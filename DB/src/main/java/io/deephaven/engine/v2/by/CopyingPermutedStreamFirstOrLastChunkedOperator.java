@@ -1,14 +1,9 @@
 package io.deephaven.engine.v2.by;
 
-import io.deephaven.engine.table.ChunkSource;
-import io.deephaven.engine.table.SharedContext;
-import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.MatchPair;
+import io.deephaven.engine.table.*;
 import io.deephaven.engine.v2.sort.permute.PermuteKernel;
 import io.deephaven.engine.v2.sort.timsort.LongIntTimsortKernel;
-import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.WritableChunkSink;
-import io.deephaven.engine.table.WritableSource;
+import io.deephaven.engine.table.ChunkSink;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.v2.utils.ChunkUtils;
 import io.deephaven.engine.rowset.RowSequence;
@@ -78,15 +73,15 @@ public abstract class CopyingPermutedStreamFirstOrLastChunkedOperator extends Ba
             final SharedContext inputSharedContext = toClose.add(SharedContext.makeSharedContext());
             final ChunkSource.GetContext[] inputContexts =
                     toClose.addArray(new ChunkSource.GetContext[numResultColumns]);
-            final WritableChunkSink.FillFromContext[] outputContexts =
-                    toClose.addArray(new WritableChunkSink.FillFromContext[numResultColumns]);
+            final ChunkSink.FillFromContext[] outputContexts =
+                    toClose.addArray(new ChunkSink.FillFromContext[numResultColumns]);
             // noinspection unchecked
             final WritableChunk<Attributes.Values>[] outputChunks =
                     toClose.addArray(new WritableChunk[numResultColumns]);
 
             for (int ci = 0; ci < numResultColumns; ++ci) {
                 inputContexts[ci] = inputColumns[ci].makeGetContext(COPY_CHUNK_SIZE, inputSharedContext);
-                final WritableSource<?> outputColumn = outputColumns[ci];
+                final WritableColumnSource<?> outputColumn = outputColumns[ci];
                 outputContexts[ci] = outputColumn.makeFillFromContext(COPY_CHUNK_SIZE);
                 outputChunks[ci] = outputColumn.getChunkType().makeWritableChunk(COPY_CHUNK_SIZE);
                 outputColumn.ensureCapacity(destinations.lastRowKey() + 1, false);

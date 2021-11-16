@@ -108,7 +108,7 @@ public class RunChartDownsample implements Function.Unary<Table, Table> {
         //
         // baseTable.initializeWithSnapshot("downsample", swapListener, (prevRequested, beforeClock) -> {
         // final boolean usePrev = prevRequested && baseTable.isRefreshing();
-        // final TrackingMutableRowSet indexToUse = usePrev ? baseTable.build().getPrevRowSet() : baseTable.build();
+        // final TrackingWritableRowSet indexToUse = usePrev ? baseTable.build().getPrevRowSet() : baseTable.build();
         //
         // // process existing rows
         // handleAdded(indexToUse, columnSourceToBin, getNanosPerPx(minBins, usePrev, indexToUse, columnSourceToBin),
@@ -227,7 +227,7 @@ public class RunChartDownsample implements Function.Unary<Table, Table> {
         }
 
         private final QueryTable sourceTable;
-        private final TrackingMutableRowSet rowSet;
+        private final TrackingWritableRowSet rowSet;
         private final QueryTable resultTable;
         private final DownsampleKey key;
         private IndexMode indexMode = IndexMode.DOWNSAMPLE;
@@ -242,7 +242,7 @@ public class RunChartDownsample implements Function.Unary<Table, Table> {
         private final ColumnSource<Long> xColumnSource;
 
         private final ValueTracker[] values;
-        private final MutableRowSet availableSlots = RowSetFactory.builderSequential().build();
+        private final WritableRowSet availableSlots = RowSetFactory.builderSequential().build();
         private int nextSlot;
 
         private final int[] allYColumnIndexes;
@@ -272,7 +272,7 @@ public class RunChartDownsample implements Function.Unary<Table, Table> {
                 final DownsampleKey key) {
             super("downsample listener", sourceTable, resultTable);
             this.sourceTable = sourceTable;
-            this.rowSet = resultTable.getRowSet().mutableCast();
+            this.rowSet = resultTable.getRowSet().writableCast();
             this.resultTable = resultTable;
             this.key = key;
 

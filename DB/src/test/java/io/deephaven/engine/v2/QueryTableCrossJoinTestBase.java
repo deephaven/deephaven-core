@@ -417,14 +417,14 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         assertTableEquals(z3, z);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            xqt.getRowSet().mutableCast().insertRange(size, size * 2);
+            xqt.getRowSet().writableCast().insertRange(size, size * 2);
             xqt.notifyListeners(RowSetFactory.fromRange(size, size * 2), i(), i());
         });
 
         assertTableEquals(z3, z);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            yqt.getRowSet().mutableCast().insertRange(size, size * 2);
+            yqt.getRowSet().writableCast().insertRange(size, size * 2);
             yqt.notifyListeners(RowSetFactory.fromRange(size, size * 2), i(), i());
         });
 

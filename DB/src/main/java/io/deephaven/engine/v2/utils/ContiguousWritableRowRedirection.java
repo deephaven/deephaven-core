@@ -11,11 +11,12 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.chunk.Attributes.RowKeys;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.chunk.WritableLongChunk;
+import io.deephaven.engine.updategraph.UpdateCommitter;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
 
-public class ContiguousMutableRowRedirection implements MutableRowRedirection {
+public class ContiguousWritableRowRedirection implements WritableRowRedirection {
     private static final long UPDATES_KEY_NOT_FOUND = -2L;
 
     // The current state of the world.
@@ -24,10 +25,10 @@ public class ContiguousMutableRowRedirection implements MutableRowRedirection {
     int size;
     // How things looked on the last clock tick
     private volatile TLongLongHashMap checkpoint;
-    private UpdateCommitter<ContiguousMutableRowRedirection> updateCommitter;
+    private UpdateCommitter<ContiguousWritableRowRedirection> updateCommitter;
 
     @SuppressWarnings("unused")
-    public ContiguousMutableRowRedirection(int initialCapacity) {
+    public ContiguousWritableRowRedirection(int initialCapacity) {
         redirections = new long[initialCapacity];
         Arrays.fill(redirections, RowSequence.NULL_ROW_KEY);
         size = 0;
@@ -35,7 +36,7 @@ public class ContiguousMutableRowRedirection implements MutableRowRedirection {
         updateCommitter = null;
     }
 
-    public ContiguousMutableRowRedirection(long[] redirections) {
+    public ContiguousWritableRowRedirection(long[] redirections) {
         this.redirections = redirections;
         size = redirections.length;
         checkpoint = null;
@@ -145,7 +146,7 @@ public class ContiguousMutableRowRedirection implements MutableRowRedirection {
         Assert.eqNull(updateCommitter, "updateCommitter");
         checkpoint =
                 new TLongLongHashMap(Math.min(size, 1024 * 1024), 0.75f, UPDATES_KEY_NOT_FOUND, UPDATES_KEY_NOT_FOUND);
-        updateCommitter = new UpdateCommitter<>(this, ContiguousMutableRowRedirection::commitUpdates);
+        updateCommitter = new UpdateCommitter<>(this, ContiguousWritableRowRedirection::commitUpdates);
     }
 
     private synchronized void commitUpdates() {

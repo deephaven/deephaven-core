@@ -11,7 +11,7 @@ import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Require;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.datastructures.util.SmartKey;
-import io.deephaven.engine.rowset.MutableRowSet;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ColumnDefinition;
@@ -1101,14 +1101,14 @@ public class TableTools {
      */
     public static Table newTable(ColumnHolder... columnHolders) {
         checkSizes(columnHolders);
-        MutableRowSet rowSet = getRowSet(columnHolders);
+        WritableRowSet rowSet = getRowSet(columnHolders);
         Map<String, ColumnSource<?>> columns = Stream.of(columnHolders).collect(COLUMN_HOLDER_LINKEDMAP_COLLECTOR);
         return new QueryTable(rowSet.toTracking(), columns);
     }
 
     public static Table newTable(TableDefinition definition, ColumnHolder... columnHolders) {
         checkSizes(columnHolders);
-        MutableRowSet rowSet = getRowSet(columnHolders);
+        WritableRowSet rowSet = getRowSet(columnHolders);
         Map<String, ColumnSource<?>> columns = Stream.of(columnHolders).collect(COLUMN_HOLDER_LINKEDMAP_COLLECTOR);
         return new QueryTable(definition, rowSet.toTracking(), columns);
     }
@@ -1123,7 +1123,7 @@ public class TableTools {
         }
     }
 
-    private static MutableRowSet getRowSet(ColumnHolder[] columnHolders) {
+    private static WritableRowSet getRowSet(ColumnHolder[] columnHolders) {
         return columnHolders.length == 0 ? RowSetFactory.empty()
                 : RowSetFactory.flat(Array.getLength(columnHolders[0].data));
     }

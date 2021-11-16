@@ -2,7 +2,7 @@ package io.deephaven.engine.v2;
 
 import io.deephaven.base.Function;
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.engine.rowset.MutableRowSet;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -330,7 +330,7 @@ public class TreeTableOrphanPromoter implements Function.Unary<Table, Table> {
                                     removeChildren(upstream.getModifiedPreShift());
                                 }
 
-                                try (final MutableRowSet prevIndex = source.getRowSet().getPrevRowSet()) {
+                                try (final WritableRowSet prevIndex = source.getRowSet().getPrevRowSet()) {
                                     prevIndex.remove(upstream.removed);
                                     if (modifiedInputColumns) {
                                         prevIndex.remove(upstream.getModifiedPreShift());
@@ -378,8 +378,8 @@ public class TreeTableOrphanPromoter implements Function.Unary<Table, Table> {
                                     return true;
                                 });
 
-                                downstream.modified.mutableCast().insert(builder.build());
-                                downstream.modified.mutableCast().remove(upstream.added);
+                                downstream.modified.writableCast().insert(builder.build());
+                                downstream.modified.writableCast().remove(upstream.added);
 
                                 if (downstream.modified.isNonempty()) {
                                     mcsTransformer.clearAndTransform(upstream.modifiedColumnSet,

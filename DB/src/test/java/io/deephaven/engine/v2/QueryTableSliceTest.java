@@ -362,7 +362,7 @@ public class QueryTableSliceTest extends QueryTableTestBase {
                 final int jj = j;
                 UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                     RowSet added = RowSetFactory.fromRange(ii * jj, (ii + 1) * jj - 1);
-                    upTable.getRowSet().mutableCast().insert(added);
+                    upTable.getRowSet().writableCast().insert(added);
                     Listener.Update update =
                             new Listener.Update(added, RowSetFactory.empty(),
                                     RowSetFactory.empty(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY);

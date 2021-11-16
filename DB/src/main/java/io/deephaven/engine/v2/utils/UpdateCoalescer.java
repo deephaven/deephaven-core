@@ -1,6 +1,6 @@
 package io.deephaven.engine.v2.utils;
 
-import io.deephaven.engine.rowset.MutableRowSet;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.v2.Listener;
@@ -16,16 +16,16 @@ import java.util.function.BiConsumer;
  */
 public class UpdateCoalescer {
 
-    public final MutableRowSet added;
-    public final MutableRowSet removed;
-    public final MutableRowSet modified;
+    public final WritableRowSet added;
+    public final WritableRowSet removed;
+    public final WritableRowSet modified;
 
     public RowSetShiftData shifted;
     public ModifiedColumnSet modifiedColumnSet;
 
     // This is an rowSet that represents which keys still exist in prevSpace for the agg update. It is necessary to
     // keep to ensure we make the correct selections when shift destinations overlap.
-    private final MutableRowSet rowSet;
+    private final WritableRowSet rowSet;
 
     public UpdateCoalescer(final RowSet rowSet, final Listener.Update update) {
         this.rowSet = rowSet.copy();
@@ -58,7 +58,7 @@ public class UpdateCoalescer {
             }
 
             // Aggregate update.remove in coalesced pre-shift removed.
-            try (final MutableRowSet myRemoved = update.removed.minus(addedAndRemoved)) {
+            try (final WritableRowSet myRemoved = update.removed.minus(addedAndRemoved)) {
                 RowSetShiftUtils.unapply(shifted, myRemoved);
                 removed.insert(myRemoved);
                 rowSet.remove(myRemoved);

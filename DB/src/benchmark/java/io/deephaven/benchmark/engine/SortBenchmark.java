@@ -1,6 +1,7 @@
 package io.deephaven.benchmark.engine;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.v2.ModifiedColumnSet;
@@ -13,7 +14,6 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.benchmarking.*;
 import io.deephaven.benchmarking.generator.EnumStringColumnGenerator;
-import io.deephaven.engine.rowset.TrackingMutableRowSet;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.BenchmarkParams;
@@ -177,7 +177,7 @@ public class SortBenchmark {
         return rollingSortTable;
     }
 
-    private TrackingMutableRowSet rollingInputRowSet;
+    private TrackingWritableRowSet rollingInputRowSet;
     private QueryTable rollingInputTable;
     private Table rollingOutputTable;
 
@@ -192,8 +192,8 @@ public class SortBenchmark {
         update.added = inputTable.getRowSet().subSetByPositionRange(addMarker, addMarker + sizePerStep - 1);
         update.modified = inputTable.getRowSet().subSetByPositionRange(modMarker, modMarker + sizePerStep - 1);
         update.removed = inputTable.getRowSet().subSetByPositionRange(rmMarker, rmMarker + sizePerStep - 1);
-        update.modified.mutableCast().retain(rollingInputRowSet);
-        update.removed.mutableCast().retain(rollingInputRowSet);
+        update.modified.writableCast().retain(rollingInputRowSet);
+        update.removed.writableCast().retain(rollingInputRowSet);
         update.modifiedColumnSet = mcsWithoutSortColumn;
         update.shifted = RowSetShiftData.EMPTY;
 
@@ -218,8 +218,8 @@ public class SortBenchmark {
         update.added = inputTable.getRowSet().subSetByPositionRange(addMarker, addMarker + sizePerStep - 1);
         update.modified = inputTable.getRowSet().subSetByPositionRange(modMarker, modMarker + sizePerStep - 1);
         update.removed = inputTable.getRowSet().subSetByPositionRange(rmMarker, rmMarker + sizePerStep - 1);
-        update.modified.mutableCast().retain(rollingInputRowSet);
-        update.removed.mutableCast().retain(rollingInputRowSet);
+        update.modified.writableCast().retain(rollingInputRowSet);
+        update.removed.writableCast().retain(rollingInputRowSet);
         update.modifiedColumnSet = mcsWithSortColumn;
         update.shifted = RowSetShiftData.EMPTY;
 

@@ -1,6 +1,6 @@
 package io.deephaven.engine.rowset.impl;
 
-import io.deephaven.engine.rowset.MutableRowSet;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSetBuilderRandom;
 import io.deephaven.engine.rowset.impl.rsp.RspBitmap;
 
@@ -13,8 +13,8 @@ class BasicRowSetBuilderRandom extends AbstractOrderedLongSetBuilderRandom
     private RspBitmap.BuilderRandom builder;
 
     @Override
-    public MutableRowSet build() {
-        return new MutableRowSetImpl(getTreeIndexImpl());
+    public WritableRowSet build() {
+        return new WritableRowSetImpl(getTreeIndexImpl());
     }
 
     @Override
@@ -24,12 +24,12 @@ class BasicRowSetBuilderRandom extends AbstractOrderedLongSetBuilderRandom
 
     @Override
     protected void setupInnerBuilderForRange(final long start, final long end) {
-        builder = new RspBitmap.BuilderRandom(indexCounts, start, end);
+        builder = new RspBitmap.BuilderRandom(rowSetCounts, start, end);
     }
 
     @Override
     protected void setupInnerBuilderEmpty() {
-        builder = new RspBitmap.BuilderRandom(indexCounts);
+        builder = new RspBitmap.BuilderRandom(rowSetCounts);
     }
 
     @Override

@@ -105,20 +105,20 @@ public interface RowRedirection {
     }
 
     /**
-     * @return Whether this RowRedirection is actually {@link MutableRowRedirection mutable}
+     * @return Whether this RowRedirection is actually {@link WritableRowRedirection writable}
      */
-    default boolean isMutable() {
-        return this instanceof MutableRowRedirection;
+    default boolean isWritable() {
+        return this instanceof WritableRowRedirection;
     }
 
     /**
      * <p>
-     * Cast this RowRedirection reference to a {@link MutableRowRedirection}.
+     * Cast this RowRedirection reference to a {@link WritableRowRedirection}.
      *
-     * @return {@code this} cast to a {@link MutableRowRedirection}
-     * @throws ClassCastException If {@code this} is not a {@link MutableRowRedirection}
+     * @return {@code this} cast to a {@link WritableRowRedirection}
+     * @throws ClassCastException If {@code this} is not a {@link WritableRowRedirection}
      */
-    default MutableRowRedirection mutableCast() {
-        return (MutableRowRedirection) this;
+    default WritableRowRedirection writableCast() {
+        return (WritableRowRedirection) this;
     }
 }

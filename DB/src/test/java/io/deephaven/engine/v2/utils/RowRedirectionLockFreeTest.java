@@ -23,7 +23,7 @@ public class RowRedirectionLockFreeTest extends RefreshingTableTestCase {
     private static final int testDurationInSeconds = 15;
 
     public void testRowRedirection() throws InterruptedException {
-        final MutableRowRedirectionLockFree index = new RowRedirectionLockFreeFactory().createRowRedirection(10);
+        final WritableRowRedirectionLockFree index = new RowRedirectionLockFreeFactory().createRowRedirection(10);
         index.startTrackingPrevValues();
         final long initialStep = LogicalClock.DEFAULT.currentStep();
         Writer writer = new Writer("writer", initialStep, index);
@@ -53,7 +53,7 @@ public class RowRedirectionLockFreeTest extends RefreshingTableTestCase {
             failed |= rwb.hasFailed();
         }
         if (failed) {
-            fail("MutableRowRedirection had some corrupt values");
+            fail("WritableRowRedirection had some corrupt values");
         }
     }
 
@@ -64,11 +64,11 @@ public class RowRedirectionLockFreeTest extends RefreshingTableTestCase {
     private static abstract class RWBase implements Runnable, Cancellable {
         protected final String name;
         protected final long initialStep;
-        protected final MutableRowRedirectionLockFree index;
+        protected final WritableRowRedirectionLockFree index;
         protected int numIterations;
         protected volatile boolean cancelled;
 
-        protected RWBase(String name, long initialStep, MutableRowRedirectionLockFree index) {
+        protected RWBase(String name, long initialStep, WritableRowRedirectionLockFree index) {
             this.name = name;
             this.initialStep = initialStep;
             this.index = index;
@@ -100,7 +100,7 @@ public class RowRedirectionLockFreeTest extends RefreshingTableTestCase {
         private int badUpdateCycles;
         private int incoherentCycles;
 
-        Reader(String name, long initialStep, MutableRowRedirectionLockFree index) {
+        Reader(String name, long initialStep, WritableRowRedirectionLockFree index) {
             super(name, initialStep, index);
             goodIdleCycles = 0;
             goodUpdateCycles = 0;
@@ -121,7 +121,7 @@ public class RowRedirectionLockFreeTest extends RefreshingTableTestCase {
             final Random rng = new Random(step);
             final int numKeysToInsert = rng.nextInt(keysInThisGeneration);
             long[] keys = fillAndShuffle(rng, keysInThisGeneration);
-            final MutableRowRedirectionLockFree ix = index;
+            final WritableRowRedirectionLockFree ix = index;
 
             // Record the mismatches
             final TLongArrayList mmKeys = new TLongArrayList();
@@ -188,7 +188,7 @@ public class RowRedirectionLockFreeTest extends RefreshingTableTestCase {
     }
 
     private static class Writer extends RWBase {
-        Writer(String name, long initialStep, MutableRowRedirectionLockFree index) {
+        Writer(String name, long initialStep, WritableRowRedirectionLockFree index) {
             super(name, initialStep, index);
         }
 
@@ -202,7 +202,7 @@ public class RowRedirectionLockFreeTest extends RefreshingTableTestCase {
                 final int numKeysToInsert = rng.nextInt(keysInThisGeneration.getValue());
                 // A bit of a waste because we only look at the first 'numKeysToInsert' keys, but that's ok.
                 long[] keys = fillAndShuffle(rng, keysInThisGeneration.getValue());
-                final MutableRowRedirectionLockFree ix = index;
+                final WritableRowRedirectionLockFree ix = index;
                 for (int ii = 0; ii < numKeysToInsert; ++ii) {
                     final long key = keys[ii];
                     final long value = step * oneBillion + ii;
@@ -215,7 +215,7 @@ public class RowRedirectionLockFreeTest extends RefreshingTableTestCase {
             });
 
             // waste some time doing something else
-            final MutableRowRedirectionLockFree privateIndex =
+            final WritableRowRedirectionLockFree privateIndex =
                     new RowRedirectionLockFreeFactory().createRowRedirection(10);
             for (long ii = 0; ii < keysInThisGeneration.getValue() * 4; ++ii) {
                 privateIndex.put(ii, ii);

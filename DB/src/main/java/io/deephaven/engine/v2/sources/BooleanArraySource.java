@@ -5,7 +5,7 @@
 package io.deephaven.engine.v2.sources;
 
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.WritableSource;
+import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.Attributes.RowKeys;
@@ -458,7 +458,7 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]> imple
         }
     }
 
-    private class ReinterpretedAsByte extends AbstractColumnSource<Byte> implements MutableColumnSourceGetDefaults.ForByte, FillUnordered, WritableSource<Byte> {
+    private class ReinterpretedAsByte extends AbstractColumnSource<Byte> implements MutableColumnSourceGetDefaults.ForByte, FillUnordered, WritableColumnSource<Byte> {
         private ReinterpretedAsByte() {
             super(byte.class);
         }

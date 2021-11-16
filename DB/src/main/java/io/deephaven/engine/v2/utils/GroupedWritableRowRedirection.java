@@ -12,16 +12,16 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Arrays;
 
 /**
- * The GroupedMutableRowRedirection is intended for situations where you have several Indices that represent contiguous
+ * The GroupedWritableRowRedirection is intended for situations where you have several Indices that represent contiguous
  * rows of your output table and a flat output rowSet.
  *
- * When sorting a table by its grouping column, instead of using a large contiguous MutableRowRedirection, we simply
+ * When sorting a table by its grouping column, instead of using a large contiguous WritableRowRedirection, we simply
  * store the row sets for each group and the accumulated cardinality. We then binary search in the accumulated
  * cardinality for a given key; and fetch the corresponding offset from that group's row set.
  *
- * This MutableRowRedirection does not support mutation.
+ * This WritableRowRedirection does not support mutation.
  */
-public class GroupedMutableRowRedirection implements MutableRowRedirection {
+public class GroupedWritableRowRedirection implements WritableRowRedirection {
     /**
      * The total size of the row redirection.
      */
@@ -32,7 +32,7 @@ public class GroupedMutableRowRedirection implements MutableRowRedirection {
      */
     private final long[] groupSizes;
     /**
-     * The actual TrackingMutableRowSet for each group; parallel with groupSizes.
+     * The actual TrackingWritableRowSet for each group; parallel with groupSizes.
      */
     private final RowSet[] groups;
 
@@ -43,7 +43,7 @@ public class GroupedMutableRowRedirection implements MutableRowRedirection {
      */
     private final ThreadLocal<SavedContext> threadContext = ThreadLocal.withInitial(SavedContext::new);
 
-    public GroupedMutableRowRedirection(long size, long[] groupSizes, RowSet[] groups) {
+    public GroupedWritableRowRedirection(long size, long[] groupSizes, RowSet[] groups) {
         this.size = size;
         this.groupSizes = groupSizes;
         this.groups = groups;

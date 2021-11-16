@@ -173,7 +173,7 @@ for(ii = 0; ii < y3.length; ii++) {
     y3Higher[ii] = d + ((2 + ii) * 0.3)
     y3Lower[ii] = d - ((2 + ii) * 0.3)
 }
-fig = figure().plotStyle(PlotStyle.LINE).yLabel("Predicted TrackingMutableRowSet")
+fig = figure().plotStyle(PlotStyle.LINE).yLabel("Predicted TrackingWritableRowSet")
         .plot("S1", date3,y3).pointsVisible(false)
         .plot("S2", date1,y1).pointsVisible(false)
 axs2 = fig.twin()

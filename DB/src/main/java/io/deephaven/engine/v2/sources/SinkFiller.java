@@ -1,12 +1,13 @@
 package io.deephaven.engine.v2.sources;
 
-import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.Attributes.Values;
-import io.deephaven.engine.table.WritableChunkSink;
-import io.deephaven.engine.table.WritableSource;
+import io.deephaven.engine.chunk.*;
+import io.deephaven.engine.table.ChunkSink;
+import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.util.datastructures.LongAbortableConsumer;
 
-public abstract class SinkFiller implements WritableChunkSink.FillFromContext, LongAbortableConsumer {
+public abstract class SinkFiller implements ChunkSink.FillFromContext, LongAbortableConsumer {
+
     public static SinkFiller create(final ChunkType chunkType) {
         switch (chunkType) {
             case Byte:
@@ -34,10 +35,10 @@ public abstract class SinkFiller implements WritableChunkSink.FillFromContext, L
         }
     }
 
-    WritableSource dest;
+    WritableColumnSource dest;
     int srcIndex;
 
-    final void reset(WritableSource dest, Chunk<? extends Values> src) {
+    final void reset(WritableColumnSource dest, Chunk<? extends Values> src) {
         this.dest = dest;
         srcIndex = 0;
         resetSrc(src);

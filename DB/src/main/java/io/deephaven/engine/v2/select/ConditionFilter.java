@@ -315,9 +315,9 @@ public class ConditionFilter extends AbstractConditionFilter {
         }
 
         @Override
-        public MutableRowSet filter(final RowSet selection, final RowSet fullSet, final Table table,
-                                    final boolean usePrev,
-                                    String formula, final Param... params) {
+        public WritableRowSet filter(final RowSet selection, final RowSet fullSet, final Table table,
+                                     final boolean usePrev,
+                                     String formula, final Param... params) {
             try (final FilterKernel.Context context = filterKernel.getContext(chunkSize);
                     final RowSequence.Iterator rsIterator = selection.getRowSequenceIterator()) {
                 final ChunkGetter[] chunkGetters = new ChunkGetter[columnNames.length];

@@ -5,18 +5,15 @@
 package io.deephaven.engine.v2.remote;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.rowset.MutableRowSet;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.table.ColumnDefinition;
-import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.*;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.sources.ArrayBackedColumnSource;
-import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.sources.WritableRedirectedColumnSource;
-import io.deephaven.engine.table.WritableSource;
+import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.v2.utils.*;
 
 import java.util.BitSet;
@@ -26,21 +23,21 @@ import java.util.Map;
 public class InitialSnapshotTable extends QueryTable {
     protected final Setter<?>[] setters;
     protected int capacity;
-    protected MutableRowSet freeset = RowSetFactory.empty();
-    protected final MutableRowSet populatedRows;
-    protected final MutableRowSet[] populatedCells;
-    protected WritableSource<?>[] writableSources;
-    protected MutableRowRedirection rowRedirection;
+    protected WritableRowSet freeset = RowSetFactory.empty();
+    protected final WritableRowSet populatedRows;
+    protected final WritableRowSet[] populatedCells;
+    protected WritableColumnSource<?>[] writableSources;
+    protected WritableRowRedirection rowRedirection;
 
     private final BitSet subscribedColumns;
 
-    protected InitialSnapshotTable(Map<String, ? extends ColumnSource<?>> result, WritableSource<?>[] writableSources,
-            MutableRowRedirection rowRedirection, BitSet subscribedColumns) {
+    protected InitialSnapshotTable(Map<String, ? extends ColumnSource<?>> result, WritableColumnSource<?>[] writableSources,
+                                   WritableRowRedirection rowRedirection, BitSet subscribedColumns) {
         super(RowSetFactory.empty().toTracking(), result);
         this.subscribedColumns = subscribedColumns;
         this.writableSources = writableSources;
         this.setters = new Setter[writableSources.length];
-        this.populatedCells = new MutableRowSet[writableSources.length];
+        this.populatedCells = new WritableRowSet[writableSources.length];
         for (int ii = 0; ii < writableSources.length; ++ii) {
             setters[ii] = getSetter(writableSources[ii]);
             this.populatedCells[ii] = RowSetFactory.fromKeys();
@@ -58,7 +55,7 @@ public class InitialSnapshotTable extends QueryTable {
     }
 
     @SuppressWarnings("rawtypes")
-    protected Setter<?> getSetter(final WritableSource source) {
+    protected Setter<?> getSetter(final WritableColumnSource source) {
         if (source.getType() == byte.class) {
             return (Setter<byte[]>) (array, arrayIndex, destIndex) -> source.set(destIndex, array[arrayIndex]);
         } else if (source.getType() == char.class) {
@@ -86,7 +83,7 @@ public class InitialSnapshotTable extends QueryTable {
     protected void processInitialSnapshot(InitialSnapshot snapshot) {
         final RowSet viewPort = snapshot.viewport;
         final RowSet addedRowSet = snapshot.rowsIncluded;
-        try (final MutableRowSet newlyPopulated =
+        try (final WritableRowSet newlyPopulated =
                 viewPort == null ? addedRowSet.copy() : snapshot.rowSet.subSetForPositions(viewPort)) {
             if (viewPort != null) {
                 newlyPopulated.retain(addedRowSet);
@@ -132,13 +129,13 @@ public class InitialSnapshotTable extends QueryTable {
 
             for (int ii = 0; ii < setters.length; ii++) {
                 if (subscribedColumns.get(ii) && snapshot.dataColumns[ii] != null) {
-                    final MutableRowSet ix = populatedCells[ii];
+                    final WritableRowSet ix = populatedCells[ii];
                     ix.insert(newlyPopulated);
                 }
             }
             populatedRows.insert(newlyPopulated);
         }
-        getRowSet().mutableCast().insert(snapshot.rowSet);
+        getRowSet().writableCast().insert(snapshot.rowSet);
     }
 
     protected RowSet getFreeRows(long size) {
@@ -158,7 +155,7 @@ public class InitialSnapshotTable extends QueryTable {
         }
         if (needsResizing) {
             for (ColumnSource<?> source : getColumnSources()) {
-                ((WritableSource<?>) source).ensureCapacity(capacity);
+                ((WritableColumnSource<?>) source).ensureCapacity(capacity);
             }
         }
         RowSet result = freeset.subSetByPositionRange(0, (int) size);
@@ -189,8 +186,8 @@ public class InitialSnapshotTable extends QueryTable {
     public static InitialSnapshotTable setupInitialSnapshotTable(TableDefinition definition, InitialSnapshot snapshot,
             BitSet subscribedColumns) {
         final ColumnDefinition<?>[] columns = definition.getColumns();
-        WritableSource<?>[] writableSources = new WritableSource[columns.length];
-        MutableRowRedirection rowRedirection = MutableRowRedirection.FACTORY.createRowRedirection(8);
+        WritableColumnSource<?>[] writableSources = new WritableColumnSource[columns.length];
+        WritableRowRedirection rowRedirection = WritableRowRedirection.FACTORY.createRowRedirection(8);
         LinkedHashMap<String, ColumnSource<?>> finalColumns = new LinkedHashMap<>();
         for (int i = 0; i < columns.length; i++) {
             writableSources[i] = ArrayBackedColumnSource.getMemoryColumnSource(0, columns[i].getDataType(),

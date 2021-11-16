@@ -74,7 +74,7 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
             resultMap.put(entry.getKey(), new ReversedColumnSource<>(entry.getValue(), this));
         }
 
-        final TrackingMutableRowSet rowSet = transform(rowSetToReverse).toTracking();
+        final TrackingWritableRowSet rowSet = transform(rowSetToReverse).toTracking();
         resultSize = rowSet.size();
         Assert.eq(resultSize, "resultSize", rowSetToReverse.size(), "rowSetToReverse.size()");
 
@@ -98,7 +98,7 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
     }
 
     private void onUpdate(final Listener.Update upstream) {
-        final MutableRowSet rowSet = resultTable.getRowSet().mutableCast();
+        final WritableRowSet rowSet = resultTable.getRowSet().writableCast();
         final RowSet parentRowSet = parent.getRowSet();
         Assert.eq(resultSize, "resultSize", rowSet.size(), "rowSet.size()");
 
@@ -224,7 +224,7 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
      * @param rowSetToTransform the outer rowSet
      * @return the corresponding inner rowSet
      */
-    public MutableRowSet transform(final RowSet rowSetToTransform) {
+    public WritableRowSet transform(final RowSet rowSetToTransform) {
         return transform(rowSetToTransform, false);
     }
 
@@ -234,11 +234,11 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
      * @param outerRowSet the outer rowSet
      * @return the corresponding inner rowSet
      */
-    public MutableRowSet transformPrev(final RowSet outerRowSet) {
+    public WritableRowSet transformPrev(final RowSet outerRowSet) {
         return transform(outerRowSet, true);
     }
 
-    private MutableRowSet transform(final RowSet outerRowSet, final boolean usePrev) {
+    private WritableRowSet transform(final RowSet outerRowSet, final boolean usePrev) {
         final long pivot = usePrev ? getPivotPrev() : pivotPoint;
         final RowSetBuilderRandom reversedBuilder = RowSetFactory.builderRandom();
 

@@ -7,11 +7,11 @@ package io.deephaven.engine.v2.utils;
 import io.deephaven.base.Function;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.rowset.TrackingMutableRowSet;
+import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.WritableSource;
+import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.BaseTable;
@@ -39,10 +39,10 @@ public class FunctionGeneratedTableFactory {
     private final Function.Nullary<Table> tableGenerator;
     private final int refreshIntervalMs;
     private long nextRefresh;
-    private final Map<String, WritableSource<?>> writableSources = new LinkedHashMap<>();
+    private final Map<String, WritableColumnSource<?>> writableSources = new LinkedHashMap<>();
     private final Map<String, ColumnSource<?>> columns = new LinkedHashMap<>();
 
-    private final TrackingMutableRowSet rowSet;
+    private final TrackingWritableRowSet rowSet;
 
     /**
      * Create a table that refreshes based on the value of your function, automatically called every refreshIntervalMs.
@@ -121,7 +121,7 @@ public class FunctionGeneratedTableFactory {
         RowSet sourceRowSet = source.getRowSet();
 
         for (Map.Entry<String, ? extends ColumnSource<?>> entry : sourceColumns.entrySet()) {
-            WritableSource<?> destColumn = writableSources.get(entry.getKey());
+            WritableColumnSource<?> destColumn = writableSources.get(entry.getKey());
             destColumn.ensureCapacity(sourceRowSet.size());
 
             long position = 0;

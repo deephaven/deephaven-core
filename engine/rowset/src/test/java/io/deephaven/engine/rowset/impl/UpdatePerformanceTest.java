@@ -1,6 +1,6 @@
 package io.deephaven.engine.rowset.impl;
 
-import io.deephaven.engine.rowset.MutableRowSet;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderRandom;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -70,7 +70,7 @@ public class UpdatePerformanceTest {
     }
 
     static class IndexUpdateStrategy implements UpdateStrategy {
-        private MutableRowSet ix[] = new MutableRowSet[4];
+        private WritableRowSet ix[] = new WritableRowSet[4];
         private final Runnable[] runners = new Runnable[] {
                 getParallelRunner(), getSequentialRunner()
         };
@@ -150,7 +150,7 @@ public class UpdatePerformanceTest {
 
                 @Override
                 public String toString() {
-                    return "TrackingMutableRowSet Parallel Update";
+                    return "TrackingWritableRowSet Parallel Update";
                 }
             };
         }
@@ -165,7 +165,7 @@ public class UpdatePerformanceTest {
 
                 @Override
                 public String toString() {
-                    return "TrackingMutableRowSet Sequential Update";
+                    return "TrackingWritableRowSet Sequential Update";
                 }
             };
         }

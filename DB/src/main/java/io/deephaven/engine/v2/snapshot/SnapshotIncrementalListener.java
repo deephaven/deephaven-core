@@ -2,7 +2,7 @@ package io.deephaven.engine.v2.snapshot;
 
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.rowset.TrackingMutableRowSet;
+import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.v2.ListenerRecorder;
 import io.deephaven.engine.v2.MergedListener;
 import io.deephaven.engine.v2.QueryTable;
@@ -24,7 +24,7 @@ public class SnapshotIncrementalListener extends MergedListener {
     private final Map<String, ? extends ColumnSource<?>> leftColumns;
 
     private UpdateCoalescer rightUpdates;
-    private final TrackingMutableRowSet lastRightRowSet;
+    private final TrackingWritableRowSet lastRightRowSet;
     private boolean firstSnapshot = true;
 
     public SnapshotIncrementalListener(QueryTable triggerTable, QueryTable resultTable,
@@ -64,7 +64,7 @@ public class SnapshotIncrementalListener extends MergedListener {
 
     public void doFirstSnapshot(boolean initial) {
         doRowCopy(rightTable.getRowSet());
-        resultTable.getRowSet().mutableCast().insert(rightTable.getRowSet());
+        resultTable.getRowSet().writableCast().insert(rightTable.getRowSet());
         if (!initial) {
             resultTable.notifyListeners(resultTable.getRowSet().copy(),
                     RowSetFactory.empty(), RowSetFactory.empty());
@@ -84,7 +84,7 @@ public class SnapshotIncrementalListener extends MergedListener {
 
             doRowCopy(rowsToCopy);
 
-            resultTable.getRowSet().mutableCast().update(rightAdded, rightRemoved);
+            resultTable.getRowSet().writableCast().update(rightAdded, rightRemoved);
             resultTable.notifyListeners(rightAdded, rightRemoved, rightModified);
         }
     }

@@ -5,15 +5,15 @@
 package io.deephaven.engine.v2.sources.deltaaware;
 
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.rowset.MutableRowSet;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.impl.RowSequenceUtil;
+import io.deephaven.engine.updategraph.UpdateCommitter;
 import io.deephaven.engine.v2.sources.*;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.Attributes.Values;
-import io.deephaven.engine.v2.utils.*;
 import org.jetbrains.annotations.NotNull;
 
 // This worked-out example is a sketch of the problem we are trying to solve.
@@ -82,7 +82,7 @@ import org.jetbrains.annotations.NotNull;
 // Then the final item from the delta chunk: d15
 
 public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
-        implements WritableSource<T>, WritableChunkSink<Values> {
+        implements WritableColumnSource<T>, ChunkSink<Values> {
     /**
      * The initial size of the delta column source.
      */
@@ -90,11 +90,11 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
     /**
      * In its own coordinate space
      */
-    private final WritableChunkSink<Values> baseline;
+    private final ChunkSink<Values> baseline;
     /**
      * Also in its own coordinate space (i.e. densely packed)
      */
-    private WritableChunkSink<Values> delta;
+    private ChunkSink<Values> delta;
 
     @FunctionalInterface
     private interface CapacityEnsurer {
@@ -102,12 +102,12 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
     }
 
     /**
-     * A lambda that ensures the capacity of the baseline data structure. (We have this because the WritableChunkSink
+     * A lambda that ensures the capacity of the baseline data structure. (We have this because the ChunkSink
      * does not have an 'ensureCapacity', but the underlying data structure we use does).
      */
     private final CapacityEnsurer baselineCapacityEnsurer;
     /**
-     * A lambda that ensures the capacity of the delta data structure. (We have this because the WritableChunkSink does
+     * A lambda that ensures the capacity of the delta data structure. (We have this because the ChunkSink does
      * not have an 'ensureCapacity', but the underlying data structure we use does).
      */
     private CapacityEnsurer deltaCapacityEnsurer;
@@ -124,7 +124,7 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
      * field is volatile because we want concurrent lockfree getters to see correct values from "get()" even though we
      * might be in the middle of commitValues().
      */
-    private volatile MutableRowSet deltaRows;
+    private volatile WritableRowSet deltaRows;
     /**
      * The maximum key inserted into deltaRows during this phase. We use this to make sure that keys are not inserted
      * out of numerical order.
@@ -514,7 +514,7 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
         }
 
         // Do the volatile read once.
-        final MutableRowSet dRows = deltaRows;
+        final WritableRowSet dRows = deltaRows;
 
         // Otherwise, we need to either update a key or append a key
         final long existing = dRows.find(index);

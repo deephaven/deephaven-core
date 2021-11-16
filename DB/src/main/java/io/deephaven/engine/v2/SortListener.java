@@ -13,7 +13,7 @@ import io.deephaven.engine.rowset.impl.RowSequenceUtil;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.table.WritableChunkSink;
+import io.deephaven.engine.table.ChunkSink;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.engine.tables.SortingOrder;
 import io.deephaven.util.datastructures.hash.HashMapK4V4;
@@ -51,9 +51,9 @@ public class SortListener extends BaseTable.ListenerImpl {
     private final QueryTable result;
     private final HashMapK4V4 reverseLookup;
     private final ColumnSource<Comparable<?>>[] columnsToSortBy;
-    private final MutableRowSet resultRowSet;
+    private final WritableRowSet resultRowSet;
     private final SortingOrder[] order;
-    private final MutableRowRedirection sortMapping;
+    private final WritableRowRedirection sortMapping;
     private final ColumnSource<Comparable<?>>[] sortedColumnsToSortBy;
     private final EffortTracker effortTracker;
 
@@ -64,14 +64,14 @@ public class SortListener extends BaseTable.ListenerImpl {
 
     public SortListener(Table parent, QueryTable result, HashMapK4V4 reverseLookup,
                         ColumnSource<Comparable<?>>[] columnsToSortBy, SortingOrder[] order,
-                        MutableRowRedirection sortMapping, ColumnSource<Comparable<?>>[] sortedColumnsToSortBy,
+                        WritableRowRedirection sortMapping, ColumnSource<Comparable<?>>[] sortedColumnsToSortBy,
                         ModifiedColumnSet.Transformer mcsTransformer, ModifiedColumnSet sortColumnSet) {
         super("sortInternal", parent, result);
         this.parent = parent;
         this.result = result;
         this.reverseLookup = reverseLookup;
         this.columnsToSortBy = columnsToSortBy;
-        this.resultRowSet = result.getRowSet().mutableCast();
+        this.resultRowSet = result.getRowSet().writableCast();
         this.order = order;
         this.sortMapping = sortMapping;
         this.sortedColumnsToSortBy = sortedColumnsToSortBy;
@@ -445,8 +445,8 @@ public class SortListener extends BaseTable.ListenerImpl {
                         Arrays.binarySearch(qs.addedOutputKeys, qs.addedCurrent, qs.addedEnd, maxRunKey));
             }
 
-            // note: if TrackingMutableRowSet.SearchIterator had an O(1) method to get pos we should prefer that over
-            // TrackingMutableRowSet#find,
+            // note: if TrackingWritableRowSet.SearchIterator had an O(1) method to get pos we should prefer that over
+            // TrackingWritableRowSet#find,
             // turn maxRunKey into an advancing iterator (similar to gapEvictionIter), and also use that method to
             // compute sizeToShift
             final long backMaxIdx = qs.twiddleIfNegative(resultRowSet.find(maxRunKey));
@@ -611,7 +611,7 @@ public class SortListener extends BaseTable.ListenerImpl {
         private final ExposedTLongArrayList values;
         private final WritableLongChunk valuesChunk;
         private final WritableLongChunk<OrderedRowKeys> keysChunk;
-        private final WritableChunkSink.FillFromContext fillFromContext;
+        private final ChunkSink.FillFromContext fillFromContext;
         private final LongSortKernel sortKernel;
 
         SortMappingAggregator() {
@@ -788,7 +788,7 @@ public class SortListener extends BaseTable.ListenerImpl {
         }
 
         @Override
-        public MutableRowSet build() {
+        public WritableRowSet build() {
             RowSetBuilderSequential builder = RowSetFactory.builderSequential();
             appendToBuilder(builder);
             return builder.build();

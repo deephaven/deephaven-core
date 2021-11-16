@@ -13,9 +13,9 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.updategraph.NotificationQueue;
+import io.deephaven.engine.updategraph.UpdateCommitter;
 import io.deephaven.engine.v2.*;
 import io.deephaven.engine.v2.Listener;
-import io.deephaven.engine.v2.utils.*;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -24,7 +24,7 @@ import java.util.*;
 public class UnionSourceManager {
 
     private final UnionColumnSource<?>[] sources;
-    private final MutableRowSet rowSet;
+    private final WritableRowSet rowSet;
     private final List<ModifiedColumnSet.Transformer> modColumnTransformers = new ArrayList<>();
     private final ModifiedColumnSet modifiedColumnSet;
 
@@ -51,7 +51,7 @@ public class UnionSourceManager {
         this.parentDependency = parentDependency;
 
         result = new QueryTable(RowSetFactory.empty().toTracking(), getColumnSources());
-        rowSet = result.getRowSet().mutableCast();
+        rowSet = result.getRowSet().writableCast();
         modifiedColumnSet = result.newModifiedColumnSet(names);
 
         mergedListener = new MergedUnionListener(listeners, "TableTools.merge()", result);

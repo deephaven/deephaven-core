@@ -8,7 +8,7 @@ import io.deephaven.engine.chunk.LongChunk;
 import io.deephaven.engine.chunk.WritableByteChunk;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.WritableSource;
+import io.deephaven.engine.table.WritableColumnSource;
 import org.openjdk.jmh.infra.Blackhole;
 
 import java.util.Random;
@@ -16,7 +16,7 @@ import java.util.Random;
 class ByteHelper implements FillBenchmarkHelper {
     private final byte[] byteArray;
     private final ByteArraySource byteArraySource;
-    private final WritableSource byteSparseArraySource;
+    private final WritableColumnSource byteSparseArraySource;
 
     private final ColumnSource.FillContext arrayContext;
     private final ColumnSource.FillContext sparseContext;

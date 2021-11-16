@@ -36,7 +36,7 @@ public class ZeroKeyChunkedAjMergedListener extends MergedListener {
     private final ChunkSsaStamp chunkSsaStamp;
     private final SegmentedSortedArray leftSsa;
     private final SegmentedSortedArray rightSsa;
-    private final MutableRowRedirection rowRedirection;
+    private final WritableRowRedirection rowRedirection;
     private final ModifiedColumnSet leftStampColumn;
     private final ModifiedColumnSet rightStampColumn;
     private final ModifiedColumnSet allRightColumns;
@@ -67,7 +67,7 @@ public class ZeroKeyChunkedAjMergedListener extends MergedListener {
             SsaSsaStamp ssaSsaStamp,
             SegmentedSortedArray leftSsa,
             SegmentedSortedArray rightSsa,
-            MutableRowRedirection rowRedirection,
+            WritableRowRedirection rowRedirection,
             JoinControl joinControl) {
         super(Arrays.asList(leftRecorder, rightRecorder), Collections.emptyList(), listenerDescription, result);
         this.leftRecorder = leftRecorder;

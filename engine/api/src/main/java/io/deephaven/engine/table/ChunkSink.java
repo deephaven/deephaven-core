@@ -4,7 +4,7 @@ import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.rowset.RowSequence;
 import org.jetbrains.annotations.NotNull;
 
-public interface WritableChunkSink<ATTR extends Attributes.Any> extends ChunkSource<ATTR> {
+public interface ChunkSink<ATTR extends Attributes.Any> extends ChunkSource<ATTR> {
 
     FillFromContext DEFAULT_FILL_FROM_INSTANCE = new FillFromContext() {};
 
@@ -33,7 +33,7 @@ public interface WritableChunkSink<ATTR extends Attributes.Any> extends ChunkSou
             @NotNull LongChunk<Attributes.RowKeys> keys);
 
     /**
-     * Make a context suitable for the {@link WritableChunkSink#fillFromChunk} method.
+     * Make a context suitable for the {@link ChunkSink#fillFromChunk} method.
      */
     FillFromContext makeFillFromContext(int chunkCapacity);
 }

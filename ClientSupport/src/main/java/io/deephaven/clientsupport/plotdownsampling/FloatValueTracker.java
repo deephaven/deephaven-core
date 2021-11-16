@@ -4,7 +4,7 @@
 package io.deephaven.clientsupport.plotdownsampling;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.rowset.MutableRowSet;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.v2.sources.FloatArraySource;
@@ -41,7 +41,7 @@ public final class FloatValueTracker extends ValueTracker {
     }
 
     @Override
-    public void append(int offset, long rowIndex, Chunk<? extends Attributes.Values> valuesChunk, int indexInChunk, @Nullable MutableRowSet nulls) {
+    public void append(int offset, long rowIndex, Chunk<? extends Attributes.Values> valuesChunk, int indexInChunk, @Nullable WritableRowSet nulls) {
         final float val = valuesChunk.asFloatChunk().get(indexInChunk);
         if (val == NULL_FLOAT) {
             if (nulls != null) {
@@ -67,7 +67,7 @@ public final class FloatValueTracker extends ValueTracker {
     }
 
     @Override
-    public void update(int offset, long rowIndex, Chunk<? extends Attributes.Values> valuesChunk, int indexInChunk, @Nullable MutableRowSet nulls) {
+    public void update(int offset, long rowIndex, Chunk<? extends Attributes.Values> valuesChunk, int indexInChunk, @Nullable WritableRowSet nulls) {
         float val = valuesChunk.asFloatChunk().get(indexInChunk);
         if (val == NULL_FLOAT) {
             if (nulls != null) {

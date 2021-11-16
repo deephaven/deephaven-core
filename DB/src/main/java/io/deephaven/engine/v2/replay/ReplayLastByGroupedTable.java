@@ -19,7 +19,7 @@ public class ReplayLastByGroupedTable extends QueryReplayGroupedTable {
     public ReplayLastByGroupedTable(TrackingRowSet rowSet, Map<String, ? extends ColumnSource<?>> input,
                                     String timeColumn,
                                     Replayer replayer, String[] groupingColumns) {
-        super(rowSet, input, timeColumn, replayer, MutableRowRedirection.FACTORY.createRowRedirection(100),
+        super(rowSet, input, timeColumn, replayer, WritableRowRedirection.FACTORY.createRowRedirection(100),
                 groupingColumns);
         // noinspection unchecked
         replayer.registerTimeSource(rowSet, (ColumnSource<DateTime>) input.get(timeColumn));
@@ -51,7 +51,7 @@ public class ReplayLastByGroupedTable extends QueryReplayGroupedTable {
         final RowSet added = addedBuilder.build();
         final RowSet modified = modifiedBuilder.build();
         if (added.size() > 0 || modified.size() > 0) {
-            getRowSet().mutableCast().insert(added);
+            getRowSet().writableCast().insert(added);
             notifyListeners(added, RowSetFactory.empty(), modified);
         }
     }

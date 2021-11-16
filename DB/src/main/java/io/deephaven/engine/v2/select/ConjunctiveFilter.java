@@ -6,7 +6,7 @@ package io.deephaven.engine.v2.select;
 
 import io.deephaven.engine.exceptions.QueryCancellationException;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.rowset.MutableRowSet;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.util.SafeCloseable;
 
@@ -39,8 +39,8 @@ public class ConjunctiveFilter extends ComposedFilter {
     }
 
     @Override
-    public MutableRowSet filter(RowSet selection, RowSet fullSet, Table table, boolean usePrev) {
-        MutableRowSet matched = selection.copy();
+    public WritableRowSet filter(RowSet selection, RowSet fullSet, Table table, boolean usePrev) {
+        WritableRowSet matched = selection.copy();
 
         for (WhereFilter filter : componentFilters) {
             if (Thread.interrupted()) {

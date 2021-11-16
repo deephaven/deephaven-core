@@ -5,7 +5,7 @@ import io.deephaven.engine.chunk.LongChunk;
 import io.deephaven.engine.chunk.WritableCharChunk;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.WritableSource;
+import io.deephaven.engine.table.WritableColumnSource;
 import org.openjdk.jmh.infra.Blackhole;
 
 import java.util.Random;
@@ -13,7 +13,7 @@ import java.util.Random;
 class CharHelper implements FillBenchmarkHelper {
     private final char[] charArray;
     private final CharacterArraySource charArraySource;
-    private final WritableSource charSparseArraySource;
+    private final WritableColumnSource charSparseArraySource;
 
     private final ColumnSource.FillContext arrayContext;
     private final ColumnSource.FillContext sparseContext;

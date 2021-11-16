@@ -14,7 +14,7 @@ import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.Attributes.*;
 import io.deephaven.engine.v2.ssa.SegmentedSortedArray;
 import io.deephaven.engine.v2.utils.ChunkUtils;
-import io.deephaven.engine.v2.utils.LongColumnSourceMutableRowRedirection;
+import io.deephaven.engine.v2.utils.LongColumnSourceWritableRowRedirection;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -25,7 +25,7 @@ public class SortedFirstOrLastChunkedOperator implements IterativeChunkedAggrega
     private final boolean isFirst;
     private final Supplier<SegmentedSortedArray> ssaFactory;
     private final LongArraySource redirections;
-    private final LongColumnSourceMutableRowRedirection rowRedirection;
+    private final LongColumnSourceWritableRowRedirection rowRedirection;
     private final Map<String, ColumnSource<?>> resultColumns;
     private final ObjectArraySource<SegmentedSortedArray> ssas;
 
@@ -35,7 +35,7 @@ public class SortedFirstOrLastChunkedOperator implements IterativeChunkedAggrega
         this.isFirst = isFirst;
         this.ssaFactory = SegmentedSortedArray.makeFactory(chunkType, false, 1024);
         this.redirections = new LongArraySource();
-        this.rowRedirection = new LongColumnSourceMutableRowRedirection(redirections);
+        this.rowRedirection = new LongColumnSourceWritableRowRedirection(redirections);
         this.ssas = new ObjectArraySource<>(SegmentedSortedArray.class);
 
         this.resultColumns = new LinkedHashMap<>();

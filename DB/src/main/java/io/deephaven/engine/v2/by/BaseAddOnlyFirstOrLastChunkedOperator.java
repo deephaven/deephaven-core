@@ -10,7 +10,7 @@ import io.deephaven.engine.chunk.Attributes.ChunkLengths;
 import io.deephaven.engine.chunk.Attributes.ChunkPositions;
 import io.deephaven.engine.chunk.Attributes.RowKeys;
 import io.deephaven.engine.chunk.Attributes.Values;
-import io.deephaven.engine.v2.utils.LongColumnSourceMutableRowRedirection;
+import io.deephaven.engine.v2.utils.LongColumnSourceWritableRowRedirection;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -18,14 +18,14 @@ import java.util.Map;
 abstract class BaseAddOnlyFirstOrLastChunkedOperator implements IterativeChunkedAggregationOperator {
     final boolean isFirst;
     final LongArraySource redirections;
-    private final LongColumnSourceMutableRowRedirection rowRedirection;
+    private final LongColumnSourceWritableRowRedirection rowRedirection;
     private final Map<String, ColumnSource<?>> resultColumns;
 
     BaseAddOnlyFirstOrLastChunkedOperator(boolean isFirst, MatchPair[] resultPairs, Table originalTable,
             String exposeRedirectionAs) {
         this.isFirst = isFirst;
         this.redirections = new LongArraySource();
-        this.rowRedirection = new LongColumnSourceMutableRowRedirection(redirections);
+        this.rowRedirection = new LongColumnSourceWritableRowRedirection(redirections);
 
         this.resultColumns = new LinkedHashMap<>(resultPairs.length);
         for (final MatchPair mp : resultPairs) {

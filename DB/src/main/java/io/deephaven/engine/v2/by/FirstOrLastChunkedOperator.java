@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2.by;
 
 import io.deephaven.base.verify.Require;
-import io.deephaven.engine.rowset.MutableRowSet;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.Table;
@@ -20,8 +20,8 @@ import java.util.Map;
 public class FirstOrLastChunkedOperator implements IterativeChunkedAggregationOperator {
     private final boolean isFirst;
     private final LongArraySource redirections;
-    private final ObjectArraySource<MutableRowSet> rowSets;
-    private final LongColumnSourceMutableRowRedirection rowRedirection;
+    private final ObjectArraySource<WritableRowSet> rowSets;
+    private final LongColumnSourceWritableRowRedirection rowRedirection;
     private final Map<String, ColumnSource<?>> resultColumns;
     private final boolean exposeRedirections;
 
@@ -29,8 +29,8 @@ public class FirstOrLastChunkedOperator implements IterativeChunkedAggregationOp
             String exposeRedirectionAs) {
         this.isFirst = isFirst;
         this.redirections = new LongArraySource();
-        this.rowRedirection = new LongColumnSourceMutableRowRedirection(redirections);
-        this.rowSets = new ObjectArraySource<>(MutableRowSet.class);
+        this.rowRedirection = new LongColumnSourceWritableRowRedirection(redirections);
+        this.rowSets = new ObjectArraySource<>(WritableRowSet.class);
 
         this.resultColumns = new LinkedHashMap<>(resultPairs.length);
         for (final MatchPair mp : resultPairs) {
@@ -116,7 +116,7 @@ public class FirstOrLastChunkedOperator implements IterativeChunkedAggregationOp
 
     private long doShift(LongChunk<OrderedRowKeys> preShiftIndices, LongChunk<OrderedRowKeys> postShiftIndices,
             int startPosition, int runLength, long destination) {
-        final MutableRowSet rowSet = rowSetForSlot(destination);
+        final WritableRowSet rowSet = rowSetForSlot(destination);
         rowSet.remove(preShiftIndices, startPosition, runLength);
         rowSet.insert(postShiftIndices, startPosition, runLength);
         return isFirst ? rowSet.firstRowKey() : rowSet.lastRowKey();
@@ -194,7 +194,7 @@ public class FirstOrLastChunkedOperator implements IterativeChunkedAggregationOp
     }
 
     private boolean addChunk(LongChunk<OrderedRowKeys> indices, int start, int length, long destination) {
-        final MutableRowSet rowSet = rowSetForSlot(destination);
+        final WritableRowSet rowSet = rowSetForSlot(destination);
         rowSet.insert(indices, start, length);
 
         return updateRedirections(destination, rowSet);
@@ -206,14 +206,14 @@ public class FirstOrLastChunkedOperator implements IterativeChunkedAggregationOp
             return false;
         }
 
-        final MutableRowSet rowSet = rowSetForSlot(destination);
+        final WritableRowSet rowSet = rowSetForSlot(destination);
         rowSet.insert(addRowSet);
 
         return updateRedirections(destination, rowSet);
     }
 
-    private MutableRowSet rowSetForSlot(long destination) {
-        MutableRowSet rowSet = rowSets.getUnsafe(destination);
+    private WritableRowSet rowSetForSlot(long destination) {
+        WritableRowSet rowSet = rowSets.getUnsafe(destination);
         if (rowSet == null) {
             rowSets.set(destination, rowSet = RowSetFactory.empty());
         }
@@ -221,7 +221,7 @@ public class FirstOrLastChunkedOperator implements IterativeChunkedAggregationOp
     }
 
     private boolean removeChunk(LongChunk<OrderedRowKeys> indices, int start, int length, long destination) {
-        final MutableRowSet rowSet = rowSetForSlot(destination);
+        final WritableRowSet rowSet = rowSetForSlot(destination);
         rowSet.remove(indices, start, length);
 
         return updateRedirections(destination, rowSet);
@@ -429,7 +429,7 @@ public class FirstOrLastChunkedOperator implements IterativeChunkedAggregationOp
     private class ComplementaryOperator implements IterativeChunkedAggregationOperator {
         private final boolean isFirst;
         private final LongArraySource redirections;
-        private final LongColumnSourceMutableRowRedirection rowRedirection;
+        private final LongColumnSourceWritableRowRedirection rowRedirection;
         private final Map<String, ColumnSource<?>> resultColumns;
         private final boolean exposeRedirections;
 
@@ -438,7 +438,7 @@ public class FirstOrLastChunkedOperator implements IterativeChunkedAggregationOp
             this.isFirst = isFirst;
             redirections = new LongArraySource();
 
-            this.rowRedirection = new LongColumnSourceMutableRowRedirection(redirections);
+            this.rowRedirection = new LongColumnSourceWritableRowRedirection(redirections);
 
             this.resultColumns = new LinkedHashMap<>(resultPairs.length);
             for (final MatchPair mp : resultPairs) {

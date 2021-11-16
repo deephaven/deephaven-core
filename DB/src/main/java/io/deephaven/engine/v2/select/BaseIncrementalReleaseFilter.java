@@ -5,10 +5,10 @@
 package io.deephaven.engine.v2.select;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.rowset.MutableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 
 import java.util.Collections;
@@ -53,7 +53,7 @@ public abstract class BaseIncrementalReleaseFilter extends WhereFilterLivenessAr
     }
 
     @Override
-    public MutableRowSet filter(RowSet selection, RowSet fullSet, Table table, boolean usePrev) {
+    public WritableRowSet filter(RowSet selection, RowSet fullSet, Table table, boolean usePrev) {
         if (usePrev) {
             Assert.eqZero(releasedSize, "releasedSize");
             Assert.eq(fullSet.size(), "fullSet.size()", selection.size(), "selection.size()");

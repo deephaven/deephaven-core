@@ -2,7 +2,7 @@ package io.deephaven.clientsupport.plotdownsampling;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.*;
-import io.deephaven.engine.v2.utils.*;
+import io.deephaven.engine.rowset.impl.RowSetUtil;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.chunk.Chunk;
@@ -21,7 +21,7 @@ import java.util.stream.IntStream;
  * its own offset in those arrays.
  */
 public class BucketState {
-    private final MutableRowSet rowSet = RowSetFactory.empty();
+    private final WritableRowSet rowSet = RowSetFactory.empty();
 
     private RowSet cachedRowSet;
 
@@ -34,7 +34,7 @@ public class BucketState {
     private final ValueTracker[] values;
 
     private final boolean trackNulls;
-    private final MutableRowSet[] nulls;
+    private final WritableRowSet[] nulls;
 
     public BucketState(final long key, final int offset, final ValueTracker[] valueTrackers, boolean trackNulls) {
         Assert.eqTrue(trackNulls || offset == 0 || offset == 1, "trackNulls || offset == 0 || offset == 1");
@@ -44,7 +44,7 @@ public class BucketState {
         this.trackNulls = trackNulls;
         if (trackNulls) {
             this.nulls = IntStream.range(0, valueTrackers.length).mapToObj(ignore -> RowSetFactory.empty())
-                    .toArray(MutableRowSet[]::new);
+                    .toArray(WritableRowSet[]::new);
         } else {
             this.nulls = null;
         }
@@ -109,7 +109,7 @@ public class BucketState {
 
         if (trackNulls) {
             // if we're tracking nulls, update those arrays
-            for (final MutableRowSet nullValues : nulls) {
+            for (final WritableRowSet nullValues : nulls) {
                 RowSetShiftUtils.apply(shiftData, nullValues);
             }
         }
@@ -212,7 +212,7 @@ public class BucketState {
                 }
                 RowSequence.Iterator keysIterator = rowSet.getRowSequenceIterator();
                 MutableLong position = new MutableLong(0);
-                RowSetUtilities.forAllInvertedLongRanges(rowSet, nullsForCol, (first, last) -> {
+                RowSetUtil.forAllInvertedLongRanges(rowSet, nullsForCol, (first, last) -> {
                     if (first > 0) {
                         // Advance to (first - 1)
                         keysIterator.getNextRowSequenceWithLength(first - 1 - position.longValue());

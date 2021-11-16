@@ -8,7 +8,7 @@
 package io.deephaven.engine.v2.utils.freezeby;
 
 import io.deephaven.engine.v2.sources.BooleanArraySource;
-import io.deephaven.engine.table.WritableSource;
+import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.rowset.RowSequence;
 
@@ -16,7 +16,7 @@ class BooleanFreezeByHelper implements FreezeByOperator.FreezeByHelper {
     private final BooleanArraySource resultSource;
     private final FreezeByCountOperator rowCount;
 
-    BooleanFreezeByHelper(WritableSource resultSource, FreezeByCountOperator rowCount) {
+    BooleanFreezeByHelper(WritableColumnSource resultSource, FreezeByCountOperator rowCount) {
         this.resultSource = (BooleanArraySource)resultSource;
         this.rowCount = rowCount;
     }

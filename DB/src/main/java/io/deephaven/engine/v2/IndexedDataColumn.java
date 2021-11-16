@@ -418,12 +418,12 @@ public class IndexedDataColumn<TYPE> implements DataColumn<TYPE> {
     }
 
     // ------------------------------------------------------------------------------------------------------------------
-    // Set method implementations - will cast columnSource to a WritableSource internally
+    // Set method implementations - will cast columnSource to a WritableColumnSource internally
     // ------------------------------------------------------------------------------------------------------------------
 
     @Override
     public void set(final long pos, final TYPE value) {
-        ((WritableSource<TYPE>) columnSource).set(rowSet.get(pos), value);
+        ((WritableColumnSource<TYPE>) columnSource).set(rowSet.get(pos), value);
     }
 
     @Override
@@ -434,14 +434,14 @@ public class IndexedDataColumn<TYPE> implements DataColumn<TYPE> {
 
             @Override
             public void accept(final long key) {
-                ((WritableSource<TYPE>) columnSource).set(key, values[vi++]);
+                ((WritableColumnSource<TYPE>) columnSource).set(key, values[vi++]);
             }
         });
     }
 
     @Override
     public void setBoolean(final long pos, final Boolean value) {
-        ((WritableSource<Boolean>) columnSource).set(rowSet.get(pos), value);
+        ((WritableColumnSource<Boolean>) columnSource).set(rowSet.get(pos), value);
     }
 
     @Override
@@ -452,7 +452,7 @@ public class IndexedDataColumn<TYPE> implements DataColumn<TYPE> {
 
     @Override
     public void setByte(final long pos, final byte value) {
-        ((WritableSource<Byte>) columnSource).set(rowSet.get(pos), value);
+        ((WritableColumnSource<Byte>) columnSource).set(rowSet.get(pos), value);
     }
 
     @Override
@@ -462,14 +462,14 @@ public class IndexedDataColumn<TYPE> implements DataColumn<TYPE> {
 
             @Override
             public void accept(final long key) {
-                ((WritableSource<TYPE>) columnSource).set(key, values[vi++]);
+                ((WritableColumnSource<TYPE>) columnSource).set(key, values[vi++]);
             }
         });
     }
 
     @Override
     public void setChar(final long pos, final char value) {
-        ((WritableSource<Character>) columnSource).set(rowSet.get(pos), value);
+        ((WritableColumnSource<Character>) columnSource).set(rowSet.get(pos), value);
     }
 
     @Override
@@ -479,14 +479,14 @@ public class IndexedDataColumn<TYPE> implements DataColumn<TYPE> {
 
             @Override
             public void accept(final long key) {
-                ((WritableSource<TYPE>) columnSource).set(key, values[vi++]);
+                ((WritableColumnSource<TYPE>) columnSource).set(key, values[vi++]);
             }
         });
     }
 
     @Override
     public void setDouble(final long pos, final double value) {
-        ((WritableSource<Double>) columnSource).set(rowSet.get(pos), value);
+        ((WritableColumnSource<Double>) columnSource).set(rowSet.get(pos), value);
     }
 
     @Override
@@ -496,14 +496,14 @@ public class IndexedDataColumn<TYPE> implements DataColumn<TYPE> {
 
             @Override
             public void accept(final long key) {
-                ((WritableSource<TYPE>) columnSource).set(key, values[vi++]);
+                ((WritableColumnSource<TYPE>) columnSource).set(key, values[vi++]);
             }
         });
     }
 
     @Override
     public void setFloat(final long pos, final float value) {
-        ((WritableSource<Float>) columnSource).set(rowSet.get(pos), value);
+        ((WritableColumnSource<Float>) columnSource).set(rowSet.get(pos), value);
     }
 
     @Override
@@ -513,14 +513,14 @@ public class IndexedDataColumn<TYPE> implements DataColumn<TYPE> {
 
             @Override
             public void accept(final long key) {
-                ((WritableSource<TYPE>) columnSource).set(key, values[vi++]);
+                ((WritableColumnSource<TYPE>) columnSource).set(key, values[vi++]);
             }
         });
     }
 
     @Override
     public void setInt(final long pos, final int value) {
-        ((WritableSource<Integer>) columnSource).set(rowSet.get(pos), value);
+        ((WritableColumnSource<Integer>) columnSource).set(rowSet.get(pos), value);
     }
 
     @Override
@@ -530,14 +530,14 @@ public class IndexedDataColumn<TYPE> implements DataColumn<TYPE> {
 
             @Override
             public void accept(final long key) {
-                ((WritableSource<TYPE>) columnSource).set(key, values[vi++]);
+                ((WritableColumnSource<TYPE>) columnSource).set(key, values[vi++]);
             }
         });
     }
 
     @Override
     public void setLong(final long pos, final long value) {
-        ((WritableSource<Long>) columnSource).set(rowSet.get(pos), value);
+        ((WritableColumnSource<Long>) columnSource).set(rowSet.get(pos), value);
     }
 
     @Override
@@ -547,14 +547,14 @@ public class IndexedDataColumn<TYPE> implements DataColumn<TYPE> {
 
             @Override
             public void accept(final long key) {
-                ((WritableSource<TYPE>) columnSource).set(key, values[vi++]);
+                ((WritableColumnSource<TYPE>) columnSource).set(key, values[vi++]);
             }
         });
     }
 
     @Override
     public void setShort(final long pos, final short value) {
-        ((WritableSource<Short>) columnSource).set(rowSet.get(pos), value);
+        ((WritableColumnSource<Short>) columnSource).set(rowSet.get(pos), value);
     }
 
     @Override
@@ -564,7 +564,7 @@ public class IndexedDataColumn<TYPE> implements DataColumn<TYPE> {
 
             @Override
             public void accept(final long key) {
-                ((WritableSource<TYPE>) columnSource).set(key, values[vi++]);
+                ((WritableColumnSource<TYPE>) columnSource).set(key, values[vi++]);
             }
         });
     }

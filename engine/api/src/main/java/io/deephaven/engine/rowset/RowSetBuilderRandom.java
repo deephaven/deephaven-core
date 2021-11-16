@@ -18,7 +18,7 @@ import java.util.PrimitiveIterator;
  */
 public interface RowSetBuilderRandom {
 
-    MutableRowSet build();
+    WritableRowSet build();
 
     void addKey(long rowKey);
 

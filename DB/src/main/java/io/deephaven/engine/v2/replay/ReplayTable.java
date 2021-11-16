@@ -66,7 +66,7 @@ public class ReplayTable extends QueryTable implements Runnable {
         }
         final RowSet added = indexBuilder.build();
         if (added.size() > 0) {
-            getRowSet().mutableCast().insert(added);
+            getRowSet().writableCast().insert(added);
             notifyListeners(added, RowSetFactory.empty(), RowSetFactory.empty());
         }
     }

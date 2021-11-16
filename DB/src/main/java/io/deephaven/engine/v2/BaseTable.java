@@ -9,8 +9,7 @@ import io.deephaven.base.StringUtils;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.updategraph.DynamicNode;
+import io.deephaven.engine.updategraph.*;
 import io.deephaven.hash.KeyedObjectHashSet;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.reference.WeakSimpleReference;
@@ -25,7 +24,6 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.NotSortableException;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
@@ -36,7 +34,6 @@ import io.deephaven.engine.v2.select.SelectColumn;
 import io.deephaven.engine.v2.select.SourceColumn;
 import io.deephaven.engine.v2.select.SwitchColumn;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.v2.utils.*;
 import io.deephaven.util.annotations.ReferentialIntegrity;
 import io.deephaven.internal.log.LoggerFactory;
@@ -1410,7 +1407,7 @@ public abstract class BaseTable extends LivenessArtifact
      * </p>
      *
      * <p>
-     * This function is for use when the result table shares an TrackingMutableRowSet; such that if this table is flat,
+     * This function is for use when the result table shares an TrackingWritableRowSet; such that if this table is flat,
      * the result table must also be flat.
      * </p>
      *

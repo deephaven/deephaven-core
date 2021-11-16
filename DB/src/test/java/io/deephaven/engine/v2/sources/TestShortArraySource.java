@@ -8,7 +8,7 @@ import io.deephaven.engine.table.DefaultGetContext;
 import io.deephaven.engine.rftable.TestSourceSink;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.WritableChunkSink;
+import io.deephaven.engine.table.ChunkSink;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.v2.select.FormulaColumn;
 import io.deephaven.engine.chunk.*;
@@ -501,7 +501,7 @@ public class TestShortArraySource {
         try (RowSet srcKeys = RowSetFactory.fromRange(rangeStart, rangeEnd)) {
             try (RowSet destKeys = RowSetFactory.fromRange(rangeStart + 1, rangeEnd + 1)) {
                 try (ChunkSource.GetContext srcContext = source.makeGetContext(arraySize)) {
-                    try (WritableChunkSink.FillFromContext destContext = source.makeFillFromContext(arraySize)) {
+                    try (ChunkSink.FillFromContext destContext = source.makeFillFromContext(arraySize)) {
                         Chunk chunk = source.getChunk(srcContext, srcKeys);
                         if (chunk.isAlias(peekedBlock)) {
                             // If the ArraySource gives out aliases of its blocks, then it should throw when we try to

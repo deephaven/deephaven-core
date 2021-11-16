@@ -3,7 +3,8 @@ package io.deephaven.engine.v2.select.analyzers;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.ColumnDefinition;
-import io.deephaven.engine.table.WritableSource;
+import io.deephaven.engine.table.WritableColumnSource;
+import io.deephaven.engine.v2.utils.WritableRowRedirection;
 import io.deephaven.engine.vector.Vector;
 import io.deephaven.engine.v2.ModifiedColumnSet;
 import io.deephaven.engine.v2.Listener;
@@ -11,7 +12,6 @@ import io.deephaven.engine.v2.select.SelectColumn;
 import io.deephaven.engine.v2.select.SourceColumn;
 import io.deephaven.engine.v2.select.SwitchColumn;
 import io.deephaven.engine.v2.sources.*;
-import io.deephaven.engine.v2.utils.MutableRowRedirection;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.util.SafeCloseable;
@@ -30,9 +30,9 @@ public abstract class SelectAndViewAnalyzer {
             SelectColumn... selectColumns) {
         SelectAndViewAnalyzer analyzer = createBaseLayer(columnSources, publishTheseSources);
         final Map<String, ColumnDefinition<?>> columnDefinitions = new LinkedHashMap<>();
-        final MutableRowRedirection rowRedirection;
+        final WritableRowRedirection rowRedirection;
         if (mode == Mode.SELECT_REDIRECTED_REFRESHING && rowSet.size() < Integer.MAX_VALUE) {
-            rowRedirection = MutableRowRedirection.FACTORY.createRowRedirection(rowSet.intSize());
+            rowRedirection = WritableRowRedirection.FACTORY.createRowRedirection(rowSet.intSize());
             analyzer = analyzer.createRedirectionLayer(rowSet, rowRedirection);
         } else {
             rowRedirection = null;
@@ -74,7 +74,7 @@ public abstract class SelectAndViewAnalyzer {
                 case SELECT_STATIC: {
                     // We need to call newDestInstance because only newDestInstance has the knowledge to endow our
                     // created array with the proper componentType (in the case of Vectors).
-                    final WritableSource<?> scs = sc.newDestInstance(targetSize);
+                    final WritableColumnSource<?> scs = sc.newDestInstance(targetSize);
                     analyzer =
                             analyzer.createLayerForSelect(sc.getName(), sc, scs, null, distinctDeps, mcsBuilder, false);
                     break;
@@ -84,8 +84,8 @@ public abstract class SelectAndViewAnalyzer {
                     // We need to call newDestInstance because only newDestInstance has the knowledge to endow our
                     // created array with the proper componentType (in the case of Vectors).
                     // TODO(kosak): use DeltaAwareColumnSource
-                    WritableSource<?> scs = sc.newDestInstance(targetSize);
-                    WritableSource<?> underlyingSource = null;
+                    WritableColumnSource<?> scs = sc.newDestInstance(targetSize);
+                    WritableColumnSource<?> underlyingSource = null;
                     if (rowRedirection != null) {
                         underlyingSource = scs;
                         scs = new WritableRedirectedColumnSource<>(rowRedirection, underlyingSource, rowSet.intSize());
@@ -106,13 +106,13 @@ public abstract class SelectAndViewAnalyzer {
         return new BaseLayer(sources, publishTheseSources);
     }
 
-    private RedirectionLayer createRedirectionLayer(TrackingRowSet resultRowSet, MutableRowRedirection rowRedirection) {
+    private RedirectionLayer createRedirectionLayer(TrackingRowSet resultRowSet, WritableRowRedirection rowRedirection) {
         return new RedirectionLayer(this, resultRowSet, rowRedirection);
     }
 
     private SelectAndViewAnalyzer createLayerForSelect(String name, SelectColumn sc,
-            WritableSource<?> cs, WritableSource<?> underlyingSource,
-            String[] parentColumnDependencies, ModifiedColumnSet mcsBuilder, boolean isRedirected) {
+                                                       WritableColumnSource<?> cs, WritableColumnSource<?> underlyingSource,
+                                                       String[] parentColumnDependencies, ModifiedColumnSet mcsBuilder, boolean isRedirected) {
         return new SelectColumnLayer(this, name, sc, cs, underlyingSource, parentColumnDependencies, mcsBuilder,
                 isRedirected);
     }

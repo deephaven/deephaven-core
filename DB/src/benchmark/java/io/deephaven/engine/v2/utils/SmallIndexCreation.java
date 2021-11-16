@@ -2,6 +2,7 @@ package io.deephaven.engine.v2.utils;
 
 
 import io.deephaven.engine.rowset.impl.OrderedLongSetBuilderSequential;
+import io.deephaven.engine.rowset.impl.RspBitmapBuilderSequential;
 import io.deephaven.engine.rowset.impl.rsp.RspArray;
 import io.deephaven.engine.rowset.impl.rsp.RspBitmap;
 import io.deephaven.engine.rowset.impl.sortedranges.SortedRanges;

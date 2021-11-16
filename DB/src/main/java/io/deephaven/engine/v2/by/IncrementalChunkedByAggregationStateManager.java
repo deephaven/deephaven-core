@@ -106,7 +106,7 @@ class IncrementalChunkedByAggregationStateManager
 
     @ReplicateHashTable.EmptyStateValue
     // @NullStateValue@ from \Qnull\E, @StateValueType@ from \QTrackingMutableRowSet\E
-    private static final TrackingMutableRowSet EMPTY_VALUE = null;
+    private static final TrackingWritableRowSet EMPTY_VALUE = null;
 
     // mixin getStateValue
     // region overflow pivot
@@ -156,22 +156,22 @@ class IncrementalChunkedByAggregationStateManager
 
     // we are going to also reuse this for our state entry, so that we do not need additional storage
     @ReplicateHashTable.StateColumnSource
-    // @StateColumnSourceType@ from \QObjectArraySource<TrackingMutableRowSet>\E
-    private final ObjectArraySource<TrackingMutableRowSet> rowSetSource
-            // @StateColumnSourceConstructor@ from \QObjectArraySource<>(TrackingMutableRowSet.class)\E
-            = new ObjectArraySource<>(TrackingMutableRowSet.class);
+    // @StateColumnSourceType@ from \QObjectArraySource<TrackingWritableRowSet>\E
+    private final ObjectArraySource<TrackingWritableRowSet> rowSetSource
+            // @StateColumnSourceConstructor@ from \QObjectArraySource<>(TrackingWritableRowSet.class)\E
+            = new ObjectArraySource<>(TrackingWritableRowSet.class);
 
     // the keys for overflow
     private int nextOverflowLocation = 0;
     private final ArrayBackedColumnSource<?> [] overflowKeySources;
     // the location of the next key in an overflow bucket
     private final IntegerArraySource overflowOverflowLocationSource = new IntegerArraySource();
-    // the overflow buckets for the right TrackingMutableRowSet
+    // the overflow buckets for the right TrackingWritableRowSet
     @ReplicateHashTable.OverflowStateColumnSource
-    // @StateColumnSourceType@ from \QObjectArraySource<TrackingMutableRowSet>\E
-    private final ObjectArraySource<TrackingMutableRowSet> overflowRowSetSource
-            // @StateColumnSourceConstructor@ from \QObjectArraySource<>(TrackingMutableRowSet.class)\E
-            = new ObjectArraySource<>(TrackingMutableRowSet.class);
+    // @StateColumnSourceType@ from \QObjectArraySource<TrackingWritableRowSet>\E
+    private final ObjectArraySource<TrackingWritableRowSet> overflowRowSetSource
+            // @StateColumnSourceConstructor@ from \QObjectArraySource<>(TrackingWritableRowSet.class)\E
+            = new ObjectArraySource<>(TrackingWritableRowSet.class);
 
     // the type of each of our key chunks
     private final ChunkType[] keyChunkTypes;
@@ -349,8 +349,8 @@ class IncrementalChunkedByAggregationStateManager
         final WritableLongChunk<RowKeys> overflowLocationForEqualityCheck;
 
         // the chunk of state values that we read from the hash table
-        // @WritableStateChunkType@ from \QWritableObjectChunk<TrackingMutableRowSet,Values>\E
-        final WritableObjectChunk<TrackingMutableRowSet,Values> workingStateEntries;
+        // @WritableStateChunkType@ from \QWritableObjectChunk<TrackingWritableRowSet,Values>\E
+        final WritableObjectChunk<TrackingWritableRowSet,Values> workingStateEntries;
 
         // the chunks for getting key values from the hash table
         final WritableChunk<Values>[] workingKeyChunks;
@@ -540,7 +540,7 @@ class IncrementalChunkedByAggregationStateManager
              // endregion build initialization try
         ) {
             // region build initialization
-            // TrackingMutableRowSet keys extracted from the input rowSet, parallel to the sourceKeyChunks
+            // TrackingWritableRowSet keys extracted from the input rowSet, parallel to the sourceKeyChunks
             final WritableLongChunk<OrderedRowKeys> sourceChunkIndexKeys = WritableLongChunk.makeWritableChunk(bc.chunkSize);
             // endregion build initialization
 
@@ -913,7 +913,7 @@ class IncrementalChunkedByAggregationStateManager
                     }
 
                     // @StateValueType@ from \QTrackingMutableRowSet\E
-                    final TrackingMutableRowSet stateValueToMove = rowSetSource.getUnsafe(oldHashLocation);
+                    final TrackingWritableRowSet stateValueToMove = rowSetSource.getUnsafe(oldHashLocation);
                     rowSetSource.set(newHashLocation, stateValueToMove);
                     rowSetSource.set(oldHashLocation, EMPTY_VALUE);
                                 // region rehash move values
@@ -1289,8 +1289,8 @@ class IncrementalChunkedByAggregationStateManager
 
         // the chunk of right indices that we read from the hash table, the empty right rowSet is used as a sentinel that the
         // state exists; otherwise when building from the left it is always null
-        // @WritableStateChunkType@ from \QWritableObjectChunk<TrackingMutableRowSet,Values>\E
-        final WritableObjectChunk<TrackingMutableRowSet,Values> workingStateEntries;
+        // @WritableStateChunkType@ from \QWritableObjectChunk<TrackingWritableRowSet,Values>\E
+        final WritableObjectChunk<TrackingWritableRowSet,Values> workingStateEntries;
 
         // the overflow locations that we need to get from the overflowLocationSource (or overflowOverflowLocationSource)
         final WritableLongChunk<RowKeys> overflowLocationsToFetch;
@@ -1589,17 +1589,17 @@ class IncrementalChunkedByAggregationStateManager
     }
 
     // region extraction functions
-    ObjectArraySource<TrackingMutableRowSet> getRowSetSource() {
+    ObjectArraySource<TrackingWritableRowSet> getRowSetSource() {
         return rowSetSource;
     }
 
-    ObjectArraySource<TrackingMutableRowSet> getOverflowRowSetSource() {
+    ObjectArraySource<TrackingWritableRowSet> getOverflowRowSetSource() {
         return overflowRowSetSource;
     }
 
-    ColumnSource<TrackingMutableRowSet> getRowSetHashTableSource() {
+    ColumnSource<TrackingWritableRowSet> getRowSetHashTableSource() {
         //noinspection unchecked
-        final ColumnSource<TrackingMutableRowSet> indexHashTableSource = new HashTableColumnSource(TrackingMutableRowSet.class, rowSetSource, overflowRowSetSource);
+        final ColumnSource<TrackingWritableRowSet> indexHashTableSource = new HashTableColumnSource(TrackingWritableRowSet.class, rowSetSource, overflowRowSetSource);
         indexHashTableSource.startTrackingPrevValues();
         return indexHashTableSource;
     }
@@ -1618,12 +1618,12 @@ class IncrementalChunkedByAggregationStateManager
                     @NotNull final ShiftAppliedCallback shiftAppliedCallback) {
         if (isOverflowLocation(stateSlot)) {
             final int overflowSlot = hashLocationToOverflowLocation(stateSlot);
-            final MutableRowSet overflowStateRowSet = overflowRowSetSource.get(overflowSlot);
+            final WritableRowSet overflowStateRowSet = overflowRowSetSource.get(overflowSlot);
             if (RowSetShiftData.applyShift(overflowStateRowSet, beginRange, endRange, shiftDelta)) {
                 overflowCookieSource.set(overflowSlot, shiftAppliedCallback.invoke(overflowCookieSource.getLong(overflowSlot), stateSlot));
             }
         } else {
-            final MutableRowSet stateRowSet = rowSetSource.get(stateSlot);
+            final WritableRowSet stateRowSet = rowSetSource.get(stateSlot);
             if (RowSetShiftData.applyShift(stateRowSet, beginRange, endRange, shiftDelta)) {
                 cookieSource.set(stateSlot, shiftAppliedCallback.invoke(cookieSource.getLong(stateSlot), stateSlot));
             }

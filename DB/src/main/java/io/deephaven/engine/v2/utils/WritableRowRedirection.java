@@ -8,7 +8,7 @@ import gnu.trove.map.TLongLongMap;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetShiftData;
-import io.deephaven.engine.table.WritableChunkSink;
+import io.deephaven.engine.table.ChunkSink;
 import io.deephaven.engine.chunk.Attributes.RowKeys;
 import io.deephaven.engine.chunk.Chunk;
 import io.deephaven.engine.chunk.LongChunk;
@@ -16,12 +16,12 @@ import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Mutable {@link RowRedirection}.
+ * Writable {@link RowRedirection}.
  *
- * A MutableRowRedirection can be in one of two states: tracking prev values or not. The typical lifecycle looks like
+ * A WritableRowRedirection can be in one of two states: tracking prev values or not. The typical lifecycle looks like
  * this:
  * <ol>
- * <li>A MutableRowRedirection is created with an initial map, but not tracking prev values. In this state, get() and
+ * <li>A WritableRowRedirection is created with an initial map, but not tracking prev values. In this state, get() and
  * getPrev() behave identically; put() and remove() affect current values but do no "prev value" tracking.
  * <li>Prev value tracking begins when the caller calls startTrackingPrevValues(). Immediately after this call, the data
  * is logically "forked": getPrev() will still refer to the same set of entries as before; this set will be frozen until
@@ -34,7 +34,7 @@ import org.jetbrains.annotations.NotNull;
  * current, and current becomes the new fork of the map.
  * </ol>
  */
-public interface MutableRowRedirection extends RowRedirection {
+public interface WritableRowRedirection extends RowRedirection {
 
     /**
      * Initiate previous value tracking.
@@ -91,19 +91,19 @@ public interface MutableRowRedirection extends RowRedirection {
     }
 
     /**
-     * A basic, empty, singleton default {@link WritableChunkSink.FillFromContext} instance.
+     * A basic, empty, singleton default {@link ChunkSink.FillFromContext} instance.
      */
-    WritableChunkSink.FillFromContext DEFAULT_FILL_FROM_INSTANCE = new WritableChunkSink.FillFromContext() {};
+    ChunkSink.FillFromContext DEFAULT_FILL_FROM_INSTANCE = new ChunkSink.FillFromContext() {};
 
     /**
-     * Make a {@link WritableChunkSink.FillFromContext } for this MutableRowRedirection. The default implementation
+     * Make a {@link ChunkSink.FillFromContext } for this WritableRowRedirection. The default implementation
      * supplies {@link #DEFAULT_FILL_FROM_INSTANCE}, suitable for use with the default implementation of
-     * {@link #fillFromChunk(WritableChunkSink.FillFromContext , Chunk, RowSequence)}.
+     * {@link #fillFromChunk(ChunkSink.FillFromContext , Chunk, RowSequence)}.
      *
      * @param chunkCapacity The maximum number of mappings that will be supplied in one operation
-     * @return The {@link WritableChunkSink.FillFromContext } to use
+     * @return The {@link ChunkSink.FillFromContext } to use
      */
-    default WritableChunkSink.FillFromContext makeFillFromContext(final int chunkCapacity) {
+    default ChunkSink.FillFromContext makeFillFromContext(final int chunkCapacity) {
         return DEFAULT_FILL_FROM_INSTANCE;
     }
 
@@ -114,7 +114,7 @@ public interface MutableRowRedirection extends RowRedirection {
      * @param innerRowKeys The inner row keys to map to
      * @param outerRowKeys The outer row keys to map from
      */
-    default void fillFromChunk(@NotNull final WritableChunkSink.FillFromContext fillFromContext,
+    default void fillFromChunk(@NotNull final ChunkSink.FillFromContext fillFromContext,
             @NotNull final Chunk<? extends RowKeys> innerRowKeys,
             @NotNull final RowSequence outerRowKeys) {
         final MutableInt offset = new MutableInt();
@@ -131,7 +131,7 @@ public interface MutableRowRedirection extends RowRedirection {
     }
 
     /**
-     * Update this MutableRowRedirection according to a {@link RowSetShiftData}.
+     * Update this WritableRowRedirection according to a {@link RowSetShiftData}.
      *
      * @param tableRowSet A {@link RowSet} to filter which rows should be shifted
      * @param shiftData The {@link RowSetShiftData} for this update
@@ -146,10 +146,10 @@ public interface MutableRowRedirection extends RowRedirection {
     interface Factory {
         TLongLongMap createUnderlyingMapWithCapacity(int initialCapacity);
 
-        MutableRowRedirection createRowRedirection(int initialCapacity);
+        WritableRowRedirection createRowRedirection(int initialCapacity);
 
         /**
-         * @param map The initial {@link TLongLongMap} to use for backing the result MutableRowRedirection. Needs to
+         * @param map The initial {@link TLongLongMap} to use for backing the result WritableRowRedirection. Needs to
          *        have the same dynamic type as that returned by {@link #createUnderlyingMapWithCapacity(int)}.
          */
         RowRedirection createRowRedirection(TLongLongMap map);

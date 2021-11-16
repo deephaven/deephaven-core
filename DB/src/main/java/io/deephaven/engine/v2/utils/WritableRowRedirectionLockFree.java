@@ -8,11 +8,12 @@ import gnu.trove.iterator.TLongLongIterator;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.table.ChunkSink;
+import io.deephaven.engine.updategraph.UpdateCommitter;
 import io.deephaven.util.datastructures.hash.HashMapLockFreeK1V1;
 import io.deephaven.util.datastructures.hash.HashMapLockFreeK2V2;
 import io.deephaven.util.datastructures.hash.HashMapLockFreeK4V4;
 import io.deephaven.util.datastructures.hash.TNullableLongLongMap;
-import io.deephaven.engine.table.WritableChunkSink;
 import io.deephaven.engine.chunk.Attributes.RowKeys;
 import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.chunk.Chunk;
@@ -21,7 +22,7 @@ import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * This is a lock-free implementation of a MutableRowRedirection. The rules for using this class are as follows.
+ * This is a lock-free implementation of a WritableRowRedirection. The rules for using this class are as follows.
  *
  * Users of this class fall into two roles: 1. Readers (snapshotters), of which there can be many. 2. Writers, of which
  * there can be only one.
@@ -107,7 +108,7 @@ import org.jetbrains.annotations.NotNull;
  * not have any special responsibility, but the first call to put() inside an Update generation causes a new
  * 'keysAndValues' array to be generated, which the Reader will start to see next time it looks.
  */
-public class MutableRowRedirectionLockFree implements MutableRowRedirection {
+public class WritableRowRedirectionLockFree implements WritableRowRedirection {
     private static final float LOAD_FACTOR =
             (float) Configuration.getInstance().getDoubleWithDefault("RowRedirectionK4V4Impl.loadFactor", 0.5);
     /**
@@ -129,9 +130,9 @@ public class MutableRowRedirectionLockFree implements MutableRowRedirection {
      */
     private TNullableLongLongMap updates;
 
-    private UpdateCommitter<MutableRowRedirectionLockFree> updateCommitter;
+    private UpdateCommitter<WritableRowRedirectionLockFree> updateCommitter;
 
-    MutableRowRedirectionLockFree(TNullableLongLongMap map) {
+    WritableRowRedirectionLockFree(TNullableLongLongMap map) {
         this.baseline = map;
         // Initially, baseline == updates (i.e. they point to the same object). They will continue to point to the same
         // object until the first terminal listener notification after prev tracking is turned on (via
@@ -144,7 +145,7 @@ public class MutableRowRedirectionLockFree implements MutableRowRedirection {
      * Commits the 'updates' map into the 'baseline' map, then resets the 'updates' map to empty. The only caller should
      * be Writer@Idle, via the TerminalNotification.
      */
-    private static void commitUpdates(@NotNull final MutableRowRedirectionLockFree instance) {
+    private static void commitUpdates(@NotNull final WritableRowRedirectionLockFree instance) {
         // This only gets called by the UpdateCommitter, and only as a result of a terminal listener notification (which
         // in turn can only happen once prev tracking has been turned on). We copy updates to baseline and reset the
         // updates map.
@@ -233,7 +234,7 @@ public class MutableRowRedirectionLockFree implements MutableRowRedirection {
         Assert.eqNull(updateCommitter, "updateCommitter");
         Assert.eq(baseline, "baseline", updates, "updates");
         updates = createUpdateMap();
-        updateCommitter = new UpdateCommitter<>(this, MutableRowRedirectionLockFree::commitUpdates);
+        updateCommitter = new UpdateCommitter<>(this, WritableRowRedirectionLockFree::commitUpdates);
     }
 
     /**
@@ -253,7 +254,7 @@ public class MutableRowRedirectionLockFree implements MutableRowRedirection {
     }
 
     @Override
-    public void fillFromChunk(@NotNull WritableChunkSink.FillFromContext context,
+    public void fillFromChunk(@NotNull ChunkSink.FillFromContext context,
             @NotNull Chunk<? extends RowKeys> innerRowKeys,
             @NotNull RowSequence outerRowKeys) {
         if (updateCommitter != null) {
@@ -269,7 +270,7 @@ public class MutableRowRedirectionLockFree implements MutableRowRedirection {
     }
 
     private static final int hashBucketWidth = Configuration.getInstance()
-            .getIntegerForClassWithDefault(MutableRowRedirectionLockFree.class, "hashBucketWidth", 1);
+            .getIntegerForClassWithDefault(WritableRowRedirectionLockFree.class, "hashBucketWidth", 1);
 
     @NotNull
     private static TNullableLongLongMap createUpdateMap() {

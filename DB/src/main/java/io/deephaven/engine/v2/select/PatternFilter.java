@@ -4,11 +4,11 @@
 
 package io.deephaven.engine.v2.select;
 
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.rowset.MutableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import org.jetbrains.annotations.NotNull;
 
@@ -94,7 +94,7 @@ public abstract class PatternFilter extends WhereFilterImpl {
     protected abstract Pattern compile(String value, int flags);
 
     @Override
-    public MutableRowSet filter(RowSet selection, RowSet fullSet, Table table, boolean usePrev) {
+    public WritableRowSet filter(RowSet selection, RowSet fullSet, Table table, boolean usePrev) {
         final ColumnSource<String> columnSource = table.getColumnSource(columnName);
 
         if (invertMatch) {

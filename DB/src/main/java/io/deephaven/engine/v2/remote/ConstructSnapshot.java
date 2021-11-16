@@ -442,7 +442,7 @@ public class ConstructSnapshot {
      * @param logIdentityObject An object used to prepend to log rows.
      * @param table the table to snapshot.
      * @param columnsToSerialize A {@link BitSet} of columns to include, null for all
-     * @param keysToSnapshot An TrackingMutableRowSet of keys within the table to include, null for all
+     * @param keysToSnapshot An TrackingWritableRowSet of keys within the table to include, null for all
      * @return a snapshot of the entire base table.
      */
     public static InitialSnapshot constructInitialSnapshot(final Object logIdentityObject,
@@ -476,7 +476,7 @@ public class ConstructSnapshot {
      * @param logIdentityObject An object used to prepend to log rows.
      * @param table the table to snapshot.
      * @param columnsToSerialize A {@link BitSet} of columns to include, null for all
-     * @param positionsToSnapshot An TrackingMutableRowSet of positions within the table to include, null for all
+     * @param positionsToSnapshot An TrackingWritableRowSet of positions within the table to include, null for all
      * @return a snapshot of the entire base table.
      */
     public static InitialSnapshot constructInitialSnapshotInPositionSpace(final Object logIdentityObject,
@@ -533,7 +533,7 @@ public class ConstructSnapshot {
      * @param logIdentityObject An object used to prepend to log rows.
      * @param table the table to snapshot.
      * @param columnsToSerialize A {@link BitSet} of columns to include, null for all
-     * @param positionsToSnapshot An TrackingMutableRowSet of positions within the table to include, null for all
+     * @param positionsToSnapshot An TrackingWritableRowSet of positions within the table to include, null for all
      * @return a snapshot of the entire base table.
      */
     public static BarrageMessage constructBackplaneSnapshotInPositionSpace(final Object logIdentityObject,
@@ -551,7 +551,7 @@ public class ConstructSnapshot {
      * @param logIdentityObject An object used to prepend to log rows.
      * @param table the table to snapshot.
      * @param columnsToSerialize A {@link BitSet} of columns to include, null for all
-     * @param positionsToSnapshot An TrackingMutableRowSet of positions within the table to include, null for all
+     * @param positionsToSnapshot An TrackingWritableRowSet of positions within the table to include, null for all
      * @param control A {@link SnapshotControl} to define the parameters and consistency for this snapshot
      * @return a snapshot of the entire base table.
      */
@@ -1204,7 +1204,7 @@ public class ConstructSnapshot {
      * @param snapshot The snapshot to populate
      * @param logIdentityObject An object for use with log() messages
      * @param columnsToSerialize A {@link BitSet} of columns to include, null for all
-     * @param keysToSnapshot An TrackingMutableRowSet of keys within the table to include, null for all
+     * @param keysToSnapshot An TrackingWritableRowSet of keys within the table to include, null for all
      *
      * @return Whether the snapshot succeeded
      */

@@ -4,8 +4,8 @@
 
 package io.deephaven.engine.v2.utils.freezeby;
 
+import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.v2.sources.CharacterArraySource;
-import io.deephaven.engine.table.WritableSource;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.rowset.RowSequence;
 
@@ -13,7 +13,7 @@ class CharFreezeByHelper implements FreezeByOperator.FreezeByHelper {
     private final CharacterArraySource resultSource;
     private final FreezeByCountOperator rowCount;
 
-    CharFreezeByHelper(WritableSource resultSource, FreezeByCountOperator rowCount) {
+    CharFreezeByHelper(WritableColumnSource resultSource, FreezeByCountOperator rowCount) {
         this.resultSource = (CharacterArraySource)resultSource;
         this.rowCount = rowCount;
     }

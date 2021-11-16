@@ -2,7 +2,7 @@ package io.deephaven.clientsupport.plotdownsampling;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
-import io.deephaven.engine.rowset.MutableRowSet;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.table.ColumnSource;
@@ -40,7 +40,7 @@ public final class ObjectValueTracker<T extends Comparable<T>> extends ValueTrac
     }
 
     @Override
-    public void append(int offset, long rowIndex, Chunk<? extends Attributes.Values> valuesChunk, int indexInChunk, @Nullable MutableRowSet nulls) {
+    public void append(int offset, long rowIndex, Chunk<? extends Attributes.Values> valuesChunk, int indexInChunk, @Nullable WritableRowSet nulls) {
         final T val = valuesChunk.<T>asObjectChunk().get(indexInChunk);
         if (val == null) {
             if (nulls != null) {
@@ -66,7 +66,7 @@ public final class ObjectValueTracker<T extends Comparable<T>> extends ValueTrac
     }
 
     @Override
-    public void update(int offset, long rowIndex, Chunk<? extends Attributes.Values> valuesChunk, int indexInChunk, @Nullable MutableRowSet nulls) {
+    public void update(int offset, long rowIndex, Chunk<? extends Attributes.Values> valuesChunk, int indexInChunk, @Nullable WritableRowSet nulls) {
         T val = valuesChunk.<T>asObjectChunk().get(indexInChunk);
         if (val == null) {
             if (nulls != null) {

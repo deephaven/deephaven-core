@@ -8,7 +8,7 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * This interface marks SelectFilters that return a result set that should be the full set for subsequent filters. Said
- * another way, subsequent filters need to see the TrackingMutableRowSet selected by this filter for purposes of
+ * another way, subsequent filters need to see the TrackingWritableRowSet selected by this filter for purposes of
  * determining i values. ReindexingFilters may also optionally specify a re-sorting of the table to be input.
  */
 public interface ReindexingFilter extends WhereFilter {

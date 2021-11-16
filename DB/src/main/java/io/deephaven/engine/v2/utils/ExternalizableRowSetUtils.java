@@ -4,7 +4,7 @@ import gnu.trove.list.array.TShortArrayList;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.rowset.TrackingMutableRowSet;
+import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
 
@@ -14,7 +14,7 @@ import java.io.IOException;
 import java.util.function.LongConsumer;
 
 /**
- * Utility methods used for writing/reading {@link TrackingMutableRowSet}es.
+ * Utility methods used for writing/reading {@link TrackingWritableRowSet}es.
  */
 public class ExternalizableRowSetUtils {
 
@@ -33,7 +33,7 @@ public class ExternalizableRowSetUtils {
     private static final byte CMD_MASK = 0x78;
 
     /**
-     * Write an {@link TrackingMutableRowSet} to {@code out}.
+     * Write an {@link TrackingWritableRowSet} to {@code out}.
      *
      * @param out The destination
      * @param rowSet The rowSet

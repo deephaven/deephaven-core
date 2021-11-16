@@ -26,18 +26,18 @@ import java.util.Objects;
 import java.util.PrimitiveIterator;
 import java.util.function.LongConsumer;
 
-public class MutableRowSetImpl extends RowSequenceAsChunkImpl implements MutableRowSet, Externalizable {
+public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements WritableRowSet, Externalizable {
 
     private static final long serialVersionUID = 1L;
 
     private OrderedLongSet innerSet;
 
     @SuppressWarnings("WeakerAccess") // Mandatory for Externalizable
-    public MutableRowSetImpl() {
+    public WritableRowSetImpl() {
         this(OrderedLongSet.EMPTY);
     }
 
-    public MutableRowSetImpl(final OrderedLongSet innerSet) {
+    public WritableRowSetImpl(final OrderedLongSet innerSet) {
         this.innerSet = Objects.requireNonNull(innerSet);
     }
 
@@ -46,13 +46,13 @@ public class MutableRowSetImpl extends RowSequenceAsChunkImpl implements Mutable
     }
 
     @Override
-    public final MutableRowSet copy() {
-        return new MutableRowSetImpl(innerSet.ixCowRef());
+    public final WritableRowSet copy() {
+        return new WritableRowSetImpl(innerSet.ixCowRef());
     }
 
     @Override
-    public TrackingMutableRowSet toTracking() {
-        final TrackingMutableRowSet result = new TrackingMutableRowSetImpl(innerSet);
+    public TrackingWritableRowSet toTracking() {
+        final TrackingWritableRowSet result = new TrackingWritableRowSetImpl(innerSet);
         innerSet = null; // Force NPE on use after tracking
         closeRowSequenceAsChunkImpl();
         return result;
@@ -237,19 +237,19 @@ public class MutableRowSetImpl extends RowSequenceAsChunkImpl implements Mutable
     }
 
     @Override
-    public final MutableRowSet invert(final RowSet keys, final long maximumPosition) {
-        return new MutableRowSetImpl(innerSet.ixInvertOnNew(getInnerSet(keys), maximumPosition));
+    public final WritableRowSet invert(final RowSet keys, final long maximumPosition) {
+        return new WritableRowSetImpl(innerSet.ixInvertOnNew(getInnerSet(keys), maximumPosition));
     }
 
     @Override
     public final TLongArrayList[] findMissing(final RowSet keys) {
-        return RowSetUtilities.findMissing(this, keys);
+        return RowSetUtil.findMissing(this, keys);
     }
 
     @NotNull
     @Override
-    public final MutableRowSet intersect(@NotNull final RowSet range) {
-        return new MutableRowSetImpl(innerSet.ixIntersectOnNew(getInnerSet(range)));
+    public final WritableRowSet intersect(@NotNull final RowSet range) {
+        return new WritableRowSetImpl(innerSet.ixIntersectOnNew(getInnerSet(range)));
     }
 
     @Override
@@ -268,24 +268,24 @@ public class MutableRowSetImpl extends RowSequenceAsChunkImpl implements Mutable
     }
 
     @Override
-    public final MutableRowSet minus(final RowSet indexToRemove) {
+    public final WritableRowSet minus(final RowSet indexToRemove) {
         if (indexToRemove == this) {
             return RowSetFactory.empty();
         }
-        return new MutableRowSetImpl(innerSet.ixMinusOnNew(getInnerSet(indexToRemove)));
+        return new WritableRowSetImpl(innerSet.ixMinusOnNew(getInnerSet(indexToRemove)));
     }
 
     @Override
-    public final MutableRowSet union(final RowSet indexToAdd) {
+    public final WritableRowSet union(final RowSet indexToAdd) {
         if (indexToAdd == this) {
             return copy();
         }
-        return new MutableRowSetImpl(innerSet.ixUnionOnNew(getInnerSet(indexToAdd)));
+        return new WritableRowSetImpl(innerSet.ixUnionOnNew(getInnerSet(indexToAdd)));
     }
 
     @Override
-    public final MutableRowSet shift(final long shiftAmount) {
-        return new MutableRowSetImpl(innerSet.ixShiftOnNew(shiftAmount));
+    public final WritableRowSet shift(final long shiftAmount) {
+        return new WritableRowSetImpl(innerSet.ixShiftOnNew(shiftAmount));
     }
 
     @Override
@@ -324,13 +324,13 @@ public class MutableRowSetImpl extends RowSequenceAsChunkImpl implements Mutable
     }
 
     @Override
-    public final MutableRowSet subSetByPositionRange(final long startPos, final long endPos) {
-        return new MutableRowSetImpl(innerSet.ixSubindexByPosOnNew(startPos, endPos));
+    public final WritableRowSet subSetByPositionRange(final long startPos, final long endPos) {
+        return new WritableRowSetImpl(innerSet.ixSubindexByPosOnNew(startPos, endPos));
     }
 
     @Override
-    public final MutableRowSet subSetByKeyRange(final long startKey, final long endKey) {
-        return new MutableRowSetImpl(innerSet.ixSubindexByKeyOnNew(startKey, endKey));
+    public final WritableRowSet subSetByKeyRange(final long startKey, final long endKey) {
+        return new WritableRowSetImpl(innerSet.ixSubindexByKeyOnNew(startKey, endKey));
     }
 
     @Override
@@ -381,31 +381,31 @@ public class MutableRowSetImpl extends RowSequenceAsChunkImpl implements Mutable
 
     @Override
     public final void fillRowKeyChunk(final WritableLongChunk<? extends RowKeys> chunkToFill) {
-        RowSetUtilities.fillKeyIndicesChunk(this, chunkToFill);
+        RowSetUtil.fillKeyIndicesChunk(this, chunkToFill);
     }
 
     @Override
     public final void fillRowKeyRangesChunk(final WritableLongChunk<OrderedRowKeyRanges> chunkToFill) {
-        RowSetUtilities.fillKeyRangesChunk(this, chunkToFill);
+        RowSetUtil.fillKeyRangesChunk(this, chunkToFill);
     }
 
     @Override
     public LogOutput append(LogOutput logOutput) {
-        return RowSetUtilities.append(logOutput, rangeIterator());
+        return RowSetUtil.append(logOutput, rangeIterator());
     }
 
     @Override
     public String toString() {
-        return RowSetUtilities.toString(this, 200);
+        return RowSetUtil.toString(this, 200);
     }
 
     public String toString(final int maxRanges) {
-        return RowSetUtilities.toString(this, maxRanges);
+        return RowSetUtil.toString(this, maxRanges);
     }
 
     @SuppressWarnings("EqualsWhichDoesntCheckParameterClass")
     public final boolean equals(final Object obj) {
-        return RowSetUtilities.equals(this, obj);
+        return RowSetUtil.equals(this, obj);
     }
 
     @Override
@@ -431,7 +431,7 @@ public class MutableRowSetImpl extends RowSequenceAsChunkImpl implements Mutable
     }
 
     public static void addToBuilderFromImpl(final OrderedLongSet.BuilderRandom builder,
-            final MutableRowSetImpl rowSet) {
+            final WritableRowSetImpl rowSet) {
         if (rowSet.innerSet instanceof SingleRange) {
             builder.add((SingleRange) rowSet.innerSet);
             return;
@@ -445,8 +445,8 @@ public class MutableRowSetImpl extends RowSequenceAsChunkImpl implements Mutable
     }
 
     protected static OrderedLongSet getInnerSet(final RowSet rowSet) {
-        if (rowSet instanceof MutableRowSetImpl) {
-            return ((MutableRowSetImpl) rowSet).getInnerSet();
+        if (rowSet instanceof WritableRowSetImpl) {
+            return ((WritableRowSetImpl) rowSet).getInnerSet();
         }
         throw new UnsupportedOperationException("Unexpected RowSet type " + rowSet.getClass());
     }

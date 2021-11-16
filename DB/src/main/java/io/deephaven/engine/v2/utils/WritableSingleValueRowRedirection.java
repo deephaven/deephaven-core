@@ -11,12 +11,12 @@ import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.chunk.WritableLongChunk;
 import org.jetbrains.annotations.NotNull;
 
-public class MutableSingleValueRowRedirection extends SingleValueRowRedirection {
+public class WritableSingleValueRowRedirection extends SingleValueRowRedirection {
 
     private long prevValue;
     private long updatedClockTick = 0;
 
-    public MutableSingleValueRowRedirection(final long value) {
+    public WritableSingleValueRowRedirection(final long value) {
         super(value);
     }
 

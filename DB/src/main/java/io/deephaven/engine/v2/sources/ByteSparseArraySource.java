@@ -17,10 +17,10 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.WritableSource;
+import io.deephaven.engine.table.WritableColumnSource;
+import io.deephaven.engine.updategraph.UpdateCommitter;
 import io.deephaven.engine.v2.sources.sparse.ByteOneOrN;
 import io.deephaven.engine.v2.sources.sparse.LongOneOrN;
-import io.deephaven.engine.v2.utils.*;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.util.SoftRecycler;
 import gnu.trove.list.array.TLongArrayList;
@@ -109,7 +109,7 @@ public class ByteSparseArraySource extends SparseArrayColumnSource<Byte> impleme
         final byte[] data = (byte[])in.readObject();
         final ByteChunk<Values> srcChunk = ByteChunk.chunkWrap(data);
         // noinspection unchecked
-        final WritableSource<Byte> reinterpreted = (WritableSource<Byte>) reinterpretForSerialization();
+        final WritableColumnSource<Byte> reinterpreted = (WritableColumnSource<Byte>) reinterpretForSerialization();
         try (final FillFromContext context = reinterpreted.makeFillFromContext(rowSet.intSize())) {
             reinterpreted.fillFromChunk(context, srcChunk, rowSet);
         }

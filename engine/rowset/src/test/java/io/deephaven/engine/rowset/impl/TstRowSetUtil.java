@@ -1,9 +1,8 @@
 package io.deephaven.engine.rowset.impl;
 
-import io.deephaven.engine.rowset.MutableRowSet;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSetBuilderRandom;
 import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.rowset.impl.MutableRowSetImpl;
 import io.deephaven.engine.rowset.impl.rsp.RspBitmap;
 import io.deephaven.engine.rowset.impl.singlerange.SingleRange;
 import io.deephaven.engine.rowset.impl.sortedranges.SortedRanges;
@@ -32,16 +31,16 @@ public class TstRowSetUtil {
         return true;
     }
 
-    public static MutableRowSet makeEmptyRsp() {
-        return new MutableRowSetImpl(RspBitmap.makeEmpty());
+    public static WritableRowSet makeEmptyRsp() {
+        return new WritableRowSetImpl(RspBitmap.makeEmpty());
     }
 
-    public static MutableRowSet makeEmptySr() {
-        return new MutableRowSetImpl(SortedRanges.makeEmpty());
+    public static WritableRowSet makeEmptySr() {
+        return new WritableRowSetImpl(SortedRanges.makeEmpty());
     }
 
-    public static MutableRowSet makeSingleRange(final long start, final long end) {
-        return new MutableRowSetImpl(SingleRange.make(start, end));
+    public static WritableRowSet makeSingleRange(final long start, final long end) {
+        return new WritableRowSetImpl(SingleRange.make(start, end));
     }
 
     public static class BuilderToRangeConsumer implements LongRangeAbortableConsumer {
@@ -62,27 +61,27 @@ public class TstRowSetUtil {
         }
     }
 
-    public static MutableRowSet rowSetFromString(final String str, final RowSetBuilderRandom builder) {
+    public static WritableRowSet rowSetFromString(final String str, final RowSetBuilderRandom builder) {
         final BuilderToRangeConsumer adaptor = BuilderToRangeConsumer.adapt(builder);
         stringToRanges(str, adaptor);
         return builder.build();
     }
 
-    public static MutableRowSet rowSetFromString(String string) {
+    public static WritableRowSet rowSetFromString(String string) {
         final RowSetBuilderRandom builder = RowSetFactory.builderRandom();
         return rowSetFromString(string, builder);
     }
 
     public static final class RowSetToBuilderRandomAdaptor implements RowSetBuilderRandom {
 
-        private final MutableRowSet rs;
+        private final WritableRowSet rs;
 
-        public RowSetToBuilderRandomAdaptor(final MutableRowSet rs) {
+        public RowSetToBuilderRandomAdaptor(final WritableRowSet rs) {
             this.rs = rs;
         }
 
         @Override
-        public MutableRowSet build() {
+        public WritableRowSet build() {
             return rs;
         }
 
@@ -96,12 +95,12 @@ public class TstRowSetUtil {
             rs.insertRange(firstRowKey, lastRowKey);
         }
 
-        public static RowSetToBuilderRandomAdaptor adapt(final MutableRowSet rs) {
+        public static RowSetToBuilderRandomAdaptor adapt(final WritableRowSet rs) {
             return new RowSetToBuilderRandomAdaptor(rs);
         }
     }
 
-    public static MutableRowSet rowSetFromString(String string, final MutableRowSet ix) {
+    public static WritableRowSet rowSetFromString(String string, final WritableRowSet ix) {
         return rowSetFromString(string, RowSetToBuilderRandomAdaptor.adapt(ix));
     }
 

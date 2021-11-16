@@ -13,11 +13,11 @@ public class RowRedirectionTest extends RefreshingTableTestCase {
     private final Logger log = LoggerFactory.getLogger(RowRedirectionTest.class);
 
     public void testBasic() {
-        final MutableRowRedirection rowRedirection = MutableRowRedirection.FACTORY.createRowRedirection(8);
+        final WritableRowRedirection rowRedirection = WritableRowRedirection.FACTORY.createRowRedirection(8);
         for (int i = 0; i < 3; i++) {
             rowRedirection.put(i, i * 2);
         }
-        final MutableRowRedirection rowRedirection1 = MutableRowRedirection.FACTORY.createRowRedirection(8);
+        final WritableRowRedirection rowRedirection1 = WritableRowRedirection.FACTORY.createRowRedirection(8);
         for (int i = 0; i < 3; i++) {
             rowRedirection1.put(i * 2, i * 4);
         }
@@ -48,7 +48,7 @@ public class RowRedirectionTest extends RefreshingTableTestCase {
     }
 
     public void testContiguous() {
-        final MutableRowRedirection rowRedirection = new ContiguousMutableRowRedirection(10);
+        final WritableRowRedirection rowRedirection = new ContiguousWritableRowRedirection(10);
 
         // Fill redirection rowSet with values 100 + ii * 2
         for (int ii = 0; ii < 100; ++ii) {

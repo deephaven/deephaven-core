@@ -19,7 +19,7 @@ public interface TrackingRowSet extends RowSet {
 
     long sizePrev();
 
-    MutableRowSet getPrevRowSet();
+    WritableRowSet getPrevRowSet();
 
     long getPrev(long pos);
 
@@ -63,7 +63,7 @@ public interface TrackingRowSet extends RowSet {
      * @param keySet a set of values that keyColumns should match. For a single keyColumns, the values within the set
      *        are the values that we would like to find. For multiple keyColumns, the values are SmartKeys.
      * @param tupleSource the tuple factory for the keyColumn
-     * @return an MutableRowSet containing only keys that match keySet.
+     * @return an WritableRowSet containing only keys that match keySet.
      */
     /**
      * Return a subset that contains row keys that match the values in {@code keys}.
@@ -72,13 +72,13 @@ public interface TrackingRowSet extends RowSet {
      *        within the set are the values that we would like to find. For compound {@link TupleSource} instances, the
      *        values are SmartKeys.
      * @param tupleSource The tuple factory for singular or compound keys
-     * @return A {@link MutableRowSet} with all row keys from this RowSet whose value in {@code tupleSource} was present
+     * @return A {@link WritableRowSet} with all row keys from this RowSet whose value in {@code tupleSource} was present
      *         in {@code keys}
      */
     RowSet getSubSetForKeySet(Set<Object> keys, TupleSource tupleSource);
 
     @Override
-    default TrackingMutableRowSet mutableCast() {
-        return (TrackingMutableRowSet) this;
+    default TrackingWritableRowSet writableCast() {
+        return (TrackingWritableRowSet) this;
     }
 }

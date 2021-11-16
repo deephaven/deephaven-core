@@ -47,7 +47,7 @@ public class HashSetBackedTableFactory {
     private final TLongLongMap indexToPreviousClock = new TLongLongHashMap();
     private long lastIndex = 0;
     private final TLongArrayList freeSet = new TLongArrayList();
-    private TrackingMutableRowSet rowSet;
+    private TrackingWritableRowSet rowSet;
 
     private HashSetBackedTableFactory(Function.Nullary<HashSet<SmartKey>> setGenerator, int refreshIntervalMs,
             String... colNames) {
@@ -79,7 +79,7 @@ public class HashSetBackedTableFactory {
 
         factory.updateValueSet(addedBuilder, removedBuilder);
 
-        MutableRowSet added = addedBuilder.build();
+        WritableRowSet added = addedBuilder.build();
         RowSet removed = removedBuilder.build();
 
         factory.rowSet = added.toTracking();
@@ -165,8 +165,8 @@ public class HashSetBackedTableFactory {
 
             updateValueSet(addedBuilder, removedBuilder);
 
-            final MutableRowSet added = addedBuilder.build();
-            final MutableRowSet removed = removedBuilder.build();
+            final WritableRowSet added = addedBuilder.build();
+            final WritableRowSet removed = removedBuilder.build();
 
             if (added.size() > 0 || removed.size() > 0) {
                 final RowSet modified = added.intersect(removed);

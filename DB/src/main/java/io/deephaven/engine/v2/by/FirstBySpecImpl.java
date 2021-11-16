@@ -5,7 +5,7 @@
 package io.deephaven.engine.v2.by;
 
 /**
- * State factory for firstBy using an InterativeIndexState to create a redirection TrackingMutableRowSet.
+ * State factory for firstBy using an InterativeIndexState to create a redirection TrackingWritableRowSet.
  */
 public class FirstBySpecImpl extends IterativeIndexSpec {
     public FirstBySpecImpl() {

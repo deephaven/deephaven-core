@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2.utils;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.rowset.MutableRowSet;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
@@ -392,7 +392,7 @@ public class UpdateCoalescerTest {
         up[1].modifiedColumnSet = ModifiedColumnSet.ALL;
         up[1].shifted = newShiftDataByTriplets(2, 2, -1);
 
-        final MutableRowSet rowSet = RowSetFactory.fromRange(0, 3);
+        final WritableRowSet rowSet = RowSetFactory.fromRange(0, 3);
         final Listener.Update agg = validateFinalIndex(rowSet, up);
         rowSet.remove(agg.removed);
         RowSetShiftUtils.apply(agg.shifted, rowSet);
@@ -414,7 +414,7 @@ public class UpdateCoalescerTest {
         up[1].modifiedColumnSet = ModifiedColumnSet.ALL;
         up[1].shifted = newShiftDataByTriplets(1, 1, -1, 3, 4, -2);
 
-        final MutableRowSet rowSet = RowSetFactory.fromRange(0, 4);
+        final WritableRowSet rowSet = RowSetFactory.fromRange(0, 4);
         final Listener.Update agg = validateFinalIndex(rowSet, up);
         rowSet.remove(agg.removed);
         RowSetShiftUtils.apply(agg.shifted, rowSet);
@@ -435,7 +435,7 @@ public class UpdateCoalescerTest {
         up[1].modifiedColumnSet = ModifiedColumnSet.ALL;
         up[1].shifted = newShiftDataByTriplets(0, 2, +1, 3, 4, +2);
 
-        final MutableRowSet rowSet = RowSetFactory.fromRange(0, 4);
+        final WritableRowSet rowSet = RowSetFactory.fromRange(0, 4);
         final Listener.Update agg = validateFinalIndex(rowSet, up);
         rowSet.remove(agg.removed);
         RowSetShiftUtils.apply(agg.shifted, rowSet);
@@ -456,7 +456,7 @@ public class UpdateCoalescerTest {
         up[1].modifiedColumnSet = ModifiedColumnSet.ALL;
         up[1].shifted = newShiftDataByTriplets(3, 4, -2);
 
-        final MutableRowSet rowSet = RowSetFactory.fromRange(0, 2);
+        final WritableRowSet rowSet = RowSetFactory.fromRange(0, 2);
         final Listener.Update agg = validateFinalIndex(rowSet, up);
         rowSet.remove(agg.removed);
         RowSetShiftUtils.apply(agg.shifted, rowSet);
@@ -474,7 +474,7 @@ public class UpdateCoalescerTest {
         up[1].removed = i(0);
         up[1].shifted = newShiftDataByTriplets(1, 4, -1);
 
-        final MutableRowSet rowSet = RowSetFactory.fromRange(0, 2);
+        final WritableRowSet rowSet = RowSetFactory.fromRange(0, 2);
         final Listener.Update agg = validateFinalIndex(rowSet, up);
         rowSet.remove(agg.removed);
         RowSetShiftUtils.apply(agg.shifted, rowSet);
@@ -492,7 +492,7 @@ public class UpdateCoalescerTest {
         up[1].removed = i(1, 2, 3, 4);
         up[1].shifted = newShiftDataByTriplets(5, 6, -2);
 
-        final MutableRowSet rowSet = RowSetFactory.fromRange(0, 6);
+        final WritableRowSet rowSet = RowSetFactory.fromRange(0, 6);
         final Listener.Update agg = validateFinalIndex(rowSet, up);
         rowSet.remove(agg.removed);
         RowSetShiftUtils.apply(agg.shifted, rowSet);
@@ -510,7 +510,7 @@ public class UpdateCoalescerTest {
         up[1].removed = i(1, 2);
         up[1].shifted = newShiftDataByTriplets(0, 0, +1);
 
-        final MutableRowSet rowSet = RowSetFactory.fromRange(0, 6);
+        final WritableRowSet rowSet = RowSetFactory.fromRange(0, 6);
         final Listener.Update agg = validateFinalIndex(rowSet, up);
         rowSet.remove(agg.removed);
         RowSetShiftUtils.apply(agg.shifted, rowSet);
@@ -534,7 +534,7 @@ public class UpdateCoalescerTest {
         up[3].added = i(7);
         up[3].shifted = newShiftDataByTriplets(7, 10, +1);
 
-        final MutableRowSet rowSet = RowSetFactory.fromRange(0, 5);
+        final WritableRowSet rowSet = RowSetFactory.fromRange(0, 5);
         final Listener.Update agg = validateFinalIndex(rowSet, up);
         rowSet.remove(agg.removed);
         RowSetShiftUtils.apply(agg.shifted, rowSet);
@@ -592,10 +592,10 @@ public class UpdateCoalescerTest {
         }
         final Listener.Update agg = coalescer.coalesce();
 
-        try (final MutableRowSet perUpdate = rowSet.copy();
-                final MutableRowSet aggUpdate = rowSet.copy();
-                final MutableRowSet perModify = RowSetFactory.empty();
-                final MutableRowSet perAdded = RowSetFactory.empty()) {
+        try (final WritableRowSet perUpdate = rowSet.copy();
+             final WritableRowSet aggUpdate = rowSet.copy();
+             final WritableRowSet perModify = RowSetFactory.empty();
+             final WritableRowSet perAdded = RowSetFactory.empty()) {
 
             for (Listener.Update up : updates) {
                 perAdded.remove(up.removed);
@@ -622,7 +622,7 @@ public class UpdateCoalescerTest {
         }
 
         // verify that the shift does not overwrite data
-        try (final MutableRowSet myindex = rowSet.copy()) {
+        try (final WritableRowSet myindex = rowSet.copy()) {
             myindex.remove(agg.removed);
             agg.shifted.apply(((beginRange, endRange, shiftDelta) -> {
                 if (shiftDelta < 0) {
@@ -639,7 +639,7 @@ public class UpdateCoalescerTest {
                     Assert.eqTrue(iter.currentValue() <= endRange, "iter.currentValue() <= endRange");
                 }
                 try (final RowSet sub = RowSetFactory.fromRange(beginRange, endRange);
-                        final MutableRowSet moving = myindex.extract(sub)) {
+                        final WritableRowSet moving = myindex.extract(sub)) {
                     moving.shiftInPlace(shiftDelta);
                     myindex.insert(moving);
                 }

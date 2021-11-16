@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2.select;
 
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.WritableSource;
+import io.deephaven.engine.table.WritableColumnSource;
 
 public interface FormulaColumn extends SelectColumn {
 
@@ -21,5 +21,5 @@ public interface FormulaColumn extends SelectColumn {
         return createFormulaColumn(columnName, formulaString, FormulaParserConfiguration.parser);
     }
 
-    ColumnSource<?> updateData(WritableSource<?> result, long destPos, long sourcePos);
+    ColumnSource<?> updateData(WritableColumnSource<?> result, long destPos, long sourcePos);
 }

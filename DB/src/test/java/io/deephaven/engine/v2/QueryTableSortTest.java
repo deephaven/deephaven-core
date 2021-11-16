@@ -4,7 +4,7 @@ import io.deephaven.base.FileUtils;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.rowset.TrackingMutableRowSet;
+import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
@@ -708,7 +708,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
         setExpectError(false);
         assertEquals(10, table.size());
 
-        final TrackingMutableRowSet rowSet = table.getRowSet().subSetByPositionRange(0, 4).toTracking();
+        final TrackingWritableRowSet rowSet = table.getRowSet().subSetByPositionRange(0, 4).toTracking();
         final QueryTable refreshing = new QueryTable(rowSet, table.getColumnSourceMap());
         refreshing.setRefreshing(true);
 

@@ -2,7 +2,7 @@ package io.deephaven.engine.v2.snapshot;
 
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.rowset.TrackingMutableRowSet;
+import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.NotificationQueue;
@@ -22,7 +22,7 @@ public class SnapshotInternalListener extends BaseTable.ListenerImpl {
     private final QueryTable result;
     private final Map<String, SingleValueColumnSource<?>> resultLeftColumns;
     private final Map<String, ArrayBackedColumnSource<?>> resultRightColumns;
-    private final TrackingMutableRowSet resultRowSet;
+    private final TrackingWritableRowSet resultRowSet;
 
     public SnapshotInternalListener(QueryTable triggerTable,
             boolean lazySnapshot,
@@ -30,7 +30,7 @@ public class SnapshotInternalListener extends BaseTable.ListenerImpl {
             QueryTable result,
             Map<String, SingleValueColumnSource<?>> resultLeftColumns,
             Map<String, ArrayBackedColumnSource<?>> resultRightColumns,
-            TrackingMutableRowSet resultRowSet) {
+            TrackingWritableRowSet resultRowSet) {
         super("snapshot " + result.getColumnSourceMap().keySet().toString(), triggerTable, result);
         this.triggerTable = triggerTable;
         this.result = result;

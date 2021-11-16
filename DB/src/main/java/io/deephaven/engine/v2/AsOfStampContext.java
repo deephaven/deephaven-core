@@ -11,7 +11,7 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.chunk.Attributes.RowKeys;
 import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.chunk.*;
-import io.deephaven.engine.v2.utils.MutableRowRedirection;
+import io.deephaven.engine.v2.utils.WritableRowRedirection;
 import io.deephaven.engine.rowset.RowSet;
 
 class AsOfStampContext implements Context {
@@ -168,7 +168,7 @@ class AsOfStampContext implements Context {
      * @param rightRowSet the indices of the right values in this state
      * @param rowRedirection the redirection rowSet to update
      */
-    void processEntry(RowSet leftRowSet, RowSet rightRowSet, MutableRowRedirection rowRedirection) {
+    void processEntry(RowSet leftRowSet, RowSet rightRowSet, WritableRowRedirection rowRedirection) {
         ensureRightCapacity(rightRowSet.intSize());
         getAndCompactStamps(rightRowSet, rightKeyIndicesChunk, rightStampChunk);
         processEntry(leftRowSet, rightStampChunk, rightKeyIndicesChunk, rowRedirection);
@@ -203,7 +203,7 @@ class AsOfStampContext implements Context {
      * @param rowRedirection the redirection rowSet to update
      */
     void processEntry(RowSet leftRowSet, Chunk<Values> rightStampChunk, LongChunk<RowKeys> rightKeyIndicesChunk,
-            MutableRowRedirection rowRedirection) {
+            WritableRowRedirection rowRedirection) {
         ensureLeftCapacity(leftRowSet.intSize());
 
         // read the left stamp column
@@ -218,8 +218,8 @@ class AsOfStampContext implements Context {
         computeRedirections(rowRedirection, rightStampChunk, rightKeyIndicesChunk);
     }
 
-    private void computeRedirections(MutableRowRedirection rowRedirection, Chunk<Values> rightStampChunk,
-            LongChunk<RowKeys> rightKeyIndicesChunk) {
+    private void computeRedirections(WritableRowRedirection rowRedirection, Chunk<Values> rightStampChunk,
+                                     LongChunk<RowKeys> rightKeyIndicesChunk) {
         stampKernel.computeRedirections(leftStampChunk, rightStampChunk, rightKeyIndicesChunk, leftRedirections);
         for (int ii = 0; ii < leftKeyIndicesChunk.size(); ++ii) {
             final long rightKey = leftRedirections.get(ii);

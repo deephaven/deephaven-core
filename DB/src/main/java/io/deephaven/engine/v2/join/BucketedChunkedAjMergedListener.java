@@ -47,7 +47,7 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
     private final SsaSsaStamp ssaSsaStamp;
     private final ChunkSsaStamp chunkSsaStamp;
     private final RightIncrementalChunkedAsOfJoinStateManager asOfJoinStateManager;
-    private final MutableRowRedirection rowRedirection;
+    private final WritableRowRedirection rowRedirection;
     private final ModifiedColumnSet leftKeyColumns;
     private final ModifiedColumnSet rightKeyColumns;
     private final ModifiedColumnSet leftStampColumn;
@@ -87,7 +87,7 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
             boolean disallowExactMatch,
             SsaSsaStamp ssaSsaStamp,
             JoinControl control, RightIncrementalChunkedAsOfJoinStateManager asOfJoinStateManager,
-            MutableRowRedirection rowRedirection) {
+            WritableRowRedirection rowRedirection) {
         super(Arrays.asList(leftRecorder, rightRecorder), Collections.emptyList(), listenerDescription, result);
         this.leftRecorder = leftRecorder;
         this.rightRecorder = rightRecorder;
@@ -176,7 +176,7 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                 final int removedSlotCount = asOfJoinStateManager.markForRemoval(leftRestampRemovals, leftKeySources,
                         slots, sequentialBuilders);
 
-                final MutableObject<MutableRowSet> leftIndexOutput = new MutableObject<>();
+                final MutableObject<WritableRowSet> leftIndexOutput = new MutableObject<>();
 
                 for (int slotIndex = 0; slotIndex < removedSlotCount; ++slotIndex) {
                     final long slot = slots.getLong(slotIndex);
@@ -249,7 +249,7 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                                 if ((state & ENTRY_RIGHT_MASK) == ENTRY_RIGHT_IS_EMPTY) {
                                     // if the left is empty, we should be an rowSet entry rather than an SSA, and we can
                                     // not be empty, because we are responsive
-                                    final MutableRowSet leftRowSet = asOfJoinStateManager.getLeftIndex(slot);
+                                    final WritableRowSet leftRowSet = asOfJoinStateManager.getLeftIndex(slot);
                                     RowSetShiftUtils.apply(shiftDataForSlot, leftRowSet);
                                     shiftedRowSet.close();
                                     leftRowSet.compact();
@@ -303,7 +303,7 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
             final int removedSlotCount = asOfJoinStateManager.markForRemoval(rightRestampRemovals, rightKeySources,
                     slots, sequentialBuilders);
 
-            final MutableObject<MutableRowSet> rowSetOutput = new MutableObject<>();
+            final MutableObject<WritableRowSet> rowSetOutput = new MutableObject<>();
             try (final WritableLongChunk<RowKeys> priorRedirections =
                     WritableLongChunk.makeWritableChunk(rightChunkSize);
                     final ColumnSource.FillContext fillContext = rightStampSource.makeFillContext(rightChunkSize);
@@ -385,7 +385,7 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                                 if (leftSsa == null) {
                                     // if the left is empty, we should be an rowSet entry rather than an SSA, and we can
                                     // not be empty, because we are responsive
-                                    final MutableRowSet rightRowSet = asOfJoinStateManager.getRightIndex(slot);
+                                    final WritableRowSet rightRowSet = asOfJoinStateManager.getRightIndex(slot);
                                     RowSetShiftUtils.apply(shiftDataForSlot, rightRowSet);
                                     shiftedRowSet.close();
                                     rightRowSet.compact();
@@ -672,7 +672,7 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                     continue;
                 }
                 if (updateLeftIndex) {
-                    final MutableRowSet leftRowSet = asOfJoinStateManager.getLeftIndex(slot);
+                    final WritableRowSet leftRowSet = asOfJoinStateManager.getLeftIndex(slot);
                     leftRowSet.insert(leftAdded);
                     leftAdded.close();
                     leftRowSet.compact();

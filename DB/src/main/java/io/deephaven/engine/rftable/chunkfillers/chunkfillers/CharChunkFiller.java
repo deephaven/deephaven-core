@@ -4,7 +4,7 @@ import io.deephaven.engine.table.ElementSource;
 import static io.deephaven.engine.chunk.Attributes.RowKeys;
 import static io.deephaven.engine.chunk.Attributes.Values;
 
-import io.deephaven.engine.table.WritableSource;
+import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.chunk.LongChunk;
 import io.deephaven.engine.chunk.WritableCharChunk;
 import io.deephaven.engine.chunk.WritableChunk;
@@ -87,7 +87,7 @@ public final class CharChunkFiller implements ChunkFiller {
     }
 
     @Override
-    public void fillFromSingleValue(ElementSource src, long srcKey, WritableSource dest, RowSequence destKeys) {
+    public void fillFromSingleValue(ElementSource src, long srcKey, WritableColumnSource dest, RowSequence destKeys) {
         final char value = src.getChar(srcKey);
         destKeys.forAllRowKeys(destKey -> dest.set(destKey, value));
     }

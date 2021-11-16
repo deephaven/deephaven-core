@@ -10,7 +10,7 @@ import io.deephaven.engine.chunk.*;
 import static io.deephaven.engine.chunk.Attributes.*;
 
 /**
- * The LongMegaMergeKernel merges sorted chunks into a column source, with a parallel long array of TrackingMutableRowSet keys.
+ * The LongMegaMergeKernel merges sorted chunks into a column source, with a parallel long array of TrackingWritableRowSet keys.
  *
  * The intention is that you will use a Timsort kernel to sort maximally sized chunks, then merge the result into a
  * ColumnSource using the MegaMergeKernel only if necessary.

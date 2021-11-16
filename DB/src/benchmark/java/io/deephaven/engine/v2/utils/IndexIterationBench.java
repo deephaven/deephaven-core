@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2.utils;
 
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.impl.TrackingMutableRowSetImpl;
+import io.deephaven.engine.rowset.impl.TrackingWritableRowSetImpl;
 import io.deephaven.engine.rowset.impl.rsp.RspBitmap;
 import io.deephaven.engine.rowset.impl.rsp.RspIterator;
 import gnu.trove.iterator.TLongIterator;
@@ -49,7 +49,7 @@ public class IndexIterationBench {
             prev = v;
         }
         rb.finishMutationsAndOptimize();
-        ix = new TrackingMutableRowSetImpl(rb);
+        ix = new TrackingWritableRowSetImpl(rb);
         tset = new TLongHashSet(values);
     }
 

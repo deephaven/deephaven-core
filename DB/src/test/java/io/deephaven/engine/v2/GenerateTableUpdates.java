@@ -147,7 +147,7 @@ public class GenerateTableUpdates {
             final TstUtils.ColumnInfo<?, ?>[] columnInfo) {
         profile.validate();
 
-        try (final MutableRowSet rowSet = table.getRowSet().copy()) {
+        try (final WritableRowSet rowSet = table.getRowSet().copy()) {
             final TstUtils.ColumnInfo<?, ?>[] mutableColumns =
                     Arrays.stream(columnInfo).filter(ci -> !ci.immutable).toArray(TstUtils.ColumnInfo[]::new);
             final boolean hasImmutableColumns = columnInfo.length > mutableColumns.length;
@@ -235,7 +235,7 @@ public class GenerateTableUpdates {
                 final long blatEnd = delta < 0 ? start - 1 : end + delta;
                 try (final RowSet blattedRows =
                         rowSet.extract(RowSetFactory.fromRange(blatStart, blatEnd))) {
-                    update.removed.mutableCast().insert(blattedRows);
+                    update.removed.writableCast().insert(blattedRows);
                 }
             });
             final int numRowsBlattedByShift = preShiftIndexSize - rowSet.intSize();
@@ -277,11 +277,11 @@ public class GenerateTableUpdates {
     static public void generateTableUpdates(final Listener.Update update,
             final Random random, final QueryTable table,
             final TstUtils.ColumnInfo<?, ?>[] columnInfo) {
-        final MutableRowSet rowSet = table.getRowSet().mutableCast();
+        final WritableRowSet rowSet = table.getRowSet().writableCast();
 
         if (RefreshingTableTestCase.printTableUpdates) {
             System.out.println();
-            System.out.println("TrackingMutableRowSet: " + rowSet);
+            System.out.println("TrackingWritableRowSet: " + rowSet);
         }
 
         // Remove data:

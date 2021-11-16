@@ -13,7 +13,7 @@ import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.v2.ShiftObliviousInstrumentedListener;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.v2.utils.TerminalNotification;
+import io.deephaven.engine.updategraph.TerminalNotification;
 import io.deephaven.engine.time.TimeProvider;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;

@@ -4,12 +4,12 @@
 
 package io.deephaven.engine.v2.select;
 
+import io.deephaven.engine.rowset.TrackingWritableRowSet;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.rowset.MutableRowSet;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.TrackingMutableRowSet;
 
 import java.util.Collections;
 import java.util.List;
@@ -51,7 +51,7 @@ public class RollingReleaseFilter extends WhereFilterLivenessArtifactImpl implem
     }
 
     @Override
-    public MutableRowSet filter(RowSet selection, RowSet fullSet, Table table, boolean usePrev) {
+    public WritableRowSet filter(RowSet selection, RowSet fullSet, Table table, boolean usePrev) {
         if (usePrev) {
             throw new PreviousFilteringNotSupported();
         }
@@ -62,13 +62,13 @@ public class RollingReleaseFilter extends WhereFilterLivenessArtifactImpl implem
         }
 
         if (offset + workingSize <= fullSet.size()) {
-            final TrackingMutableRowSet sub =
+            final TrackingWritableRowSet sub =
                     fullSet.subSetByPositionRange(offset, offset + workingSize).toTracking();
             sub.retain(selection);
             return sub;
         }
 
-        final MutableRowSet sub = fullSet.copy();
+        final WritableRowSet sub = fullSet.copy();
         sub.removeRange(sub.get((offset + workingSize) % fullSet.size()), sub.get(offset) - 1);
         sub.retain(selection);
 

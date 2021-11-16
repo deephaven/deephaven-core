@@ -1,9 +1,8 @@
 package io.deephaven.engine.v2.utils;
 
-import io.deephaven.engine.rowset.MutableRowSet;
-import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.rowset.RowSetShiftData;
-import io.deephaven.engine.rowset.TrackingMutableRowSet;
+import io.deephaven.engine.rowset.*;
+import io.deephaven.engine.rowset.TrackingWritableRowSet;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.v2.Listener;
 import io.deephaven.engine.v2.ModifiedColumnSet;
 import io.deephaven.engine.updategraph.LogicalClock;
@@ -497,16 +496,16 @@ public class RowSetShiftDataExpanderTest {
      * Profit by letting @Before / @After clear context and run validate automagically.
      */
     private static class Context {
-        public final TrackingMutableRowSet sourceRowSet =
+        public final TrackingWritableRowSet sourceRowSet =
                 RowSetFactory.empty().toTracking();
-        public final MutableRowSet added = RowSetFactory.empty();
-        public final MutableRowSet removed = RowSetFactory.empty();
-        public final MutableRowSet modified = RowSetFactory.empty();
+        public final WritableRowSet added = RowSetFactory.empty();
+        public final WritableRowSet removed = RowSetFactory.empty();
+        public final WritableRowSet modified = RowSetFactory.empty();
         public final RowSetShiftData.Builder shifted = new RowSetShiftData.Builder();
 
-        public final MutableRowSet expectAdded = RowSetFactory.empty();
-        public final MutableRowSet expectRemoved = RowSetFactory.empty();
-        public final MutableRowSet expectModified = RowSetFactory.empty();
+        public final WritableRowSet expectAdded = RowSetFactory.empty();
+        public final WritableRowSet expectRemoved = RowSetFactory.empty();
+        public final WritableRowSet expectModified = RowSetFactory.empty();
 
         public Context() {
             LogicalClock.DEFAULT.resetForUnitTests();

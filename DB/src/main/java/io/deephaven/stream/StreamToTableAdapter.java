@@ -19,7 +19,7 @@ import io.deephaven.engine.chunk.WritableChunk;
 import io.deephaven.engine.chunkcolumnsource.ChunkColumnSource;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
-import io.deephaven.engine.rowset.TrackingMutableRowSet;
+import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.MultiException;
@@ -44,7 +44,7 @@ public class StreamToTableAdapter implements SafeCloseable, StreamConsumer, Runn
     private final String name;
 
     private final QueryTable table;
-    private final TrackingMutableRowSet rowSet;
+    private final TrackingWritableRowSet rowSet;
     private final SwitchColumnSource<?>[] switchSources;
 
     /** To start out when we have no data, we use null value column sources which are cheap and singletons. */

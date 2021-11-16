@@ -80,8 +80,8 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
             }
         }, (e) -> {
         });
-        result.getRowSet().mutableCast().insert(builder.build());
-        result.getRowSet().mutableCast().initializePreviousValue();
+        result.getRowSet().writableCast().insert(builder.build());
+        result.getRowSet().writableCast().initializePreviousValue();
         UpdateGraphProcessor.DEFAULT.addSource(result);
     }
 

@@ -8,7 +8,7 @@ import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.updategraph.LogicalClock;
-import io.deephaven.engine.v2.utils.UpdateCommitter;
+import io.deephaven.engine.updategraph.UpdateCommitter;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;

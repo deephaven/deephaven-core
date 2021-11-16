@@ -11,7 +11,8 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.WritableSource;
+import io.deephaven.engine.table.WritableColumnSource;
+import io.deephaven.engine.updategraph.UpdateCommitter;
 import io.deephaven.util.BooleanUtils;
 
 import static io.deephaven.util.BooleanUtils.NULL_BOOLEAN_AS_BYTE;
@@ -24,7 +25,6 @@ import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.chunk.Attributes.OrderedRowKeys;
 import io.deephaven.engine.v2.sources.sparse.ByteOneOrN;
 import io.deephaven.engine.v2.sources.sparse.LongOneOrN;
-import io.deephaven.engine.v2.utils.*;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.util.SoftRecycler;
 import gnu.trove.list.array.TLongArrayList;
@@ -87,8 +87,8 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
     // endregion constructor
 
     // region serialization
-    WritableSource reinterpretForSerialization() {
-        return (WritableSource)reinterpret(byte.class);
+    WritableColumnSource reinterpretForSerialization() {
+        return (WritableColumnSource)reinterpret(byte.class);
     }
 
     private void writeObject(java.io.ObjectOutputStream out) throws IOException {
@@ -117,7 +117,7 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
         final byte[] data = (byte[])in.readObject();
         final ByteChunk<Values> srcChunk = ByteChunk.chunkWrap(data);
         // noinspection unchecked
-        final WritableSource<Byte> reinterpreted = (WritableSource<Byte>) reinterpretForSerialization();
+        final WritableColumnSource<Byte> reinterpreted = (WritableColumnSource<Byte>) reinterpretForSerialization();
         try (final FillFromContext context = reinterpreted.makeFillFromContext(rowSet.intSize())) {
             reinterpreted.fillFromChunk(context, srcChunk, rowSet);
         }
@@ -820,7 +820,7 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
         return (ColumnSource<ALTERNATE_DATA_TYPE>) new BooleanSparseArraySource.ReinterpretedAsByte(this);
     }
 
-    private static class ReinterpretedAsByte extends AbstractColumnSource<Byte> implements MutableColumnSourceGetDefaults.ForByte, FillUnordered, WritableSource<Byte> {
+    private static class ReinterpretedAsByte extends AbstractColumnSource<Byte> implements MutableColumnSourceGetDefaults.ForByte, FillUnordered, WritableColumnSource<Byte> {
         private final BooleanSparseArraySource wrapped;
 
         private ReinterpretedAsByte(BooleanSparseArraySource wrapped) {

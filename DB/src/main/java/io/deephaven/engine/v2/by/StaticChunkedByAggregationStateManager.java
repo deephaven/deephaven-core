@@ -5,13 +5,13 @@ package io.deephaven.engine.v2.by;
 
 import io.deephaven.base.verify.Require;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.Context;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.rowset.TrackingMutableRowSet;
 import io.deephaven.engine.rowset.impl.RowSequenceUtil;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.util.QueryConstants;
@@ -129,7 +129,7 @@ class StaticChunkedByAggregationStateManager
     private final ArrayBackedColumnSource<?> [] overflowKeySources;
     // the location of the next key in an overflow bucket
     private final IntegerArraySource overflowOverflowLocationSource = new IntegerArraySource();
-    // the overflow buckets for the right TrackingMutableRowSet
+    // the overflow buckets for the right TrackingWritableRowSet
     @ReplicateHashTable.OverflowStateColumnSource
     // @StateColumnSourceType@ from \QObjectArraySource<Object>\E
     private final ObjectArraySource<Object> overflowRowSetSource
@@ -482,7 +482,7 @@ class StaticChunkedByAggregationStateManager
              // endregion build initialization try
         ) {
             // region build initialization
-            // TrackingMutableRowSet keys extracted from the input rowSet, parallel to the sourceKeyChunks
+            // TrackingWritableRowSet keys extracted from the input rowSet, parallel to the sourceKeyChunks
             final WritableLongChunk<OrderedRowKeys> sourceChunkIndexKeys = WritableLongChunk.makeWritableChunk(bc.chunkSize);
 
             // Result destination slots recorded during the build, parallel to the sourceKeyChunks and sourceChunkIndexKeys
@@ -1279,9 +1279,9 @@ class StaticChunkedByAggregationStateManager
         return keyHashTableSources;
     }
 
-    ColumnSource<TrackingMutableRowSet> getIndexHashTableSource() {
+    ColumnSource<TrackingWritableRowSet> getIndexHashTableSource() {
         //noinspection unchecked
-        return new HashTableColumnSource(TrackingMutableRowSet.class, rowSetSource, overflowRowSetSource);
+        return new HashTableColumnSource(TrackingWritableRowSet.class, rowSetSource, overflowRowSetSource);
     }
     // endregion extraction functions
 

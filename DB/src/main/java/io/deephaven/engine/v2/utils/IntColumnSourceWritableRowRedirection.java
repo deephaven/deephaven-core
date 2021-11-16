@@ -2,7 +2,7 @@ package io.deephaven.engine.v2.utils;
 
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.WritableSource;
+import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.chunk.Attributes.RowKeys;
 import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.table.ChunkSource;
@@ -12,11 +12,11 @@ import io.deephaven.engine.chunk.WritableLongChunk;
 import io.deephaven.util.QueryConstants;
 import org.jetbrains.annotations.NotNull;
 
-public final class IntColumnSourceMutableRowRedirection implements MutableRowRedirection {
+public final class IntColumnSourceWritableRowRedirection implements WritableRowRedirection {
 
-    private final WritableSource<Integer> columnSource;
+    private final WritableColumnSource<Integer> columnSource;
 
-    public IntColumnSourceMutableRowRedirection(WritableSource<Integer> columnSource) {
+    public IntColumnSourceWritableRowRedirection(WritableColumnSource<Integer> columnSource) {
         this.columnSource = columnSource;
     }
 
@@ -57,7 +57,7 @@ public final class IntColumnSourceMutableRowRedirection implements MutableRowRed
         private final ColumnSource.FillContext colSrcCtx;
         private final WritableIntChunk<Values> intChunk;
 
-        private FillContext(final IntColumnSourceMutableRowRedirection csrc, final int chunkSize) {
+        private FillContext(final IntColumnSourceWritableRowRedirection csrc, final int chunkSize) {
             colSrcCtx = csrc.columnSource.makeFillContext(chunkSize);
             intChunk = WritableIntChunk.makeWritableChunk(chunkSize);
         }

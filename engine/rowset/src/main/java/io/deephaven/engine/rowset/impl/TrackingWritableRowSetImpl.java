@@ -4,15 +4,15 @@
 
 package io.deephaven.engine.rowset.impl;
 
-import io.deephaven.engine.rowset.MutableRowSet;
-import io.deephaven.engine.rowset.TrackingMutableRowSet;
+import io.deephaven.engine.rowset.TrackingWritableRowSet;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.v2.sources.LogicalClock;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.io.ObjectInput;
 
-public class TrackingMutableRowSetImpl extends GroupingRowSetHelper {
+public class TrackingWritableRowSetImpl extends GroupingRowSetHelper {
 
     private transient OrderedLongSet prevInnerSet;
     /**
@@ -22,11 +22,11 @@ public class TrackingMutableRowSetImpl extends GroupingRowSetHelper {
     private transient volatile long changeTimeStep;
 
 
-    public TrackingMutableRowSetImpl() {
+    public TrackingWritableRowSetImpl() {
         this(OrderedLongSet.EMPTY);
     }
 
-    public TrackingMutableRowSetImpl(final OrderedLongSet innerSet) {
+    public TrackingWritableRowSetImpl(final OrderedLongSet innerSet) {
         super(innerSet);
         this.prevInnerSet = OrderedLongSet.EMPTY;
         changeTimeStep = -1;
@@ -54,7 +54,7 @@ public class TrackingMutableRowSetImpl extends GroupingRowSetHelper {
     }
 
     @Override
-    public TrackingMutableRowSet toTracking() {
+    public TrackingWritableRowSet toTracking() {
         throw new UnsupportedOperationException("Already tracking! You must copy() before toTracking()");
     }
 
@@ -79,8 +79,8 @@ public class TrackingMutableRowSetImpl extends GroupingRowSetHelper {
     }
 
     @Override
-    public MutableRowSet getPrevRowSet() {
-        return new MutableRowSetImpl(checkAndGetPrev().ixCowRef());
+    public WritableRowSet getPrevRowSet() {
+        return new WritableRowSetImpl(checkAndGetPrev().ixCowRef());
     }
 
     @Override

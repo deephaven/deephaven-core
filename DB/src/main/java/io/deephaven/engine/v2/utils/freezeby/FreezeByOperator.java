@@ -5,7 +5,7 @@
 package io.deephaven.engine.v2.utils.freezeby;
 
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.WritableSource;
+import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.v2.Listener;
 import io.deephaven.engine.v2.by.IterativeChunkedAggregationOperator;
@@ -19,7 +19,7 @@ import java.util.Collections;
 import java.util.Map;
 
 public class FreezeByOperator implements IterativeChunkedAggregationOperator {
-    private final WritableSource<?> resultSource;
+    private final WritableColumnSource<?> resultSource;
     private final String name;
     private final FreezeByHelper helper;
 
@@ -93,7 +93,7 @@ public class FreezeByOperator implements IterativeChunkedAggregationOperator {
         }
     }
 
-    private static FreezeByHelper makeHelper(WritableSource source, FreezeByCountOperator rowCount) {
+    private static FreezeByHelper makeHelper(WritableColumnSource source, FreezeByCountOperator rowCount) {
         switch (source.getChunkType()) {
             default:
             case Boolean:

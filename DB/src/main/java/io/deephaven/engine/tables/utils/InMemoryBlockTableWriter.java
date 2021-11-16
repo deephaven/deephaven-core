@@ -6,8 +6,8 @@ package io.deephaven.engine.tables.utils;
 
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.v2.InMemoryTable;
-import io.deephaven.engine.table.WritableSource;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 
@@ -73,7 +73,7 @@ public class InMemoryBlockTableWriter {
         public void setValue(String columname, Object value) {
             try {
                 // noinspection unchecked
-                ((WritableSource) _imt.getColumnSource(columname)).set(index, value);
+                ((WritableColumnSource) _imt.getColumnSource(columname)).set(index, value);
             } catch (ClassCastException e) {
                 logger.error().append("Working on column: ").append(columname).endl();
                 throw e;

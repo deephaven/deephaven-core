@@ -8,7 +8,7 @@ import io.deephaven.engine.chunk.LongChunk;
 import io.deephaven.engine.chunk.WritableLongChunk;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.WritableSource;
+import io.deephaven.engine.table.WritableColumnSource;
 import org.openjdk.jmh.infra.Blackhole;
 
 import java.util.Random;
@@ -16,7 +16,7 @@ import java.util.Random;
 class LongHelper implements FillBenchmarkHelper {
     private final long[] longArray;
     private final LongArraySource longArraySource;
-    private final WritableSource longSparseArraySource;
+    private final WritableColumnSource longSparseArraySource;
 
     private final ColumnSource.FillContext arrayContext;
     private final ColumnSource.FillContext sparseContext;

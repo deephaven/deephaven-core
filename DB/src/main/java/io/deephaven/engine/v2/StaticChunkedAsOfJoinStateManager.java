@@ -123,7 +123,7 @@ class StaticChunkedAsOfJoinStateManager
     private final ArrayBackedColumnSource<?> [] overflowKeySources;
     // the location of the next key in an overflow bucket
     private final IntegerArraySource overflowOverflowLocationSource = new IntegerArraySource();
-    // the overflow buckets for the right TrackingMutableRowSet
+    // the overflow buckets for the right TrackingWritableRowSet
     @ReplicateHashTable.OverflowStateColumnSource
     // @StateColumnSourceType@ from \QByteArraySource\E
     private final ByteArraySource overflowStateSource
@@ -1713,7 +1713,7 @@ class StaticChunkedAsOfJoinStateManager
      * left refreshing case.
      *
      * @param slot the slot in the table (either positive for a main slot, or negative for overflow)
-     * @return the TrackingMutableRowSet for this slot
+     * @return the TrackingWritableRowSet for this slot
      */
     RowSet getLeftIndex(long slot) {
         final RowSetBuilderSequential builder;

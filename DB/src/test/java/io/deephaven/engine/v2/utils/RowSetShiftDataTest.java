@@ -206,9 +206,9 @@ public class RowSetShiftDataTest {
         scb.shiftRange(3950, 4050, 10);
         final RowSetShiftData sisd = scb.build();
 
-        final MutableRowSet didx = rowSet.copy();
+        final WritableRowSet didx = rowSet.copy();
         RowSetShiftUtils.apply(disd, didx);
-        final MutableRowSet sidx = rowSet.copy();
+        final WritableRowSet sidx = rowSet.copy();
         RowSetShiftUtils.apply(sisd, sidx);
 
         assertEquals(didx, sidx);
@@ -237,9 +237,9 @@ public class RowSetShiftDataTest {
         scb.shiftRange(3950, 4050, 10);
         final RowSetShiftData sisd = scb.build();
 
-        final MutableRowSet didx = rowSet.copy();
+        final WritableRowSet didx = rowSet.copy();
         RowSetShiftUtils.apply(disd, didx);
-        final MutableRowSet sidx = rowSet.copy();
+        final WritableRowSet sidx = rowSet.copy();
         RowSetShiftUtils.apply(sisd, sidx);
 
         assertEquals(2, sisd.size());
@@ -261,9 +261,9 @@ public class RowSetShiftDataTest {
         scb.shiftRange(1000, 4000, 10);
         final RowSetShiftData sisd = scb.build();
 
-        final MutableRowSet didx = rowSet.copy();
+        final WritableRowSet didx = rowSet.copy();
         RowSetShiftUtils.apply(disd, didx);
-        final MutableRowSet sidx = rowSet.copy();
+        final WritableRowSet sidx = rowSet.copy();
         RowSetShiftUtils.apply(sisd, sidx);
 
         assertEquals(didx, sidx);
@@ -294,9 +294,9 @@ public class RowSetShiftDataTest {
         scb.shiftRange(3950, 4050, 10);
         final RowSetShiftData sisd = scb.build();
 
-        final MutableRowSet didx = rowSet.copy();
+        final WritableRowSet didx = rowSet.copy();
         RowSetShiftUtils.apply(disd, didx);
-        final MutableRowSet sidx = rowSet.copy();
+        final WritableRowSet sidx = rowSet.copy();
         RowSetShiftUtils.apply(sisd, sidx);
 
         assertEquals(didx, sidx);
@@ -327,9 +327,9 @@ public class RowSetShiftDataTest {
         scb.shiftRange(4300, 4301, -1);
         final RowSetShiftData sisd = scb.build();
 
-        final MutableRowSet didx = rowSet.copy();
+        final WritableRowSet didx = rowSet.copy();
         RowSetShiftUtils.apply(disd, didx);
-        final MutableRowSet sidx = rowSet.copy();
+        final WritableRowSet sidx = rowSet.copy();
         RowSetShiftUtils.apply(sisd, sidx);
 
         assertEquals(didx, sidx);
@@ -351,9 +351,9 @@ public class RowSetShiftDataTest {
         scb.shiftRange(10, 12, 1);
         final RowSetShiftData sisd = scb.build();
 
-        final MutableRowSet didx = rowSet.copy();
+        final WritableRowSet didx = rowSet.copy();
         RowSetShiftUtils.apply(disd, didx);
-        final MutableRowSet sidx = rowSet.copy();
+        final WritableRowSet sidx = rowSet.copy();
         RowSetShiftUtils.apply(sisd, sidx);
 
         assertEquals(didx, sidx);
@@ -385,9 +385,9 @@ public class RowSetShiftDataTest {
         scb.shiftRange(38, 40, -3);
         final RowSetShiftData sisd = scb.build();
 
-        final MutableRowSet didx = rowSet.copy();
+        final WritableRowSet didx = rowSet.copy();
         RowSetShiftUtils.apply(disd, didx);
-        final MutableRowSet sidx = rowSet.copy();
+        final WritableRowSet sidx = rowSet.copy();
         RowSetShiftUtils.apply(sisd, sidx);
 
         assertEquals(didx, sidx);
@@ -409,9 +409,9 @@ public class RowSetShiftDataTest {
         scb.shiftRange(20, 27, -1);
         final RowSetShiftData sisd = scb.build();
 
-        final MutableRowSet didx = rowSet.copy();
+        final WritableRowSet didx = rowSet.copy();
         RowSetShiftUtils.apply(disd, didx);
-        final MutableRowSet sidx = rowSet.copy();
+        final WritableRowSet sidx = rowSet.copy();
         RowSetShiftUtils.apply(sisd, sidx);
 
         System.out.println(sisd);

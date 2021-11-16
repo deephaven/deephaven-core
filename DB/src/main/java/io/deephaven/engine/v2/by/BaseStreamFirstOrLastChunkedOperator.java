@@ -4,7 +4,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.MatchPair;
-import io.deephaven.engine.table.WritableSource;
+import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.v2.Listener;
 import io.deephaven.engine.v2.sources.*;
 import io.deephaven.engine.chunk.*;
@@ -45,7 +45,7 @@ public abstract class BaseStreamFirstOrLastChunkedOperator implements IterativeC
      * <p>
      * These are the result columns, reinterpreted to primitives where applicable.
      */
-    protected final WritableSource<?>[] outputColumns;
+    protected final WritableColumnSource<?>[] outputColumns;
     /**
      * Cached pointer to the most-recently allocated {@link #redirections}.
      */
@@ -60,7 +60,7 @@ public abstract class BaseStreamFirstOrLastChunkedOperator implements IterativeC
             @NotNull final Table streamTable) {
         numResultColumns = resultPairs.length;
         inputColumns = new ColumnSource[numResultColumns];
-        outputColumns = new WritableSource[numResultColumns];
+        outputColumns = new WritableColumnSource[numResultColumns];
         final Map<String, ArrayBackedColumnSource<?>> resultColumnsMutable = new LinkedHashMap<>(numResultColumns);
         for (int ci = 0; ci < numResultColumns; ++ci) {
             final MatchPair resultPair = resultPairs[ci];
@@ -70,7 +70,7 @@ public abstract class BaseStreamFirstOrLastChunkedOperator implements IterativeC
             resultColumnsMutable.put(resultPair.left(), resultSource);
             inputColumns[ci] = ReinterpretUtilities.maybeConvertToPrimitive(streamSource);
             // Note that ArrayBackedColumnSources implementations reinterpret very efficiently where applicable.
-            outputColumns[ci] = (WritableSource<?>) ReinterpretUtilities.maybeConvertToPrimitive(resultSource);
+            outputColumns[ci] = (WritableColumnSource<?>) ReinterpretUtilities.maybeConvertToPrimitive(resultSource);
             Assert.eq(inputColumns[ci].getChunkType(), "inputColumns[ci].getChunkType()",
                     outputColumns[ci].getChunkType(), "outputColumns[ci].getChunkType()");
         }

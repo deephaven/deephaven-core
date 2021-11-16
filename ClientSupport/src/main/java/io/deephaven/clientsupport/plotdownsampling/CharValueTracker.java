@@ -1,7 +1,7 @@
 package io.deephaven.clientsupport.plotdownsampling;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.rowset.MutableRowSet;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.v2.sources.CharacterArraySource;
@@ -38,7 +38,7 @@ public final class CharValueTracker extends ValueTracker {
     }
 
     @Override
-    public void append(int offset, long rowIndex, Chunk<? extends Attributes.Values> valuesChunk, int indexInChunk, @Nullable MutableRowSet nulls) {
+    public void append(int offset, long rowIndex, Chunk<? extends Attributes.Values> valuesChunk, int indexInChunk, @Nullable WritableRowSet nulls) {
         final char val = valuesChunk.asCharChunk().get(indexInChunk);
         if (val == NULL_CHAR) {
             if (nulls != null) {
@@ -64,7 +64,7 @@ public final class CharValueTracker extends ValueTracker {
     }
 
     @Override
-    public void update(int offset, long rowIndex, Chunk<? extends Attributes.Values> valuesChunk, int indexInChunk, @Nullable MutableRowSet nulls) {
+    public void update(int offset, long rowIndex, Chunk<? extends Attributes.Values> valuesChunk, int indexInChunk, @Nullable WritableRowSet nulls) {
         char val = valuesChunk.asCharChunk().get(indexInChunk);
         if (val == NULL_CHAR) {
             if (nulls != null) {

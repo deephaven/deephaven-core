@@ -6,7 +6,7 @@ package io.deephaven.engine.v2.sources;
 
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.WritableSource;
+import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.chunk.*;
@@ -136,7 +136,7 @@ public class DateTimeArraySource extends AbstractLongArraySource<DateTime> {
     }
 
     private class ReinterpretedAsLong extends AbstractColumnSource<Long>
-            implements MutableColumnSourceGetDefaults.ForLong, FillUnordered, WritableSource<Long> {
+            implements MutableColumnSourceGetDefaults.ForLong, FillUnordered, WritableColumnSource<Long> {
         private ReinterpretedAsLong() {
             super(long.class);
         }

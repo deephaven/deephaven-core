@@ -6,7 +6,7 @@ package io.deephaven.engine.v2.sources;
 
 import io.deephaven.engine.table.DefaultGetContext;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.WritableSource;
+import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
@@ -65,7 +65,7 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
 @AbstractColumnSource.IsSerializable(value = true)
 public abstract class ArrayBackedColumnSource<T>
         extends AbstractDeferredGroupingColumnSource<T>
-        implements FillUnordered, ShiftData.ShiftCallback, WritableSource<T>, Serializable {
+        implements FillUnordered, ShiftData.ShiftCallback, WritableColumnSource<T>, Serializable {
     private static final long serialVersionUID = -7823391894248382929L;
 
     static final int DEFAULT_RECYCLER_CAPACITY = 1024;
@@ -248,7 +248,7 @@ public abstract class ArrayBackedColumnSource<T>
      */
     public static ArrayBackedColumnSource<Boolean> getBooleanMemoryColumnSource(@NotNull final byte[] data) {
         final ArrayBackedColumnSource<Boolean> result = new BooleanArraySource();
-        final WritableSource<Byte> dest = (WritableSource<Byte>) result.reinterpret(byte.class);
+        final WritableColumnSource<Byte> dest = (WritableColumnSource<Byte>) result.reinterpret(byte.class);
         result.ensureCapacity(data.length);
         try (final FillFromContext context = dest.makeFillFromContext(data.length);
                 final RowSequence range = RowSequenceUtil.forRange(0, data.length - 1)) {
@@ -347,7 +347,7 @@ public abstract class ArrayBackedColumnSource<T>
     public static ArrayBackedColumnSource<DateTime> getDateTimeMemoryColumnSource(@NotNull final long[] data) {
         final ArrayBackedColumnSource<DateTime> result = new DateTimeArraySource();
         result.ensureCapacity(data.length);
-        final WritableSource<Long> asLong = (WritableSource<Long>) result.reinterpret(long.class);
+        final WritableColumnSource<Long> asLong = (WritableColumnSource<Long>) result.reinterpret(long.class);
         try (final FillFromContext context = asLong.makeFillFromContext(data.length);
                 final RowSequence range = RowSequenceUtil.forRange(0, data.length - 1)) {
             asLong.fillFromChunk(context, LongChunk.chunkWrap(data), range);
@@ -457,7 +457,7 @@ public abstract class ArrayBackedColumnSource<T>
      * @param dataArray the data to insert into the new column source
      * @return a ColumnSource with the supplied data.
      */
-    public static WritableSource<?> getMemoryColumnSourceUntyped(@NotNull final Object dataArray) {
+    public static WritableColumnSource<?> getMemoryColumnSourceUntyped(@NotNull final Object dataArray) {
         return getMemoryColumnSourceUntyped(dataArray, dataArray.getClass().getComponentType(),
                 dataArray.getClass().getComponentType().getComponentType());
     }
@@ -471,10 +471,10 @@ public abstract class ArrayBackedColumnSource<T>
      * @param componentType the component type for column sources of arrays or Vectors
      * @return a ColumnSource with the supplied data.
      */
-    public static <T> WritableSource<T> getMemoryColumnSourceUntyped(@NotNull final Object dataArray,
-            @NotNull final Class<T> dataType,
-            @Nullable final Class<?> componentType) {
-        final WritableSource<?> result;
+    public static <T> WritableColumnSource<T> getMemoryColumnSourceUntyped(@NotNull final Object dataArray,
+                                                                           @NotNull final Class<T> dataType,
+                                                                           @Nullable final Class<?> componentType) {
+        final WritableColumnSource<?> result;
         if (dataArray instanceof boolean[]) {
             result = getMemoryColumnSource(ArrayTypeUtils.getBoxedArray((boolean[]) dataArray), Boolean.class, null);
         } else if (dataArray instanceof byte[]) {
@@ -512,7 +512,7 @@ public abstract class ArrayBackedColumnSource<T>
             result = getMemoryColumnSource((T[]) dataArray, dataType, componentType);
         }
         // noinspection unchecked
-        return (WritableSource<T>) result;
+        return (WritableColumnSource<T>) result;
     }
 
     /**

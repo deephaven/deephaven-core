@@ -1,4 +1,4 @@
-package io.deephaven.engine.v2.utils;
+package io.deephaven.engine.rowset.impl;
 
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.Assert;
@@ -11,7 +11,8 @@ import gnu.trove.list.array.TLongArrayList;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.mutable.MutableLong;
 
-public class RowSetUtilities {
+public class RowSetUtil {
+
     static String toString(RowSet rowSet, int maxRanges) {
         int count = 0;
         final StringBuilder result = new StringBuilder("{");
@@ -123,7 +124,7 @@ public class RowSetUtilities {
             return false;
         }
         final RowSet otherRowSet = (RowSet) other;
-        return index.size() == otherRowSet.size() && RowSetUtilities.equalsDeepImpl(index, otherRowSet);
+        return index.size() == otherRowSet.size() && RowSetUtil.equalsDeepImpl(index, otherRowSet);
     }
 
     public interface Comparator {

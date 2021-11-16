@@ -1436,7 +1436,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             final long key = table.getRowSet().firstRowKey();
-            table.getRowSet().mutableCast().remove(key);
+            table.getRowSet().writableCast().remove(key);
             TstUtils.removeRows(table, i(key));
             table.notifyListeners(i(), i(key), i());
         });

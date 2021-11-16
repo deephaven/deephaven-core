@@ -7,7 +7,7 @@ package io.deephaven.engine.v2.select;
 import io.deephaven.base.clock.Clock;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.rowset.MutableRowSet;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderRandom;
 import org.jetbrains.annotations.NotNull;
@@ -52,9 +52,9 @@ public class SortedClockFilter extends ClockFilter {
 
     @Override
     @Nullable
-    protected MutableRowSet initializeAndGetInitialIndex(@NotNull final RowSet selection,
-            @NotNull final RowSet fullSet,
-            @NotNull final Table table) {
+    protected WritableRowSet initializeAndGetInitialIndex(@NotNull final RowSet selection,
+                                                          @NotNull final RowSet fullSet,
+                                                          @NotNull final Table table) {
         // External code is required to have sorted according to column before calling this, so we expect the input to
         // be flat. This is not actually a guarantee of the sort() method, but is something that happens to be true
         // because the input table must be historical, and the historical sort implementation uses a
@@ -74,7 +74,7 @@ public class SortedClockFilter extends ClockFilter {
 
     @Override
     @Nullable
-    protected MutableRowSet updateAndGetAddedIndex() {
+    protected WritableRowSet updateAndGetAddedIndex() {
         if (range.isEmpty()) {
             return null;
         }

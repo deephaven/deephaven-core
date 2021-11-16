@@ -6,7 +6,7 @@ package io.deephaven.engine.v2.by;
 
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.sources.*;
-import io.deephaven.engine.v2.utils.MutableRowRedirection;
+import io.deephaven.engine.v2.utils.WritableRowRedirection;
 import io.deephaven.engine.v2.utils.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 
@@ -17,7 +17,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public abstract class IterativeIndexSpec extends ReaggregatableStatefactory {
     static final String REDIRECTION_INDEX_PREFIX = "RowRedirection_";
     private final Map<String, ColumnSource> nameToDestColumns = new LinkedHashMap<>();
-    final protected RowRedirection rowRedirection = MutableRowRedirection.FACTORY.createRowRedirection(8);
+    final protected RowRedirection rowRedirection = WritableRowRedirection.FACTORY.createRowRedirection(8);
     private boolean firstTime;
     final boolean lowestRollup;
     final boolean secondRollup;

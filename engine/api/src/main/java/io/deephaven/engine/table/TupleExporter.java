@@ -5,7 +5,7 @@ import org.jetbrains.annotations.NotNull;
 
 /**
  * Interface for classes that know how to export the elements of a given tuple type. Currently supports element-wise
- * export to a {@link WritableSource} without unnecessary boxing, or full export to a "{@link SmartKey}" with the
+ * export to a {@link WritableColumnSource} without unnecessary boxing, or full export to a "{@link SmartKey}" with the
  * necessary boxing.
  */
 public interface TupleExporter<TUPLE_TYPE> {
@@ -26,7 +26,7 @@ public interface TupleExporter<TUPLE_TYPE> {
      * @param destinationIndexKey The destination rowSet key
      */
     <ELEMENT_TYPE> void exportElement(TUPLE_TYPE tuple, int elementIndex,
-            @NotNull WritableSource<ELEMENT_TYPE> writableSource, long destinationIndexKey);
+                                      @NotNull WritableColumnSource<ELEMENT_TYPE> writableSource, long destinationIndexKey);
 
     /**
      * Export a single element from the tuple, identified by its element rowSet, to an Object

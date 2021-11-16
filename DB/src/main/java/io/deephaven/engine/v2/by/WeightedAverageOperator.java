@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2.by;
 
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.WritableSource;
+import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.type.TypeUtils;
 
@@ -11,7 +11,7 @@ class WeightedAverageOperator {
 
         Class<?> getResultType();
 
-        void setDestination(WritableSource<Double> columnSource);
+        void setDestination(WritableColumnSource<Double> columnSource);
     }
 
     interface State {
@@ -200,7 +200,7 @@ class WeightedAverageOperator {
     }
 
     private static class OperatorImpl implements Operator {
-        private WritableSource<Double> dest;
+        private WritableColumnSource<Double> dest;
         private final ValueGetter componentGetter;
         private final ValueGetter weightGetter;
 
@@ -220,7 +220,7 @@ class WeightedAverageOperator {
         }
 
         @Override
-        public void setDestination(WritableSource<Double> dest) {
+        public void setDestination(WritableColumnSource<Double> dest) {
             this.dest = dest;
         }
 

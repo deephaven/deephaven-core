@@ -4,7 +4,7 @@
 
 package io.deephaven.engine.v2;
 
-import io.deephaven.engine.rowset.MutableRowSet;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
@@ -280,7 +280,7 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
         }
     }
 
-    private static MutableRowSet indexByRange(long firstKey, long lastKey) {
+    private static WritableRowSet indexByRange(long firstKey, long lastKey) {
         return RowSetFactory.fromRange(firstKey, lastKey);
     }
 

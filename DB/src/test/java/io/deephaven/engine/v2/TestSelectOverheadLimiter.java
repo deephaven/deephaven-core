@@ -29,7 +29,7 @@ public class TestSelectOverheadLimiter extends RefreshingTableTestCase {
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             final RowSet added = RowSetFactory.fromRange(10000, 11000);
-            queryTable.getRowSet().mutableCast().insert(added);
+            queryTable.getRowSet().writableCast().insert(added);
             queryTable.notifyListeners(added, i(), i());
         });
 
@@ -38,7 +38,7 @@ public class TestSelectOverheadLimiter extends RefreshingTableTestCase {
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             final RowSet added = RowSetFactory.fromRange(11001, 11100);
-            queryTable.getRowSet().mutableCast().insert(added);
+            queryTable.getRowSet().writableCast().insert(added);
             queryTable.notifyListeners(added, i(), i());
         });
 
@@ -47,7 +47,7 @@ public class TestSelectOverheadLimiter extends RefreshingTableTestCase {
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             final RowSet added = RowSetFactory.fromRange(20000, 20100);
-            queryTable.getRowSet().mutableCast().insert(added);
+            queryTable.getRowSet().writableCast().insert(added);
             queryTable.notifyListeners(added, i(), i());
         });
 
@@ -56,7 +56,7 @@ public class TestSelectOverheadLimiter extends RefreshingTableTestCase {
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             final RowSet added = RowSetFactory.fromRange(30000, 30100);
-            queryTable.getRowSet().mutableCast().insert(added);
+            queryTable.getRowSet().writableCast().insert(added);
             queryTable.notifyListeners(added, i(), i());
         });
 
@@ -76,7 +76,7 @@ public class TestSelectOverheadLimiter extends RefreshingTableTestCase {
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             final RowSet removed = RowSetFactory.fromRange(0, 100);
             final RowSet added = RowSetFactory.fromRange(10000, 10100);
-            queryTable.getRowSet().mutableCast().update(added, removed);
+            queryTable.getRowSet().writableCast().update(added, removed);
             final Listener.Update update = new Listener.Update();
             final RowSetShiftData.Builder builder = new RowSetShiftData.Builder();
             builder.shiftRange(0, 1000, 10000);
@@ -93,7 +93,7 @@ public class TestSelectOverheadLimiter extends RefreshingTableTestCase {
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             final RowSet removed = RowSetFactory.fromRange(10000, 10100);
-            queryTable.getRowSet().mutableCast().remove(removed);
+            queryTable.getRowSet().writableCast().remove(removed);
             queryTable.notifyListeners(i(), removed, i());
         });
     }
@@ -192,7 +192,7 @@ public class TestSelectOverheadLimiter extends RefreshingTableTestCase {
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             final RowSet added = RowSetFactory.fromRange(10000, 11000);
-            queryTable.getRowSet().mutableCast().insert(added);
+            queryTable.getRowSet().writableCast().insert(added);
             queryTable.notifyListeners(added, i(), i());
         });
 
@@ -201,7 +201,7 @@ public class TestSelectOverheadLimiter extends RefreshingTableTestCase {
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             final RowSet added = RowSetFactory.fromRange(11001, 11100);
-            queryTable.getRowSet().mutableCast().insert(added);
+            queryTable.getRowSet().writableCast().insert(added);
             queryTable.notifyListeners(added, i(), i());
         });
 

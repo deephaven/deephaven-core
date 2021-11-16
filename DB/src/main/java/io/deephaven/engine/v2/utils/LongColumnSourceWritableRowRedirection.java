@@ -1,8 +1,8 @@
 package io.deephaven.engine.v2.utils;
 
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.table.WritableChunkSink;
-import io.deephaven.engine.table.WritableSource;
+import io.deephaven.engine.table.ChunkSink;
+import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.chunk.Attributes.RowKeys;
 import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.chunk.Chunk;
@@ -11,12 +11,12 @@ import io.deephaven.util.QueryConstants;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * {@link MutableRowRedirection} implementation that wraps a {@link WritableSource} of {@code longs}.
+ * {@link WritableRowRedirection} implementation that wraps a {@link WritableColumnSource} of {@code longs}.
  */
-public final class LongColumnSourceMutableRowRedirection extends LongColumnSourceRowRedirection<WritableSource<Long>>
-        implements MutableRowRedirection {
+public final class LongColumnSourceWritableRowRedirection extends LongColumnSourceRowRedirection<WritableColumnSource<Long>>
+        implements WritableRowRedirection {
 
-    public LongColumnSourceMutableRowRedirection(WritableSource<Long> columnSource) {
+    public LongColumnSourceWritableRowRedirection(WritableColumnSource<Long> columnSource) {
         super(columnSource);
     }
 
@@ -52,20 +52,20 @@ public final class LongColumnSourceMutableRowRedirection extends LongColumnSourc
     @Override
     public void removeAll(final RowSequence outerRowKeys) {
         final int numKeys = outerRowKeys.intSize();
-        try (final WritableChunkSink.FillFromContext fillFromContext = columnSource.makeFillFromContext(numKeys);
-                final WritableLongChunk<Values> values = WritableLongChunk.makeWritableChunk(numKeys)) {
+        try (final ChunkSink.FillFromContext fillFromContext = columnSource.makeFillFromContext(numKeys);
+             final WritableLongChunk<Values> values = WritableLongChunk.makeWritableChunk(numKeys)) {
             values.fillWithNullValue(0, numKeys);
             columnSource.fillFromChunk(fillFromContext, values, outerRowKeys);
         }
     }
 
     @Override
-    public WritableChunkSink.FillFromContext makeFillFromContext(int chunkCapacity) {
+    public ChunkSink.FillFromContext makeFillFromContext(int chunkCapacity) {
         return columnSource.makeFillFromContext(chunkCapacity);
     }
 
     @Override
-    public void fillFromChunk(@NotNull WritableChunkSink.FillFromContext context,
+    public void fillFromChunk(@NotNull ChunkSink.FillFromContext context,
             @NotNull Chunk<? extends RowKeys> innerRowKeys, @NotNull RowSequence outerRowKeys) {
         columnSource.fillFromChunk(context, innerRowKeys, outerRowKeys);
     }

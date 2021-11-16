@@ -6,7 +6,7 @@ package io.deephaven.engine.v2.sort.timsort;
 
 import java.util.Objects;
 
-import io.deephaven.engine.rowset.MutableRowSet;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderRandom;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -337,7 +337,7 @@ public abstract class BaseTestObjectTimSortKernel extends TestTimSortKernel {
 
         final RowSet[] results = context.getPartitions(true);
 
-        final MutableRowSet reconstructed = RowSetFactory.empty();
+        final WritableRowSet reconstructed = RowSetFactory.empty();
 
         // make sure that each partition is a subset of the rowSet and is disjoint
         for (int ii = 0; ii < results.length; ii++) {

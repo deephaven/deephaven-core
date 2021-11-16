@@ -47,7 +47,7 @@ public class TestTailInitializationFilter extends RefreshingTableTestCase {
             data2[0] = DateTimeUtils.convertDateTime("2020-08-20T07:00:00 NY");
             data2[1] = DateTimeUtils.convertDateTime("2020-08-20T08:30:00 NY");
             final RowSet newRowSet = RowSetFactory.fromKeys(100, 101, 1100, 1101);
-            input.getRowSet().mutableCast().insert(newRowSet);
+            input.getRowSet().writableCast().insert(newRowSet);
             ((DateTimeTreeMapSource) input.<DateTime>getColumnSource("Timestamp")).add(newRowSet, data2);
             input.notifyListeners(newRowSet, TstUtils.i(), TstUtils.i());
         });

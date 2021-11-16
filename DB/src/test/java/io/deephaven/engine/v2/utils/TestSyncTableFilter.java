@@ -313,7 +313,7 @@ public class TestSyncTableFilter extends RefreshingTableTestCase {
 
         UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
         allowingError(() -> {
-            a.getRowSet().mutableCast().remove(1);
+            a.getRowSet().writableCast().remove(1);
             a.notifyListeners(i(), i(1), i());
             UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
         }, throwables -> {

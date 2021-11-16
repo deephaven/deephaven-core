@@ -3,7 +3,7 @@ package io.deephaven.engine.rowset.impl.sortedranges;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.rowset.impl.TrackingMutableRowSetImpl;
+import io.deephaven.engine.rowset.impl.TrackingWritableRowSetImpl;
 import io.deephaven.util.datastructures.LongAbortableConsumer;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.impl.RowSequenceAsChunkImpl;
@@ -139,7 +139,7 @@ public class SortedRangesRowSequence extends RowSequenceAsChunkImpl {
     @Override
     public RowSet asRowSet() {
         if (size == sar.getCardinality()) {
-            return new TrackingMutableRowSetImpl(sar.deepCopy());
+            return new TrackingWritableRowSetImpl(sar.deepCopy());
         }
         if (size <= 0) {
             return RowSetFactory.empty();
@@ -174,7 +174,7 @@ public class SortedRangesRowSequence extends RowSequenceAsChunkImpl {
             }
             ans.count = iAns;
         }
-        return new TrackingMutableRowSetImpl(ans);
+        return new TrackingWritableRowSetImpl(ans);
     }
 
     @Override

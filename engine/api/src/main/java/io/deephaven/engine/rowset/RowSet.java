@@ -19,12 +19,12 @@ public interface RowSet extends RowSequence, LongSizedDataStructure, SafeCloseab
     void close();
 
     /**
-     * Make a new {@link MutableRowSet} with the same row keys as {@code this} that is safe for further mutation. The
-     * result will never be a {@link TrackingRowSet}; use {@link MutableRowSet#toTracking()} on the result as needed.
+     * Make a new {@link WritableRowSet} with the same row keys as {@code this} that is safe for further mutation. The
+     * result will never be a {@link TrackingRowSet}; use {@link WritableRowSet#toTracking()} on the result as needed.
      *
-     * @return The copied {@link MutableRowSet}
+     * @return The copied {@link WritableRowSet}
      */
-    MutableRowSet copy();
+    WritableRowSet copy();
 
     /**
      * How many keys are in this RowSet.
@@ -76,22 +76,22 @@ public interface RowSet extends RowSequence, LongSizedDataStructure, SafeCloseab
 
     /**
      * <p>
-     * Returns a {@link MutableRowSet} with the row positions of <i>row keys</i> in this RowSet.
+     * Returns a {@link WritableRowSet} with the row positions of <i>row keys</i> in this RowSet.
      *
      * <p>
      * This can be thought of as an iterative find() over the values in keys, but <b>all</b> keys <b>must</b> exist
      * within this RowSet, because a RowSet result can not represent negative values.
      *
      * @param keys The keys to find positions for
-     * @return A new {@link MutableRowSet} containing the positions of the keys in this RowSet
+     * @return A new {@link WritableRowSet} containing the positions of the keys in this RowSet
      */
-    default MutableRowSet invert(RowSet keys) {
+    default WritableRowSet invert(RowSet keys) {
         return invert(keys, Long.MAX_VALUE);
     }
 
     /**
      * <p>
-     * Returns the row positions of <i>row keys</i> in the current set as a {@link MutableRowSet}, stopping at
+     * Returns the row positions of <i>row keys</i> in the current set as a {@link WritableRowSet}, stopping at
      * maximumPosition.
      *
      * <p>
@@ -100,9 +100,9 @@ public interface RowSet extends RowSequence, LongSizedDataStructure, SafeCloseab
      *
      * @param keys The keys to find positions for
      * @param maximumPosition The largest position for which we will find a key
-     * @return A new {@link MutableRowSet} containing the positions of the keys in this RowSet
+     * @return A new {@link WritableRowSet} containing the positions of the keys in this RowSet
      */
-    MutableRowSet invert(RowSet keys, long maximumPosition);
+    WritableRowSet invert(RowSet keys, long maximumPosition);
 
     /**
      * For the given keys RowSet, under the assertion that none of them are present in the current RowSet, return the
@@ -117,7 +117,7 @@ public interface RowSet extends RowSequence, LongSizedDataStructure, SafeCloseab
      * Returns a new RowSet representing the intersection of the current RowSet with the input RowSet
      */
     @NotNull
-    MutableRowSet intersect(@NotNull RowSet range);
+    WritableRowSet intersect(@NotNull RowSet range);
 
     /**
      * Returns true if a RowSet has any overlap.
@@ -146,7 +146,7 @@ public interface RowSet extends RowSequence, LongSizedDataStructure, SafeCloseab
      * Returns a new RowSet representing the keys of the current set not present inside rowSetToRemove. This operation
      * is equivalent to set difference. This RowSet is not modified.
      */
-    MutableRowSet minus(RowSet rowSetToRemove);
+    WritableRowSet minus(RowSet rowSetToRemove);
 
     /**
      * Returns a new RowSet representing the keys present in both this RowSet and the argument RowSet.
@@ -154,9 +154,9 @@ public interface RowSet extends RowSequence, LongSizedDataStructure, SafeCloseab
      * @param rowSetToAdd A RowSet whose keys will be joined with our own to produce a new RowSet.
      * @return a new RowSet with the union of the keys in both this RowSet and rowSetToAdd.
      */
-    MutableRowSet union(RowSet rowSetToAdd);
+    WritableRowSet union(RowSet rowSetToAdd);
 
-    MutableRowSet shift(long shiftAmount);
+    WritableRowSet shift(long shiftAmount);
 
     interface RangeIterator extends SafeCloseable {
         void close();
@@ -415,7 +415,7 @@ public interface RowSet extends RowSequence, LongSizedDataStructure, SafeCloseab
      * @param endPos The last position to included in the output (exclusive)
      * @return A new RowSet, containing only positions &gt;= startPos and &lt; endPos
      */
-    MutableRowSet subSetByPositionRange(long startPos, long endPos);
+    WritableRowSet subSetByPositionRange(long startPos, long endPos);
 
     /**
      * Get a subset of this RowSet within the specified closed range of row keys.
@@ -424,7 +424,7 @@ public interface RowSet extends RowSequence, LongSizedDataStructure, SafeCloseab
      * @param endKey The last key (inclusive) to include in the output.
      * @return A new RowSet, containing only values &gt;= startKey and &lt;= endKey.
      */
-    MutableRowSet subSetByKeyRange(long startKey, long endKey);
+    WritableRowSet subSetByKeyRange(long startKey, long endKey);
 
     /**
      * Get a subset of this RowSet according to the supplied set of row positions in {@code posRowSet}.
@@ -432,7 +432,7 @@ public interface RowSet extends RowSequence, LongSizedDataStructure, SafeCloseab
      * @param posRowSet The RowSet of position-based ranges to extract.
      * @return A new RowSet, containing values at the locations in the provided RowSet.
      */
-    default MutableRowSet subSetForPositions(RowSet posRowSet) {
+    default WritableRowSet subSetForPositions(RowSet posRowSet) {
         final MutableLong currentOffset = new MutableLong();
         final RowSequence.Iterator iter = getRowSequenceIterator();
         final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
@@ -506,21 +506,21 @@ public interface RowSet extends RowSequence, LongSizedDataStructure, SafeCloseab
     }
 
     /**
-     * @return Whether this RowSet is actually {@link MutableRowSet mutable}
+     * @return Whether this RowSet is actually {@link WritableRowSet writable}
      */
-    default boolean isMutable() {
-        return this instanceof MutableRowSet;
+    default boolean isWritable() {
+        return this instanceof WritableRowSet;
     }
 
     /**
      * <p>
-     * Cast this RowSet reference to a {@link MutableRowSet}.
+     * Cast this RowSet reference to a {@link WritableRowSet}.
      *
-     * @return {@code this} cast to a {@link MutableRowSet}
-     * @throws ClassCastException If {@code this} is not a {@link MutableRowSet}
+     * @return {@code this} cast to a {@link WritableRowSet}
+     * @throws ClassCastException If {@code this} is not a {@link WritableRowSet}
      */
-    default MutableRowSet mutableCast() {
-        return (MutableRowSet) this;
+    default WritableRowSet writableCast() {
+        return (WritableRowSet) this;
     }
 
     /**

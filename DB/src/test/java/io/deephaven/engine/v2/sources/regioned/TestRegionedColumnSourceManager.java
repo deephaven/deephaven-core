@@ -1,6 +1,7 @@
 package io.deephaven.engine.v2.sources.regioned;
 
 import io.deephaven.base.verify.AssertionFailure;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.v2.ColumnToCodecMappings;
 import io.deephaven.engine.v2.RefreshingTableTestCase;
@@ -8,7 +9,6 @@ import io.deephaven.engine.v2.locations.*;
 import io.deephaven.engine.v2.locations.impl.SimpleTableLocationKey;
 import io.deephaven.engine.v2.locations.impl.TableLocationUpdateSubscriptionBuffer;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.rowset.MutableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import gnu.trove.map.TIntIntMap;
@@ -78,7 +78,7 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
     private TIntIntMap locationIndexToRegionIndex;
     private RowSet expectedRowSet;
     private RowSet expectedAddedRowSet;
-    private Map<String, MutableRowSet> expectedPartitioningColumnGrouping;
+    private Map<String, WritableRowSet> expectedPartitioningColumnGrouping;
 
     private RegionedColumnSourceManager SUT;
 
@@ -249,7 +249,7 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
     }
 
     private void setSizeExpectations(final boolean refreshing, final long... sizes) {
-        final MutableRowSet newExpectedRowSet = RowSetFactory.empty();
+        final WritableRowSet newExpectedRowSet = RowSetFactory.empty();
         expectedPartitioningColumnGrouping = new LinkedHashMap<>();
         IntStream.range(0, sizes.length).forEachOrdered(li -> {
             final long size = sizes[li];

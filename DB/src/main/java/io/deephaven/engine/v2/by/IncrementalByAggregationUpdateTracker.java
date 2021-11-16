@@ -27,16 +27,16 @@ import org.jetbrains.annotations.NotNull;
  * <em>step 5</em>):
  * <ol>
  * <li>Probe and accumulate removes (including modified-pre-shift when key columns are modified) in sequential builders
- * per state, then build the removed {@link TrackingMutableRowSet} for each state and remove it from the state's
- * {@link TrackingMutableRowSet}</li>
- * <li>Probe shifts and apply them as they are found to impact a given state's {@link TrackingMutableRowSet}, writing
+ * per state, then build the removed {@link TrackingWritableRowSet} for each state and remove it from the state's
+ * {@link TrackingWritableRowSet}</li>
+ * <li>Probe shifts and apply them as they are found to impact a given state's {@link TrackingWritableRowSet}, writing
  * down the total number of states with shifts as the chunk size for accumulating shifts in <em>step 5</em></li>
  * <li>Probe non-key modifies and flag impacted states</li>
  * <li>Build and accumulate adds (including modified-post-shift when key columns are modified) in sequential builders
- * per state, then build the added {@link TrackingMutableRowSet} for each state and add it to the state's
- * {@link TrackingMutableRowSet}</li>
- * <li>Update redirections from the previous {@link TrackingMutableRowSet} first key to the current
- * {@link TrackingMutableRowSet} first key, and from old slot to new slot where a state was moved or promoted in rehash,
+ * per state, then build the added {@link TrackingWritableRowSet} for each state and add it to the state's
+ * {@link TrackingWritableRowSet}</li>
+ * <li>Update redirections from the previous {@link TrackingWritableRowSet} first key to the current
+ * {@link TrackingWritableRowSet} first key, and from old slot to new slot where a state was moved or promoted in rehash,
  * accumulating rowSet keys in 3 random builders (for added, removed, and modified) and shifts in a pair of parallel
  * {@link WritableLongChunk}s for previous and current, using the following logic:
  * <ol>
@@ -58,7 +58,7 @@ import org.jetbrains.annotations.NotNull;
  * To process results after steps 1, 4, and 5, the caller uses
  * {@link #applyRemovesToStates(ObjectArraySource, ObjectArraySource)},
  * {@link #applyAddsToStates(ObjectArraySource, ObjectArraySource)}, and
- * {@link #makeUpdateFromStates(ObjectArraySource, ObjectArraySource, MutableRowSet, MutableRowRedirection, ModifiedColumnSetProducer)} 
+ * {@link #makeUpdateFromStates(ObjectArraySource, ObjectArraySource, WritableRowSet, WritableRowRedirection, ModifiedColumnSetProducer)}
  * respectively.
  */
 class IncrementalByAggregationUpdateTracker {
@@ -189,7 +189,7 @@ class IncrementalByAggregationUpdateTracker {
 
     /**
      * Record that an rowSet key has been added to a state on initial build, to be applied in
-     * {@link #applyAddsAndMakeInitialRowSet(ObjectArraySource, ObjectArraySource, MutableRowRedirection)} 
+     * {@link #applyAddsAndMakeInitialRowSet(ObjectArraySource, ObjectArraySource, WritableRowRedirection)}
      *
      * @param cookie The last known cookie for the state
      * @param stateSlot The state's slot (in main table space)
@@ -354,18 +354,18 @@ class IncrementalByAggregationUpdateTracker {
     }
 
     /**
-     * Apply accumulated adds to their states, populate the result {@link MutableRowRedirection}, and build the initial
-     * result {@link TrackingMutableRowSet}.
+     * Apply accumulated adds to their states, populate the result {@link WritableRowRedirection}, and build the initial
+     * result {@link TrackingWritableRowSet}.
      *
-     * @param rowSetSource The {@link TrackingMutableRowSet} column source for the main table
-     * @param overflowRowSetSource The {@link TrackingMutableRowSet} column source for the overflow table
-     * @param rowRedirection The result {@link MutableRowRedirection} (from state first keys to state slots) to populate
-     * @return The result {@link TrackingMutableRowSet}
+     * @param rowSetSource The {@link TrackingWritableRowSet} column source for the main table
+     * @param overflowRowSetSource The {@link TrackingWritableRowSet} column source for the overflow table
+     * @param rowRedirection The result {@link WritableRowRedirection} (from state first keys to state slots) to populate
+     * @return The result {@link TrackingWritableRowSet}
      */
-    final TrackingMutableRowSet applyAddsAndMakeInitialRowSet(
-            @NotNull final ObjectArraySource<TrackingMutableRowSet> rowSetSource,
-            @NotNull final ObjectArraySource<TrackingMutableRowSet> overflowRowSetSource,
-            @NotNull final MutableRowRedirection rowRedirection) {
+    final TrackingWritableRowSet applyAddsAndMakeInitialRowSet(
+            @NotNull final ObjectArraySource<TrackingWritableRowSet> rowSetSource,
+            @NotNull final ObjectArraySource<TrackingWritableRowSet> overflowRowSetSource,
+            @NotNull final WritableRowRedirection rowRedirection) {
         final RowSetBuilderRandom resultBuilder = RowSetFactory.builderRandom();
         for (long trackerIndex = 0; trackerIndex < size; ++trackerIndex) {
             final long slotAndFlags = updatedStateSlotAndFlags.getLong(trackerIndex);
@@ -376,7 +376,7 @@ class IncrementalByAggregationUpdateTracker {
             final long stateFirstKey;
             // noinspection ConstantConditions
             try (final RowSet stateAddedRowSet = stateBuilder.build()) {
-                final TrackingMutableRowSet stateRowSet = slotToRowSet(rowSetSource, overflowRowSetSource, slot);
+                final TrackingWritableRowSet stateRowSet = slotToRowSet(rowSetSource, overflowRowSetSource, slot);
                 stateRowSet.insert(stateAddedRowSet);
                 stateRowSet.initializePreviousValue();
                 stateFirstKey = stateAddedRowSet.firstRowKey();
@@ -393,11 +393,11 @@ class IncrementalByAggregationUpdateTracker {
     /**
      * Apply all accumulated removes to this tracker's updated states.
      *
-     * @param rowSetSource The {@link TrackingMutableRowSet} column source for the main table
-     * @param overflowRowSetSource The {@link TrackingMutableRowSet} column source for the overflow table
+     * @param rowSetSource The {@link TrackingWritableRowSet} column source for the main table
+     * @param overflowRowSetSource The {@link TrackingWritableRowSet} column source for the overflow table
      */
-    final void applyRemovesToStates(@NotNull final ObjectArraySource<TrackingMutableRowSet> rowSetSource,
-            @NotNull final ObjectArraySource<TrackingMutableRowSet> overflowRowSetSource) {
+    final void applyRemovesToStates(@NotNull final ObjectArraySource<TrackingWritableRowSet> rowSetSource,
+            @NotNull final ObjectArraySource<TrackingWritableRowSet> overflowRowSetSource) {
         for (long trackerIndex = 0; trackerIndex < size; ++trackerIndex) {
             final long slotAndFlags = updatedStateSlotAndFlags.getLong(trackerIndex);
             // Since removes are always done first, we need not check the flags here.
@@ -415,14 +415,14 @@ class IncrementalByAggregationUpdateTracker {
     /**
      * Apply a shift to all "current pass" states.
      *
-     * @param rowSetSource The {@link TrackingMutableRowSet} column source for the main table
-     * @param overflowRowSetSource The {@link TrackingMutableRowSet} column source for the overflow table
-     * @param beginRange See {@link RowSetShiftData#applyShift(MutableRowSet, long, long, long)}
-     * @param endRange See {@link RowSetShiftData#applyShift(MutableRowSet, long, long, long)}
-     * @param shiftDelta See {@link RowSetShiftData#applyShift(MutableRowSet, long, long, long)}
+     * @param rowSetSource The {@link TrackingWritableRowSet} column source for the main table
+     * @param overflowRowSetSource The {@link TrackingWritableRowSet} column source for the overflow table
+     * @param beginRange See {@link RowSetShiftData#applyShift(WritableRowSet, long, long, long)}
+     * @param endRange See {@link RowSetShiftData#applyShift(WritableRowSet, long, long, long)}
+     * @param shiftDelta See {@link RowSetShiftData#applyShift(WritableRowSet, long, long, long)}
      */
-    final void applyShiftToStates(@NotNull final ObjectArraySource<TrackingMutableRowSet> rowSetSource,
-            @NotNull final ObjectArraySource<TrackingMutableRowSet> overflowRowSetSource,
+    final void applyShiftToStates(@NotNull final ObjectArraySource<TrackingWritableRowSet> rowSetSource,
+            @NotNull final ObjectArraySource<TrackingWritableRowSet> overflowRowSetSource,
             final long beginRange,
             final long endRange,
             final long shiftDelta) {
@@ -443,11 +443,11 @@ class IncrementalByAggregationUpdateTracker {
     /**
      * Apply all accumulated adds to this tracker's updated states.
      *
-     * @param rowSetSource The {@link TrackingMutableRowSet} column source for the main table
-     * @param overflowRowSetSource The {@link TrackingMutableRowSet} column source for the overflow table
+     * @param rowSetSource The {@link TrackingWritableRowSet} column source for the main table
+     * @param overflowRowSetSource The {@link TrackingWritableRowSet} column source for the overflow table
      */
-    final void applyAddsToStates(@NotNull final ObjectArraySource<TrackingMutableRowSet> rowSetSource,
-            @NotNull final ObjectArraySource<TrackingMutableRowSet> overflowRowSetSource) {
+    final void applyAddsToStates(@NotNull final ObjectArraySource<TrackingWritableRowSet> rowSetSource,
+            @NotNull final ObjectArraySource<TrackingWritableRowSet> overflowRowSetSource) {
         for (int currentPositionIndex = 0; currentPositionIndex < currentPassSize; ++currentPositionIndex) {
             final int trackerIndex = currentPassPositions.getInt(currentPositionIndex);
             final long slotAndFlags = updatedStateSlotAndFlags.getLong(trackerIndex);
@@ -475,20 +475,20 @@ class IncrementalByAggregationUpdateTracker {
 
     /**
      * Build an {@link Listener.Update} for this tracker's updated states, and update the result
-     * {@link TrackingMutableRowSet} and {@link MutableRowRedirection}.
+     * {@link TrackingWritableRowSet} and {@link WritableRowRedirection}.
      *
-     * @param rowSetSource The {@link TrackingMutableRowSet} column source for the main table
-     * @param overflowRowSetSource The {@link TrackingMutableRowSet} column source for the overflow table
-     * @param rowSet The result {@link TrackingMutableRowSet} of visible keys to update
-     * @param rowRedirection The result {@link MutableRowRedirection} (from state first keys to state slots) to update
+     * @param rowSetSource The {@link TrackingWritableRowSet} column source for the main table
+     * @param overflowRowSetSource The {@link TrackingWritableRowSet} column source for the overflow table
+     * @param rowSet The result {@link TrackingWritableRowSet} of visible keys to update
+     * @param rowRedirection The result {@link WritableRowRedirection} (from state first keys to state slots) to update
      * @param modifiedColumnSetProducer The {@link ModifiedColumnSetProducer} to use for computing the downstream
      *        {@link ModifiedColumnSet}
      * @return The result {@link Listener.Update}
      */
-    final Listener.Update makeUpdateFromStates(@NotNull final ObjectArraySource<TrackingMutableRowSet> rowSetSource,
-            @NotNull final ObjectArraySource<TrackingMutableRowSet> overflowRowSetSource,
-            @NotNull final MutableRowSet rowSet,
-            @NotNull final MutableRowRedirection rowRedirection,
+    final Listener.Update makeUpdateFromStates(@NotNull final ObjectArraySource<TrackingWritableRowSet> rowSetSource,
+            @NotNull final ObjectArraySource<TrackingWritableRowSet> overflowRowSetSource,
+            @NotNull final WritableRowSet rowSet,
+            @NotNull final WritableRowRedirection rowRedirection,
             @NotNull final ModifiedColumnSetProducer modifiedColumnSetProducer) {
         // First pass: Removes are handled on their own, because if the key moved to a new state we may reinsert it
         final RowSetBuilderRandom removedBuilder = RowSetFactory.builderRandom();
@@ -596,7 +596,7 @@ class IncrementalByAggregationUpdateTracker {
         final RowSet removed = removedBuilder.build();
         final RowSet modified = modifiedBuilder.build();
 
-        // Update the result TrackingMutableRowSet
+        // Update the result TrackingWritableRowSet
         rowSet.remove(removed);
         RowSetShiftUtils.apply(shiftData, rowSet);
         rowSet.insert(added);
@@ -606,9 +606,9 @@ class IncrementalByAggregationUpdateTracker {
                 modifiedColumnSetProducer.produce(someKeyHasAddsOrRemoves, someKeyHasModifies));
     }
 
-    private static TrackingMutableRowSet slotToRowSet(
-            @NotNull final ObjectArraySource<TrackingMutableRowSet> rowSetSource,
-            @NotNull final ObjectArraySource<TrackingMutableRowSet> overflowRowSetSource,
+    private static TrackingWritableRowSet slotToRowSet(
+            @NotNull final ObjectArraySource<TrackingWritableRowSet> rowSetSource,
+            @NotNull final ObjectArraySource<TrackingWritableRowSet> overflowRowSetSource,
             final int slot) {
         return IncrementalChunkedByAggregationStateManager.isOverflowLocation(slot)
                 ? overflowRowSetSource

@@ -14,7 +14,7 @@ public class RowSetShiftUtils {
      * @param rowSet The {@link RowSet} to shift
      * @return {@code rowSet}
      */
-    public static MutableRowSet apply(RowSetShiftData shiftData, final MutableRowSet rowSet) {
+    public static WritableRowSet apply(RowSetShiftData shiftData, final WritableRowSet rowSet) {
         final RowSetBuilderSequential toRemove = RowSetFactory.builderSequential();
         final RowSetBuilderSequential toInsert = RowSetFactory.builderSequential();
         try (final RowSequence.Iterator rsIt = rowSet.getRowSequenceIterator()) {
@@ -48,7 +48,7 @@ public class RowSetShiftUtils {
      * @param rowSet The {@link RowSet} to shift
      * @return {@code rowSet}
      */
-    public static RowSet unapply(RowSetShiftData shiftData, final MutableRowSet rowSet) {
+    public static RowSet unapply(RowSetShiftData shiftData, final WritableRowSet rowSet) {
         final RowSetBuilderSequential toRemove = RowSetFactory.builderSequential();
         final RowSetBuilderSequential toInsert = RowSetFactory.builderSequential();
         try (final RowSequence.Iterator rsIt = rowSet.getRowSequenceIterator()) {
@@ -76,7 +76,7 @@ public class RowSetShiftUtils {
     }
 
     /**
-     * This method creates two parallel TrackingMutableRowSet structures that contain postShiftIndex keys affected by
+     * This method creates two parallel TrackingWritableRowSet structures that contain postShiftIndex keys affected by
      * shifts. The two Indexes have the same size. An element at position k in the first rowSet is the pre-shift key for
      * the same row whose post-shift key is at position k in the second rowSet.
      *

@@ -5,10 +5,10 @@ package io.deephaven.engine.v2;
 
 import io.deephaven.base.verify.Require;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.Context;
 import io.deephaven.engine.table.SharedContext;
-import io.deephaven.engine.rowset.MutableRowSet;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -128,7 +128,7 @@ class IncrementalChunkedNaturalJoinStateManager
     private final ArrayBackedColumnSource<?> [] overflowKeySources;
     // the location of the next key in an overflow bucket
     private final IntegerArraySource overflowOverflowLocationSource = new IntegerArraySource();
-    // the overflow buckets for the right TrackingMutableRowSet
+    // the overflow buckets for the right TrackingWritableRowSet
     @ReplicateHashTable.OverflowStateColumnSource
     // @StateColumnSourceType@ from LongArraySource
     private final LongArraySource overflowRightRowSetSource
@@ -155,14 +155,14 @@ class IncrementalChunkedNaturalJoinStateManager
     // however, for inactive states, we must store the complete rowSet value, so that we can remove values from it in
     // case it does become active at some point.  If we have duplicate right hand side values, we store a reference
     // into this table
-    private final ObjectArraySource<MutableRowSet> rightRowSetStorage;
+    private final ObjectArraySource<WritableRowSet> rightRowSetStorage;
     private int nextRightIndexLocation;
-    private final MutableRowSet freeRightRowSetLocations = RowSetFactory.empty();
+    private final WritableRowSet freeRightRowSetLocations = RowSetFactory.empty();
 
     // we always store left rowSet values parallel to the keys; we may want to optimize for single left indices to avoid
     // object allocation, but we do have fairly efficient single range indices at this point
-    private final ObjectArraySource<MutableRowSet> leftRowSetSource;
-    private final ObjectArraySource<MutableRowSet> overflowLeftRowSetource;
+    private final ObjectArraySource<WritableRowSet> leftRowSetSource;
+    private final ObjectArraySource<WritableRowSet> overflowLeftRowSetource;
 
     // we must maintain our cookie for modified state tracking
     private final LongArraySource modifiedTrackerCookieSource;
@@ -213,9 +213,9 @@ class IncrementalChunkedNaturalJoinStateManager
         // endmixin rehash
 
         // region constructor
-        rightRowSetStorage = new ObjectArraySource<>(MutableRowSet.class);
-        leftRowSetSource = new ObjectArraySource<>(MutableRowSet.class);
-        overflowLeftRowSetource = new ObjectArraySource<>(MutableRowSet.class);
+        rightRowSetStorage = new ObjectArraySource<>(WritableRowSet.class);
+        leftRowSetSource = new ObjectArraySource<>(WritableRowSet.class);
+        overflowLeftRowSetource = new ObjectArraySource<>(WritableRowSet.class);
         modifiedTrackerCookieSource = new LongArraySource();
         overflowModifiedTrackerCookieSource = new LongArraySource();
         // endregion constructor
@@ -309,7 +309,7 @@ class IncrementalChunkedNaturalJoinStateManager
     }
 
     private void addLeftIndex(long tableLocation, long keyToAdd) {
-        final MutableRowSet rowSet = leftRowSetSource.get(tableLocation);
+        final WritableRowSet rowSet = leftRowSetSource.get(tableLocation);
         if (rowSet == null) {
             leftRowSetSource.set(tableLocation, RowSetFactory.fromKeys(keyToAdd));
         } else {
@@ -355,7 +355,7 @@ class IncrementalChunkedNaturalJoinStateManager
         }
         else if (isDuplicateRightIndex(existingRightIndex)) {
             final long rightIndexSlot = getRightIndexSlot(existingRightIndex);
-            final MutableRowSet rowSetToUpdate = rightRowSetStorage.getUnsafe(rightIndexSlot);
+            final WritableRowSet rowSetToUpdate = rightRowSetStorage.getUnsafe(rightIndexSlot);
             rowSetToUpdate.insert(keyToAdd);
         } else {
             final long rightIndexSlot = allocateRightIndexSlot();
@@ -379,7 +379,7 @@ class IncrementalChunkedNaturalJoinStateManager
             rightRowSetSource.set(tableLocation, shiftedKey);
         } else {
             if (!isDuplicateRightIndex(existingRightIndex)) {
-                throw Assert.statementNeverExecuted("Existing Right TrackingMutableRowSet: " + existingRightIndex + ", shiftedKey" + shiftedKey + ", shiftDelta=" + shiftDelta + ", key=" + keyString(tableLocation));
+                throw Assert.statementNeverExecuted("Existing Right TrackingWritableRowSet: " + existingRightIndex + ", shiftedKey" + shiftedKey + ", shiftDelta=" + shiftDelta + ", key=" + keyString(tableLocation));
             }
 
             shiftDuplicateRightIndex(shiftedKey, shiftDelta, existingRightIndex);
@@ -387,7 +387,7 @@ class IncrementalChunkedNaturalJoinStateManager
     }
 
     private void shiftLeftIndex(long tableLocation, long shiftedKey, long shiftDelta) {
-        final MutableRowSet existingLeftRowSet = leftRowSetSource.get(tableLocation);
+        final WritableRowSet existingLeftRowSet = leftRowSetSource.get(tableLocation);
         final long sizeBefore = existingLeftRowSet.size();
         existingLeftRowSet.remove(shiftedKey - shiftDelta);
         existingLeftRowSet.insert(shiftedKey);
@@ -395,7 +395,7 @@ class IncrementalChunkedNaturalJoinStateManager
     }
 
     private void shiftLeftIndexOverflow(long overflowLocation, long shiftedKey, long shiftDelta) {
-        final MutableRowSet existingLeftRowSet = overflowLeftRowSetource.get(overflowLocation);
+        final WritableRowSet existingLeftRowSet = overflowLeftRowSetource.get(overflowLocation);
         final long sizeBefore = existingLeftRowSet.size();
         existingLeftRowSet.remove(shiftedKey - shiftDelta);
         existingLeftRowSet.insert(shiftedKey);
@@ -422,22 +422,22 @@ class IncrementalChunkedNaturalJoinStateManager
 
     private void shiftDuplicateRightIndex(long shiftedKey, long shiftDelta, long existingRightIndex) {
         if (!isDuplicateRightIndex(existingRightIndex)) {
-            throw Assert.statementNeverExecuted("Existing Right TrackingMutableRowSet: " + existingRightIndex + ", shiftedKey" + shiftedKey + ", shiftDelta=" + shiftDelta);
+            throw Assert.statementNeverExecuted("Existing Right TrackingWritableRowSet: " + existingRightIndex + ", shiftedKey" + shiftedKey + ", shiftDelta=" + shiftDelta);
         }
 
         final long rightIndexSlot = getRightIndexSlot(existingRightIndex);
-        final MutableRowSet rowSetToUpdate = rightRowSetStorage.get(rightIndexSlot);
+        final WritableRowSet rowSetToUpdate = rightRowSetStorage.get(rightIndexSlot);
         rowSetToUpdate.remove(shiftedKey - shiftDelta);
         rowSetToUpdate.insert(shiftedKey);
     }
 
     private void removeFromDuplicateIndex(LongArraySource rowSetSource, long location, long keyToRemove, long existingRightIndex) {
         if (!isDuplicateRightIndex(existingRightIndex)) {
-            throw Assert.statementNeverExecuted("Existing Right TrackingMutableRowSet: " + existingRightIndex + ", keyToRemove=" + keyToRemove);
+            throw Assert.statementNeverExecuted("Existing Right TrackingWritableRowSet: " + existingRightIndex + ", keyToRemove=" + keyToRemove);
         }
 
         final long rightIndexSlot = getRightIndexSlot(existingRightIndex);
-        final MutableRowSet rowSetToUpdate = rightRowSetStorage.get(rightIndexSlot);
+        final WritableRowSet rowSetToUpdate = rightRowSetStorage.get(rightIndexSlot);
         rowSetToUpdate.remove(keyToRemove);
         if (rowSetToUpdate.isEmpty()) {
             throw Assert.statementNeverExecuted();
@@ -449,7 +449,7 @@ class IncrementalChunkedNaturalJoinStateManager
     }
 
     private void addLeftIndexOverflow(long overflowLocation, long keyToAdd) {
-        final MutableRowSet rowSet = overflowLeftRowSetource.get(overflowLocation);
+        final WritableRowSet rowSet = overflowLeftRowSetource.get(overflowLocation);
         if (rowSet == null) {
             overflowLeftRowSetource.set(overflowLocation, RowSetFactory.fromKeys(keyToAdd));
         } else {
@@ -464,7 +464,7 @@ class IncrementalChunkedNaturalJoinStateManager
         }
         else if (isDuplicateRightIndex(existingRightIndex)) {
             final long rightIndexSlot = getRightIndexSlot(existingRightIndex);
-            final MutableRowSet rowSetToUpdate = rightRowSetStorage.get(rightIndexSlot);
+            final WritableRowSet rowSetToUpdate = rightRowSetStorage.get(rightIndexSlot);
             rowSetToUpdate.insert(keyToAdd);
         } else {
             final long rightIndexSlot = allocateRightIndexSlot();
@@ -507,13 +507,13 @@ class IncrementalChunkedNaturalJoinStateManager
 
     void compactAll() {
         for (int ii = 0; ii < tableSize; ++ii) {
-            final MutableRowSet rowSet = leftRowSetSource.get(ii);
+            final WritableRowSet rowSet = leftRowSetSource.get(ii);
             if (rowSet != null) {
                 rowSet.compact();
             }
         }
         for (int ii = 0; ii < nextOverflowLocation; ++ii) {
-            final MutableRowSet rowSet = overflowLeftRowSetource.get(ii);
+            final WritableRowSet rowSet = overflowLeftRowSetource.get(ii);
             if (rowSet != null) {
                 rowSet.compact();
             }
@@ -1200,7 +1200,7 @@ class IncrementalChunkedNaturalJoinStateManager
                     rightRowSetSource.set(newHashLocation, stateValueToMove);
                     rightRowSetSource.set(oldHashLocation, EMPTY_RIGHT_VALUE);
                     // region rehash move values
-                    final MutableRowSet oldLeftRowSetValue = leftRowSetSource.get(oldHashLocation);
+                    final WritableRowSet oldLeftRowSetValue = leftRowSetSource.get(oldHashLocation);
                     leftRowSetSource.set(newHashLocation, oldLeftRowSetValue);
                     leftRowSetSource.set(oldHashLocation, null);
                     moveModifiedSlot(modifiedSlotTracker, oldHashLocation, newHashLocation);
@@ -2008,7 +2008,7 @@ class IncrementalChunkedNaturalJoinStateManager
     }
 
     // region extraction functions
-    MutableRowRedirection buildRowRedirectionFromRedirections(QueryTable leftTable, boolean exactMatch, LongArraySource leftRedirections, JoinControl.RedirectionType redirectionType) {
+    WritableRowRedirection buildRowRedirectionFromRedirections(QueryTable leftTable, boolean exactMatch, LongArraySource leftRedirections, JoinControl.RedirectionType redirectionType) {
         return buildRowRedirection(leftTable, exactMatch, leftRedirections::getUnsafe, redirectionType);
     }
 

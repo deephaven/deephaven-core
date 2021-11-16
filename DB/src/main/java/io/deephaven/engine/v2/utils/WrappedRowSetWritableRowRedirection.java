@@ -12,18 +12,18 @@ import io.deephaven.engine.chunk.Attributes.RowKeys;
 import io.deephaven.engine.chunk.util.LongChunkAppender;
 import io.deephaven.engine.chunk.util.LongChunkIterator;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.TrackingMutableRowSet;
+import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import org.jetbrains.annotations.NotNull;
 
-public class WrappedRowSetMutableRowRedirection implements MutableRowRedirection {
+public class WrappedRowSetWritableRowRedirection implements WritableRowRedirection {
 
     /**
-     * {@link TrackingMutableRowSet} used to map from outer key (position in the rowSet) to inner key.
+     * {@link TrackingWritableRowSet} used to map from outer key (position in the rowSet) to inner key.
      */
     private final TrackingRowSet wrappedRowSet;
 
-    public WrappedRowSetMutableRowRedirection(final TrackingRowSet wrappedRowSet) {
+    public WrappedRowSetWritableRowRedirection(final TrackingRowSet wrappedRowSet) {
         this.wrappedRowSet = wrappedRowSet;
     }
 
@@ -82,7 +82,7 @@ public class WrappedRowSetMutableRowRedirection implements MutableRowRedirection
     @Override
     public ChunkSource.FillContext makeFillContext(final int chunkCapacity, final SharedContext sharedContext) {
         // NB: No need to implement sharing at this level. RedirectedColumnSource uses a SharedContext to share
-        // MutableRowRedirection lookup results.
+        // WritableRowRedirection lookup results.
         return new FillContext(chunkCapacity);
     }
 
@@ -110,7 +110,7 @@ public class WrappedRowSetMutableRowRedirection implements MutableRowRedirection
     }
 
     /*
-     * TODO: Uncomment and test this if we ever start using WrappedRowSetMutableRowRedirection for unordered reads.
+     * TODO: Uncomment and test this if we ever start using WrappedRowSetWritableRowRedirection for unordered reads.
      * 
      * @Override public void fillChunkUnordered(@NotNull final MutableChunkSource.FillContext fillContext,
      * 

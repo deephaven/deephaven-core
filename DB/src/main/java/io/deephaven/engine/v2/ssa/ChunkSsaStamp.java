@@ -3,7 +3,7 @@ package io.deephaven.engine.v2.ssa;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.Attributes.RowKeys;
 import io.deephaven.engine.chunk.Attributes.Values;
-import io.deephaven.engine.v2.utils.MutableRowRedirection;
+import io.deephaven.engine.v2.utils.WritableRowRedirection;
 import io.deephaven.engine.v2.utils.RowRedirection;
 import io.deephaven.engine.rowset.RowSetBuilderRandom;
 
@@ -61,19 +61,19 @@ public interface ChunkSsaStamp {
 
     void processRemovals(Chunk<Values> leftStampValues, LongChunk<RowKeys> leftStampKeys,
             Chunk<? extends Values> rightStampChunk, LongChunk<Attributes.RowKeys> rightKeys,
-            WritableLongChunk<Attributes.RowKeys> priorRedirections, MutableRowRedirection rowRedirection,
+            WritableLongChunk<Attributes.RowKeys> priorRedirections, WritableRowRedirection rowRedirection,
             RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch);
 
     void processInsertion(Chunk<Values> leftStampValues, LongChunk<Attributes.RowKeys> leftStampKeys,
-            Chunk<? extends Values> rightStampChunk, LongChunk<RowKeys> rightKeys, Chunk<Values> nextRightValue,
-            MutableRowRedirection rowRedirection, RowSetBuilderRandom modifiedBuilder, boolean endsWithLastValue,
-            boolean disallowExactMatch);
+                          Chunk<? extends Values> rightStampChunk, LongChunk<RowKeys> rightKeys, Chunk<Values> nextRightValue,
+                          WritableRowRedirection rowRedirection, RowSetBuilderRandom modifiedBuilder, boolean endsWithLastValue,
+                          boolean disallowExactMatch);
 
     int findModified(int first, Chunk<Values> leftStampValues, LongChunk<Attributes.RowKeys> leftStampKeys,
             RowRedirection rowRedirection, Chunk<? extends Values> rightStampChunk,
             LongChunk<RowKeys> rightStampIndices, RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch);
 
     void applyShift(Chunk<Values> leftStampValues, LongChunk<Attributes.RowKeys> leftStampKeys,
-            Chunk<? extends Values> rightStampChunk, LongChunk<RowKeys> rightStampKeys, long shiftDelta,
-            MutableRowRedirection rowRedirection, boolean disallowExactMatch);
+                    Chunk<? extends Values> rightStampChunk, LongChunk<RowKeys> rightStampKeys, long shiftDelta,
+                    WritableRowRedirection rowRedirection, boolean disallowExactMatch);
 }

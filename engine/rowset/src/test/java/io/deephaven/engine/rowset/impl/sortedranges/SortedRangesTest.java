@@ -5,8 +5,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.impl.OrderedLongSet;
 import io.deephaven.engine.rowset.impl.OrderedLongSetBuilderSequential;
-import io.deephaven.engine.rowset.impl.TrackingMutableRowSetImpl;
-import io.deephaven.engine.v2.utils.*;
+import io.deephaven.engine.rowset.impl.TrackingWritableRowSetImpl;
 import io.deephaven.engine.rowset.impl.rsp.RspBitmap;
 import io.deephaven.engine.rowset.impl.singlerange.SingleRange;
 import io.deephaven.test.types.OutOfBandTest;
@@ -1651,7 +1650,7 @@ public class SortedRangesTest {
         final boolean r = sar.invertOnNew(ixrit, b, maxPosition);
         final String m = "maxPosition==" + maxPosition;
         assertTrue(m, r);
-        final RowSet rix = new TrackingMutableRowSetImpl(b.getTreeIndexImpl());
+        final RowSet rix = new TrackingWritableRowSetImpl(b.getTreeIndexImpl());
         final RowSet.Iterator rit = rix.iterator();
         while (ixit.hasNext()) {
             final long ixv = ixit.nextLong();
@@ -2602,7 +2601,7 @@ public class SortedRangesTest {
                     for (long end = start; end <= last + 1; ++end) {
                         final String m4 = m3 + " && end==" + end;
                         try (final RowSequence rs = sr.getRowSequenceByKeyRange(start, end);
-                                final RowSet ix = new TrackingMutableRowSetImpl(sr.ixSubindexByKeyOnNew(start, end))) {
+                                final RowSet ix = new TrackingWritableRowSetImpl(sr.ixSubindexByKeyOnNew(start, end))) {
                             assertEquals(m4, ix.firstRowKey(), rs.firstRowKey());
                             assertEquals(m4, ix.lastRowKey(), rs.lastRowKey());
                             assertEquals(m4, ix.size(), rs.size());
@@ -2623,7 +2622,7 @@ public class SortedRangesTest {
                                     final long rStart = Math.min(rs.lastRowKey(), Math.max(rs2Start, rs.firstRowKey()));
                                     final long rEnd = Math.max(rs.firstRowKey(), Math.min(rs2End, rs.lastRowKey()));
                                     final RowSet ix2 =
-                                            new TrackingMutableRowSetImpl(sr.ixSubindexByKeyOnNew(rStart, rEnd));
+                                            new TrackingWritableRowSetImpl(sr.ixSubindexByKeyOnNew(rStart, rEnd));
                                     checkOkAgainstIndex(m5, rs2, ix2);
                                 }
                             }
@@ -2675,7 +2674,7 @@ public class SortedRangesTest {
                             final RowSequence rs = rsIt.getNextRowSequenceWithLength(step);
                             final long rsCard = Math.min(step, rsSrCard - accum);
                             assertEquals(m3, rsCard, rs.size());
-                            final RowSet subSr = new TrackingMutableRowSetImpl(
+                            final RowSet subSr = new TrackingWritableRowSetImpl(
                                     sr.ixSubindexByPosOnNew(dStart + accum, dStart + accum + rsCard /* exclusive */));
                             assertEquals(m3, rsCard, subSr.size());
                             checkOkAgainstIndex(m3, rs, subSr);
@@ -2721,7 +2720,7 @@ public class SortedRangesTest {
                                 break;
                             }
                             final long rsCard = Math.min(1 + rand.nextInt(step), rsSrCard - accum);
-                            final RowSet subSr = new TrackingMutableRowSetImpl(
+                            final RowSet subSr = new TrackingWritableRowSetImpl(
                                     sr.ixSubindexByPosOnNew(dStart + accum, dStart + accum + rsCard /* exclusive */));
                             final long last = subSr.lastRowKey();
                             final long target;
@@ -2897,9 +2896,9 @@ public class SortedRangesTest {
         sr = sr.add(5);
         try (final RowSequence.Iterator rsIt = sr.getRowSequenceIterator()) {
             RowSequence rs = rsIt.getNextRowSequenceWithLength(3);
-            checkOkAgainstIndex("", rs, new TrackingMutableRowSetImpl(sr.subRangesByKey(1, 3)));
+            checkOkAgainstIndex("", rs, new TrackingWritableRowSetImpl(sr.subRangesByKey(1, 3)));
             rs = rsIt.getNextRowSequenceWithLength(4);
-            checkOkAgainstIndex("", rs, new TrackingMutableRowSetImpl(sr.subRangesByKey(5, 5)));
+            checkOkAgainstIndex("", rs, new TrackingWritableRowSetImpl(sr.subRangesByKey(5, 5)));
         }
     }
 
@@ -2912,9 +2911,9 @@ public class SortedRangesTest {
         sr = sr.add(20);
         try (final RowSequence.Iterator rsIt = sr.getRowSequenceIterator()) {
             RowSequence rs = rsIt.getNextRowSequenceWithLength(3);
-            checkOkAgainstIndex("", rs, new TrackingMutableRowSetImpl(sr.subRangesByKey(1, 3)));
+            checkOkAgainstIndex("", rs, new TrackingWritableRowSetImpl(sr.subRangesByKey(1, 3)));
             rs = rsIt.getNextRowSequenceWithLength(9);
-            checkOkAgainstIndex("", rs, new TrackingMutableRowSetImpl(sr.subRangesByKey(7, 20)));
+            checkOkAgainstIndex("", rs, new TrackingWritableRowSetImpl(sr.subRangesByKey(7, 20)));
         }
     }
 

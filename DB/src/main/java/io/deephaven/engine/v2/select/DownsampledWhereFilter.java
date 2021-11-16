@@ -4,7 +4,7 @@
 
 package io.deephaven.engine.v2.select;
 
-import io.deephaven.engine.rowset.MutableRowSet;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -88,7 +88,7 @@ public class DownsampledWhereFilter extends WhereFilterImpl {
     public void init(TableDefinition tableDefinition) {}
 
     @Override
-    public MutableRowSet filter(RowSet selection, RowSet fullSet, Table table, boolean usePrev) {
+    public WritableRowSet filter(RowSet selection, RowSet fullSet, Table table, boolean usePrev) {
         if (DynamicNode.isDynamicAndIsRefreshing(table)) {
             throw new UnsupportedOperationException("Can not do a DownsampledWhereFilter on a refreshing table!");
         }

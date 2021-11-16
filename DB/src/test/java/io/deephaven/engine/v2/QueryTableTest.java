@@ -1033,7 +1033,7 @@ public class QueryTableTest extends QueryTableTestBase {
         assertEquals(0, (long) licsr.get(2));
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            bigTable.getRowSet().mutableCast().insert(Long.MAX_VALUE);
+            bigTable.getRowSet().writableCast().insert(Long.MAX_VALUE);
             bigTable.notifyListeners(i(Long.MAX_VALUE), i(), i());
         });
 
@@ -1135,7 +1135,7 @@ public class QueryTableTest extends QueryTableTestBase {
             builder.shiftRange(1 << 29, 1 << 30, 1024);
             downstream.shifted = builder.build();
 
-            try (final MutableRowSet rowSetCopy = table.getRowSet().copy()) {
+            try (final WritableRowSet rowSetCopy = table.getRowSet().copy()) {
                 RowSetShiftUtils.apply(downstream.shifted, rowSetCopy);
                 TstUtils.removeRows(table, table.getRowSet());
                 TstUtils.addToTable(table, rowSetCopy, c("Sentinel", 1));
@@ -3001,7 +3001,7 @@ public class QueryTableTest extends QueryTableTestBase {
         // LogicalClock.DEFAULT.currentStep()
         // assertion error when notifying from an uncoalesced table.
 
-        final TrackingMutableRowSet parentRowSet = RowSetFactory.empty().toTracking();
+        final TrackingWritableRowSet parentRowSet = RowSetFactory.empty().toTracking();
         final Supplier<QueryTable> supplier = () -> TstUtils.testRefreshingTable(parentRowSet);
 
         final UncoalescedTable table = new UncoalescedTable(

@@ -4,7 +4,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.rowset.TrackingMutableRowSet;
+import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.time.DateTimeUtils;
@@ -104,7 +104,7 @@ public class TailInitializationFilter {
             }
             return true;
         });
-        final TrackingMutableRowSet resultRowSet = builder.build().toTracking();
+        final TrackingWritableRowSet resultRowSet = builder.build().toTracking();
         final QueryTable result = new QueryTable(table.getDefinition(), resultRowSet, table.getColumnSourceMap());
         if (table.isRefreshing()) {
             // TODO: Assert AddOnly in T+, propagate AddOnly in Treasure

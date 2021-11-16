@@ -4,7 +4,7 @@
 
 package io.deephaven.engine.v2.sources.regioned;
 
-import io.deephaven.engine.rowset.MutableRowSet;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -126,7 +126,7 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
     }
 
     @Override
-    public synchronized MutableRowSet refresh() {
+    public synchronized WritableRowSet refresh() {
         final RowSetBuilderSequential addedIndexBuilder = RowSetFactory.builderSequential();
         for (final IncludedTableLocationEntry entry : orderedIncludedTableLocations) { // Ordering matters, since we're
                                                                                        // using a sequential builder.
@@ -262,7 +262,7 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
         private final List<ColumnLocationState> columnLocationStates = new ArrayList<>();
 
         /**
-         * TrackingMutableRowSet in the region's space, not the table's space.
+         * TrackingWritableRowSet in the region's space, not the table's space.
          */
         private RowSet indexAtLastUpdate;
 
@@ -325,7 +325,7 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
                 if (!indexAtLastUpdate.subsetOf(updateIndex)) { // Bad change
                     // noinspection ThrowableNotThrown
                     Assert.statementNeverExecuted(
-                            "TrackingMutableRowSet keys removed at location " + location + ": "
+                            "TrackingWritableRowSet keys removed at location " + location + ": "
                                     + indexAtLastUpdate.minus(updateIndex));
                 }
                 if (indexAtLastUpdate.size() == updateIndex.size()) {
@@ -446,7 +446,7 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
                 if (current == null) {
                     columnPartitionToIndex.put(columnPartitionValue, locationAddedIndexInTable.copy());
                 } else {
-                    current.mutableCast().insert(locationAddedIndexInTable);
+                    current.writableCast().insert(locationAddedIndexInTable);
                 }
             }
         }

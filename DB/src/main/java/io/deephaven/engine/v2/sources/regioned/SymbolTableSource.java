@@ -3,7 +3,7 @@ package io.deephaven.engine.v2.sources.regioned;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.v2.QueryTable;
-import io.deephaven.engine.rowset.TrackingMutableRowSet;
+import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import org.jetbrains.annotations.NotNull;
 
@@ -55,7 +55,7 @@ public interface SymbolTableSource<SYMBOL_TYPE> extends ColumnSource<SYMBOL_TYPE
      * <p>
      * The result will be refreshing if {@code table} {@link Table#isRefreshing() is refreshing}.
      *
-     * @param sourceTable The {@link QueryTable} whose {@link TrackingMutableRowSet} keys must be mappable via the
+     * @param sourceTable The {@link QueryTable} whose {@link TrackingWritableRowSet} keys must be mappable via the
      *        result {@link Table}'s identifier column
      * @param useLookupCaching Hint whether symbol lookups performed to generate the symbol table should apply caching.
      *        Implementations may ignore this hint.

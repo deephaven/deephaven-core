@@ -4,7 +4,7 @@ import static io.deephaven.engine.chunk.Attributes.OrderedRowKeyRanges;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.impl.TrackingMutableRowSetImpl;
+import io.deephaven.engine.rowset.impl.TrackingWritableRowSetImpl;
 import io.deephaven.util.datastructures.LongAbortableConsumer;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.impl.RowSequenceAsChunkImpl;
@@ -158,7 +158,7 @@ public class RspRowSequence extends RowSequenceAsChunkImpl {
     @Override
     public RowSet asRowSet() {
         final RspBitmap newArr = new RspBitmap(arr, startIdx, startOffset, endIdx, endOffset);
-        return new TrackingMutableRowSetImpl(newArr);
+        return new TrackingWritableRowSetImpl(newArr);
     }
 
     @Override
@@ -245,7 +245,7 @@ public class RspRowSequence extends RowSequenceAsChunkImpl {
         return true;
     }
 
-    // Note unlike RowSet.Iterator, this Iterator will /not/ automatically release its underlying TrackingMutableRowSet
+    // Note unlike RowSet.Iterator, this Iterator will /not/ automatically release its underlying TrackingWritableRowSet
     // representation
     // when iteration is exhausted. The API for OK.Iterator makes that impossible.
     static class Iterator implements RowSequence.Iterator {

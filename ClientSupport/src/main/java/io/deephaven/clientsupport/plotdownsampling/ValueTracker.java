@@ -1,6 +1,6 @@
 package io.deephaven.clientsupport.plotdownsampling;
 
-import io.deephaven.engine.rowset.MutableRowSet;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.util.QueryConstants;
@@ -108,7 +108,7 @@ public abstract class ValueTracker {
      * @param valuesChunk the chunk that we're currently examining
      * @param indexInChunk the rowSet in the chunk that we're currently examining
      */
-    public abstract void append(int offset, long rowIndex, Chunk<? extends Attributes.Values> valuesChunk, int indexInChunk, @Nullable MutableRowSet nulls);
+    public abstract void append(int offset, long rowIndex, Chunk<? extends Attributes.Values> valuesChunk, int indexInChunk, @Nullable WritableRowSet nulls);
 
     /**
      * Indicates that a row was removed from the original table being downsampled. If that rowSet was previously
@@ -151,7 +151,7 @@ public abstract class ValueTracker {
      * @param valuesChunk the chunk that we're currently examining
      * @param chunkIndex the rowSet in the chunk that we're currently examining
      */
-    public abstract void update(int offset, long rowIndex, Chunk<? extends Attributes.Values> valuesChunk, int chunkIndex, @Nullable MutableRowSet nulls);
+    public abstract void update(int offset, long rowIndex, Chunk<? extends Attributes.Values> valuesChunk, int chunkIndex, @Nullable WritableRowSet nulls);
 
     /**
      * Transforms the given BucketState.offset into the position in the array sources that represents the min value

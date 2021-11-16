@@ -1,10 +1,10 @@
 package io.deephaven.engine.v2.select;
 
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.tables.SortingOrder;
 import io.deephaven.engine.v2.SortedColumnsAttribute;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.rowset.MutableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 
 import java.math.BigDecimal;
@@ -75,7 +75,7 @@ public abstract class AbstractRangeFilter extends WhereFilterImpl {
     }
 
     @Override
-    public MutableRowSet filter(RowSet selection, RowSet fullSet, Table table, boolean usePrev) {
+    public WritableRowSet filter(RowSet selection, RowSet fullSet, Table table, boolean usePrev) {
         final ColumnSource columnSource = table.getColumnSource(columnName);
         final Optional<SortingOrder> orderForColumn = SortedColumnsAttribute.getOrderForColumn(table, columnName);
         if (orderForColumn.isPresent()) {
@@ -88,7 +88,7 @@ public abstract class AbstractRangeFilter extends WhereFilterImpl {
         return ChunkFilter.applyChunkFilter(selection, columnSource, usePrev, chunkFilter);
     }
 
-    abstract MutableRowSet binarySearch(RowSet selection, ColumnSource columnSource, boolean usePrev, boolean reverse);
+    abstract WritableRowSet binarySearch(RowSet selection, ColumnSource columnSource, boolean usePrev, boolean reverse);
 
     @Override
     public boolean isSimpleFilter() {

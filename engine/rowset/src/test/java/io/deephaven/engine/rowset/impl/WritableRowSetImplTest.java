@@ -51,7 +51,7 @@ import static java.lang.Math.max;
 import static java.lang.Math.min;
 
 @Category(OutOfBandTest.class)
-public class MutableRowSetImplTest extends TestCase {
+public class WritableRowSetImplTest extends TestCase {
 
     private static final boolean debugDetail = false;
     private final long[][] KEYS = new long[][] {
@@ -85,7 +85,7 @@ public class MutableRowSetImplTest extends TestCase {
     }
 
     @NotNull
-    protected MutableRowSet getSortedIndex(long... keys) {
+    protected WritableRowSet getSortedIndex(long... keys) {
         final RowSetBuilderRandom treeIndexBuilder = RowSetFactory.builderRandom();
         for (long key : keys) {
             treeIndexBuilder.addKey(key);
@@ -94,8 +94,8 @@ public class MutableRowSetImplTest extends TestCase {
     }
 
     @NotNull
-    protected final MutableRowSet fromTreeIndexImpl(@NotNull final OrderedLongSet orderedLongSet) {
-        return new MutableRowSetImpl(orderedLongSet);
+    protected final WritableRowSet fromTreeIndexImpl(@NotNull final OrderedLongSet orderedLongSet) {
+        return new WritableRowSetImpl(orderedLongSet);
     }
 
     public void testSimple() {
@@ -116,7 +116,7 @@ public class MutableRowSetImplTest extends TestCase {
     }
 
     public void testSerialize() throws IOException, ClassNotFoundException {
-        MutableRowSet rowSet = RowSetFactory.fromRange(0, 100);
+        WritableRowSet rowSet = RowSetFactory.fromRange(0, 100);
         RowSet copy = (RowSet) doSerDeser(rowSet);
         assertEquals(rowSet, copy);
         rowSet.insert(1000000);
@@ -214,7 +214,7 @@ public class MutableRowSetImplTest extends TestCase {
     }
 
     private static int getRefCount(@NotNull final Object rowSet) {
-        return ((MutableRowSetImpl) rowSet).refCount();
+        return ((WritableRowSetImpl) rowSet).refCount();
     }
 
     public void testSerializeRandomSize() throws IOException, ClassNotFoundException {
@@ -231,7 +231,7 @@ public class MutableRowSetImplTest extends TestCase {
     }
 
     public void testRange() {
-        final MutableRowSet index = RowSetFactory.empty();
+        final WritableRowSet index = RowSetFactory.empty();
         assertEquals(1, getRefCount(index));
         final RowSet range = index.subSetByPositionRange(0, 10);
         // The refCount of an empty RowSet is implementation dependant.
@@ -562,7 +562,7 @@ public class MutableRowSetImplTest extends TestCase {
     }
 
     private void testInsertionAlreadyThere(long... keys) {
-        final MutableRowSet rowSet = getSortedIndex(keys);
+        final WritableRowSet rowSet = getSortedIndex(keys);
         for (int i = 0; i < keys.length; i++) {
             final long preSize = rowSet.size();
             rowSet.insert(keys[i]);
@@ -593,7 +593,7 @@ public class MutableRowSetImplTest extends TestCase {
             notThere.add(10);
         }
         for (final TLongIterator iterator = notThere.iterator(); iterator.hasNext();) {
-            final MutableRowSet rowSet = getSortedIndex(keys);
+            final WritableRowSet rowSet = getSortedIndex(keys);
             final long key = iterator.next();
             rowSet.insert(key);
             final TLongArrayList al = new TLongArrayList(keys);
@@ -602,7 +602,7 @@ public class MutableRowSetImplTest extends TestCase {
             compareIndexAndKeyValues(rowSet, al.toArray());
         }
         for (int i = 1; i < notThere.size() + 1; i++) {
-            MutableRowSet rowSet = getSortedIndex(keys);
+            WritableRowSet rowSet = getSortedIndex(keys);
             int steps = 0;
             TLongArrayList al = new TLongArrayList(keys);
             for (final TLongIterator iterator = notThere.iterator(); iterator.hasNext();) {
@@ -715,7 +715,7 @@ public class MutableRowSetImplTest extends TestCase {
 
         rowSetBuilder1.addRange(8260, 33000);
 
-        final MutableRowSet idx = rowSetBuilder1.build();
+        final WritableRowSet idx = rowSetBuilder1.build();
 
         // Now try to force an overflow.
         final RowSetBuilderRandom rowSetBuilder2 = RowSetFactory.builderRandom();
@@ -910,8 +910,8 @@ public class MutableRowSetImplTest extends TestCase {
             subSet[ii] = generator.nextBoolean();
         }
 
-        final MutableRowSet fullRowSet = getSortedIndex(booleanSetToKeys(fullSet));
-        final MutableRowSet subRowSet = getSortedIndex(booleanSetToKeys(subSet));
+        final WritableRowSet fullRowSet = getSortedIndex(booleanSetToKeys(fullSet));
+        final WritableRowSet subRowSet = getSortedIndex(booleanSetToKeys(subSet));
 
         for (int iteration = 0; iteration < 100; ++iteration) {
             final String m2 = m1 + " && iteration==" + iteration;
@@ -1084,7 +1084,7 @@ public class MutableRowSetImplTest extends TestCase {
         final int maxRange = 20;
         final int maxValue = 1 << 24;
 
-        final MutableRowSet check = RowSetFactory.empty();
+        final WritableRowSet check = RowSetFactory.empty();
 
         final Random random = new Random(1);
 
@@ -1127,7 +1127,7 @@ public class MutableRowSetImplTest extends TestCase {
             final RowSet subsetA = builder2.build();
             subsetA.validate(m);
 
-            final MutableRowSet checkA = check.intersect(subsetA);
+            final WritableRowSet checkA = check.intersect(subsetA);
             checkA.validate(m);
             final RowSet checkB = check.minus(subsetA);
             checkB.validate(m);
@@ -1202,17 +1202,17 @@ public class MutableRowSetImplTest extends TestCase {
                 final RowSet rowSet = fromTreeIndexImpl(rhs.get());
                 final LongChunk<Attributes.OrderedRowKeys> asKeyIndicesChunk = rowSet.asRowKeyChunk();
 
-                final MutableRowSet expectedAfterInsert = fromTreeIndexImpl(lhs.get());
+                final WritableRowSet expectedAfterInsert = fromTreeIndexImpl(lhs.get());
                 expectedAfterInsert.validate(m);
                 expectedAfterInsert.insert(rowSet);
                 expectedAfterInsert.validate(m);
 
-                final MutableRowSet actualAfterInsert1 = fromTreeIndexImpl(lhs.get());
+                final WritableRowSet actualAfterInsert1 = fromTreeIndexImpl(lhs.get());
                 actualAfterInsert1.insert(asKeyIndicesChunk, 0, asKeyIndicesChunk.size());
                 actualAfterInsert1.validate(m);
                 assertEquals(m, expectedAfterInsert, actualAfterInsert1);
 
-                final MutableRowSet actualAfterInsert2 = fromTreeIndexImpl(lhs.get());
+                final WritableRowSet actualAfterInsert2 = fromTreeIndexImpl(lhs.get());
                 try (final WritableLongChunk<Attributes.OrderedRowKeys> toBeSliced =
                         WritableLongChunk.makeWritableChunk(asKeyIndicesChunk.size() + 2048)) {
                     toBeSliced.copyFromChunk(asKeyIndicesChunk, 0, 1024, asKeyIndicesChunk.size());
@@ -1221,16 +1221,16 @@ public class MutableRowSetImplTest extends TestCase {
                 actualAfterInsert2.validate(m);
                 assertEquals(m, expectedAfterInsert, actualAfterInsert2);
 
-                final MutableRowSet expectedAfterRemove = fromTreeIndexImpl(lhs.get());
+                final WritableRowSet expectedAfterRemove = fromTreeIndexImpl(lhs.get());
                 expectedAfterRemove.validate(m);
                 expectedAfterRemove.remove(rowSet);
 
-                final MutableRowSet actualAfterRemove1 = fromTreeIndexImpl(lhs.get());
+                final WritableRowSet actualAfterRemove1 = fromTreeIndexImpl(lhs.get());
                 actualAfterRemove1.remove(asKeyIndicesChunk, 0, asKeyIndicesChunk.size());
                 actualAfterRemove1.validate(m);
                 assertEquals(m, expectedAfterRemove, actualAfterRemove1);
 
-                final MutableRowSet actualAfterRemove2 = fromTreeIndexImpl(lhs.get());
+                final WritableRowSet actualAfterRemove2 = fromTreeIndexImpl(lhs.get());
                 try (final WritableLongChunk<Attributes.OrderedRowKeys> toBeSliced =
                         WritableLongChunk.makeWritableChunk(asKeyIndicesChunk.size() + 2048)) {
                     toBeSliced.copyFromChunk(asKeyIndicesChunk, 0, 1024, asKeyIndicesChunk.size());
@@ -1244,7 +1244,7 @@ public class MutableRowSetImplTest extends TestCase {
             for (final Supplier<OrderedLongSet> rhs : suppliers) {
                 final OrderedLongSet lhsOrderedLongSet = lhs.get();
                 if (lhsOrderedLongSet instanceof RspBitmap) {
-                    final MutableRowSet lhsRowSet = fromTreeIndexImpl(lhs.get());
+                    final WritableRowSet lhsRowSet = fromTreeIndexImpl(lhs.get());
                     final RowSet rhsRowSet = fromTreeIndexImpl(rhs.get());
 
                     lhsRowSet.insert(rhsRowSet);
@@ -1292,7 +1292,7 @@ public class MutableRowSetImplTest extends TestCase {
         for (int ii = 0; ii < 65; ++ii) {
             builder.addKey(ii * 2);
         }
-        final MutableRowSet rowSet = builder.build();
+        final WritableRowSet rowSet = builder.build();
         rowSet.validate();
         rowSet.insert(63);
         rowSet.validate();
@@ -1302,7 +1302,7 @@ public class MutableRowSetImplTest extends TestCase {
         for (int ii = 0; ii < 65; ++ii) {
             builder2.addKey(ii * 4);
         }
-        final MutableRowSet rowSet2 = builder2.build();
+        final WritableRowSet rowSet2 = builder2.build();
         rowSet2.validate();
         rowSet2.insertRange(125, 127);
         rowSet2.validate();
@@ -1312,7 +1312,7 @@ public class MutableRowSetImplTest extends TestCase {
         for (int ii = 0; ii < 65; ++ii) {
             builder3.addKey(ii * 4);
         }
-        final MutableRowSet rowSet3 = builder3.build();
+        final WritableRowSet rowSet3 = builder3.build();
         rowSet3.validate();
         for (int ii = 0; ii < 31; ++ii) {
             rowSet3.remove(ii * 4);
@@ -1417,7 +1417,7 @@ public class MutableRowSetImplTest extends TestCase {
         for (int ii = 0; ii < 32; ++ii) {
             result.addKey(3101 + ii * 2);
         }
-        final MutableRowSet idx = result.build();
+        final WritableRowSet idx = result.build();
 
         // we've got an rowSet which is split where we want it at this point
 
@@ -1435,13 +1435,13 @@ public class MutableRowSetImplTest extends TestCase {
         // we've got {3163,3200} now, each of them are in their own nodes
         System.out.println("Idx: " + idx);
 
-        final MutableRowSet idx2 = idx.copy();
+        final WritableRowSet idx2 = idx.copy();
 
         final RowSet rowSetToAdd = RowSetFactory.fromKeys(3164);
         idx.insert(rowSetToAdd);
         idx.validate();
 
-        final MutableRowSet rowSetToAdd2 = RowSetFactory.fromRange(3164, 3199);
+        final WritableRowSet rowSetToAdd2 = RowSetFactory.fromRange(3164, 3199);
         rowSetToAdd2.insert(idx2);
         rowSetToAdd2.validate();
 
@@ -1649,7 +1649,7 @@ public class MutableRowSetImplTest extends TestCase {
                 // System.out.println(value + " -> " + (value + rangeSize - 1));
             }
 
-            final RowSet prioRowSet = new MutableRowSetImpl(priorityQueueBuilder.getTreeIndexImpl());
+            final RowSet prioRowSet = new WritableRowSetImpl(priorityQueueBuilder.getTreeIndexImpl());
             final RowSet treeRowSet = treeBuilder.build();
 
             values.sort();
@@ -1739,7 +1739,7 @@ public class MutableRowSetImplTest extends TestCase {
         priorityQueueBuilder.addRange(220, 260);
         assertEquals(7, priorityQueueBuilder.rangeCount());
 
-        final RowSet prioRowSet = new MutableRowSetImpl(priorityQueueBuilder.getTreeIndexImpl());
+        final RowSet prioRowSet = new WritableRowSetImpl(priorityQueueBuilder.getTreeIndexImpl());
 
         final RowSet.RangeIterator rit = prioRowSet.rangeIterator();
         assertTrue(rit.hasNext());
@@ -1798,7 +1798,7 @@ public class MutableRowSetImplTest extends TestCase {
 
     // This test would be way too brittle to include, even if I wasn't reading the deserialized stuff from a file.
     // The following function will write something useful to read in.
-    // String dumpSerialized(MutableRowSetImpl obj) {
+    // String dumpSerialized(WritableRowSetImpl obj) {
     // try {
     // ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
     // ObjectOutputStream objectOutputStream = new ObjectOutputStream(byteArrayOutputStream);
@@ -1828,10 +1828,10 @@ public class MutableRowSetImplTest extends TestCase {
     //
     // Assert.eq(3, "3", readImpls.size(), "readImpls.size()");
     //
-    // RowSet toInsertInto = new MutableRowSetImpl(readImpls.get(0));
+    // RowSet toInsertInto = new WritableRowSetImpl(readImpls.get(0));
     // toInsertInto.validate();
     //
-    // RowSet indexToInsert = new MutableRowSetImpl(readImpls.get(1));
+    // RowSet indexToInsert = new WritableRowSetImpl(readImpls.get(1));
     // indexToInsert.validate();
     //
     // System.out.println(toInsertInto);
@@ -1843,7 +1843,7 @@ public class MutableRowSetImplTest extends TestCase {
     // }
 
     // public void testDeserializeIt() throws IOException, ClassNotFoundException {
-    // Map<String, MutableRowSetImpl> readIndices = new LinkedHashMap<>();
+    // Map<String, WritableRowSetImpl> readIndices = new LinkedHashMap<>();
     //
     // try (BufferedReader br = new BufferedReader(new FileReader("/home/cwright/tmp/t"))) {
     // String line;
@@ -1859,11 +1859,11 @@ public class MutableRowSetImplTest extends TestCase {
     // ObjectInputStream ois = new ObjectInputStream(bis);
     // Object read = ois.readObject();
     // if (read instanceof OrderedLongSet) {
-    // readIndices.put(name, new MutableRowSetImpl((OrderedLongSet) read));
+    // readIndices.put(name, new WritableRowSetImpl((OrderedLongSet) read));
     // }
     // }
     // }
-    // for (Map.Entry<String, MutableRowSetImpl> entry : readIndices.entrySet()) {
+    // for (Map.Entry<String, WritableRowSetImpl> entry : readIndices.entrySet()) {
     // System.out.println(entry.getKey() + " -> " + entry.getValue());
     // }
     //
@@ -2115,7 +2115,7 @@ public class MutableRowSetImplTest extends TestCase {
     }
 
     public void testRangeIteratorAdvanceBack() {
-        final MutableRowSet ix = RowSetFactory.empty();
+        final WritableRowSet ix = RowSetFactory.empty();
         final long s = 300;
         final long e = 600;
         ix.insertRange(s, e);
@@ -2138,12 +2138,12 @@ public class MutableRowSetImplTest extends TestCase {
     public void testSimpleOpsRefCounts() {
         final RowSet ix0 = singleRangeIndex(10, 1000);
         assertEquals(1, getRefCount(ix0));
-        final MutableRowSet ix1 = ix0.copy();
+        final WritableRowSet ix1 = ix0.copy();
         assertEquals(1, getRefCount(ix0));
         assertEquals(1, getRefCount(ix1));
         final RowSet ix2 = singleRangeIndex(100, 900);
         assertEquals(1, getRefCount(ix2));
-        final MutableRowSet ix3 = ix2.copy();
+        final WritableRowSet ix3 = ix2.copy();
         assertEquals(1, getRefCount(ix2));
         assertEquals(1, getRefCount(ix3));
         ix3.remove(101);
@@ -2219,7 +2219,7 @@ public class MutableRowSetImplTest extends TestCase {
         assertEquals(1, e.getAverageRunLengthEstimate());
         final RowSet r1 = singleRangeIndex(0, 65535);
         assertEquals(BLOCK_SIZE, r1.getAverageRunLengthEstimate());
-        final MutableRowSet r2 = RowSetFactory.empty();
+        final WritableRowSet r2 = RowSetFactory.empty();
         r2.insert(1);
         r2.insert(3);
         r2.insert(5);
@@ -2444,12 +2444,12 @@ public class MutableRowSetImplTest extends TestCase {
 
     public void testArrayOfSmallIndices() {
         final int sz = 10;
-        final MutableRowSet[] ixs = new MutableRowSet[sz];
+        final WritableRowSet[] ixs = new WritableRowSet[sz];
         for (int i = 0; i < sz; ++i) {
             ixs[i] = RowSetFactory.empty();
             ixs[i].insert(i);
         }
-        final MutableRowSet r = RowSetFactory.empty();
+        final WritableRowSet r = RowSetFactory.empty();
         for (int i = 0; i < sz; ++i) {
             r.insert(ixs[i]);
         }
@@ -2459,7 +2459,7 @@ public class MutableRowSetImplTest extends TestCase {
     }
 
     public void testSubindexByPosRegreesion0() {
-        final MutableRowSet ix = RowSetFactory.empty();
+        final WritableRowSet ix = RowSetFactory.empty();
         ix.insertRange(0, 95 * ((long) BLOCK_SIZE));
         final long s1 = 0x1000000 * ((long) BLOCK_SIZE);
         ix.insertRange(s1, s1 + 95 * 65536);
@@ -2474,14 +2474,14 @@ public class MutableRowSetImplTest extends TestCase {
         final RowSet ix3 = ix.subSetByPositionRange(9_999_999L, ix.size());
         ix3.validate();
         assertFalse(ix2.overlaps(ix3));
-        final MutableRowSet ix4 = ix2.copy();
+        final WritableRowSet ix4 = ix2.copy();
         ix4.insert(ix3);
         assertEquals(ix.size(), ix4.size());
         assertTrue(ix.subsetOf(ix4));
     }
 
     public void testContainsRange() {
-        final MutableRowSet ix = RowSetFactory.empty();
+        final WritableRowSet ix = RowSetFactory.empty();
         ix.insertRange(1, 3);
         ix.insertRange(BLOCK_LAST, BLOCK_SIZE);
         ix.insertRange(2 * BLOCK_SIZE, 2 * BLOCK_SIZE + 1);
@@ -2517,7 +2517,7 @@ public class MutableRowSetImplTest extends TestCase {
     }
 
     public void testOverlapsRange() {
-        final MutableRowSet ix = RowSetFactory.empty();
+        final WritableRowSet ix = RowSetFactory.empty();
         ix.insertRange(3, 5);
         ix.insertRange(BLOCK_LAST, BLOCK_SIZE);
         ix.insertRange(2 * BLOCK_SIZE, 2 * BLOCK_SIZE + 1);
@@ -2568,11 +2568,11 @@ public class MutableRowSetImplTest extends TestCase {
     public void testOneRangeIndexMinus() {
         final RowSet ix = RowSetFactory.fromRange(1000, 5000);
         final RowSet r = ix.minus(RowSetFactory.fromRange(1001, 4999));
-        final MutableRowSet c = ix.copy();
+        final WritableRowSet c = ix.copy();
         c.removeRange(1001, 4999);
     }
 
-    private void releaseReleasedRegression0case0(final MutableRowSet ix) {
+    private void releaseReleasedRegression0case0(final WritableRowSet ix) {
         ix.insertRange(1, 2);
         ix.insertRange(5, 6);
         final RowSet ix2 = ix.copy();
@@ -2591,7 +2591,7 @@ public class MutableRowSetImplTest extends TestCase {
         releaseReleasedRegression0case0(TstRowSetUtil.makeEmptySr());
     }
 
-    private void releaseReleasedRegression0case1(final MutableRowSet ix) {
+    private void releaseReleasedRegression0case1(final WritableRowSet ix) {
         ix.insertRange(1, 2);
         ix.insertRange(5, 6);
         final RowSet ix2 = ix.copy();
@@ -2610,7 +2610,7 @@ public class MutableRowSetImplTest extends TestCase {
         releaseReleasedRegression0case1(TstRowSetUtil.makeEmptySr());
     }
 
-    private static void releaseReleasedRegression0case2(final MutableRowSet ix) {
+    private static void releaseReleasedRegression0case2(final WritableRowSet ix) {
         ix.insertRange(1, 2);
         ix.insertRange(5, 6);
         final RowSet ix2 = ix.copy();
@@ -2630,7 +2630,7 @@ public class MutableRowSetImplTest extends TestCase {
     }
 
     public void testSearchIteratorRegression0() {
-        final MutableRowSet ix0 = RowSetFactory.empty();
+        final WritableRowSet ix0 = RowSetFactory.empty();
         // force a bitmap container.
         for (int i = 0; i < 5000; ++i) {
             ix0.insert(2 * i);
@@ -2648,7 +2648,7 @@ public class MutableRowSetImplTest extends TestCase {
     }
 
     public void testAsKeyRangesChunk() {
-        final MutableRowSet rowSet = RowSetFactory.empty();
+        final WritableRowSet rowSet = RowSetFactory.empty();
         rowSet.insertRange(130972, 131071);
         rowSet.insert(262144);
 
@@ -2688,7 +2688,7 @@ public class MutableRowSetImplTest extends TestCase {
         RowSetBuilderRandom builder = RowSetFactory.builderRandom();
         builder.addKey(key);
         builder.addKey(key + 10);
-        MutableRowSet rowSet = builder.build();
+        WritableRowSet rowSet = builder.build();
         rowSet.remove(key + 10);
         RowSet.SearchIterator iter = rowSet.reverseIterator();
         assertFalse(iter.advance(key - 1));
@@ -2699,7 +2699,7 @@ public class MutableRowSetImplTest extends TestCase {
         RowSetBuilderRandom builder = RowSetFactory.builderRandom();
         builder.addKey(key);
         builder.addKey(key + 10);
-        MutableRowSet rowSet = builder.build();
+        WritableRowSet rowSet = builder.build();
         rowSet.remove(key + 10);
         assertFalse(rowSet.reverseIterator().advance(key - 1));
         assertTrue(rowSet.reverseIterator().advance(key));
@@ -2751,13 +2751,13 @@ public class MutableRowSetImplTest extends TestCase {
     }
 
     public void testSubsetOf() {
-        final MutableRowSet ix1 = TstRowSetUtil.makeEmptySr();
+        final WritableRowSet ix1 = TstRowSetUtil.makeEmptySr();
         ix1.insertRange(0, 1);
         final RowSet ix2 = TstRowSetUtil.makeSingleRange(0, 2);
         assertTrue(ix1.subsetOf(ix2));
     }
 
-    private static void rvs2ix(final MutableRowSet ix, final long[] vs) {
+    private static void rvs2ix(final WritableRowSet ix, final long[] vs) {
         long pendingStart = -1;
         for (long v : vs) {
             if (v < 0) {
@@ -2776,8 +2776,8 @@ public class MutableRowSetImplTest extends TestCase {
     }
 
     public void testMinusRegression0() {
-        final RowSet ix1 = new MutableRowSetImpl(RspBitmap.makeSingleRange(1073741843L, 1073741860L));
-        final RowSet ix2 = new MutableRowSetImpl(SortedRanges.makeSingleElement(1073741843L));
+        final RowSet ix1 = new WritableRowSetImpl(RspBitmap.makeSingleRange(1073741843L, 1073741860L));
+        final RowSet ix2 = new WritableRowSetImpl(SortedRanges.makeSingleElement(1073741843L));
         final RowSet ix3 = ix1.minus(ix2);
         assertEquals(ix1.lastRowKey() - ix1.firstRowKey(), ix3.size());
         assertTrue(ix3.containsRange(ix1.firstRowKey() + 1, ix1.lastRowKey()));
@@ -2785,7 +2785,7 @@ public class MutableRowSetImplTest extends TestCase {
 
     public void testSubsetOfRegression0() {
         SortedRanges sr0 = new SortedRangesShort(64, 10);
-        final MutableRowSet ix0 = new MutableRowSetImpl(sr0);
+        final WritableRowSet ix0 = new WritableRowSetImpl(sr0);
         rvs2ix(ix0, new long[] {
                 85, 88, 103, 121, 201, 204, 220, 258, 275, 296, 366, 370, 386, 409, 411, 453, 584, 587, 602, 631, 661,
                 683, 714, -715,
@@ -2803,14 +2803,14 @@ public class MutableRowSetImplTest extends TestCase {
                 -2697, 2702, 2723,
                 2741, 2751, 2757, 2784, 2792, 2799, 2818, 2824, 2838, 2853, 2857, 2863
         });
-        final MutableRowSet ix1 = TstRowSetUtil.makeEmptyRsp();
+        final WritableRowSet ix1 = TstRowSetUtil.makeEmptyRsp();
         rvs2ix(ix1, new long[] {296, 366, 370, 386, 409, 411, 453});
         assertTrue(ix1.subsetOf(ix0));
     }
 
     public void testIntersectRegression0() {
-        MutableRowSet ix0 = TstRowSetUtil.makeEmptySr();
-        MutableRowSet ix1 = TstRowSetUtil.makeEmptyRsp();
+        WritableRowSet ix0 = TstRowSetUtil.makeEmptySr();
+        WritableRowSet ix1 = TstRowSetUtil.makeEmptyRsp();
         ix0 = rowSetFromString(
                 "87,236,275,324,329,468,505,673,705,779,834,848,917,1017,1019,1062,1366,1405,1453,1575,1599,1757," +
                         "1834,1853,1856,1895,1960,2098,2167,2218,2411,2606,2686,2842,2958,3225,3451,3509,3587,3601," +
@@ -2828,12 +2828,12 @@ public class MutableRowSetImplTest extends TestCase {
     }
 
     public void testConversionRemovalRefCount0() {
-        MutableRowSet ix0 = TstRowSetUtil.makeEmptySr();
+        WritableRowSet ix0 = TstRowSetUtil.makeEmptySr();
         final int n = 4;
         for (int i = 0; i < SortedRanges.MAX_CAPACITY - n; ++i) {
             ix0.insert(i * 6L + 2);
         }
-        final MutableRowSet ix1 = TstRowSetUtil.makeEmptySr();
+        final WritableRowSet ix1 = TstRowSetUtil.makeEmptySr();
         for (int i = 0; i < n + 1; ++i) {
             ix1.insert(i * 6 + 4);
         }
@@ -2848,7 +2848,7 @@ public class MutableRowSetImplTest extends TestCase {
     }
 
     public void testSubsetOfMixed() {
-        final MutableRowSet ix0 = TstRowSetUtil.makeEmptySr();
+        final WritableRowSet ix0 = TstRowSetUtil.makeEmptySr();
         final long bkSz = BLOCK_SIZE;
         final long off0 = bkSz;
         ix0.insertRange(off0 + 7, off0 + 9);
@@ -2858,7 +2858,7 @@ public class MutableRowSetImplTest extends TestCase {
         ix0.insert(off2 + 20);
         final long off3 = off2 + 3 * bkSz;
         ix0.insertRange(off2 + 33, off3 + 45);
-        final MutableRowSet ix1 = TstRowSetUtil.makeEmptyRsp();
+        final WritableRowSet ix1 = TstRowSetUtil.makeEmptyRsp();
         ix1.insertRange(off0 + 7, off0 + 9);
         ix1.insertRange(off1 + 13, off1 + 15);
         ix1.insert(off2 + 20);
@@ -2871,14 +2871,14 @@ public class MutableRowSetImplTest extends TestCase {
                 final long start = it1.currentRangeStart();
                 final long end = it1.currentRangeEnd();
                 for (long v : new long[] {pendingStart, start - bkSz, start - 1}) {
-                    final MutableRowSet ix2 = ix1.copy();
+                    final WritableRowSet ix2 = ix1.copy();
                     ix2.insert(v);
                     assertFalse("v==" + v, ix2.subsetOf(ix0));
                 }
                 pendingStart = end + 1;
             }
             for (long v : new long[] {pendingStart, pendingStart + 3}) {
-                final MutableRowSet ix2 = ix1.copy();
+                final WritableRowSet ix2 = ix1.copy();
                 ix2.insert(v);
                 assertFalse("v==" + v, ix2.subsetOf(ix0));
             }
@@ -2911,11 +2911,11 @@ public class MutableRowSetImplTest extends TestCase {
                 "232459,232490,232494,232499,232516-232518,232525,232543,232558,232580,232591,232598,232603,232640," +
                 "232649,232660,232673,232677,232686,232709,232715,232721,232723,232739,232743,232757,232771,232773," +
                 "232776,232778,232783,232796,232810,232823";
-        MutableRowSet ix0 = TstRowSetUtil.makeEmptySr();
+        WritableRowSet ix0 = TstRowSetUtil.makeEmptySr();
         ix0 = rowSetFromString(ix0Str, ix0);
-        MutableRowSet ix1 = TstRowSetUtil.makeEmptyRsp();
+        WritableRowSet ix1 = TstRowSetUtil.makeEmptyRsp();
         ix1 = rowSetFromString(ix1Str, ix1);
-        MutableRowSet ix0Rsp = TstRowSetUtil.makeEmptyRsp();
+        WritableRowSet ix0Rsp = TstRowSetUtil.makeEmptyRsp();
         ix0Rsp = rowSetFromString(ix0Str, ix0Rsp);
         ix0.remove(ix1);
         ix0Rsp.remove(ix1);
@@ -2924,17 +2924,17 @@ public class MutableRowSetImplTest extends TestCase {
     }
 
     public void testMinusRegression1() {
-        final MutableRowSet ix0 = TstRowSetUtil.makeEmptySr();
+        final WritableRowSet ix0 = TstRowSetUtil.makeEmptySr();
         rvs2ix(ix0, new long[] {
                 10, -12, 14, 16, 18, 20, 22, 24, 26, 28, -29, 31, 33, -34, 36, 38, -39, 41, 43, 45, -47, 49, 51, 53, 55,
                 57, 59, 61, 63, -64,
                 66, -67, 69, 71, -76, 78, -80, 82, -83, 85, -88, 90, -91, 93, -94, 96, 98, 100, 102, -110, 112, -113
         });
-        final MutableRowSet ix1 = TstRowSetUtil.makeEmptySr();
+        final WritableRowSet ix1 = TstRowSetUtil.makeEmptySr();
         rvs2ix(ix1, new long[] {24, 28, 31, 38, 51, 57, 59, 61, 74, 90, 93, 107, -108, 110});
         final RowSet ix3 = ix0.minus(ix1);
         final RowSet intersect = ix0.intersect(ix1);
-        final MutableRowSet ix4 = ix0.copy();
+        final WritableRowSet ix4 = ix0.copy();
         ix4.remove(intersect);
         assertEquals(ix4.size(), ix3.size());
         assertTrue(ix4.subsetOf(ix3));
@@ -2952,11 +2952,11 @@ public class MutableRowSetImplTest extends TestCase {
                 "1677-1678,1732,1761,1774,1804,1811,1813,1843,1856,1890,1903,1918,1927,1933,1942,2009,2068,2155,2184," +
                 "2189,2206,2210,2221,2223,2230,2303,2310,2316,2329,2347,2352,2354,2380,2458,2474,2482,2489,2494,2503," +
                 "2622,2625,2631,2635,2640,2643-2644,2684,2686,2688,2690,2704,2725,2811,2829,2839";
-        MutableRowSet ix0 = TstRowSetUtil.makeEmptySr();
+        WritableRowSet ix0 = TstRowSetUtil.makeEmptySr();
         ix0 = rowSetFromString(ix0Str, ix0);
-        MutableRowSet ix1 = TstRowSetUtil.makeEmptyRsp();
+        WritableRowSet ix1 = TstRowSetUtil.makeEmptyRsp();
         ix1 = rowSetFromString(ix1Str, ix1);
-        MutableRowSet ix0Rsp = TstRowSetUtil.makeEmptyRsp();
+        WritableRowSet ix0Rsp = TstRowSetUtil.makeEmptyRsp();
         ix0Rsp = rowSetFromString(ix0Str, ix0Rsp);
         RowSet result = ix0.minus(ix1);
         RowSet rspResult = ix0Rsp.minus(ix1);
@@ -2965,25 +2965,25 @@ public class MutableRowSetImplTest extends TestCase {
     }
 
     public void testRemoveRegression1() {
-        MutableRowSet ix0 = TstRowSetUtil.makeEmptyRsp();
+        WritableRowSet ix0 = TstRowSetUtil.makeEmptyRsp();
         ix0 = rowSetFromString("0-65536,131071-393215", ix0);
-        MutableRowSet ix1 = TstRowSetUtil.makeEmptySr();
+        WritableRowSet ix1 = TstRowSetUtil.makeEmptySr();
         ix1 = rowSetFromString("195608,196607", ix1);
         ix0.remove(ix1);
-        MutableRowSet expected = TstRowSetUtil.makeEmptySr();
+        WritableRowSet expected = TstRowSetUtil.makeEmptySr();
         expected = rowSetFromString("0-65536,131071-195607,195609-196606,196608-393215", expected);
         assertEquals(expected.size(), ix0.size());
         assertTrue(expected.subsetOf(ix0));
     }
 
     public void testRemoveRegression2() {
-        MutableRowSet ix0 = TstRowSetUtil.makeEmptyRsp();
+        WritableRowSet ix0 = TstRowSetUtil.makeEmptyRsp();
         ix0.insert(0);
         ix0.insert(65535);
         for (int i = 2; i <= 65534; i += 2) {
             ix0.insert(i);
         }
-        MutableRowSet ix1 = TstRowSetUtil.makeEmptySr();
+        WritableRowSet ix1 = TstRowSetUtil.makeEmptySr();
         ix1.insert(0);
         ix1.insert(65535);
         ix0.remove(ix1);
@@ -3018,20 +3018,20 @@ public class MutableRowSetImplTest extends TestCase {
     }
 
     public void testRetainMixed() {
-        final MutableRowSet ix1 = new MutableRowSetImpl(new RspBitmap(3, 4));
+        final WritableRowSet ix1 = new WritableRowSetImpl(new RspBitmap(3, 4));
         SortedRanges sr = new SortedRangesLong();
         sr = sr.add(20);
-        final RowSet ix2 = new MutableRowSetImpl(sr);
+        final RowSet ix2 = new WritableRowSetImpl(sr);
         ix1.retain(ix2);
         assertTrue(ix1.isEmpty());
     }
 
     public void testRetainRefCountRegress() {
-        final RowSet ix1 = new MutableRowSetImpl(new RspBitmap(20, 24));
+        final RowSet ix1 = new WritableRowSetImpl(new RspBitmap(20, 24));
         SortedRanges sr = new SortedRangesLong();
         sr = sr.add(18);
         sr = sr.add(20);
-        final MutableRowSet ix2 = new MutableRowSetImpl(sr);
+        final WritableRowSet ix2 = new WritableRowSetImpl(sr);
         final RowSet clone = ix2.copy();
         ix2.retain(ix1);
         assertEquals(1, getRefCount(ix2));
@@ -3045,7 +3045,7 @@ public class MutableRowSetImplTest extends TestCase {
         SortedRanges sr = new SortedRangesLong();
         sr = sr.add(18);
         sr = sr.add(20);
-        final MutableRowSet ix2 = new MutableRowSetImpl(sr);
+        final WritableRowSet ix2 = new WritableRowSetImpl(sr);
         final RowSet clone = ix2.copy();
         ix2.retainRange(20, 24);
         assertEquals(1, getRefCount(ix2));
@@ -3057,11 +3057,11 @@ public class MutableRowSetImplTest extends TestCase {
     public void testRetainSrPrefix() {
         SortedRanges sr0 = new SortedRangesLong();
         sr0 = sr0.add(20);
-        final MutableRowSet ix0 = new MutableRowSetImpl(sr0);
+        final WritableRowSet ix0 = new WritableRowSetImpl(sr0);
         SortedRanges sr1 = new SortedRangesLong();
         sr1 = sr1.addRange(5, 10);
         sr1 = sr1.addRange(25, 30);
-        final RowSet ix1 = new MutableRowSetImpl(sr1);
+        final RowSet ix1 = new WritableRowSetImpl(sr1);
         ix0.insert(21); // force prev.
         ix0.retain(ix1);
         ix0.validate();
@@ -3074,18 +3074,18 @@ public class MutableRowSetImplTest extends TestCase {
         int i0 = 0;
         for (RowSet ix0 : new RowSet[] {
                 TstRowSetUtil.makeSingleRange(start0, end0),
-                new MutableRowSetImpl(new RspBitmap(start0, end0)),
-                new MutableRowSetImpl(SortedRanges.makeSingleRange(start0, end0))}) {
+                new WritableRowSetImpl(new RspBitmap(start0, end0)),
+                new WritableRowSetImpl(SortedRanges.makeSingleRange(start0, end0))}) {
             final long start1 = 4 * BLOCK_SIZE + BLOCK_SIZE / 2;
             final long end1 = 5 * BLOCK_SIZE + BLOCK_SIZE / 2;
             int i1 = 0;
             for (RowSet ix1 : new RowSet[] {
                     TstRowSetUtil.makeSingleRange(start1, end1),
-                    new MutableRowSetImpl(new RspBitmap(start1, end1)),
-                    new MutableRowSetImpl(SortedRanges.makeSingleRange(start1, end1))}) {
+                    new WritableRowSetImpl(new RspBitmap(start1, end1)),
+                    new WritableRowSetImpl(SortedRanges.makeSingleRange(start1, end1))}) {
                 int ia = 0;
                 for (long shiftAmount : new long[] {2 * BLOCK_SIZE, 2 * BLOCK_SIZE + 1}) {
-                    final MutableRowSet ix2 = ix0.copy();
+                    final WritableRowSet ix2 = ix0.copy();
                     ix2.insertWithShift(shiftAmount, ix1);
                     final String m = "i0==" + i0 + " && i1==" + i1 + " && ia==" + ia;
                     assertEquals(m, end1 - start1 + 1 + end0 - start0 + 1, ix2.size());
@@ -3101,9 +3101,9 @@ public class MutableRowSetImplTest extends TestCase {
 
     public void testSearchIteratorBinarySearchFirstCallNotFoundNoNext() {
         final RowSet[] ixs = new RowSet[] {
-                new MutableRowSetImpl(SingleRange.make(11, 11)),
-                new MutableRowSetImpl(SortedRanges.makeSingleRange(11, 11)),
-                new MutableRowSetImpl(RspBitmap.makeSingleRange(11, 11))
+                new WritableRowSetImpl(SingleRange.make(11, 11)),
+                new WritableRowSetImpl(SortedRanges.makeSingleRange(11, 11)),
+                new WritableRowSetImpl(RspBitmap.makeSingleRange(11, 11))
         };
         for (int i = 0; i < ixs.length; ++i) {
             final String m = "i==" + i;
@@ -3170,8 +3170,8 @@ public class MutableRowSetImplTest extends TestCase {
                 inner.appendRange(ii, ((i + 1) << 16) - 1);
             }
         }
-        try (final MutableRowSet result = outer.build();
-                final RowSet toRemove = inner.build()) {
+        try (final WritableRowSet result = outer.build();
+             final RowSet toRemove = inner.build()) {
             final long t0 = System.currentTimeMillis();
             result.remove(toRemove);
             final long t1 = System.currentTimeMillis();

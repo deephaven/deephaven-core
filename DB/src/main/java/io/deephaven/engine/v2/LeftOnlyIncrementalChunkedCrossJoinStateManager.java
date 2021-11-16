@@ -79,7 +79,7 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
 
     @ReplicateHashTable.EmptyStateValue
     // @NullStateValue@ from \Qnull\E, @StateValueType@ from \QTrackingMutableRowSet\E
-    private static final TrackingMutableRowSet EMPTY_RIGHT_VALUE = null;
+    private static final TrackingWritableRowSet EMPTY_RIGHT_VALUE = null;
 
     // mixin getStateValue
     // region overflow pivot
@@ -129,22 +129,22 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
 
     // we are going to also reuse this for our state entry, so that we do not need additional storage
     @ReplicateHashTable.StateColumnSource
-    // @StateColumnSourceType@ from \QObjectArraySource<TrackingMutableRowSet>\E
-    private final ObjectArraySource<TrackingMutableRowSet> rightRowSetSource
-            // @StateColumnSourceConstructor@ from \QObjectArraySource<>(TrackingMutableRowSet.class)\E
-            = new ObjectArraySource<>(TrackingMutableRowSet.class);
+    // @StateColumnSourceType@ from \QObjectArraySource<TrackingWritableRowSet>\E
+    private final ObjectArraySource<TrackingWritableRowSet> rightRowSetSource
+            // @StateColumnSourceConstructor@ from \QObjectArraySource<>(TrackingWritableRowSet.class)\E
+            = new ObjectArraySource<>(TrackingWritableRowSet.class);
 
     // the keys for overflow
     private int nextOverflowLocation = 0;
     private final ArrayBackedColumnSource<?> [] overflowKeySources;
     // the location of the next key in an overflow bucket
     private final IntegerArraySource overflowOverflowLocationSource = new IntegerArraySource();
-    // the overflow buckets for the right TrackingMutableRowSet
+    // the overflow buckets for the right TrackingWritableRowSet
     @ReplicateHashTable.OverflowStateColumnSource
-    // @StateColumnSourceType@ from \QObjectArraySource<TrackingMutableRowSet>\E
-    private final ObjectArraySource<TrackingMutableRowSet> overflowRightRowSetSource
-            // @StateColumnSourceConstructor@ from \QObjectArraySource<>(TrackingMutableRowSet.class)\E
-            = new ObjectArraySource<>(TrackingMutableRowSet.class);
+    // @StateColumnSourceType@ from \QObjectArraySource<TrackingWritableRowSet>\E
+    private final ObjectArraySource<TrackingWritableRowSet> overflowRightRowSetSource
+            // @StateColumnSourceConstructor@ from \QObjectArraySource<>(TrackingWritableRowSet.class)\E
+            = new ObjectArraySource<>(TrackingWritableRowSet.class);
 
     // the type of each of our key chunks
     private final ChunkType[] keyChunkTypes;
@@ -163,7 +163,7 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
 
     // region extra variables
     // maintain a mapping from left rowSet to its slot
-    private final MutableRowRedirection leftIndexToSlot;
+    private final WritableRowRedirection leftIndexToSlot;
     private final ColumnSource<?>[] leftKeySources;
     private final long EMPTY_RIGHT_SLOT = Long.MIN_VALUE;
     private final QueryTable leftTable;
@@ -215,7 +215,7 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
         // endmixin rehash
 
         // region constructor
-        leftIndexToSlot = MutableRowRedirection.FACTORY.createRowRedirection(tableSize);
+        leftIndexToSlot = WritableRowRedirection.FACTORY.createRowRedirection(tableSize);
         this.leftKeySources = tableKeySources;
         this.leftTable = leftTable;
         // endregion constructor
@@ -254,9 +254,9 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
 
     // region build wrappers
     @NotNull
-    MutableRowSet buildLeftTicking(@NotNull final QueryTable leftTable,
-                                   @NotNull final QueryTable rightTable,
-                                   @NotNull final ColumnSource<?>[] rightKeys) {
+    WritableRowSet buildLeftTicking(@NotNull final QueryTable leftTable,
+                                    @NotNull final QueryTable rightTable,
+                                    @NotNull final ColumnSource<?>[] rightKeys) {
         final boolean ignoreMissing = false;
 
         if (!rightTable.isEmpty()) {
@@ -324,7 +324,7 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
         leftIndexToSlot.applyShift(prevLeftIndex, shiftData);
     }
 
-    void processLeftModifies(final Listener.Update upstream, final Listener.Update downstream, final MutableRowSet resultRowSet) {
+    void processLeftModifies(final Listener.Update upstream, final Listener.Update downstream, final WritableRowSet resultRowSet) {
         if (upstream.modified.isEmpty()) {
             downstream.modified = RowSetFactory.empty();
             return;
@@ -372,8 +372,8 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
         try (final RowSet added = addBuilder.build();
              final RowSet removed = rmBuilder.build();
              final RowSet postShiftRemoved = rmResultBuilder.build()) {
-            downstream.removed.mutableCast().insert(removed);
-            downstream.added.mutableCast().insert(added);
+            downstream.removed.writableCast().insert(removed);
+            downstream.added.writableCast().insert(added);
             // must remove before adding as removed.intersect(added) may be non-empty
             resultRowSet.remove(postShiftRemoved);
             resultRowSet.insert(added);
@@ -381,9 +381,9 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
         downstream.modified = modBuilder.build();
     }
 
-    private void addToIndex(final ObjectArraySource<TrackingMutableRowSet> source, final long location, final long keyToAdd, boolean ignoreMissing) {
+    private void addToIndex(final ObjectArraySource<TrackingWritableRowSet> source, final long location, final long keyToAdd, boolean ignoreMissing) {
         final long size;
-        final MutableRowSet rowSet = source.get(location);
+        final WritableRowSet rowSet = source.get(location);
         if (rowSet == null) {
             if (ignoreMissing) {
                 return;
@@ -450,8 +450,8 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
         final WritableLongChunk<RowKeys> overflowLocationForEqualityCheck;
 
         // the chunk of state values that we read from the hash table
-        // @WritableStateChunkType@ from \QWritableObjectChunk<TrackingMutableRowSet,Values>\E
-        final WritableObjectChunk<TrackingMutableRowSet,Values> workingStateEntries;
+        // @WritableStateChunkType@ from \QWritableObjectChunk<TrackingWritableRowSet,Values>\E
+        final WritableObjectChunk<TrackingWritableRowSet,Values> workingStateEntries;
 
         // the chunks for getting key values from the hash table
         final WritableChunk<Values>[] workingKeyChunks;
@@ -476,8 +476,8 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
         final ResettableWritableLongChunk<Any> overflowLocationForPromotionLoop = ResettableWritableLongChunk.makeResettableChunk();
 
         // mixin allowUpdateWriteThroughState
-        // @WritableStateChunkType@ from \QWritableObjectChunk<TrackingMutableRowSet,Values>\E, @WritableStateChunkName@ from \QWritableObjectChunk\E
-        final ResettableWritableObjectChunk<TrackingMutableRowSet,Values> writeThroughState = ResettableWritableObjectChunk.makeResettableChunk();
+        // @WritableStateChunkType@ from \QWritableObjectChunk<TrackingWritableRowSet,Values>\E, @WritableStateChunkName@ from \QWritableObjectChunk\E
+        final ResettableWritableObjectChunk<TrackingWritableRowSet,Values> writeThroughState = ResettableWritableObjectChunk.makeResettableChunk();
         // endmixin allowUpdateWriteThroughState
         final ResettableWritableIntChunk<Values> writeThroughOverflowLocations = ResettableWritableIntChunk.makeResettableChunk();
         // endmixin rehash
@@ -1023,7 +1023,7 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
                     }
 
                     // @StateValueType@ from \QTrackingMutableRowSet\E
-                    final TrackingMutableRowSet stateValueToMove = rightRowSetSource.getUnsafe(oldHashLocation);
+                    final TrackingWritableRowSet stateValueToMove = rightRowSetSource.getUnsafe(oldHashLocation);
                     rightRowSetSource.set(newHashLocation, stateValueToMove);
                     rightRowSetSource.set(oldHashLocation, EMPTY_RIGHT_VALUE);
                                 // region rehash move values
@@ -1237,8 +1237,8 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
     }
 
     // mixin allowUpdateWriteThroughState
-    // @WritableStateChunkType@ from \QWritableObjectChunk<TrackingMutableRowSet,Values>\E
-    private void updateWriteThroughState(ResettableWritableObjectChunk<TrackingMutableRowSet,Values> writeThroughState, long firstPosition, long expectedLastPosition) {
+    // @WritableStateChunkType@ from \QWritableObjectChunk<TrackingWritableRowSet,Values>\E
+    private void updateWriteThroughState(ResettableWritableObjectChunk<TrackingWritableRowSet,Values> writeThroughState, long firstPosition, long expectedLastPosition) {
         final long firstBackingChunkPosition = rightRowSetSource.resetWritableChunkToBackingStore(writeThroughState, firstPosition);
         if (firstBackingChunkPosition != firstPosition) {
             throw new IllegalStateException("ArrayBackedColumnSources have different block sizes!");
@@ -1387,8 +1387,8 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
 
         // the chunk of right indices that we read from the hash table, the empty right rowSet is used as a sentinel that the
         // state exists; otherwise when building from the left it is always null
-        // @WritableStateChunkType@ from \QWritableObjectChunk<TrackingMutableRowSet,Values>\E
-        final WritableObjectChunk<TrackingMutableRowSet,Values> workingStateEntries;
+        // @WritableStateChunkType@ from \QWritableObjectChunk<TrackingWritableRowSet,Values>\E
+        final WritableObjectChunk<TrackingWritableRowSet,Values> workingStateEntries;
 
         // the overflow locations that we need to get from the overflowLocationSource (or overflowOverflowLocationSource)
         final WritableLongChunk<RowKeys> overflowLocationsToFetch;

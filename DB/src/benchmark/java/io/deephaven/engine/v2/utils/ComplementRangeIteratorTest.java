@@ -1,6 +1,6 @@
 package io.deephaven.engine.v2.utils;
 
-import io.deephaven.engine.rowset.MutableRowSet;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.impl.ComplementRangeIterator;
@@ -11,7 +11,7 @@ import static org.junit.Assert.*;
 public class ComplementRangeIteratorTest {
     @Test
     public void testSimpleComplement() {
-        final MutableRowSet ix = RowSetFactory.empty();
+        final WritableRowSet ix = RowSetFactory.empty();
         ix.insertRange(10, 20);
         ix.insertRange(22, 40);
         ix.insertRange(50, 100);
@@ -44,7 +44,7 @@ public class ComplementRangeIteratorTest {
 
     @Test
     public void testEmptyComplement() {
-        final MutableRowSet ix = RowSetFactory.empty();
+        final WritableRowSet ix = RowSetFactory.empty();
         ix.insertRange(0, Long.MAX_VALUE);
 
         try (final ComplementRangeIterator cit = new ComplementRangeIterator(ix.rangeIterator())) {
@@ -100,7 +100,7 @@ public class ComplementRangeIteratorTest {
 
     @Test
     public void testInputTwoRangesContainsZero() {
-        final MutableRowSet ix = RowSetFactory.empty();
+        final WritableRowSet ix = RowSetFactory.empty();
         ix.insertRange(0, 20);
         ix.insertRange(22, 40);
 
@@ -121,7 +121,7 @@ public class ComplementRangeIteratorTest {
 
     @Test
     public void testInputTwoRangesContainsMax() {
-        final MutableRowSet ix = RowSetFactory.empty();
+        final WritableRowSet ix = RowSetFactory.empty();
         ix.insertRange(10, 20);
         ix.insertRange(22, Long.MAX_VALUE);
 
@@ -142,7 +142,7 @@ public class ComplementRangeIteratorTest {
 
     @Test
     public void testAdvanceSimple() {
-        final MutableRowSet ix = RowSetFactory.empty();
+        final WritableRowSet ix = RowSetFactory.empty();
         ix.insertRange(10, 20);
         ix.insertRange(30, 40);
 
@@ -188,7 +188,7 @@ public class ComplementRangeIteratorTest {
 
     @Test
     public void testAdvanceInputContainsZero() {
-        final MutableRowSet ix = RowSetFactory.empty();
+        final WritableRowSet ix = RowSetFactory.empty();
         ix.insertRange(0, 10);
         ix.insertRange(20, 40);
 
@@ -209,7 +209,7 @@ public class ComplementRangeIteratorTest {
 
     @Test
     public void testAdvanceInputContainsMax() {
-        final MutableRowSet ix = RowSetFactory.empty();
+        final WritableRowSet ix = RowSetFactory.empty();
         ix.insertRange(5, 10);
         ix.insertRange(20, Long.MAX_VALUE);
 
@@ -238,7 +238,7 @@ public class ComplementRangeIteratorTest {
 
     @Test
     public void testAdvanceCoverage1() {
-        final MutableRowSet ix = RowSetFactory.empty();
+        final WritableRowSet ix = RowSetFactory.empty();
         ix.insertRange(0, 10);
         ix.insertRange(20, Long.MAX_VALUE);
         for (long v : new long[] {20, 21, 30, Long.MAX_VALUE}) {
@@ -254,7 +254,7 @@ public class ComplementRangeIteratorTest {
 
     @Test
     public void testAdvanceCoverage2() {
-        final MutableRowSet ix = RowSetFactory.empty();
+        final WritableRowSet ix = RowSetFactory.empty();
         ix.insertRange(10, 20);
         ix.insertRange(30, 40);
         ix.insertRange(50, 60);

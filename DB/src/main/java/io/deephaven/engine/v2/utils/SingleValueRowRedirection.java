@@ -60,20 +60,20 @@ public class SingleValueRowRedirection implements RowRedirection {
     }
 
     /**
-     * @return Whether this SingleValueRowRedirection is actually {@link MutableSingleValueRowRedirection mutable}
+     * @return Whether this SingleValueRowRedirection is actually {@link WritableSingleValueRowRedirection writable}
      */
-    public final boolean isMutableSingleValue() {
-        return this instanceof MutableSingleValueRowRedirection;
+    public final boolean isWritableSingleValue() {
+        return this instanceof WritableSingleValueRowRedirection;
     }
 
     /**
      * <p>
-     * Cast this SingleValueRowRedirection reference to a {@link MutableSingleValueRowRedirection}.
+     * Cast this SingleValueRowRedirection reference to a {@link WritableSingleValueRowRedirection}.
      *
-     * @return {@code this} cast to a {@link MutableSingleValueRowRedirection}
-     * @throws ClassCastException If {@code this} is not a {@link MutableSingleValueRowRedirection}
+     * @return {@code this} cast to a {@link WritableSingleValueRowRedirection}
+     * @throws ClassCastException If {@code this} is not a {@link WritableSingleValueRowRedirection}
      */
-    public final MutableSingleValueRowRedirection mutableSingleValueCast() {
-        return (MutableSingleValueRowRedirection) this;
+    public final WritableSingleValueRowRedirection writableSingleValueCast() {
+        return (WritableSingleValueRowRedirection) this;
     }
 }

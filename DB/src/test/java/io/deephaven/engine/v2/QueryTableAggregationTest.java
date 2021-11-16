@@ -261,7 +261,7 @@ public class QueryTableAggregationTest {
                     "IntCol = " + tableIndexName + " * 1_000_000 + i",
                     "TimeCol = ii % 100 == 0 ? null : plus(" + nowName + ", ii * 100)");
             // Hide part of the table's rowSet from downstream, initially.
-            result.getRowSet().mutableCast().removeRange(mergeChunkMultiple, 2 * mergeChunkMultiple - 1);
+            result.getRowSet().writableCast().removeRange(mergeChunkMultiple, 2 * mergeChunkMultiple - 1);
             return result;
         }).toArray(QueryTable[]::new);
 
@@ -307,31 +307,31 @@ public class QueryTableAggregationTest {
         };
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            inputs[0].getRowSet().mutableCast().insertRange(mergeChunkMultiple, 2 * mergeChunkMultiple - 1);
+            inputs[0].getRowSet().writableCast().insertRange(mergeChunkMultiple, 2 * mergeChunkMultiple - 1);
             inputs[0].notifyListeners(ir(mergeChunkMultiple, 2 * mergeChunkMultiple - 1), i(), i());
         });
         TstUtils.validate(ens);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            inputs[1].getRowSet().mutableCast().removeRange(mergeChunkMultiple - 1_000, mergeChunkMultiple - 1);
+            inputs[1].getRowSet().writableCast().removeRange(mergeChunkMultiple - 1_000, mergeChunkMultiple - 1);
             inputs[1].notifyListeners(i(), ir(mergeChunkMultiple - 1_000, mergeChunkMultiple - 1), i());
         });
         TstUtils.validate(ens);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            inputs[2].getRowSet().mutableCast().insertRange(mergeChunkMultiple, 2 * mergeChunkMultiple - 1);
+            inputs[2].getRowSet().writableCast().insertRange(mergeChunkMultiple, 2 * mergeChunkMultiple - 1);
             inputs[2].notifyListeners(ir(mergeChunkMultiple, 2 * mergeChunkMultiple - 1), i(), i());
         });
         TstUtils.validate(ens);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            inputs[0].getRowSet().mutableCast().removeRange(mergeChunkMultiple, 2 * mergeChunkMultiple - 1);
+            inputs[0].getRowSet().writableCast().removeRange(mergeChunkMultiple, 2 * mergeChunkMultiple - 1);
             inputs[0].notifyListeners(i(), ir(mergeChunkMultiple, 2 * mergeChunkMultiple - 1), i());
         });
         TstUtils.validate(ens);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            inputs[0].getRowSet().mutableCast().removeRange(0, mergeChunkMultiple - 1);
+            inputs[0].getRowSet().writableCast().removeRange(0, mergeChunkMultiple - 1);
             inputs[0].notifyListeners(i(), ir(0, mergeChunkMultiple - 1), i());
         });
         TstUtils.validate(ens);
@@ -368,7 +368,7 @@ public class QueryTableAggregationTest {
         input1.setRefreshing(true);
         final QueryTable input2 =
                 (QueryTable) TableTools.emptyTable(100).update("StrCol=Long.toString(ii)", "IntCol=i");
-        input2.getRowSet().mutableCast().remove(input2.getRowSet());
+        input2.getRowSet().writableCast().remove(input2.getRowSet());
         input2.setRefreshing(true);
 
         final EvalNugget[] ens = new EvalNugget[] {
@@ -383,25 +383,25 @@ public class QueryTableAggregationTest {
         };
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            input1.getRowSet().mutableCast().removeRange(50, 99);
+            input1.getRowSet().writableCast().removeRange(50, 99);
             input1.notifyListeners(i(), ir(50, 99), i());
         });
         TstUtils.validate(ens);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            input1.getRowSet().mutableCast().removeRange(0, 49);
+            input1.getRowSet().writableCast().removeRange(0, 49);
             input1.notifyListeners(i(), ir(0, 49), i());
         });
         TstUtils.validate(ens);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            input2.getRowSet().mutableCast().insertRange(0, 49);
+            input2.getRowSet().writableCast().insertRange(0, 49);
             input2.notifyListeners(ir(0, 49), i(), i());
         });
         TstUtils.validate(ens);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            input2.getRowSet().mutableCast().insertRange(50, 99);
+            input2.getRowSet().writableCast().insertRange(50, 99);
             input2.notifyListeners(ir(50, 99), i(), i());
         });
         TstUtils.validate(ens);
@@ -2709,7 +2709,7 @@ public class QueryTableAggregationTest {
 
             UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                 final RowSet added = RowSetFactory.fromRange(size * (fstep + 1), size * (fstep + 2) - 1);
-                queryTable.getRowSet().mutableCast().insert(added);
+                queryTable.getRowSet().writableCast().insert(added);
 
                 // Modifies and Adds in post-shift keyspace.
                 final ColumnHolder[] columnHolders = new ColumnHolder[columnInfos.length];
@@ -3017,8 +3017,8 @@ public class QueryTableAggregationTest {
             addToTable(table, i(9), c("x", 1));
             table.notifyListeners(i(9), i(), i());
         });
-        show(table.update("TrackingMutableRowSet=k"));
-        show(result.update("TrackingMutableRowSet=k"));
+        show(table.update("TrackingWritableRowSet=k"));
+        show(result.update("TrackingWritableRowSet=k"));
 
         TestCase.assertEquals(4, result.size());
         TestCase.assertEquals(0, listener.getCount());
@@ -3030,8 +3030,8 @@ public class QueryTableAggregationTest {
             TstUtils.removeRows(table, i(2));
             table.notifyListeners(i(), i(2), i());
         });
-        show(table.update("TrackingMutableRowSet=k"));
-        show(result.update("TrackingMutableRowSet=k"));
+        show(table.update("TrackingWritableRowSet=k"));
+        show(result.update("TrackingWritableRowSet=k"));
 
         TestCase.assertEquals(4, result.size());
         TestCase.assertEquals(0, listener.getCount());
@@ -3043,8 +3043,8 @@ public class QueryTableAggregationTest {
             TstUtils.removeRows(table, i(9));
             table.notifyListeners(i(), i(9), i());
         });
-        show(table.update("TrackingMutableRowSet=k"));
-        show(result.update("TrackingMutableRowSet=k"));
+        show(table.update("TrackingWritableRowSet=k"));
+        show(result.update("TrackingWritableRowSet=k"));
 
         TestCase.assertEquals(3, result.size());
 
@@ -3060,8 +3060,8 @@ public class QueryTableAggregationTest {
             addToTable(table, i(9), c("x", 1));
             table.notifyListeners(i(9), i(), i());
         });
-        show(table.update("TrackingMutableRowSet=k"));
-        show(result.update("TrackingMutableRowSet=k"));
+        show(table.update("TrackingWritableRowSet=k"));
+        show(result.update("TrackingWritableRowSet=k"));
 
         TestCase.assertEquals(4, result.size());
 
@@ -3077,8 +3077,8 @@ public class QueryTableAggregationTest {
             addToTable(table, i(9), c("x", 1));
             table.notifyListeners(i(), i(), i(9));
         });
-        show(table.update("TrackingMutableRowSet=k"));
-        show(result.update("TrackingMutableRowSet=k"));
+        show(table.update("TrackingWritableRowSet=k"));
+        show(result.update("TrackingWritableRowSet=k"));
 
         TestCase.assertEquals(4, result.size());
 
@@ -3092,8 +3092,8 @@ public class QueryTableAggregationTest {
             addToTable(table, i(4), c("x", 5));
             table.notifyListeners(i(), i(), i(4));
         });
-        show(table.update("TrackingMutableRowSet=k"));
-        show(result.update("TrackingMutableRowSet=k"));
+        show(table.update("TrackingWritableRowSet=k"));
+        show(result.update("TrackingWritableRowSet=k"));
 
         TestCase.assertEquals(5, result.size());
 
@@ -3244,8 +3244,8 @@ public class QueryTableAggregationTest {
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             ((TreeMapSource) table.getColumnSourceMap().get("Sentinel")).shift(0, 4097, 4096);
             ((TreeMapSource) table.getColumnSourceMap().get("Bucket")).shift(0, 4097, 4096);
-            table.getRowSet().mutableCast().removeRange(0, 4095);
-            table.getRowSet().mutableCast().insertRange(4098, 8193);
+            table.getRowSet().writableCast().removeRange(0, 4095);
+            table.getRowSet().writableCast().insertRange(4098, 8193);
             final Listener.Update update = new Listener.Update();
             update.removed = i();
             update.added = i();
@@ -3526,7 +3526,7 @@ public class QueryTableAggregationTest {
             for (final boolean substituteForThisIteration : new boolean[] {false, true}) {
                 ChunkedOperatorAggregationHelper.KEY_ONLY_SUBSTITUTION_ENABLED = substituteForThisIteration;
                 final Table source = emptyTable(100).updateView("A=i%10");
-                source.getRowSet().mutableCast().removeRange(50, 100);
+                source.getRowSet().writableCast().removeRange(50, 100);
                 source.setRefreshing(true);
 
                 resultSets[substituteForThisIteration ? 1 : 0] = new Table[] {
@@ -3539,7 +3539,7 @@ public class QueryTableAggregationTest {
                 };
 
                 UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-                    source.getRowSet().mutableCast().insertRange(50, 100);
+                    source.getRowSet().writableCast().insertRange(50, 100);
                     source.notifyListeners(new Listener.Update(ir(50, 100), i(), i(), RowSetShiftData.EMPTY,
                             ModifiedColumnSet.EMPTY));
                 });

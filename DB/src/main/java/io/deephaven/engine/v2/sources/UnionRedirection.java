@@ -18,7 +18,7 @@ public class UnionRedirection implements Serializable {
      * What do we tell users when they try to insert into a full Redirection rowSet.
      */
     private static final String INDEX_OVERFLOW_MESSAGE =
-            "Failure to insert rowSet into UnionRedirection, TrackingMutableRowSet values exceed long.  If you have several recursive merges, consider rewriting your query to do a single merge of many tables.";
+            "Failure to insert rowSet into UnionRedirection, TrackingWritableRowSet values exceed long.  If you have several recursive merges, consider rewriting your query to do a single merge of many tables.";
 
     /**
      * This is the minimum size of an initial allocation of a region.

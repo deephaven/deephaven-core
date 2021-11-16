@@ -38,7 +38,7 @@ abstract class StaticNaturalJoinStateManager {
         return "[" + Arrays.stream(keySourcesForErrorMessages).map(ls -> Objects.toString(ls.get(leftKey))).collect(Collectors.joining(", ")) + "]";
     }
 
-    MutableRowRedirection buildRowRedirection(QueryTable leftTable, boolean exactMatch, LongUnaryOperator rightSideFromSlot, JoinControl.RedirectionType redirectionType) {
+    WritableRowRedirection buildRowRedirection(QueryTable leftTable, boolean exactMatch, LongUnaryOperator rightSideFromSlot, JoinControl.RedirectionType redirectionType) {
         switch (redirectionType) {
             case Contiguous: {
                 if (!leftTable.isFlat()) {
@@ -51,7 +51,7 @@ abstract class StaticNaturalJoinStateManager {
                     checkExactMatch(exactMatch, leftTable.getRowSet().get(ii), rightSide);
                     innerIndex[ii] = rightSide;
                 }
-                return new ContiguousMutableRowRedirection(innerIndex);
+                return new ContiguousWritableRowRedirection(innerIndex);
             }
             case Sparse: {
                 final LongSparseArraySource sparseRedirections = new LongSparseArraySource();
@@ -65,10 +65,10 @@ abstract class StaticNaturalJoinStateManager {
                         sparseRedirections.set(next, rightSide);
                     }
                 }
-                return new LongColumnSourceMutableRowRedirection(sparseRedirections);
+                return new LongColumnSourceWritableRowRedirection(sparseRedirections);
             }
             case Hash: {
-                final MutableRowRedirection rowRedirection = MutableRowRedirectionLockFree.FACTORY.createRowRedirection(leftTable.intSize());
+                final WritableRowRedirection rowRedirection = WritableRowRedirectionLockFree.FACTORY.createRowRedirection(leftTable.intSize());
 
                 long leftPosition = 0;
                 for (final RowSet.Iterator it = leftTable.getRowSet().iterator(); it.hasNext(); ) {

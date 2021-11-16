@@ -73,15 +73,15 @@ public class TreeTableFilter implements Function<Table, Table>, MemoizedOperatio
         /**
          * The complete rowSet of our result table.
          */
-        private TrackingMutableRowSet resultRowSet;
+        private TrackingWritableRowSet resultRowSet;
         /**
          * The rowSet of values that match our desired filter.
          */
-        private MutableRowSet valuesRowSet;
+        private WritableRowSet valuesRowSet;
         /**
          * The rowSet of ancestors of matching values.
          */
-        private MutableRowSet parentRowSet;
+        private WritableRowSet parentRowSet;
         /**
          * For each parent key, a set of rows which directly descend from the parent.
          */
@@ -288,8 +288,8 @@ public class TreeTableFilter implements Function<Table, Table>, MemoizedOperatio
             parentRowSet.remove(builder.build());
         }
 
-        private MutableRowSet doValueFilter(boolean usePrev, RowSet rowsToFilter) {
-            MutableRowSet matched = rowsToFilter.copy();
+        private WritableRowSet doValueFilter(boolean usePrev, RowSet rowsToFilter) {
+            WritableRowSet matched = rowsToFilter.copy();
             for (final WhereFilter filter : filters) {
                 try (final SafeCloseable ignored = matched) { // Ensure we close old matched
                     matched = filter.filter(matched, source.getRowSet(), source, usePrev);
@@ -313,7 +313,7 @@ public class TreeTableFilter implements Function<Table, Table>, MemoizedOperatio
             return builder.build();
         }
 
-        private MutableRowSet computeParents(final boolean usePrev, @NotNull final RowSet rowsToParent) {
+        private WritableRowSet computeParents(final boolean usePrev, @NotNull final RowSet rowsToParent) {
             final Map<Object, TLongSet> parents =
                     generateParentReferenceMap(rowsToParent, usePrev ? parentSource::getPrev : parentSource::get);
 
@@ -419,11 +419,11 @@ public class TreeTableFilter implements Function<Table, Table>, MemoizedOperatio
                 RowSetShiftUtils.apply(upstream.shifted, resultRowSet);
 
                 // Finally, handle added sets.
-                try (final MutableRowSet addedAndModified = upstream.added.union(upstream.modified);
-                        final RowSet newFiltered = doValueFilter(false, addedAndModified);
-                        final RowSet resurrectedParents = checkForResurrectedParent(addedAndModified);
-                        final RowSet newParents = computeParents(false, newFiltered);
-                        final RowSet newResurrectedParents = computeParents(false, resurrectedParents)) {
+                try (final WritableRowSet addedAndModified = upstream.added.union(upstream.modified);
+                     final RowSet newFiltered = doValueFilter(false, addedAndModified);
+                     final RowSet resurrectedParents = checkForResurrectedParent(addedAndModified);
+                     final RowSet newParents = computeParents(false, newFiltered);
+                     final RowSet newResurrectedParents = computeParents(false, resurrectedParents)) {
 
 
                     valuesRowSet.insert(newFiltered);
@@ -434,16 +434,16 @@ public class TreeTableFilter implements Function<Table, Table>, MemoizedOperatio
 
                 // Compute expected results and the sets we will propagate to child listeners.
                 try (final RowSet result = valuesRowSet.union(parentRowSet);
-                        final MutableRowSet resultRemovals = resultRowSet.minus(result)) {
+                        final WritableRowSet resultRemovals = resultRowSet.minus(result)) {
                     downstream.added = result.minus(resultRowSet);
                     resultRowSet.update(downstream.added, resultRemovals);
 
                     downstream.modified = upstream.modified.intersect(resultRowSet);
-                    downstream.modified.mutableCast().remove(downstream.added);
+                    downstream.modified.writableCast().remove(downstream.added);
 
                     // convert post filter removals into pre-shift space -- note these rows must have previously existed
                     RowSetShiftUtils.unapply(upstream.shifted, resultRemovals);
-                    downstream.removed.mutableCast().insert(resultRemovals);
+                    downstream.removed.writableCast().insert(resultRemovals);
                 }
 
                 downstream.shifted = upstream.shifted;

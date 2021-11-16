@@ -6,7 +6,7 @@
 package io.deephaven.engine.v2.select;
 
 import io.deephaven.base.verify.Require;
-import io.deephaven.engine.rowset.MutableRowSet;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -61,7 +61,7 @@ public class TimeSeriesFilter extends WhereFilterLivenessArtifactImpl implements
     }
 
     @Override
-    public MutableRowSet filter(RowSet selection, RowSet fullSet, Table table, boolean usePrev) {
+    public WritableRowSet filter(RowSet selection, RowSet fullSet, Table table, boolean usePrev) {
         if (usePrev) {
             throw new PreviousFilteringNotSupported();
         }

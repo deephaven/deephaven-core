@@ -5,12 +5,12 @@
 package io.deephaven.engine.v2.utils;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.table.ChunkSink;
+import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.util.datastructures.SizeException;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ChunkSource;
-import io.deephaven.engine.table.WritableChunkSink;
-import io.deephaven.engine.table.WritableSource;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.Attributes.Any;
 import io.deephaven.engine.chunk.Attributes.OrderedRowKeys;
@@ -504,7 +504,7 @@ public class ChunkUtils {
      * @param usePrev Should we read previous values from src
      */
     public static void copyData(ChunkSource.WithPrev<? extends Attributes.Values> src, RowSequence srcAllKeys,
-            WritableSource<?> dest,
+            WritableColumnSource<?> dest,
             RowSequence destAllKeys, boolean usePrev) {
         if (src == dest) {
             throw new UnsupportedOperationException("This method isn't safe when src == dest");
@@ -520,9 +520,9 @@ public class ChunkUtils {
         }
         dest.ensureCapacity(destAllKeys.lastRowKey() + 1);
         try (final ChunkSource.GetContext srcContext = src.makeGetContext(minSize);
-                final WritableChunkSink.FillFromContext destContext = dest.makeFillFromContext(minSize);
-                final RowSequence.Iterator srcIter = srcAllKeys.getRowSequenceIterator();
-                final RowSequence.Iterator destIter = destAllKeys.getRowSequenceIterator()) {
+             final ChunkSink.FillFromContext destContext = dest.makeFillFromContext(minSize);
+             final RowSequence.Iterator srcIter = srcAllKeys.getRowSequenceIterator();
+             final RowSequence.Iterator destIter = destAllKeys.getRowSequenceIterator()) {
             while (srcIter.hasMore()) {
                 Assert.assertion(destIter.hasMore(), "destIter.hasMore()");
                 final RowSequence srcNextKeys = srcIter.getNextRowSequenceWithLength(minSize);
@@ -548,7 +548,7 @@ public class ChunkUtils {
      * @param usePrev Should we read previous values from src
      */
     public static void copyData(ChunkSource.WithPrev<? extends Attributes.Values>[] sources, RowSequence srcAllKeys,
-            WritableSource<?>[] destinations,
+            WritableColumnSource<?>[] destinations,
             RowSequence destAllKeys, boolean usePrev) {
         if (srcAllKeys.size() != destAllKeys.size()) {
             final String msg = String.format("Expected srcAllKeys.size() == destAllKeys.size(), but got %d and %d",
@@ -566,17 +566,17 @@ public class ChunkUtils {
         }
 
         final ChunkSource.GetContext[] sourceContexts = new ChunkSource.GetContext[sources.length];
-        final WritableChunkSink.FillFromContext[] destContexts = new WritableChunkSink.FillFromContext[sources.length];
+        final ChunkSink.FillFromContext[] destContexts = new ChunkSink.FillFromContext[sources.length];
 
         try (final SharedContext sharedContext = SharedContext.makeSharedContext();
              final RowSequence.Iterator srcIter = srcAllKeys.getRowSequenceIterator();
              final RowSequence.Iterator destIter = destAllKeys.getRowSequenceIterator();
              final SafeCloseableArray<ChunkSource.GetContext> ignored = new SafeCloseableArray<>(sourceContexts);
-             final SafeCloseableArray<WritableChunkSink.FillFromContext> ignored2 =
+             final SafeCloseableArray<ChunkSink.FillFromContext> ignored2 =
                         new SafeCloseableArray<>(destContexts)) {
 
             for (int ss = 0; ss < sources.length; ++ss) {
-                for (WritableSource<?> destination : destinations) {
+                for (WritableColumnSource<?> destination : destinations) {
                     if (sources[ss] == destination) {
                         throw new IllegalArgumentException("Source must not equal destination!");
                     }
@@ -603,14 +603,14 @@ public class ChunkUtils {
         }
     }
 
-    public static <T extends Attributes.Values> void fillWithNullValue(WritableChunkSink<T> dest, RowSequence allKeys) {
+    public static <T extends Attributes.Values> void fillWithNullValue(ChunkSink<T> dest, RowSequence allKeys) {
         final int minSize = Math.min(allKeys.intSize(), COPY_DATA_CHUNK_SIZE);
         if (minSize == 0) {
             return;
         }
-        try (final WritableChunkSink.FillFromContext destContext = dest.makeFillFromContext(minSize);
-                final WritableChunk<T> chunk = dest.getChunkType().makeWritableChunk(minSize);
-                final RowSequence.Iterator iter = allKeys.getRowSequenceIterator()) {
+        try (final ChunkSink.FillFromContext destContext = dest.makeFillFromContext(minSize);
+             final WritableChunk<T> chunk = dest.getChunkType().makeWritableChunk(minSize);
+             final RowSequence.Iterator iter = allKeys.getRowSequenceIterator()) {
             chunk.fillWithNullValue(0, minSize);
             while (iter.hasMore()) {
                 try (final RowSequence nextKeys = iter.getNextRowSequenceWithLength(COPY_DATA_CHUNK_SIZE)) {

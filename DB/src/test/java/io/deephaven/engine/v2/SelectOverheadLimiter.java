@@ -5,7 +5,7 @@ import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
-import io.deephaven.engine.rowset.TrackingMutableRowSet;
+import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.updategraph.NotificationQueue;
@@ -104,7 +104,7 @@ public class SelectOverheadLimiter {
 
         // we are refreshing, and within the permitted overhead
 
-        final TrackingMutableRowSet rowSet = input.getRowSet().copy().toTracking();
+        final TrackingWritableRowSet rowSet = input.getRowSet().copy().toTracking();
         final Map<String, SwitchColumnSource<?>> resultColumns = new LinkedHashMap<>();
         input.getColumnSourceMap().forEach((name, cs) -> resultColumns.put(name, new SwitchColumnSource<>(cs)));
         final QueryTable result = new QueryTable(rowSet, resultColumns);

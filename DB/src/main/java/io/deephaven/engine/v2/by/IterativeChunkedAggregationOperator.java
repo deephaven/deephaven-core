@@ -235,7 +235,7 @@ public interface IterativeChunkedAggregationOperator {
 
 
     /**
-     * Whether the operator can deal with an unchunked TrackingMutableRowSet more efficiently than a chunked rowSet.
+     * Whether the operator can deal with an unchunked TrackingWritableRowSet more efficiently than a chunked rowSet.
      *
      * @return true if the operator can deal with unchunked indices, false otherwise
      */

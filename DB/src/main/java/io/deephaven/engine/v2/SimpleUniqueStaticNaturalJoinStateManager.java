@@ -8,7 +8,7 @@ import io.deephaven.engine.v2.sources.LongArraySource;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.v2.utils.MutableRowRedirection;
+import io.deephaven.engine.v2.utils.WritableRowRedirection;
 import io.deephaven.engine.rowset.RowSet;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
@@ -104,7 +104,7 @@ class SimpleUniqueStaticNaturalJoinStateManager extends StaticNaturalJoinStateMa
     }
 
     @NotNull
-    MutableRowRedirection buildRowRedirection(QueryTable leftTable, boolean exactMatch, LongArraySource leftRedirections, JoinControl.RedirectionType redirectionType) {
+    WritableRowRedirection buildRowRedirection(QueryTable leftTable, boolean exactMatch, LongArraySource leftRedirections, JoinControl.RedirectionType redirectionType) {
         return buildRowRedirection(leftTable, exactMatch, leftRedirections::getLong, redirectionType);
     }
 }

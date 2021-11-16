@@ -2,7 +2,7 @@ package io.deephaven.engine.v2;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.rowset.MutableRowSet;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -374,7 +374,7 @@ public class QueryTableSelectUpdateTest {
                 }
             }
 
-            MutableRowSet rowSetToCheck = listener1.added.copy();
+            WritableRowSet rowSetToCheck = listener1.added.copy();
             rowSetToCheck.insert(listener1.modified);
             RowSet checkInvert = sourceTable.getRowSet().invert(rowSetToCheck);
 

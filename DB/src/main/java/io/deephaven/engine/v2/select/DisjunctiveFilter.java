@@ -5,8 +5,8 @@
 package io.deephaven.engine.v2.select;
 
 import io.deephaven.engine.exceptions.QueryCancellationException;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.rowset.MutableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.util.SafeCloseable;
 
@@ -35,9 +35,9 @@ public class DisjunctiveFilter extends ComposedFilter {
     }
 
     @Override
-    public MutableRowSet filter(RowSet selection, RowSet fullSet, Table table, boolean usePrev) {
-        MutableRowSet matched = null;
-        try (MutableRowSet remaining = selection.copy()) {
+    public WritableRowSet filter(RowSet selection, RowSet fullSet, Table table, boolean usePrev) {
+        WritableRowSet matched = null;
+        try (WritableRowSet remaining = selection.copy()) {
             for (WhereFilter filter : componentFilters) {
                 if (Thread.interrupted()) {
                     throw new QueryCancellationException("interrupted while filtering");
@@ -48,7 +48,7 @@ public class DisjunctiveFilter extends ComposedFilter {
                     remaining.remove(matched);
                 }
 
-                final MutableRowSet filterMatched = filter.filter(remaining, fullSet, table, usePrev);
+                final WritableRowSet filterMatched = filter.filter(remaining, fullSet, table, usePrev);
 
                 // All matched entries get put into the value
                 if (matched == null) {

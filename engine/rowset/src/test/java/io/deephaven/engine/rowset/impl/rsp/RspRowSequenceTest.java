@@ -1,6 +1,6 @@
 package io.deephaven.engine.rowset.impl.rsp;
 
-import io.deephaven.engine.rowset.MutableRowSet;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.chunk.Attributes.OrderedRowKeyRanges;
@@ -10,8 +10,7 @@ import io.deephaven.engine.chunk.WritableLongChunk;
 import io.deephaven.engine.chunk.util.pools.ChunkPoolReleaseTracking;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.rowset.impl.TrackingMutableRowSetImpl;
-import io.deephaven.engine.v2.utils.*;
+import io.deephaven.engine.rowset.impl.TrackingWritableRowSetImpl;
 import org.junit.Test;
 
 import java.util.Random;
@@ -29,7 +28,7 @@ public class RspRowSequenceTest extends RowSequenceTestBase {
             rb.addUnsafe(v);
         }
         rb.finishMutationsAndOptimize();
-        return new TrackingMutableRowSetImpl(rb);
+        return new TrackingWritableRowSetImpl(rb);
     }
 
     @Test
@@ -274,7 +273,7 @@ public class RspRowSequenceTest extends RowSequenceTestBase {
         ix.validate();
         final RspBitmap rb2 = (RspBitmap) rb.ixSubindexByKeyOnNew(startKey, endKey);
         rb2.andEquals(rb);
-        final RowSet ix2 = new TrackingMutableRowSetImpl(rb2);
+        final RowSet ix2 = new TrackingWritableRowSetImpl(rb2);
         assertEquals(ix2.size(), ix.size());
         assertEquals(0, ix2.minus(ix).size());
         rs.close();
@@ -518,7 +517,7 @@ public class RspRowSequenceTest extends RowSequenceTestBase {
 
     @Test
     public void testAsKeyRangesChunkRegression0() {
-        MutableRowSet rowSet = TstRowSetUtil.makeSingleRange(130972, 131071);
+        WritableRowSet rowSet = TstRowSetUtil.makeSingleRange(130972, 131071);
         rowSet.insert(262144);
 
         final long CHUNK_SIZE = 4096;
@@ -558,7 +557,7 @@ public class RspRowSequenceTest extends RowSequenceTestBase {
 
     @Test
     public void testAsKeyRangesChunkRegression0Rsp() {
-        MutableRowSet rowSet = TstRowSetUtil.makeSingleRange(130972, 131071);
+        WritableRowSet rowSet = TstRowSetUtil.makeSingleRange(130972, 131071);
         rowSet.insert(262144);
 
         final long CHUNK_SIZE = 4096;
@@ -578,7 +577,7 @@ public class RspRowSequenceTest extends RowSequenceTestBase {
 
     @Test
     public void testAsKeyRangesChunkRegression0SortedRanges() {
-        MutableRowSet rowSet = RowSetFactory.empty();
+        WritableRowSet rowSet = RowSetFactory.empty();
         rowSet.insertRange(130972, 131071);
         rowSet.insert(262144);
 

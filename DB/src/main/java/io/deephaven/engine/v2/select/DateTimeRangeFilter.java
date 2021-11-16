@@ -8,7 +8,7 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.sources.ReinterpretUtilities;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.Attributes.Values;
-import io.deephaven.engine.rowset.MutableRowSet;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.util.QueryConstants;
 
@@ -59,7 +59,7 @@ public class DateTimeRangeFilter extends LongRangeFilter {
     }
 
     @Override
-    MutableRowSet binarySearch(RowSet selection, ColumnSource columnSource, boolean usePrev, boolean reverse) {
+    WritableRowSet binarySearch(RowSet selection, ColumnSource columnSource, boolean usePrev, boolean reverse) {
         if (selection.isEmpty()) {
             return selection.copy();
         }

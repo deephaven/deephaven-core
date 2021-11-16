@@ -11,7 +11,7 @@ import java.util.function.LongConsumer;
 
 abstract class AbstractOrderedLongSetBuilderRandom implements OrderedLongSet.BuilderRandom {
 
-    protected static final IndexCounts indexCounts = new IndexCounts("randomIndexBuilder");
+    protected static final RowSetCounts rowSetCounts = new RowSetCounts("orderedLongSetBuilderRandom");
 
     protected SortedRanges pendingSr = null;
     private long pendingRangeStart = -1;
@@ -107,11 +107,11 @@ abstract class AbstractOrderedLongSetBuilderRandom implements OrderedLongSet.Bui
         final OrderedLongSet ans;
         if (innerBuilder() == null && pendingSr == null) {
             if (pendingRangeStart == -1) {
-                indexCounts.emptyCount.sample(1);
+                rowSetCounts.emptyCount.sample(1);
                 ans = OrderedLongSet.EMPTY;
             } else {
                 final SingleRange sr = SingleRange.make(pendingRangeStart, pendingRangeEnd);
-                indexCounts.sampleSingleRange(sr);
+                rowSetCounts.sampleSingleRange(sr);
                 ans = sr;
                 pendingRangeStart = -1;
             }
@@ -119,7 +119,7 @@ abstract class AbstractOrderedLongSetBuilderRandom implements OrderedLongSet.Bui
             flushPendingRange();
             if (innerBuilder() == null) {
                 pendingSr = pendingSr.tryCompactUnsafe(4);
-                indexCounts.sampleSortedRanges(pendingSr);
+                rowSetCounts.sampleSortedRanges(pendingSr);
                 ans = pendingSr;
                 pendingSr = null;
             } else {
@@ -155,8 +155,8 @@ abstract class AbstractOrderedLongSetBuilderRandom implements OrderedLongSet.Bui
 
     public void addRowSet(final RowSet rowSet) {
         flushPendingRange();
-        if (rowSet instanceof MutableRowSetImpl) {
-            MutableRowSetImpl.addToBuilderFromImpl(this, (MutableRowSetImpl) rowSet);
+        if (rowSet instanceof WritableRowSetImpl) {
+            WritableRowSetImpl.addToBuilderFromImpl(this, (WritableRowSetImpl) rowSet);
             return;
         }
         rowSet.forEachRowKeyRange((final long start, final long end) -> {

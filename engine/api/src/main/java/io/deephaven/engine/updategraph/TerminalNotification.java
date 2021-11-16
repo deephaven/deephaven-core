@@ -1,6 +1,7 @@
-package io.deephaven.engine.v2.utils;
+package io.deephaven.engine.updategraph;
 
 public abstract class TerminalNotification extends AbstractNotification {
+
     protected TerminalNotification() {
         super(true);
     }

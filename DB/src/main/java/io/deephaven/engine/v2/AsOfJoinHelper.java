@@ -85,7 +85,7 @@ public class AsOfJoinHelper {
                     + leftStampSource.getType() + ", right=" + rightStampSource.getType());
         }
 
-        final MutableRowRedirection rowRedirection = JoinRowRedirection.makeRowRedirection(control, leftTable);
+        final WritableRowRedirection rowRedirection = JoinRowRedirection.makeRowRedirection(control, leftTable);
         if (keyColumnCount == 0) {
             return zeroKeyAj(control, leftTable, rightTable, columnsToAdd, stampPair, leftStampSource,
                     originalRightStampSource, rightStampSource, order, disallowExactMatch, rowRedirection);
@@ -122,7 +122,7 @@ public class AsOfJoinHelper {
             ColumnSource<?> leftStampSource,
             ColumnSource<?> originalRightStampSource,
             ColumnSource<?> rightStampSource,
-            MutableRowRedirection rowRedirection) {
+            WritableRowRedirection rowRedirection) {
         final LongArraySource slots = new LongArraySource();
         final int slotCount;
 
@@ -411,7 +411,7 @@ public class AsOfJoinHelper {
     }
 
     private static void processLeftSlotWithRightCache(AsOfStampContext stampContext,
-            RowSet leftRowSet, RowSet rightRowSet, MutableRowRedirection rowRedirection,
+            RowSet leftRowSet, RowSet rightRowSet, WritableRowRedirection rowRedirection,
             ColumnSource<?> rightStampSource,
             ResettableWritableLongChunk<RowKeys> keyChunk, ResettableWritableChunk<Values> valuesChunk,
             ArrayValuesCache arrayValuesCache,
@@ -498,7 +498,7 @@ public class AsOfJoinHelper {
     private static Table zeroKeyAj(JoinControl control, QueryTable leftTable, QueryTable rightTable,
             MatchPair[] columnsToAdd, MatchPair stampPair, ColumnSource<?> leftStampSource,
             ColumnSource<?> originalRightStampSource, ColumnSource<?> rightStampSource, SortingOrder order,
-            boolean disallowExactMatch, final MutableRowRedirection rowRedirection) {
+            boolean disallowExactMatch, final WritableRowRedirection rowRedirection) {
         if (rightTable.isRefreshing() && leftTable.isRefreshing()) {
             return zeroKeyAjBothIncremental(control, leftTable, rightTable, columnsToAdd, stampPair, leftStampSource,
                     rightStampSource, order, disallowExactMatch, rowRedirection);
@@ -523,7 +523,7 @@ public class AsOfJoinHelper {
             ColumnSource<?>[] rightSources,
             ColumnSource<?> leftStampSource,
             ColumnSource<?> rightStampSource,
-            MutableRowRedirection rowRedirection) {
+            WritableRowRedirection rowRedirection) {
         if (leftTable.isRefreshing()) {
             throw new IllegalStateException();
         }
@@ -906,7 +906,7 @@ public class AsOfJoinHelper {
             ColumnSource<?>[] rightSources,
             ColumnSource<?> leftStampSource,
             ColumnSource<?> rightStampSource,
-            MutableRowRedirection rowRedirection) {
+            WritableRowRedirection rowRedirection) {
         final boolean reverse = order == SortingOrder.Descending;
 
         final ChunkType stampChunkType = rightStampSource.getChunkType();
@@ -1040,7 +1040,7 @@ public class AsOfJoinHelper {
     private static Table zeroKeyAjBothIncremental(JoinControl control, QueryTable leftTable, QueryTable rightTable,
             MatchPair[] columnsToAdd, MatchPair stampPair, ColumnSource<?> leftStampSource,
             ColumnSource<?> rightStampSource, SortingOrder order, boolean disallowExactMatch,
-            final MutableRowRedirection rowRedirection) {
+            final WritableRowRedirection rowRedirection) {
         final boolean reverse = order == SortingOrder.Descending;
 
         final ChunkType stampChunkType = rightStampSource.getChunkType();
@@ -1120,7 +1120,7 @@ public class AsOfJoinHelper {
     private static Table zeroKeyAjRightIncremental(JoinControl control, QueryTable leftTable, QueryTable rightTable,
             MatchPair[] columnsToAdd, MatchPair stampPair, ColumnSource<?> leftStampSource,
             ColumnSource<?> rightStampSource, SortingOrder order, boolean disallowExactMatch,
-            final MutableRowRedirection rowRedirection) {
+            final WritableRowRedirection rowRedirection) {
         final boolean reverse = order == SortingOrder.Descending;
 
         final ChunkType stampChunkType = rightStampSource.getChunkType();
@@ -1337,11 +1337,11 @@ public class AsOfJoinHelper {
     }
 
     private static void rightIncrementalApplySsaShift(RowSetShiftData shiftData, SegmentedSortedArray ssa,
-            LongSortKernel<Values, RowKeys> sortKernel, ChunkSource.FillContext fillContext,
-            RowSet restampRemovals, QueryTable table,
-            int chunkSize, ColumnSource<?> stampSource, ChunkSsaStamp chunkSsaStamp,
-            WritableChunk<Values> leftStampValues, WritableLongChunk<RowKeys> leftStampKeys,
-            MutableRowRedirection rowRedirection, boolean disallowExactMatch) {
+                                                      LongSortKernel<Values, RowKeys> sortKernel, ChunkSource.FillContext fillContext,
+                                                      RowSet restampRemovals, QueryTable table,
+                                                      int chunkSize, ColumnSource<?> stampSource, ChunkSsaStamp chunkSsaStamp,
+                                                      WritableChunk<Values> leftStampValues, WritableLongChunk<RowKeys> leftStampKeys,
+                                                      WritableRowRedirection rowRedirection, boolean disallowExactMatch) {
 
         try (final RowSet fullPrevRowSet = table.getRowSet().getPrevRowSet();
                 final RowSet previousToShift = fullPrevRowSet.minus(restampRemovals);
@@ -1417,7 +1417,7 @@ public class AsOfJoinHelper {
     private static Table zeroKeyAjRightStatic(QueryTable leftTable, Table rightTable, MatchPair[] columnsToAdd,
             MatchPair stampPair, ColumnSource<?> leftStampSource, ColumnSource<?> originalRightStampSource,
             ColumnSource<?> rightStampSource, SortingOrder order, boolean disallowExactMatch,
-            final MutableRowRedirection rowRedirection) {
+            final WritableRowRedirection rowRedirection) {
         final RowSet rightRowSet = rightTable.getRowSet();
 
         final WritableLongChunk<RowKeys> rightStampKeys = WritableLongChunk.makeWritableChunk(rightRowSet.intSize());
@@ -1530,7 +1530,7 @@ public class AsOfJoinHelper {
             columnSources.put(mp.left(), rightSource);
         });
         if (refreshing) {
-            rowRedirection.mutableCast().startTrackingPrevValues();
+            rowRedirection.writableCast().startTrackingPrevValues();
         }
         return new QueryTable(leftTable.getRowSet(), columnSources);
     }

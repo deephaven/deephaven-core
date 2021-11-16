@@ -1,11 +1,11 @@
 package io.deephaven.engine.v2.select;
 
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.util.compare.CharComparisons;
 import io.deephaven.engine.v2.select.chunkfilters.CharRangeComparator;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.rowset.MutableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.gui.table.filters.Condition;
 import io.deephaven.util.QueryConstants;
@@ -78,7 +78,7 @@ public class CharRangeFilter extends AbstractRangeFilter {
     }
 
     @Override
-    MutableRowSet binarySearch(RowSet selection, ColumnSource columnSource, boolean usePrev, boolean reverse) {
+    WritableRowSet binarySearch(RowSet selection, ColumnSource columnSource, boolean usePrev, boolean reverse) {
         if (selection.isEmpty()) {
             return selection.copy();
         }

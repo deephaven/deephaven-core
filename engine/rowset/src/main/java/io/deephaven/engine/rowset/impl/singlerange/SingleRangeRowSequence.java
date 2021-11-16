@@ -4,7 +4,7 @@ import static io.deephaven.engine.chunk.Attributes.OrderedRowKeyRanges;
 
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.impl.MutableRowSetImpl;
+import io.deephaven.engine.rowset.impl.WritableRowSetImpl;
 import io.deephaven.engine.rowset.impl.RowSequenceAsChunkImpl;
 import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.chunk.WritableLongChunk;
@@ -65,7 +65,7 @@ public class SingleRangeRowSequence extends RowSequenceAsChunkImpl implements Si
 
     @Override
     public RowSet asRowSet() {
-        return new MutableRowSetImpl(SingleRange.make(rangeStart(), rangeEnd()));
+        return new WritableRowSetImpl(SingleRange.make(rangeStart(), rangeEnd()));
     }
 
     @Override

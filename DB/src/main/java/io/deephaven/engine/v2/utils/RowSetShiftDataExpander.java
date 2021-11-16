@@ -26,7 +26,7 @@ public class RowSetShiftDataExpander implements SafeCloseable {
 
     private final RowSet added;
     private final RowSet removed;
-    private final MutableRowSet modified;
+    private final WritableRowSet modified;
 
     /**
      * Generates the backwards compatible ARM from an ARMS update.
@@ -71,8 +71,8 @@ public class RowSetShiftDataExpander implements SafeCloseable {
             }
 
             // consider all rows that are in a shift region as modified (if they still exist)
-            try (final MutableRowSet addedByShift = addedByShiftB.build();
-                    final RowSet rmByShift = removedByShiftB.build()) {
+            try (final WritableRowSet addedByShift = addedByShiftB.build();
+                 final RowSet rmByShift = removedByShiftB.build()) {
                 addedByShift.insert(rmByShift);
                 addedByShift.retain(sourceRowSet);
                 modified.insert(addedByShift);
@@ -160,7 +160,7 @@ public class RowSetShiftDataExpander implements SafeCloseable {
             return;
         }
 
-        // Excuse the sloppiness in TrackingMutableRowSet closing after this point, we're planning to crash the process
+        // Excuse the sloppiness in TrackingWritableRowSet closing after this point, we're planning to crash the process
         // anyway...
 
         String serializedIndices = null;
@@ -206,7 +206,7 @@ public class RowSetShiftDataExpander implements SafeCloseable {
 
         // Everything is messed up for this table, print out the indices in an easy to understand way
         final String indexUpdateErrorMessage = new LogOutputStringImpl()
-                .append("TrackingMutableRowSet update error detected: ")
+                .append("TrackingWritableRowSet update error detected: ")
                 .append(LogOutput::nl).append("\t          previousIndex=").append(sourceRowSet.getPrevRowSet())
                 .append(LogOutput::nl).append("\t           currentIndex=").append(sourceRowSet)
                 .append(LogOutput::nl).append("\t         updateToExpand=").append(update)
@@ -225,7 +225,7 @@ public class RowSetShiftDataExpander implements SafeCloseable {
         log.error().append(indexUpdateErrorMessage).endl();
 
         if (serializedIndices != null) {
-            log.error().append("TrackingMutableRowSet update error detected: serialized data=")
+            log.error().append("TrackingWritableRowSet update error detected: serialized data=")
                     .append(serializedIndices).endl();
         }
 

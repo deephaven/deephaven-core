@@ -130,7 +130,7 @@ public interface ChunkFilter {
             Configuration.getInstance().getLongWithDefault("ChunkFilter.interruptionGoalMillis", 100);
 
     /**
-     * Apply a chunk filter to a RowSet and column source, producing a new MutableRowSet that is responsive to the
+     * Apply a chunk filter to a RowSet and column source, producing a new WritableRowSet that is responsive to the
      * filter.
      *
      * @param selection the RowSet to filter
@@ -138,10 +138,10 @@ public interface ChunkFilter {
      * @param usePrev should we use previous values from the column source?
      * @param chunkFilter the chunk filter to apply
      *
-     * @return A new MutableRowSet representing the filtered values, owned by the caller
+     * @return A new WritableRowSet representing the filtered values, owned by the caller
      */
-    static MutableRowSet applyChunkFilter(RowSet selection, ColumnSource<?> columnSource, boolean usePrev,
-                                          ChunkFilter chunkFilter) {
+    static WritableRowSet applyChunkFilter(RowSet selection, ColumnSource<?> columnSource, boolean usePrev,
+                                           ChunkFilter chunkFilter) {
         final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
 
         final int contextSize = (int) Math.min(FILTER_CHUNK_SIZE, selection.size());

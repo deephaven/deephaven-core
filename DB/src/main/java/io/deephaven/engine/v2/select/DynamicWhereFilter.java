@@ -174,7 +174,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
     public void init(TableDefinition tableDefinition) {}
 
     @Override
-    public MutableRowSet filter(RowSet selection, RowSet fullSet, Table table, boolean usePrev) {
+    public WritableRowSet filter(RowSet selection, RowSet fullSet, Table table, boolean usePrev) {
         if (usePrev) {
             throw new PreviousFilteringNotSupported();
         }
@@ -221,19 +221,19 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
         return filterLinear(selection, keyColumns, tupleSource);
     }
 
-    private MutableRowSet filterGrouping(TrackingRowSet selection, TupleSource tupleSource) {
+    private WritableRowSet filterGrouping(TrackingRowSet selection, TupleSource tupleSource) {
         final RowSet matchingKeys = selection.getSubSetForKeySet(liveValues, tupleSource);
         return (inclusion ? matchingKeys.copy() : selection.minus(matchingKeys));
     }
 
-    private MutableRowSet filterGrouping(TrackingRowSet selection, Table table) {
+    private WritableRowSet filterGrouping(TrackingRowSet selection, Table table) {
         final ColumnSource[] keyColumns =
                 Arrays.stream(matchPairs).map(mp -> table.getColumnSource(mp.left())).toArray(ColumnSource[]::new);
         final TupleSource tupleSource = TupleSourceFactory.makeTupleSource(keyColumns);
         return filterGrouping(selection, tupleSource);
     }
 
-    private MutableRowSet filterLinear(RowSet selection, ColumnSource[] keyColumns, TupleSource tupleSource) {
+    private WritableRowSet filterLinear(RowSet selection, ColumnSource[] keyColumns, TupleSource tupleSource) {
         if (keyColumns.length == 1) {
             return filterLinearOne(selection, keyColumns[0]);
         } else {
@@ -241,7 +241,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
         }
     }
 
-    private MutableRowSet filterLinearOne(RowSet selection, ColumnSource keyColumn) {
+    private WritableRowSet filterLinearOne(RowSet selection, ColumnSource keyColumn) {
         if (selection.isEmpty()) {
             return RowSetFactory.empty();
         }
@@ -280,7 +280,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
         return indexBuilder.build();
     }
 
-    private MutableRowSet filterLinearTuple(RowSet selection, TupleSource tupleSource) {
+    private WritableRowSet filterLinearTuple(RowSet selection, TupleSource tupleSource) {
         final RowSetBuilderSequential indexBuilder = RowSetFactory.builderSequential();
 
         for (final RowSet.Iterator it = selection.iterator(); it.hasNext();) {

@@ -9,7 +9,7 @@ import org.jetbrains.annotations.NotNull;
  * implementations conform to this interface, but many APIs only expose the super-interface to discourage inappropriate
  * changes.
  */
-public interface MutableRowSet extends RowSet {
+public interface WritableRowSet extends RowSet {
 
     /**
      * Add a single key to this RowSet if it's not already present.
@@ -85,8 +85,8 @@ public interface MutableRowSet extends RowSet {
      * @return a new RowSet representing the keys removed
      */
     @NotNull
-    default MutableRowSet extract(@NotNull final RowSet other) {
-        final MutableRowSet ret = this.intersect(other);
+    default WritableRowSet extract(@NotNull final RowSet other) {
+        final WritableRowSet ret = this.intersect(other);
         remove(ret);
         return ret;
     }
@@ -125,15 +125,15 @@ public interface MutableRowSet extends RowSet {
     void compact();
 
     @Override
-    default TrackingMutableRowSet trackingCast() {
-        return (TrackingMutableRowSet) this;
+    default TrackingWritableRowSet trackingCast() {
+        return (TrackingWritableRowSet) this;
     }
 
     /**
      * <p>
-     * Destructively convert this MutableRowSet into a {@link TrackingMutableRowSet}.
+     * Destructively convert this WritableRowSet into a {@link TrackingWritableRowSet}.
      * <p>
-     * This is really only suitable when the caller "owns" this MutableRowSet. Programming errors may occur if the any
+     * This is really only suitable when the caller "owns" this WritableRowSet. Programming errors may occur if the any
      * code holds onto references to {@link this} rather than the result, because there may be ambiguity about resource
      * ownership.
      * <p>
@@ -142,7 +142,7 @@ public interface MutableRowSet extends RowSet {
      * <p>
      * It is an error to invoke this on an instance that is already tracking.
      *
-     * @return A {@link TrackingMutableRowSet} constructed from this MutableRowSet, or {@code this} if already tracking
+     * @return A {@link TrackingWritableRowSet} constructed from this WritableRowSet, or {@code this} if already tracking
      */
-    TrackingMutableRowSet toTracking();
+    TrackingWritableRowSet toTracking();
 }

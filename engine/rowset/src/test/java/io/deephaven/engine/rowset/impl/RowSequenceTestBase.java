@@ -467,7 +467,7 @@ public abstract class RowSequenceTestBase {
 
     @Test
     public void testGetAverageRunLengthEstimate() {
-        final MutableRowSet ix = TstRowSetUtil.makeEmptyRsp();
+        final WritableRowSet ix = TstRowSetUtil.makeEmptyRsp();
         final long k0 = 1 << 14;
         final long rlen = 16;
         final long nRanges = 256;
@@ -515,7 +515,7 @@ public abstract class RowSequenceTestBase {
             assertChunksEqual(expectedIndices, rowSequence.asRowKeyChunk());
             // Check Ordered Ranges Chunk
             assertChunksEqual(expectedRanges, rowSequence.asRowKeyRangesChunk());
-            // Check TrackingMutableRowSet
+            // Check TrackingWritableRowSet
             final MutableInt idx = new MutableInt(0);
             final RowSet ix = rowSequence.asRowSet();
             assertTrue(msg, ix.forEachRowKey((value) -> {
@@ -662,7 +662,7 @@ public abstract class RowSequenceTestBase {
     }
 
 
-    protected void advanceBug(final MutableRowSet rowSet) {
+    protected void advanceBug(final WritableRowSet rowSet) {
         final long regionBits = 40;
         final long regionSize = 1L << regionBits;
         final long subRegionBitMask = regionSize - 1;

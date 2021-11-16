@@ -25,12 +25,12 @@ import java.util.PriorityQueue;
 public abstract class QueryReplayGroupedTable extends QueryTable implements Runnable {
 
 
-    protected final MutableRowRedirection rowRedirection;
+    protected final WritableRowRedirection rowRedirection;
     final Replayer replayer;
     protected PriorityQueue<IteratorsAndNextTime> allIterators = new PriorityQueue<>();
 
     private static Map<String, ColumnSource<?>> getResultSources(Map<String, ? extends ColumnSource<?>> input,
-            MutableRowRedirection rowRedirection) {
+            WritableRowRedirection rowRedirection) {
         Map<String, ColumnSource<?>> result = new LinkedHashMap<>();
         for (Map.Entry<String, ? extends ColumnSource<?>> stringEntry : input.entrySet()) {
             ColumnSource<?> value = stringEntry.getValue();
@@ -75,7 +75,7 @@ public abstract class QueryReplayGroupedTable extends QueryTable implements Runn
     }
 
     protected QueryReplayGroupedTable(TrackingRowSet rowSet, Map<String, ? extends ColumnSource<?>> input,
-                                      String timeColumn, Replayer replayer, MutableRowRedirection rowRedirection, String[] groupingColumns) {
+                                      String timeColumn, Replayer replayer, WritableRowRedirection rowRedirection, String[] groupingColumns) {
 
         super(RowSetFactory.empty().toTracking(), getResultSources(input, rowRedirection));
         this.rowRedirection = rowRedirection;

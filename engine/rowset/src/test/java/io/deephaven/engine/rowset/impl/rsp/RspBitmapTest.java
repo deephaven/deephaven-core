@@ -4,12 +4,11 @@ import static io.deephaven.engine.chunk.Attributes.OrderedRowKeys;
 
 import io.deephaven.engine.rowset.impl.OrderedLongSet;
 import io.deephaven.engine.rowset.impl.OrderedLongSetBuilderSequential;
-import io.deephaven.engine.rowset.impl.TrackingMutableRowSetImpl;
+import io.deephaven.engine.rowset.impl.TrackingWritableRowSetImpl;
 import io.deephaven.util.datastructures.LongAbortableConsumer;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.chunk.WritableLongChunk;
-import io.deephaven.engine.v2.utils.*;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.Shuffle;
 import gnu.trove.set.TLongSet;
@@ -3689,7 +3688,7 @@ public class RspBitmapTest {
         rb = rb.add(2 * BLOCK_SIZE + BLOCK_LAST);
         rb = rb.addRange(3 * BLOCK_SIZE, 3 * BLOCK_SIZE + BLOCK_LAST);
         final OrderedLongSet.BuilderSequential b = new OrderedLongSetBuilderSequential();
-        rb.invert(b, new TrackingMutableRowSetImpl(rb).rangeIterator(), rb.getCardinality());
+        rb.invert(b, new TrackingWritableRowSetImpl(rb).rangeIterator(), rb.getCardinality());
         final OrderedLongSet timpl = b.getTreeIndexImpl();
         assertEquals(rb.getCardinality(), timpl.ixCardinality());
         assertTrue(timpl.ixContainsRange(0, rb.getCardinality() - 1));

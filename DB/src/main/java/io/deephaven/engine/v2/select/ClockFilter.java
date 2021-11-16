@@ -6,7 +6,7 @@ package io.deephaven.engine.v2.select;
 
 import io.deephaven.base.clock.Clock;
 import io.deephaven.base.verify.Require;
-import io.deephaven.engine.rowset.MutableRowSet;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderRandom;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -57,8 +57,8 @@ public abstract class ClockFilter extends WhereFilterLivenessArtifactImpl implem
     }
 
     @Override
-    public final MutableRowSet filter(@NotNull final RowSet selection, @NotNull final RowSet fullSet,
-                                      @NotNull final Table table, boolean usePrev) {
+    public final WritableRowSet filter(@NotNull final RowSet selection, @NotNull final RowSet fullSet,
+                                       @NotNull final Table table, boolean usePrev) {
         if (usePrev) {
             throw new PreviousFilteringNotSupported();
         }
@@ -77,13 +77,13 @@ public abstract class ClockFilter extends WhereFilterLivenessArtifactImpl implem
                 : table.view(columnName + " = isNull(" + columnName + ") ? NULL_LONG : " + columnName + ".getNanos()")
                         .getColumnSource(columnName);
 
-        final MutableRowSet initial = initializeAndGetInitialIndex(selection, fullSet, table);
+        final WritableRowSet initial = initializeAndGetInitialIndex(selection, fullSet, table);
         return initial == null ? RowSetFactory.empty() : initial;
     }
 
     @Nullable
-    protected abstract MutableRowSet initializeAndGetInitialIndex(@NotNull final RowSet selection,
-            @NotNull final RowSet fullSet, @NotNull final Table table);
+    protected abstract WritableRowSet initializeAndGetInitialIndex(@NotNull final RowSet selection,
+                                                                   @NotNull final RowSet fullSet, @NotNull final Table table);
 
     @Override
     public final boolean isSimpleFilter() {
@@ -116,14 +116,14 @@ public abstract class ClockFilter extends WhereFilterLivenessArtifactImpl implem
     public final void run() {
         final RowSet added = updateAndGetAddedIndex();
         if (added != null && !added.isEmpty()) {
-            resultTable.getRowSet().mutableCast().insert(added);
+            resultTable.getRowSet().writableCast().insert(added);
             resultTable.notifyListeners(added, RowSetFactory.empty(),
                     RowSetFactory.empty());
         }
     }
 
     @Nullable
-    protected abstract MutableRowSet updateAndGetAddedIndex();
+    protected abstract WritableRowSet updateAndGetAddedIndex();
 
     /**
      * Representation of a contiguous key range with monotonically nondecreasing timestamp values.

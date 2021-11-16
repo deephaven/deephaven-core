@@ -119,7 +119,7 @@ public class UpdatableTable extends QueryTable implements Runnable {
         final RowSet added = setToIndex(addedSet);
         final RowSet removed = setToIndex(removedSet);
         final RowSet modified = setToIndex(modifiedSet);
-        getRowSet().mutableCast().update(added, removed);
+        getRowSet().writableCast().update(added, removed);
         if (added.isNonempty() || removed.isNonempty() || modified.isNonempty()) {
             final Listener.Update update = new Listener.Update();
             update.added = added;

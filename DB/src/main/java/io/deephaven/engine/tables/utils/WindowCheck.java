@@ -217,7 +217,7 @@ public class WindowCheck {
                 // now add the new timestamps
                 upstream.added.forAllRowKeys(this::addIndex);
 
-                final MutableRowSet downstreamModified = upstream.modified.copy();
+                final WritableRowSet downstreamModified = upstream.modified.copy();
                 try (final RowSet modifiedByTime = recomputeModified()) {
                     if (modifiedByTime.isNonempty()) {
                         downstreamModified.insert(modifiedByTime);

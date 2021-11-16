@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2.snapshot;
 
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.WritableSource;
+import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.rftable.chunkfillers.chunkfillers.ChunkFiller;
 import io.deephaven.engine.v2.utils.ChunkUtils;
 import io.deephaven.engine.rowset.RowSet;
@@ -39,13 +39,13 @@ public class SnapshotUtils {
      * @param destRowSet The keys in destColumns we want to write to
      */
     public static void copyStampColumns(@NotNull Map<String, ? extends ColumnSource<?>> stampColumns, long stampKey,
-            @NotNull Map<String, ? extends WritableSource<?>> destColumns, @NotNull RowSet destRowSet) {
+                                        @NotNull Map<String, ? extends WritableColumnSource<?>> destColumns, @NotNull RowSet destRowSet) {
         for (Map.Entry<String, ? extends ColumnSource<?>> entry : stampColumns.entrySet()) {
             final String name = entry.getKey();
             final ColumnSource<?> src = entry.getValue();
 
             // Fill the corresponding destination column
-            final WritableSource<?> dest = destColumns.get(name);
+            final WritableColumnSource<?> dest = destColumns.get(name);
             final ChunkFiller destFiller = ChunkFiller.forChunkType(src.getChunkType());
             destFiller.fillFromSingleValue(src, stampKey, dest, destRowSet);
         }
@@ -63,13 +63,13 @@ public class SnapshotUtils {
      * @param destKey The key in destColumns we want to write to
      */
     public static void copyStampColumns(@NotNull Map<String, ? extends ColumnSource<?>> stampColumns, long stampKey,
-            @NotNull Map<String, ? extends WritableSource<?>> destColumns, long destKey) {
+                                        @NotNull Map<String, ? extends WritableColumnSource<?>> destColumns, long destKey) {
         for (Map.Entry<String, ? extends ColumnSource<?>> entry : stampColumns.entrySet()) {
             final String name = entry.getKey();
             final ColumnSource<?> src = entry.getValue();
 
             // Fill the corresponding destination column
-            final WritableSource<?> dest = destColumns.get(name);
+            final WritableColumnSource<?> dest = destColumns.get(name);
             // noinspection unchecked,rawtypes
             dest.copy((ColumnSource) src, stampKey, destKey);
         }
@@ -85,7 +85,7 @@ public class SnapshotUtils {
      * @param destRowSet The keys in destColumns we want to write to
      */
     public static void copyDataColumns(@NotNull Map<String, ? extends ColumnSource<?>> srcColumns,
-            @NotNull RowSet srcRowSet, @NotNull Map<String, ? extends WritableSource<?>> destColumns,
+            @NotNull RowSet srcRowSet, @NotNull Map<String, ? extends WritableColumnSource<?>> destColumns,
             @NotNull RowSet destRowSet,
             boolean usePrev) {
         assert srcRowSet.size() == destRowSet.size();
@@ -96,7 +96,7 @@ public class SnapshotUtils {
             final String name = entry.getKey();
             final ColumnSource<?> srcCs = entry.getValue();
 
-            final WritableSource<?> destCs = destColumns.get(name);
+            final WritableColumnSource<?> destCs = destColumns.get(name);
             destCs.ensureCapacity(destRowSet.lastRowKey() + 1);
             ChunkUtils.copyData(srcCs, srcRowSet, destCs, destRowSet, usePrev);
         }

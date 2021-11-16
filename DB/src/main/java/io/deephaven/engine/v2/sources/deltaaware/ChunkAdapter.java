@@ -2,12 +2,12 @@ package io.deephaven.engine.v2.sources.deltaaware;
 
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.engine.table.ChunkSource;
-import io.deephaven.engine.table.WritableChunkSink;
+import io.deephaven.engine.table.ChunkSink;
 import io.deephaven.engine.chunk.*;
 
 public class ChunkAdapter<T> {
-    public static <T> ChunkAdapter<T> create(Class type, final WritableChunkSink baseline,
-            final WritableChunkSink delta) {
+    public static <T> ChunkAdapter<T> create(Class type, final ChunkSink baseline,
+            final ChunkSink delta) {
         // noinspection unchecked
         return type == Boolean.class ? (ChunkAdapter<T>) new BooleanChunkAdapter(baseline, delta)
                 : new ChunkAdapter<>(baseline, delta);
@@ -16,12 +16,12 @@ public class ChunkAdapter<T> {
     /**
      * A copy of DeltaAwareColumnSource.baseline, kept here for convenience
      */
-    private final WritableChunkSink baseline;
+    private final ChunkSink baseline;
     /**
      * A copy of DeltaAwareColumnSource.delta, kept here for convenience, and updated when the corresponding delta
      * changes.
      */
-    private WritableChunkSink delta;
+    private ChunkSink delta;
     /**
      * A context suitable for getting data from baseline.
      */
@@ -33,7 +33,7 @@ public class ChunkAdapter<T> {
     /**
      * A context suitable for getting filling the delta from a context. Updated when the corresponding delta changes.
      */
-    private WritableChunkSink.FillFromContext deltaFillFromContext;
+    private ChunkSink.FillFromContext deltaFillFromContext;
     /**
      * A custom RowSequence implementation optimized to store a single key, and to be resettable.
      */
@@ -43,7 +43,7 @@ public class ChunkAdapter<T> {
      */
     private final WritableChunk<Attributes.Values> baseChunk;
 
-    ChunkAdapter(final WritableChunkSink baseline, final WritableChunkSink delta) {
+    ChunkAdapter(final ChunkSink baseline, final ChunkSink delta) {
         this.baseline = baseline;
         this.delta = delta;
         this.baselineContext = baseline.makeFillContext(1);
@@ -160,7 +160,7 @@ public class ChunkAdapter<T> {
     }
 
     private static class BooleanChunkAdapter extends ChunkAdapter<Boolean> {
-        BooleanChunkAdapter(WritableChunkSink baseline, WritableChunkSink delta) {
+        BooleanChunkAdapter(ChunkSink baseline, ChunkSink delta) {
             super(baseline, delta);
         }
 

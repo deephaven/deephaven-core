@@ -7,9 +7,9 @@ package io.deephaven.engine.table;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.chunk.ChunkType;
-import io.deephaven.engine.rowset.MutableRowSet;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.TrackingMutableRowSet;
+import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 
@@ -22,7 +22,7 @@ import java.util.Map;
  * A "source" for column data - allows cell values to be looked up by (long) keys.
  *
  * <p>
- * Note for implementors: All {@link ColumnSource} implementations must map {@link TrackingMutableRowSet#NULL_ROW_KEY}
+ * Note for implementors: All {@link ColumnSource} implementations must map {@link TrackingWritableRowSet#NULL_ROW_KEY}
  * to a null value for all {@code get} and {@code getPrev} methods.
  */
 public interface ColumnSource<T>
@@ -43,8 +43,8 @@ public interface ColumnSource<T>
         return ChunkType.fromElementType(dataType);
     }
 
-    MutableRowSet match(boolean invertMatch, boolean usePrev, boolean caseInsensitive, RowSet mapper,
-            final Object... keys);
+    WritableRowSet match(boolean invertMatch, boolean usePrev, boolean caseInsensitive, RowSet mapper,
+                         final Object... keys);
 
     Map<T, RowSet> getValuesMapping(RowSet subRange);
 
@@ -135,7 +135,7 @@ public interface ColumnSource<T>
 
     @Override
     default <ELEMENT_TYPE> void exportElement(final T tuple, final int elementIndex,
-            @NotNull final WritableSource<ELEMENT_TYPE> writableSource, final long destinationIndexKey) {
+                                              @NotNull final WritableColumnSource<ELEMENT_TYPE> writableSource, final long destinationIndexKey) {
         // noinspection unchecked
         writableSource.set(destinationIndexKey, (ELEMENT_TYPE) tuple);
     }

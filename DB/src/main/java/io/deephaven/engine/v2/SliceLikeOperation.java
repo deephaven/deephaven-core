@@ -4,9 +4,9 @@
 
 package io.deephaven.engine.v2;
 
-import io.deephaven.engine.rowset.MutableRowSet;
+import io.deephaven.engine.rowset.TrackingWritableRowSet;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.TrackingMutableRowSet;
 import io.deephaven.engine.rowset.TrackingRowSet;
 
 public class SliceLikeOperation implements QueryTable.Operation<QueryTable> {
@@ -90,7 +90,7 @@ public class SliceLikeOperation implements QueryTable.Operation<QueryTable> {
     public Result initialize(boolean usePrev, long beforeClock) {
         final TrackingRowSet resultRowSet;
         final TrackingRowSet parentRowSet = parent.getRowSet();
-        try (final MutableRowSet parentPrev = usePrev ? parentRowSet.getPrevRowSet() : null) {
+        try (final WritableRowSet parentPrev = usePrev ? parentRowSet.getPrevRowSet() : null) {
             resultRowSet = computeSliceIndex(usePrev ? parentPrev : parentRowSet).toTracking();
         }
         // result table must be a sub-table so we can pass ModifiedColumnSet to listeners when possible
@@ -113,7 +113,7 @@ public class SliceLikeOperation implements QueryTable.Operation<QueryTable> {
     }
 
     private void onUpdate(final Listener.Update upstream) {
-        final TrackingMutableRowSet rowSet = resultTable.getRowSet().mutableCast();
+        final TrackingWritableRowSet rowSet = resultTable.getRowSet().writableCast();
         final RowSet sliceRowSet = computeSliceIndex(parent.getRowSet());
 
         final Listener.Update downstream = new Listener.Update();
@@ -124,10 +124,10 @@ public class SliceLikeOperation implements QueryTable.Operation<QueryTable> {
         RowSetShiftUtils.apply(downstream.shifted, rowSet);
 
         // Must calculate in post-shift space what indices were removed by the slice operation.
-        final MutableRowSet opRemoved = rowSet.minus(sliceRowSet);
+        final WritableRowSet opRemoved = rowSet.minus(sliceRowSet);
         rowSet.remove(opRemoved);
         RowSetShiftUtils.unapply(downstream.shifted, opRemoved);
-        downstream.removed.mutableCast().insert(opRemoved);
+        downstream.removed.writableCast().insert(opRemoved);
 
         // Must intersect against modified set before adding the new rows to result rowSet.
         downstream.modified = upstream.modified.intersect(rowSet);
@@ -145,7 +145,7 @@ public class SliceLikeOperation implements QueryTable.Operation<QueryTable> {
         resultTable.notifyListeners(downstream);
     }
 
-    private MutableRowSet computeSliceIndex(RowSet useRowSet) {
+    private WritableRowSet computeSliceIndex(RowSet useRowSet) {
         final long size = parent.size();
         long startSlice = getFirstPositionInclusive();
         long endSlice = getLastPositionExclusive();

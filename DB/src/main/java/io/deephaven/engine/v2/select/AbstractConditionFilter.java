@@ -1,6 +1,7 @@
 package io.deephaven.engine.v2.select;
 
 import io.deephaven.UncheckedDeephavenException;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
@@ -11,7 +12,6 @@ import io.deephaven.engine.tables.select.Param;
 import io.deephaven.engine.tables.select.QueryScope;
 import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.v2.select.python.DeephavenCompatibleFunction;
-import io.deephaven.engine.rowset.MutableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.process.ProcessEnvironment;
@@ -210,7 +210,7 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
             LanguageParser.Result result) throws MalformedURLException, ClassNotFoundException;
 
     @Override
-    public MutableRowSet filter(RowSet selection, RowSet fullSet, Table table, boolean usePrev) {
+    public WritableRowSet filter(RowSet selection, RowSet fullSet, Table table, boolean usePrev) {
         if (usePrev && params.length > 0) {
             throw new PreviousFilteringNotSupported("Previous filter with parameters not supported.");
         }
@@ -259,7 +259,7 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
          * See {@link WhereFilter#filter(RowSet, RowSet, Table, boolean)} for basic documentation of {@code selection},
          * {@code fullSet}, {@code table}, and {@code usePrev}.
          */
-        MutableRowSet filter(
+        WritableRowSet filter(
                 RowSet selection,
                 RowSet fullSet,
                 Table table,

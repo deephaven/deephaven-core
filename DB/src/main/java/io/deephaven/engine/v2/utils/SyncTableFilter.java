@@ -64,7 +64,7 @@ public class SyncTableFilter {
             Configuration.getInstance().getIntegerWithDefault("SyncTableFilter.chunkSize", 1 << 16);
     private final List<SyncTableDescription> tables;
     private final QueryTable[] results;
-    private final TrackingMutableRowSet[] resultRowSet;
+    private final TrackingWritableRowSet[] resultRowSet;
 
     private final TupleSource[] keySources;
     private final List<ColumnSource<Long>> idSources;
@@ -74,8 +74,8 @@ public class SyncTableFilter {
     private final List<ListenerRecorder> recorders;
 
     private static class KeyState {
-        MutableRowSet pendingRows = RowSetFactory.empty();
-        MutableRowSet matchedRows = RowSetFactory.empty();
+        WritableRowSet pendingRows = RowSetFactory.empty();
+        WritableRowSet matchedRows = RowSetFactory.empty();
         RowSetBuilderSequential unprocessedBuilder = null;
         RowSetBuilderSequential currentIdBuilder = null;
         final TLongArrayList unprocessedIds = new TLongArrayList();
@@ -141,7 +141,7 @@ public class SyncTableFilter {
         this.keySources = new TupleSource[tableCount];
         this.idSources = new ArrayList<>(tableCount);
         this.results = new QueryTable[tableCount];
-        this.resultRowSet = new TrackingMutableRowSet[tableCount];
+        this.resultRowSet = new TrackingWritableRowSet[tableCount];
         this.minimumid = new TObjectLongHashMap<>(0, 0.5f, QueryConstants.NULL_LONG);
         this.recorders = new ArrayList<>(tableCount);
 
@@ -244,7 +244,7 @@ public class SyncTableFilter {
                     if (!keysToRefilter.contains(key)) {
                         // if we did not refilter this key; then we should add the currently matched values,
                         // otherwise we ignore them because they have already been superseded
-                        final MutableRowSet newlyMatchedRows = state.currentIdBuilder.build();
+                        final WritableRowSet newlyMatchedRows = state.currentIdBuilder.build();
                         state.matchedRows.insert(newlyMatchedRows);
                         newlyMatchedRows.remove(resultRowSet[tt]);
                         addedBuilder.addRowSet(newlyMatchedRows);
@@ -257,9 +257,9 @@ public class SyncTableFilter {
                 resultRowSet[tt].remove(removed);
                 resultRowSet[tt].insert(added);
 
-                final MutableRowSet addedAndRemoved = added.intersect(removed);
+                final WritableRowSet addedAndRemoved = added.intersect(removed);
 
-                final MutableRowSet modified;
+                final WritableRowSet modified;
                 if (recorders.get(tt).getNotificationStep() == currentStep) {
                     modified = recorders.get(tt).getModified().intersect(resultRowSet[tt]);
                     modified.remove(added);

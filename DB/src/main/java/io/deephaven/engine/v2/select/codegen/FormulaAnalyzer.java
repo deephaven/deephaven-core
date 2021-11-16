@@ -11,8 +11,8 @@ import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.v2.select.DhFormulaColumn;
 import io.deephaven.engine.v2.select.FormulaCompilationException;
 import io.deephaven.engine.v2.select.formula.FormulaSourceDescriptor;
-import io.deephaven.engine.table.WritableSource;
-import io.deephaven.engine.rowset.TrackingMutableRowSet;
+import io.deephaven.engine.table.WritableColumnSource;
+import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 
@@ -134,8 +134,8 @@ public class FormulaAnalyzer {
         }
 
         final Set<Class<?>> classImports = new HashSet<>(QueryLibrary.getClassImports());
-        classImports.add(TrackingMutableRowSet.class);
-        classImports.add(WritableSource.class);
+        classImports.add(TrackingWritableRowSet.class);
+        classImports.add(WritableColumnSource.class);
         return new LanguageParser(timeConversionResult.getConvertedFormula(), QueryLibrary.getPackageImports(),
                 classImports, QueryLibrary.getStaticImports(), possibleVariables, possibleVariableParameterizedTypes)
                         .getResult();

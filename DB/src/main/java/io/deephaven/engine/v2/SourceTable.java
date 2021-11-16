@@ -6,6 +6,7 @@ package io.deephaven.engine.v2;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
+import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
@@ -15,10 +16,9 @@ import io.deephaven.engine.v2.locations.TableDataException;
 import io.deephaven.engine.v2.locations.TableLocationProvider;
 import io.deephaven.engine.v2.locations.impl.TableLocationSubscriptionBuffer;
 import io.deephaven.engine.updategraph.LogicalClock;
-import io.deephaven.engine.rowset.MutableRowSet;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.rowset.TrackingMutableRowSet;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.QueryConstants;
@@ -74,7 +74,7 @@ public abstract class SourceTable extends RedefinableTable {
     /**
      * The rowSet that backs this table, shared with all child tables.
      */
-    private TrackingMutableRowSet rowSet;
+    private TrackingWritableRowSet rowSet;
 
     /**
      * The update source object for refreshing locations and location sizes.
@@ -193,7 +193,7 @@ public abstract class SourceTable extends RedefinableTable {
         }
     }
 
-    private MutableRowSet refreshLocationSizes() {
+    private WritableRowSet refreshLocationSizes() {
         try {
             return columnSourceManager.refresh();
         } catch (Exception e) {
@@ -217,7 +217,7 @@ public abstract class SourceTable extends RedefinableTable {
                 // NB: This class previously had functionality to notify "location listeners", but it was never used.
                 // Resurrect from git history if needed.
                 if (!locationSizesInitialized) {
-                    // We don't want to start polling size changes until the initial TrackingMutableRowSet has been
+                    // We don't want to start polling size changes until the initial TrackingWritableRowSet has been
                     // computed.
                     return;
                 }

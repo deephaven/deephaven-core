@@ -26,7 +26,7 @@ public interface RowSetBuilderSequential extends TLongProcedure, LongRangeConsum
      */
     default void setDomain(long minRowKey, long maxRowKey) {}
 
-    MutableRowSet build();
+    WritableRowSet build();
 
     void appendKey(long rowKey);
 

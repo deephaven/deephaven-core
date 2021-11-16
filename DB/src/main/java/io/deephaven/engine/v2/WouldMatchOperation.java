@@ -94,7 +94,7 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
             matchColumns.forEach(holder -> {
                 final WhereFilter filter = holder.getFilter();
                 filter.init(parent.getDefinition());
-                final MutableRowSet result = filter.filter(fullRowSet, fullRowSet, parent, usePrev);
+                final WritableRowSet result = filter.filter(fullRowSet, fullRowSet, parent, usePrev);
                 holder.column = new IndexWrapperColumnSource(
                         holder.getColumnName(), parent, result.toTracking(), filter);
 
@@ -204,7 +204,7 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
                             parent))
                     .filter(Objects::nonNull)
                     .forEach(rs -> {
-                        downstream.modified.mutableCast().insert(rs);
+                        downstream.modified.writableCast().insert(rs);
                         rs.close();
                     });
 
@@ -241,7 +241,7 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
 
                     downstream.modifiedColumnSet.setAll(holder.getColumnName());
                     try (final RowSet recomputed = holder.column.recompute(parent, EMPTY_INDEX)) {
-                        downstream.modified.mutableCast().insert(recomputed);
+                        downstream.modified.writableCast().insert(recomputed);
                     }
                 }
             }
@@ -266,7 +266,7 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
 
     private static class IndexWrapperColumnSource extends AbstractColumnSource<Boolean>
             implements MutableColumnSourceGetDefaults.ForBoolean, WhereFilter.RecomputeListener {
-        private final TrackingMutableRowSet source;
+        private final TrackingWritableRowSet source;
         private final WhereFilter filter;
         private boolean doRecompute = false;
         private QueryTable resultTable;
@@ -274,7 +274,7 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
         private final String name;
         private final ModifiedColumnSet possibleUpstreamModified;
 
-        IndexWrapperColumnSource(String name, QueryTable parent, TrackingMutableRowSet sourceRowSet,
+        IndexWrapperColumnSource(String name, QueryTable parent, TrackingWritableRowSet sourceRowSet,
                 WhereFilter filter) {
             super(Boolean.class);
             this.source = sourceRowSet;
@@ -435,7 +435,7 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
 
             try (final SafeCloseableList toClose = new SafeCloseableList()) {
                 // Filter and add addeds
-                final MutableRowSet filteredAdded = toClose.add(filter.filter(added, source, table, false));
+                final WritableRowSet filteredAdded = toClose.add(filter.filter(added, source, table, false));
                 RowSet keysToRemove = EMPTY_INDEX;
 
                 // If we were affected, recompute mods and re-add the ones that pass.
@@ -457,10 +457,10 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
             doRecompute = false;
             final RowSet rowsChanged;
             try (final SafeCloseableList toClose = new SafeCloseableList()) {
-                final MutableRowSet refiltered =
+                final WritableRowSet refiltered =
                         toClose.add(filter.filter(table.getRowSet().copy(), table.getRowSet(), table, false));
 
-                // This is just Xor, but there is no TrackingMutableRowSet op for that
+                // This is just Xor, but there is no TrackingWritableRowSet op for that
                 final RowSet newlySet = toClose.add(refiltered.minus(source));
                 final RowSet justCleared = toClose.add(source.minus(refiltered));
                 rowsChanged = toClose.add(newlySet.union(justCleared))

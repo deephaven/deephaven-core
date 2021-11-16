@@ -5,7 +5,7 @@ import org.junit.Test;
 
 import static org.junit.Assert.*;
 
-public class TrackingMutableRowSetTest {
+public class TrackingWritableRowSetTest {
     private static class FakeIterator implements RowSet.Iterator {
         long curr = 10;
 

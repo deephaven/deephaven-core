@@ -6,7 +6,7 @@ package io.deephaven.engine.v2.sources;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.WritableSource;
+import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.chunk.Attributes;
@@ -57,7 +57,7 @@ import java.util.Collection;
  * <td>25-8</td>
  * </tr>
  * <tr>
- * <td>TrackingMutableRowSet Within Block</td>
+ * <td>TrackingWritableRowSet Within Block</td>
  * <td>8</td>
  * <td>7-0</td>
  * </tr>
@@ -74,7 +74,7 @@ import java.util.Collection;
 @AbstractColumnSource.IsSerializable(value = true)
 public abstract class SparseArrayColumnSource<T>
         extends AbstractDeferredGroupingColumnSource<T>
-        implements FillUnordered, WritableSource<T> {
+        implements FillUnordered, WritableColumnSource<T> {
     public static final SparseArrayColumnSource<?>[] ZERO_LENGTH_SPARSE_ARRAY_COLUMN_SOURCE_ARRAY =
             new SparseArrayColumnSource[0];
 
@@ -159,7 +159,7 @@ public abstract class SparseArrayColumnSource<T>
 
     // This is customized in two different classes: In BooleanSparseArraySource it is special-cased by the
     // Replicator. In DateTimeSparseArraySource (a non-replicated class), the humans have overridden it manually.
-    WritableSource<?> reinterpretForSerialization() {
+    WritableColumnSource<?> reinterpretForSerialization() {
         return this;
     }
 

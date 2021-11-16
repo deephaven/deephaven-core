@@ -6,8 +6,8 @@ import io.deephaven.engine.v2.ModifiedColumnSet;
 import io.deephaven.engine.v2.Listener;
 import io.deephaven.engine.v2.select.VectorChunkAdapter;
 import io.deephaven.engine.v2.select.SelectColumn;
-import io.deephaven.engine.table.WritableChunkSink;
-import io.deephaven.engine.table.WritableSource;
+import io.deephaven.engine.table.ChunkSink;
+import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.chunk.WritableChunk;
@@ -19,9 +19,9 @@ import java.util.function.LongToIntFunction;
 
 final public class SelectColumnLayer extends SelectOrViewColumnLayer {
     /**
-     * The same reference as super.columnSource, but as a WritableSource
+     * The same reference as super.columnSource, but as a WritableColumnSource
      */
-    private final WritableSource writableSource;
+    private final WritableColumnSource writableSource;
     private final boolean isRedirected;
 
     /**
@@ -30,8 +30,8 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
     private ChunkSource<Attributes.Values> chunkSource;
 
     SelectColumnLayer(SelectAndViewAnalyzer inner, String name, SelectColumn sc,
-            WritableSource ws, WritableSource underlying,
-            String[] deps, ModifiedColumnSet mcsBuilder, boolean isRedirected) {
+                      WritableColumnSource ws, WritableColumnSource underlying,
+                      String[] deps, ModifiedColumnSet mcsBuilder, boolean isRedirected) {
         super(inner, name, sc, ws, underlying, deps, mcsBuilder);
         this.writableSource = ws;
         this.isRedirected = isRedirected;
@@ -85,7 +85,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                 contextSize.applyAsInt(Math.max(upstream.added.size(), upstream.modified.size()));
         final int destContextSize = contextSize.applyAsInt(Math.max(preMoveKeys.size(), chunkSourceContextSize));
 
-        try (final WritableChunkSink.FillFromContext destContext =
+        try (final ChunkSink.FillFromContext destContext =
                 needDestContext ? writableSource.makeFillFromContext(destContextSize) : null;
                 final ChunkSource.GetContext chunkSourceContext =
                         needGetContext ? chunkSource.makeGetContext(chunkSourceContextSize) : null) {

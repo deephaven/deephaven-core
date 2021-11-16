@@ -10,13 +10,13 @@ import io.deephaven.api.Strings;
 import io.deephaven.api.filter.*;
 import io.deephaven.api.value.Value;
 import io.deephaven.api.value.Value.Visitor;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.tables.select.SelectFilterFactory;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.remote.ConstructSnapshot;
 import io.deephaven.engine.v2.select.MatchFilter.MatchType;
-import io.deephaven.engine.rowset.MutableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import org.jetbrains.annotations.NotNull;
 
@@ -120,7 +120,7 @@ public interface WhereFilter {
      *
      * @return The subset of selection accepted by this filter; ownership passes to the caller
      */
-    MutableRowSet filter(RowSet selection, RowSet fullSet, Table table, boolean usePrev);
+    WritableRowSet filter(RowSet selection, RowSet fullSet, Table table, boolean usePrev);
 
     /**
      * @return true if this is a filter that does not require any code execution, but rather is handled entirely within

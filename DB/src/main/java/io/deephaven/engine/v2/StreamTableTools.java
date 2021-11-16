@@ -4,14 +4,14 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
-import io.deephaven.engine.rowset.TrackingMutableRowSet;
+import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
 import io.deephaven.engine.v2.remote.ConstructSnapshot;
 import io.deephaven.engine.v2.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.sources.ReinterpretUtilities;
-import io.deephaven.engine.table.WritableSource;
 import io.deephaven.engine.v2.utils.*;
 import org.apache.commons.lang3.mutable.Mutable;
 import org.apache.commons.lang3.mutable.MutableObject;
@@ -52,7 +52,7 @@ public class StreamTableTools {
                         final Map<String, ? extends ColumnSource<?>> columnSourceMap = streamTable.getColumnSourceMap();
                         final int columnCount = columnSourceMap.size();
                         final ColumnSource<?>[] sourceColumns = new ColumnSource[columnCount];
-                        final WritableSource<?>[] destColumns = new WritableSource[columnCount];
+                        final WritableColumnSource<?>[] destColumns = new WritableColumnSource[columnCount];
                         int colIdx = 0;
                         for (Map.Entry<String, ? extends ColumnSource<?>> nameColumnSourceEntry : columnSourceMap
                                 .entrySet()) {
@@ -66,11 +66,11 @@ public class StreamTableTools {
                             // for the destination sources, we know they are array backed sources that will actually
                             // store primitives and we can fill efficiently
                             destColumns[colIdx++] =
-                                    (WritableSource<?>) ReinterpretUtilities.maybeConvertToPrimitive(newColumn);
+                                    (WritableColumnSource<?>) ReinterpretUtilities.maybeConvertToPrimitive(newColumn);
                         }
 
 
-                        final TrackingMutableRowSet rowSet;
+                        final TrackingWritableRowSet rowSet;
                         if (usePrev) {
                             try (final RowSet useRowSet = baseStreamTable.getRowSet().getPrevRowSet()) {
                                 rowSet = RowSetFactory.flat(useRowSet.size()).toTracking();

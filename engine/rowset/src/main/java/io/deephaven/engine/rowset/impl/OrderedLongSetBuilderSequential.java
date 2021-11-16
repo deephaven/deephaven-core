@@ -8,7 +8,7 @@ import io.deephaven.util.annotations.TestUseOnly;
 public class OrderedLongSetBuilderSequential extends RspBitmapBuilderSequential {
     private SortedRanges pendingSr;
 
-    private static final IndexCounts indexCounts = new IndexCounts("sequentialBuilder");
+    private static final RowSetCounts rowSetCounts = new RowSetCounts("orderedLongSetBuilderSequential");
 
     public OrderedLongSetBuilderSequential() {
         this(false);
@@ -23,26 +23,26 @@ public class OrderedLongSetBuilderSequential extends RspBitmapBuilderSequential 
         if (pendingStart != -1) {
             if (pendingSr == null && pendingContainerKey == -1 && rb == null) {
                 final SingleRange r = SingleRange.make(pendingStart, pendingEnd);
-                indexCounts.sampleSingleRange(r);
+                rowSetCounts.sampleSingleRange(r);
                 return r;
             }
             flushPendingRange();
         }
         if (pendingSr != null) {
             pendingSr = pendingSr.tryCompactUnsafe(4);
-            indexCounts.sampleSortedRanges(pendingSr);
+            rowSetCounts.sampleSortedRanges(pendingSr);
             return pendingSr;
         }
         if (pendingContainerKey != -1) {
             flushPendingContainer();
         }
         if (rb == null) {
-            indexCounts.sampleEmpty();
+            rowSetCounts.sampleEmpty();
             return OrderedLongSet.EMPTY;
         }
         rb.tryCompactUnsafe(4);
         rb.finishMutations();
-        indexCounts.sampleRsp(rb);
+        rowSetCounts.sampleRsp(rb);
         final RspBitmap ans = rb;
         rb = null;
         return ans;

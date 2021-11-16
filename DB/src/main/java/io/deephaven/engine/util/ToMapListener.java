@@ -7,7 +7,7 @@ import io.deephaven.engine.v2.InstrumentedListenerAdapter;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.v2.utils.TerminalNotification;
+import io.deephaven.engine.updategraph.TerminalNotification;
 import gnu.trove.map.hash.TObjectLongHashMap;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;

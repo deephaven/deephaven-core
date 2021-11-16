@@ -9,26 +9,26 @@ import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.Attributes.RowKeys;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.WritableSource;
-import io.deephaven.engine.v2.utils.MutableRowRedirection;
+import io.deephaven.engine.table.WritableColumnSource;
+import io.deephaven.engine.v2.utils.WritableRowRedirection;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * A {@link ColumnSource} that provides a redirected view into another {@link ColumnSource} by mapping keys using a
- * {@link MutableRowRedirection}.
+ * {@link WritableRowRedirection}.
  */
-public class WritableRedirectedColumnSource<T> extends RedirectedColumnSource<T> implements WritableSource<T> {
+public class WritableRedirectedColumnSource<T> extends RedirectedColumnSource<T> implements WritableColumnSource<T> {
     private long maxInnerIndex;
 
     /**
-     * Create a type-appropriate WritableRedirectedColumnSource for the supplied {@link MutableRowRedirection} and inner
+     * Create a type-appropriate WritableRedirectedColumnSource for the supplied {@link WritableRowRedirection} and inner
      * {@link ColumnSource}.
      *
      * @param rowRedirection The redirection rowSet to use
      * @param innerSource The column source to redirect
      * @param maxInnerIndex The maximum rowSet key available in innerSource
      */
-    public WritableRedirectedColumnSource(@NotNull final MutableRowRedirection rowRedirection,
+    public WritableRedirectedColumnSource(@NotNull final WritableRowRedirection rowRedirection,
             @NotNull final ColumnSource<T> innerSource,
             final long maxInnerIndex) {
         super(rowRedirection, innerSource);
@@ -37,42 +37,42 @@ public class WritableRedirectedColumnSource<T> extends RedirectedColumnSource<T>
 
     @Override
     public void set(long key, T value) {
-        ((WritableSource<T>) innerSource).set(rowRedirection.get(key), value);
+        ((WritableColumnSource<T>) innerSource).set(rowRedirection.get(key), value);
     }
 
     @Override
     public void set(long key, byte value) {
-        ((WritableSource<T>) innerSource).set(rowRedirection.get(key), value);
+        ((WritableColumnSource<T>) innerSource).set(rowRedirection.get(key), value);
     }
 
     @Override
     public void set(long key, char value) {
-        ((WritableSource<T>) innerSource).set(rowRedirection.get(key), value);
+        ((WritableColumnSource<T>) innerSource).set(rowRedirection.get(key), value);
     }
 
     @Override
     public void set(long key, double value) {
-        ((WritableSource<T>) innerSource).set(rowRedirection.get(key), value);
+        ((WritableColumnSource<T>) innerSource).set(rowRedirection.get(key), value);
     }
 
     @Override
     public void set(long key, float value) {
-        ((WritableSource<T>) innerSource).set(rowRedirection.get(key), value);
+        ((WritableColumnSource<T>) innerSource).set(rowRedirection.get(key), value);
     }
 
     @Override
     public void set(long key, int value) {
-        ((WritableSource<T>) innerSource).set(rowRedirection.get(key), value);
+        ((WritableColumnSource<T>) innerSource).set(rowRedirection.get(key), value);
     }
 
     @Override
     public void set(long key, long value) {
-        ((WritableSource<T>) innerSource).set(rowRedirection.get(key), value);
+        ((WritableColumnSource<T>) innerSource).set(rowRedirection.get(key), value);
     }
 
     @Override
     public void set(long key, short value) {
-        ((WritableSource<T>) innerSource).set(rowRedirection.get(key), value);
+        ((WritableColumnSource<T>) innerSource).set(rowRedirection.get(key), value);
     }
 
     @Override
@@ -81,17 +81,17 @@ public class WritableRedirectedColumnSource<T> extends RedirectedColumnSource<T>
         if (innerDest == -1) {
             innerDest = ++maxInnerIndex;
             ensureCapacity(maxInnerIndex + 1);
-            rowRedirection.mutableCast().put(destKey, innerDest);
+            rowRedirection.writableCast().put(destKey, innerDest);
         } else if (innerDest > maxInnerIndex) {
             ensureCapacity(innerDest + 1);
             maxInnerIndex = innerDest;
         }
-        ((WritableSource<T>) innerSource).copy(sourceColumn, sourceKey, innerDest);
+        ((WritableColumnSource<T>) innerSource).copy(sourceColumn, sourceKey, innerDest);
     }
 
     @Override
     public void ensureCapacity(long capacity, boolean nullFill) {
-        ((WritableSource<T>) innerSource).ensureCapacity(capacity, nullFill);
+        ((WritableColumnSource<T>) innerSource).ensureCapacity(capacity, nullFill);
     }
 
     private class RedirectionFillFrom implements FillFromContext {
@@ -101,7 +101,7 @@ public class WritableRedirectedColumnSource<T> extends RedirectedColumnSource<T>
 
         private RedirectionFillFrom(int chunkCapacity) {
             this.redirectionFillContext = rowRedirection.makeFillContext(chunkCapacity, null);
-            this.innerFillFromContext = ((WritableSource<T>) innerSource).makeFillFromContext(chunkCapacity);
+            this.innerFillFromContext = ((WritableColumnSource<T>) innerSource).makeFillFromContext(chunkCapacity);
             this.redirections = WritableLongChunk.makeWritableChunk(chunkCapacity);
         }
 
@@ -125,7 +125,7 @@ public class WritableRedirectedColumnSource<T> extends RedirectedColumnSource<T>
         final RedirectionFillFrom redirectionFillFrom = (RedirectionFillFrom) context;
         rowRedirection.fillChunk(redirectionFillFrom.redirectionFillContext, redirectionFillFrom.redirections,
                 rowSequence);
-        ((WritableSource<T>) innerSource).fillFromChunkUnordered(redirectionFillFrom.innerFillFromContext, src,
+        ((WritableColumnSource<T>) innerSource).fillFromChunkUnordered(redirectionFillFrom.innerFillFromContext, src,
                 redirectionFillFrom.redirections);
     }
 
@@ -136,7 +136,7 @@ public class WritableRedirectedColumnSource<T> extends RedirectedColumnSource<T>
         final RedirectionFillFrom redirectionFillFrom = (RedirectionFillFrom) context;
         rowRedirection.fillChunkUnordered(redirectionFillFrom.redirectionFillContext,
                 redirectionFillFrom.redirections, keys);
-        ((WritableSource<T>) innerSource).fillFromChunkUnordered(redirectionFillFrom.innerFillFromContext, src,
+        ((WritableColumnSource<T>) innerSource).fillFromChunkUnordered(redirectionFillFrom.innerFillFromContext, src,
                 redirectionFillFrom.redirections);
     }
 }

@@ -8,6 +8,7 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.rowset.impl.RowSequenceUtil;
+import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.tables.SortingOrder;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.v2.sort.LongMegaMergeKernel;
@@ -22,7 +23,6 @@ import io.deephaven.engine.v2.sort.LongSortKernel;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.sources.LongArraySource;
 import io.deephaven.engine.v2.sources.LongSparseArraySource;
-import io.deephaven.engine.table.WritableSource;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.Attributes.*;
 import io.deephaven.engine.v2.sources.regioned.SymbolTableSource;
@@ -43,9 +43,9 @@ public class SortHelpers {
 
     /**
      * If we have more than this many entries per group, instead of creating a large flat redirection
-     * TrackingMutableRowSet, we create a redirection rowSet that is composed of the group indices and an accumulated
+     * TrackingWritableRowSet, we create a redirection rowSet that is composed of the group indices and an accumulated
      * cardinality cache. This can save a significant amount of memory when the groups are large and storing them using
-     * our TrackingMutableRowSet structure is more efficient.
+     * our TrackingWritableRowSet structure is more efficient.
      */
     public static int groupedRedirectionThreshold =
             Configuration.getInstance().getIntegerWithDefault("SortHelpers.groupedRedirectionThreshold", 32);
@@ -73,7 +73,7 @@ public class SortHelpers {
 
         boolean forEachLong(LongPredicate consumer);
 
-        MutableRowRedirection makeHistoricalRowRedirection();
+        WritableRowRedirection makeHistoricalRowRedirection();
     }
 
     final static class ArraySortMapping implements SortMapping {
@@ -114,8 +114,8 @@ public class SortHelpers {
         }
 
         @Override
-        public MutableRowRedirection makeHistoricalRowRedirection() {
-            return new ContiguousMutableRowRedirection(mapping);
+        public WritableRowRedirection makeHistoricalRowRedirection() {
+            return new ContiguousWritableRowRedirection(mapping);
         }
     }
 
@@ -157,8 +157,8 @@ public class SortHelpers {
         }
 
         @Override
-        public MutableRowRedirection makeHistoricalRowRedirection() {
-            return new LongColumnSourceMutableRowRedirection(columnSource);
+        public WritableRowRedirection makeHistoricalRowRedirection() {
+            return new LongColumnSourceWritableRowRedirection(columnSource);
         }
     }
 
@@ -204,8 +204,8 @@ public class SortHelpers {
         }
 
         @Override
-        public MutableRowRedirection makeHistoricalRowRedirection() {
-            return new GroupedMutableRowRedirection(size, groupSize, groups);
+        public WritableRowRedirection makeHistoricalRowRedirection() {
+            return new GroupedWritableRowRedirection(size, groupSize, groups);
         }
     }
 
@@ -737,8 +737,8 @@ public class SortHelpers {
     }
 
     @NotNull
-    static MutableRowRedirection createSortRowRedirection() {
-        final WritableSource<Long> sparseLongSource = new LongSparseArraySource();
-        return new LongColumnSourceMutableRowRedirection(sparseLongSource);
+    static WritableRowRedirection createSortRowRedirection() {
+        final WritableColumnSource<Long> sparseLongSource = new LongSparseArraySource();
+        return new LongColumnSourceWritableRowRedirection(sparseLongSource);
     }
 }

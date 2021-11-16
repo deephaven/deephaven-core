@@ -1,7 +1,7 @@
 package io.deephaven.engine.rowset.impl;
 
 import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.rowset.TrackingMutableRowSet;
+import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.tables.live.UpdateGraphProcessor;
 import io.deephaven.engine.v2.sources.LogicalClock;
@@ -11,7 +11,7 @@ import org.junit.Test;
 
 import static org.junit.Assert.*;
 
-public class TrackingMutableRowSetImplPrevTest {
+public class TrackingWritableRowSetImplPrevTest {
     @Before
     public void setUp() throws Exception {
         UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
@@ -32,7 +32,7 @@ public class TrackingMutableRowSetImplPrevTest {
 
     @Test
     public void testPrevWithSingleRangeIxOnly() {
-        final TrackingMutableRowSet ix = RowSetFactory.fromKeys(1L).toTracking();
+        final TrackingWritableRowSet ix = RowSetFactory.fromKeys(1L).toTracking();
         assertEquals(1L, ix.size());
         assertEquals(1L, ix.firstRowKey());
         assertEquals(1L, ix.getPrevRowSet().size());
@@ -67,7 +67,7 @@ public class TrackingMutableRowSetImplPrevTest {
 
     @Test
     public void testPrevWithRspOnly() {
-        final TrackingMutableRowSet ix = RowSetFactory.fromKeys(1, 3).toTracking();
+        final TrackingWritableRowSet ix = RowSetFactory.fromKeys(1, 3).toTracking();
         assertEquals(2L, ix.size());
         assertEquals(1L, ix.firstRowKey());
         assertEquals(3L, ix.lastRowKey());
@@ -114,7 +114,7 @@ public class TrackingMutableRowSetImplPrevTest {
     @Test
     public void testPrevWithSingleThenRspThenEmptyThenSingle() {
         LogicalClock.DEFAULT.resetForUnitTests();
-        final TrackingMutableRowSet ix = RowSetFactory.fromKeys(1L).toTracking();
+        final TrackingWritableRowSet ix = RowSetFactory.fromKeys(1L).toTracking();
         assertEquals(1L, ix.size());
         assertEquals(1L, ix.firstRowKey());
         assertEquals(1L, ix.getPrevRowSet().size());

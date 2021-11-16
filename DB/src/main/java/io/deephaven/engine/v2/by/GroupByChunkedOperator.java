@@ -34,7 +34,7 @@ public final class GroupByChunkedOperator implements IterativeChunkedAggregation
     private final QueryTable inputTable;
     private final boolean registeredWithHelper;
     private final boolean live;
-    private final ObjectArraySource<MutableRowSet> rowSets;
+    private final ObjectArraySource<WritableRowSet> rowSets;
     private final String[] inputColumnNames;
     private final Map<String, AggregateColumnSource<?, ?>> resultColumns;
     private final ModifiedColumnSet resultInputsModifiedColumnSet;
@@ -48,7 +48,7 @@ public final class GroupByChunkedOperator implements IterativeChunkedAggregation
         this.inputTable = inputTable;
         this.registeredWithHelper = registeredWithHelper;
         live = inputTable.isRefreshing();
-        rowSets = new ObjectArraySource<>(MutableRowSet.class);
+        rowSets = new ObjectArraySource<>(WritableRowSet.class);
         resultColumns = Arrays.stream(resultColumnPairs).collect(Collectors.toMap(MatchPair::left,
                 matchPair -> AggregateColumnSource
                         .make(inputTable.getColumnSource(matchPair.right()), rowSets),
@@ -208,7 +208,7 @@ public final class GroupByChunkedOperator implements IterativeChunkedAggregation
 
     private void addChunk(@NotNull final LongChunk<OrderedRowKeys> indices, final int start, final int length,
             final long destination) {
-        final MutableRowSet rowSet = rowSetForSlot(destination);
+        final WritableRowSet rowSet = rowSetForSlot(destination);
         rowSet.insert(indices, start, length);
     }
 
@@ -218,22 +218,22 @@ public final class GroupByChunkedOperator implements IterativeChunkedAggregation
 
     private void removeChunk(@NotNull final LongChunk<OrderedRowKeys> indices, final int start, final int length,
             final long destination) {
-        final MutableRowSet rowSet = rowSetForSlot(destination);
+        final WritableRowSet rowSet = rowSetForSlot(destination);
         rowSet.remove(indices, start, length);
     }
 
     private void doShift(@NotNull final LongChunk<OrderedRowKeys> preShiftIndices,
             @NotNull final LongChunk<OrderedRowKeys> postShiftIndices,
             final int startPosition, final int runLength, final long destination) {
-        final MutableRowSet rowSet = rowSetForSlot(destination);
+        final WritableRowSet rowSet = rowSetForSlot(destination);
         rowSet.remove(preShiftIndices, startPosition, runLength);
         rowSet.insert(postShiftIndices, startPosition, runLength);
     }
 
-    private MutableRowSet rowSetForSlot(final long destination) {
-        MutableRowSet rowSet = rowSets.getUnsafe(destination);
+    private WritableRowSet rowSetForSlot(final long destination) {
+        WritableRowSet rowSet = rowSets.getUnsafe(destination);
         if (rowSet == null) {
-            final MutableRowSet empty = RowSetFactory.empty();
+            final WritableRowSet empty = RowSetFactory.empty();
             rowSets.set(destination, rowSet = live ? empty.toTracking() : empty);
         }
         return rowSet;
@@ -337,7 +337,7 @@ public final class GroupByChunkedOperator implements IterativeChunkedAggregation
                 // it is an ArrayBackedColumnSource), allowing getChunk to skip a copy.
                 final RowSequence newDestinationsSlice =
                         newDestinationsIterator.getNextRowSequenceThrough(nextBlockEnd);
-                final ObjectChunk<TrackingMutableRowSet, Values> indicesChunk =
+                final ObjectChunk<TrackingWritableRowSet, Values> indicesChunk =
                         rowSets.getChunk(indicesGetContext, newDestinationsSlice).asObjectChunk();
                 final int indicesChunkSize = indicesChunk.size();
                 for (int ii = 0; ii < indicesChunkSize; ++ii) {

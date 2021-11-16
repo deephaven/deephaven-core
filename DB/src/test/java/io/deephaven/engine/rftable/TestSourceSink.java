@@ -3,7 +3,7 @@ package io.deephaven.engine.rftable;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.util.hashing.ChunkEquals;
 import io.deephaven.engine.table.ChunkSource;
-import io.deephaven.engine.table.WritableChunkSink;
+import io.deephaven.engine.table.ChunkSink;
 import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.impl.RowSequenceUtil;
@@ -17,12 +17,12 @@ public class TestSourceSink {
      * A variety of tests are possible here. As a first pass, we make a chunk of size 1000, fill elements 0-249 and
      * 500-749 with random values, and then see if they come back.
      */
-    public static void runTests(ChunkType chunkType, IntFunction<WritableChunkSink> makeSink) {
+    public static void runTests(ChunkType chunkType, IntFunction<ChunkSink> makeSink) {
         final ChunkType containerType = chunkType == ChunkType.Boolean ? ChunkType.Object : chunkType;
         final int chunkSize = 1000; // deliberately not a power of two, for fun.
         final int totalSize = chunkSize * 4;
 
-        WritableChunkSink sink = makeSink.apply(totalSize);
+        ChunkSink sink = makeSink.apply(totalSize);
 
         final RandomResetter randomResetter = RandomResetter.makeRandomResetter(chunkType);
         final Random rng = new Random(120108951);
@@ -36,7 +36,7 @@ public class TestSourceSink {
         final RowSequence keysB = RowSequenceUtil
                 .wrapKeyRangesChunkAsRowSequence(LongChunk.chunkWrap(new long[] {2 * chunkSize, 3 * chunkSize - 1}));
 
-        final WritableChunkSink.FillFromContext fromContext = sink.makeFillFromContext(chunkSize);
+        final ChunkSink.FillFromContext fromContext = sink.makeFillFromContext(chunkSize);
         sink.fillFromChunk(fromContext, chunkA, keysA);
         sink.fillFromChunk(fromContext, chunkB, keysB);
 

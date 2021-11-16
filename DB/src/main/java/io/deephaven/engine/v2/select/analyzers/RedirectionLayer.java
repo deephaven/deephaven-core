@@ -19,11 +19,11 @@ import java.util.*;
 final public class RedirectionLayer extends SelectAndViewAnalyzer {
     private final SelectAndViewAnalyzer inner;
     private final TrackingRowSet resultRowSet;
-    private final MutableRowRedirection rowRedirection;
-    private final MutableRowSet freeValues = RowSetFactory.empty();
+    private final WritableRowRedirection rowRedirection;
+    private final WritableRowSet freeValues = RowSetFactory.empty();
     private long maxInnerIndex;
 
-    RedirectionLayer(SelectAndViewAnalyzer inner, TrackingRowSet resultRowSet, MutableRowRedirection rowRedirection) {
+    RedirectionLayer(SelectAndViewAnalyzer inner, TrackingRowSet resultRowSet, WritableRowRedirection rowRedirection) {
         this.inner = inner;
         this.resultRowSet = resultRowSet;
         this.rowRedirection = rowRedirection;

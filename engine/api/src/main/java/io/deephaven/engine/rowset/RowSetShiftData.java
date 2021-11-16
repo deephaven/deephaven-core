@@ -169,7 +169,7 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
     /**
      * Queries whether this RowSetShiftData is non-empty (i.e. has at least one shift).
      * 
-     * @return true if the size() of this TrackingMutableRowSet greater than zero, false if the size is zero
+     * @return true if the size() of this TrackingWritableRowSet greater than zero, false if the size is zero
      */
     public final boolean nonempty() {
         return !empty();
@@ -288,9 +288,9 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
      * @param shiftDelta amount range has moved by
      * @return Whether there was any overlap found to shift
      */
-    public static boolean applyShift(@NotNull final MutableRowSet rowSet, final long beginRange, final long endRange,
-            final long shiftDelta) {
-        try (final MutableRowSet toShift = rowSet.subSetByKeyRange(beginRange, endRange)) {
+    public static boolean applyShift(@NotNull final WritableRowSet rowSet, final long beginRange, final long endRange,
+                                     final long shiftDelta) {
+        try (final WritableRowSet toShift = rowSet.subSetByKeyRange(beginRange, endRange)) {
             if (toShift.isEmpty()) {
                 return false;
             }
@@ -308,7 +308,7 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
      * @param offset an additional offset to apply to all shifts (such as when applying to a wrapped table)
      * @return rowSet
      */
-    public RowSet unapply(final MutableRowSet rowSet, final long offset) {
+    public RowSet unapply(final WritableRowSet rowSet, final long offset) {
         // NB: This is an unapply callback, and beginRange, endRange, and shiftDelta have been adjusted so that this is
         // a reversed shift,
         // hence we use the applyShift helper.
@@ -326,9 +326,9 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
      * @param shiftDelta amount range has moved by
      * @return Whether there was any overlap found to shift
      */
-    public static boolean unapplyShift(@NotNull final MutableRowSet rowSet, final long beginRange, final long endRange,
-            final long shiftDelta) {
-        try (final MutableRowSet toShift = rowSet.subSetByKeyRange(beginRange + shiftDelta, endRange + shiftDelta)) {
+    public static boolean unapplyShift(@NotNull final WritableRowSet rowSet, final long beginRange, final long endRange,
+                                       final long shiftDelta) {
+        try (final WritableRowSet toShift = rowSet.subSetByKeyRange(beginRange + shiftDelta, endRange + shiftDelta)) {
             if (toShift.isEmpty()) {
                 return false;
             }

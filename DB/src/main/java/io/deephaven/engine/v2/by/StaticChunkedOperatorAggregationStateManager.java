@@ -128,7 +128,7 @@ class StaticChunkedOperatorAggregationStateManager
     private final ArrayBackedColumnSource<?> [] overflowKeySources;
     // the location of the next key in an overflow bucket
     private final IntegerArraySource overflowOverflowLocationSource = new IntegerArraySource();
-    // the overflow buckets for the right TrackingMutableRowSet
+    // the overflow buckets for the right TrackingWritableRowSet
     @ReplicateHashTable.OverflowStateColumnSource
     // @StateColumnSourceType@ from \QIntegerArraySource\E
     private final IntegerArraySource overflowStateSource
@@ -1279,7 +1279,7 @@ class StaticChunkedOperatorAggregationStateManager
     // region extraction functions
     @Override
     public ColumnSource[] getKeyHashTableSources() {
-        final MutableRowRedirection resultIndexToHashSlot = new IntColumnSourceMutableRowRedirection(outputPositionToHashSlot);
+        final WritableRowRedirection resultIndexToHashSlot = new IntColumnSourceWritableRowRedirection(outputPositionToHashSlot);
         final ColumnSource[] keyHashTableSources = new ColumnSource[keyColumnCount];
         for (int kci = 0; kci < keyColumnCount; ++kci) {
             // noinspection unchecked

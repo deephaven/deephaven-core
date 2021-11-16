@@ -10,7 +10,7 @@ import io.deephaven.io.logger.Logger;
 import io.deephaven.util.clock.RealTimeClock;
 import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.engine.time.ClockTimeProvider;
-import io.deephaven.engine.v2.utils.TerminalNotification;
+import io.deephaven.engine.updategraph.TerminalNotification;
 import io.deephaven.engine.time.TimeProvider;
 import io.deephaven.util.annotations.ScriptApi;
 import org.jetbrains.annotations.NotNull;

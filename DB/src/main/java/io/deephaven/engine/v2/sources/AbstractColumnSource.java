@@ -7,9 +7,8 @@ package io.deephaven.engine.v2.sources;
 import io.deephaven.base.Pair;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.impl.GroupingRowSetHelper;
-import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.WritableSource;
+import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.vector.*;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.vector.Vector;
@@ -123,8 +122,8 @@ public abstract class AbstractColumnSource<T> implements ColumnSource<T>, Serial
     }
 
     @Override
-    public MutableRowSet match(boolean invertMatch, boolean usePrev, boolean caseInsensitive, RowSet mapper,
-                               final Object... keys) {
+    public WritableRowSet match(boolean invertMatch, boolean usePrev, boolean caseInsensitive, RowSet mapper,
+                                final Object... keys) {
         final Map<T, RowSet> groupToRange = (isImmutable() || !usePrev) ? getGroupToRange(mapper) : null;
         if (groupToRange != null) {
             RowSetBuilderRandom allInMatchingGroups = RowSetFactory.builderRandom();
@@ -147,7 +146,7 @@ public abstract class AbstractColumnSource<T> implements ColumnSource<T>, Serial
                 }
             }
 
-            final MutableRowSet matchingValues;
+            final WritableRowSet matchingValues;
             try (final RowSet matchingGroups = allInMatchingGroups.build()) {
                 if (invertMatch) {
                     matchingValues = mapper.minus(matchingGroups);
@@ -186,7 +185,7 @@ public abstract class AbstractColumnSource<T> implements ColumnSource<T>, Serial
 
         // if we have a grouping we can use it to avoid iterating the entire subRange. The issue is that our grouping
         // could be bigger than the rowSet we care about, by a very large margin. In this case we could be spinning
-        // on TrackingMutableRowSet intersect operations that are actually useless. This check says that if our subRange
+        // on TrackingWritableRowSet intersect operations that are actually useless. This check says that if our subRange
         // is smaller
         // than the number of keys in our grouping, we should just fetch the keys instead and generate the grouping
         // from scratch.
@@ -291,7 +290,7 @@ public abstract class AbstractColumnSource<T> implements ColumnSource<T>, Serial
      * @param groupConsumer Consumer for responsive groups
      */
     public static <TYPE> void forEachGroup(@NotNull final Map<TYPE, RowSet> groupToIndex,
-            @NotNull final BiConsumer<TYPE, MutableRowSet> groupConsumer) {
+            @NotNull final BiConsumer<TYPE, WritableRowSet> groupConsumer) {
         groupToIndex.entrySet().stream()
                 .filter(kie -> kie.getValue().isNonempty())
                 .sorted(java.util.Comparator.comparingLong(kie -> kie.getValue().firstRowKey()))
@@ -308,17 +307,17 @@ public abstract class AbstractColumnSource<T> implements ColumnSource<T>, Serial
      * @return A pair of a flat key column source and a flat rowSet column source
      */
     @SuppressWarnings("unused")
-    public static <TYPE> Pair<ArrayBackedColumnSource<TYPE>, ObjectArraySource<TrackingMutableRowSet>> groupingToFlatSources(
+    public static <TYPE> Pair<ArrayBackedColumnSource<TYPE>, ObjectArraySource<TrackingWritableRowSet>> groupingToFlatSources(
             @NotNull final ColumnSource<TYPE> originalKeyColumnSource, @NotNull final Map<TYPE, RowSet> groupToIndex) {
         final int numGroups = groupToIndex.size();
         final ArrayBackedColumnSource<TYPE> resultKeyColumnSource = ArrayBackedColumnSource.getMemoryColumnSource(
                 numGroups, originalKeyColumnSource.getType(), originalKeyColumnSource.getComponentType());
-        final ObjectArraySource<TrackingMutableRowSet> resultIndexColumnSource =
-                new ObjectArraySource<>(TrackingMutableRowSet.class);
+        final ObjectArraySource<TrackingWritableRowSet> resultIndexColumnSource =
+                new ObjectArraySource<>(TrackingWritableRowSet.class);
         resultIndexColumnSource.ensureCapacity(numGroups);
 
         final MutableInt processedGroupCount = new MutableInt(0);
-        forEachGroup(groupToIndex, (final TYPE key, final MutableRowSet rowSet) -> {
+        forEachGroup(groupToIndex, (final TYPE key, final WritableRowSet rowSet) -> {
             final long groupIndex = processedGroupCount.longValue();
             resultKeyColumnSource.set(groupIndex, key);
             resultIndexColumnSource.set(groupIndex, rowSet.toTracking());
@@ -337,7 +336,7 @@ public abstract class AbstractColumnSource<T> implements ColumnSource<T>, Serial
      */
     public static <TYPE> void forEachResponsiveGroup(@NotNull final Map<TYPE, RowSet> groupToIndex,
             @NotNull final RowSet intersect,
-            @NotNull final BiConsumer<TYPE, MutableRowSet> groupConsumer) {
+            @NotNull final BiConsumer<TYPE, WritableRowSet> groupConsumer) {
         groupToIndex.entrySet().stream()
                 .map(kie -> new Pair<>(kie.getKey(), kie.getValue().intersect(intersect)))
                 .filter(kip -> kip.getSecond().isNonempty())
@@ -356,7 +355,7 @@ public abstract class AbstractColumnSource<T> implements ColumnSource<T>, Serial
      * @param responsiveGroups Set to the number of responsive groups on exit
      * @return A pair of a flat key column source and a flat rowSet column source
      */
-    public static <TYPE> Pair<ArrayBackedColumnSource<TYPE>, ObjectArraySource<TrackingMutableRowSet>> groupingToFlatSources(
+    public static <TYPE> Pair<ArrayBackedColumnSource<TYPE>, ObjectArraySource<TrackingWritableRowSet>> groupingToFlatSources(
             @NotNull final ColumnSource<TYPE> originalKeyColumnSource,
             @NotNull final Map<TYPE, RowSet> groupToIndex,
             @NotNull final RowSet intersect,
@@ -364,12 +363,12 @@ public abstract class AbstractColumnSource<T> implements ColumnSource<T>, Serial
         final int numGroups = groupToIndex.size();
         final ArrayBackedColumnSource<TYPE> resultKeyColumnSource = ArrayBackedColumnSource.getMemoryColumnSource(
                 numGroups, originalKeyColumnSource.getType(), originalKeyColumnSource.getComponentType());
-        final ObjectArraySource<TrackingMutableRowSet> resultIndexColumnSource =
-                new ObjectArraySource<>(TrackingMutableRowSet.class);
+        final ObjectArraySource<TrackingWritableRowSet> resultIndexColumnSource =
+                new ObjectArraySource<>(TrackingWritableRowSet.class);
         resultIndexColumnSource.ensureCapacity(numGroups);
 
         responsiveGroups.setValue(0);
-        forEachResponsiveGroup(groupToIndex, intersect, (final TYPE key, final MutableRowSet rowSet) -> {
+        forEachResponsiveGroup(groupToIndex, intersect, (final TYPE key, final WritableRowSet rowSet) -> {
             final long groupIndex = responsiveGroups.longValue();
             resultKeyColumnSource.set(groupIndex, key);
             resultIndexColumnSource.set(groupIndex, rowSet.toTracking());
@@ -443,7 +442,7 @@ public abstract class AbstractColumnSource<T> implements ColumnSource<T>, Serial
         Assert.eq(getType(), "getType()", DateTime.class);
         Assert.eq(alternateDataType, "alternateDataType", long.class);
         // noinspection unchecked
-        return (ColumnSource<ALTERNATE_DATA_TYPE>) new UnboxedDateTimeWritableSource((WritableSource<DateTime>) this);
+        return (ColumnSource<ALTERNATE_DATA_TYPE>) new UnboxedDateTimeWritableSource((WritableColumnSource<DateTime>) this);
     }
 
     public static abstract class DefaultedMutable<DATA_TYPE> extends AbstractColumnSource<DATA_TYPE>

@@ -7,7 +7,7 @@ package io.deephaven.engine.v2;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.rowset.MutableRowSet;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.engine.updategraph.NotificationQueue;
@@ -52,7 +52,7 @@ public interface Listener extends TableListener {
         public ModifiedColumnSet modifiedColumnSet;
 
         // Cached version of prevModified rowSet.
-        private volatile MutableRowSet prevModified;
+        private volatile WritableRowSet prevModified;
 
         // Field updater for refCount, so we can avoid creating an {@link java.util.concurrent.atomic.AtomicInteger} for
         // each instance.
@@ -133,7 +133,7 @@ public interface Listener extends TableListener {
             if (shifted.empty()) {
                 return modified;
             }
-            MutableRowSet localPrevModified = prevModified;
+            WritableRowSet localPrevModified = prevModified;
             if (localPrevModified == null) {
                 synchronized (this) {
                     localPrevModified = prevModified;

@@ -3,33 +3,33 @@ package io.deephaven.engine.rowset;
 import gnu.trove.list.TLongList;
 import io.deephaven.engine.rowset.impl.AdaptiveRowSetBuilderRandom;
 import io.deephaven.engine.rowset.impl.BasicRowSetBuilderSequential;
-import io.deephaven.engine.rowset.impl.MutableRowSetImpl;
+import io.deephaven.engine.rowset.impl.WritableRowSetImpl;
 import io.deephaven.engine.rowset.impl.singlerange.SingleRange;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Repository of factory methods for constructing {@link MutableRowSet row sets}.
+ * Repository of factory methods for constructing {@link WritableRowSet row sets}.
  */
 public abstract class RowSetFactory {
 
     private RowSetFactory() {}
 
     /**
-     * Get an empty {@link MutableRowSet}.
+     * Get an empty {@link WritableRowSet}.
      *
-     * @return A new {@link MutableRowSet} containing no rows
+     * @return A new {@link WritableRowSet} containing no rows
      */
-    public static MutableRowSet empty() {
-        return new MutableRowSetImpl();
+    public static WritableRowSet empty() {
+        return new WritableRowSetImpl();
     }
 
     /**
-     * Get a {@link MutableRowSet} containing the specified row keys. Row keys must be nonnegative numbers.
+     * Get a {@link WritableRowSet} containing the specified row keys. Row keys must be nonnegative numbers.
      *
      * @param rowKeys The row keys to include
-     * @return A new {@link MutableRowSet} containing the specified row keys
+     * @return A new {@link WritableRowSet} containing the specified row keys
      */
-    public static MutableRowSet fromKeys(final long... rowKeys) {
+    public static WritableRowSet fromKeys(final long... rowKeys) {
         if (rowKeys.length == 0) {
             return empty();
         }
@@ -44,22 +44,22 @@ public abstract class RowSetFactory {
     }
 
     /**
-     * Produce a {@link MutableRowSet} containing a single row key. Row keys must be nonnegative numbers.
+     * Produce a {@link WritableRowSet} containing a single row key. Row keys must be nonnegative numbers.
      *
      * @param rowKey The row key to include
-     * @return A new {@link MutableRowSet} containing the specified row key
+     * @return A new {@link WritableRowSet} containing the specified row key
      */
-    public static MutableRowSet fromKeys(final long rowKey) {
+    public static WritableRowSet fromKeys(final long rowKey) {
         return fromRange(rowKey, rowKey);
     }
 
     /**
-     * Get a {@link MutableRowSet} containing the specified row keys.
+     * Get a {@link WritableRowSet} containing the specified row keys.
      * <p>
      * The provided {@link TLongList} is sorted and then passed to a {@link RowSetBuilderSequential}.
      *
      * @param rowKeys A {@link TLongList}. Note that this list is mutated within the method!
-     * @return A new {@link MutableRowSet} containing the values from {@code rowKeys}
+     * @return A new {@link WritableRowSet} containing the values from {@code rowKeys}
      */
     public static RowSet fromKeys(@NotNull final TLongList rowKeys) {
         rowKeys.sort();
@@ -69,25 +69,25 @@ public abstract class RowSetFactory {
     }
 
     /**
-     * Create a {@link MutableRowSet} containing the continuous range [firstRowKey, lastRowKey].
+     * Create a {@link WritableRowSet} containing the continuous range [firstRowKey, lastRowKey].
      *
      * @param firstRowKey The first row key in the continuous range
      * @param lastRowKey The last row key in the continuous range
-     * @return A new {@link MutableRowSet} containing the specified row key range
+     * @return A new {@link WritableRowSet} containing the specified row key range
      */
-    public static MutableRowSet fromRange(final long firstRowKey, final long lastRowKey) {
-        return new MutableRowSetImpl(SingleRange.make(firstRowKey, lastRowKey));
+    public static WritableRowSet fromRange(final long firstRowKey, final long lastRowKey) {
+        return new WritableRowSetImpl(SingleRange.make(firstRowKey, lastRowKey));
     }
 
     /**
-     * Get a flat {@link MutableRowSet} containing the row key range {@code [0, size)}, or an {@link #empty() empty row
+     * Get a flat {@link WritableRowSet} containing the row key range {@code [0, size)}, or an {@link #empty() empty row
      * set} if {@code size <= 0}.
      *
-     * @param size The size of the {@link MutableRowSet} to create
-     * @return A flat {@link MutableRowSet} containing the row key range {@code [0, size)} or an {@link #empty() empty
+     * @param size The size of the {@link WritableRowSet} to create
+     * @return A flat {@link WritableRowSet} containing the row key range {@code [0, size)} or an {@link #empty() empty
      *         row set} if the {@code size <= 0}
      */
-    public static MutableRowSet flat(final long size) {
+    public static WritableRowSet flat(final long size) {
         return size <= 0 ? empty() : fromRange(0, size - 1);
     }
 

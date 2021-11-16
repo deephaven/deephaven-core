@@ -17,8 +17,8 @@ import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.select.DhFormulaColumn;
 import io.deephaven.engine.v2.select.FormulaColumn;
 import io.deephaven.engine.v2.sources.ArrayBackedColumnSource;
-import io.deephaven.engine.table.WritableChunkSink.FillFromContext;
-import io.deephaven.engine.table.WritableSource;
+import io.deephaven.engine.table.ChunkSink.FillFromContext;
+import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.v2.utils.UpdatePerformanceTracker;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
@@ -44,7 +44,7 @@ class FormulaChunkedOperator implements IterativeChunkedAggregationOperator {
 
     private final FormulaColumn[] formulaColumns;
     private final ChunkSource<Values>[] formulaDataSources;
-    private final WritableSource<?>[] resultColumns;
+    private final WritableColumnSource<?>[] resultColumns;
     private final ModifiedColumnSet[] resultColumnModifiedColumnSets;
 
     /**
@@ -81,7 +81,7 @@ class FormulaChunkedOperator implements IterativeChunkedAggregationOperator {
         formulaColumns = new DhFormulaColumn[resultColumnPairs.length];
         // noinspection unchecked
         formulaDataSources = new ChunkSource[resultColumnPairs.length]; // Not populated until propagateInitialState
-        resultColumns = new WritableSource[resultColumnPairs.length];
+        resultColumns = new WritableColumnSource[resultColumnPairs.length];
         resultColumnModifiedColumnSets = new ModifiedColumnSet[resultColumnPairs.length]; // Not populated until
                                                                                           // initializeRefreshing
         final Map<String, ? extends ColumnSource<?>> byResultColumns = groupBy.getResultColumns();
@@ -231,14 +231,14 @@ class FormulaChunkedOperator implements IterativeChunkedAggregationOperator {
             groupBy.ensureCapacity(tableSize);
         }
         for (@NotNull
-        final WritableSource<?> resultColumn : resultColumns) {
+        final WritableColumnSource<?> resultColumn : resultColumns) {
             resultColumn.ensureCapacity(tableSize);
         }
     }
 
     @Override
     public Map<String, ? extends ColumnSource<?>> getResultColumns() {
-        final Map<String, WritableSource<?>> resultColumnsMap = new LinkedHashMap<>();
+        final Map<String, WritableColumnSource<?>> resultColumnsMap = new LinkedHashMap<>();
         for (int ci = 0; ci < resultColumnNames.length; ++ci) {
             resultColumnsMap.put(resultColumnNames[ci], resultColumns[ci]);
         }
@@ -274,7 +274,7 @@ class FormulaChunkedOperator implements IterativeChunkedAggregationOperator {
             groupBy.startTrackingPrevValues();
         }
         for (@NotNull
-        final WritableSource<?> resultColumn : resultColumns) {
+        final WritableColumnSource<?> resultColumn : resultColumns) {
             resultColumn.startTrackingPrevValues();
         }
     }
@@ -398,7 +398,7 @@ class FormulaChunkedOperator implements IterativeChunkedAggregationOperator {
                             calculateContainingBlockLastKey(RowSequenceIterator.peekNextKey()));
                     nullValueChunk.setSize(rowSequenceSlice.intSize());
                     for (int ci = 0; ci < columnsToFillMask.length; ++ci) {
-                        final WritableSource<?> resultColumn = resultColumns[ci];
+                        final WritableColumnSource<?> resultColumn = resultColumns[ci];
                         if (columnsToFillMask[ci] && !resultColumn.getType().isPrimitive()) {
                             resultColumn.fillFromChunk(fillFromContexts[ci], nullValueChunk, rowSequenceSlice);
                         }

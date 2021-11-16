@@ -5,9 +5,7 @@
 package io.deephaven.engine.v2;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.table.ColumnDefinition;
-import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.*;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
 import io.deephaven.engine.tables.utils.TableTools;
@@ -17,8 +15,7 @@ import io.deephaven.engine.v2.locations.TableLocationKey;
 import io.deephaven.engine.v2.locations.TableLocationProvider;
 import io.deephaven.engine.v2.select.*;
 import io.deephaven.engine.v2.sources.ArrayBackedColumnSource;
-import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.WritableSource;
+import io.deephaven.engine.table.WritableColumnSource;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -221,7 +218,7 @@ public class PartitionAwareSourceTable extends SourceTable {
             @NotNull final Collection<ImmutableTableLocationKey> locationKeys) {
         final Class<? super T> dataType = columnDefinition.getDataType();
         final String partitionKey = columnDefinition.getName();
-        final WritableSource<? super T> result =
+        final WritableColumnSource<? super T> result =
                 ArrayBackedColumnSource.getMemoryColumnSource(locationKeys.size(), dataType, null);
         final MutableLong nextIndex = new MutableLong(0L);
         // noinspection unchecked

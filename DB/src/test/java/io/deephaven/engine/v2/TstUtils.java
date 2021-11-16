@@ -47,11 +47,11 @@ public class TstUtils {
         return TableTools.col(name, data);
     }
 
-    public static MutableRowSet i(long... keys) {
+    public static WritableRowSet i(long... keys) {
         return RowSetFactory.fromKeys(keys);
     }
 
-    public static MutableRowSet ir(final long firstKey, final long lastKey) {
+    public static WritableRowSet ir(final long firstKey, final long lastKey) {
         return RowSetFactory.fromRange(firstKey, lastKey);
     }
 
@@ -98,7 +98,7 @@ public class TstUtils {
             throw new IllegalStateException("Not all columns were populated, missing " + expected);
         }
 
-        table.getRowSet().mutableCast().insert(rowSet);
+        table.getRowSet().writableCast().insert(rowSet);
         if (table.isFlat()) {
             Assert.assertion(table.getRowSet().isFlat(), "table.build().isFlat()", table.getRowSet(),
                     "table.build()", rowSet, "rowSet");
@@ -107,7 +107,7 @@ public class TstUtils {
 
     public static void removeRows(Table table, RowSet rowSet) {
         Require.requirement(table.isRefreshing(), "table.isRefreshing()");
-        table.getRowSet().mutableCast().remove(rowSet);
+        table.getRowSet().writableCast().remove(rowSet);
         if (table.isFlat()) {
             Assert.assertion(table.getRowSet().isFlat(), "table.build().isFlat()", table.getRowSet(),
                     "table.build()", rowSet, "rowSet");
@@ -157,7 +157,7 @@ public class TstUtils {
         return c(colName, data);
     }
 
-    public static MutableRowSet getRandomIndex(long minValue, int size, Random random) {
+    public static WritableRowSet getRandomIndex(long minValue, int size, Random random) {
         final RowSetBuilderRandom builder = RowSetFactory.builderRandom();
         long previous = minValue;
         for (int i = 0; i < size; i++) {
@@ -368,7 +368,7 @@ public class TstUtils {
         }
     }
 
-    static MutableRowSet getInitialIndex(int size, Random random) {
+    static WritableRowSet getInitialIndex(int size, Random random) {
         final RowSetBuilderRandom builder = RowSetFactory.builderRandom();
         long firstKey = 10;
         for (int i = 0; i < size; i++) {
@@ -377,7 +377,7 @@ public class TstUtils {
         return builder.build();
     }
 
-    public static MutableRowSet selectSubIndexSet(int size, RowSet sourceRowSet, Random random) {
+    public static WritableRowSet selectSubIndexSet(int size, RowSet sourceRowSet, Random random) {
         Assert.assertion(size <= sourceRowSet.size(), "size <= sourceRowSet.size()", size, "size", sourceRowSet,
                 "sourceRowSet.size()");
 
@@ -404,7 +404,7 @@ public class TstUtils {
                 Math.min((int) (Math.max(0.0, ((random.nextGaussian() / 0.1) + 0.9)) * emptySlots), targetSize),
                 (int) emptySlots);
 
-        final MutableRowSet fillIn =
+        final WritableRowSet fillIn =
                 selectSubIndexSet(slotsToFill,
                         RowSetFactory.fromRange(0, maxKey).minus(sourceRowSet), random);
 
@@ -476,7 +476,7 @@ public class TstUtils {
     }
 
     public static QueryTable getTable(boolean refreshing, int size, Random random, ColumnInfo[] columnInfos) {
-        final TrackingMutableRowSet rowSet = getInitialIndex(size, random).toTracking();
+        final TrackingWritableRowSet rowSet = getInitialIndex(size, random).toTracking();
         for (ColumnInfo columnInfo : columnInfos) {
             columnInfo.populateMap(rowSet, random);
         }
@@ -520,7 +520,7 @@ public class TstUtils {
     }
 
     public static QueryTable testRefreshingTable(ColumnHolder... columnHolders) {
-        final TrackingMutableRowSet rowSet = (columnHolders.length == 0
+        final TrackingWritableRowSet rowSet = (columnHolders.length == 0
                 ? RowSetFactory.empty()
                 : RowSetFactory.flat(Array.getLength(columnHolders[0].data))).toTracking();
         final Map<String, ColumnSource<?>> columns = new LinkedHashMap<>();
@@ -554,7 +554,7 @@ public class TstUtils {
     }
 
     public static Table prevTableColumnSources(Table table) {
-        final TrackingMutableRowSet rowSet = table.getRowSet().getPrevRowSet().toTracking();
+        final TrackingWritableRowSet rowSet = table.getRowSet().getPrevRowSet().toTracking();
         final Map<String, ColumnSource<?>> columnSourceMap = new LinkedHashMap<>();
         table.getColumnSourceMap().forEach((k, cs) -> {
             columnSourceMap.put(k, new PrevColumnSource<>(cs));
@@ -2145,7 +2145,7 @@ public class TstUtils {
         try {
             TestCase.assertEquals(expected, actual);
         } catch (AssertionFailedError error) {
-            System.err.println("TrackingMutableRowSet equality check failed:"
+            System.err.println("TrackingWritableRowSet equality check failed:"
                     + "\n\texpected: " + expected.toString()
                     + "\n]tactual: " + actual.toString()
                     + "\n]terror: " + error);

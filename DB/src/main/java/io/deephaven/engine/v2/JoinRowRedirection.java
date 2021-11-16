@@ -2,8 +2,8 @@ package io.deephaven.engine.v2;
 
 import io.deephaven.engine.v2.sources.LongSparseArraySource;
 import io.deephaven.engine.v2.utils.*;
-import io.deephaven.engine.v2.utils.ContiguousMutableRowRedirection;
-import io.deephaven.engine.v2.utils.MutableRowRedirection;
+import io.deephaven.engine.v2.utils.ContiguousWritableRowRedirection;
+import io.deephaven.engine.v2.utils.WritableRowRedirection;
 
 /**
  * Makes a redirection index based on the type provided by the join control.
@@ -15,21 +15,21 @@ public class JoinRowRedirection {
      * @param control the JoinControl that determines the redirection type
      * @param leftTable the left table of the join, which the join control examines and determines our result size
      *
-     * @return an empty MutableRowRedirection
+     * @return an empty WritableRowRedirection
      */
-    static MutableRowRedirection makeRowRedirection(JoinControl control, QueryTable leftTable) {
+    static WritableRowRedirection makeRowRedirection(JoinControl control, QueryTable leftTable) {
         final JoinControl.RedirectionType redirectionType = control.getRedirectionType(leftTable);
 
-        final MutableRowRedirection rowRedirection;
+        final WritableRowRedirection rowRedirection;
         switch (redirectionType) {
             case Contiguous:
-                rowRedirection = new ContiguousMutableRowRedirection(leftTable.intSize());
+                rowRedirection = new ContiguousWritableRowRedirection(leftTable.intSize());
                 break;
             case Sparse:
-                rowRedirection = new LongColumnSourceMutableRowRedirection(new LongSparseArraySource());
+                rowRedirection = new LongColumnSourceWritableRowRedirection(new LongSparseArraySource());
                 break;
             case Hash:
-                rowRedirection = MutableRowRedirectionLockFree.FACTORY.createRowRedirection(leftTable.intSize());
+                rowRedirection = WritableRowRedirectionLockFree.FACTORY.createRowRedirection(leftTable.intSize());
                 break;
             default:
                 throw new IllegalStateException();

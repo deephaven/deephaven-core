@@ -9,8 +9,8 @@ import gnu.trove.list.TLongList;
 import gnu.trove.list.linked.TLongLinkedList;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.rowset.MutableRowSet;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -54,11 +54,11 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
     /** the capacity that the destSources been set to */
     private int capacity = 0;
     /** the reinterpretted destination writable sources */
-    private final WritableSource<?>[] destSources;
+    private final WritableColumnSource<?>[] destSources;
     /** we compact the parent table's key-space and instead redirect; ideal for viewport */
-    private final MutableRowRedirection rowRedirection;
+    private final WritableRowRedirection rowRedirection;
     /** represents which rows in writable source exist but are not mapped to any parent rows */
-    private MutableRowSet freeset = RowSetFactory.empty();
+    private WritableRowSet freeset = RowSetFactory.empty();
 
 
     /** unsubscribed must never be reset to false once it has been set to true */
@@ -107,8 +107,8 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
     protected BarrageTable(final UpdateSourceRegistrar registrar,
             final NotificationQueue notificationQueue,
             final LinkedHashMap<String, ColumnSource<?>> columns,
-            final WritableSource<?>[] writableSources,
-            final MutableRowRedirection rowRedirection,
+            final WritableColumnSource<?>[] writableSources,
+            final WritableRowRedirection rowRedirection,
             final boolean isViewPort) {
         super(RowSetFactory.empty().toTracking(), columns);
         this.registrar = registrar;
@@ -124,9 +124,9 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
             serverViewport = null;
         }
 
-        this.destSources = new WritableSource<?>[writableSources.length];
+        this.destSources = new WritableColumnSource<?>[writableSources.length];
         for (int ii = 0; ii < writableSources.length; ++ii) {
-            destSources[ii] = (WritableSource<?>) ReinterpretUtilities.maybeConvertToPrimitive(writableSources[ii]);
+            destSources[ii] = (WritableColumnSource<?>) ReinterpretUtilities.maybeConvertToPrimitive(writableSources[ii]);
         }
 
         // we always start empty, and can be notified this cycle if we are refreshed
@@ -199,7 +199,7 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
             saveForDebugging(update);
 
             modifiedColumnSet.clear();
-            final MutableRowSet mods = RowSetFactory.empty();
+            final WritableRowSet mods = RowSetFactory.empty();
             for (int ci = 0; ci < update.modColumnData.length; ++ci) {
                 final RowSet rowsModified = update.modColumnData[ci].rowsModified;
                 if (rowsModified.isNonempty()) {
@@ -223,11 +223,11 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
 
         // make sure that these rowSet updates make some sense compared with each other, and our current view of the
         // table
-        final MutableRowSet currentRowSet = getRowSet().mutableCast();
+        final WritableRowSet currentRowSet = getRowSet().writableCast();
         final boolean mightBeInitialSnapshot = currentRowSet.isEmpty() && update.isSnapshot;
 
         try (final RowSet currRowsFromPrev = currentRowSet.copy();
-                final MutableRowSet populatedRows =
+                final WritableRowSet populatedRows =
                         (serverViewport != null ? currentRowSet.subSetForPositions(serverViewport) : null)) {
 
             // removes
@@ -246,14 +246,14 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
             }
             currentRowSet.insert(update.rowsAdded);
 
-            final MutableRowSet totalMods = RowSetFactory.empty();
+            final WritableRowSet totalMods = RowSetFactory.empty();
             for (int i = 0; i < update.modColumnData.length; ++i) {
                 final BarrageMessage.ModColumnData column = update.modColumnData[i];
                 totalMods.insert(column.rowsModified);
             }
 
             if (update.rowsIncluded.isNonempty()) {
-                try (final WritableChunkSink.FillFromContext redirContext =
+                try (final ChunkSink.FillFromContext redirContext =
                         rowRedirection.makeFillFromContext(update.rowsIncluded.intSize());
                         final RowSet destinationRowSet = getFreeRows(update.rowsIncluded.size())) {
                     // Update redirection mapping:
@@ -266,7 +266,7 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
                             final Chunk<? extends Attributes.Values> data = update.addColumnData[ii].data;
                             Assert.eq(data.size(), "delta.includedAdditions.size()", destinationRowSet.size(),
                                     "destinationRowSet.size()");
-                            try (final WritableChunkSink.FillFromContext ctxt =
+                            try (final ChunkSink.FillFromContext ctxt =
                                     destSources[ii].makeFillFromContext(destinationRowSet.intSize())) {
                                 destSources[ii].fillFromChunk(ctxt, data, destinationRowSet);
                             }
@@ -293,7 +293,7 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
                         Assert.notEquals(keys.get(i), "keys[i]", RowSequence.NULL_ROW_KEY, "RowSet.NULL_ROW_KEY");
                     }
 
-                    try (final WritableChunkSink.FillFromContext ctxt =
+                    try (final ChunkSink.FillFromContext ctxt =
                             destSources[ii].makeFillFromContext(keys.size())) {
                         destSources[ii].fillFromChunkUnordered(ctxt, column.data, keys);
                     }
@@ -347,7 +347,7 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
         }
 
         if (needsResizing) {
-            for (final WritableSource<?> source : destSources) {
+            for (final WritableColumnSource<?> source : destSources) {
                 source.ensureCapacity(capacity);
             }
         }
@@ -403,7 +403,7 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
             if (getRowSet().isNonempty()) {
                 // publish one last clear downstream; this data would be stale
                 final RowSet allRows = getRowSet().copy();
-                getRowSet().mutableCast().remove(allRows);
+                getRowSet().writableCast().remove(allRows);
                 notifyListeners(RowSetFactory.empty(), allRows, RowSetFactory.empty());
             }
             cleanup();
@@ -510,8 +510,8 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
             final TableDefinition tableDefinition,
             final boolean isViewPort) {
         final ColumnDefinition<?>[] columns = tableDefinition.getColumns();
-        final WritableSource<?>[] writableSources = new WritableSource[columns.length];
-        final MutableRowRedirection rowRedirection = MutableRowRedirection.FACTORY.createRowRedirection(8);
+        final WritableColumnSource<?>[] writableSources = new WritableColumnSource[columns.length];
+        final WritableRowRedirection rowRedirection = WritableRowRedirection.FACTORY.createRowRedirection(8);
         final LinkedHashMap<String, ColumnSource<?>> finalColumns =
                 makeColumns(columns, writableSources, rowRedirection);
 
@@ -532,8 +532,8 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
      */
     @NotNull
     protected static LinkedHashMap<String, ColumnSource<?>> makeColumns(final ColumnDefinition<?>[] columns,
-            final WritableSource<?>[] writableSources,
-            final MutableRowRedirection emptyRowRedirection) {
+            final WritableColumnSource<?>[] writableSources,
+            final WritableRowRedirection emptyRowRedirection) {
         final LinkedHashMap<String, ColumnSource<?>> finalColumns = new LinkedHashMap<>();
         for (int ii = 0; ii < columns.length; ii++) {
             writableSources[ii] = ArrayBackedColumnSource.getMemoryColumnSource(0, columns[ii].getDataType(),
@@ -550,7 +550,7 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
             return;
         }
 
-        for (final WritableSource<?> ws : destSources) {
+        for (final WritableColumnSource<?> ws : destSources) {
             ws.startTrackingPrevValues();
         }
         rowRedirection.startTrackingPrevValues();

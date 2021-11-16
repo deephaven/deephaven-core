@@ -5,14 +5,11 @@
 package io.deephaven.engine.v2.select;
 
 import io.deephaven.base.verify.Require;
-import io.deephaven.engine.table.ColumnDefinition;
-import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.MatchPair;
+import io.deephaven.engine.table.*;
 import io.deephaven.api.util.NameValidator;
 import io.deephaven.engine.v2.NoSuchColumnException;
-import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.sources.ViewColumnSource;
-import io.deephaven.engine.table.WritableSource;
+import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.rftable.chunkfillers.chunkfillers.ChunkFiller;
@@ -210,7 +207,7 @@ public class FunctionalColumn<S, D> implements SelectColumn {
     }
 
     @Override
-    public WritableSource<?> newDestInstance(long size) {
+    public WritableColumnSource<?> newDestInstance(long size) {
         throw new UnsupportedOperationException();
     }
 

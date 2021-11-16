@@ -120,14 +120,14 @@ public interface RowSequence extends SafeCloseable, LongSizedDataStructure {
     /**
      * Get the first row key in this {@code RowSequence}.
      *
-     * @return The first row key, or {@link TrackingMutableRowSet#NULL_ROW_KEY} if there is none.
+     * @return The first row key, or {@link TrackingWritableRowSet#NULL_ROW_KEY} if there is none.
      */
     long firstRowKey();
 
     /**
      * Get the last row key in this {@code RowSequence}.
      *
-     * @return The last row key, or {@link TrackingMutableRowSet#NULL_ROW_KEY} if there is none.
+     * @return The last row key, or {@link TrackingWritableRowSet#NULL_ROW_KEY} if there is none.
      */
     long lastRowKey();
 
@@ -214,7 +214,7 @@ public interface RowSequence extends SafeCloseable, LongSizedDataStructure {
          * Peek at the next row key that would be returned by {@link #getNextRowSequenceThrough(long)} or
          * {@link #getNextRowSequenceWithLength(long)}. Does not advance the position.
          *
-         * @return The next row key that would be returned, or {@link TrackingMutableRowSet#NULL_ROW_KEY} if this
+         * @return The next row key that would be returned, or {@link TrackingWritableRowSet#NULL_ROW_KEY} if this
          *         iterator is exhausted
          */
         long peekNextKey();

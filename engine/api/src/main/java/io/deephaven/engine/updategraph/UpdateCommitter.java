@@ -2,14 +2,16 @@
  * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
  */
 
-package io.deephaven.engine.v2.utils;
+package io.deephaven.engine.updategraph;
 
+import io.deephaven.engine.updategraph.TerminalNotification;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 
 import java.lang.ref.WeakReference;
 import java.util.function.Consumer;
 
 public class UpdateCommitter<T> extends TerminalNotification {
+
     private final WeakReference<T> targetReference;
     private final Consumer<T> committer;
     private boolean active;

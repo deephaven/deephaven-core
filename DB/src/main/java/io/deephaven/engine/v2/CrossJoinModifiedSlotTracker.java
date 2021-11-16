@@ -33,8 +33,8 @@ class CrossJoinModifiedSlotTracker {
     RowSetShiftData leftShifted;
     RowSetShiftData rightShifted;
 
-    MutableRowSet leftAdded;
-    MutableRowSet leftRemoved;
+    WritableRowSet leftAdded;
+    WritableRowSet leftRemoved;
     RowSet leftModified;
 
     boolean hasLeftModifies = false;
@@ -61,13 +61,13 @@ class CrossJoinModifiedSlotTracker {
         RowSetBuilderRandom indexBuilder = RowSetFactory.builderRandom();
 
         long lastIndex = 0; // if added/removed/modified have been shifted then this is the left-rowSet for the shift
-        MutableRowSet rightAdded;
-        MutableRowSet rightRemoved;
-        MutableRowSet rightModified;
+        WritableRowSet rightAdded;
+        WritableRowSet rightRemoved;
+        WritableRowSet rightModified;
         RowSetShiftData innerShifted;
 
-        MutableRowSet leftRowSet; // reference, NOT a copy
-        TrackingMutableRowSet rightRowSet; // reference, NOT a copy
+        WritableRowSet leftRowSet; // reference, NOT a copy
+        TrackingWritableRowSet rightRowSet; // reference, NOT a copy
 
         private SlotState() {
             keyChunk.ensureCapacityPreserve(START_SLOT_CHUNK_SIZE);

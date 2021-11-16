@@ -35,7 +35,7 @@ public class FlattenOperation implements QueryTable.MemoizableOperation<QueryTab
     public Result<QueryTable> initialize(boolean usePrev, long beforeClock) {
         final TrackingRowSet rowSet = parent.getRowSet();
         final Map<String, ColumnSource<?>> resultColumns = new LinkedHashMap<>();
-        final MutableRowRedirection rowRedirection = new WrappedRowSetMutableRowRedirection(rowSet);
+        final WritableRowRedirection rowRedirection = new WrappedRowSetWritableRowRedirection(rowSet);
 
         final long size = usePrev ? rowSet.sizePrev() : rowSet.size();
 
@@ -160,9 +160,9 @@ public class FlattenOperation implements QueryTable.MemoizableOperation<QueryTab
         }
 
         if (newSize < prevSize) {
-            resultTable.getRowSet().mutableCast().removeRange(newSize, prevSize - 1);
+            resultTable.getRowSet().writableCast().removeRange(newSize, prevSize - 1);
         } else if (newSize > prevSize) {
-            resultTable.getRowSet().mutableCast().insertRange(prevSize, newSize - 1);
+            resultTable.getRowSet().writableCast().insertRange(prevSize, newSize - 1);
         }
 
         downstream.shifted = outShifted.build();

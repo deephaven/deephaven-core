@@ -10,7 +10,7 @@ import io.deephaven.engine.vector.*;
 import io.deephaven.engine.chunk.util.hashing.ChunkEquals;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.sources.SparseArrayColumnSource;
-import io.deephaven.engine.table.WritableChunkSink;
+import io.deephaven.engine.table.ChunkSink;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.v2.utils.*;
 import io.deephaven.util.SafeCloseable;
@@ -46,7 +46,7 @@ public class TableUpdateValidator implements QueryTable.Operation {
     private final ModifiedColumnSet validationMCS;
     private ColumnInfo[] columnInfos;
 
-    private MutableRowSet rowSet;
+    private WritableRowSet rowSet;
     private QueryTable resultTable;
     private SharedContext sharedContext;
     private final String description;
@@ -313,7 +313,7 @@ public class TableUpdateValidator implements QueryTable.Operation {
         ColumnSource.FillContext sourceFillContext;
         WritableObjectChunk<Object, Attributes.Values> sourceFillChunk;
         ColumnSource.GetContext expectedGetContext;
-        WritableChunkSink.FillFromContext expectedFillFromContext;
+        ChunkSink.FillFromContext expectedFillFromContext;
         WritableBooleanChunk equalValuesDest;
 
         private ColumnInfo(Table tableToValidate, String columnName) {
@@ -356,7 +356,7 @@ public class TableUpdateValidator implements QueryTable.Operation {
             return expectedGetContext;
         }
 
-        private WritableChunkSink.FillFromContext expectedFillFromContext() {
+        private ChunkSink.FillFromContext expectedFillFromContext() {
             if (expectedFillFromContext == null) {
                 expectedFillFromContext = expectedSource.makeFillFromContext(CHUNK_SIZE);
             }

@@ -85,7 +85,7 @@ class StaticChunkedNaturalJoinStateManager
     private final ArrayBackedColumnSource<?> [] overflowKeySources;
     // the location of the next key in an overflow bucket
     private final IntegerArraySource overflowOverflowLocationSource = new IntegerArraySource();
-    // the overflow buckets for the right TrackingMutableRowSet
+    // the overflow buckets for the right TrackingWritableRowSet
     @ReplicateHashTable.OverflowStateColumnSource
     // @StateColumnSourceType@ from \QLongArraySource\E
     private final LongArraySource overflowRightRowSetSource
@@ -1192,15 +1192,15 @@ class StaticChunkedNaturalJoinStateManager
     }
 
     // region extraction functions
-    MutableRowRedirection buildRowRedirectionFromHashSlot(QueryTable leftTable, boolean exactMatch, LongArraySource leftHashSlots, JoinControl.RedirectionType redirectionType) {
+    WritableRowRedirection buildRowRedirectionFromHashSlot(QueryTable leftTable, boolean exactMatch, LongArraySource leftHashSlots, JoinControl.RedirectionType redirectionType) {
         return buildRowRedirection(leftTable, exactMatch, position -> getStateValue(leftHashSlots, position), redirectionType);
     }
 
-    MutableRowRedirection buildRowRedirectionFromRedirections(QueryTable leftTable, boolean exactMatch, LongArraySource leftRedirections, JoinControl.RedirectionType redirectionType) {
+    WritableRowRedirection buildRowRedirectionFromRedirections(QueryTable leftTable, boolean exactMatch, LongArraySource leftRedirections, JoinControl.RedirectionType redirectionType) {
         return buildRowRedirection(leftTable, exactMatch, leftRedirections::getLong, redirectionType);
     }
 
-    MutableRowRedirection buildGroupedRowRedirection(QueryTable leftTable, boolean exactMatch, long groupingSize, LongArraySource leftHashSlots, ArrayBackedColumnSource<RowSet> leftIndices, JoinControl.RedirectionType redirectionType) {
+    WritableRowRedirection buildGroupedRowRedirection(QueryTable leftTable, boolean exactMatch, long groupingSize, LongArraySource leftHashSlots, ArrayBackedColumnSource<RowSet> leftIndices, JoinControl.RedirectionType redirectionType) {
         switch (redirectionType) {
             case Contiguous: {
                 if (!leftTable.isFlat()) {
@@ -1214,7 +1214,7 @@ class StaticChunkedNaturalJoinStateManager
                     final RowSet leftRowSetForKey = leftIndices.get(ii);
                     leftRowSetForKey.forAllRowKeys((long ll) -> innerIndex[(int) ll] = rightSide);
                 }
-                return new ContiguousMutableRowRedirection(innerIndex);
+                return new ContiguousWritableRowRedirection(innerIndex);
             }
             case Sparse: {
                 final LongSparseArraySource sparseRedirections = new LongSparseArraySource();
@@ -1228,10 +1228,10 @@ class StaticChunkedNaturalJoinStateManager
                         leftRowSetForKey.forAllRowKeys((long ll) -> sparseRedirections.set(ll, rightSide));
                     }
                 }
-                return new LongColumnSourceMutableRowRedirection(sparseRedirections);
+                return new LongColumnSourceWritableRowRedirection(sparseRedirections);
             }
             case Hash: {
-                final MutableRowRedirection rowRedirection = MutableRowRedirectionLockFree.FACTORY.createRowRedirection(leftTable.intSize());
+                final WritableRowRedirection rowRedirection = WritableRowRedirectionLockFree.FACTORY.createRowRedirection(leftTable.intSize());
 
                 for (int ii = 0; ii < groupingSize; ++ii) {
                     final long rightSide = getStateValue(leftHashSlots, ii);

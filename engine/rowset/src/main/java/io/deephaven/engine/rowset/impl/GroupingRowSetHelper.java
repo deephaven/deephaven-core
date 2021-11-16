@@ -6,7 +6,10 @@ package io.deephaven.engine.rowset.impl;
 
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.rowset.*;
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.TupleSource;
 import io.deephaven.engine.tuple.EmptyTuple;
+import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.v2.sources.LogicalClock;
 import io.deephaven.engine.tuplesource.TupleSource;
@@ -19,9 +22,9 @@ import java.util.stream.Collectors;
 
 /**
  * Intermediate base class to separate grouping functionality from tracking functionality to be exposed in
- * {@link TrackingMutableRowSetImpl}.
+ * {@link TrackingWritableRowSetImpl}.
  */
-public abstract class GroupingRowSetHelper extends MutableRowSetImpl implements TrackingMutableRowSet {
+public abstract class GroupingRowSetHelper extends WritableRowSetImpl implements TrackingWritableRowSet {
 
     /*
      * TODO (https://github.com/deephaven/deephaven-core/issues/1521): We need to do something better than

@@ -4,7 +4,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
-import io.deephaven.engine.rowset.TrackingMutableRowSet;
+import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.v2.Listener.Update;
@@ -57,16 +57,16 @@ public class StreamTableOperationsTest {
                 source.getColumnSourceMap());
         normal.setRefreshing(true);
 
-        final TrackingMutableRowSet streamInternalRowSet;
+        final TrackingWritableRowSet streamInternalRowSet;
         final Map<String, ? extends ColumnSource<?>> streamSources;
         if (windowed) {
             streamInternalRowSet = null;
             streamSources = source.getColumnSourceMap();
         } else {
-            // Redirecting so we can present a zero-based TrackingMutableRowSet from the stream table
+            // Redirecting so we can present a zero-based TrackingWritableRowSet from the stream table
             streamInternalRowSet = RowSetFactory.empty().toTracking();
-            final MutableRowRedirection streamRedirections =
-                    new WrappedRowSetMutableRowRedirection(streamInternalRowSet);
+            final WritableRowRedirection streamRedirections =
+                    new WrappedRowSetWritableRowRedirection(streamInternalRowSet);
             streamSources = source.getColumnSourceMap().entrySet().stream().collect(Collectors.toMap(
                     Map.Entry::getKey,
                     (entry -> new RedirectedColumnSource<>(streamRedirections, entry.getValue())),
@@ -107,7 +107,7 @@ public class StreamTableOperationsTest {
                 final RowSet finalNormalLastInserted = normalLastInserted;
                 UpdateGraphProcessor.DEFAULT.refreshUpdateSourceForUnitTests(() -> {
                     if (normalStepInserted.isNonempty() || finalNormalLastInserted.isNonempty()) {
-                        normal.getRowSet().mutableCast().update(normalStepInserted, finalNormalLastInserted);
+                        normal.getRowSet().writableCast().update(normalStepInserted, finalNormalLastInserted);
                         normal.notifyListeners(new Update(normalStepInserted.copy(), finalNormalLastInserted,
                                 RowSetFactory.empty(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
                     }
@@ -119,8 +119,8 @@ public class StreamTableOperationsTest {
                             streamInternalRowSet.clear();
                             streamInternalRowSet.insert(normalStepInserted);
                         }
-                        stream.getRowSet().mutableCast().clear();
-                        stream.getRowSet().mutableCast().insert(streamStepInserted);
+                        stream.getRowSet().writableCast().clear();
+                        stream.getRowSet().writableCast().insert(streamStepInserted);
                         stream.notifyListeners(new Update(streamStepInserted.copy(), finalStreamLastInserted,
                                 RowSetFactory.empty(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY));
                     }

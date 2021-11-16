@@ -6,7 +6,7 @@ package io.deephaven.engine.v2.sources;
 
 import io.deephaven.engine.table.DefaultChunkSource;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.WritableSource;
+import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.Attributes.Values;
@@ -30,8 +30,8 @@ public class DateTimeSparseArraySource extends AbstractSparseLongArraySource<Dat
     }
 
     @Override
-    WritableSource<Long> reinterpretForSerialization() {
-        return (WritableSource<Long>) reinterpret(long.class);
+    WritableColumnSource<Long> reinterpretForSerialization() {
+        return (WritableColumnSource<Long>) reinterpret(long.class);
     }
 
     @Override

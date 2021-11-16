@@ -1,6 +1,6 @@
 package io.deephaven.engine.rowset.impl;
 
-import io.deephaven.engine.rowset.MutableRowSet;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSetBuilderRandom;
 
 /**
@@ -11,8 +11,8 @@ class AdaptiveRowSetBuilderRandom implements RowSetBuilderRandom {
     private final AdaptiveOrderedLongSetBuilderRandom builder = new AdaptiveOrderedLongSetBuilderRandom();
 
     @Override
-    public MutableRowSet build() {
-        return new MutableRowSetImpl(builder.getTreeIndexImpl());
+    public WritableRowSet build() {
+        return new WritableRowSetImpl(builder.getTreeIndexImpl());
     }
 
     @Override

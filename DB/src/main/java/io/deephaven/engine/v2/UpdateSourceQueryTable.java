@@ -7,7 +7,7 @@ package io.deephaven.engine.v2;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderRandom;
 import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.rowset.TrackingMutableRowSet;
+import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.ColumnSource;
 
@@ -21,7 +21,7 @@ public class UpdateSourceQueryTable extends QueryTable implements Runnable {
 
     private RowSetBuilderRandom additionsBuilder = RowSetFactory.builderRandom();
 
-    public UpdateSourceQueryTable(TrackingMutableRowSet rowSet, Map<String, ? extends ColumnSource<?>> result) {
+    public UpdateSourceQueryTable(TrackingWritableRowSet rowSet, Map<String, ? extends ColumnSource<?>> result) {
         super(rowSet, result);
     }
 
@@ -33,7 +33,7 @@ public class UpdateSourceQueryTable extends QueryTable implements Runnable {
             additionsBuilder = RowSetFactory.builderRandom();
         }
         final RowSet added = builder.build();
-        getRowSet().mutableCast().insert(added);
+        getRowSet().writableCast().insert(added);
         if (added.size() > 0) {
             notifyListeners(added, RowSetFactory.empty(),
                     RowSetFactory.empty());

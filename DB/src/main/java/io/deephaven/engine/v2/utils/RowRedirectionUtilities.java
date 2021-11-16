@@ -7,8 +7,8 @@ import io.deephaven.engine.rowset.RowSetShiftData;
 public class RowRedirectionUtilities {
     private static final long SEARCH_ITERATOR_THRESHOLD = 512;
 
-    static void applyRedirectionShift(final MutableRowRedirection rowRedirection, final RowSet filterIndex,
-            final RowSetShiftData shiftData) {
+    static void applyRedirectionShift(final WritableRowRedirection rowRedirection, final RowSet filterIndex,
+                                      final RowSetShiftData shiftData) {
 
         final RowSetShiftData.SingleElementShiftCallback applyOneShift = (key, delta) -> {
             final long oldKey = rowRedirection.remove(key);

@@ -1132,7 +1132,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         final StringBuilder sb = new StringBuilder();
 
         sb.append("Complete Table has ").append(rowSet.size()).append(" rows:\n");
-        sb.append("TrackingMutableRowSet=").append(rowSet).append("\n");
+        sb.append("TrackingWritableRowSet=").append(rowSet).append("\n");
         for (final RowSet.Iterator it = rowSet.iterator(); it.hasNext();) {
             final long value = it.nextLong();
             final Object[] keyValues = new Object[columns.length];
@@ -1144,7 +1144,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
 
         final RowSet prevRowSet = rowSet.getPrevRowSet();
         sb.append("Complete Previous Table has ").append(prevRowSet.size()).append(" rows:\n");
-        sb.append("TrackingMutableRowSet=").append(rowSet).append("\n");
+        sb.append("TrackingWritableRowSet=").append(rowSet).append("\n");
         for (final RowSet.Iterator it = prevRowSet.iterator(); it.hasNext();) {
             final long value = it.nextLong();
             final Object[] keyValues = new Object[columns.length];

@@ -1,7 +1,7 @@
 package io.deephaven.engine.rftable.chunkfillers.chunkfillers;
 
 import io.deephaven.engine.table.ElementSource;
-import io.deephaven.engine.table.WritableSource;
+import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.chunk.ChunkType;
@@ -55,5 +55,5 @@ public interface ChunkFiller {
      * run we may want to generalize this functionality, or, at the very least, move it to some "ColumnSourceFiller"
      * class.
      */
-    void fillFromSingleValue(ElementSource src, long srcKey, WritableSource dest, RowSequence destKeys);
+    void fillFromSingleValue(ElementSource src, long srcKey, WritableColumnSource dest, RowSequence destKeys);
 }

@@ -7,9 +7,10 @@
 
 package io.deephaven.engine.v2.by.ssmcountdistinct.unique;
 
-import io.deephaven.engine.rowset.MutableRowSet;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.updategraph.UpdateCommitter;
 import io.deephaven.engine.v2.Listener;
 import io.deephaven.engine.v2.by.AggregationFactory;
 import io.deephaven.engine.v2.by.IterativeChunkedAggregationOperator;
@@ -26,7 +27,6 @@ import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.v2.ssms.ByteSegmentedSortedMultiset;
 import io.deephaven.engine.v2.ssms.SegmentedSortedMultiSet;
-import io.deephaven.engine.v2.utils.*;
 import io.deephaven.engine.v2.utils.compact.ByteCompactKernel;
 import org.jetbrains.annotations.NotNull;
 
@@ -52,7 +52,7 @@ public class ByteRollupUniqueOperator implements IterativeChunkedAggregationOper
     private final byte nonUniqueKey;
 
     private UpdateCommitter<ByteRollupUniqueOperator> prevFlusher = null;
-    private MutableRowSet touchedStates;
+    private WritableRowSet touchedStates;
 
     public ByteRollupUniqueOperator(
                                     // region Constructor

@@ -81,7 +81,7 @@ public class TimeTable extends QueryTable implements Runnable {
                 lastIndex = 0;
                 dateTimeArraySource.ensureCapacity(lastIndex + 1);
                 dateTimeArraySource.set(lastIndex, lastTime = currentBinnedTime);
-                getRowSet().mutableCast().insert(lastIndex);
+                getRowSet().writableCast().insert(lastIndex);
             } else
                 while (currentBinnedTime.compareTo(lastTime) > 0) {
                     lastTime = DateTimeUtils.plus(lastTime, period);
@@ -98,7 +98,7 @@ public class TimeTable extends QueryTable implements Runnable {
                     log.info().append("TimeTable updated to ").append(lastTime.toString()).endl();
                 }
                 final RowSet range = RowSetFactory.fromRange(rangeStart, lastIndex);
-                getRowSet().mutableCast().insert(range);
+                getRowSet().writableCast().insert(range);
                 if (notifyListeners) {
                     notifyListeners(range, RowSetFactory.empty(), RowSetFactory.empty());
                 }

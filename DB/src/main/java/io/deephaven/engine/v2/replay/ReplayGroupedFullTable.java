@@ -20,12 +20,12 @@ public class ReplayGroupedFullTable extends QueryReplayGroupedTable {
                                   String timeColumn,
                                   Replayer replayer, String groupingColumn) {
         super(rowSet, input, timeColumn, replayer,
-                MutableRowRedirection.FACTORY.createRowRedirection((int) rowSet.size()),
+                WritableRowRedirection.FACTORY.createRowRedirection((int) rowSet.size()),
                 new String[] {groupingColumn});
         redirIndexSize = 0;
-        // We do not modify existing entries in the MutableRowRedirection (we only add at the end), so there's no need
+        // We do not modify existing entries in the WritableRowRedirection (we only add at the end), so there's no need
         // to
-        // ask the MutableRowRedirection to track previous values.
+        // ask the WritableRowRedirection to track previous values.
     }
 
     @Override
@@ -46,7 +46,7 @@ public class ReplayGroupedFullTable extends QueryReplayGroupedTable {
         }
         final RowSet added = rowSetBuilder.build();
         if (added.size() > 0) {
-            getRowSet().mutableCast().insert(added);
+            getRowSet().writableCast().insert(added);
             notifyListeners(added, RowSetFactory.empty(), RowSetFactory.empty());
         }
     }

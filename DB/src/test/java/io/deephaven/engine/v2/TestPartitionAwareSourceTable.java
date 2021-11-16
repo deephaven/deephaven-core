@@ -7,7 +7,7 @@ package io.deephaven.engine.v2;
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.engine.rowset.MutableRowSet;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ColumnDefinition;
@@ -83,7 +83,7 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
     private Listener listener;
     private final TstUtils.TstNotification notification = new TstUtils.TstNotification();
 
-    private MutableRowSet expectedRowSet;
+    private WritableRowSet expectedRowSet;
 
     private PartitionAwareSourceTable SUT;
 

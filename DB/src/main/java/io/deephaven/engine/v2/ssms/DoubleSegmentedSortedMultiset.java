@@ -2287,7 +2287,7 @@ public final class DoubleSegmentedSortedMultiset implements SegmentedSortedMulti
             }
         }
 
-        throw new IllegalStateException("TrackingMutableRowSet " + i + " not found in this SSM");
+        throw new IllegalStateException("TrackingWritableRowSet " + i + " not found in this SSM");
     }
 
     @Override

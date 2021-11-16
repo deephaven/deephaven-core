@@ -12,7 +12,8 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.WritableSource;
+import io.deephaven.engine.table.WritableColumnSource;
+import io.deephaven.engine.updategraph.UpdateCommitter;
 import io.deephaven.engine.vector.Vector;
 
 import io.deephaven.engine.chunk.*;
@@ -22,7 +23,6 @@ import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.chunk.Attributes.OrderedRowKeys;
 import io.deephaven.engine.v2.sources.sparse.ObjectOneOrN;
 import io.deephaven.engine.v2.sources.sparse.LongOneOrN;
-import io.deephaven.engine.v2.utils.*;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.util.SoftRecycler;
 import gnu.trove.list.array.TLongArrayList;
@@ -117,7 +117,7 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T> imple
         final T [] data = (T [])in.readObject();
         final ObjectChunk<T, Values> srcChunk = ObjectChunk.chunkWrap(data);
         // noinspection unchecked
-        final WritableSource<Object> reinterpreted = (WritableSource<Object>) reinterpretForSerialization();
+        final WritableColumnSource<Object> reinterpreted = (WritableColumnSource<Object>) reinterpretForSerialization();
         try (final FillFromContext context = reinterpreted.makeFillFromContext(rowSet.intSize())) {
             reinterpreted.fillFromChunk(context, srcChunk, rowSet);
         }

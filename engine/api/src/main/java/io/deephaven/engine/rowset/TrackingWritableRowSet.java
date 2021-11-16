@@ -7,7 +7,7 @@ package io.deephaven.engine.rowset;
 /**
  * Tracking, mutable {@link RowSet}.
  */
-public interface TrackingMutableRowSet extends MutableRowSet, TrackingRowSet {
+public interface TrackingWritableRowSet extends WritableRowSet, TrackingRowSet {
 
     /**
      * Initializes our previous value from the current value.

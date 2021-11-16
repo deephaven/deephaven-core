@@ -4,7 +4,7 @@ import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.chunk.LongChunk;
 import io.deephaven.engine.chunk.WritableChunk;
-import io.deephaven.engine.table.WritableChunkSink;
+import io.deephaven.engine.table.ChunkSink;
 import org.jetbrains.annotations.NotNull;
 
 public interface FillFromUnordered {
@@ -17,7 +17,7 @@ public interface FillFromUnordered {
      * @param keys A chunk of individual, not assumed to be ordered keys to be fetched
      */
     void fillFromChunkUnordered(
-            @NotNull WritableChunkSink.FillFromContext context,
+            @NotNull ChunkSink.FillFromContext context,
             @NotNull WritableChunk<? super Values> dest,
             @NotNull LongChunk<? extends Attributes.RowKeys> keys);
 }

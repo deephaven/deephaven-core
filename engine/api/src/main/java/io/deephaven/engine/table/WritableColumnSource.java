@@ -4,13 +4,16 @@
 
 package io.deephaven.engine.table;
 
-import io.deephaven.engine.chunk.*;
+import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.chunk.Attributes.Values;
+import io.deephaven.engine.chunk.Chunk;
+import io.deephaven.engine.chunk.LongChunk;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 
-public interface WritableSource<T> extends ColumnSource<T>, WritableChunkSink<Attributes.Values> {
+public interface WritableColumnSource<T> extends ColumnSource<T>, ChunkSink<Values> {
+
     default void set(long key, T value) {
         throw new UnsupportedOperationException();
     }
@@ -54,7 +57,7 @@ public interface WritableSource<T> extends ColumnSource<T>, WritableChunkSink<At
     }
 
     /**
-     * Ensure that this WritableSource can accept rowSet keys in range {@code [0, capacity)}.
+     * Ensure that this WritableColumnSource can accept rowSet keys in range {@code [0, capacity)}.
      *
      * @param capacity The new minimum capacity
      * @param nullFilled Whether data should be "null-filled". If true, get operations at rowSet keys that have not been
@@ -62,11 +65,11 @@ public interface WritableSource<T> extends ColumnSource<T>, WritableChunkSink<At
      */
     void ensureCapacity(long capacity, boolean nullFilled);
 
-    // WritableSource provides a slow, default implementation of fillFromChunk. Inheritors who care should provide
+    // WritableColumnSource provides a slow, default implementation of fillFromChunk. Inheritors who care should provide
     // something more efficient.
 
     /**
-     * Provide a default, empty {@link FillFromContext} for use with our default {@link WritableSource#fillFromChunk}.
+     * Provide a default, empty {@link FillFromContext} for use with our default {@link WritableColumnSource#fillFromChunk}.
      */
     @Override
     default FillFromContext makeFillFromContext(int chunkCapacity) {

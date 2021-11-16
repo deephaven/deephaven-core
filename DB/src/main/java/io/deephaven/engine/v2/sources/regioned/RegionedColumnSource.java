@@ -10,7 +10,7 @@ import io.deephaven.engine.v2.locations.ColumnLocation;
 import io.deephaven.engine.v2.sources.DeferredGroupingColumnSource;
 import io.deephaven.engine.v2.sources.ImmutableColumnSource;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.TrackingMutableRowSet;
+import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.util.annotations.VisibleForTesting;
 import org.jetbrains.annotations.NotNull;
 
@@ -21,7 +21,7 @@ import org.jetbrains.annotations.NotNull;
  * <p>
  * {@link io.deephaven.engine.v2.SourceTable source tables} can be thought of a tree of partitions with
  * {@link io.deephaven.engine.v2.locations.TableLocation table locations} at the leaf nodes. When building the
- * {@link TrackingMutableRowSet TrackingMutableRowSet} for such a {@link Table table}, we
+ * {@link TrackingWritableRowSet TrackingWritableRowSet} for such a {@link Table table}, we
  * statically partition the available element address space from [0, {@value Long#MAX_VALUE} <i>(2^63-1)</i>].
  *
  * <p>

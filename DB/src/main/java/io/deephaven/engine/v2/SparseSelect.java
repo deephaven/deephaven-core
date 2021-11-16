@@ -268,7 +268,7 @@ public class SparseSelect {
     }
 
     private static void doCopy(RowSet addedAndModified, ColumnSource<?>[] inputSources,
-            WritableSource<?>[] outputSources,
+            WritableColumnSource<?>[] outputSources,
             boolean[] toCopy) {
         if (executor == null) {
             doCopySingle(addedAndModified, inputSources, outputSources, toCopy);
@@ -278,13 +278,13 @@ public class SparseSelect {
     }
 
     private static void doCopySingle(RowSet addedAndModified, ColumnSource<?>[] inputSources,
-            WritableSource<?>[] outputSources, boolean[] toCopy) {
+                                     WritableColumnSource<?>[] outputSources, boolean[] toCopy) {
         final ChunkSource.GetContext[] gcs = new ChunkSource.GetContext[inputSources.length];
-        final WritableChunkSink.FillFromContext[] ffcs = new WritableChunkSink.FillFromContext[inputSources.length];
+        final ChunkSink.FillFromContext[] ffcs = new ChunkSink.FillFromContext[inputSources.length];
         try (final SafeCloseableArray<ChunkSource.GetContext> ignored = new SafeCloseableArray<>(gcs);
-                final SafeCloseableArray<WritableChunkSink.FillFromContext> ignored2 = new SafeCloseableArray<>(ffcs);
-                final RowSequence.Iterator rsIt = addedAndModified.getRowSequenceIterator();
-                final SharedContext sharedContext = SharedContext.makeSharedContext()) {
+             final SafeCloseableArray<ChunkSink.FillFromContext> ignored2 = new SafeCloseableArray<>(ffcs);
+             final RowSequence.Iterator rsIt = addedAndModified.getRowSequenceIterator();
+             final SharedContext sharedContext = SharedContext.makeSharedContext()) {
             for (int cc = 0; cc < inputSources.length; cc++) {
                 if (toCopy == null || toCopy[cc]) {
                     gcs[cc] = inputSources[cc].makeGetContext(SPARSE_SELECT_CHUNK_SIZE, sharedContext);
@@ -305,7 +305,7 @@ public class SparseSelect {
     }
 
     private static void doCopyThreads(RowSet addedAndModified, ColumnSource<?>[] inputSources,
-            WritableSource<?>[] outputSources, boolean[] toCopy) {
+                                      WritableColumnSource<?>[] outputSources, boolean[] toCopy) {
         final Future<?>[] futures = new Future[inputSources.length];
         for (int columnIndex = 0; columnIndex < inputSources.length; columnIndex++) {
             if (toCopy == null || toCopy[columnIndex]) {
@@ -327,10 +327,10 @@ public class SparseSelect {
         }
     }
 
-    private static void doCopySource(RowSet addedAndModified, WritableSource<?> outputSource,
+    private static void doCopySource(RowSet addedAndModified, WritableColumnSource<?> outputSource,
             ColumnSource<?> inputSource) {
         try (final RowSequence.Iterator rsIt = addedAndModified.getRowSequenceIterator();
-                final WritableChunkSink.FillFromContext ffc =
+                final ChunkSink.FillFromContext ffc =
                         outputSource.makeFillFromContext(SPARSE_SELECT_CHUNK_SIZE);
                 final ChunkSource.GetContext gc = inputSource.makeGetContext(SPARSE_SELECT_CHUNK_SIZE)) {
             while (rsIt.hasMore()) {
@@ -347,14 +347,14 @@ public class SparseSelect {
         // noinspection unchecked
         final WritableChunk<Values>[] values = new WritableChunk[outputSources.length];
         final ChunkSource.FillContext[] fcs = new ChunkSource.FillContext[outputSources.length];
-        final WritableChunkSink.FillFromContext[] ffcs = new WritableChunkSink.FillFromContext[outputSources.length];
+        final ChunkSink.FillFromContext[] ffcs = new ChunkSink.FillFromContext[outputSources.length];
 
         try (final SafeCloseableArray<WritableChunk<Values>> ignored = new SafeCloseableArray<>(values);
-                final SafeCloseableArray<ChunkSource.FillContext> ignored2 = new SafeCloseableArray<>(fcs);
-                final SafeCloseableArray<WritableChunkSink.FillFromContext> ignored3 = new SafeCloseableArray<>(ffcs);
-                final SharedContext sharedContext = SharedContext.makeSharedContext();
-                final RowSequence.Iterator preIt = shifts.first.getRowSequenceIterator();
-                final RowSequence.Iterator postIt = shifts.second.getRowSequenceIterator()) {
+             final SafeCloseableArray<ChunkSource.FillContext> ignored2 = new SafeCloseableArray<>(fcs);
+             final SafeCloseableArray<ChunkSink.FillFromContext> ignored3 = new SafeCloseableArray<>(ffcs);
+             final SharedContext sharedContext = SharedContext.makeSharedContext();
+             final RowSequence.Iterator preIt = shifts.first.getRowSequenceIterator();
+             final RowSequence.Iterator postIt = shifts.second.getRowSequenceIterator()) {
 
             for (int cc = 0; cc < outputSources.length; cc++) {
                 if (toShift == null || toShift[cc]) {
@@ -404,7 +404,7 @@ public class SparseSelect {
             SparseArrayColumnSource<?> outputSource) {
         try (final RowSequence.Iterator preIt = shifts.first.getRowSequenceIterator();
                 final RowSequence.Iterator postIt = shifts.second.getRowSequenceIterator();
-                final WritableChunkSink.FillFromContext ffc =
+                final ChunkSink.FillFromContext ffc =
                         outputSource.makeFillFromContext(SPARSE_SELECT_CHUNK_SIZE);
                 final ChunkSource.FillContext fc = outputSource.makeFillContext(SPARSE_SELECT_CHUNK_SIZE);
                 final WritableChunk<Values> values =

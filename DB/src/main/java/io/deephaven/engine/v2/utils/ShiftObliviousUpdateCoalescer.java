@@ -2,10 +2,10 @@ package io.deephaven.engine.v2.utils;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.rowset.MutableRowSet;
+import io.deephaven.engine.rowset.TrackingWritableRowSet;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.rowset.TrackingMutableRowSet;
 import io.deephaven.engine.v2.ShiftObliviousListener;
 
 /**
@@ -16,7 +16,7 @@ public class ShiftObliviousUpdateCoalescer {
     private static final boolean VALIDATE_COALESCED_UPDATES = Configuration.getInstance()
             .getBooleanWithDefault("ShiftObliviousUpdateCoalescer.validateCoalescedUpdates", true);
 
-    private MutableRowSet added, modified, removed;
+    private WritableRowSet added, modified, removed;
 
     public ShiftObliviousUpdateCoalescer() {
         reset();
@@ -26,8 +26,8 @@ public class ShiftObliviousUpdateCoalescer {
      * The class assumes ownership of one reference to the indices passed; the caller should ensure to RowSet.copy()
      * them before passing them if they are shared.
      */
-    public ShiftObliviousUpdateCoalescer(final TrackingMutableRowSet added, final TrackingMutableRowSet removed,
-                                         final TrackingMutableRowSet modified) {
+    public ShiftObliviousUpdateCoalescer(final TrackingWritableRowSet added, final TrackingWritableRowSet removed,
+                                         final TrackingWritableRowSet modified) {
         this.added = added;
         this.removed = removed;
         this.modified = modified;

@@ -169,7 +169,7 @@ public class ChunkedOperatorAggregationHelper {
         }
         ac.getResultColumns(resultColumnSourceMap);
 
-        final TrackingMutableRowSet resultRowSet =
+        final TrackingWritableRowSet resultRowSet =
                 RowSetFactory.flat(outputPosition.intValue()).toTracking();
         if (withView.isRefreshing()) {
             copyKeyColumns(keyColumnsRaw, keyColumnsCopied, resultRowSet);
@@ -214,7 +214,7 @@ public class ChunkedOperatorAggregationHelper {
                                         keyColumnsCopied,
                                         result.getModifiedColumnSetForUpdates(), resultModifiedColumnSetFactories);
                             }
-                            result.getRowSet().mutableCast().update(downstream.added, downstream.removed);
+                            result.getRowSet().writableCast().update(downstream.added, downstream.removed);
                             result.notifyListeners(downstream);
                         }
 
@@ -453,7 +453,7 @@ public class ChunkedOperatorAggregationHelper {
         private Update computeDownstreamIndicesAndCopyKeys(
                 @NotNull final RowSet upstreamIndex,
                 @NotNull final ColumnSource<?>[] keyColumnsRaw,
-                @NotNull final WritableSource<?>[] keyColumnsCopied,
+                @NotNull final WritableColumnSource<?>[] keyColumnsCopied,
                 @NotNull final ModifiedColumnSet resultModifiedColumnSet,
                 @NotNull final UnaryOperator<ModifiedColumnSet>[] resultModifiedColumnSetFactories) {
             final int previousLastState = outputPosition.intValue();
@@ -467,7 +467,7 @@ public class ChunkedOperatorAggregationHelper {
                 try (final ModifySplitResult split =
                         keysModified ? splitKeyModificationsAndDoKeyChangeRemoves() : null) {
                     if (processShifts) {
-                        try (final MutableRowSet postShiftRowSet = upstreamIndex.minus(upstream.added)) {
+                        try (final WritableRowSet postShiftRowSet = upstreamIndex.minus(upstream.added)) {
                             if (keysModified) {
                                 postShiftRowSet.remove(split.keyChangeIndicesPostShift);
                             }
@@ -500,7 +500,7 @@ public class ChunkedOperatorAggregationHelper {
                                                 : null;
                                         final RowSet shiftedSameSlotModifiesPost = upstream.modified
                                                 .minus(removeIndex == null ? unshiftedSameSlotModifies : removeIndex);
-                                        final MutableRowSet shiftedSameSlotModifiesPre =
+                                        final WritableRowSet shiftedSameSlotModifiesPre =
                                                 shiftedSameSlotModifiesPost.copy()) {
                                     RowSetShiftUtils.unapply(upstream.shifted, shiftedSameSlotModifiesPre);
                                     doSameSlotModifies(shiftedSameSlotModifiesPre, shiftedSameSlotModifiesPost, true,
@@ -509,7 +509,7 @@ public class ChunkedOperatorAggregationHelper {
                                 }
                             } else if (ac.requiresIndices()) {
                                 // Do shifted same-key modifies for rowSet-only operators
-                                try (final MutableRowSet shiftedSameSlotModifiesPost =
+                                try (final WritableRowSet shiftedSameSlotModifiesPost =
                                         upstream.modified.minus(unshiftedSameSlotModifies)) {
                                     if (keysModified) {
                                         shiftedSameSlotModifiesPost.remove(split.keyChangeIndicesPostShift);
@@ -556,19 +556,19 @@ public class ChunkedOperatorAggregationHelper {
                 downstream.removed = emptiedStatesBuilder.build();
 
                 try (final RowSet addedBack = downstream.added.intersect(downstream.removed)) {
-                    downstream.added.mutableCast().remove(addedBack);
-                    downstream.removed.mutableCast().remove(addedBack);
+                    downstream.added.writableCast().remove(addedBack);
+                    downstream.removed.writableCast().remove(addedBack);
 
                     if (newStates.isNonempty()) {
-                        downstream.added.mutableCast().insert(newStates);
+                        downstream.added.writableCast().insert(newStates);
                         copyKeyColumns(keyColumnsRaw, keyColumnsCopied, newStates);
                     }
 
                     downstream.modified = modifiedStatesBuilder.build();
-                    downstream.modified.mutableCast().remove(downstream.added);
-                    downstream.modified.mutableCast().remove(downstream.removed);
+                    downstream.modified.writableCast().remove(downstream.added);
+                    downstream.modified.writableCast().remove(downstream.removed);
                     if (ac.addedBackModified()) {
-                        downstream.modified.mutableCast().insert(addedBack);
+                        downstream.modified.writableCast().insert(addedBack);
                     }
                 }
 
@@ -1577,15 +1577,15 @@ public class ChunkedOperatorAggregationHelper {
                 : RowSetFactory.fromRange(first, last);
     }
 
-    private static void copyKeyColumns(ColumnSource<?>[] keyColumnsRaw, WritableSource<?>[] keyColumnsCopied,
+    private static void copyKeyColumns(ColumnSource<?>[] keyColumnsRaw, WritableColumnSource<?>[] keyColumnsCopied,
             final RowSet copyValues) {
         if (copyValues.isEmpty()) {
             return;
         }
         final int chunkSize = chunkSize(copyValues.size());
         final ColumnSource.GetContext[] getContext = new ColumnSource.GetContext[keyColumnsRaw.length];
-        final WritableChunkSink.FillFromContext[] fillFromContexts =
-                new WritableChunkSink.FillFromContext[keyColumnsRaw.length];
+        final ChunkSink.FillFromContext[] fillFromContexts =
+                new ChunkSink.FillFromContext[keyColumnsRaw.length];
         try (final RowSequence.Iterator rsIt = copyValues.getRowSequenceIterator();
                 final SharedContext sharedContext = SharedContext.makeSharedContext();
                 final SafeCloseableArray ignored = new SafeCloseableArray<>(getContext);
@@ -1704,7 +1704,7 @@ public class ChunkedOperatorAggregationHelper {
                                                 // don't require indices
                                                 try (final RowSet shiftedModifiesPost =
                                                         upstream.modified.minus(unshiftedModifies);
-                                                        final MutableRowSet shiftedModifiesPre =
+                                                        final WritableRowSet shiftedModifiesPre =
                                                                 shiftedModifiesPost.copy()) {
                                                     RowSetShiftUtils.unapply(upstream.shifted, shiftedModifiesPre);
                                                     doNoKeyModifications(shiftedModifiesPre, shiftedModifiesPost, ac,
@@ -1751,12 +1751,12 @@ public class ChunkedOperatorAggregationHelper {
                                     downstream.added = RowSetFactory.fromKeys(0);
                                     downstream.removed = RowSetFactory.empty();
                                     downstream.modified = RowSetFactory.empty();
-                                    result.getRowSet().mutableCast().insert(0);
+                                    result.getRowSet().writableCast().insert(0);
                                 } else if (lastSize == 1 && newResultSize == 0) {
                                     downstream.added = RowSetFactory.empty();
                                     downstream.removed = RowSetFactory.fromKeys(0);
                                     downstream.modified = RowSetFactory.empty();
-                                    result.getRowSet().mutableCast().remove(0);
+                                    result.getRowSet().writableCast().remove(0);
                                 } else {
                                     if (!anyTrue(BooleanChunk.chunkWrap(modifiedOperators))) {
                                         return;

@@ -1,21 +1,15 @@
 package io.deephaven.engine.v2.utils;
 
-import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.engine.table.ChunkSource;
-import io.deephaven.engine.table.SharedContext;
+import io.deephaven.engine.table.*;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.rowset.impl.RowSequenceUtil;
-import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.util.config.InputTableStatusListener;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.sources.ArrayBackedColumnSource;
-import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.sources.NullValueColumnSource;
-import io.deephaven.engine.table.WritableChunkSink;
+import io.deephaven.engine.table.ChunkSink;
 import io.deephaven.engine.chunk.*;
 import org.jetbrains.annotations.NotNull;
 
@@ -109,7 +103,7 @@ public class AppendOnlyArrayBackedMutableTable extends BaseArrayBackedMutableTab
                     final ArrayBackedColumnSource<?> arrayBackedColumnSource = (ArrayBackedColumnSource<?>) cs;
                     arrayBackedColumnSource.ensureCapacity(nextRow);
                     final ColumnSource<?> sourceColumnSource = table.getColumnSource(name);
-                    try (final WritableChunkSink.FillFromContext ffc =
+                    try (final ChunkSink.FillFromContext ffc =
                             arrayBackedColumnSource.makeFillFromContext(chunkCapacity);
                             final ChunkSource.GetContext getContext =
                                     sourceColumnSource.makeGetContext(chunkCapacity, sharedContext)) {

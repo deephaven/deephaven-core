@@ -1,4 +1,4 @@
-package io.deephaven.engine.v2.utils;
+package io.deephaven.engine.rowset.impl;
 
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.impl.OrderedLongSet;
