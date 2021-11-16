@@ -42,29 +42,9 @@ import static org.junit.Assert.assertArrayEquals;
 @Category(OutOfBandTest.class)
 public class TestComboBy extends LiveTableTestCase {
 
-    private static final boolean ENABLE_COMPILER_TOOLS_LOGGING = Configuration.getInstance()
-            .getBooleanForClassWithDefault(TestComboBy.class, "CompilerTools.logEnabled", false);
-
-    private boolean oldLogEnabled;
-    private boolean oldCheckLtm;
-
     @Override
     protected void setUp() throws Exception {
         super.setUp();
-        oldLogEnabled = CompilerTools.setLogEnabled(ENABLE_COMPILER_TOOLS_LOGGING);
-        LiveTableMonitor.DEFAULT.enableUnitTestMode();
-        oldCheckLtm = LiveTableMonitor.DEFAULT.setCheckTableOperations(false);
-        UpdatePerformanceTracker.getInstance().enableUnitTestMode();
-    }
-
-    @Override
-    protected void tearDown() throws Exception {
-        try {
-            super.tearDown();
-        } finally {
-            CompilerTools.setLogEnabled(oldLogEnabled);
-            LiveTableMonitor.DEFAULT.setCheckTableOperations(oldCheckLtm);
-        }
     }
 
     public void testBy() {

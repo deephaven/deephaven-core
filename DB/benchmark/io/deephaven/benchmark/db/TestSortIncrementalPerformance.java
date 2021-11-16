@@ -6,12 +6,8 @@ import io.deephaven.db.tables.live.LiveTableMonitor;
 import io.deephaven.db.tables.select.QueryScope;
 import io.deephaven.db.tables.utils.TableTools;
 import io.deephaven.db.v2.select.IncrementalReleaseFilter;
-import io.deephaven.db.v2.utils.AsyncClientErrorNotifier;
-import io.deephaven.test.junit4.DbTestRule;
+import io.deephaven.test.junit4.DbCleanup;
 import io.deephaven.test.types.ParallelTest;
-import io.deephaven.util.ExceptionDetails;
-import junit.framework.TestCase;
-import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -84,8 +80,5 @@ public class TestSortIncrementalPerformance {
     }
 
     @Rule
-    public final DbTestRule rule = new DbTestRule(t -> {
-        System.err.println("Received error notification: " + new ExceptionDetails(t).getFullStackTrace());
-        TestCase.fail(t.getMessage());
-    });
+    public final DbCleanup rule = new DbCleanup();
 }

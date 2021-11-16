@@ -7,7 +7,7 @@ import io.deephaven.db.tables.select.QueryScope;
 import io.deephaven.db.tables.utils.DBDateTime;
 import io.deephaven.db.tables.utils.DBTimeUtils;
 
-import io.deephaven.test.junit4.JUnit4QueryTableTestBase;
+import io.deephaven.test.junit4.DbCleanup;
 import io.deephaven.test.types.OutOfBandTest;
 import java.time.LocalDate;
 
@@ -26,7 +26,7 @@ public class StaticCalendarMethodsTest extends BaseArrayTestCase {
     private final String date1 = "2017-08-01";
     private final String date2 = "2017-08-05";
 
-    private final JUnit4QueryTableTestBase base = new JUnit4QueryTableTestBase();
+    private final DbCleanup base = new DbCleanup();
 
     @Override
     protected void setUp() throws Exception {

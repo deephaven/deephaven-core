@@ -8,7 +8,7 @@ import io.deephaven.db.tables.utils.TableTools;
 import io.deephaven.db.v2.DynamicTable;
 import io.deephaven.db.v2.LiveQueryTable;
 import io.deephaven.db.v2.TstUtils;
-import io.deephaven.test.junit4.JUnit4LiveTableTestCase;
+import io.deephaven.test.junit4.DbCleanup;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.tablelogger.Row;
 import org.junit.Rule;
@@ -21,7 +21,7 @@ import static io.deephaven.db.tables.utils.TableTools.*;
 
 public class TestDynamicTableWriter {
     @Rule
-    public final JUnit4LiveTableTestCase ltc = new JUnit4LiveTableTestCase();
+    public final DbCleanup ltc = new DbCleanup();
 
     @Test
     public void testTypes() throws IOException {

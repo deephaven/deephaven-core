@@ -17,14 +17,7 @@ import java.util.*;
  * QueryTable tests can extend this to get convenient EvalNuggets, JoinIncrementors, etc.
  */
 public abstract class QueryTableTestBase extends LiveTableTestCase {
-
-    private static final boolean ENABLE_COMPILER_TOOLS_LOGGING = Configuration.getInstance()
-            .getBooleanForClassWithDefault(QueryTableTestBase.class, "CompilerTools.logEnabled", false);
-
     protected final SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
-
-    private boolean oldLogEnabled;
-    private boolean oldCheckLtm;
 
     private static final GenerateTableUpdates.SimulationProfile NO_SHIFT_PROFILE =
             new GenerateTableUpdates.SimulationProfile();
@@ -32,26 +25,6 @@ public abstract class QueryTableTestBase extends LiveTableTestCase {
         NO_SHIFT_PROFILE.SHIFT_10_PERCENT_KEY_SPACE = 0;
         NO_SHIFT_PROFILE.SHIFT_10_PERCENT_POS_SPACE = 0;
         NO_SHIFT_PROFILE.SHIFT_AGGRESSIVELY = 0;
-    }
-
-    @Override
-    protected void setUp() throws Exception {
-        super.setUp();
-        oldLogEnabled = CompilerTools.setLogEnabled(ENABLE_COMPILER_TOOLS_LOGGING);
-        oldCheckLtm = LiveTableMonitor.DEFAULT.setCheckTableOperations(false);
-        UpdatePerformanceTracker.getInstance().enableUnitTestMode();
-        ChunkPoolReleaseTracking.enableStrict();
-    }
-
-    @Override
-    protected void tearDown() throws Exception {
-        try {
-            super.tearDown();
-        } finally {
-            CompilerTools.setLogEnabled(oldLogEnabled);
-            LiveTableMonitor.DEFAULT.setCheckTableOperations(oldCheckLtm);
-            ChunkPoolReleaseTracking.checkAndDisable();
-        }
     }
 
     final JoinIncrement leftStep = new JoinIncrement() {

@@ -20,7 +20,7 @@ import io.deephaven.db.v2.select.IncrementalReleaseFilter;
 
 import gnu.trove.list.TByteList;
 import gnu.trove.list.array.TByteArrayList;
-import io.deephaven.test.junit4.JUnit4QueryTableTestBase;
+import io.deephaven.test.junit4.DbCleanup;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.junit.Rule;
@@ -37,7 +37,7 @@ import static org.junit.Assert.*;
 public class TestReadOnlyRedirectedColumnSource {
 
     @Rule
-    public final JUnit4QueryTableTestBase base = new JUnit4QueryTableTestBase();
+    public final DbCleanup base = new DbCleanup();
 
 
     private Table makeTable() {

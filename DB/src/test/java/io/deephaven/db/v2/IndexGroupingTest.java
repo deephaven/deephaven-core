@@ -33,26 +33,6 @@ import static io.deephaven.db.v2.TstUtils.getTable;
 @Category(OutOfBandTest.class)
 public class IndexGroupingTest extends LiveTableTestCase {
 
-    private static final boolean ENABLE_COMPILER_TOOLS_LOGGING = Configuration.getInstance()
-            .getBooleanForClassWithDefault(IndexGroupingTest.class, "CompilerTools.logEnabled", false);
-
-    private boolean oldCompilerToolsLogEnabled;
-
-    @Before
-    @Override
-    public void setUp() throws Exception {
-        super.setUp();
-        UpdatePerformanceTracker.getInstance().enableUnitTestMode();
-        oldCompilerToolsLogEnabled = CompilerTools.setLogEnabled(ENABLE_COMPILER_TOOLS_LOGGING);
-    }
-
-    @After
-    @Override
-    public void tearDown() throws Exception {
-        CompilerTools.setLogEnabled(oldCompilerToolsLogEnabled);
-        super.tearDown();
-    }
-
     private static ArrayList<ArrayList<String>> powerSet(Set<String> originalSet) {
         return powerSet(originalSet.stream().collect(Collectors.toList()));
     }

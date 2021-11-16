@@ -6,7 +6,7 @@ import io.deephaven.db.tables.Table;
 import io.deephaven.db.util.AbstractScriptSession;
 import io.deephaven.db.util.GroovyDeephavenSession;
 import io.deephaven.db.util.PythonDeephavenSession;
-import io.deephaven.test.junit4.JUnit4QueryTableTestBase;
+import io.deephaven.test.junit4.DbCleanup;
 import org.junit.*;
 
 import java.io.IOException;
@@ -16,7 +16,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class ApplicationTest {
 
     @Rule
-    public final JUnit4QueryTableTestBase base = new JUnit4QueryTableTestBase();
+    public final DbCleanup base = new DbCleanup();
 
     private AbstractScriptSession session = null;
 

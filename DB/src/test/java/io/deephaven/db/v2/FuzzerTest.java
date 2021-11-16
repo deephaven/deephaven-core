@@ -13,7 +13,7 @@ import io.deephaven.db.util.GroovyDeephavenSession.RunScripts;
 import io.deephaven.db.util.liveness.LivenessScopeStack;
 import io.deephaven.db.v2.utils.RuntimeMemory;
 import io.deephaven.db.v2.utils.TimeProvider;
-import io.deephaven.test.junit4.JUnit4LiveTableTestCase;
+import io.deephaven.test.junit4.DbCleanup;
 import io.deephaven.test.types.SerialTest;
 import io.deephaven.util.SafeCloseable;
 import org.apache.commons.lang3.mutable.MutableLong;
@@ -40,7 +40,7 @@ public class FuzzerTest {
             Configuration.getInstance().getBooleanWithDefault("FuzzerTest.realTime", false);
 
     @Rule
-    public final JUnit4LiveTableTestCase framework = new JUnit4LiveTableTestCase();
+    public final DbCleanup framework = new DbCleanup();
 
     private static class FuzzDescriptor {
         final long querySeed;

@@ -4,7 +4,7 @@ import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.libs.QueryLibrary;
 import io.deephaven.db.tables.select.QueryScope;
 import io.deephaven.db.tables.utils.TableTools;
-import io.deephaven.test.junit4.JUnit4QueryTableTestBase;
+import io.deephaven.test.junit4.DbCleanup;
 import io.deephaven.db.v2.utils.ModelFileGenerator;
 import org.jetbrains.annotations.NotNull;
 import org.junit.After;
@@ -35,7 +35,7 @@ public class TestFormulaColumnGeneration {
     }
 
     @Rule
-    public final JUnit4QueryTableTestBase base = new JUnit4QueryTableTestBase();
+    public final DbCleanup base = new DbCleanup();
 
     @Before
     public void setUp() {

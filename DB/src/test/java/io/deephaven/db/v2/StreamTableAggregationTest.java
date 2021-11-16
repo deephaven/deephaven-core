@@ -12,7 +12,7 @@ import io.deephaven.db.v2.utils.IndexShiftData;
 import io.deephaven.db.v2.utils.RedirectionIndex;
 import io.deephaven.db.v2.utils.WrappedIndexRedirectionIndexImpl;
 import io.deephaven.qst.table.EmptyTable;
-import io.deephaven.test.junit4.JUnit4QueryTableTestBase;
+import io.deephaven.test.junit4.DbCleanup;
 import junit.framework.ComparisonFailure;
 import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
@@ -38,7 +38,7 @@ public class StreamTableAggregationTest {
     private static final long MAX_RANDOM_ITERATION_SIZE = 10_000;
 
     @Rule
-    public final JUnit4QueryTableTestBase base = new JUnit4QueryTableTestBase();
+    public final DbCleanup base = new DbCleanup();
 
     private final Table source = Table.of(EmptyTable.of(INPUT_SIZE)
             .update("Sym = Long.toString(ii % 1000) + `_Sym`")

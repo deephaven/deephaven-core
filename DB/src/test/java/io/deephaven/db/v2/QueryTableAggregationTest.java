@@ -28,7 +28,7 @@ import io.deephaven.db.v2.utils.ColumnHolder;
 import io.deephaven.db.v2.utils.Index;
 import io.deephaven.db.v2.utils.IndexShiftData;
 import io.deephaven.db.v2.utils.UpdatePerformanceTracker;
-import io.deephaven.test.junit4.JUnit4QueryTableTestBase;
+import io.deephaven.test.junit4.DbCleanup;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
@@ -57,7 +57,7 @@ import static io.deephaven.db.v2.TstUtils.*;
 @Category(OutOfBandTest.class)
 public class QueryTableAggregationTest {
     @Rule
-    public final JUnit4QueryTableTestBase base = new JUnit4QueryTableTestBase();
+    public final DbCleanup base = new DbCleanup();
 
     @Before
     public void setUp() throws Exception {

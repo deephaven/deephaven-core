@@ -17,7 +17,7 @@ import io.deephaven.db.util.liveness.LivenessScopeStack;
 import io.deephaven.db.v2.QueryTableTestBase.JoinIncrement;
 import io.deephaven.db.v2.sources.chunk.util.pools.ChunkPoolReleaseTracking;
 import io.deephaven.db.v2.utils.ColumnHolder;
-import io.deephaven.test.junit4.JUnit4QueryTableTestBase;
+import io.deephaven.test.junit4.DbCleanup;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.SafeCloseable;
 import gnu.trove.list.array.TIntArrayList;
@@ -48,7 +48,7 @@ import static junit.framework.TestCase.assertNotNull;
 public class QueryTableAjTest {
 
     @Rule
-    public final JUnit4QueryTableTestBase base = new JUnit4QueryTableTestBase();
+    public final DbCleanup base = new DbCleanup();
 
     @Before
     public void setUp() throws Exception {

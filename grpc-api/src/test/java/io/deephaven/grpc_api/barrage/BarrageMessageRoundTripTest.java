@@ -103,7 +103,6 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
         liveTableRegistrar = new LiveTableRefreshCombiner();
         scheduler = new TestControlledScheduler();
         exceptions = new ArrayDeque<>();
-        ChunkPoolReleaseTracking.enableStrict();
         useDeephavenNulls = true;
 
         daggerRoot = DaggerBarrageMessageRoundTripTest_TestComponent
@@ -114,7 +113,6 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
 
     @Override
     protected void tearDown() throws Exception {
-        ChunkPoolReleaseTracking.checkAndDisable();
         liveTableRegistrar = null;
         scheduler = null;
         exceptions = null;

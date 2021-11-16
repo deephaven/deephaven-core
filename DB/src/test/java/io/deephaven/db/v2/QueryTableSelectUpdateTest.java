@@ -21,7 +21,7 @@ import io.deephaven.db.v2.sources.LongSparseArraySource;
 import io.deephaven.db.v2.utils.Index;
 import io.deephaven.db.v2.utils.RuntimeMemory;
 import io.deephaven.db.v2.utils.UpdatePerformanceTracker;
-import io.deephaven.test.junit4.JUnit4QueryTableTestBase;
+import io.deephaven.test.junit4.DbCleanup;
 import io.deephaven.util.SafeCloseable;
 import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -40,7 +40,7 @@ import static io.deephaven.db.v2.TstUtils.*;
 public class QueryTableSelectUpdateTest {
 
     @Rule
-    public final JUnit4QueryTableTestBase base = new JUnit4QueryTableTestBase();
+    public final DbCleanup base = new DbCleanup();
 
     @Test
     public void testSelectAndUpdate() {

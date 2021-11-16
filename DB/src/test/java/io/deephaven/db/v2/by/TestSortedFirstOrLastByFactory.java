@@ -29,37 +29,9 @@ import static io.deephaven.db.v2.by.ComboAggregateFactory.AggSortedLast;
 
 @Category(OutOfBandTest.class)
 public class TestSortedFirstOrLastByFactory extends LiveTableTestCase {
-
-    private static final boolean ENABLE_COMPILER_TOOLS_LOGGING = Configuration.getInstance()
-            .getBooleanForClassWithDefault(TestSortedFirstOrLastByFactory.class, "CompilerTools.logEnabled", false);
-
     private static final String[] colNames = new String[] {"Sym", "intCol", "doubleCol", "Keys"};
     private static final boolean printTableUpdates = Configuration.getInstance()
             .getBooleanForClassWithDefault(LiveTableTestCase.class, "printTableUpdates", false);
-
-    private boolean oldLogEnabled;
-    private boolean oldCheckLtm;
-
-    @Override
-    protected void setUp() throws Exception {
-        super.setUp();
-        oldLogEnabled = CompilerTools.setLogEnabled(ENABLE_COMPILER_TOOLS_LOGGING);
-        LiveTableMonitor.DEFAULT.enableUnitTestMode();
-        oldCheckLtm = LiveTableMonitor.DEFAULT.setCheckTableOperations(false);
-        UpdatePerformanceTracker.getInstance().enableUnitTestMode();
-        ChunkPoolReleaseTracking.enableStrict();
-    }
-
-    @Override
-    protected void tearDown() throws Exception {
-        try {
-            super.tearDown();
-        } finally {
-            CompilerTools.setLogEnabled(oldLogEnabled);
-            LiveTableMonitor.DEFAULT.setCheckTableOperations(oldCheckLtm);
-            ChunkPoolReleaseTracking.checkAndDisable();
-        }
-    }
 
     public void testSortedFirstOrLastBy() {
         final int[] sizes = {10, 50, 200};
