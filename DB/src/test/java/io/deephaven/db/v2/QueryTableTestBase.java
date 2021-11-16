@@ -23,7 +23,7 @@ public abstract class QueryTableTestBase extends LiveTableTestCase {
         NO_SHIFT_PROFILE.SHIFT_AGGRESSIVELY = 0;
     }
 
-    final JoinIncrement leftStep = new JoinIncrement() {
+    public final JoinIncrement leftStep = new JoinIncrement() {
         @Override
         public void step(int leftSize, int rightSize, QueryTable leftTable, QueryTable rightTable,
                 TstUtils.ColumnInfo[] leftColumnInfo, TstUtils.ColumnInfo[] rightColumnInfo, EvalNuggetInterface[] en,
@@ -36,7 +36,7 @@ public abstract class QueryTableTestBase extends LiveTableTestCase {
             return "Left Step";
         }
     };
-    final JoinIncrement leftStepShift = new JoinIncrement() {
+    public final JoinIncrement leftStepShift = new JoinIncrement() {
         @Override
         public void step(int leftSize, int rightSize, QueryTable leftTable, QueryTable rightTable,
                 TstUtils.ColumnInfo[] leftColumnInfo, TstUtils.ColumnInfo[] rightColumnInfo, EvalNuggetInterface[] en,
@@ -62,7 +62,7 @@ public abstract class QueryTableTestBase extends LiveTableTestCase {
             return "Right Step";
         }
     };
-    final JoinIncrement rightStepShift = new JoinIncrement() {
+    public final JoinIncrement rightStepShift = new JoinIncrement() {
         @Override
         public void step(int leftSize, int rightSize, QueryTable leftTable, QueryTable rightTable,
                 TstUtils.ColumnInfo[] leftColumnInfo, TstUtils.ColumnInfo[] rightColumnInfo, EvalNuggetInterface[] en,
@@ -75,7 +75,7 @@ public abstract class QueryTableTestBase extends LiveTableTestCase {
             return "Right Shift Step";
         }
     };
-    final JoinIncrement leftRightStep = new JoinIncrement() {
+    public final JoinIncrement leftRightStep = new JoinIncrement() {
         @Override
         public void step(int leftSize, int rightSize, QueryTable leftTable, QueryTable rightTable,
                 TstUtils.ColumnInfo[] leftColumnInfo, TstUtils.ColumnInfo[] rightColumnInfo, EvalNuggetInterface[] en,
@@ -89,7 +89,7 @@ public abstract class QueryTableTestBase extends LiveTableTestCase {
             return "Left and Right Step";
         }
     };
-    final JoinIncrement leftRightStepShift = new JoinIncrement() {
+    public final JoinIncrement leftRightStepShift = new JoinIncrement() {
         @Override
         public void step(int leftSize, int rightSize, QueryTable leftTable, QueryTable rightTable,
                 TstUtils.ColumnInfo[] leftColumnInfo, TstUtils.ColumnInfo[] rightColumnInfo, EvalNuggetInterface[] en,
@@ -104,7 +104,7 @@ public abstract class QueryTableTestBase extends LiveTableTestCase {
         }
     };
 
-    final JoinIncrement leftRightConcurrentStepShift = new JoinIncrement() {
+    public final JoinIncrement leftRightConcurrentStepShift = new JoinIncrement() {
         @Override
         public void step(int leftSize, int rightSize, QueryTable leftTable, QueryTable rightTable,
                 TstUtils.ColumnInfo[] leftColumnInfo, TstUtils.ColumnInfo[] rightColumnInfo, EvalNuggetInterface[] en,
@@ -123,7 +123,7 @@ public abstract class QueryTableTestBase extends LiveTableTestCase {
         }
     };
 
-    final JoinIncrement[] joinIncrementors = new JoinIncrement[] {leftStep, rightStep, leftRightStep};
+    public final JoinIncrement[] joinIncrementors = new JoinIncrement[] {leftStep, rightStep, leftRightStep};
     final JoinIncrement[] joinIncrementorsShift = new JoinIncrement[] {leftStep, rightStep, leftRightStep,
             leftStepShift, rightStepShift, leftRightStepShift, leftRightConcurrentStepShift};
 
