@@ -1,16 +1,17 @@
 package io.deephaven.test.junit4;
 
 import io.deephaven.db.v2.LiveTableTestCase;
+import io.deephaven.db.v2.QueryTableTestBase;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
 /**
- * When you want to extend LiveTableTestCase, but you need to use JUnit 4 annotations, like @Category
+ * When you want to extend LiveTableTestCase/QueryTableTestBase but you need to use JUnit 4 annotations, like @Category
  * or @RunWith(Suite.class), then instead of extending LiveTableTestCase, you should instead create a `@Rule public
  * final DbCleanup field = new DbCleanup();`.
  */
-public class DbCleanup extends LiveTableTestCase implements TestRule {
+public class DbCleanup extends QueryTableTestBase implements TestRule {
     @Override
     public void setUp() throws Exception {
         super.setUp();

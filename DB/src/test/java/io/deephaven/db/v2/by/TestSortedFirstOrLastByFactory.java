@@ -5,15 +5,12 @@
 package io.deephaven.db.v2.by;
 
 import io.deephaven.configuration.Configuration;
-import io.deephaven.compilertools.CompilerTools;
 import io.deephaven.db.tables.live.LiveTableMonitor;
 import io.deephaven.db.tables.utils.TableTools;
 import io.deephaven.db.util.SortedBy;
 import io.deephaven.db.v2.*;
-import io.deephaven.db.v2.sources.chunk.util.pools.ChunkPoolReleaseTracking;
 import io.deephaven.db.v2.utils.Index;
 import io.deephaven.db.v2.utils.IndexShiftData;
-import io.deephaven.db.v2.utils.UpdatePerformanceTracker;
 import io.deephaven.test.types.OutOfBandTest;
 import junit.framework.TestCase;
 

@@ -1,13 +1,9 @@
 package io.deephaven.db.v2;
 
-import io.deephaven.compilertools.CompilerTools;
-import io.deephaven.configuration.Configuration;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.live.LiveTableMonitor;
 import io.deephaven.db.tables.utils.TableDiff;
-import io.deephaven.db.v2.sources.chunk.util.pools.ChunkPoolReleaseTracking;
 import io.deephaven.db.v2.utils.Index;
-import io.deephaven.db.v2.utils.UpdatePerformanceTracker;
 import org.apache.commons.lang3.mutable.MutableInt;
 
 import java.text.SimpleDateFormat;

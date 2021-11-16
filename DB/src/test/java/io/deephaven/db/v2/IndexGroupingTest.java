@@ -6,8 +6,6 @@ package io.deephaven.db.v2;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
-import io.deephaven.compilertools.CompilerTools;
-import io.deephaven.configuration.Configuration;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.live.LiveTableMonitor;
 import io.deephaven.db.tables.utils.TableTools;
@@ -15,18 +13,14 @@ import io.deephaven.db.v2.sources.ColumnSource;
 import io.deephaven.db.v2.tuples.TupleSource;
 import io.deephaven.db.v2.tuples.TupleSourceFactory;
 import io.deephaven.db.v2.utils.Index;
-import io.deephaven.db.v2.utils.UpdatePerformanceTracker;
 import io.deephaven.test.types.OutOfBandTest;
 import org.apache.commons.lang3.mutable.MutableInt;
-import org.junit.After;
-import org.junit.Before;
 
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 import org.junit.experimental.categories.Category;
 
-import static io.deephaven.db.tables.utils.TableTools.show;
 import static io.deephaven.db.v2.TstUtils.getTable;
 
 @SuppressWarnings("ClassInitializerMayBeStatic")

@@ -4,7 +4,6 @@ import io.deephaven.db.tables.live.LiveTableMonitor;
 import io.deephaven.db.tables.select.MatchPair;
 import io.deephaven.db.tables.select.WouldMatchPair;
 import io.deephaven.db.v2.select.DynamicWhereFilter;
-import io.deephaven.db.v2.sources.chunk.util.pools.ChunkPoolReleaseTracking;
 import io.deephaven.test.types.OutOfBandTest;
 import junit.framework.TestCase;
 

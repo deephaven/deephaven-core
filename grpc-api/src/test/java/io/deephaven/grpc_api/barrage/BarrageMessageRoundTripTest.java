@@ -32,7 +32,6 @@ import io.deephaven.db.v2.ShiftAwareListener;
 import io.deephaven.db.v2.TableUpdateValidator;
 import io.deephaven.db.v2.TstUtils;
 import io.deephaven.db.v2.sources.chunk.ChunkType;
-import io.deephaven.db.v2.sources.chunk.util.pools.ChunkPoolReleaseTracking;
 import io.deephaven.db.v2.utils.BarrageMessage;
 import io.deephaven.db.v2.utils.Index;
 import io.deephaven.db.v2.utils.IndexShiftData;
