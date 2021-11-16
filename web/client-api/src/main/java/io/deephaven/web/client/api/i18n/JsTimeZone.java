@@ -1,9 +1,7 @@
 package io.deephaven.web.client.api.i18n;
 
 import com.google.gwt.core.client.GWT;
-import com.google.gwt.core.client.JsArrayString;
 import com.google.gwt.i18n.client.TimeZone;
-import com.google.gwt.i18n.client.TimeZoneInfo;
 import com.google.gwt.i18n.client.constants.TimeZoneConstants;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsProperty;
@@ -17,20 +15,17 @@ public class JsTimeZone {
     private static final Map<String, JsTimeZone> timeZoneCache = new HashMap<>();
 
     // Map of all time IDs to their json code string
-    private static final Map<String, String> timeZones = new HashMap<>();
+    private static final Map<String, TimeZone> timeZones = new HashMap<>();
 
     public static JsTimeZone getTimeZone(String tzCode) {
         return timeZoneCache.computeIfAbsent(tzCode, ignored -> createTimeZone(tzCode));
     }
 
     private static JsTimeZone createTimeZone(String tzCode) {
-        if (tzCode.equals("UTC") || tzCode.equals("GMT") || tzCode.equals("Etc/GMT") || tzCode.equals("Z")) {
-            return new JsTimeZone(TimeZone.createTimeZone(0));
-        }
-        return new JsTimeZone(TimeZone.createTimeZone(getTimeZoneForCode(tzCode)));
+        return new JsTimeZone(getTimeZoneForCode(tzCode));
     }
 
-    private static String getTimeZoneForCode(String tzCode) {
+    private static TimeZone getTimeZoneForCode(String tzCode) {
         initTimeZones();
 
         if (!timeZones.containsKey(tzCode)) {
@@ -518,11 +513,11 @@ public class JsTimeZone {
         addJsonMapping("SHG", constants.asiaShanghai());
 
         // Add GMT mappings
-//        TimeZone gmtTimeZone = TimeZone.createTimeZone(0);
-//        addMapping("UTC", gmtTimeZone);
-//        addMapping("GMT", gmtTimeZone);
-//        addMapping("Etc/GMT", gmtTimeZone);
-//        addMapping("Z", gmtTimeZone);
+        TimeZone gmtTimeZone = TimeZone.createTimeZone(0);
+        addMapping("UTC", gmtTimeZone);
+        addMapping("GMT", gmtTimeZone);
+        addMapping("Etc/GMT", gmtTimeZone);
+        addMapping("Z", gmtTimeZone);
     }
 
     /**
@@ -530,26 +525,25 @@ public class JsTimeZone {
      * @param json The JSON to add the time zone for
      */
     private static void addJsonTimeZone(String json) {
-        TimeZoneInfo tzInfo = TimeZoneInfo.buildTimeZoneData(json);
-        TimeZone tz = TimeZone.createTimeZone(tzInfo);
-        addMapping(tz.getID(), json);
+        TimeZone tz = TimeZone.createTimeZone(json);
+        addMapping(tz.getID(), tz);
     }
 
     private static void addJsonMapping(String key, String json) {
-        addMapping(key, json);
+        addMapping(key, TimeZone.createTimeZone(json));
     }
 
     /**
      * Add a time zone to the map. Throws if there already exists an entry for that key
      * @param key The key to map from
-     * @param json The JSON encoded time zone info
+     * @param tz The TimeZone to map to
      */
-    private static void addMapping(String key, String json) {
+    private static void addMapping(String key, TimeZone tz) {
         if (timeZones.containsKey(key)) {
             throw new IllegalArgumentException("Attempting to add the same key twice: " + key);
         }
 
-        timeZones.put(key, json);
+        timeZones.put(key, tz);
     }
 
     @JsIgnore
