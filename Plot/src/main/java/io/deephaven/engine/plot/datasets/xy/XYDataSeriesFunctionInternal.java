@@ -1,6 +1,6 @@
 package io.deephaven.engine.plot.datasets.xy;
 
-import io.deephaven.libs.primitives.DoubleFpPrimitives;
+import io.deephaven.engine.function.DoubleFpPrimitives;
 
 /**
  * {@link XYDataSeries} based on a function.

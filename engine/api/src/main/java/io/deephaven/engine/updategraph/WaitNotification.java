@@ -2,7 +2,6 @@ package io.deephaven.engine.updategraph;
 
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.engine.exceptions.QueryCancellationException;
-import io.deephaven.engine.v2.utils.AbstractNotification;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;

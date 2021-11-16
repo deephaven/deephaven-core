@@ -2,8 +2,7 @@ package io.deephaven.engine.table;
 
 import io.deephaven.api.RawString;
 import io.deephaven.api.filter.Filter;
-import io.deephaven.engine.table.Table;
-import io.deephaven.util.NameValidator;
+import io.deephaven.api.util.NameValidator;
 
 import java.util.Objects;
 

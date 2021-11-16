@@ -1,6 +1,7 @@
 import io.deephaven.tools.Tools
 
 configurations {
+    testCompile.extendsFrom junit
 }
 
 sourceSets {
@@ -17,6 +18,9 @@ sourceSets {
 }
 
 dependencies {
+    compile 'net.sf.trove4j:trove4j:3.0.3',
+            project(':Util'),
+            project(':engine-vector')
 }
 
 spotless {

@@ -20,7 +20,8 @@ sourceSets {
 dependencies {
     compile 'joda-time:joda-time:2.10',
             project(':Base'),
-            project(':Util')
+            project(':Util'),
+            project(':engine-function')
 
     testCompile project(path: ':Base', configuration: 'tests')
 }

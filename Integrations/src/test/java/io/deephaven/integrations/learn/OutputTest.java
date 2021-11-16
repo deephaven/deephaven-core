@@ -1,6 +1,6 @@
 package io.deephaven.integrations.learn;
 
-import io.deephaven.util.NameValidator;
+import io.deephaven.api.util.NameValidator;
 import org.junit.Assert;
 import org.junit.Test;
 

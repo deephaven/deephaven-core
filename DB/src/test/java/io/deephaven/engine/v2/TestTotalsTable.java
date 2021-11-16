@@ -2,6 +2,10 @@ package io.deephaven.engine.v2;
 
 import io.deephaven.compilertools.CompilerTools;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.function.ByteNumericPrimitives;
+import io.deephaven.engine.function.DoubleNumericPrimitives;
+import io.deephaven.engine.function.FloatNumericPrimitives;
+import io.deephaven.engine.function.IntegerNumericPrimitives;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.util.TotalsTableBuilder;
 import io.deephaven.engine.vector.DoubleVectorDirect;

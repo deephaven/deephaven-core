@@ -10,7 +10,7 @@ import io.deephaven.engine.plot.Chart;
 import io.deephaven.engine.plot.errors.PlotIllegalArgumentException;
 import io.deephaven.engine.plot.util.ArgumentValidations;
 import io.deephaven.engine.plot.util.PlotUtils;
-import io.deephaven.libs.primitives.DoubleFpPrimitives;
+import io.deephaven.engine.function.DoubleFpPrimitives;
 import io.deephaven.internal.log.LoggerFactory;
 
 import java.util.Map;

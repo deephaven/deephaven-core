@@ -1,7 +1,7 @@
 package io.deephaven.integrations.learn;
 
 import io.deephaven.engine.table.Table;
-import io.deephaven.util.NameValidator;
+import io.deephaven.api.util.NameValidator;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.integrations.python.PythonFunctionCaller;
 import io.deephaven.util.annotations.ScriptApi;

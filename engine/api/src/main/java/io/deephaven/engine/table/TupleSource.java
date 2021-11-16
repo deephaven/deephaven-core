@@ -1,15 +1,12 @@
 package io.deephaven.engine.table;
 
-import io.deephaven.engine.rftable.ChunkSource;
-import io.deephaven.engine.v2.sources.ColumnSource;
 import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.v2.utils.TrackingMutableRowSet;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
 /**
- * Factory to produce immutable tuples from a long key in {@link TrackingMutableRowSet} space.
+ * Factory to produce immutable tuples from a long row key.
  */
 public interface TupleSource<TUPLE_TYPE> extends TupleExporter<TUPLE_TYPE>, ChunkSource.WithPrev<Attributes.Values> {
 
@@ -45,8 +42,7 @@ public interface TupleSource<TUPLE_TYPE> extends TupleExporter<TUPLE_TYPE>, Chun
     TUPLE_TYPE createTupleFromValues(@NotNull final Object... values);
 
     /**
-     * Create a tuple for the supplied reinterpreted values (e.g., those that come from the getColumnSources after a
-     * reinterpretation by {@link TupleSourceFactory}).
+     * Create a tuple for the supplied reinterpreted values.
      *
      * @param values The values
      * @return The resulting tuple

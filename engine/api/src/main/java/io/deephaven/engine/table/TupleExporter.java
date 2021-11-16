@@ -1,7 +1,6 @@
 package io.deephaven.engine.table;
 
 import io.deephaven.datastructures.util.SmartKey;
-import io.deephaven.engine.v2.sources.WritableSource;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -64,8 +63,8 @@ public interface TupleExporter<TUPLE_TYPE> {
 
     /**
      * <p>
-     * Export this tuple's element list as a key suitable for the {@link io.deephaven.engine.v2.TableMap}s resulting
-     * from {@link io.deephaven.engine.table.Table#partitionBy}.
+     * Export this tuple's element list as a key suitable for the {@link TableMap table maps} resulting
+     * from {@link Table#partitionBy}.
      * <p>
      * For the empty tuple this is a unsupported.
      * <p>

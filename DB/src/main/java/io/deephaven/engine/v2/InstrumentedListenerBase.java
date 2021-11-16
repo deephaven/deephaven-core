@@ -9,6 +9,7 @@ import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.updategraph.AbstractNotification;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.io.log.LogEntry;

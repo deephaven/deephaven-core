@@ -8,7 +8,7 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.MatchPair;
-import io.deephaven.util.NameValidator;
+import io.deephaven.api.util.NameValidator;
 import io.deephaven.engine.v2.NoSuchColumnException;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.sources.ViewColumnSource;

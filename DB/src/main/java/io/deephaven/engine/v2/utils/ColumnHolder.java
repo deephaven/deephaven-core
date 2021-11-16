@@ -6,7 +6,7 @@ package io.deephaven.engine.v2.utils;
 
 import io.deephaven.engine.vector.ObjectVector;
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.util.NameValidator;
+import io.deephaven.api.util.NameValidator;
 import io.deephaven.engine.v2.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.ColumnSource;
 

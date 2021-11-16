@@ -15,7 +15,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.util.NameValidator;
+import io.deephaven.api.util.NameValidator;
 import io.deephaven.engine.util.ColumnFormattingValues;
 import io.deephaven.engine.util.config.MutableInputTable;
 import io.deephaven.engine.v2.HierarchicalTableInfo;

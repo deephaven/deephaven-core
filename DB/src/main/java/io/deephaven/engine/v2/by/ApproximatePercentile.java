@@ -5,7 +5,7 @@ import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.vector.ObjectVector;
 import io.deephaven.engine.tables.select.SelectColumnFactory;
-import io.deephaven.util.NameValidator;
+import io.deephaven.api.util.NameValidator;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.select.SelectColumn;
 import com.tdunning.math.stats.TDigest;

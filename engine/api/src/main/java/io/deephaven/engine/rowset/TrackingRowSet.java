@@ -1,7 +1,8 @@
 package io.deephaven.engine.rowset;
 
-import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.tuplesource.TupleSource;
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.TupleSource;
+import io.deephaven.engine.updategraph.LogicalClock;
 
 import java.util.Map;
 import java.util.Set;
@@ -9,8 +10,8 @@ import java.util.Set;
 /**
  * <p>
  * {@link RowSet} that internally tracks changes and maintains a consistent snapshot of its previous state, valid during
- * the {@link io.deephaven.engine.v2.sources.LogicalClock.State#Updating updating} phase of its associated
- * {@link io.deephaven.engine.v2.sources.LogicalClock LogicalClock}.
+ * the {@link LogicalClock.State#Updating updating} phase of its associated
+ * {@link LogicalClock LogicalClock}.
  * <p>
  * Also adds various methods for interacting with grouping information.
  */
@@ -51,7 +52,7 @@ public interface TrackingRowSet extends RowSet {
      *        within the set are the values that we would like to find. For compound {@link TupleSource} instances, the
      *        values are SmartKeys.
      * @param tupleSource The tuple factory for singular or compound keys
-     * @return A map from keys to {@link RowSet}, for each of the {@link keys} present in this {@link RowSet row set's}
+     * @return A map from keys to {@link RowSet}, for each of the {@code keys} present in this {@link RowSet row set's}
      *         view of {@code tupleSource}
      */
     Map<Object, RowSet> getGroupingForKeySet(Set<Object> keys, TupleSource tupleSource);

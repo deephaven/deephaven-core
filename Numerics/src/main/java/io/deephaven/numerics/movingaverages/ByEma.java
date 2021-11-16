@@ -6,7 +6,7 @@ package io.deephaven.numerics.movingaverages;
 
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.libs.primitives.DoublePrimitives;
+import io.deephaven.engine.function.DoublePrimitives;
 
 import java.io.Serializable;
 import java.util.Arrays;

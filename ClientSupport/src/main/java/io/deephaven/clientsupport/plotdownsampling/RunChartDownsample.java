@@ -18,7 +18,7 @@ import io.deephaven.engine.v2.sources.ReinterpretUtilities;
 import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.chunk.Chunk;
 import io.deephaven.engine.chunk.LongChunk;
-import io.deephaven.libs.primitives.LongNumericPrimitives;
+import io.deephaven.engine.function.LongNumericPrimitives;
 import org.apache.commons.lang3.mutable.Mutable;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.Nullable;

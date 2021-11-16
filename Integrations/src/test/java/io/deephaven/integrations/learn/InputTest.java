@@ -2,7 +2,7 @@ package io.deephaven.integrations.learn;
 
 import io.deephaven.engine.v2.InMemoryTable;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.util.NameValidator;
+import io.deephaven.api.util.NameValidator;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;

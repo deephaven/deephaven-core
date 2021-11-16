@@ -18,7 +18,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.util.NameValidator;
+import io.deephaven.api.util.NameValidator;
 import org.jetbrains.annotations.NotNull;
 
 import java.net.MalformedURLException;

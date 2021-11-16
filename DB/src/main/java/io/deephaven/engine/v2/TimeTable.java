@@ -13,7 +13,7 @@ import io.deephaven.engine.time.TimeProvider;
 import io.deephaven.engine.v2.utils.*;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.engine.table.Table;
-import io.deephaven.libs.primitives.LongNumericPrimitives;
+import io.deephaven.engine.function.LongNumericPrimitives;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.sources.DateTimeArraySource;
 

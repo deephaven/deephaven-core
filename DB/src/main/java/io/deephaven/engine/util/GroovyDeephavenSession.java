@@ -16,7 +16,7 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.exceptions.QueryCancellationException;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.tables.select.QueryScope;
-import io.deephaven.util.NameValidator;
+import io.deephaven.api.util.NameValidator;
 import io.deephaven.engine.util.scripts.ScriptPathLoader;
 import io.deephaven.engine.util.scripts.ScriptPathLoaderState;
 import io.deephaven.engine.util.scripts.StateOverrideScriptPathLoader;

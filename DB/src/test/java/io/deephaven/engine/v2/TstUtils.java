@@ -14,6 +14,7 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.tables.StringSetWrapper;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.tables.libs.StringSet;
+import io.deephaven.engine.updategraph.AbstractNotification;
 import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.tables.utils.TableDiff;

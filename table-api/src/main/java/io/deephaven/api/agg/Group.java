@@ -9,7 +9,7 @@ import org.immutables.value.Value.Parameter;
 public abstract class Group implements Aggregation {
 
     public static Group of(Pair pair) {
-        return ImmutableaGroup.of(pair);
+        return ImmutableGroup.of(pair);
     }
 
     public static Group of(String x) {

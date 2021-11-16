@@ -1,6 +1,6 @@
 package io.deephaven.integrations.learn;
 
-import io.deephaven.util.NameValidator;
+import io.deephaven.api.util.NameValidator;
 import io.deephaven.integrations.python.PythonFunctionCaller;
 import org.jpy.PyObject;
 

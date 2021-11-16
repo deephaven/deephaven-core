@@ -5,7 +5,6 @@
 package io.deephaven.engine.util.systemicmarking;
 
 import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.v2.SystemicObject;
 
 import java.util.function.Supplier;
 
@@ -16,7 +15,7 @@ import java.util.function.Supplier;
  */
 public class SystemicObjectTracker {
 
-    private static ThreadLocal<Boolean> SYSTEMIC_CREATION_THREAD = ThreadLocal.withInitial(() -> false);
+    private static final ThreadLocal<Boolean> SYSTEMIC_CREATION_THREAD = ThreadLocal.withInitial(() -> false);
 
     private static final boolean SYSTEMIC_OBJECT_MARKING_ENABLED =
             Configuration.getInstance().getBooleanWithDefault("SystemicObjectTracker.enabled", false);

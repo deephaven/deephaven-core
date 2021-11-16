@@ -5,7 +5,6 @@
 package io.deephaven.engine.table;
 
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.rowset.impl.RowSequenceUtil;
 import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.chunk.Chunk;
 import io.deephaven.engine.chunk.ChunkType;
@@ -31,11 +30,11 @@ public interface DefaultChunkSource<ATTR extends Attributes.Any> extends ChunkSo
     }
 
     @Override
-    default Chunk<? extends ATTR> getChunk(@NotNull final GetContext context, long firstKey, long lastKey) {
+    Chunk<? extends ATTR> getChunk(@NotNull final GetContext context, long firstKey, long lastKey);/* {
         try (RowSequence rowSequence = RowSequenceUtil.forRange(firstKey, lastKey)) {
             return getChunk(context, rowSequence);
         }
-    }
+    }*/
 
     @FinalDefault
     default Chunk<ATTR> getChunkByFilling(@NotNull final GetContext context, @NotNull final RowSequence rowSequence) {
@@ -53,11 +52,11 @@ public interface DefaultChunkSource<ATTR extends Attributes.Any> extends ChunkSo
         }
 
         @Override
-        default Chunk<? extends ATTR> getPrevChunk(@NotNull final GetContext context, long firstKey, long lastKey) {
+        Chunk<? extends ATTR> getPrevChunk(@NotNull final GetContext context, long firstKey, long lastKey);/* {
             try (RowSequence rowSequence = RowSequenceUtil.forRange(firstKey, lastKey)) {
                 return getPrevChunk(context, rowSequence);
             }
-        }
+        }*/
 
         @FinalDefault
         default Chunk<ATTR> getPrevChunkByFilling(@NotNull final GetContext context,

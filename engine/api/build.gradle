@@ -21,6 +21,8 @@ dependencies {
             project(':engine-chunk'),
             project(':engine-vector'),
             project(':engine-time')
+
+    compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
 }
 
 spotless {

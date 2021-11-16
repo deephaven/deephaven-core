@@ -41,7 +41,7 @@ import java.util.stream.IntStream;
 
 import static io.deephaven.util.QueryConstants.*;
 import static io.deephaven.engine.v2.by.AggregationFactory.*;
-import static io.deephaven.libs.primitives.IntegerNumericPrimitives.abs;
+import static io.deephaven.engine.function.IntegerNumericPrimitives.abs;
 
 /**
  * Utilities class for plotting.

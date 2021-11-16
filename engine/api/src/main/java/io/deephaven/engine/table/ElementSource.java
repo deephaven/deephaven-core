@@ -1,6 +1,7 @@
 package io.deephaven.engine.table;
 
 public interface ElementSource<T> {
+
     T get(long index);
 
     Boolean getBoolean(long index);

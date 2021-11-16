@@ -7,7 +7,7 @@ package io.deephaven.engine.time.calendar;
 import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.util.NameValidator;
+import io.deephaven.api.util.NameValidator;
 import io.deephaven.internal.log.LoggerFactory;
 import org.jetbrains.annotations.NotNull;
 

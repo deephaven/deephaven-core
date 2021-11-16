@@ -1,7 +1,7 @@
 package io.deephaven.engine.tables.utils.csv;
 
 import io.deephaven.annotations.BuildableStyle;
-import io.deephaven.util.NameValidator;
+import io.deephaven.api.util.NameValidator;
 import io.deephaven.qst.array.Array;
 import io.deephaven.qst.array.ArrayBuilder;
 import io.deephaven.qst.table.NewTable;
