@@ -4,7 +4,7 @@
   "addParentReference": "Called on a dependent node to ensure that a strong reference is maintained to any parent object that is required\n for the proper maintenance and functioning of the dependent.\n\n In the most common case, the parent object is a child listener to a parent node. The parent node only keeps a\n weak reference to its child listener, but the listener maintains a strong reference to the parent node. In this\n scenario, the only strong reference to the listener (and thus indirectly to the parent node itself) is the\n reference kept by the dependent node.\n\n:param parent: (java.lang.Object) - A parent of this node",
   "addSubscription": "Add a subscription to this BarrageMessageProducer.\n\n:param listener: (io.grpc.stub.StreamObserver<BarrageMessageProducer.MessageView>) - The listener for this subscription\n:param options: (BarrageMessageProducer.Options) - The subscription options\n:param columnsToSubscribe: (java.util.BitSet) - The initial columns to subscribe to\n:param initialViewport: (io.deephaven.engine.v2.utils.RowSet) - Initial viewport, to be owned by the subscription",
   "getRowSet": ":return: io.deephaven.engine.v2.utils.RowSet",
-  "getTableDefinition": ":return: io.deephaven.engine.tables.TableDefinition",
+  "getTableDefinition": ":return: io.deephaven.engine.table.TableDefinition",
   "isRefreshing": "Is the node updating?\n\n:return: (boolean) true if the node is updating; false otherwise.",
   "removeSubscription": ":param listener: io.grpc.stub.StreamObserver<BarrageMessageProducer.MessageView>",
   "setLastNotificationStep": "Deliver a last notification step to this receiver.\n\n:param lastNotificationStep: (long) - The last notification step to be delivered",

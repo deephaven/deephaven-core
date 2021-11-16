@@ -6,6 +6,7 @@ package io.deephaven.engine.v2.sources;
 
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.WritableSource;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.chunk.*;

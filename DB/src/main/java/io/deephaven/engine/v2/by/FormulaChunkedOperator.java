@@ -7,22 +7,18 @@ import io.deephaven.engine.chunk.Attributes.RowKeys;
 import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.table.ChunkSource;
+import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.ChunkSource.GetContext;
-import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.SharedContext;
-import io.deephaven.engine.tables.ColumnDefinition;
-import io.deephaven.engine.tables.select.MatchPair;
 import io.deephaven.engine.tables.select.Utils;
-import io.deephaven.engine.util.liveness.LivenessReferent;
+import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.v2.Listener;
 import io.deephaven.engine.v2.ModifiedColumnSet;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.select.DhFormulaColumn;
 import io.deephaven.engine.v2.select.FormulaColumn;
 import io.deephaven.engine.v2.sources.ArrayBackedColumnSource;
-import io.deephaven.engine.v2.sources.WritableChunkSink.FillFromContext;
-import io.deephaven.engine.v2.sources.WritableSource;
+import io.deephaven.engine.table.WritableChunkSink.FillFromContext;
+import io.deephaven.engine.table.WritableSource;
 import io.deephaven.engine.v2.utils.UpdatePerformanceTracker;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
@@ -37,7 +33,7 @@ import static io.deephaven.engine.v2.sources.ArrayBackedColumnSource.BLOCK_SIZE;
 
 /**
  * An {@link IterativeChunkedAggregationOperator} used in the implementation of
- * {@link io.deephaven.engine.tables.Table#applyToAllBy}.
+ * {@link Table#applyToAllBy}.
  */
 class FormulaChunkedOperator implements IterativeChunkedAggregationOperator {
 

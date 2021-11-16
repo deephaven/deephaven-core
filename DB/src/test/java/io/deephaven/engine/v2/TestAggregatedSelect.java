@@ -5,8 +5,10 @@
 package io.deephaven.engine.v2;
 
 import io.deephaven.base.FileUtils;
-import io.deephaven.engine.tables.ColumnDefinition;
-import io.deephaven.engine.tables.*;
+import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.DataColumn;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.vector.DoubleVector;
 import io.deephaven.engine.vector.ObjectVector;
 import io.deephaven.engine.vector.Vector;

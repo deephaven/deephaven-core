@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2;
 
-import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.util.liveness.LivenessScopeStack;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.chunk.util.pools.ChunkPoolReleaseTracking;
 import io.deephaven.util.SafeCloseable;
 

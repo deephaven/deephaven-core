@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2.by;
 
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.tables.select.MatchPairFactory;
 import io.deephaven.engine.tables.select.SelectColumnFactory;
 import io.deephaven.engine.v2.QueryTable;
@@ -14,7 +14,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * An {@link AggregationContextFactory} used in the implementation of {@link io.deephaven.engine.tables.Table#groupBy}.
+ * An {@link AggregationContextFactory} used in the implementation of {@link Table#groupBy}.
  */
 public class GroupByAggregationFactory implements AggregationContextFactory {
 

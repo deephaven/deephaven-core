@@ -5,7 +5,7 @@
 package io.deephaven.kafka.ingest;
 
 import io.deephaven.UncheckedDeephavenException;
-import io.deephaven.engine.tables.TableDefinition;
+import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.chunk.ChunkType;
 

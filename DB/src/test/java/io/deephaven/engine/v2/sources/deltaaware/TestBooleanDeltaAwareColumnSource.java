@@ -7,7 +7,7 @@ import io.deephaven.engine.chunk.ObjectChunk;
 
 import io.deephaven.util.BooleanUtils;
 
-import io.deephaven.engine.tables.live.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.chunk.ArrayGenerator;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.chunk.Attributes.Values;

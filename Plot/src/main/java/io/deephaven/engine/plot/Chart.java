@@ -5,7 +5,7 @@
 package io.deephaven.engine.plot;
 
 import io.deephaven.engine.plot.filters.SelectableDataSet;
-import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.table.Table;
 import io.deephaven.gui.color.Paint;
 
 import java.io.Serializable;

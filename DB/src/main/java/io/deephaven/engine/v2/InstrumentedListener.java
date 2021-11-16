@@ -4,7 +4,6 @@
 
 package io.deephaven.engine.v2;
 
-import io.deephaven.engine.v2.utils.AbstractIndexUpdateNotification;
 import org.jetbrains.annotations.Nullable;
 
 public abstract class InstrumentedListener extends InstrumentedListenerBase implements Listener {
@@ -18,7 +17,7 @@ public abstract class InstrumentedListener extends InstrumentedListenerBase impl
     }
 
     @Override
-    public AbstractIndexUpdateNotification getNotification(final Update update) {
+    public Notification getNotification(final Update update) {
         return new Notification(update);
     }
 

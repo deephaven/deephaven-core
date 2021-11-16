@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2.ssa;
 
-import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.live.UpdateGraphProcessor;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.TstUtils;
 import org.jetbrains.annotations.NotNull;

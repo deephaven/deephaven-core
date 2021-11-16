@@ -11,7 +11,7 @@ import io.deephaven.gui.color.Color;
 import io.deephaven.engine.plot.datasets.data.IndexableNumericData;
 import io.deephaven.engine.plot.datasets.data.IndexableNumericDataArrayInt;
 import io.deephaven.engine.plot.util.tables.TableHandle;
-import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.tables.utils.TableTools;
 import junit.framework.TestCase;
 

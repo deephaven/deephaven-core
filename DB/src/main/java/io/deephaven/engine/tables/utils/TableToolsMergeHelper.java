@@ -1,11 +1,11 @@
 package io.deephaven.engine.tables.utils;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.tables.ColumnDefinition;
-import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.TableDefinition;
-import io.deephaven.engine.tables.live.UpdateGraphProcessor;
-import io.deephaven.engine.tables.live.NotificationQueue;
+import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.v2.*;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.sources.UnionColumnSource;

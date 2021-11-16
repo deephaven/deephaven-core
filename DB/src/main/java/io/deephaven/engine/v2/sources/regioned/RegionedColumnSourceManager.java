@@ -14,7 +14,7 @@ import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.engine.tables.ColumnDefinition;
+import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.v2.ColumnSourceManager;
 import io.deephaven.engine.v2.locations.*;
 import io.deephaven.engine.v2.sources.DeferredGroupingColumnSource;

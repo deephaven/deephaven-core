@@ -10,7 +10,7 @@ import io.deephaven.engine.plot.datasets.category.AbstractSwappableTableBasedCat
 import io.deephaven.engine.plot.datasets.category.CategorySwappableTableDataSeriesInternal;
 import io.deephaven.engine.plot.util.ArgumentValidations;
 import io.deephaven.engine.plot.util.tables.SwappableTable;
-import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.table.Table;
 
 import java.util.Collection;
 

@@ -4,8 +4,8 @@
 
 package io.deephaven.engine.tables.select;
 
-import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.TableDefinition;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.tables.utils.TableTools;

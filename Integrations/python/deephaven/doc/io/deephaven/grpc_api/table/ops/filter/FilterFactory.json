@@ -1,7 +1,7 @@
 {
  "className": "io.deephaven.grpc_api.table.ops.filter.FilterFactory",
  "methods": {
-  "makeFilter": ":param table: io.deephaven.engine.tables.Table\n:param condition: io.deephaven.proto.backplane.grpc.Condition\n:return: io.deephaven.engine.v2.select.SelectFilter",
+  "makeFilter": ":param table: io.deephaven.engine.table.Table\n:param condition: io.deephaven.proto.backplane.grpc.Condition\n:return: io.deephaven.engine.v2.select.SelectFilter",
   "onAnd": ":param filtersList: java.util.List<io.deephaven.proto.backplane.grpc.Condition>\n:return: io.deephaven.engine.v2.select.SelectFilter",
   "onComparison": ":param operation: io.deephaven.proto.backplane.grpc.CompareCondition.CompareOperation\n:param caseSensitivity: io.deephaven.proto.backplane.grpc.CaseSensitivity\n:param lhs: io.deephaven.proto.backplane.grpc.Value\n:param rhs: io.deephaven.proto.backplane.grpc.Value\n:return: io.deephaven.engine.v2.select.SelectFilter",
   "onContains": ":param reference: io.deephaven.proto.backplane.grpc.Reference\n:param searchString: java.lang.String\n:param caseSensitivity: io.deephaven.proto.backplane.grpc.CaseSensitivity\n:param matchType: io.deephaven.proto.backplane.grpc.MatchType\n:return: io.deephaven.engine.v2.select.SelectFilter",

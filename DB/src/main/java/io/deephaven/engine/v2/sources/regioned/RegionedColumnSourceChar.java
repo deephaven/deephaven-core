@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2.sources.regioned;
 
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.tables.ColumnDefinition;
+import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.v2.locations.ColumnLocation;
 import io.deephaven.engine.v2.locations.TableDataException;
 import io.deephaven.engine.v2.locations.TableLocationKey;

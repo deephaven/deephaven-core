@@ -1,7 +1,7 @@
 package io.deephaven.engine.plot.util.tables;
 
-import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.TableDefinition;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableDefinition;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.Serializable;

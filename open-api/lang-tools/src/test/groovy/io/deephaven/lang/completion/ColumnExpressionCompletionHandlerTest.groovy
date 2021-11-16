@@ -4,8 +4,8 @@ import io.deephaven.engine.util.VariableProvider
 import io.deephaven.io.logger.Logger
 import io.deephaven.proto.backplane.script.grpc.CompletionItem
 import io.deephaven.util.process.ProcessEnvironment
-import io.deephaven.engine.tables.Table
-import io.deephaven.engine.tables.TableDefinition
+import io.deephaven.engine.table.Table
+import io.deephaven.engine.table.TableDefinition
 import io.deephaven.engine.time.DateTime
 import io.deephaven.lang.parse.CompletionParser
 import spock.lang.Specification

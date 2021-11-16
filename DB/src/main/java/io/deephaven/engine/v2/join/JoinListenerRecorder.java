@@ -4,7 +4,7 @@
 
 package io.deephaven.engine.v2.join;
 
-import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.v2.ListenerRecorder;
 
 /**

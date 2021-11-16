@@ -11,7 +11,7 @@ import io.deephaven.engine.chunk.sized.SizedChunk;
 import io.deephaven.engine.chunk.sized.SizedLongChunk;
 import io.deephaven.engine.v2.ssa.SegmentedSortedArray;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.v2.utils.RowSetShiftData;
+import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.v2.utils.SizedSafeCloseable;
 

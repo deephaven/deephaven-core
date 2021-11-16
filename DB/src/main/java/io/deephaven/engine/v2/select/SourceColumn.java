@@ -5,15 +5,15 @@
 package io.deephaven.engine.v2.select;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.tables.ColumnDefinition;
-import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.vector.Vector;
-import io.deephaven.engine.tables.select.MatchPair;
+import io.deephaven.engine.table.MatchPair;
 import io.deephaven.util.NameValidator;
 import io.deephaven.engine.v2.NoSuchColumnException;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.sources.SparseArrayColumnSource;
-import io.deephaven.engine.v2.sources.WritableSource;
+import io.deephaven.engine.table.WritableSource;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import org.jetbrains.annotations.NotNull;
 

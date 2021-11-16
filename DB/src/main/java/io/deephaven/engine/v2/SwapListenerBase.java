@@ -2,14 +2,14 @@ package io.deephaven.engine.v2;
 
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.v2.utils.AbstractNotification;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.engine.tables.live.NotificationQueue;
-import io.deephaven.engine.tables.live.NullIndexUpdateNotification;
-import io.deephaven.engine.util.liveness.LivenessArtifact;
+import io.deephaven.engine.updategraph.NotificationQueue;
+import io.deephaven.engine.updategraph.EmptyNotification;
+import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.v2.remote.ConstructSnapshot;
-import io.deephaven.engine.v2.sources.LogicalClock;
-import io.deephaven.engine.v2.utils.AbstractIndexUpdateNotification;
+import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.v2.utils.UpdatePerformanceTracker;
 import org.jetbrains.annotations.NotNull;
 
@@ -28,7 +28,7 @@ import org.jetbrains.annotations.NotNull;
  * Use either {@link ShiftObliviousSwapListener} or {@link SwapListener} depending on which ShiftObliviousListener
  * interface you are using.
  */
-public abstract class SwapListenerBase<T extends ListenerBase> extends LivenessArtifact implements ListenerBase {
+public abstract class SwapListenerBase<T extends TableListener> extends LivenessArtifact implements TableListener {
     protected static final boolean DEBUG =
             Configuration.getInstance().getBooleanWithDefault("SwapListener.debug", false);
     static final boolean DEBUG_NOTIFICATIONS =
@@ -149,7 +149,7 @@ public abstract class SwapListenerBase<T extends ListenerBase> extends LivenessA
         if (success && !isInInitialNotificationWindow()) {
             return eventualListener.getErrorNotification(originalException, sourceEntry);
         } else {
-            return new NullIndexUpdateNotification();
+            return new EmptyNotification();
         }
     }
 
@@ -184,20 +184,20 @@ public abstract class SwapListenerBase<T extends ListenerBase> extends LivenessA
     public abstract void subscribeForUpdates();
 
     interface NotificationFactory {
-        NotificationQueue.IndexUpdateNotification newNotification();
+        NotificationQueue.Notification newNotification();
     }
 
-    NotificationQueue.IndexUpdateNotification doGetNotification(final NotificationFactory factory) {
+    NotificationQueue.Notification doGetNotification(final NotificationFactory factory) {
         if (!success || isInInitialNotificationWindow()) {
-            return new NullIndexUpdateNotification();
+            return new EmptyNotification();
         }
 
-        final NotificationQueue.IndexUpdateNotification notification = factory.newNotification();
+        final NotificationQueue.Notification notification = factory.newNotification();
         if (!DEBUG_NOTIFICATIONS) {
             return notification;
         }
 
-        return new AbstractIndexUpdateNotification(notification.isTerminal()) {
+        return new AbstractNotification(notification.isTerminal()) {
 
             @Override
             public boolean canExecute(final long step) {

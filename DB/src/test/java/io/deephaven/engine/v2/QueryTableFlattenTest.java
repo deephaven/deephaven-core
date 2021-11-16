@@ -7,8 +7,9 @@ package io.deephaven.engine.v2;
 import io.deephaven.engine.rowset.MutableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.live.UpdateGraphProcessor;
+import io.deephaven.engine.rowset.RowSetShiftData;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.v2.utils.*;
 import junit.framework.TestCase;
 import org.junit.Assert;
@@ -219,14 +220,14 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
         }, i(3), i(), i(1), shiftDataByValues(3, 3, 1));
     }
 
-    private static class TestHelper<T extends ListenerBase> {
+    private static class TestHelper<T extends TableListener> {
         final QueryTable sourceTable;
         final TableUpdateValidator validator;
         final T listener;
 
         long updateCount = 0;
 
-        public interface ListenerFactory<T extends ListenerBase> {
+        public interface ListenerFactory<T extends TableListener> {
             T newListener(QueryTable queryTable);
         }
 

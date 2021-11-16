@@ -5,17 +5,18 @@
 package io.deephaven.engine.v2.utils;
 
 import io.deephaven.base.log.LogOutput;
-import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.tablelogger.UpdatePerformanceLogLogger;
-import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.TableDefinition;
-import io.deephaven.engine.tables.live.UpdateGraphProcessor;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.tables.utils.QueryPerformanceLogThreshold;
 import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
+import io.deephaven.engine.v2.TableListener;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.ShiftObliviousInstrumentedListener;
 import io.deephaven.engine.v2.ShiftObliviousListener;
@@ -283,7 +284,7 @@ public class UpdatePerformanceTracker {
     /**
      * Entry class for tracking the performance characteristics of a single recurring update event.
      */
-    public static class Entry implements LogOutputAppendable {
+    public static class Entry implements TableListener.Entry {
         private final int id;
         private final int evaluationNumber;
         private final int operationNumber;

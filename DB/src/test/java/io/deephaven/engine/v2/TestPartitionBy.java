@@ -5,14 +5,15 @@
 package io.deephaven.engine.v2;
 
 import io.deephaven.datastructures.util.SmartKey;
-import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.live.UpdateGraphProcessor;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableMap;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.tables.select.QueryScope;
 import io.deephaven.engine.tables.utils.TableDiff;
 import io.deephaven.engine.tables.utils.TableTools;
-import io.deephaven.engine.util.liveness.LivenessScope;
-import io.deephaven.engine.util.liveness.LivenessScopeStack;
-import io.deephaven.engine.util.liveness.SingletonLivenessManager;
+import io.deephaven.engine.liveness.LivenessScope;
+import io.deephaven.engine.liveness.LivenessScopeStack;
+import io.deephaven.engine.liveness.SingletonLivenessManager;
 import io.deephaven.engine.v2.by.SortedFirstBy;
 import io.deephaven.engine.v2.select.MatchFilter;
 import io.deephaven.engine.table.ColumnSource;

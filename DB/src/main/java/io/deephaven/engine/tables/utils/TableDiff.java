@@ -8,7 +8,7 @@ import io.deephaven.base.Pair;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.Context;
 import io.deephaven.engine.table.SharedContext;
-import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.chunk.util.hashing.ChunkEquals;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.chunk.Attributes.Values;

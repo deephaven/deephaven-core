@@ -1,5 +1,6 @@
 package io.deephaven.engine.v2;
 
+import io.deephaven.engine.util.ColumnRenderersBuilder;
 import junit.framework.TestCase;
 import org.junit.Test;
 

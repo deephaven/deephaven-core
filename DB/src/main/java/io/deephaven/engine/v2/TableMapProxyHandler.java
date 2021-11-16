@@ -1,18 +1,16 @@
 package io.deephaven.engine.v2;
 
 import io.deephaven.base.StringUtils;
-import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.TableDefinition;
-import io.deephaven.engine.tables.select.MatchPair;
+import io.deephaven.engine.table.*;
 import io.deephaven.engine.tables.select.MatchPairFactory;
 import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
 import io.deephaven.engine.tables.utils.TableTools;
-import io.deephaven.engine.util.liveness.Liveness;
-import io.deephaven.engine.util.liveness.LivenessArtifact;
-import io.deephaven.engine.util.liveness.LivenessScopeStack;
-import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.liveness.Liveness;
+import io.deephaven.engine.liveness.LivenessArtifact;
+import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.v2.utils.RowSetShiftData;
+import io.deephaven.engine.rowset.RowSetShiftData;
+import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.v2.utils.UpdatePerformanceTracker;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;

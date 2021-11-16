@@ -4,9 +4,9 @@
 
 package io.deephaven.engine.v2.select;
 
-import io.deephaven.engine.tables.TableDefinition;
-import io.deephaven.engine.tables.live.NotificationQueue;
-import io.deephaven.engine.util.liveness.LivenessArtifact;
+import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.updategraph.NotificationQueue;
+import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.v2.DependencyStreamProvider;
 import io.deephaven.util.annotations.TestUseOnly;
 

@@ -5,7 +5,7 @@
 package io.deephaven.engine.v2.remote;
 
 import io.deephaven.base.formatters.FormatBitSet;
-import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.rowset.RowSet;
 
 import java.io.Serializable;

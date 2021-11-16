@@ -9,12 +9,12 @@ import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.FileUtils;
 import io.deephaven.compilertools.CompilerTools;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.TableDefinition;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.tables.libs.QueryLibrary;
 import io.deephaven.engine.tables.select.QueryScope;
-import io.deephaven.engine.util.liveness.LivenessScope;
-import io.deephaven.engine.util.liveness.LivenessScopeStack;
+import io.deephaven.engine.liveness.LivenessScope;
+import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.Nullable;
 

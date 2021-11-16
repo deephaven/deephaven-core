@@ -9,7 +9,7 @@ import io.deephaven.engine.plot.errors.PlotUnsupportedOperationException;
 import io.deephaven.engine.plot.util.ArgumentValidations;
 import io.deephaven.engine.plot.util.PlotUtils;
 import io.deephaven.engine.plot.util.tables.TableHandle;
-import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.table.Table;
 
 import java.util.HashMap;
 import java.util.Map;

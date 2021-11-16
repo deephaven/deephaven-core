@@ -2,7 +2,7 @@ package io.deephaven.engine.plot.datasets.category;
 
 import io.deephaven.engine.plot.errors.PlotInfo;
 import io.deephaven.engine.plot.util.ArgumentValidations;
-import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.table.Table;
 import gnu.trove.map.hash.TObjectLongHashMap;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;

@@ -10,7 +10,7 @@ import io.deephaven.engine.plot.datasets.data.IndexableData;
 import io.deephaven.engine.plot.datasets.data.IndexableDataArray;
 import io.deephaven.engine.plot.datasets.data.IndexableDataInteger;
 import io.deephaven.engine.plot.util.PlotUtils;
-import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.gui.color.Color;
 import io.deephaven.gui.color.Paint;

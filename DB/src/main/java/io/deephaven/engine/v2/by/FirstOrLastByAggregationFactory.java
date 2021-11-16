@@ -1,8 +1,8 @@
 package io.deephaven.engine.v2.by;
 
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.select.MatchPair;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.MatchPair;
 import io.deephaven.util.NameValidator;
 import io.deephaven.engine.v2.BaseTable;
 import io.deephaven.engine.chunk.Attributes.Values;

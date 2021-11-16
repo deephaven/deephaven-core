@@ -10,8 +10,8 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.MutableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
-import io.deephaven.engine.tables.live.NotificationQueue;
-import io.deephaven.engine.v2.utils.RowSetShiftData;
+import io.deephaven.engine.updategraph.NotificationQueue;
+import io.deephaven.engine.rowset.RowSetShiftData;
 
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.BiConsumer;
@@ -19,7 +19,7 @@ import java.util.function.BiConsumer;
 /**
  * Shift-aware listener for table changes.
  */
-public interface Listener extends ListenerBase {
+public interface Listener extends TableListener {
 
     /**
      * A shift aware update structure, containing the rows and columns that were added, modified, removed, and shifted
@@ -139,7 +139,7 @@ public interface Listener extends ListenerBase {
                     localPrevModified = prevModified;
                     if (localPrevModified == null) {
                         localPrevModified = modified.copy();
-                        shifted.unapply(localPrevModified);
+                        RowSetShiftUtils.unapply(shifted, localPrevModified);
                         // this volatile write ensures prevModified is visible only after it is shifted
                         prevModified = localPrevModified;
                     }
@@ -220,5 +220,5 @@ public interface Listener extends ListenerBase {
      * @param upstream The set of upstream table updates.
      * @return table change notification
      */
-    NotificationQueue.IndexUpdateNotification getNotification(Update upstream);
+    NotificationQueue.Notification getNotification(Update upstream);
 }

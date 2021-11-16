@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2.select;
 
 
-import io.deephaven.engine.util.liveness.LivenessArtifact;
+import io.deephaven.engine.liveness.LivenessArtifact;
 
 import java.io.Serializable;
 

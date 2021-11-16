@@ -4,7 +4,7 @@
 
 package io.deephaven.engine.tables.utils;
 
-import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.table.Table;
 
 public class TableGetter {
     private final Table table;

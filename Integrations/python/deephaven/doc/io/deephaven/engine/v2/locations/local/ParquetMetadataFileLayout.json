@@ -3,7 +3,7 @@
  "methods": {
   "findKeys": "Find keys and deliver them to the locationKeyObserver.\n\n:param locationKeyObserver: (java.util.function.Consumer<io.deephaven.engine.v2.locations.parquet.local.ParquetTableLocationKey>) - Per-key callback",
   "getInstructions": ":return: io.deephaven.engine.v2.parquet.ParquetInstructions",
-  "getTableDefinition": ":return: io.deephaven.engine.tables.TableDefinition",
+  "getTableDefinition": ":return: io.deephaven.engine.table.TableDefinition",
   "toString": ":return: java.lang.String"
  },
  "path": "io.deephaven.engine.v2.locations.local.ParquetMetadataFileLayout",

@@ -1,7 +1,7 @@
 package io.deephaven.benchmark.engine;
 
-import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.live.UpdateGraphProcessor;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.util.metrics.MetricsManager;
 import io.deephaven.benchmarking.*;

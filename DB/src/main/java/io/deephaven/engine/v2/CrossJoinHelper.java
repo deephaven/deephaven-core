@@ -2,17 +2,17 @@ package io.deephaven.engine.v2;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.exceptions.OutOfKeySpaceException;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.util.datastructures.LongRangeConsumer;
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.select.MatchPair;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.v2.join.JoinListenerRecorder;
 import io.deephaven.engine.v2.sources.BitMaskingColumnSource;
 import io.deephaven.engine.v2.sources.BitShiftingColumnSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.sources.CrossJoinRightColumnSource;
-import io.deephaven.engine.v2.utils.*;
 import io.deephaven.util.SafeCloseableList;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -139,7 +139,7 @@ public class CrossJoinHelper {
                             prevLeftRowSet.remove(upstream.removed);
                             jsm.applyLeftShift(prevLeftRowSet, upstream.shifted);
                             downstream.shifted = expandLeftOnlyShift(prevLeftRowSet, upstream.shifted, jsm);
-                            downstream.shifted.apply(resultRowSet);
+                            RowSetShiftUtils.apply(downstream.shifted, resultRowSet);
                         }
 
                         if (upstream.modifiedColumnSet.containsAny(leftKeyColumns)) {
@@ -419,7 +419,7 @@ public class CrossJoinHelper {
                             try (final RowSequence.Iterator rsIt =
                                     allRowsShift ? null : resultRowSet.getRowSequenceIterator();
                                     final MutableRowSet unshiftedRowsToShift = rowsToShift.copy()) {
-                                upstreamLeft.shifted.unapply(unshiftedRowsToShift);
+                                RowSetShiftUtils.unapply(upstreamLeft.shifted, unshiftedRowsToShift);
                                 final RowSet.SearchIterator prevIter = unshiftedRowsToShift.searchIterator();
 
                                 final LongConsumer processLeftShiftsUntil = (ii) -> {
@@ -1054,7 +1054,7 @@ public class CrossJoinHelper {
                     }
 
                     downstream.shifted = expandLeftOnlyShift(leftTable.getRowSet(), leftUpdate.shifted, crossJoinState);
-                    downstream.shifted.apply(resultRowSet);
+                    RowSetShiftUtils.apply(downstream.shifted, resultRowSet);
 
                     iter = leftUpdate.modified.searchIterator();
                     while (iter.hasNext()) {

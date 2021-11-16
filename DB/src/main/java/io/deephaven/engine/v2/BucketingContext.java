@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2;
 
-import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.select.MatchPair;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
@@ -20,7 +20,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static io.deephaven.engine.tables.select.MatchPair.matchString;
+import static io.deephaven.engine.table.MatchPair.matchString;
 
 class BucketingContext implements SafeCloseable {
     final int keyColumnCount;

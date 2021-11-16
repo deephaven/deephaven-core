@@ -1,6 +1,6 @@
 package io.deephaven.engine.v2.parquet;
 
-import io.deephaven.engine.table.Context;
+import io.deephaven.engine.table.*;
 import io.deephaven.engine.tables.*;
 import io.deephaven.engine.vector.Vector;
 import io.deephaven.engine.tables.libs.QueryLibrary;
@@ -19,8 +19,6 @@ import io.deephaven.engine.v2.select.FormulaColumn;
 import io.deephaven.engine.v2.select.NullSelectColumn;
 import io.deephaven.engine.v2.select.SelectColumn;
 import io.deephaven.engine.v2.select.SourceColumn;
-import io.deephaven.engine.table.ChunkSource;
-import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.sources.ReinterpretUtilities;
 import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.chunk.*;

@@ -10,7 +10,7 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.io.log.LogLevel;
 import io.deephaven.io.logger.StreamLoggerImpl;
 import io.deephaven.util.process.ProcessEnvironment;
-import io.deephaven.engine.tables.TableDefinition;
+import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.util.WorkerPythonEnvironment;
 import io.deephaven.engine.v2.select.MatchFilter;
 import io.deephaven.engine.v2.select.WhereFilter;

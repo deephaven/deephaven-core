@@ -4,7 +4,7 @@
 
 package io.deephaven.engine.v2.utils;
 
-import io.deephaven.engine.tables.live.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.v2.RefreshingTableTestCase;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.internal.log.LoggerFactory;

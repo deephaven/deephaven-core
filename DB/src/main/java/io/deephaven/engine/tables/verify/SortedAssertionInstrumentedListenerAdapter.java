@@ -5,7 +5,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.tables.SortingOrder;
-import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.v2.BaseTable;
 import io.deephaven.engine.v2.ModifiedColumnSet;
 import io.deephaven.engine.v2.sortcheck.SortCheck;

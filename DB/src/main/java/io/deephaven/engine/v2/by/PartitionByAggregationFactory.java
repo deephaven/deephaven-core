@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2.by;
 
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.tables.select.SelectColumnFactory;
 import io.deephaven.engine.v2.LocalTableMap;
 import io.deephaven.engine.v2.QueryTable;
@@ -13,7 +13,7 @@ import java.util.List;
 
 /**
  * An {@link AggregationContextFactory} used in the implementation of
- * {@link io.deephaven.engine.tables.Table#partitionBy}.
+ * {@link Table#partitionBy}.
  */
 public class PartitionByAggregationFactory implements AggregationContextFactory {
 

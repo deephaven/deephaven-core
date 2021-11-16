@@ -4,7 +4,7 @@ import io.deephaven.base.ClassUtil;
 import io.deephaven.base.Pair;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.plot.util.functions.ClosureFunction;
-import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.table.Table;
 import io.deephaven.libs.GroovyStaticImportGenerator;
 import io.deephaven.util.type.TypeUtils;
 import groovy.lang.Closure;
@@ -404,7 +404,7 @@ public class GenerateMultiSeries {
                         }
 
                         final String arg;
-                        if (typeName.equals("io.deephaven.engine.tables.Table")) {
+                        if (typeName.equals("io.deephaven.engine.table.Table")) {
                             arg = "((io.deephaven.engine.plot.util.tables.TableHandle) objectArray[" + i
                                     + "]).getTable()";
                         } else if (typeName.equals("java.lang.Object")) {
@@ -785,7 +785,7 @@ public class GenerateMultiSeries {
             final Map<String, String> tableToTableHandleVarMap = new HashMap<>();
             for (int i = 0; i < vars.length; i++) {
                 final Type var = vars[i];
-                if (var.getTypeName().equals("io.deephaven.engine.tables.Table")) {
+                if (var.getTypeName().equals("io.deephaven.engine.table.Table")) {
                     final String handleName = names[i] + "Handle";
                     tableToTableHandleVarMap.put(names[i], handleName);
                     code.append(indent(1)).append("final io.deephaven.engine.plot.util.tables.TableHandle ")

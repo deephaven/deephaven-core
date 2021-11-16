@@ -2,10 +2,11 @@ package io.deephaven.engine.v2.utils;
 
 import io.deephaven.engine.rowset.MutableRowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.TrackingMutableRowSet;
 import io.deephaven.engine.v2.Listener;
 import io.deephaven.engine.v2.ModifiedColumnSet;
-import io.deephaven.engine.v2.sources.LogicalClock;
+import io.deephaven.engine.updategraph.LogicalClock;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;

@@ -6,12 +6,13 @@ import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.impl.MutableRowSetImpl;
 import io.deephaven.engine.rowset.impl.OrderedLongSet;
 import io.deephaven.engine.rowset.impl.OrderedLongSetBuilderSequential;
-import io.deephaven.engine.tables.ColumnDefinition;
-import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.live.UpdateGraphProcessor;
-import io.deephaven.engine.tables.live.NotificationQueue;
+import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
-import io.deephaven.engine.util.liveness.LivenessReferent;
+import io.deephaven.engine.liveness.LivenessReferent;
+import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.v2.*;
 import io.deephaven.engine.v2.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.ColumnSource;
@@ -31,7 +32,7 @@ import java.util.stream.Collectors;
 
 /**
  * An {@link IterativeChunkedAggregationOperator} used in the implementation of
- * {@link io.deephaven.engine.tables.Table#partitionBy}.
+ * {@link Table#partitionBy}.
  */
 public final class PartitionByChunkedOperator implements IterativeChunkedAggregationOperator {
 
@@ -878,7 +879,7 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
                         modifiedTable.getRowSet().mutableCast().remove(downstream.removed);
                     }
                     if (downstream.shifted.nonempty()) {
-                        downstream.shifted.apply(((MutableRowSet) modifiedTable.getRowSet()));
+                        RowSetShiftUtils.apply(downstream.shifted, ((MutableRowSet) modifiedTable.getRowSet()));
                     }
                     if (downstream.added.isNonempty()) {
                         modifiedTable.getRowSet().mutableCast().insert(downstream.added);

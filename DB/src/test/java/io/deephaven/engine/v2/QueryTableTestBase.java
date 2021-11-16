@@ -1,8 +1,8 @@
 package io.deephaven.engine.v2;
 
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.live.UpdateGraphProcessor;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.tables.utils.TableDiff;
 import io.deephaven.engine.v2.utils.RowSet;
 import org.apache.commons.lang3.mutable.MutableInt;

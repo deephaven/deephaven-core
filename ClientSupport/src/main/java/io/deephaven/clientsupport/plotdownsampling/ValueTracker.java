@@ -2,7 +2,7 @@ package io.deephaven.clientsupport.plotdownsampling;
 
 import io.deephaven.engine.rowset.MutableRowSet;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.v2.utils.RowSetShiftData;
+import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.v2.sources.BooleanArraySource;
 import io.deephaven.engine.table.ColumnSource;

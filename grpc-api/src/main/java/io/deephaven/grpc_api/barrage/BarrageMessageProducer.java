@@ -14,24 +14,25 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.impl.RowSequenceUtil;
 import io.deephaven.engine.time.DateTimeUtils;
+import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.v2.*;
 import io.deephaven.engine.v2.utils.*;
 import io.deephaven.extensions.barrage.util.BarrageMessageConsumer;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.tables.TableDefinition;
+import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
-import io.deephaven.engine.util.liveness.LivenessArtifact;
-import io.deephaven.engine.util.liveness.LivenessReferent;
+import io.deephaven.engine.liveness.LivenessArtifact;
+import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.v2.Listener;
 import io.deephaven.engine.v2.remote.ConstructSnapshot;
 import io.deephaven.engine.v2.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.sources.FillUnordered;
-import io.deephaven.engine.v2.sources.LogicalClock;
+import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.v2.sources.ObjectArraySource;
 import io.deephaven.engine.v2.sources.ReinterpretUtilities;
-import io.deephaven.engine.v2.sources.WritableChunkSink;
-import io.deephaven.engine.v2.sources.WritableSource;
+import io.deephaven.engine.table.WritableChunkSink;
+import io.deephaven.engine.table.WritableSource;
 import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.chunk.LongChunk;
@@ -711,7 +712,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
             }
 
             try (final MutableRowSet scoped = scopedViewBuilder.build()) {
-                upstream.shifted.apply(scoped); // we built scoped rows in prev-keyspace
+                RowSetShiftUtils.apply(upstream.shifted, scoped); // we built scoped rows in prev-keyspace
                 scoped.retain(rowSet); // we only record valid rows
                 addsToRecord.insert(scoped);
             }
@@ -1297,7 +1298,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
             for (int i = startDelta; i < endDelta; ++i) {
                 final Delta delta = pendingDeltas.get(i);
                 localAdded.remove(delta.update.removed);
-                delta.update.shifted.apply(localAdded);
+                RowSetShiftUtils.apply(delta.update.shifted, localAdded);
 
                 // reset the add column set if we do not have any adds from previous updates
                 if (localAdded.isEmpty()) {
@@ -1352,8 +1353,8 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
                     final Delta delta = pendingDeltas.get(i);
                     retval.modified.remove(delta.update.removed);
                     retval.recordedMods.remove(delta.update.removed);
-                    delta.update.shifted.apply(retval.modified);
-                    delta.update.shifted.apply(retval.recordedMods);
+                    RowSetShiftUtils.apply(delta.update.shifted, retval.modified);
+                    RowSetShiftUtils.apply(delta.update.shifted, retval.recordedMods);
 
                     if (deltasThatModifyThisColumn.get(i)) {
                         retval.modified.insert(delta.update.modified);
@@ -1413,8 +1414,8 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
                         applyMapping.accept(false, false); // map recorded mods
                     }
 
-                    delta.update.shifted.unapply(addedRemaining);
-                    delta.update.shifted.unapply(modifiedRemaining);
+                    RowSetShiftUtils.unapply(delta.update.shifted, addedRemaining);
+                    RowSetShiftUtils.unapply(delta.update.shifted, modifiedRemaining);
                 }
 
                 if (unfilledAdds.size() > 0) {
@@ -1493,7 +1494,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
 
         // Update our propagation rowSet.
         propagationRowSet.remove(downstream.rowsRemoved);
-        downstream.shifted.apply(propagationRowSet);
+        RowSetShiftUtils.apply(downstream.shifted, propagationRowSet);
         propagationRowSet.insert(downstream.rowsAdded);
 
         return downstream;

@@ -9,6 +9,7 @@ import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.Attributes.RowKeys;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.WritableSource;
 import io.deephaven.engine.v2.utils.MutableRowRedirection;
 import org.jetbrains.annotations.NotNull;
 

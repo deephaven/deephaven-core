@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2.by;
 
 import io.deephaven.engine.tables.utils.TableToolsShowControl;
-import io.deephaven.engine.v2.sources.LogicalClock;
+import io.deephaven.engine.updategraph.LogicalClock;
 import org.jetbrains.annotations.NotNull;
 
 @TableToolsShowControl(getWidth = 40)

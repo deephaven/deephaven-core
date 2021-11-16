@@ -11,7 +11,7 @@
   "getPoolAllocatedBytesForCurrentThread": "Get the total bytes of pool-allocated memory attributed to this thread via\n recordPoolAllocation(Supplier).\n\n:return: (long) The total bytes of pool-allocated memory attributed to this thread.",
   "getQueryLevelPerformanceData": ":return: io.deephaven.engine.tables.utils.QueryPerformanceNugget",
   "getState": "Return the query's current state\n\n:return: (io.deephaven.engine.tables.utils.QueryState) the query's state or null if it isn't initialized yet",
-  "getTimingResultsAsTable": ":return: io.deephaven.engine.tables.Table",
+  "getTimingResultsAsTable": ":return: io.deephaven.engine.table.Table",
   "recordPoolAllocation": "Record a single-threaded operation's allocations as \"pool\" allocated memory attributable to the current thread.\n\nNote: Java generics information - <RESULT_TYPE>\n\n:param operation: (java.util.function.Supplier<RESULT_TYPE>) - The operation to record allocation for\n:return: (RESULT_TYPE) The result of the operation.",
   "setCallsite": "**Incompatible overloads text - text from the first overload:**\n\n\n Attempt to compute and set the thread local callsite so that invocations of getCallerLine() will not\n spend time trying to recompute.\n \n\n Users should follow the best practice as described by setCallsite(String)\n\n*Overload 1*  \n  :param callsite: (java.lang.String) - The call site to use.\n  :return: (boolean) true if successfully set, false otherwise/\n  \n*Overload 2*  \n  :return: (boolean) true if the callsite was computed and set.",
   "setQueryData": ":param setter: io.deephaven.engine.tables.utils.QueryPerformanceRecorder.EntrySetter",

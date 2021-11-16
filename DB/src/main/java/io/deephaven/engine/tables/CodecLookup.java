@@ -1,5 +1,6 @@
 package io.deephaven.engine.tables;
 
+import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.vector.ObjectVector;
 import io.deephaven.engine.vector.Vector;
 import io.deephaven.engine.tables.libs.StringSet;

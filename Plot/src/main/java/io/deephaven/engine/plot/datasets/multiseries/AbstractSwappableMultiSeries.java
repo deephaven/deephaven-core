@@ -5,10 +5,10 @@ import io.deephaven.engine.plot.datasets.DataSeriesInternal;
 import io.deephaven.engine.plot.util.ArgumentValidations;
 import io.deephaven.engine.plot.util.tables.SwappableTable;
 import io.deephaven.engine.plot.util.tables.TableHandle;
-import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.tables.libs.QueryLibrary;
 import io.deephaven.engine.tables.select.QueryScope;
-import io.deephaven.engine.v2.TableMap;
+import io.deephaven.engine.table.TableMap;
 
 import java.util.*;
 import java.util.function.Function;

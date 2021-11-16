@@ -11,6 +11,7 @@ import io.deephaven.engine.plot.datasets.xy.XYDataSeriesTableArray;
 import io.deephaven.engine.plot.util.ArgumentValidations;
 import io.deephaven.engine.plot.util.tables.TableBackedTableMapHandle;
 import io.deephaven.engine.plot.util.tables.TableHandle;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.v2.BaseTable;
 
 /**
@@ -407,7 +408,7 @@ public class MultiXYSeries extends AbstractTableMapHandleMultiSeries<XYDataSerie
     public io.deephaven.engine.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.Object[]> pointColorSeriesNameToTableStringMap() {
         return pointColorSeriesNameToTableStringMap;
     }
-    @Override public MultiXYSeries pointColor(final io.deephaven.engine.tables.Table t, final java.lang.String columnName, final Object... keys) {
+    @Override public MultiXYSeries pointColor(final Table t, final java.lang.String columnName, final Object... keys) {
     final io.deephaven.engine.plot.util.tables.TableHandle tHandle = new io.deephaven.engine.plot.util.tables.TableHandle(t, columnName);
     addTableHandle(tHandle);
         if(keys == null || keys.length == 0) {
@@ -511,7 +512,7 @@ public class MultiXYSeries extends AbstractTableMapHandleMultiSeries<XYDataSerie
     public io.deephaven.engine.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.Object[]> pointLabelSeriesNameToTableStringMap() {
         return pointLabelSeriesNameToTableStringMap;
     }
-    @Override public MultiXYSeries pointLabel(final io.deephaven.engine.tables.Table t, final java.lang.String columnName, final Object... keys) {
+    @Override public MultiXYSeries pointLabel(final Table t, final java.lang.String columnName, final Object... keys) {
     final io.deephaven.engine.plot.util.tables.TableHandle tHandle = new io.deephaven.engine.plot.util.tables.TableHandle(t, columnName);
     addTableHandle(tHandle);
         if(keys == null || keys.length == 0) {
@@ -649,7 +650,7 @@ public class MultiXYSeries extends AbstractTableMapHandleMultiSeries<XYDataSerie
     public io.deephaven.engine.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.Object[]> pointShapeSeriesNameToTableStringMap() {
         return pointShapeSeriesNameToTableStringMap;
     }
-    @Override public MultiXYSeries pointShape(final io.deephaven.engine.tables.Table t, final java.lang.String columnName, final Object... keys) {
+    @Override public MultiXYSeries pointShape(final Table t, final java.lang.String columnName, final Object... keys) {
     final io.deephaven.engine.plot.util.tables.TableHandle tHandle = new io.deephaven.engine.plot.util.tables.TableHandle(t, columnName);
     addTableHandle(tHandle);
         if(keys == null || keys.length == 0) {
@@ -787,7 +788,7 @@ public class MultiXYSeries extends AbstractTableMapHandleMultiSeries<XYDataSerie
     public io.deephaven.engine.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.Object[]> pointSizeSeriesNameToTableStringMap() {
         return pointSizeSeriesNameToTableStringMap;
     }
-    @Override public MultiXYSeries pointSize(final io.deephaven.engine.tables.Table t, final java.lang.String columnName, final Object... keys) {
+    @Override public MultiXYSeries pointSize(final Table t, final java.lang.String columnName, final Object... keys) {
     final io.deephaven.engine.plot.util.tables.TableHandle tHandle = new io.deephaven.engine.plot.util.tables.TableHandle(t, columnName);
     addTableHandle(tHandle);
         if(keys == null || keys.length == 0) {

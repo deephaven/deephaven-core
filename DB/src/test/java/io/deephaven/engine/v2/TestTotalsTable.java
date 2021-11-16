@@ -2,9 +2,10 @@ package io.deephaven.engine.v2;
 
 import io.deephaven.compilertools.CompilerTools;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.util.TotalsTableBuilder;
 import io.deephaven.engine.vector.DoubleVectorDirect;
-import io.deephaven.engine.tables.live.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.utils.UpdatePerformanceTracker;
 import io.deephaven.libs.primitives.*;

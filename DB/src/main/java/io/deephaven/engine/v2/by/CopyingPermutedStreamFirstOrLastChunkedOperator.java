@@ -2,13 +2,13 @@ package io.deephaven.engine.v2.by;
 
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.SharedContext;
-import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.select.MatchPair;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.v2.sort.permute.PermuteKernel;
 import io.deephaven.engine.v2.sort.timsort.LongIntTimsortKernel;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.v2.sources.WritableChunkSink;
-import io.deephaven.engine.v2.sources.WritableSource;
+import io.deephaven.engine.table.WritableChunkSink;
+import io.deephaven.engine.table.WritableSource;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.v2.utils.ChunkUtils;
 import io.deephaven.engine.rowset.RowSequence;

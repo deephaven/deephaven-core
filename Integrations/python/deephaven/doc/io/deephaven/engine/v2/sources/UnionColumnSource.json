@@ -28,6 +28,6 @@
   "makeFillContext": "Allocate a new ChunkSource.FillContext for filling chunks from this FillContextMaker, typically a\n ChunkSource.\n\n:param chunkCapacity: (int) - The maximum size of any WritableChunk that will be filled with this context\n:param sharedContext: (io.deephaven.engine.chunk.SharedContext) - Shared store of intermediate results.\n:return: (io.deephaven.engine.chunk.ChunkSource.FillContext) A context for use with fill operations"
  },
  "path": "io.deephaven.engine.v2.sources.UnionColumnSource",
- "text": "ColumnSource implementation for TableTools.merge(java.util.List<io.deephaven.engine.tables.Table>) results.",
+ "text": "ColumnSource implementation for TableTools.merge(java.util.List<io.deephaven.engine.table.Table>) results.",
  "typeName": "class"
 }

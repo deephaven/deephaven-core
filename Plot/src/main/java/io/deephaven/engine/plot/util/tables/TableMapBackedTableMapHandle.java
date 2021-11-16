@@ -2,10 +2,10 @@ package io.deephaven.engine.plot.util.tables;
 
 import io.deephaven.engine.plot.errors.PlotInfo;
 import io.deephaven.engine.plot.util.ArgumentValidations;
-import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.TableDefinition;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.tables.utils.TableTools;
-import io.deephaven.engine.v2.TableMap;
+import io.deephaven.engine.table.TableMap;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 

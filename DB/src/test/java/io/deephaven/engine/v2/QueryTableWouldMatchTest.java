@@ -1,8 +1,8 @@
 package io.deephaven.engine.v2;
 
-import io.deephaven.engine.tables.live.UpdateGraphProcessor;
-import io.deephaven.engine.tables.select.MatchPair;
-import io.deephaven.engine.tables.select.WouldMatchPair;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.table.MatchPair;
+import io.deephaven.engine.table.WouldMatchPair;
 import io.deephaven.engine.v2.select.DynamicWhereFilter;
 import io.deephaven.test.types.OutOfBandTest;
 import junit.framework.TestCase;

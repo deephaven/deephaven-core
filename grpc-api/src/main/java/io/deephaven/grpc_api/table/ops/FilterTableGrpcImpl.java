@@ -1,7 +1,7 @@
 package io.deephaven.grpc_api.table.ops;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.v2.select.WhereFilter;
 import io.deephaven.grpc_api.session.SessionState;
 import io.deephaven.grpc_api.table.ops.filter.*;

@@ -1,11 +1,11 @@
 package io.deephaven.engine.v2;
 
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.vector.IntVector;
 import io.deephaven.engine.vector.ObjectVector;
 import io.deephaven.engine.vector.DoubleVector;
-import io.deephaven.engine.tables.live.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.tables.select.QueryScope;
 import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.test.junit4.EngineCleanup;

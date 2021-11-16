@@ -1,12 +1,13 @@
 package io.deephaven.benchmarking.generator;
 
-import io.deephaven.engine.tables.ColumnDefinition;
+import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.benchmarking.generator.random.ExtendedRandom;
+import io.deephaven.engine.table.Table;
 
 /**
  * An interface that defines a class which will create Columns for a {@link io.deephaven.benchmarking.BenchmarkTable}
  * including {@link ColumnDefinition} creation and a method to create
- * {@link io.deephaven.engine.tables.Table#update(String...)} strings.
+ * {@link Table#update(String...)} strings.
  *
  * @param <T> The column type
  */
@@ -24,7 +25,7 @@ public interface ColumnGenerator<T> {
     void init(ExtendedRandom random);
 
     /**
-     * Create a string suitable for use with {@link io.deephaven.engine.tables.Table#update(String...)} calls to
+     * Create a string suitable for use with {@link Table#update(String...)} calls to
      * generate data.
      *
      * @param varName The name of this instance's variable within the

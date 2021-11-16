@@ -4,11 +4,11 @@
 
 package io.deephaven.engine.v2.utils;
 
-import io.deephaven.engine.tables.live.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.time.ClockTimeProvider;
 import io.deephaven.engine.v2.RefreshingTableTestCase;
 import io.deephaven.util.clock.RealTimeClock;
-import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.v2.select.AutoTuningIncrementalReleaseFilter;
 import io.deephaven.engine.v2.select.IncrementalReleaseFilter;

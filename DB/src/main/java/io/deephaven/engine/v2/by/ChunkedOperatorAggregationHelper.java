@@ -5,12 +5,9 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.SmartKey;
-import io.deephaven.engine.table.ChunkSource;
-import io.deephaven.engine.table.SharedContext;
+import io.deephaven.engine.table.*;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.impl.RowSequenceUtil;
-import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.tables.Table;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.util.BooleanUtils;
@@ -505,7 +502,7 @@ public class ChunkedOperatorAggregationHelper {
                                                 .minus(removeIndex == null ? unshiftedSameSlotModifies : removeIndex);
                                         final MutableRowSet shiftedSameSlotModifiesPre =
                                                 shiftedSameSlotModifiesPost.copy()) {
-                                    upstream.shifted.unapply(shiftedSameSlotModifiesPre);
+                                    RowSetShiftUtils.unapply(upstream.shifted, shiftedSameSlotModifiesPre);
                                     doSameSlotModifies(shiftedSameSlotModifiesPre, shiftedSameSlotModifiesPost, true,
                                             od.operatorsWithModifiedInputColumnsThatIgnoreIndices,
                                             od.operatorsThatRequireIndices);
@@ -1709,7 +1706,7 @@ public class ChunkedOperatorAggregationHelper {
                                                         upstream.modified.minus(unshiftedModifies);
                                                         final MutableRowSet shiftedModifiesPre =
                                                                 shiftedModifiesPost.copy()) {
-                                                    upstream.shifted.unapply(shiftedModifiesPre);
+                                                    RowSetShiftUtils.unapply(upstream.shifted, shiftedModifiesPre);
                                                     doNoKeyModifications(shiftedModifiesPre, shiftedModifiesPost, ac,
                                                             opContexts, true,
                                                             od.operatorsWithModifiedInputColumnsThatIgnoreIndices,

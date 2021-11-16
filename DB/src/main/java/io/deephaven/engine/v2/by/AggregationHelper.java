@@ -7,7 +7,7 @@ import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.impl.RowSequenceUtil;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.v2.*;
 import io.deephaven.engine.v2.select.SelectColumn;
 import io.deephaven.engine.v2.sources.*;

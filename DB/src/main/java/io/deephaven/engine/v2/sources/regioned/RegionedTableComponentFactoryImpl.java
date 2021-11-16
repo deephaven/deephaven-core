@@ -4,7 +4,7 @@
 
 package io.deephaven.engine.v2.sources.regioned;
 
-import io.deephaven.engine.tables.ColumnDefinition;
+import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.v2.ColumnSourceManager;
 import io.deephaven.engine.v2.ColumnToCodecMappings;

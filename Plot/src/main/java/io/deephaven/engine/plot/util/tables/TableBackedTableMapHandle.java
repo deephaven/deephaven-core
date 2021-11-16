@@ -3,8 +3,8 @@ package io.deephaven.engine.plot.util.tables;
 import io.deephaven.engine.plot.errors.PlotIllegalStateException;
 import io.deephaven.engine.plot.errors.PlotInfo;
 import io.deephaven.engine.plot.util.ArgumentValidations;
-import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.TableDefinition;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableDefinition;
 
 import java.util.Collection;
 

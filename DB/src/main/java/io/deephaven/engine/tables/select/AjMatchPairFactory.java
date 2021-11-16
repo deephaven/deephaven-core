@@ -5,7 +5,8 @@
 package io.deephaven.engine.tables.select;
 
 import io.deephaven.base.Pair;
-import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.table.MatchPair;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.tables.utils.AbstractExpressionFactory;
 import io.deephaven.engine.tables.utils.ExpressionParser;
 

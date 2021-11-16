@@ -5,7 +5,7 @@
   "clear": "Clears all column renderers.\n\n:return: io.deephaven.engine.v2.ColumnRenderersBuilder",
   "empty": ":return: io.deephaven.engine.v2.ColumnRenderersBuilder",
   "fromDirective": "Creates a new ColumnRenderersBuilder from an existing COLUMN_RENDERERS_ATTRIBUTE directive.\n\n:param directive: (java.lang.String) - a valid COLUMN_RENDERERS_ATTRIBUTE directive\n:return: (io.deephaven.engine.v2.ColumnRenderersBuilder) a ColumnRenderersBuilder represented by the directive",
-  "get": "Gets a ColumnRenderersBuilder from the COLUMN_RENDERERS_ATTRIBUTE in a source Table.\n\n:param source: (io.deephaven.engine.tables.Table) - the Table\n:return: (io.deephaven.engine.v2.ColumnRenderersBuilder) the ColumnRenderersBuilder from the Table",
+  "get": "Gets a ColumnRenderersBuilder from the COLUMN_RENDERERS_ATTRIBUTE in a source Table.\n\n:param source: (io.deephaven.engine.table.Table) - the Table\n:return: (io.deephaven.engine.v2.ColumnRenderersBuilder) the ColumnRenderersBuilder from the Table",
   "getColumnSet": "Returns a Set of column-names, which may be verified as valid prior to setting our directive as an attribute to\n the table\n\n:return: (java.util.Set<java.lang.String>) An iterable Set of column-names identified by this builder-instance",
   "getRenderClassForType": ":param type: io.deephaven.engine.v2.ColumnRenderersBuilder.ColumnRendererType\n:return: java.lang.String",
   "getRenderClassName": "Gets the fully qualified class name for the renderer of a column.\n\n:param columnName: (java.lang.String) - the column name\n:return: (java.lang.String) the fully qualified class name of the renderer",

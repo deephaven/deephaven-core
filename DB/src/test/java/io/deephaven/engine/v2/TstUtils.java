@@ -12,13 +12,13 @@ import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.tables.StringSetWrapper;
-import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.tables.libs.StringSet;
 import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.tables.utils.TableDiff;
 import io.deephaven.engine.tables.utils.TableTools;
-import io.deephaven.engine.util.liveness.LivenessScopeStack;
+import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.v2.sources.*;
 import io.deephaven.engine.v2.utils.*;
 import io.deephaven.util.QueryConstants;
@@ -2108,7 +2108,7 @@ public class TstUtils {
     }
 
 
-    public static class TstNotification extends AbstractIndexUpdateNotification {
+    public static class TstNotification extends AbstractNotification {
 
         private boolean invoked = false;
 

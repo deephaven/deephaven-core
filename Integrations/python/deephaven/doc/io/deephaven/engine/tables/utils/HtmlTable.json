@@ -1,7 +1,7 @@
 {
  "className": "io.deephaven.engine.tables.utils.HtmlTable",
  "methods": {
-  "html": ":param source: io.deephaven.engine.tables.Table\n:return: java.lang.String"
+  "html": ":param source: io.deephaven.engine.table.Table\n:return: java.lang.String"
  },
  "path": "io.deephaven.engine.tables.utils.HtmlTable",
  "typeName": "class"

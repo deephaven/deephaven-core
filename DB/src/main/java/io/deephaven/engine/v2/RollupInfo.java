@@ -1,6 +1,6 @@
 package io.deephaven.engine.v2;
 
-import io.deephaven.engine.tables.select.MatchPair;
+import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.v2.by.AggregationFactory;
 import io.deephaven.engine.v2.select.SelectColumn;
 

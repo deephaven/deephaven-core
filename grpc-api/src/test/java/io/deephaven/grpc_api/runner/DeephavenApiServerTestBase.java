@@ -1,8 +1,8 @@
 package io.deephaven.grpc_api.runner;
 
-import io.deephaven.engine.tables.live.UpdateGraphProcessor;
-import io.deephaven.engine.util.liveness.LivenessScope;
-import io.deephaven.engine.util.liveness.LivenessScopeStack;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.liveness.LivenessScope;
+import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.grpc_api.DeephavenChannel;
 import io.deephaven.grpc_api.appmode.AppMode;
 import io.deephaven.io.logger.LogBuffer;

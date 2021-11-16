@@ -1,7 +1,7 @@
 {
  "className": "io.deephaven.engine.v2.select.ConditionFilter$ChunkFilter",
  "methods": {
-  "filter": "See SelectFilter.filter(RowSet, RowSet, Table, boolean) for basic documentation of selection,\n fullSet, table, and usePrev.\n\n:param selection: io.deephaven.engine.v2.utils.RowSet\n:param fullSet: io.deephaven.engine.v2.utils.RowSet\n:param table: io.deephaven.engine.tables.Table\n:param usePrev: boolean\n:param formula: java.lang.String\n:param params: io.deephaven.engine.tables.select.Param...\n:return: io.deephaven.engine.v2.utils.MutableRowSet"
+  "filter": "See SelectFilter.filter(RowSet, RowSet, Table, boolean) for basic documentation of selection,\n fullSet, table, and usePrev.\n\n:param selection: io.deephaven.engine.v2.utils.RowSet\n:param fullSet: io.deephaven.engine.v2.utils.RowSet\n:param table: io.deephaven.engine.table.Table\n:param usePrev: boolean\n:param formula: java.lang.String\n:param params: io.deephaven.engine.tables.select.Param...\n:return: io.deephaven.engine.v2.utils.MutableRowSet"
  },
  "path": "io.deephaven.engine.v2.select.ConditionFilter.ChunkFilter",
  "typeName": "class"

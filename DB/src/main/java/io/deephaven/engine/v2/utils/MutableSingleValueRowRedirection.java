@@ -5,7 +5,7 @@
 package io.deephaven.engine.v2.utils;
 
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.v2.sources.LogicalClock;
+import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.chunk.WritableLongChunk;

@@ -1,13 +1,13 @@
 package io.deephaven.lang.completion
 
-import io.deephaven.engine.tables.ColumnDefinition
-import io.deephaven.engine.tables.TableDefinition
+import io.deephaven.engine.table.ColumnDefinition
+import io.deephaven.engine.table.TableDefinition
 import io.deephaven.engine.util.VariableProvider
 import io.deephaven.io.logger.Logger
 import io.deephaven.proto.backplane.script.grpc.ChangeDocumentRequest.TextDocumentContentChangeEvent
 import io.deephaven.proto.backplane.script.grpc.CompletionItem
 import io.deephaven.util.process.ProcessEnvironment
-import io.deephaven.engine.tables.Table
+import io.deephaven.engine.table.Table
 import io.deephaven.lang.parse.CompletionParser
 import spock.lang.Specification
 import spock.lang.Unroll

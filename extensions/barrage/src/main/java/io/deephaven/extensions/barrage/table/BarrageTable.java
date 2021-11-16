@@ -9,18 +9,15 @@ import gnu.trove.list.TLongList;
 import gnu.trove.list.linked.TLongLinkedList;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.table.ChunkSource;
+import io.deephaven.engine.table.*;
 import io.deephaven.engine.rowset.MutableRowSet;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.tables.ColumnDefinition;
-import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.TableDefinition;
-import io.deephaven.engine.tables.live.UpdateGraphProcessor;
-import io.deephaven.engine.tables.live.UpdateSourceRegistrar;
-import io.deephaven.engine.tables.live.NotificationQueue;
+import io.deephaven.engine.updategraph.LogicalClock;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
+import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.v2.Listener;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.sources.*;
@@ -242,9 +239,9 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
             // shifts
             if (update.shifted.nonempty()) {
                 rowRedirection.applyShift(currentRowSet, update.shifted);
-                update.shifted.apply(currentRowSet);
+                RowSetShiftUtils.apply(update.shifted, currentRowSet);
                 if (populatedRows != null) {
-                    update.shifted.apply(populatedRows);
+                    RowSetShiftUtils.apply(update.shifted, populatedRows);
                 }
             }
             currentRowSet.insert(update.rowsAdded);

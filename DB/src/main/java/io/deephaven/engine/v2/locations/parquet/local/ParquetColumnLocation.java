@@ -10,7 +10,7 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.Context;
 import io.deephaven.engine.tables.CodecLookup;
-import io.deephaven.engine.tables.ColumnDefinition;
+import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.vector.Vector;
 import io.deephaven.engine.v2.locations.TableDataException;
 import io.deephaven.engine.v2.locations.impl.AbstractColumnLocation;

@@ -4,13 +4,14 @@
 
 package io.deephaven.engine.v2;
 
-import io.deephaven.engine.tables.live.NotificationQueue;
+import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.rowset.RowSet;
 
 /**
  * ShiftObliviousListener for table changes.
  */
-public interface ShiftObliviousListener extends ListenerBase {
+public interface ShiftObliviousListener extends TableListener {
+
     /**
      * Process notification of table changes.
      * 
@@ -28,7 +29,7 @@ public interface ShiftObliviousListener extends ListenerBase {
      * @param modified rows modified
      * @return table change notification
      */
-    NotificationQueue.IndexUpdateNotification getNotification(RowSet added, RowSet removed, RowSet modified);
+    NotificationQueue.Notification getNotification(RowSet added, RowSet removed, RowSet modified);
 
     /**
      * Sets the rowSet for the initial data.

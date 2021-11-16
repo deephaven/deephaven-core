@@ -1,6 +1,6 @@
 package io.deephaven.treetable;
 
-import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.table.Table;
 
 public class TreeTableConstants {
     // This is the object used to identify the root table in fetch operations

@@ -1,14 +1,14 @@
 package io.deephaven.treetable;
 
 import io.deephaven.base.verify.Require;
-import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.live.NotificationQueue;
-import io.deephaven.engine.tables.select.MatchPair;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.updategraph.NotificationQueue;
+import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.util.string.StringUtils;
 import io.deephaven.engine.v2.HierarchicalTable;
 import io.deephaven.engine.v2.ReverseLookup;
 import io.deephaven.engine.v2.RollupInfo;
-import io.deephaven.engine.v2.TableMap;
+import io.deephaven.engine.table.TableMap;
 import io.deephaven.engine.v2.select.SelectColumn;
 import io.deephaven.engine.v2.select.WhereFilter;
 import io.deephaven.engine.table.ColumnSource;

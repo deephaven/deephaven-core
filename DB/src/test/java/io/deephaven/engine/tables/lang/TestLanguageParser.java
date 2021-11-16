@@ -8,7 +8,7 @@ import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.base.testing.BaseArrayTestCase;
-import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.vector.*;
 import io.deephaven.engine.tables.lang.LanguageParser.QueryLanguageParseException;
@@ -1067,8 +1067,8 @@ public class TestLanguageParser extends BaseArrayTestCase {
         resultExpression = "java.util.Arrays.asList(5)";
         check(expression, resultExpression, List.class, new String[] {});
 
-        expression = "io.deephaven.engine.tables.ColumnDefinition.COLUMNTYPE_NORMAL";
-        resultExpression = "io.deephaven.engine.tables.ColumnDefinition.COLUMNTYPE_NORMAL";
+        expression = "io.deephaven.engine.table.ColumnDefinition.COLUMNTYPE_NORMAL";
+        resultExpression = "io.deephaven.engine.table.ColumnDefinition.COLUMNTYPE_NORMAL";
         check(expression, resultExpression, int.class, new String[] {});
 
         expression = "ColumnDefinition.COLUMNTYPE_NORMAL";

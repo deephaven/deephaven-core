@@ -5,7 +5,7 @@ import io.deephaven.client.impl.BarrageSessionFactoryBuilder;
 import io.deephaven.client.impl.BarrageSubscription;
 import io.deephaven.client.impl.ChannelHelper;
 import io.deephaven.client.impl.TableHandle.TableHandleException;
-import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.table.Table;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.qst.table.TableSpec;
 import io.deephaven.qst.table.TicketTable;

@@ -1,6 +1,7 @@
 package io.deephaven.engine.v2.utils;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.rowset.RowSetShiftData;
 
 import java.util.function.LongUnaryOperator;
 

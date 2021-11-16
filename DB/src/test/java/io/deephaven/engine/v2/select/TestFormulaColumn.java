@@ -7,8 +7,8 @@ package io.deephaven.engine.v2.select;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.AssertionFailure;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.tables.ColumnDefinition;
-import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.tables.lang.LanguageFunctionUtil;
 import io.deephaven.engine.tables.lang.LanguageParser.QueryLanguageParseException;
 import io.deephaven.engine.tables.libs.QueryLibrary;
@@ -240,7 +240,7 @@ public class TestFormulaColumn {
             result = Arrays.asList("varargTest1", "varargTest2", "varargTest3");
             checkPrimitive(row, expression, result);
 
-            expression = "io.deephaven.engine.tables.ColumnDefinition.COLUMNTYPE_NORMAL";
+            expression = "io.deephaven.engine.table.ColumnDefinition.COLUMNTYPE_NORMAL";
             result = ColumnDefinition.COLUMNTYPE_NORMAL;
             checkPrimitive(row, expression, result);
 

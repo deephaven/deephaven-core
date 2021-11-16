@@ -1,6 +1,6 @@
 package io.deephaven.engine.v2.sources.regioned;
 
-import io.deephaven.engine.v2.sources.Releasable;
+import io.deephaven.engine.table.Releasable;
 import io.deephaven.engine.chunk.Attributes.Any;
 import io.deephaven.engine.chunk.WritableChunk;
 import io.deephaven.engine.page.Page;

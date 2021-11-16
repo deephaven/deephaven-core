@@ -40,7 +40,7 @@ def _defineSymbols():
     if _table_tools_ is None:
         # This will raise an exception if the desired object is not the classpath
         _table_tools_ = jpy.get_type("io.deephaven.engine.tables.utils.TableTools")
-        _col_def_ = jpy.get_type("io.deephaven.engine.tables.ColumnDefinition")
+        _col_def_ = jpy.get_type("io.deephaven.engine.table.ColumnDefinition")
         _jprops_ = jpy.get_type("java.util.Properties")
         _jmap_ = jpy.get_type("java.util.HashMap")
         _jset_ = jpy.get_type("java.util.HashSet")

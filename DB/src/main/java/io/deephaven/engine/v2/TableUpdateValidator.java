@@ -3,17 +3,14 @@ package io.deephaven.engine.v2;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
+import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.SharedContext;
-import io.deephaven.engine.rowset.MutableRowSet;
-import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.vector.*;
 import io.deephaven.engine.chunk.util.hashing.ChunkEquals;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.sources.SparseArrayColumnSource;
-import io.deephaven.engine.v2.sources.WritableChunkSink;
+import io.deephaven.engine.table.WritableChunkSink;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.v2.utils.*;
 import io.deephaven.util.SafeCloseable;
@@ -174,7 +171,7 @@ public class TableUpdateValidator implements QueryTable.Operation {
 
             // shift columns first because they use tracking rowSet
             Arrays.stream(columnInfos).forEach((ci) -> upstream.shifted.apply(ci));
-            upstream.shifted.apply(rowSet);
+            RowSetShiftUtils.apply(upstream.shifted, rowSet);
 
             if (aggressiveUpdateValidation) {
                 final RowSet unmodified = rowSet.minus(upstream.modified);

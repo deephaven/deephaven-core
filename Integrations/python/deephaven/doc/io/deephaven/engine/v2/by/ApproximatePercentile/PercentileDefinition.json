@@ -7,6 +7,6 @@
   "setCompression": "Sets the t-digest compression parameter.\n\n:param compression: (double) - the t-digest compression factor.\n:return: (io.deephaven.engine.v2.by.ApproximatePercentile.PercentileDefinition) a (possibly new) PercentileDefinition"
  },
  "path": "io.deephaven.engine.v2.by.ApproximatePercentile.PercentileDefinition",
- "text": "A builder class for an approximate percentile definition to be used with ApproximatePercentile.approximatePercentiles(io.deephaven.engine.tables.Table, io.deephaven.engine.v2.by.ApproximatePercentile.PercentileDefinition, io.deephaven.engine.v2.select.SelectColumn...).",
+ "text": "A builder class for an approximate percentile definition to be used with ApproximatePercentile.approximatePercentiles(io.deephaven.engine.table.Table, io.deephaven.engine.v2.by.ApproximatePercentile.PercentileDefinition, io.deephaven.engine.v2.select.SelectColumn...).",
  "typeName": "class"
 }

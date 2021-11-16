@@ -11,7 +11,7 @@ import io.deephaven.engine.plot.datasets.category.*;
 import io.deephaven.engine.plot.filters.SelectableDataSetSwappableTable;
 import io.deephaven.engine.plot.util.ArgumentValidations;
 import io.deephaven.engine.plot.util.tables.SwappableTable;
-import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.v2.BaseTable;
 
 import java.util.Collection;
@@ -586,7 +586,7 @@ public class MultiCatSeriesSwappable extends AbstractSwappableMultiSeries<Catego
     public io.deephaven.engine.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.Object[]> pointColorSeriesNameToTableStringStringMap() {
         return pointColorSeriesNameToTableStringStringMap;
     }
-    @Override public MultiCatSeriesSwappable pointColor(final io.deephaven.engine.tables.Table t, final java.lang.String keyColumn, final java.lang.String valueColumn, final Object... keys) {
+    @Override public MultiCatSeriesSwappable pointColor(final Table t, final java.lang.String keyColumn, final java.lang.String valueColumn, final Object... keys) {
     final io.deephaven.engine.plot.util.tables.TableHandle tHandle = new io.deephaven.engine.plot.util.tables.TableHandle(t, keyColumn, valueColumn);
     addTableHandle(tHandle);
         if(keys == null || keys.length == 0) {
@@ -707,7 +707,7 @@ public class MultiCatSeriesSwappable extends AbstractSwappableMultiSeries<Catego
     public io.deephaven.engine.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.Object[]> pointLabelSeriesNameToTableStringStringMap() {
         return pointLabelSeriesNameToTableStringStringMap;
     }
-    @Override public MultiCatSeriesSwappable pointLabel(final io.deephaven.engine.tables.Table t, final java.lang.String keyColumn, final java.lang.String valueColumn, final Object... keys) {
+    @Override public MultiCatSeriesSwappable pointLabel(final Table t, final java.lang.String keyColumn, final java.lang.String valueColumn, final Object... keys) {
     final io.deephaven.engine.plot.util.tables.TableHandle tHandle = new io.deephaven.engine.plot.util.tables.TableHandle(t, keyColumn, valueColumn);
     addTableHandle(tHandle);
         if(keys == null || keys.length == 0) {
@@ -845,7 +845,7 @@ public class MultiCatSeriesSwappable extends AbstractSwappableMultiSeries<Catego
     public io.deephaven.engine.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.Object[]> pointShapeSeriesNameToTableStringStringMap() {
         return pointShapeSeriesNameToTableStringStringMap;
     }
-    @Override public MultiCatSeriesSwappable pointShape(final io.deephaven.engine.tables.Table t, final java.lang.String keyColumn, final java.lang.String valueColumn, final Object... keys) {
+    @Override public MultiCatSeriesSwappable pointShape(final Table t, final java.lang.String keyColumn, final java.lang.String valueColumn, final Object... keys) {
     final io.deephaven.engine.plot.util.tables.TableHandle tHandle = new io.deephaven.engine.plot.util.tables.TableHandle(t, keyColumn, valueColumn);
     addTableHandle(tHandle);
         if(keys == null || keys.length == 0) {
@@ -1051,7 +1051,7 @@ public class MultiCatSeriesSwappable extends AbstractSwappableMultiSeries<Catego
     public io.deephaven.engine.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.Object[]> pointSizeSeriesNameToTableStringStringMap() {
         return pointSizeSeriesNameToTableStringStringMap;
     }
-    @Override public MultiCatSeriesSwappable pointSize(final io.deephaven.engine.tables.Table t, final java.lang.String keyColumn, final java.lang.String valueColumn, final Object... keys) {
+    @Override public MultiCatSeriesSwappable pointSize(final Table t, final java.lang.String keyColumn, final java.lang.String valueColumn, final Object... keys) {
     final io.deephaven.engine.plot.util.tables.TableHandle tHandle = new io.deephaven.engine.plot.util.tables.TableHandle(t, keyColumn, valueColumn);
     addTableHandle(tHandle);
         if(keys == null || keys.length == 0) {

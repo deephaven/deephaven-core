@@ -3,8 +3,8 @@ package io.deephaven.treetable;
 import io.deephaven.base.Function;
 import io.deephaven.base.formatters.FormatBitSet;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.remote.AsyncMethod;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.updategraph.ConcurrentMethod;
 import io.deephaven.engine.v2.HierarchicalTable;
 import io.deephaven.engine.v2.HierarchicalTableInfo;
 import io.deephaven.engine.v2.RollupInfo;
@@ -72,7 +72,7 @@ public class TreeSnapshotQuery<CLIENT_TYPE extends TreeTableClientTableManager.C
     }
 
     @Override
-    @AsyncMethod
+    @ConcurrentMethod
     public TreeSnapshotResult call(Table arg) {
         if (!(arg instanceof HierarchicalTable)) {
             throw new IllegalArgumentException("Input table was not a hierarchical table");

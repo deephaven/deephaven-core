@@ -6,7 +6,7 @@ package io.deephaven.engine.plot.example_plots;
 
 import io.deephaven.engine.plot.Figure;
 import io.deephaven.engine.plot.FigureFactory;
-import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.tables.utils.TableTools;
 
 

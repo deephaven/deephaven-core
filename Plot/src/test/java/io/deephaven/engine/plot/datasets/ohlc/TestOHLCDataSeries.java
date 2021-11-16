@@ -16,7 +16,7 @@ import io.deephaven.engine.plot.datasets.data.IndexableNumericDataArrayDouble;
 import io.deephaven.engine.plot.datasets.xy.TestAbstractXYDataSeries;
 import io.deephaven.engine.plot.util.tables.SwappableTable;
 import io.deephaven.engine.plot.util.tables.TableHandle;
-import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.tables.utils.TableTools;
 
 import java.util.ArrayList;

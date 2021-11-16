@@ -4,7 +4,7 @@
 
 package io.deephaven.engine.v2.utils;
 
-import io.deephaven.engine.tables.live.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 
 import java.lang.ref.WeakReference;
 import java.util.function.Consumer;

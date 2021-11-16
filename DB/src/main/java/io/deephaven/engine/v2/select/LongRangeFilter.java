@@ -3,8 +3,8 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.v2.select;
 
-import io.deephaven.engine.tables.ColumnDefinition;
-import io.deephaven.engine.tables.TableDefinition;
+import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.util.compare.LongComparisons;
 import io.deephaven.engine.v2.select.chunkfilters.LongRangeComparator;
 import io.deephaven.engine.table.ColumnSource;

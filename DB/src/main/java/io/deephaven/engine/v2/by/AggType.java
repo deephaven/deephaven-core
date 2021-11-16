@@ -1,8 +1,10 @@
 package io.deephaven.engine.v2.by;
 
+import io.deephaven.engine.util.TotalsTableBuilder;
+
 /**
  * Enumeration representing valid aggregation types for {@link AggregationFactory} or
- * {@link io.deephaven.engine.v2.TotalsTableBuilder}.
+ * {@link TotalsTableBuilder}.
  */
 public enum AggType {
     /** Return the number of rows in each group. */

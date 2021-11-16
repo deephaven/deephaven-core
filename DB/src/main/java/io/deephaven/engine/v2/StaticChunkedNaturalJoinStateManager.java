@@ -29,7 +29,7 @@ import org.jetbrains.annotations.NotNull;
 // region extra imports
 import io.deephaven.util.SafeCloseableList;
 import org.jetbrains.annotations.Nullable;
-import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.table.Table;
 // endregion extra imports
 
 import static io.deephaven.util.SafeCloseable.closeArray;

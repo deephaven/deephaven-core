@@ -11,7 +11,9 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.chunk.util.pools.ChunkPoolInstrumentation;
 import io.deephaven.engine.exceptions.QueryCancellationException;
-import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.updategraph.UpdateGraphLock;
+import io.deephaven.util.FunctionalInterfaces;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.profiling.ThreadProfiler;
 import org.apache.commons.lang3.mutable.MutableLong;
@@ -322,6 +324,26 @@ public class QueryPerformanceRecorder implements Serializable {
      */
     public static void installPoolAllocationRecorder() {
         ChunkPoolInstrumentation.setAllocationRecorder(QueryPerformanceRecorder::recordPoolAllocation);
+    }
+
+    /**
+     * Install this {@link QueryPerformanceRecorder} as the lock action recorder for {@link UpdateGraphLock}.
+     */
+    public static void installUpdateGraphLockInstrumentation() {
+        UpdateGraphLock.installInstrumentation(new UpdateGraphLock.Instrumentation() {
+
+            @Override
+            public void recordAction(@NotNull String description, @NotNull Runnable action) {
+                QueryPerformanceRecorder.withNugget(description, action::run);
+            }
+
+            @Override
+            public void recordActionInterruptibly(@NotNull String description,
+                    @NotNull FunctionalInterfaces.ThrowingRunnable<InterruptedException> action)
+                    throws InterruptedException {
+                QueryPerformanceRecorder.withNuggetThrowing(description, action::run);
+            }
+        });
     }
 
     /**

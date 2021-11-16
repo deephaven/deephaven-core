@@ -38,7 +38,7 @@ import io.deephaven.util.SafeCloseableArray;
 import org.jetbrains.annotations.NotNull;
 
 // region extra imports
-import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.v2.ReplicateHashTable;
 import org.apache.commons.lang3.mutable.MutableInt;
 // endregion extra imports

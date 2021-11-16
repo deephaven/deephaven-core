@@ -1,7 +1,7 @@
 package io.deephaven.benchmarking.impl;
 
-import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.TableDefinition;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.benchmarking.BenchmarkTable;
 import io.deephaven.benchmarking.generator.ColumnGenerator;
 import io.deephaven.benchmarking.generator.random.ExtendedRandom;

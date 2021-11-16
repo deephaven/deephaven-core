@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2;
 
 import io.deephaven.engine.tables.SortingOrder;
-import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.table.Table;
 
 import java.util.*;
 import java.util.stream.Collectors;

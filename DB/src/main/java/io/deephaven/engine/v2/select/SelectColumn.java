@@ -9,12 +9,12 @@ import io.deephaven.api.RawString;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.expression.Expression;
 import io.deephaven.api.value.Value;
-import io.deephaven.engine.tables.ColumnDefinition;
-import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.select.MatchPair;
+import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.tables.select.SelectColumnFactory;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.v2.sources.WritableSource;
+import io.deephaven.engine.table.WritableSource;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import org.jetbrains.annotations.NotNull;
 

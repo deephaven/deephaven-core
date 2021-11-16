@@ -366,7 +366,7 @@ def base64Fingerprint(source):
     Compute the SHA256 hash of the input table and return it in base64 string format.
      
     
-    :param source: (io.deephaven.engine.tables.Table) - The table to fingerprint
+    :param source: (io.deephaven.engine.table.Table) - The table to fingerprint
     :return: (java.lang.String) The SHA256 hash of the table data and TableDefinition
     """
     
@@ -457,7 +457,7 @@ def computeFingerprint(source):
      includes the input table definition column names and types.
      
     
-    :param source: (io.deephaven.engine.tables.Table) - The table to fingerprint
+    :param source: (io.deephaven.engine.table.Table) - The table to fingerprint
     :return: (byte[]) The SHA256 hash of the table data and TableDefinition
     """
     
@@ -483,14 +483,14 @@ def diff(*args):
     Computes the difference of two tables for use in verification.
     
     *Overload 1*  
-      :param actualResult: (io.deephaven.engine.tables.Table) - first Deephaven table object to compare
-      :param expectedResult: (io.deephaven.engine.tables.Table) - second Deephaven table object to compare
+      :param actualResult: (io.deephaven.engine.table.Table) - first Deephaven table object to compare
+      :param expectedResult: (io.deephaven.engine.table.Table) - second Deephaven table object to compare
       :param maxDiffLines: (long) - stop comparing after this many differences are found
       :return: (java.lang.String) String report of the detected differences
       
     *Overload 2*  
-      :param actualResult: (io.deephaven.engine.tables.Table) - first Deephaven table object to compare
-      :param expectedResult: (io.deephaven.engine.tables.Table) - second Deephaven table object to compare
+      :param actualResult: (io.deephaven.engine.table.Table) - first Deephaven table object to compare
+      :param expectedResult: (io.deephaven.engine.table.Table) - second Deephaven table object to compare
       :param maxDiffLines: (long) - stop comparing after this many differences are found
       :param itemsToSkip: (java.util.EnumSet<io.deephaven.engine.tables.utils.TableDiff.DiffItems>) - EnumSet of checks not to perform, such as checking column order, or exact match of double
               values
@@ -505,8 +505,8 @@ def diffPair(actualResult, expectedResult, maxDiffLines, itemsToSkip):
     """
     Computes the difference of two tables for use in verification.
     
-    :param actualResult: (io.deephaven.engine.tables.Table) - first Deephaven table object to compare
-    :param expectedResult: (io.deephaven.engine.tables.Table) - second Deephaven table object to compare
+    :param actualResult: (io.deephaven.engine.table.Table) - first Deephaven table object to compare
+    :param expectedResult: (io.deephaven.engine.table.Table) - second Deephaven table object to compare
     :param maxDiffLines: (long) - stop comparing after this many differences are found
     :param itemsToSkip: (java.util.EnumSet<io.deephaven.engine.tables.utils.TableDiff.DiffItems>) - EnumSet of checks not to perform, such as checking column order, or exact match of double
             values
@@ -542,7 +542,7 @@ def emptyTable(size):
     Returns a new, empty Deephaven Table.
     
     :param size: (long) - the number of rows to allocate space for
-    :return: (io.deephaven.engine.tables.Table) a Deephaven Table with no columns.
+    :return: (io.deephaven.engine.table.Table) a Deephaven Table with no columns.
     """
     
     return _java_type_.emptyTable(size)
@@ -598,7 +598,7 @@ def html(source):
     """
     Returns a printout of a table formatted as HTML. Limit use to small tables to avoid running out of memory.
     
-    :param source: (io.deephaven.engine.tables.Table) - a Deephaven table object
+    :param source: (io.deephaven.engine.table.Table) - a Deephaven table object
     :return: (java.lang.String) a String of the table printout formatted as HTML
     """
     
@@ -659,16 +659,16 @@ def merge(*args):
      tables that are expected to grow at slower rates, and finally by tables that grow without bound.
     
     *Overload 1*  
-      :param theList: (java.util.List<io.deephaven.engine.tables.Table>) - a List of Tables to be concatenated
-      :return: (io.deephaven.engine.tables.Table) a Deephaven table object
+      :param theList: (java.util.List<io.deephaven.engine.table.Table>) - a List of Tables to be concatenated
+      :return: (io.deephaven.engine.table.Table) a Deephaven table object
       
     *Overload 2*  
-      :param tables: (java.util.Collection<io.deephaven.engine.tables.Table>) - a Collection of Tables to be concatenated
-      :return: (io.deephaven.engine.tables.Table) a Deephaven table object
+      :param tables: (java.util.Collection<io.deephaven.engine.table.Table>) - a Collection of Tables to be concatenated
+      :return: (io.deephaven.engine.table.Table) a Deephaven table object
       
     *Overload 3*  
-      :param tables: (io.deephaven.engine.tables.Table...) - a list of Tables to be concatenated
-      :return: (io.deephaven.engine.tables.Table) a Deephaven table object
+      :param tables: (io.deephaven.engine.table.Table...) - a list of Tables to be concatenated
+      :return: (io.deephaven.engine.table.Table) a Deephaven table object
     """
     
     return _java_type_.merge(*args)
@@ -683,13 +683,13 @@ def mergeSorted(keyColumn, *tables):
     
     *Overload 1*  
       :param keyColumn: (java.lang.String) - the column to use when sorting the concatenated results
-      :param tables: (io.deephaven.engine.tables.Table...) - sorted Tables to be concatenated
-      :return: (io.deephaven.engine.tables.Table) a Deephaven table object
+      :param tables: (io.deephaven.engine.table.Table...) - sorted Tables to be concatenated
+      :return: (io.deephaven.engine.table.Table) a Deephaven table object
       
     *Overload 2*  
       :param keyColumn: (java.lang.String) - the column to use when sorting the concatenated results
-      :param tables: (java.util.Collection<io.deephaven.engine.tables.Table>) - a Collection of sorted Tables to be concatenated
-      :return: (io.deephaven.engine.tables.Table) a Deephaven table object
+      :param tables: (java.util.Collection<io.deephaven.engine.table.Table>) - a Collection of sorted Tables to be concatenated
+      :return: (io.deephaven.engine.table.Table) a Deephaven table object
     """
     
     return _java_type_.mergeSorted(keyColumn, *tables)
@@ -704,25 +704,25 @@ def newTable(*args):
       :param size: (long) - the number of rows to allocate
       :param names: (java.util.List<java.lang.String>) - a List of column names
       :param columnSources: (java.util.List<io.deephaven.engine.table.ColumnSource<?>>) - a List of the ColumnSource(s)
-      :return: (io.deephaven.engine.tables.Table) a Deephaven Table
+      :return: (io.deephaven.engine.table.Table) a Deephaven Table
       
     *Overload 2*  
       :param size: (long) - the number of rows to allocate
       :param columns: (java.util.Map<java.lang.String,io.deephaven.engine.table.ColumnSource<?>>) - a Map of column names and ColumnSources
-      :return: (io.deephaven.engine.tables.Table) a Deephaven Table
+      :return: (io.deephaven.engine.table.Table) a Deephaven Table
       
     *Overload 3*  
-      :param definition: (io.deephaven.engine.tables.TableDefinition) - the TableDefinition (column names and properties) to use for the new table
-      :return: (io.deephaven.engine.tables.Table) an empty Deephaven Table
+      :param definition: (io.deephaven.engine.table.TableDefinition) - the TableDefinition (column names and properties) to use for the new table
+      :return: (io.deephaven.engine.table.Table) an empty Deephaven Table
       
     *Overload 4*  
       :param columnHolders: (io.deephaven.engine.v2.utils.ColumnHolder...) - a list of ColumnHolders from which to create the table
-      :return: (io.deephaven.engine.tables.Table) a Deephaven Table
+      :return: (io.deephaven.engine.table.Table) a Deephaven Table
       
     *Overload 5*  
-      :param definition: io.deephaven.engine.tables.TableDefinition
+      :param definition: io.deephaven.engine.table.TableDefinition
       :param columnHolders: io.deephaven.engine.v2.utils.ColumnHolder...
-      :return: io.deephaven.engine.tables.Table
+      :return: io.deephaven.engine.table.Table
     """
     
     return _custom_newTable(*args)
@@ -763,26 +763,26 @@ def readCsv(*args):
     
     *Overload 1*  
       :param is: (java.io.InputStream) - an InputStream providing access to the CSV data.
-      :return: (io.deephaven.engine.tables.Table) a Deephaven Table
+      :return: (io.deephaven.engine.table.Table) a Deephaven Table
       
     *Overload 2*  
       :param is: (java.io.InputStream) - an InputStream providing access to the CSV data.
       :param separator: (char) - a char to use as the delimiter value when parsing the file.
-      :return: (io.deephaven.engine.tables.Table) a Deephaven Table
+      :return: (io.deephaven.engine.table.Table) a Deephaven Table
       
     *Overload 3*  
       :param filePath: (java.lang.String) - the fully-qualified path to a CSV file to be read.
-      :return: (io.deephaven.engine.tables.Table) a Deephaven Table object
+      :return: (io.deephaven.engine.table.Table) a Deephaven Table object
       
     *Overload 4*  
       :param filePath: (java.lang.String) - the fully-qualified path to a CSV file to be read.
       :param format: (java.lang.String) - an Apache Commons CSV format name to be used to parse the CSV, or a single non-newline character to
               use as a delimiter.
-      :return: (io.deephaven.engine.tables.Table) a Deephaven Table object
+      :return: (io.deephaven.engine.table.Table) a Deephaven Table object
       
     *Overload 5*  
       :param file: (java.io.File) - a file object providing access to the CSV file to be read.
-      :return: (io.deephaven.engine.tables.Table) a Deephaven Table object
+      :return: (io.deephaven.engine.table.Table) a Deephaven Table object
     """
     
     return _java_type_.readCsv(*args)
@@ -795,17 +795,17 @@ def readHeaderlessCsv(*args):
     
     *Overload 1*  
       :param filePath: (java.lang.String) - the fully-qualified path to a CSV file to be read.
-      :return: (io.deephaven.engine.tables.Table) a Deephaven Table object
+      :return: (io.deephaven.engine.table.Table) a Deephaven Table object
       
     *Overload 2*  
       :param filePath: (java.lang.String) - the fully-qualified path to a CSV file to be read.
       :param header: (java.util.Collection<java.lang.String>) - Column names to use for the resultant table.
-      :return: (io.deephaven.engine.tables.Table) a Deephaven Table object
+      :return: (io.deephaven.engine.table.Table) a Deephaven Table object
       
     *Overload 3*  
       :param filePath: (java.lang.String) - the fully-qualified path to a CSV file to be read.
       :param header: (java.lang.String...) - Column names to use for the resultant table.
-      :return: (io.deephaven.engine.tables.Table) a Deephaven Table object
+      :return: (io.deephaven.engine.table.Table) a Deephaven Table object
     """
     
     return _java_type_.readHeaderlessCsv(*args)
@@ -818,13 +818,13 @@ def roundDecimalColumns(*args):
      float columns rounded to longs.
     
     *Overload 1*  
-      :param table: io.deephaven.engine.tables.Table
-      :return: (io.deephaven.engine.tables.Table) The new Table, with all double and float columns rounded to longs.
+      :param table: io.deephaven.engine.table.Table
+      :return: (io.deephaven.engine.table.Table) The new Table, with all double and float columns rounded to longs.
       
     *Overload 2*  
-      :param table: io.deephaven.engine.tables.Table
+      :param table: io.deephaven.engine.table.Table
       :param columns: (java.lang.String...) - The names of the double and float columns to round.
-      :return: (io.deephaven.engine.tables.Table) The new Table, with the specified columns rounded to longs.
+      :return: (io.deephaven.engine.table.Table) The new Table, with the specified columns rounded to longs.
     """
     
     return _java_type_.roundDecimalColumns(*args)
@@ -836,10 +836,10 @@ def roundDecimalColumnsExcept(table, *columnsNotToRound):
     Produce a new table with all the columns of this table, in the same order, but with all double and
      float columns rounded to longs, except for the specified columnsNotToRound.
     
-    :param table: io.deephaven.engine.tables.Table
+    :param table: io.deephaven.engine.table.Table
     :param columnsNotToRound: (java.lang.String...) - The names of the double and float columns not to round to
             longs
-    :return: (io.deephaven.engine.tables.Table) The new Table, with columns modified as explained above
+    :return: (io.deephaven.engine.table.Table) The new Table, with columns modified as explained above
     """
     
     return _java_type_.roundDecimalColumnsExcept(table, *columnsNotToRound)
@@ -870,34 +870,34 @@ def show(*args):
     Prints the first few rows of a table to standard output.
     
     *Overload 1*  
-      :param source: (io.deephaven.engine.tables.Table) - a Deephaven table object
+      :param source: (io.deephaven.engine.table.Table) - a Deephaven table object
       :param columns: (java.lang.String...) - varargs of column names to display
       
     *Overload 2*  
-      :param source: (io.deephaven.engine.tables.Table) - a Deephaven table object
+      :param source: (io.deephaven.engine.table.Table) - a Deephaven table object
       :param timeZone: (io.deephaven.engine.time.TimeZone) - a TimeZone constant relative to which DateTime data should be adjusted
       :param columns: (java.lang.String...) - varargs of column names to display
       
     *Overload 3*  
-      :param source: (io.deephaven.engine.tables.Table) - a Deephaven table object
+      :param source: (io.deephaven.engine.table.Table) - a Deephaven table object
       :param maxRowCount: (long) - the number of rows to return
       :param columns: (java.lang.String...) - varargs of column names to display
       
     *Overload 4*  
-      :param source: (io.deephaven.engine.tables.Table) - a Deephaven table object
+      :param source: (io.deephaven.engine.table.Table) - a Deephaven table object
       :param maxRowCount: (long) - the number of rows to return
       :param timeZone: (io.deephaven.engine.time.TimeZone) - a TimeZone constant relative to which DateTime data should be adjusted
       :param columns: (java.lang.String...) - varargs of column names to display
       
     *Overload 5*  
-      :param source: (io.deephaven.engine.tables.Table) - a Deephaven table object
+      :param source: (io.deephaven.engine.table.Table) - a Deephaven table object
       :param maxRowCount: (long) - the number of rows to return
       :param timeZone: (io.deephaven.engine.time.TimeZone) - a TimeZone constant relative to which DateTime data should be adjusted
       :param out: (java.io.PrintStream) - a PrintStream destination to which to print the data
       :param columns: (java.lang.String...) - varargs of column names to display
       
     *Overload 6*  
-      :param source: (io.deephaven.engine.tables.Table) - a Deephaven table object
+      :param source: (io.deephaven.engine.table.Table) - a Deephaven table object
       :param maxRowCount: (long) - the number of rows to return
       :param timeZone: (io.deephaven.engine.time.TimeZone) - a TimeZone constant relative to which DateTime data should be adjusted
       :param delimiter: (java.lang.String) - a String value to use between printed values
@@ -915,11 +915,11 @@ def showCommaDelimited(*args):
     Prints the first few rows of a table to standard output, with commas between values.
     
     *Overload 1*  
-      :param source: (io.deephaven.engine.tables.Table) - a Deephaven table object
+      :param source: (io.deephaven.engine.table.Table) - a Deephaven table object
       :param columns: (java.lang.String...) - varargs of column names to display
       
     *Overload 2*  
-      :param source: (io.deephaven.engine.tables.Table) - a Deephaven table object
+      :param source: (io.deephaven.engine.table.Table) - a Deephaven table object
       :param maxRowCount: (long) - the number of rows to return
       :param columns: (java.lang.String...) - varargs of column names to display
     """
@@ -934,30 +934,30 @@ def showWithIndex(*args):
      positions that provided the values.
     
     *Overload 1*  
-      :param source: (io.deephaven.engine.tables.Table) - a Deephaven table object
+      :param source: (io.deephaven.engine.table.Table) - a Deephaven table object
       :param columns: (java.lang.String...) - varargs of column names to display
       
     *Overload 2*  
-      :param source: (io.deephaven.engine.tables.Table) - a Deephaven table object
+      :param source: (io.deephaven.engine.table.Table) - a Deephaven table object
       :param maxRowCount: (long) - the number of rows to return
       :param columns: (java.lang.String...) - varargs of column names to display
       
     *Overload 3*  
-      :param source: (io.deephaven.engine.tables.Table) - a Deephaven table object
+      :param source: (io.deephaven.engine.table.Table) - a Deephaven table object
       :param maxRowCount: (long) - the number of rows to return
       :param timeZone: (io.deephaven.engine.time.TimeZone) - a TimeZone constant relative to which DateTime data should be adjusted
       :param out: (java.io.PrintStream) - a PrintStream destination to which to print the data
       :param columns: (java.lang.String...) - varargs of column names to display
       
     *Overload 4*  
-      :param source: (io.deephaven.engine.tables.Table) - a Deephaven table object
+      :param source: (io.deephaven.engine.table.Table) - a Deephaven table object
       :param firstRow: (long) - the firstRow to display
       :param lastRow: (long) - the lastRow (exclusive) to display
       :param out: (java.io.PrintStream) - a PrintStream destination to which to print the data
       :param columns: (java.lang.String...) - varargs of column names to display
       
     *Overload 5*  
-      :param source: (io.deephaven.engine.tables.Table) - a Deephaven table object
+      :param source: (io.deephaven.engine.table.Table) - a Deephaven table object
       :param firstRow: (long) - the firstRow to display
       :param lastRow: (long) - the lastRow (exclusive) to display
       :param columns: (java.lang.String...) - varargs of column names to display
@@ -972,24 +972,24 @@ def string(*args):
     Returns the first few rows of a table as a pipe-delimited string.
     
     *Overload 1*  
-      :param t: (io.deephaven.engine.tables.Table) - a Deephaven table object
+      :param t: (io.deephaven.engine.table.Table) - a Deephaven table object
       :param columns: (java.lang.String...) - varargs of columns to include in the result
       :return: (java.lang.String) a String
       
     *Overload 2*  
-      :param t: (io.deephaven.engine.tables.Table) - a Deephaven table object
+      :param t: (io.deephaven.engine.table.Table) - a Deephaven table object
       :param size: (int) - the number of rows to return
       :param columns: (java.lang.String...) - varargs of columns to include in the result
       :return: (java.lang.String) a String
       
     *Overload 3*  
-      :param t: (io.deephaven.engine.tables.Table) - a Deephaven table object
+      :param t: (io.deephaven.engine.table.Table) - a Deephaven table object
       :param timeZone: (io.deephaven.engine.time.TimeZone) - a TimeZone constant relative to which DateTime data should be adjusted
       :param columns: (java.lang.String...) - varargs of columns to include in the result
       :return: (java.lang.String) a String
       
     *Overload 4*  
-      :param t: (io.deephaven.engine.tables.Table) - a Deephaven table object
+      :param t: (io.deephaven.engine.table.Table) - a Deephaven table object
       :param size: (int) - the number of rows to return
       :param timeZone: (io.deephaven.engine.time.TimeZone) - a TimeZone constant relative to which DateTime data should be adjusted
       :param columns: (java.lang.String...) - varargs of columns to include in the result
@@ -1019,71 +1019,71 @@ def timeTable(*args):
     
     *Overload 1*  
       :param period: (java.lang.String) - time interval between new row additions.
-      :return: (io.deephaven.engine.tables.Table) time table
+      :return: (io.deephaven.engine.table.Table) time table
       
     *Overload 2*  
       :param period: (java.lang.String) - time interval between new row additions
       :param replayer: (io.deephaven.engine.v2.replay.ReplayerInterface) - data replayer
-      :return: (io.deephaven.engine.tables.Table) time table
+      :return: (io.deephaven.engine.table.Table) time table
       
     *Overload 3*  
       :param startTime: (io.deephaven.engine.time.DateTime) - start time for adding new rows
       :param period: (java.lang.String) - time interval between new row additions
-      :return: (io.deephaven.engine.tables.Table) time table
+      :return: (io.deephaven.engine.table.Table) time table
       
     *Overload 4*  
       :param startTime: (io.deephaven.engine.time.DateTime) - start time for adding new rows
       :param period: (java.lang.String) - time interval between new row additions
       :param replayer: (io.deephaven.engine.v2.replay.ReplayerInterface) - data replayer
-      :return: (io.deephaven.engine.tables.Table) time table
+      :return: (io.deephaven.engine.table.Table) time table
       
     *Overload 5*  
       :param startTime: (java.lang.String) - start time for adding new rows
       :param period: (java.lang.String) - time interval between new row additions
-      :return: (io.deephaven.engine.tables.Table) time table
+      :return: (io.deephaven.engine.table.Table) time table
       
     *Overload 6*  
       :param startTime: (java.lang.String) - start time for adding new rows
       :param period: (java.lang.String) - time interval between new row additions
       :param replayer: (io.deephaven.engine.v2.replay.ReplayerInterface) - data replayer
-      :return: (io.deephaven.engine.tables.Table) time table
+      :return: (io.deephaven.engine.table.Table) time table
       
     *Overload 7*  
       :param periodNanos: (long) - time interval between new row additions in nanoseconds.
-      :return: (io.deephaven.engine.tables.Table) time table
+      :return: (io.deephaven.engine.table.Table) time table
       
     *Overload 8*  
       :param periodNanos: (long) - time interval between new row additions in nanoseconds.
       :param replayer: (io.deephaven.engine.v2.replay.ReplayerInterface) - data replayer
-      :return: (io.deephaven.engine.tables.Table) time table
+      :return: (io.deephaven.engine.table.Table) time table
       
     *Overload 9*  
       :param startTime: (io.deephaven.engine.time.DateTime) - start time for adding new rows
       :param periodNanos: (long) - time interval between new row additions in nanoseconds.
-      :return: (io.deephaven.engine.tables.Table) time table
+      :return: (io.deephaven.engine.table.Table) time table
       
     *Overload 10*  
       :param startTime: (io.deephaven.engine.time.DateTime) - start time for adding new rows
       :param periodNanos: (long) - time interval between new row additions in nanoseconds.
       :param replayer: (io.deephaven.engine.v2.replay.ReplayerInterface) - data replayer
-      :return: (io.deephaven.engine.tables.Table) time table
+      :return: (io.deephaven.engine.table.Table) time table
       
     *Overload 11*  
       :param startTime: (java.lang.String) - start time for adding new rows
       :param periodNanos: (long) - time interval between new row additions in nanoseconds.
-      :return: (io.deephaven.engine.tables.Table) time table
+      :return: (io.deephaven.engine.table.Table) time table
       
     *Overload 12*  
       :param startTime: (java.lang.String) - start time for adding new rows
       :param periodNanos: (long) - time interval between new row additions in nanoseconds.
       :param replayer: (io.deephaven.engine.v2.replay.ReplayerInterface) - data replayer
-      :return: (io.deephaven.engine.tables.Table) time table
+      :return: (io.deephaven.engine.table.Table) time table
       
     *Overload 13*  
       :param timeProvider: (io.deephaven.engine.time.TimeProvider) - the time provider
       :param startTime: (io.deephaven.engine.time.DateTime) - start time for adding new rows
       :param periodNanos: (long) - time interval between new row additions in nanoseconds.
-      :return: (io.deephaven.engine.tables.Table) time table
+      :return: (io.deephaven.engine.table.Table) time table
     """
     
     return _java_type_.timeTable(*args)
@@ -1105,49 +1105,49 @@ def writeCsv(*args):
     Writes a table out as a CSV.
     
     *Overload 1*  
-      :param source: (io.deephaven.engine.tables.Table) - a Deephaven table object to be exported
+      :param source: (io.deephaven.engine.table.Table) - a Deephaven table object to be exported
       :param compressed: (boolean) - whether to compress (bz2) the file being written
       :param destPath: (java.lang.String) - path to the CSV file to be written
       :param columns: (java.lang.String...) - a list of columns to include in the export
       
     *Overload 2*  
-      :param source: (io.deephaven.engine.tables.Table) - a Deephaven table object to be exported
+      :param source: (io.deephaven.engine.table.Table) - a Deephaven table object to be exported
       :param compressed: (boolean) - whether to compress (bz2) the file being written
       :param destPath: (java.lang.String) - path to the CSV file to be written
       :param nullsAsEmpty: (boolean) - if nulls should be written as blank instead of '(null)'
       :param columns: (java.lang.String...) - a list of columns to include in the export
       
     *Overload 3*  
-      :param source: (io.deephaven.engine.tables.Table) - a Deephaven table object to be exported
+      :param source: (io.deephaven.engine.table.Table) - a Deephaven table object to be exported
       :param destPath: (java.lang.String) - path to the CSV file to be written
       :param columns: (java.lang.String...) - a list of columns to include in the export
       
     *Overload 4*  
-      :param source: (io.deephaven.engine.tables.Table) - a Deephaven table object to be exported
+      :param source: (io.deephaven.engine.table.Table) - a Deephaven table object to be exported
       :param destPath: (java.lang.String) - path to the CSV file to be written
       :param nullsAsEmpty: (boolean) - if nulls should be written as blank instead of '(null)'
       :param columns: (java.lang.String...) - a list of columns to include in the export
       
     *Overload 5*  
-      :param source: (io.deephaven.engine.tables.Table) - a Deephaven table object to be exported
+      :param source: (io.deephaven.engine.table.Table) - a Deephaven table object to be exported
       :param out: (java.io.PrintStream) - the stream to write to
       :param columns: (java.lang.String...) - a list of columns to include in the export
       
     *Overload 6*  
-      :param source: (io.deephaven.engine.tables.Table) - a Deephaven table object to be exported
+      :param source: (io.deephaven.engine.table.Table) - a Deephaven table object to be exported
       :param out: (java.io.PrintStream) - the stream to write to
       :param nullsAsEmpty: (boolean) - if nulls should be written as blank instead of '(null)'
       :param columns: (java.lang.String...) - a list of columns to include in the export
       
     *Overload 7*  
-      :param source: (io.deephaven.engine.tables.Table) - a Deephaven table object to be exported
+      :param source: (io.deephaven.engine.table.Table) - a Deephaven table object to be exported
       :param destPath: (java.lang.String) - path to the CSV file to be written
       :param compressed: (boolean) - whether to zip the file being written
       :param timeZone: (io.deephaven.engine.time.TimeZone) - a TimeZone constant relative to which DateTime data should be adjusted
       :param columns: (java.lang.String...) - a list of columns to include in the export
       
     *Overload 8*  
-      :param source: (io.deephaven.engine.tables.Table) - a Deephaven table object to be exported
+      :param source: (io.deephaven.engine.table.Table) - a Deephaven table object to be exported
       :param destPath: (java.lang.String) - path to the CSV file to be written
       :param compressed: (boolean) - whether to zip the file being written
       :param timeZone: (io.deephaven.engine.time.TimeZone) - a TimeZone constant relative to which DateTime data should be adjusted
@@ -1155,7 +1155,7 @@ def writeCsv(*args):
       :param columns: (java.lang.String...) - a list of columns to include in the export
       
     *Overload 9*  
-      :param source: (io.deephaven.engine.tables.Table) - a Deephaven table object to be exported
+      :param source: (io.deephaven.engine.table.Table) - a Deephaven table object to be exported
       :param destPath: (java.lang.String) - path to the CSV file to be written
       :param compressed: (boolean) - whether to zip the file being written
       :param timeZone: (io.deephaven.engine.time.TimeZone) - a TimeZone constant relative to which DateTime data should be adjusted
@@ -1164,7 +1164,7 @@ def writeCsv(*args):
       :param columns: (java.lang.String...) - a list of columns to include in the export
       
     *Overload 10*  
-      :param sources: (io.deephaven.engine.tables.Table[]) - an array of Deephaven table objects to be exported
+      :param sources: (io.deephaven.engine.table.Table[]) - an array of Deephaven table objects to be exported
       :param destPath: (java.lang.String) - path to the CSV file to be written
       :param compressed: (boolean) - whether to compress (bz2) the file being written
       :param timeZone: (io.deephaven.engine.time.TimeZone) - a TimeZone constant relative to which DateTime data should be adjusted
@@ -1172,7 +1172,7 @@ def writeCsv(*args):
       :param columns: (java.lang.String...) - a list of columns to include in the export
       
     *Overload 11*  
-      :param sources: (io.deephaven.engine.tables.Table[]) - an array of Deephaven table objects to be exported
+      :param sources: (io.deephaven.engine.table.Table[]) - an array of Deephaven table objects to be exported
       :param destPath: (java.lang.String) - path to the CSV file to be written
       :param compressed: (boolean) - whether to compress (bz2) the file being written
       :param timeZone: (io.deephaven.engine.time.TimeZone) - a TimeZone constant relative to which DateTime data should be adjusted
@@ -1181,7 +1181,7 @@ def writeCsv(*args):
       :param columns: (java.lang.String...) - a list of columns to include in the export
       
     *Overload 12*  
-      :param sources: (io.deephaven.engine.tables.Table[]) - an array of Deephaven table objects to be exported
+      :param sources: (io.deephaven.engine.table.Table[]) - an array of Deephaven table objects to be exported
       :param destPath: (java.lang.String) - path to the CSV file to be written
       :param compressed: (boolean) - whether to compress (bz2) the file being written
       :param timeZone: (io.deephaven.engine.time.TimeZone) - a TimeZone constant relative to which DateTime data should be adjusted

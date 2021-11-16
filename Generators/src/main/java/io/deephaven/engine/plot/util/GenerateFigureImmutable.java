@@ -557,15 +557,15 @@ public class GenerateFigureImmutable {
                                 "    private FigureImpl applyFunctionalProperties() {\n" +
                                 "        final Map<Table, java.util.Set<java.util.function.Function<Table, Table>>> tableFunctionMap = getFigure().getTableFunctionMap();\n"
                                 +
-                                "        final Map<io.deephaven.engine.v2.TableMap, java.util.Set<java.util.function.Function<io.deephaven.engine.v2.TableMap, io.deephaven.engine.v2.TableMap>>> tableMapFunctionMap = getFigure().getTableMapFunctionMap();\n"
+                                "        final Map<io.deephaven.engine.table.TableMap, java.util.Set<java.util.function.Function<io.deephaven.engine.table.TableMap, io.deephaven.engine.table.TableMap>>> tableMapFunctionMap = getFigure().getTableMapFunctionMap();\n"
                                 +
                                 "        final java.util.List<io.deephaven.engine.plot.util.functions.FigureImplFunction> figureFunctionList = getFigure().getFigureFunctionList();\n"
                                 +
                                 "        final Map<Table, Table> finalTableComputation = new HashMap<>();\n" +
-                                "        final Map<io.deephaven.engine.v2.TableMap, io.deephaven.engine.v2.TableMap> finalTableMapComputation = new HashMap<>();\n"
+                                "        final Map<io.deephaven.engine.table.TableMap, io.deephaven.engine.table.TableMap> finalTableMapComputation = new HashMap<>();\n"
                                 +
                                 "        final java.util.Set<Table> allTables = new java.util.HashSet<>();\n" +
-                                "        final java.util.Set<io.deephaven.engine.v2.TableMap> allTableMaps = new java.util.HashSet<>();\n"
+                                "        final java.util.Set<io.deephaven.engine.table.TableMap> allTableMaps = new java.util.HashSet<>();\n"
                                 +
                                 "\n" +
                                 "        for(final io.deephaven.engine.plot.util.tables.TableHandle h : getFigure().getTableHandles()) {\n"
@@ -620,14 +620,14 @@ public class GenerateFigureImmutable {
                                 "            }\n" +
                                 "        }\n" +
                                 "\n" +
-                                "        for(final io.deephaven.engine.v2.TableMap initTableMap : allTableMaps) {\n" +
+                                "        for(final io.deephaven.engine.table.TableMap initTableMap : allTableMaps) {\n" +
                                 "            if(tableMapFunctionMap.get(initTableMap) != null) {\n" +
                                 "                finalTableMapComputation.computeIfAbsent(initTableMap, t -> {\n" +
-                                "                    final java.util.Set<java.util.function.Function<io.deephaven.engine.v2.TableMap, io.deephaven.engine.v2.TableMap>> functions = tableMapFunctionMap.get(initTableMap);\n"
+                                "                    final java.util.Set<java.util.function.Function<io.deephaven.engine.table.TableMap, io.deephaven.engine.table.TableMap>> functions = tableMapFunctionMap.get(initTableMap);\n"
                                 +
-                                "                    io.deephaven.engine.v2.TableMap resultTableMap = initTableMap;\n" +
+                                "                    io.deephaven.engine.table.TableMap resultTableMap = initTableMap;\n" +
                                 "\n" +
-                                "                    for(final java.util.function.Function<io.deephaven.engine.v2.TableMap, io.deephaven.engine.v2.TableMap> f : functions) {\n"
+                                "                    for(final java.util.function.Function<io.deephaven.engine.table.TableMap, io.deephaven.engine.table.TableMap> f : functions) {\n"
                                 +
                                 "                        resultTableMap = f.apply(resultTableMap);\n" +
                                 "                    }\n" +

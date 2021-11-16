@@ -4,9 +4,9 @@
 
 package io.deephaven.engine.v2;
 
-import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.TableDefinition;
-import io.deephaven.engine.tables.live.UpdateSourceRegistrar;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.engine.v2.locations.TableLocationProvider;
 import io.deephaven.engine.v2.select.SelectColumn;
 

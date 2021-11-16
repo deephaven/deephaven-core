@@ -7,7 +7,7 @@ package io.deephaven.engine.plot;
 import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.engine.plot.datasets.multiseries.MultiXYSeries;
 import io.deephaven.engine.plot.datasets.xy.XYDataSeriesArray;
-import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.tables.utils.TableTools;
 
 /**

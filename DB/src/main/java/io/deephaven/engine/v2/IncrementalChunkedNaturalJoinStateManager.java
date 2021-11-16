@@ -39,7 +39,7 @@ import io.deephaven.util.SafeCloseableArray;
 import org.jetbrains.annotations.NotNull;
 
 // region extra imports
-import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.table.Table;
 // endregion extra imports
 
 import static io.deephaven.util.SafeCloseable.closeArray;

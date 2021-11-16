@@ -2,7 +2,7 @@ package io.deephaven.engine.v2.by;
 
 import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.vector.ObjectVector;
 import io.deephaven.engine.tables.select.SelectColumnFactory;
 import io.deephaven.util.NameValidator;

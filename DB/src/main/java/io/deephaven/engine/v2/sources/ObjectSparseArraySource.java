@@ -12,6 +12,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.WritableSource;
 import io.deephaven.engine.vector.Vector;
 
 import io.deephaven.engine.chunk.*;

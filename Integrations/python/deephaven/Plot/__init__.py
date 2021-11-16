@@ -280,7 +280,7 @@ def catErrorBar(*args):
       
     *Overload 18*  
       :param seriesName: (java.lang.Comparable) - name of the created dataset
-      :param t: (io.deephaven.engine.tables.Table) - table
+      :param t: (io.deephaven.engine.table.Table) - table
       :param categories: (java.lang.String) - column in t that holds the discrete data
       :param values: (java.lang.String) - column in t that holds the numeric data
       :param yLow: (java.lang.String) - column in t that holds the low value in the y dimension
@@ -307,7 +307,7 @@ def catErrorBarBy(*args):
       
     *Overload 2*  
       :param seriesName: (java.lang.Comparable) - name of the created dataset
-      :param t: (io.deephaven.engine.tables.Table) - table
+      :param t: (io.deephaven.engine.table.Table) - table
       :param categories: (java.lang.String) - column in t that holds the discrete data
       :param values: (java.lang.String) - column in t that holds the numeric data
       :param yLow: (java.lang.String) - column in t that holds the low value in the y dimension
@@ -365,7 +365,7 @@ def catHistPlot(*args):
       
     *Overload 8*  
       :param seriesName: (java.lang.Comparable) - name of the created dataset
-      :param t: (io.deephaven.engine.tables.Table) - table
+      :param t: (io.deephaven.engine.table.Table) - table
       :param columnName: (java.lang.String) - column in t
       :return: (io.deephaven.engine.plot.Figure) dataset created for plot
     """
@@ -543,7 +543,7 @@ def catPlot(*args):
       
     *Overload 21*  
       :param seriesName: (java.lang.Comparable) - name of the created dataset
-      :param t: (io.deephaven.engine.tables.Table) - table
+      :param t: (io.deephaven.engine.table.Table) - table
       :param categories: (java.lang.String) - column in t holding discrete data
       :param values: (java.lang.String) - column in t holding numeric data
       :return: (io.deephaven.engine.plot.Figure) dataset created for plot
@@ -566,7 +566,7 @@ def catPlotBy(*args):
       
     *Overload 2*  
       :param seriesName: (java.lang.Comparable) - name of the created dataset
-      :param t: (io.deephaven.engine.tables.Table) - table
+      :param t: (io.deephaven.engine.table.Table) - table
       :param categories: (java.lang.String) - column in t holding discrete data
       :param values: (java.lang.String) - column in t holding numeric data
       :param byColumns: (java.lang.String...) - column(s) in t that holds the grouping data
@@ -996,7 +996,7 @@ def errorBarX(*args):
       
     *Overload 39*  
       :param seriesName: (java.lang.Comparable) - name of the created dataset
-      :param t: (io.deephaven.engine.tables.Table) - table
+      :param t: (io.deephaven.engine.table.Table) - table
       :param x: (java.lang.String) - column in t that holds the x-variable data
       :param xLow: (java.lang.String) - column in t that holds the low value in the x dimension
       :param xHigh: (java.lang.String) - column in t that holds the high value in the x dimension
@@ -1023,7 +1023,7 @@ def errorBarXBy(*args):
       
     *Overload 2*  
       :param seriesName: (java.lang.Comparable) - name of the created dataset
-      :param t: (io.deephaven.engine.tables.Table) - table
+      :param t: (io.deephaven.engine.table.Table) - table
       :param x: (java.lang.String) - column in t that holds the x-variable data
       :param xLow: (java.lang.String) - column in t that holds the low value in the x dimension
       :param xHigh: (java.lang.String) - column in t that holds the high value in the x dimension
@@ -1422,7 +1422,7 @@ def errorBarXY(*args):
       
     *Overload 39*  
       :param seriesName: (java.lang.Comparable) - name of the created dataset
-      :param t: (io.deephaven.engine.tables.Table) - table
+      :param t: (io.deephaven.engine.table.Table) - table
       :param x: (java.lang.String) - column in t that holds the x-variable data
       :param xLow: (java.lang.String) - column in t that holds the low value in the x dimension
       :param xHigh: (java.lang.String) - column in t that holds the high value in the x dimension
@@ -1453,7 +1453,7 @@ def errorBarXYBy(*args):
       
     *Overload 2*  
       :param seriesName: (java.lang.Comparable) - name of the created dataset
-      :param t: (io.deephaven.engine.tables.Table) - table
+      :param t: (io.deephaven.engine.table.Table) - table
       :param x: (java.lang.String) - column in t that holds the x-variable data
       :param xLow: (java.lang.String) - column in t that holds the low value in the x dimension
       :param xHigh: (java.lang.String) - column in t that holds the high value in the x dimension
@@ -1786,7 +1786,7 @@ def errorBarY(*args):
       
     *Overload 39*  
       :param seriesName: (java.lang.Comparable) - name of the created dataset
-      :param t: (io.deephaven.engine.tables.Table) - table
+      :param t: (io.deephaven.engine.table.Table) - table
       :param x: (java.lang.String) - column in t that holds the x-variable data
       :param y: (java.lang.String) - column in t that holds the y-variable data
       :param yLow: (java.lang.String) - column in t that holds the low value in the y dimension
@@ -1813,7 +1813,7 @@ def errorBarYBy(*args):
       
     *Overload 2*  
       :param seriesName: (java.lang.Comparable) - name of the created dataset
-      :param t: (io.deephaven.engine.tables.Table) - table
+      :param t: (io.deephaven.engine.table.Table) - table
       :param x: (java.lang.String) - column in t that holds the x-variable data
       :param y: (java.lang.String) - column in t that holds the y-variable data
       :param yLow: (java.lang.String) - column in t that holds the low value in the y dimension
@@ -1886,7 +1886,7 @@ def histPlot(*args):
     
     *Overload 1*  
       :param seriesName: (java.lang.Comparable) - name of the created dataset
-      :param counts: (io.deephaven.engine.tables.Table) - table
+      :param counts: (io.deephaven.engine.table.Table) - table
       :return: (io.deephaven.engine.plot.Figure) dataset created for plot
       
     *Overload 2*  
@@ -1944,7 +1944,7 @@ def histPlot(*args):
       
     *Overload 10*  
       :param seriesName: (java.lang.Comparable) - name of the created dataset
-      :param t: (io.deephaven.engine.tables.Table) - table
+      :param t: (io.deephaven.engine.table.Table) - table
       :param columnName: (java.lang.String) - column in t
       :param nbins: (int) - number of bins in the resulting histogram
       :return: (io.deephaven.engine.plot.Figure) dataset created for plot
@@ -2020,7 +2020,7 @@ def histPlot(*args):
       
     *Overload 19*  
       :param seriesName: (java.lang.Comparable) - name of the created dataset
-      :param t: (io.deephaven.engine.tables.Table) - table
+      :param t: (io.deephaven.engine.table.Table) - table
       :param columnName: (java.lang.String) - column in t
       :param rangeMin: (double) - minimum of the range
       :param rangeMax: (double) - maximum of the range
@@ -2298,7 +2298,7 @@ def ohlcPlot(*args):
       
     *Overload 17*  
       :param seriesName: (java.lang.Comparable) - name of the created dataset
-      :param t: (io.deephaven.engine.tables.Table) - table
+      :param t: (io.deephaven.engine.table.Table) - table
       :param timeCol: (java.lang.String) - column in t that holds the time data
       :param openCol: (java.lang.String) - column in t that holds the open data
       :param highCol: (java.lang.String) - column in t that holds the high data
@@ -2327,7 +2327,7 @@ def ohlcPlotBy(*args):
       
     *Overload 2*  
       :param seriesName: (java.lang.Comparable) - name of the created dataset
-      :param t: (io.deephaven.engine.tables.Table) - table
+      :param t: (io.deephaven.engine.table.Table) - table
       :param timeCol: (java.lang.String) - column in t that holds the time data
       :param openCol: (java.lang.String) - column in t that holds the open data
       :param highCol: (java.lang.String) - column in t that holds the high data
@@ -2346,40 +2346,40 @@ def oneClick(*args):
     Creates a SelectableDataSetOneClick with the specified columns.
     
     *Overload 1*  
-      :param t: (io.deephaven.engine.tables.Table) - table
+      :param t: (io.deephaven.engine.table.Table) - table
       :param byColumns: (java.lang.String...) - selected columns
       :return: (io.deephaven.engine.plot.filters.SelectableDataSetOneClick) SelectableDataSetOneClick with the specified table and columns
       
     *Overload 2*  
-      :param tMap: (io.deephaven.engine.v2.TableMap) - TableMap
-      :param t: io.deephaven.engine.tables.Table
+      :param tMap: (io.deephaven.engine.table.TableMap) - TableMap
+      :param t: io.deephaven.engine.table.Table
       :param byColumns: (java.lang.String...) - selected columns
       :return: (io.deephaven.engine.plot.filters.SelectableDataSetOneClick) SelectableDataSetOneClick with the specified table map and columns
       
     *Overload 3*  
-      :param tMap: (io.deephaven.engine.v2.TableMap) - TableMap
-      :param tableDefinition: io.deephaven.engine.tables.TableDefinition
+      :param tMap: (io.deephaven.engine.table.TableMap) - TableMap
+      :param tableDefinition: io.deephaven.engine.table.TableDefinition
       :param byColumns: (java.lang.String...) - selected columns
       :return: (io.deephaven.engine.plot.filters.SelectableDataSetOneClick) SelectableDataSetOneClick with the specified table map and columns
       
     *Overload 4*  
-      :param t: (io.deephaven.engine.tables.Table) - table
+      :param t: (io.deephaven.engine.table.Table) - table
       :param requireAllFiltersToDisplay: (boolean) - false to display data when not all oneclicks are selected; true to only display
               data when appropriate oneclicks are selected
       :param byColumns: (java.lang.String...) - selected columns
       :return: (io.deephaven.engine.plot.filters.SelectableDataSetOneClick) SelectableDataSetOneClick with the specified table and columns
       
     *Overload 5*  
-      :param tMap: (io.deephaven.engine.v2.TableMap) - TableMap
-      :param t: io.deephaven.engine.tables.Table
+      :param tMap: (io.deephaven.engine.table.TableMap) - TableMap
+      :param t: io.deephaven.engine.table.Table
       :param requireAllFiltersToDisplay: (boolean) - false to display data when not all oneclicks are selected; true to only display
               data when appropriate oneclicks are selected
       :param byColumns: (java.lang.String...) - selected columns
       :return: (io.deephaven.engine.plot.filters.SelectableDataSetOneClick) SelectableDataSetOneClick with the specified table map and columns
       
     *Overload 6*  
-      :param tMap: (io.deephaven.engine.v2.TableMap) - TableMap
-      :param tableDefinition: io.deephaven.engine.tables.TableDefinition
+      :param tMap: (io.deephaven.engine.table.TableMap) - TableMap
+      :param tableDefinition: io.deephaven.engine.table.TableDefinition
       :param requireAllFiltersToDisplay: (boolean) - false to display data when not all oneclicks are selected; true to only display
               data when appropriate oneclicks are selected
       :param byColumns: (java.lang.String...) - selected columns
@@ -2527,7 +2527,7 @@ def piePlot(*args):
       
     *Overload 17*  
       :param seriesName: (java.lang.Comparable) - name of the created dataset
-      :param t: (io.deephaven.engine.tables.Table) - table
+      :param t: (io.deephaven.engine.table.Table) - table
       :param categories: (java.lang.String) - column in t with categorical data
       :param values: (java.lang.String) - column in t with numerical data
       :return: (io.deephaven.engine.plot.Figure) dataset created for plot
@@ -3115,7 +3115,7 @@ def plot(*args):
       
     *Overload 85*  
       :param seriesName: (java.lang.Comparable) - name of the created dataset
-      :param t: (io.deephaven.engine.tables.Table) - table
+      :param t: (io.deephaven.engine.table.Table) - table
       :param x: (java.lang.String) - column in t that holds the x-variable data
       :param y: (java.lang.String) - column in t that holds the y-variable data
       :return: (io.deephaven.engine.plot.Figure) dataset created for plot
@@ -3146,7 +3146,7 @@ def plotBy(*args):
       
     *Overload 2*  
       :param seriesName: (java.lang.Comparable) - name of the created dataset
-      :param t: (io.deephaven.engine.tables.Table) - table
+      :param t: (io.deephaven.engine.table.Table) - table
       :param x: (java.lang.String) - column in t that holds the x-variable data
       :param y: (java.lang.String) - column in t that holds the y-variable data
       :param byColumns: (java.lang.String...) - column(s) in t that holds the grouping data
@@ -3227,7 +3227,7 @@ def scatterPlotMatrix(*args):
       :return: (io.deephaven.engine.plot.composite.ScatterPlotMatrix) new Figure containing the scatter plot matrix
       
     *Overload 11*  
-      :param t: (io.deephaven.engine.tables.Table) - table
+      :param t: (io.deephaven.engine.table.Table) - table
       :param columns: (java.lang.String...) - data to plot
       :return: (io.deephaven.engine.plot.composite.ScatterPlotMatrix) new Figure containing the scatter plot matrix
       

@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2.parquet;
 
 import io.deephaven.engine.tables.CodecLookup;
-import io.deephaven.engine.tables.ColumnDefinition;
+import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.tables.libs.StringSet;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.util.codec.ExternalizableCodec;

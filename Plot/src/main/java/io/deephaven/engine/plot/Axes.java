@@ -17,7 +17,7 @@ import io.deephaven.engine.plot.datasets.xy.XYDataSeries;
 import io.deephaven.engine.plot.datasets.xy.XYDataSeriesFunction;
 import io.deephaven.engine.plot.datasets.xyerrorbar.XYErrorBarDataSeries;
 import io.deephaven.engine.plot.filters.SelectableDataSet;
-import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.gui.color.Paint;
 import io.deephaven.engine.time.calendar.BusinessCalendar;

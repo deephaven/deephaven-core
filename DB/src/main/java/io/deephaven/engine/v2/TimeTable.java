@@ -6,13 +6,13 @@ package io.deephaven.engine.v2;
 
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.tables.live.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.time.TimeProvider;
 import io.deephaven.engine.v2.utils.*;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.table.Table;
 import io.deephaven.libs.primitives.LongNumericPrimitives;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.sources.DateTimeArraySource;

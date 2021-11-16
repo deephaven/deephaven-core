@@ -8,17 +8,16 @@ import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.live.UpdateGraphProcessor;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.io.log.LogEntry;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.engine.tables.live.NotificationQueue;
-import io.deephaven.engine.tables.utils.SystemicObjectTracker;
-import io.deephaven.engine.util.liveness.LivenessArtifact;
-import io.deephaven.engine.v2.sources.LogicalClock;
-import io.deephaven.engine.v2.utils.AbstractIndexUpdateNotification;
+import io.deephaven.engine.updategraph.NotificationQueue;
+import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
+import io.deephaven.engine.liveness.LivenessArtifact;
+import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.v2.utils.AbstractNotification;
 import io.deephaven.engine.v2.utils.AsyncClientErrorNotifier;
 import io.deephaven.engine.v2.utils.AsyncErrorLogger;
@@ -31,7 +30,7 @@ import org.jetbrains.annotations.Nullable;
 import java.io.IOException;
 
 public abstract class InstrumentedListenerBase extends LivenessArtifact
-        implements ListenerBase, NotificationQueue.Dependency {
+        implements TableListener, NotificationQueue.Dependency {
 
     private static final Logger log = LoggerFactory.getLogger(ShiftObliviousInstrumentedListener.class);
 
@@ -172,7 +171,7 @@ public abstract class InstrumentedListenerBase extends LivenessArtifact
         }
     }
 
-    protected abstract class NotificationBase extends AbstractIndexUpdateNotification implements LogOutputAppendable {
+    protected abstract class NotificationBase extends AbstractNotification implements LogOutputAppendable {
 
         final Listener.Update update;
 
@@ -227,7 +226,7 @@ public abstract class InstrumentedListenerBase extends LivenessArtifact
             try {
                 if (lastCompletedStep == LogicalClock.DEFAULT.currentStep()) {
                     throw new IllegalStateException(
-                            "Executed after lastCompletedStep already set to current step: " + toString());
+                            "Executed after lastCompletedStep already set to current step: " + this);
                 }
 
                 invokeOnUpdate.run();

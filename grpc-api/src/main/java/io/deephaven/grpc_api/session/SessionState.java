@@ -17,10 +17,10 @@ import io.deephaven.engine.tablelogger.QueryPerformanceLogLogger;
 import io.deephaven.engine.tables.remotequery.QueryProcessingResults;
 import io.deephaven.engine.tables.utils.QueryPerformanceNugget;
 import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
-import io.deephaven.engine.util.liveness.LivenessArtifact;
-import io.deephaven.engine.util.liveness.LivenessReferent;
-import io.deephaven.engine.util.liveness.LivenessScopeStack;
-import io.deephaven.engine.v2.DynamicNode;
+import io.deephaven.engine.liveness.LivenessArtifact;
+import io.deephaven.engine.liveness.LivenessReferent;
+import io.deephaven.engine.liveness.LivenessScopeStack;
+import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.v2.utils.MemoryTableLoggers;
 import io.deephaven.grpc_api.util.ExportTicketHelper;
 import io.deephaven.grpc_api.util.FlightExportTicketHelper;
@@ -63,7 +63,7 @@ import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyExecuteLocked;
 /**
  * SessionState manages all exports for a single session.
  *
- * It manages exported {@link io.deephaven.engine.util.liveness.LivenessReferent}. It cascades failures to child
+ * It manages exported {@link io.deephaven.engine.liveness.LivenessReferent}. It cascades failures to child
  * dependencies.
  *
  * TODO: - cyclical dependency detection - out-of-order dependency timeout

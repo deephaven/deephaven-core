@@ -8,7 +8,8 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.exceptions.QueryCancellationException;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.tables.live.UpdateGraphProcessor;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.v2.NotificationStepSource;
 import io.deephaven.engine.v2.remote.ConstructSnapshot;
 import io.deephaven.internal.log.LoggerFactory;
@@ -45,7 +46,7 @@ public abstract class ModelFarmBase<DATATYPE> implements ModelFarm {
     }
 
     /**
-     * An operation that uses data from Deephaven {@link io.deephaven.engine.tables.Table Tables}, using either
+     * An operation that uses data from Deephaven {@link Table Tables}, using either
      * {@link ColumnSource#getPrev} or
      * {@link ColumnSource#get}) depending on the value of the argument to
      * {@link #retrieveData}.

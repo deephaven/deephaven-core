@@ -6,6 +6,7 @@ package io.deephaven.engine.v2.sources;
 
 import io.deephaven.engine.table.DefaultGetContext;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.WritableSource;
 import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.util.datastructures.LongSizedDataStructure;

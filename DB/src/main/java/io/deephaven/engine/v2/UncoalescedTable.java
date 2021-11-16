@@ -5,17 +5,15 @@
 package io.deephaven.engine.v2;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.table.*;
 import io.deephaven.engine.tables.*;
-import io.deephaven.engine.tables.select.MatchPair;
-import io.deephaven.engine.tables.select.WouldMatchPair;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.v2.by.AggregationFactory;
 import io.deephaven.util.QueryConstants;
-import io.deephaven.engine.util.liveness.Liveness;
+import io.deephaven.engine.liveness.Liveness;
 import io.deephaven.engine.v2.by.AggregationSpec;
 import io.deephaven.engine.v2.select.SelectColumn;
 import io.deephaven.engine.v2.select.WhereFilter;
-import io.deephaven.engine.table.ColumnSource;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 

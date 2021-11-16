@@ -4,9 +4,10 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.exceptions.UncheckedTableException;
 import io.deephaven.engine.rowset.*;
-import io.deephaven.engine.tables.live.NotificationQueue;
-import io.deephaven.engine.tables.select.WouldMatchPair;
-import io.deephaven.engine.util.liveness.LivenessArtifact;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.updategraph.NotificationQueue;
+import io.deephaven.engine.table.WouldMatchPair;
+import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.v2.select.WhereFilter;
 import io.deephaven.engine.v2.sources.AbstractColumnSource;
 import io.deephaven.engine.table.ColumnSource;
@@ -14,7 +15,6 @@ import io.deephaven.engine.v2.sources.MutableColumnSourceGetDefaults;
 import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.chunk.WritableChunk;
 import io.deephaven.engine.chunk.WritableObjectChunk;
-import io.deephaven.engine.v2.utils.*;
 import io.deephaven.util.SafeCloseableList;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.jetbrains.annotations.NotNull;
@@ -24,7 +24,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * A table operation similar to {@link io.deephaven.engine.tables.Table#where(String...)} except that instead of
+ * A table operation similar to {@link Table#where(String...)} except that instead of
  * filtering the rows in the table, it appends new columns containing the result of the filter evaluation on each row of
  * the table. It will re-evaluate cell values if any of the underlying filters are dynamic, and change.
  */
@@ -165,7 +165,7 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
 
     /**
      * A {@link MergedListener} implementation for
-     * {@link io.deephaven.engine.tables.Table#wouldMatch(WouldMatchPair...)} when the parent table is ticking.
+     * {@link Table#wouldMatch(WouldMatchPair...)} when the parent table is ticking.
      */
     private class Listener extends MergedListener {
         final ListenerRecorder recorder;
@@ -214,7 +214,7 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
 
     /**
      * A {@link MergedListener} implementation for
-     * {@link io.deephaven.engine.tables.Table#wouldMatch(WouldMatchPair...)} when * the parent table is static (not
+     * {@link Table#wouldMatch(WouldMatchPair...)} when * the parent table is static (not
      * ticking).
      */
     private class StaticListener extends MergedListener {
@@ -426,7 +426,7 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
             }
 
             // Shift the rowSet
-            shift.apply(source);
+            RowSetShiftUtils.apply(shift, source);
 
             if (doRecompute) {
                 downstreamModified.setAll(name);

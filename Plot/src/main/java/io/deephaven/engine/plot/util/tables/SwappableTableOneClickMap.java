@@ -5,7 +5,7 @@
 package io.deephaven.engine.plot.util.tables;
 
 import io.deephaven.engine.plot.util.ArgumentValidations;
-import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.table.Table;
 
 import java.util.*;
 import java.util.function.Function;

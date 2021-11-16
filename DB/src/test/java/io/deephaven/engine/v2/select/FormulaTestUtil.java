@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2.select;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.vector.ByteVectorDirect;
 import io.deephaven.engine.vector.ObjectVector;
 import io.deephaven.engine.vector.ObjectVectorDirect;

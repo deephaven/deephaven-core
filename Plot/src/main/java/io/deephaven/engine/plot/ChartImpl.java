@@ -10,7 +10,7 @@ import io.deephaven.engine.plot.filters.SelectableDataSet;
 import io.deephaven.engine.plot.util.ArgumentValidations;
 import io.deephaven.engine.plot.util.tables.SwappableTable;
 import io.deephaven.engine.plot.util.tables.TableHandle;
-import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.table.Table;
 import io.deephaven.gui.color.Color;
 import io.deephaven.gui.color.Paint;
 

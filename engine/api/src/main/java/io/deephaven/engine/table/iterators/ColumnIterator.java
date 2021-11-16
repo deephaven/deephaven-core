@@ -4,7 +4,7 @@
 
 package io.deephaven.engine.table.iterators;
 
-import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.rowset.RowSet;
 import org.jetbrains.annotations.NotNull;
@@ -38,7 +38,6 @@ public class ColumnIterator<TYPE> implements Iterator<TYPE> {
      * @param columnName column name for iteration
      */
     public ColumnIterator(@NotNull final Table table, @NotNull final String columnName) {
-        // noinspection unchecked
         this(table.getRowSet(), table.getColumnSource(columnName));
     }
 

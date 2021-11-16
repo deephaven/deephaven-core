@@ -87,7 +87,7 @@ def processMemory():
     """
     A user friendly view with basic memory and GC data samples for the current engine process.
     
-    :return: (io.deephaven.engine.tables.Table) a view on ProcessMemoryLog.
+    :return: (io.deephaven.engine.table.Table) a view on ProcessMemoryLog.
     """
     
     return _java_type_.processMemory()
@@ -105,7 +105,7 @@ def queryOperationPerformance(evaluationNumber):
      
     
     :param evaluationNumber: (long) - evaluation number
-    :return: (io.deephaven.engine.tables.Table) query operation performance table.
+    :return: (io.deephaven.engine.table.Table) query operation performance table.
     """
     
     return _java_type_.queryOperationPerformance(evaluationNumber)
@@ -127,7 +127,7 @@ def queryPerformance(evaluationNumber):
     
     
     :param evaluationNumber: (long) - evaluation number
-    :return: (io.deephaven.engine.tables.Table) query performance table.
+    :return: (io.deephaven.engine.table.Table) query performance table.
     """
     
     return _java_type_.queryPerformance(evaluationNumber)
@@ -139,7 +139,7 @@ def queryUpdatePerformance(evaluationNumber):
     Takes in a query id and returns a view for that query's update performance data.
     
     :param evaluationNumber: (long) - evaluation number
-    :return: (io.deephaven.engine.tables.Table) query update performance table.
+    :return: (io.deephaven.engine.table.Table) query update performance table.
     """
     
     return _java_type_.queryUpdatePerformance(evaluationNumber)
@@ -151,7 +151,7 @@ def queryUpdatePerformanceMap(evaluationNumber):
     Creates a map of query update performance tables.
     
     :param evaluationNumber: (long) - evaluation number
-    :return: (java.util.Map<java.lang.String,io.deephaven.engine.tables.Table>) map of query update performance tables.
+    :return: (java.util.Map<java.lang.String,io.deephaven.engine.table.Table>) map of query update performance tables.
     """
     
     return _java_type_.queryUpdatePerformanceMap(evaluationNumber)

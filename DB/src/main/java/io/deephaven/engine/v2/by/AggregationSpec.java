@@ -4,7 +4,7 @@
 
 package io.deephaven.engine.v2.by;
 
-import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.table.Table;
 
 /**
  * AggregationSpecs are passed to {@link Table#groupBy} operation, and used to supply operation-specific instructions.

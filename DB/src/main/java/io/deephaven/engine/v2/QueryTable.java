@@ -7,6 +7,7 @@ package io.deephaven.engine.v2;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.JoinMatch;
 import io.deephaven.api.Selectable;
+import io.deephaven.api.SortColumn;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.AggregationOutputs;
 import io.deephaven.api.filter.Filter;
@@ -17,19 +18,22 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.exceptions.QueryCancellationException;
 import io.deephaven.engine.rowset.*;
-import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.*;
 import io.deephaven.engine.tables.*;
+import io.deephaven.engine.tables.select.MatchPairFactory;
+import io.deephaven.engine.tables.select.SelectColumnFactory;
+import io.deephaven.engine.updategraph.DynamicNode;
+import io.deephaven.engine.util.ColumnFormattingValues;
+import io.deephaven.engine.util.systemicmarking.SystemicObject;
 import io.deephaven.engine.vector.Vector;
-import io.deephaven.engine.tables.live.UpdateGraphProcessor;
-import io.deephaven.engine.tables.live.NotificationQueue;
-import io.deephaven.engine.tables.select.MatchPair;
-import io.deephaven.engine.tables.select.WouldMatchPair;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
-import io.deephaven.engine.tables.utils.SystemicObjectTracker;
+import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.engine.util.IterableUtils;
-import io.deephaven.engine.util.liveness.Liveness;
-import io.deephaven.engine.util.liveness.LivenessReferent;
+import io.deephaven.engine.liveness.Liveness;
+import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.v2.MemoizedOperationKey.SelectUpdateViewOrUpdateView.Flavor;
 import io.deephaven.engine.v2.by.*;
 import io.deephaven.engine.v2.locations.GroupingProvider;
@@ -41,7 +45,6 @@ import io.deephaven.engine.v2.snapshot.SnapshotInternalListener;
 import io.deephaven.engine.v2.snapshot.SnapshotUtils;
 import io.deephaven.engine.v2.sources.*;
 import io.deephaven.engine.v2.sources.sparse.SparseConstants;
-import io.deephaven.engine.v2.utils.*;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.SafeCloseable;
@@ -66,7 +69,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static io.deephaven.engine.tables.select.MatchPair.matchString;
+import static io.deephaven.engine.table.MatchPair.matchString;
 
 /**
  * Primary coalesced table implementation.
@@ -887,6 +890,81 @@ public class QueryTable extends BaseTable {
     }
 
     @Override
+    public Table formatColumns(String... columnFormats) {
+        final SelectColumn[] selectColumns = SelectColumnFactory.getFormatExpressions(columnFormats);
+
+        final Set<String> existingColumns = getDefinition().getColumnNames()
+                .stream()
+                .filter(column -> !ColumnFormattingValues.isFormattingColumn(column))
+                .collect(Collectors.toSet());
+
+        final String[] unknownColumns = Arrays.stream(selectColumns)
+                .map(SelectColumnFactory::getFormatBaseColumn)
+                .filter(column -> (column != null && !column.equals("*") && !existingColumns.contains(column)))
+                .toArray(String[]::new);
+
+        if (unknownColumns.length > 0) {
+            throw new RuntimeException(
+                    "Unknown columns: " + Arrays.toString(unknownColumns) + ", available columns = " + existingColumns);
+        }
+
+        return viewOrUpdateView(Flavor.UpdateView, selectColumns);
+    }
+
+    @Override
+    public Table moveColumns(int index, boolean moveToEnd, String... columnsToMove) {
+        // Get the current columns
+        final List<String> currentColumns = getDefinition().getColumnNames();
+
+        // Create a Set from columnsToMove. This way, we can rename and rearrange columns at once.
+        final Set<String> leftColsToMove = new HashSet<>();
+        final Set<String> rightColsToMove = new HashSet<>();
+        int extraCols = 0;
+
+        for (final String columnToMove : columnsToMove) {
+            final String left = MatchPairFactory.getExpression(columnToMove).leftColumn;
+            final String right = MatchPairFactory.getExpression(columnToMove).rightColumn;
+
+            if (!leftColsToMove.add(left) || !currentColumns.contains(left) || (rightColsToMove.contains(left)
+                    && !left.equals(right) && leftColsToMove.stream().anyMatch(col -> col.equals(right)))) {
+                extraCols++;
+            }
+            if (currentColumns.stream().anyMatch(currentColumn -> currentColumn.equals(right)) && !left.equals(right)
+                    && rightColsToMove.add(right) && !rightColsToMove.contains(left)) {
+                extraCols--;
+            }
+        }
+        index += moveToEnd ? extraCols : 0;
+
+        // vci for write, cci for currentColumns, ctmi for columnsToMove
+        final SelectColumn[] viewColumns = new SelectColumn[currentColumns.size() + extraCols];
+        for (int vci = 0, cci = 0, ctmi = 0; vci < viewColumns.length;) {
+            if (vci >= index && ctmi < columnsToMove.length) {
+                viewColumns[vci++] = SelectColumnFactory.getExpression(columnsToMove[ctmi++]);
+            } else {
+                // Don't add the column if it's one of the columns we're moving or if it has been renamed.
+                final String currentColumn = currentColumns.get(cci++);
+                if (!leftColsToMove.contains(currentColumn)
+                        && Arrays.stream(viewColumns).noneMatch(
+                        viewCol -> viewCol != null && viewCol.getMatchPair().leftColumn.equals(currentColumn))
+                        && Arrays.stream(columnsToMove)
+                        .noneMatch(colToMove -> MatchPairFactory.getExpression(colToMove).rightColumn
+                                .equals(currentColumn))) {
+
+                    viewColumns[vci++] = SelectColumnFactory.getExpression(currentColumn);
+                }
+            }
+        }
+        return viewOrUpdateView(Flavor.View, viewColumns);
+    }
+
+    @Override
+    public Table dateTimeColumnAsNanos(String dateTimeColumnName, String nanosColumnName) {
+        return viewOrUpdateView(Flavor.UpdateView,
+                new ReinterpretedColumn<>(dateTimeColumnName, DateTime.class, nanosColumnName, long.class));
+    }
+
+    @Override
     public Table applyToAllBy(String formulaColumn, String columnParamName, Selectable... groupByColumns) {
         final QueryTable tableToUse = (QueryTable) dropColumnFormats();
         return QueryPerformanceRecorder.withNugget(
@@ -1090,7 +1168,7 @@ public class QueryTable extends BaseTable {
 
             // Note that removed must be propagated to listeners in pre-shift keyspace.
             if (shiftData != null) {
-                shiftData.unapply(postShiftRemovals);
+                RowSetShiftUtils.unapply(shiftData, postShiftRemovals);
             }
             removed.insert(postShiftRemovals);
 
@@ -2360,7 +2438,8 @@ public class QueryTable extends BaseTable {
     }
 
     @Override
-    public Table sort(SortPair... sortPairs) {
+    public Table sort(Collection<SortColumn> columnsToSortBy) {
+        final SortPair[] sortPairs = SortPair.from(columnsToSortBy);
         if (sortPairs.length == 0) {
             if (isRefreshing()) {
                 manageWithCurrentScope();
@@ -3294,7 +3373,7 @@ public class QueryTable extends BaseTable {
             currentMapping.remove(removed);
 
             // shift keyspace
-            recorder.getShifted().apply(currentMapping);
+            RowSetShiftUtils.apply(recorder.getShifted(), currentMapping);
 
             // compute added against filters
             final MutableRowSet added =
@@ -3323,7 +3402,7 @@ public class QueryTable extends BaseTable {
             currentMapping.update(added, modsToRemove);
 
             // move modsToRemove into pre-shift keyspace and add to myRemoved
-            recorder.getShifted().unapply(modsToRemove);
+            RowSetShiftUtils.unapply(recorder.getShifted(), modsToRemove);
             removed.insert(modsToRemove);
 
             ModifiedColumnSet modifiedColumnSet = sourceModColumns;

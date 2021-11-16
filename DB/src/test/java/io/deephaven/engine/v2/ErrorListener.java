@@ -1,10 +1,10 @@
 package io.deephaven.engine.v2;
 
-import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.v2.utils.UpdatePerformanceTracker;
 import junit.framework.TestCase;
 
-class ErrorListener extends InstrumentedListenerAdapter {
+public class ErrorListener extends InstrumentedListenerAdapter {
     Throwable originalException;
 
     ErrorListener(Table table) {

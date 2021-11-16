@@ -11,6 +11,7 @@ import io.deephaven.engine.plot.datasets.ohlc.OHLCDataSeriesTableArray;
 import io.deephaven.engine.plot.util.ArgumentValidations;
 import io.deephaven.engine.plot.util.tables.TableBackedTableMapHandle;
 import io.deephaven.engine.plot.util.tables.TableHandle;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.v2.BaseTable;
 
 /**
@@ -415,7 +416,7 @@ public class MultiOHLCSeries extends AbstractTableMapHandleMultiSeries<OHLCDataS
     public io.deephaven.engine.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.Object[]> pointColorSeriesNameToTableStringMap() {
         return pointColorSeriesNameToTableStringMap;
     }
-    @Override public MultiOHLCSeries pointColor(final io.deephaven.engine.tables.Table t, final java.lang.String columnName, final Object... keys) {
+    @Override public MultiOHLCSeries pointColor(final Table t, final java.lang.String columnName, final Object... keys) {
     final io.deephaven.engine.plot.util.tables.TableHandle tHandle = new io.deephaven.engine.plot.util.tables.TableHandle(t, columnName);
     addTableHandle(tHandle);
         if(keys == null || keys.length == 0) {
@@ -519,7 +520,7 @@ public class MultiOHLCSeries extends AbstractTableMapHandleMultiSeries<OHLCDataS
     public io.deephaven.engine.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.Object[]> pointLabelSeriesNameToTableStringMap() {
         return pointLabelSeriesNameToTableStringMap;
     }
-    @Override public MultiOHLCSeries pointLabel(final io.deephaven.engine.tables.Table t, final java.lang.String columnName, final Object... keys) {
+    @Override public MultiOHLCSeries pointLabel(final Table t, final java.lang.String columnName, final Object... keys) {
     final io.deephaven.engine.plot.util.tables.TableHandle tHandle = new io.deephaven.engine.plot.util.tables.TableHandle(t, columnName);
     addTableHandle(tHandle);
         if(keys == null || keys.length == 0) {
@@ -657,7 +658,7 @@ public class MultiOHLCSeries extends AbstractTableMapHandleMultiSeries<OHLCDataS
     public io.deephaven.engine.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.Object[]> pointShapeSeriesNameToTableStringMap() {
         return pointShapeSeriesNameToTableStringMap;
     }
-    @Override public MultiOHLCSeries pointShape(final io.deephaven.engine.tables.Table t, final java.lang.String columnName, final Object... keys) {
+    @Override public MultiOHLCSeries pointShape(final Table t, final java.lang.String columnName, final Object... keys) {
     final io.deephaven.engine.plot.util.tables.TableHandle tHandle = new io.deephaven.engine.plot.util.tables.TableHandle(t, columnName);
     addTableHandle(tHandle);
         if(keys == null || keys.length == 0) {
@@ -795,7 +796,7 @@ public class MultiOHLCSeries extends AbstractTableMapHandleMultiSeries<OHLCDataS
     public io.deephaven.engine.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.Object[]> pointSizeSeriesNameToTableStringMap() {
         return pointSizeSeriesNameToTableStringMap;
     }
-    @Override public MultiOHLCSeries pointSize(final io.deephaven.engine.tables.Table t, final java.lang.String columnName, final Object... keys) {
+    @Override public MultiOHLCSeries pointSize(final Table t, final java.lang.String columnName, final Object... keys) {
     final io.deephaven.engine.plot.util.tables.TableHandle tHandle = new io.deephaven.engine.plot.util.tables.TableHandle(t, columnName);
     addTableHandle(tHandle);
         if(keys == null || keys.length == 0) {

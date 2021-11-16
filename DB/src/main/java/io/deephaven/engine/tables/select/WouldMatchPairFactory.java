@@ -4,6 +4,7 @@
 
 package io.deephaven.engine.tables.select;
 
+import io.deephaven.engine.table.WouldMatchPair;
 import io.deephaven.engine.tables.utils.AbstractExpressionFactory;
 import io.deephaven.engine.tables.utils.ExpressionParser;
 

@@ -5,9 +5,9 @@
 package io.deephaven.engine.plot.filters;
 
 import io.deephaven.base.verify.Require;
-import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.TableDefinition;
-import io.deephaven.engine.v2.TableMap;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.TableMap;
 import io.deephaven.engine.v2.TableSupplier;
 
 /**

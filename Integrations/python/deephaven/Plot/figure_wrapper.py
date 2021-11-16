@@ -494,7 +494,7 @@ class FigureWrapper(object):
           
         *Overload 18*  
           :param seriesName: (java.lang.Comparable) - name of the created dataset
-          :param t: (io.deephaven.engine.tables.Table) - table
+          :param t: (io.deephaven.engine.table.Table) - table
           :param categories: (java.lang.String) - column in t that holds the discrete data
           :param values: (java.lang.String) - column in t that holds the numeric data
           :param yLow: (java.lang.String) - column in t that holds the low value in the y dimension
@@ -521,7 +521,7 @@ class FigureWrapper(object):
           
         *Overload 2*  
           :param seriesName: (java.lang.Comparable) - name of the created dataset
-          :param t: (io.deephaven.engine.tables.Table) - table
+          :param t: (io.deephaven.engine.table.Table) - table
           :param categories: (java.lang.String) - column in t that holds the discrete data
           :param values: (java.lang.String) - column in t that holds the numeric data
           :param yLow: (java.lang.String) - column in t that holds the low value in the y dimension
@@ -579,7 +579,7 @@ class FigureWrapper(object):
           
         *Overload 8*  
           :param seriesName: (java.lang.Comparable) - name of the created dataset
-          :param t: (io.deephaven.engine.tables.Table) - table
+          :param t: (io.deephaven.engine.table.Table) - table
           :param columnName: (java.lang.String) - column in t
           :return: (io.deephaven.engine.plot.Figure) dataset created for plot
         """
@@ -757,7 +757,7 @@ class FigureWrapper(object):
           
         *Overload 21*  
           :param seriesName: (java.lang.Comparable) - name of the created dataset
-          :param t: (io.deephaven.engine.tables.Table) - table
+          :param t: (io.deephaven.engine.table.Table) - table
           :param categories: (java.lang.String) - column in t holding discrete data
           :param values: (java.lang.String) - column in t holding numeric data
           :return: (io.deephaven.engine.plot.Figure) dataset created for plot
@@ -780,7 +780,7 @@ class FigureWrapper(object):
           
         *Overload 2*  
           :param seriesName: (java.lang.Comparable) - name of the created dataset
-          :param t: (io.deephaven.engine.tables.Table) - table
+          :param t: (io.deephaven.engine.table.Table) - table
           :param categories: (java.lang.String) - column in t holding discrete data
           :param values: (java.lang.String) - column in t holding numeric data
           :param byColumns: (java.lang.String...) - column(s) in t that holds the grouping data
@@ -834,7 +834,7 @@ class FigureWrapper(object):
           :return: (io.deephaven.engine.plot.Figure) this Chart with the title set to display comma-separated values from the table
           
         *Overload 3*  
-          :param t: (io.deephaven.engine.tables.Table) - table
+          :param t: (io.deephaven.engine.table.Table) - table
           :param titleColumns: (java.lang.String...) - columns to include in the chart title
           :return: (io.deephaven.engine.plot.Figure) this Chart with the title set to display comma-separated values from the table
           
@@ -850,7 +850,7 @@ class FigureWrapper(object):
           :param showColumnNamesInTitle: (boolean) - Whether to show column names in title. If this is true, the title format will
                   include the column name before the comma separated values; otherwise only the comma separated values will
                   be included.
-          :param t: (io.deephaven.engine.tables.Table) - table
+          :param t: (io.deephaven.engine.table.Table) - table
           :param titleColumns: (java.lang.String...) - columns to include in the chart title
           :return: (io.deephaven.engine.plot.Figure) this Chart with the title set to display comma-separated values from the table
           
@@ -862,7 +862,7 @@ class FigureWrapper(object):
           
         *Overload 7*  
           :param titleFormat: (java.lang.String) - a MessageFormat format string for the chart title
-          :param t: (io.deephaven.engine.tables.Table) - table
+          :param t: (io.deephaven.engine.table.Table) - table
           :param titleColumns: (java.lang.String...) - columns to include in the chart title
           :return: (io.deephaven.engine.plot.Figure) this Chart with the title set to display values from the table
         """
@@ -1269,7 +1269,7 @@ class FigureWrapper(object):
           
         *Overload 39*  
           :param seriesName: (java.lang.Comparable) - name of the created dataset
-          :param t: (io.deephaven.engine.tables.Table) - table
+          :param t: (io.deephaven.engine.table.Table) - table
           :param x: (java.lang.String) - column in t that holds the x-variable data
           :param xLow: (java.lang.String) - column in t that holds the low value in the x dimension
           :param xHigh: (java.lang.String) - column in t that holds the high value in the x dimension
@@ -1296,7 +1296,7 @@ class FigureWrapper(object):
           
         *Overload 2*  
           :param seriesName: (java.lang.Comparable) - name of the created dataset
-          :param t: (io.deephaven.engine.tables.Table) - table
+          :param t: (io.deephaven.engine.table.Table) - table
           :param x: (java.lang.String) - column in t that holds the x-variable data
           :param xLow: (java.lang.String) - column in t that holds the low value in the x dimension
           :param xHigh: (java.lang.String) - column in t that holds the high value in the x dimension
@@ -1695,7 +1695,7 @@ class FigureWrapper(object):
           
         *Overload 39*  
           :param seriesName: (java.lang.Comparable) - name of the created dataset
-          :param t: (io.deephaven.engine.tables.Table) - table
+          :param t: (io.deephaven.engine.table.Table) - table
           :param x: (java.lang.String) - column in t that holds the x-variable data
           :param xLow: (java.lang.String) - column in t that holds the low value in the x dimension
           :param xHigh: (java.lang.String) - column in t that holds the high value in the x dimension
@@ -1726,7 +1726,7 @@ class FigureWrapper(object):
           
         *Overload 2*  
           :param seriesName: (java.lang.Comparable) - name of the created dataset
-          :param t: (io.deephaven.engine.tables.Table) - table
+          :param t: (io.deephaven.engine.table.Table) - table
           :param x: (java.lang.String) - column in t that holds the x-variable data
           :param xLow: (java.lang.String) - column in t that holds the low value in the x dimension
           :param xHigh: (java.lang.String) - column in t that holds the high value in the x dimension
@@ -2059,7 +2059,7 @@ class FigureWrapper(object):
           
         *Overload 39*  
           :param seriesName: (java.lang.Comparable) - name of the created dataset
-          :param t: (io.deephaven.engine.tables.Table) - table
+          :param t: (io.deephaven.engine.table.Table) - table
           :param x: (java.lang.String) - column in t that holds the x-variable data
           :param y: (java.lang.String) - column in t that holds the y-variable data
           :param yLow: (java.lang.String) - column in t that holds the low value in the y dimension
@@ -2086,7 +2086,7 @@ class FigureWrapper(object):
           
         *Overload 2*  
           :param seriesName: (java.lang.Comparable) - name of the created dataset
-          :param t: (io.deephaven.engine.tables.Table) - table
+          :param t: (io.deephaven.engine.table.Table) - table
           :param x: (java.lang.String) - column in t that holds the x-variable data
           :param y: (java.lang.String) - column in t that holds the y-variable data
           :param yLow: (java.lang.String) - column in t that holds the low value in the y dimension
@@ -2235,7 +2235,7 @@ class FigureWrapper(object):
         
         *Overload 1*  
           :param seriesName: (java.lang.Comparable) - name of the created dataset
-          :param counts: (io.deephaven.engine.tables.Table) - table
+          :param counts: (io.deephaven.engine.table.Table) - table
           :return: (io.deephaven.engine.plot.Figure) dataset created for plot
           
         *Overload 2*  
@@ -2293,7 +2293,7 @@ class FigureWrapper(object):
           
         *Overload 10*  
           :param seriesName: (java.lang.Comparable) - name of the created dataset
-          :param t: (io.deephaven.engine.tables.Table) - table
+          :param t: (io.deephaven.engine.table.Table) - table
           :param columnName: (java.lang.String) - column in t
           :param nbins: (int) - number of bins in the resulting histogram
           :return: (io.deephaven.engine.plot.Figure) dataset created for plot
@@ -2369,7 +2369,7 @@ class FigureWrapper(object):
           
         *Overload 19*  
           :param seriesName: (java.lang.Comparable) - name of the created dataset
-          :param t: (io.deephaven.engine.tables.Table) - table
+          :param t: (io.deephaven.engine.table.Table) - table
           :param columnName: (java.lang.String) - column in t
           :param rangeMin: (double) - minimum of the range
           :param rangeMax: (double) - maximum of the range
@@ -2796,7 +2796,7 @@ class FigureWrapper(object):
           
         *Overload 17*  
           :param seriesName: (java.lang.Comparable) - name of the created dataset
-          :param t: (io.deephaven.engine.tables.Table) - table
+          :param t: (io.deephaven.engine.table.Table) - table
           :param timeCol: (java.lang.String) - column in t that holds the time data
           :param openCol: (java.lang.String) - column in t that holds the open data
           :param highCol: (java.lang.String) - column in t that holds the high data
@@ -2825,7 +2825,7 @@ class FigureWrapper(object):
           
         *Overload 2*  
           :param seriesName: (java.lang.Comparable) - name of the created dataset
-          :param t: (io.deephaven.engine.tables.Table) - table
+          :param t: (io.deephaven.engine.table.Table) - table
           :param timeCol: (java.lang.String) - column in t that holds the time data
           :param openCol: (java.lang.String) - column in t that holds the open data
           :param highCol: (java.lang.String) - column in t that holds the high data
@@ -2993,7 +2993,7 @@ class FigureWrapper(object):
           
         *Overload 17*  
           :param seriesName: (java.lang.Comparable) - name of the created dataset
-          :param t: (io.deephaven.engine.tables.Table) - table
+          :param t: (io.deephaven.engine.table.Table) - table
           :param categories: (java.lang.String) - column in t with categorical data
           :param values: (java.lang.String) - column in t with numerical data
           :return: (io.deephaven.engine.plot.Figure) dataset created for plot
@@ -3581,7 +3581,7 @@ class FigureWrapper(object):
           
         *Overload 85*  
           :param seriesName: (java.lang.Comparable) - name of the created dataset
-          :param t: (io.deephaven.engine.tables.Table) - table
+          :param t: (io.deephaven.engine.table.Table) - table
           :param x: (java.lang.String) - column in t that holds the x-variable data
           :param y: (java.lang.String) - column in t that holds the y-variable data
           :return: (io.deephaven.engine.plot.Figure) dataset created for plot
@@ -3612,7 +3612,7 @@ class FigureWrapper(object):
           
         *Overload 2*  
           :param seriesName: (java.lang.Comparable) - name of the created dataset
-          :param t: (io.deephaven.engine.tables.Table) - table
+          :param t: (io.deephaven.engine.table.Table) - table
           :param x: (java.lang.String) - column in t that holds the x-variable data
           :param y: (java.lang.String) - column in t that holds the y-variable data
           :param byColumns: (java.lang.String...) - column(s) in t that holds the grouping data
@@ -3698,25 +3698,25 @@ class FigureWrapper(object):
           :return: io.deephaven.engine.plot.Figure
           
         *Overload 9*  
-          :param t: (io.deephaven.engine.tables.Table) - table containing colors
+          :param t: (io.deephaven.engine.table.Table) - table containing colors
           :param columnName: (java.lang.String) - column in t containing colors. The color data for point i comes from row i.
           :return: (io.deephaven.engine.plot.Figure) this XYDataSeries
           
         *Overload 10*  
-          :param t: io.deephaven.engine.tables.Table
+          :param t: io.deephaven.engine.table.Table
           :param columnName: java.lang.String
           :param keys: java.lang.Object...
           :return: io.deephaven.engine.plot.Figure
           
         *Overload 11*  
-          :param t: (io.deephaven.engine.tables.Table) - table
+          :param t: (io.deephaven.engine.table.Table) - table
           :param keyColumn: (java.lang.String) - column in t, specifying category values
           :param valueColumn: (java.lang.String) - column in t, specifying Paints or ints/Integers representing color palette
                   values.
           :return: (io.deephaven.engine.plot.Figure) this CategoryDataSeries
           
         *Overload 12*  
-          :param t: io.deephaven.engine.tables.Table
+          :param t: io.deephaven.engine.table.Table
           :param keyColumn: java.lang.String
           :param valueColumn: java.lang.String
           :param keys: java.lang.Object...
@@ -3997,24 +3997,24 @@ class FigureWrapper(object):
           :return: io.deephaven.engine.plot.Figure
           
         *Overload 7*  
-          :param t: (io.deephaven.engine.tables.Table) - table containing labels
+          :param t: (io.deephaven.engine.table.Table) - table containing labels
           :param columnName: (java.lang.String) - column in t containing labels. The label data for point i comes from row i.
           :return: (io.deephaven.engine.plot.Figure) this XYDataSeries
           
         *Overload 8*  
-          :param t: io.deephaven.engine.tables.Table
+          :param t: io.deephaven.engine.table.Table
           :param columnName: java.lang.String
           :param keys: java.lang.Object...
           :return: io.deephaven.engine.plot.Figure
           
         *Overload 9*  
-          :param t: (io.deephaven.engine.tables.Table) - table
+          :param t: (io.deephaven.engine.table.Table) - table
           :param keyColumn: (java.lang.String) - column in t, specifying category values
           :param valueColumn: (java.lang.String) - column in t, specifying labels
           :return: (io.deephaven.engine.plot.Figure) this CategoryDataSeries
           
         *Overload 10*  
-          :param t: io.deephaven.engine.tables.Table
+          :param t: io.deephaven.engine.table.Table
           :param keyColumn: java.lang.String
           :param valueColumn: java.lang.String
           :param keys: java.lang.Object...
@@ -4162,24 +4162,24 @@ class FigureWrapper(object):
           :return: io.deephaven.engine.plot.Figure
           
         *Overload 9*  
-          :param t: (io.deephaven.engine.tables.Table) - table containing shapes
+          :param t: (io.deephaven.engine.table.Table) - table containing shapes
           :param columnName: (java.lang.String) - column in t containing shapes. The shape data for point i comes from row i.
           :return: (io.deephaven.engine.plot.Figure) this XYDataSeries
           
         *Overload 10*  
-          :param t: io.deephaven.engine.tables.Table
+          :param t: io.deephaven.engine.table.Table
           :param columnName: java.lang.String
           :param keys: java.lang.Object...
           :return: io.deephaven.engine.plot.Figure
           
         *Overload 11*  
-          :param t: (io.deephaven.engine.tables.Table) - table
+          :param t: (io.deephaven.engine.table.Table) - table
           :param keyColumn: (java.lang.String) - column in t, specifying category values
           :param valueColumn: (java.lang.String) - column in t, specifying shapes
           :return: (io.deephaven.engine.plot.Figure) this CategoryDataSeries
           
         *Overload 12*  
-          :param t: io.deephaven.engine.tables.Table
+          :param t: io.deephaven.engine.table.Table
           :param keyColumn: java.lang.String
           :param valueColumn: java.lang.String
           :param keys: java.lang.Object...
@@ -4336,25 +4336,25 @@ class FigureWrapper(object):
           :return: io.deephaven.engine.plot.Figure
           
         *Overload 13*  
-          :param t: (io.deephaven.engine.tables.Table) - table containing factors to multiply the default size (1) by
+          :param t: (io.deephaven.engine.table.Table) - table containing factors to multiply the default size (1) by
           :param columnName: (java.lang.String) - column in t containing size scaling factors. The size data for point i comes from row
                   i.
           :return: (io.deephaven.engine.plot.Figure) this XYDataSeries
           
         *Overload 14*  
-          :param t: io.deephaven.engine.tables.Table
+          :param t: io.deephaven.engine.table.Table
           :param columnName: java.lang.String
           :param keys: java.lang.Object...
           :return: io.deephaven.engine.plot.Figure
           
         *Overload 15*  
-          :param t: (io.deephaven.engine.tables.Table) - table
+          :param t: (io.deephaven.engine.table.Table) - table
           :param keyColumn: (java.lang.String) - column in t, specifying category values
           :param valueColumn: (java.lang.String) - column in t, specifying point sizes
           :return: (io.deephaven.engine.plot.Figure) this CategoryDataSeries
           
         *Overload 16*  
-          :param t: io.deephaven.engine.tables.Table
+          :param t: io.deephaven.engine.table.Table
           :param keyColumn: java.lang.String
           :param valueColumn: java.lang.String
           :param keys: java.lang.Object...

@@ -2,6 +2,7 @@ package io.deephaven.engine.v2.utils;
 
 import io.deephaven.engine.rowset.MutableRowSet;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.v2.Listener;
 import io.deephaven.engine.v2.ModifiedColumnSet;
 import io.deephaven.util.SafeCloseableList;
@@ -58,15 +59,15 @@ public class UpdateCoalescer {
 
             // Aggregate update.remove in coalesced pre-shift removed.
             try (final MutableRowSet myRemoved = update.removed.minus(addedAndRemoved)) {
-                shifted.unapply(myRemoved);
+                RowSetShiftUtils.unapply(shifted, myRemoved);
                 removed.insert(myRemoved);
                 rowSet.remove(myRemoved);
             }
 
             // Apply new shifts to our post-shift added/modified.
             if (update.shifted.nonempty()) {
-                update.shifted.apply(added);
-                update.shifted.apply(modified);
+                RowSetShiftUtils.apply(update.shifted, added);
+                RowSetShiftUtils.apply(update.shifted, modified);
 
                 updateShifts(update.shifted);
             }

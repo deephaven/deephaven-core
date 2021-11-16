@@ -6,7 +6,7 @@ import io.deephaven.engine.plot.util.ArgumentValidations;
 import io.deephaven.engine.plot.util.tables.TableBackedTableMapHandle;
 import io.deephaven.engine.tables.libs.QueryLibrary;
 import io.deephaven.engine.tables.select.QueryScope;
-import io.deephaven.engine.v2.TableMap;
+import io.deephaven.engine.table.TableMap;
 
 import java.util.Arrays;
 import java.util.Map;

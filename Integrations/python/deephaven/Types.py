@@ -86,13 +86,13 @@ def _defineSymbols():
     if _table_tools_ is None:
         # This will raise an exception if the desired object is not the classpath
         _table_tools_ = jpy.get_type("io.deephaven.engine.tables.utils.TableTools")
-        _col_def_ = jpy.get_type("io.deephaven.engine.tables.ColumnDefinition")
+        _col_def_ = jpy.get_type("io.deephaven.engine.table.ColumnDefinition")
         _python_tools_ = jpy.get_type("io.deephaven.integrations.python.PythonTools")
         _qst_col_header_ = jpy.get_type("io.deephaven.qst.column.header.ColumnHeader")
         _qst_column_ =  jpy.get_type("io.deephaven.qst.column.Column")
         _qst_newtable_ = jpy.get_type("io.deephaven.qst.table.NewTable")
         _qst_type_ = jpy.get_type("io.deephaven.qst.type.Type")
-        _table_ = jpy.get_type("io.deephaven.engine.tables.Table")
+        _table_ = jpy.get_type("io.deephaven.engine.table.Table")
 
     if DataType is None:
         DataType = NewType('DataType', _qst_type_)

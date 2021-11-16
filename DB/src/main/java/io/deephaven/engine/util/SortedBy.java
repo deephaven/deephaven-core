@@ -1,7 +1,7 @@
 package io.deephaven.engine.util;
 
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.tables.select.SelectColumnFactory;
 import io.deephaven.engine.v2.by.SortedFirstBy;
 import io.deephaven.engine.v2.by.SortedLastBy;

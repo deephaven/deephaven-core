@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2.select.codegen;
 
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.engine.tables.ColumnDefinition;
+import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.vector.ObjectVector;
 import io.deephaven.engine.tables.lang.LanguageParser;
 import io.deephaven.engine.tables.libs.QueryLibrary;
@@ -11,7 +11,7 @@ import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.v2.select.DhFormulaColumn;
 import io.deephaven.engine.v2.select.FormulaCompilationException;
 import io.deephaven.engine.v2.select.formula.FormulaSourceDescriptor;
-import io.deephaven.engine.v2.sources.WritableSource;
+import io.deephaven.engine.table.WritableSource;
 import io.deephaven.engine.rowset.TrackingMutableRowSet;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;

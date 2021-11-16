@@ -1,6 +1,6 @@
 package io.deephaven.grpc_api.runner;
 
-import io.deephaven.engine.tables.live.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
 import io.deephaven.engine.util.AbstractScriptSession;
 import io.deephaven.engine.v2.utils.MemoryTableLoggers;
@@ -110,6 +110,7 @@ public class DeephavenApiServer {
 
         log.info().append("Starting Performance Trackers...").endl();
         QueryPerformanceRecorder.installPoolAllocationRecorder();
+        QueryPerformanceRecorder.installUpdateGraphLockInstrumentation();
         UpdatePerformanceTracker.start();
         ProcessMemoryTracker.start();
 

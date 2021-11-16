@@ -10,7 +10,7 @@ import io.deephaven.engine.plot.datasets.data.IndexableNumericDataSwappableTable
 import io.deephaven.engine.plot.errors.PlotInfo;
 import io.deephaven.engine.plot.util.ArgumentValidations;
 import io.deephaven.engine.plot.util.tables.SwappableTable;
-import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.table.Table;
 
 import org.jetbrains.annotations.NotNull;
 

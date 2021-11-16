@@ -1,6 +1,6 @@
 package io.deephaven.engine.v2;
 
-import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.table.Table;
 
 /**
  * A listener for use in unit tests that writes down the update it receives and counts how many it received.

@@ -6,13 +6,13 @@ package io.deephaven.engine.v2;
 
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.tables.live.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.engine.tables.live.NotificationQueue;
-import io.deephaven.engine.tables.utils.SystemicObjectTracker;
-import io.deephaven.engine.util.liveness.LivenessArtifact;
-import io.deephaven.engine.v2.sources.LogicalClock;
+import io.deephaven.engine.updategraph.NotificationQueue;
+import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
+import io.deephaven.engine.liveness.LivenessArtifact;
+import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.v2.utils.AbstractNotification;
 import io.deephaven.engine.v2.utils.AsyncClientErrorNotifier;
 import io.deephaven.engine.v2.utils.UpdatePerformanceTracker;

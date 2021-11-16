@@ -5,10 +5,12 @@
 package io.deephaven.engine.v2;
 
 import io.deephaven.base.WeakReferenceManager;
+import io.deephaven.engine.table.TableMap;
+import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.hash.KeyedObjectHashSet;
-import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.util.liveness.LivenessArtifact;
-import io.deephaven.engine.util.liveness.LivenessReferent;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.liveness.LivenessArtifact;
+import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.util.annotations.ReferentialIntegrity;
 import io.deephaven.util.datastructures.hash.IdentityKeyedObjectKey;
 import org.jetbrains.annotations.NotNull;
@@ -45,7 +47,7 @@ public abstract class TableMapImpl extends LivenessArtifact implements TableMap,
     }
 
     /**
-     * Notify {@link io.deephaven.engine.v2.TableMap.Listener}s of an inserted table.
+     * Notify {@link TableMap.Listener}s of an inserted table.
      *
      * @param key the newly inserted key
      * @param table the corresponding table
@@ -55,7 +57,7 @@ public abstract class TableMapImpl extends LivenessArtifact implements TableMap,
     }
 
     /**
-     * Notify {@link io.deephaven.engine.v2.TableMap.KeyListener}s of an inserted key.
+     * Notify {@link TableMap.KeyListener}s of an inserted key.
      *
      * @param key the newly inserted key
      */
@@ -64,7 +66,7 @@ public abstract class TableMapImpl extends LivenessArtifact implements TableMap,
     }
 
     /**
-     * Returns true if there are any {@link io.deephaven.engine.v2.TableMap.Listener} for table additions.
+     * Returns true if there are any {@link TableMap.Listener} for table additions.
      *
      * <p>
      * Note that this function returns false if there are only KeyListeners.

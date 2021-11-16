@@ -1,8 +1,9 @@
 package io.deephaven.treetable;
 
 import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.live.NotificationQueue;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableMap;
+import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.v2.*;
 import io.deephaven.engine.v2.select.WhereFilter;
 import io.deephaven.engine.rowset.TrackingRowSet;

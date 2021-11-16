@@ -5,6 +5,7 @@
 package io.deephaven.engine.v2.sources;
 
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.vector.ObjectVector;
 import io.deephaven.engine.vector.Vector;
 import io.deephaven.engine.v2.sources.aggregate.AggregateColumnSource;

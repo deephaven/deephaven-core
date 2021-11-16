@@ -7,16 +7,13 @@ package io.deephaven.engine.util.string;
 import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.base.string.cache.*;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.tables.ColumnDefinition;
-import io.deephaven.engine.tables.TableDefinition;
+import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.util.caching.C14nUtil;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.Serializable;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.stream.Collectors;
 
 public class StringUtils implements Serializable {
 

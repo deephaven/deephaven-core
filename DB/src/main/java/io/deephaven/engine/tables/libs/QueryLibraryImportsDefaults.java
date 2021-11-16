@@ -2,6 +2,8 @@ package io.deephaven.engine.tables.libs;
 
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.DataColumn;
+import io.deephaven.engine.table.Table;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.engine.table.Context;
 import io.deephaven.engine.tables.lang.LanguageFunctionUtil;
@@ -31,8 +33,8 @@ public class QueryLibraryImportsDefaults implements QueryLibraryImports {
         return new LinkedHashSet<>(Arrays.asList(
                 java.lang.reflect.Array.class,
                 io.deephaven.util.type.TypeUtils.class,
-                io.deephaven.engine.tables.Table.class,
-                io.deephaven.engine.tables.DataColumn.class,
+                Table.class,
+                DataColumn.class,
                 ArrayTypeUtils.class,
                 DateTime.class,
                 DateTimeUtils.class,

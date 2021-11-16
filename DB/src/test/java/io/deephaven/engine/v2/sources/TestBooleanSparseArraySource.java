@@ -10,9 +10,10 @@ import io.deephaven.engine.chunk.WritableObjectChunk;
 
 import io.deephaven.engine.rftable.TestSourceSink;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.WritableChunkSink;
 import io.deephaven.util.BooleanUtils;
 
-import io.deephaven.engine.tables.live.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.rowset.RowSet;

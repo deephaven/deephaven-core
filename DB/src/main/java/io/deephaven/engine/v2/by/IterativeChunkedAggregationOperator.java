@@ -5,7 +5,7 @@
 package io.deephaven.engine.v2.by;
 
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.engine.util.liveness.LivenessReferent;
+import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.v2.*;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.chunk.*;

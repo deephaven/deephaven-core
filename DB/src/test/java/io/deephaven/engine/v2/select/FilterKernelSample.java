@@ -2,7 +2,7 @@ package io.deephaven.engine.v2.select;
 // QueryLibrary internal version number: DEFAULT
 import java.lang.*;
 
-import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.tables.select.Param;
 
 import static io.deephaven.engine.v2.select.ConditionFilter.FilterKernel;

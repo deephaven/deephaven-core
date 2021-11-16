@@ -1,8 +1,8 @@
 package io.deephaven.engine.tables.verify;
 
 import io.deephaven.engine.tables.SortingOrder;
-import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.live.UpdateGraphProcessor;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.v2.*;
 import io.deephaven.test.junit4.EngineCleanup;

@@ -6,7 +6,7 @@ package io.deephaven.engine.v2.select;
 
 import io.deephaven.configuration.Configuration;
 import io.deephaven.compilertools.CompilerTools;
-import io.deephaven.engine.tables.ColumnDefinition;
+import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.vector.ObjectVector;
 import io.deephaven.engine.tables.lang.LanguageParser;
 import io.deephaven.engine.tables.libs.QueryLibrary;

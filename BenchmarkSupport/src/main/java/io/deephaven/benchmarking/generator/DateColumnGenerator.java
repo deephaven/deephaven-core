@@ -1,6 +1,6 @@
 package io.deephaven.benchmarking.generator;
 
-import io.deephaven.engine.tables.ColumnDefinition;
+import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.benchmarking.generator.random.ExtendedRandom;

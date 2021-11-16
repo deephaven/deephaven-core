@@ -4,7 +4,7 @@
 
 package io.deephaven.engine.util.config;
 
-import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.table.Table;
 
 import java.util.Map;
 

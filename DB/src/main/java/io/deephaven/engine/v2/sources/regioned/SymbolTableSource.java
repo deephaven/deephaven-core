@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2.sources.regioned;
 
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.rowset.TrackingMutableRowSet;
 import io.deephaven.engine.rowset.RowSet;

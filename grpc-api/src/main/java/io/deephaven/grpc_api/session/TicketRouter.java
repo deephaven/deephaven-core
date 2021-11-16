@@ -5,7 +5,7 @@
 package io.deephaven.grpc_api.session;
 
 import com.google.rpc.Code;
-import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.table.Table;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.hash.KeyedIntObjectHashMap;

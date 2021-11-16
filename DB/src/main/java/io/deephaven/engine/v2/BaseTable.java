@@ -8,7 +8,9 @@ import io.deephaven.base.Base64;
 import io.deephaven.base.StringUtils;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.tables.live.UpdateGraphProcessor;
+import io.deephaven.engine.rowset.RowSetShiftData;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.hash.KeyedObjectHashSet;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.reference.WeakSimpleReference;
@@ -19,23 +21,22 @@ import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.io.logger.Logger;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
-import io.deephaven.engine.tables.ColumnDefinition;
+import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.NotSortableException;
-import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.TableDefinition;
-import io.deephaven.engine.tables.live.NotificationQueue;
-import io.deephaven.engine.tables.select.MatchPair;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.updategraph.NotificationQueue;
+import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
-import io.deephaven.engine.tables.utils.SystemicObjectTracker;
-import io.deephaven.engine.util.ColumnFormattingValues;
-import io.deephaven.engine.util.liveness.LivenessArtifact;
-import io.deephaven.engine.util.liveness.LivenessReferent;
+import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
+import io.deephaven.engine.liveness.LivenessArtifact;
+import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.v2.remote.ConstructSnapshot;
 import io.deephaven.engine.v2.select.SelectColumn;
 import io.deephaven.engine.v2.select.SourceColumn;
 import io.deephaven.engine.v2.select.SwitchColumn;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.v2.sources.LogicalClock;
+import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.v2.utils.*;
 import io.deephaven.util.annotations.ReferentialIntegrity;
 import io.deephaven.internal.log.LoggerFactory;
@@ -717,13 +718,13 @@ public abstract class BaseTable extends LivenessArtifact
         // notify non-direct children
         final NotificationQueue notificationQueue = getNotificationQueue();
         childListenerReferences.forEach((listenerRef, listener) -> {
-            final NotificationQueue.IndexUpdateNotification notification =
+            final NotificationQueue.Notification notification =
                     listener.getNotification(shiftExpander.getAdded(), shiftExpander.getRemoved(),
                             shiftExpander.getModified());
             notificationQueue.addNotification(notification);
         });
         childShiftAwareListenerReferences.forEach((listenerRef, listener) -> {
-            final NotificationQueue.IndexUpdateNotification notification = listener.getNotification(update);
+            final NotificationQueue.Notification notification = listener.getNotification(update);
             notificationQueue.addNotification(notification);
         });
 
@@ -1045,12 +1046,6 @@ public abstract class BaseTable extends LivenessArtifact
         return this;
     }
 
-    @Override
-    public Table layoutHints(String hints) {
-        setAttribute(Table.LAYOUT_HINTS_ATTRIBUTE, hints);
-        return this;
-    }
-
     private void checkAvailableColumns(String[] columns) {
         final Map<String, ? extends ColumnSource<?>> sourceMap = getColumnSourceMap();
         final String[] missingColumns =
@@ -1357,35 +1352,23 @@ public abstract class BaseTable extends LivenessArtifact
     }
 
     @Override
-    public Table setTotalsTable(TotalsTableBuilder builder) {
+    public Table setLayoutHints(String hints) {
         final Table result = copy();
-        result.setAttribute(TOTALS_TABLE_ATTRIBUTE, builder.buildDirective());
+        result.setAttribute(Table.LAYOUT_HINTS_ATTRIBUTE, hints);
+        return this;
+    }
+
+    @Override
+    public Table setTotalsTable(String directive) {
+        final Table result = copy();
+        result.setAttribute(TOTALS_TABLE_ATTRIBUTE, directive);
         return result;
     }
 
     @Override
-    public Table setColumnRenderers(ColumnRenderersBuilder builder) {
-        if (builder.isEmpty()) {
-            return this;
-        }
-
-        final Set<String> existingColumns = getDefinition().getColumnNames()
-                .stream()
-                .filter(column -> !ColumnFormattingValues.isFormattingColumn(column))
-                .collect(Collectors.toSet());
-
-        final String[] unknownColumns = builder.getColumnSet()
-                .stream()
-                .filter(column -> !existingColumns.contains(column))
-                .toArray(String[]::new);
-
-        if (unknownColumns.length > 0) {
-            throw new RuntimeException(
-                    "Unknown columns: " + Arrays.toString(unknownColumns) + ", available columns = " + existingColumns);
-        }
-
+    public Table setColumnRenderers(String directive) {
         final Table result = copy();
-        result.setAttribute(COLUMN_RENDERERS_ATTRIBUTE, builder.buildDirective());
+        result.setAttribute(COLUMN_RENDERERS_ATTRIBUTE, directive);
         return result;
     }
 

@@ -25,7 +25,7 @@ import io.deephaven.engine.plot.datasets.xyerrorbar.XYErrorBarDataSeriesArray;
 import io.deephaven.engine.plot.util.PlotUtils;
 import io.deephaven.engine.plot.util.tables.*;
 import io.deephaven.engine.plot.util.tables.TableHandle;
-import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.table.Table;
 import io.deephaven.grpc_api.session.SessionState;
 import io.deephaven.grpc_api.table.TableServiceGrpcImpl;
 import io.deephaven.gui.shape.JShapes;

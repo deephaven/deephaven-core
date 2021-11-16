@@ -1,6 +1,6 @@
 package io.deephaven.extensions;
 
-import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.tables.libs.QueryLibraryImports;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.util.GroovyDeephavenSession.InitScript;

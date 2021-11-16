@@ -13,7 +13,7 @@ import io.deephaven.engine.plot.datasets.DynamicSeriesNamer;
 import io.deephaven.engine.plot.errors.PlotExceptionCause;
 import io.deephaven.engine.plot.errors.PlotInfo;
 import io.deephaven.engine.v2.BaseTable;
-import io.deephaven.engine.v2.TableMap;
+import io.deephaven.engine.table.TableMap;
 
 import java.util.Map;
 

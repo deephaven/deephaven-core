@@ -12,6 +12,7 @@ import io.deephaven.engine.plot.filters.SelectableDataSetSwappableTable;
 import io.deephaven.engine.plot.util.ArgumentValidations;
 import io.deephaven.engine.plot.util.tables.SwappableTable;
 import io.deephaven.engine.plot.util.tables.TableHandle;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.v2.BaseTable;
 
 
@@ -399,7 +400,7 @@ public class MultiXYSeriesSwappable extends AbstractSwappableMultiSeries<XYDataS
     public io.deephaven.engine.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.Object[]> pointColorSeriesNameToTableStringMap() {
         return pointColorSeriesNameToTableStringMap;
     }
-    @Override public MultiXYSeriesSwappable pointColor(final io.deephaven.engine.tables.Table t, final java.lang.String columnName, final Object... keys) {
+    @Override public MultiXYSeriesSwappable pointColor(final Table t, final java.lang.String columnName, final Object... keys) {
     final io.deephaven.engine.plot.util.tables.TableHandle tHandle = new io.deephaven.engine.plot.util.tables.TableHandle(t, columnName);
     addTableHandle(tHandle);
         if(keys == null || keys.length == 0) {
@@ -503,7 +504,7 @@ public class MultiXYSeriesSwappable extends AbstractSwappableMultiSeries<XYDataS
     public io.deephaven.engine.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.Object[]> pointLabelSeriesNameToTableStringMap() {
         return pointLabelSeriesNameToTableStringMap;
     }
-    @Override public MultiXYSeriesSwappable pointLabel(final io.deephaven.engine.tables.Table t, final java.lang.String columnName, final Object... keys) {
+    @Override public MultiXYSeriesSwappable pointLabel(final Table t, final java.lang.String columnName, final Object... keys) {
     final io.deephaven.engine.plot.util.tables.TableHandle tHandle = new io.deephaven.engine.plot.util.tables.TableHandle(t, columnName);
     addTableHandle(tHandle);
         if(keys == null || keys.length == 0) {
@@ -641,7 +642,7 @@ public class MultiXYSeriesSwappable extends AbstractSwappableMultiSeries<XYDataS
     public io.deephaven.engine.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.Object[]> pointShapeSeriesNameToTableStringMap() {
         return pointShapeSeriesNameToTableStringMap;
     }
-    @Override public MultiXYSeriesSwappable pointShape(final io.deephaven.engine.tables.Table t, final java.lang.String columnName, final Object... keys) {
+    @Override public MultiXYSeriesSwappable pointShape(final Table t, final java.lang.String columnName, final Object... keys) {
     final io.deephaven.engine.plot.util.tables.TableHandle tHandle = new io.deephaven.engine.plot.util.tables.TableHandle(t, columnName);
     addTableHandle(tHandle);
         if(keys == null || keys.length == 0) {
@@ -779,7 +780,7 @@ public class MultiXYSeriesSwappable extends AbstractSwappableMultiSeries<XYDataS
     public io.deephaven.engine.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.Object[]> pointSizeSeriesNameToTableStringMap() {
         return pointSizeSeriesNameToTableStringMap;
     }
-    @Override public MultiXYSeriesSwappable pointSize(final io.deephaven.engine.tables.Table t, final java.lang.String columnName, final Object... keys) {
+    @Override public MultiXYSeriesSwappable pointSize(final Table t, final java.lang.String columnName, final Object... keys) {
     final io.deephaven.engine.plot.util.tables.TableHandle tHandle = new io.deephaven.engine.plot.util.tables.TableHandle(t, columnName);
     addTableHandle(tHandle);
         if(keys == null || keys.length == 0) {

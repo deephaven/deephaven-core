@@ -6,7 +6,7 @@ package io.deephaven.engine.v2.utils;
 
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
-import io.deephaven.engine.tables.live.NotificationQueue;
+import io.deephaven.engine.updategraph.NotificationQueue;
 import org.jetbrains.annotations.NotNull;
 
 /**

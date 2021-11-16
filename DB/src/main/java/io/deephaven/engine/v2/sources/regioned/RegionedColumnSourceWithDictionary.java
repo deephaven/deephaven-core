@@ -1,18 +1,17 @@
 package io.deephaven.engine.v2.sources.regioned;
 
 import io.deephaven.engine.rowset.*;
-import io.deephaven.engine.tables.ColumnDefinition;
-import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
 import io.deephaven.engine.v2.*;
 import io.deephaven.engine.v2.locations.ColumnLocation;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.sources.ColumnSourceGetDefaults;
-import io.deephaven.engine.v2.sources.Releasable;
+import io.deephaven.engine.table.Releasable;
 import io.deephaven.engine.v2.sources.RowIdSource;
 import io.deephaven.engine.chunk.Attributes.DictionaryKeys;
 import io.deephaven.engine.chunk.Attributes.Values;
-import io.deephaven.engine.v2.utils.*;
 import org.apache.commons.lang3.mutable.Mutable;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
@@ -286,7 +285,7 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
         public void onUpdate(@NotNull final Update upstream) {
             // TODO-RWC: Update and use
             // io.deephaven.engine.tables.verify.TableAssertions.assertAppendOnly(java.lang.String,
-            // io.deephaven.engine.tables.Table) ?
+            // io.deephaven.engine.table.Table) ?
             if (upstream.removed.isNonempty() || upstream.modified.isNonempty() || upstream.shifted.nonempty()) {
                 throw new IllegalStateException("Source table for a regioned symbol table should be add-only, instead "
                         + "removed=" + upstream.removed + ", modified=" + upstream.modified + ", shifted="

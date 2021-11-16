@@ -1,8 +1,8 @@
 package io.deephaven.benchmark.engine;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.live.UpdateGraphProcessor;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.v2.ModifiedColumnSet;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.Listener;
@@ -10,7 +10,7 @@ import io.deephaven.engine.v2.SortHelpers;
 import io.deephaven.engine.v2.select.IncrementalReleaseFilter;
 import io.deephaven.engine.v2.select.RollingReleaseFilter;
 import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.v2.utils.RowSetShiftData;
+import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.benchmarking.*;
 import io.deephaven.benchmarking.generator.EnumStringColumnGenerator;
 import io.deephaven.engine.rowset.TrackingMutableRowSet;

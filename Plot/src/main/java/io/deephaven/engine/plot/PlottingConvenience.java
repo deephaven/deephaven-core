@@ -11,6 +11,9 @@ package io.deephaven.engine.plot;
 import io.deephaven.engine.plot.axistransformations.AxisTransforms;
 import io.deephaven.engine.plot.composite.ScatterPlotMatrix;
 import io.deephaven.engine.plot.filters.Selectables;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.TableMap;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.gui.color.Color;
 
@@ -288,42 +291,42 @@ public class PlottingConvenience {
     /**
     * See {@link io.deephaven.engine.plot.filters.Selectables#oneClick} 
     **/
-    public static  io.deephaven.engine.plot.filters.SelectableDataSetOneClick oneClick( io.deephaven.engine.tables.Table t, java.lang.String... byColumns ) {
+    public static  io.deephaven.engine.plot.filters.SelectableDataSetOneClick oneClick(Table t, java.lang.String... byColumns ) {
         return Selectables.oneClick( t, byColumns );
     }
 
     /**
     * See {@link io.deephaven.engine.plot.filters.Selectables#oneClick} 
     **/
-    public static  io.deephaven.engine.plot.filters.SelectableDataSetOneClick oneClick( io.deephaven.engine.tables.Table t, boolean requireAllFiltersToDisplay, java.lang.String... byColumns ) {
+    public static  io.deephaven.engine.plot.filters.SelectableDataSetOneClick oneClick(Table t, boolean requireAllFiltersToDisplay, java.lang.String... byColumns ) {
         return Selectables.oneClick( t, requireAllFiltersToDisplay, byColumns );
     }
 
     /**
     * See {@link io.deephaven.engine.plot.filters.Selectables#oneClick} 
     **/
-    public static  io.deephaven.engine.plot.filters.SelectableDataSetOneClick oneClick( io.deephaven.engine.v2.TableMap tMap, io.deephaven.engine.tables.TableDefinition tableDefinition, java.lang.String... byColumns ) {
+    public static  io.deephaven.engine.plot.filters.SelectableDataSetOneClick oneClick(TableMap tMap, TableDefinition tableDefinition, java.lang.String... byColumns ) {
         return Selectables.oneClick( tMap, tableDefinition, byColumns );
     }
 
     /**
     * See {@link io.deephaven.engine.plot.filters.Selectables#oneClick} 
     **/
-    public static  io.deephaven.engine.plot.filters.SelectableDataSetOneClick oneClick( io.deephaven.engine.v2.TableMap tMap, io.deephaven.engine.tables.Table t, java.lang.String... byColumns ) {
+    public static  io.deephaven.engine.plot.filters.SelectableDataSetOneClick oneClick(TableMap tMap, Table t, java.lang.String... byColumns ) {
         return Selectables.oneClick( tMap, t, byColumns );
     }
 
     /**
     * See {@link io.deephaven.engine.plot.filters.Selectables#oneClick} 
     **/
-    public static  io.deephaven.engine.plot.filters.SelectableDataSetOneClick oneClick( io.deephaven.engine.v2.TableMap tMap, io.deephaven.engine.tables.TableDefinition tableDefinition, boolean requireAllFiltersToDisplay, java.lang.String... byColumns ) {
+    public static  io.deephaven.engine.plot.filters.SelectableDataSetOneClick oneClick(TableMap tMap, TableDefinition tableDefinition, boolean requireAllFiltersToDisplay, java.lang.String... byColumns ) {
         return Selectables.oneClick( tMap, tableDefinition, requireAllFiltersToDisplay, byColumns );
     }
 
     /**
     * See {@link io.deephaven.engine.plot.filters.Selectables#oneClick} 
     **/
-    public static  io.deephaven.engine.plot.filters.SelectableDataSetOneClick oneClick( io.deephaven.engine.v2.TableMap tMap, io.deephaven.engine.tables.Table t, boolean requireAllFiltersToDisplay, java.lang.String... byColumns ) {
+    public static  io.deephaven.engine.plot.filters.SelectableDataSetOneClick oneClick(TableMap tMap, Table t, boolean requireAllFiltersToDisplay, java.lang.String... byColumns ) {
         return Selectables.oneClick( tMap, t, requireAllFiltersToDisplay, byColumns );
     }
 
@@ -414,7 +417,7 @@ public class PlottingConvenience {
     /**
     * See {@link io.deephaven.engine.plot.composite.ScatterPlotMatrix#scatterPlotMatrix} 
     **/
-    public static  io.deephaven.engine.plot.composite.ScatterPlotMatrix scatterPlotMatrix( io.deephaven.engine.tables.Table t, java.lang.String... columns ) {
+    public static  io.deephaven.engine.plot.composite.ScatterPlotMatrix scatterPlotMatrix(Table t, java.lang.String... columns ) {
         return ScatterPlotMatrix.scatterPlotMatrix( t, columns );
     }
 
@@ -540,7 +543,7 @@ public class PlottingConvenience {
     /**
     * See {@link io.deephaven.engine.plot.Figure#catErrorBar} 
     **/
-    public static  io.deephaven.engine.plot.Figure catErrorBar( java.lang.Comparable seriesName, io.deephaven.engine.tables.Table t, java.lang.String categories, java.lang.String values, java.lang.String yLow, java.lang.String yHigh ) {
+    public static  io.deephaven.engine.plot.Figure catErrorBar(java.lang.Comparable seriesName, Table t, java.lang.String categories, java.lang.String values, java.lang.String yLow, java.lang.String yHigh ) {
         return FigureFactory.figure().catErrorBar( seriesName, t, categories, values, yLow, yHigh );
     }
 
@@ -554,7 +557,7 @@ public class PlottingConvenience {
     /**
     * See {@link io.deephaven.engine.plot.Figure#catErrorBarBy} 
     **/
-    public static  io.deephaven.engine.plot.Figure catErrorBarBy( java.lang.Comparable seriesName, io.deephaven.engine.tables.Table t, java.lang.String categories, java.lang.String values, java.lang.String yLow, java.lang.String yHigh, java.lang.String... byColumns ) {
+    public static  io.deephaven.engine.plot.Figure catErrorBarBy(java.lang.Comparable seriesName, Table t, java.lang.String categories, java.lang.String values, java.lang.String yLow, java.lang.String yHigh, java.lang.String... byColumns ) {
         return FigureFactory.figure().catErrorBarBy( seriesName, t, categories, values, yLow, yHigh, byColumns );
     }
 
@@ -610,7 +613,7 @@ public class PlottingConvenience {
     /**
     * See {@link io.deephaven.engine.plot.Figure#catHistPlot} 
     **/
-    public static  io.deephaven.engine.plot.Figure catHistPlot( java.lang.Comparable seriesName, io.deephaven.engine.tables.Table t, java.lang.String columnName ) {
+    public static  io.deephaven.engine.plot.Figure catHistPlot(java.lang.Comparable seriesName, Table t, java.lang.String columnName ) {
         return FigureFactory.figure().catHistPlot( seriesName, t, columnName );
     }
 
@@ -757,7 +760,7 @@ public class PlottingConvenience {
     /**
     * See {@link io.deephaven.engine.plot.Figure#catPlot} 
     **/
-    public static  io.deephaven.engine.plot.Figure catPlot( java.lang.Comparable seriesName, io.deephaven.engine.tables.Table t, java.lang.String categories, java.lang.String values ) {
+    public static  io.deephaven.engine.plot.Figure catPlot(java.lang.Comparable seriesName, Table t, java.lang.String categories, java.lang.String values ) {
         return FigureFactory.figure().catPlot( seriesName, t, categories, values );
     }
 
@@ -771,7 +774,7 @@ public class PlottingConvenience {
     /**
     * See {@link io.deephaven.engine.plot.Figure#catPlotBy} 
     **/
-    public static  io.deephaven.engine.plot.Figure catPlotBy( java.lang.Comparable seriesName, io.deephaven.engine.tables.Table t, java.lang.String categories, java.lang.String values, java.lang.String... byColumns ) {
+    public static  io.deephaven.engine.plot.Figure catPlotBy(java.lang.Comparable seriesName, Table t, java.lang.String categories, java.lang.String values, java.lang.String... byColumns ) {
         return FigureFactory.figure().catPlotBy( seriesName, t, categories, values, byColumns );
     }
 
@@ -1044,7 +1047,7 @@ public class PlottingConvenience {
     /**
     * See {@link io.deephaven.engine.plot.Figure#errorBarX} 
     **/
-    public static  io.deephaven.engine.plot.Figure errorBarX( java.lang.Comparable seriesName, io.deephaven.engine.tables.Table t, java.lang.String x, java.lang.String xLow, java.lang.String xHigh, java.lang.String y ) {
+    public static  io.deephaven.engine.plot.Figure errorBarX(java.lang.Comparable seriesName, Table t, java.lang.String x, java.lang.String xLow, java.lang.String xHigh, java.lang.String y ) {
         return FigureFactory.figure().errorBarX( seriesName, t, x, xLow, xHigh, y );
     }
 
@@ -1058,7 +1061,7 @@ public class PlottingConvenience {
     /**
     * See {@link io.deephaven.engine.plot.Figure#errorBarXBy} 
     **/
-    public static  io.deephaven.engine.plot.Figure errorBarXBy( java.lang.Comparable seriesName, io.deephaven.engine.tables.Table t, java.lang.String x, java.lang.String xLow, java.lang.String xHigh, java.lang.String y, java.lang.String... byColumns ) {
+    public static  io.deephaven.engine.plot.Figure errorBarXBy(java.lang.Comparable seriesName, Table t, java.lang.String x, java.lang.String xLow, java.lang.String xHigh, java.lang.String y, java.lang.String... byColumns ) {
         return FigureFactory.figure().errorBarXBy( seriesName, t, x, xLow, xHigh, y, byColumns );
     }
 
@@ -1331,7 +1334,7 @@ public class PlottingConvenience {
     /**
     * See {@link io.deephaven.engine.plot.Figure#errorBarXY} 
     **/
-    public static  io.deephaven.engine.plot.Figure errorBarXY( java.lang.Comparable seriesName, io.deephaven.engine.tables.Table t, java.lang.String x, java.lang.String xLow, java.lang.String xHigh, java.lang.String y, java.lang.String yLow, java.lang.String yHigh ) {
+    public static  io.deephaven.engine.plot.Figure errorBarXY(java.lang.Comparable seriesName, Table t, java.lang.String x, java.lang.String xLow, java.lang.String xHigh, java.lang.String y, java.lang.String yLow, java.lang.String yHigh ) {
         return FigureFactory.figure().errorBarXY( seriesName, t, x, xLow, xHigh, y, yLow, yHigh );
     }
 
@@ -1345,7 +1348,7 @@ public class PlottingConvenience {
     /**
     * See {@link io.deephaven.engine.plot.Figure#errorBarXYBy} 
     **/
-    public static  io.deephaven.engine.plot.Figure errorBarXYBy( java.lang.Comparable seriesName, io.deephaven.engine.tables.Table t, java.lang.String x, java.lang.String xLow, java.lang.String xHigh, java.lang.String y, java.lang.String yLow, java.lang.String yHigh, java.lang.String... byColumns ) {
+    public static  io.deephaven.engine.plot.Figure errorBarXYBy(java.lang.Comparable seriesName, Table t, java.lang.String x, java.lang.String xLow, java.lang.String xHigh, java.lang.String y, java.lang.String yLow, java.lang.String yHigh, java.lang.String... byColumns ) {
         return FigureFactory.figure().errorBarXYBy( seriesName, t, x, xLow, xHigh, y, yLow, yHigh, byColumns );
     }
 
@@ -1618,7 +1621,7 @@ public class PlottingConvenience {
     /**
     * See {@link io.deephaven.engine.plot.Figure#errorBarY} 
     **/
-    public static  io.deephaven.engine.plot.Figure errorBarY( java.lang.Comparable seriesName, io.deephaven.engine.tables.Table t, java.lang.String x, java.lang.String y, java.lang.String yLow, java.lang.String yHigh ) {
+    public static  io.deephaven.engine.plot.Figure errorBarY(java.lang.Comparable seriesName, Table t, java.lang.String x, java.lang.String y, java.lang.String yLow, java.lang.String yHigh ) {
         return FigureFactory.figure().errorBarY( seriesName, t, x, y, yLow, yHigh );
     }
 
@@ -1632,14 +1635,14 @@ public class PlottingConvenience {
     /**
     * See {@link io.deephaven.engine.plot.Figure#errorBarYBy} 
     **/
-    public static  io.deephaven.engine.plot.Figure errorBarYBy( java.lang.Comparable seriesName, io.deephaven.engine.tables.Table t, java.lang.String x, java.lang.String y, java.lang.String yLow, java.lang.String yHigh, java.lang.String... byColumns ) {
+    public static  io.deephaven.engine.plot.Figure errorBarYBy(java.lang.Comparable seriesName, Table t, java.lang.String x, java.lang.String y, java.lang.String yLow, java.lang.String yHigh, java.lang.String... byColumns ) {
         return FigureFactory.figure().errorBarYBy( seriesName, t, x, y, yLow, yHigh, byColumns );
     }
 
     /**
     * See {@link io.deephaven.engine.plot.Figure#histPlot} 
     **/
-    public static  io.deephaven.engine.plot.Figure histPlot( java.lang.Comparable seriesName, io.deephaven.engine.tables.Table counts ) {
+    public static  io.deephaven.engine.plot.Figure histPlot( java.lang.Comparable seriesName, Table counts ) {
         return FigureFactory.figure().histPlot( seriesName, counts );
     }
 
@@ -1702,7 +1705,7 @@ public class PlottingConvenience {
     /**
     * See {@link io.deephaven.engine.plot.Figure#histPlot} 
     **/
-    public static  io.deephaven.engine.plot.Figure histPlot( java.lang.Comparable seriesName, io.deephaven.engine.tables.Table t, java.lang.String columnName, int nbins ) {
+    public static  io.deephaven.engine.plot.Figure histPlot(java.lang.Comparable seriesName, Table t, java.lang.String columnName, int nbins ) {
         return FigureFactory.figure().histPlot( seriesName, t, columnName, nbins );
     }
 
@@ -1765,7 +1768,7 @@ public class PlottingConvenience {
     /**
     * See {@link io.deephaven.engine.plot.Figure#histPlot} 
     **/
-    public static  io.deephaven.engine.plot.Figure histPlot( java.lang.Comparable seriesName, io.deephaven.engine.tables.Table t, java.lang.String columnName, double rangeMin, double rangeMax, int nbins ) {
+    public static  io.deephaven.engine.plot.Figure histPlot(java.lang.Comparable seriesName, Table t, java.lang.String columnName, double rangeMin, double rangeMax, int nbins ) {
         return FigureFactory.figure().histPlot( seriesName, t, columnName, rangeMin, rangeMax, nbins );
     }
 
@@ -1933,7 +1936,7 @@ public class PlottingConvenience {
     /**
     * See {@link io.deephaven.engine.plot.Figure#ohlcPlot} 
     **/
-    public static  io.deephaven.engine.plot.Figure ohlcPlot( java.lang.Comparable seriesName, io.deephaven.engine.tables.Table t, java.lang.String timeCol, java.lang.String openCol, java.lang.String highCol, java.lang.String lowCol, java.lang.String closeCol ) {
+    public static  io.deephaven.engine.plot.Figure ohlcPlot(java.lang.Comparable seriesName, Table t, java.lang.String timeCol, java.lang.String openCol, java.lang.String highCol, java.lang.String lowCol, java.lang.String closeCol ) {
         return FigureFactory.figure().ohlcPlot( seriesName, t, timeCol, openCol, highCol, lowCol, closeCol );
     }
 
@@ -1947,7 +1950,7 @@ public class PlottingConvenience {
     /**
     * See {@link io.deephaven.engine.plot.Figure#ohlcPlotBy} 
     **/
-    public static  io.deephaven.engine.plot.Figure ohlcPlotBy( java.lang.Comparable seriesName, io.deephaven.engine.tables.Table t, java.lang.String timeCol, java.lang.String openCol, java.lang.String highCol, java.lang.String lowCol, java.lang.String closeCol, java.lang.String... byColumns ) {
+    public static  io.deephaven.engine.plot.Figure ohlcPlotBy(java.lang.Comparable seriesName, Table t, java.lang.String timeCol, java.lang.String openCol, java.lang.String highCol, java.lang.String lowCol, java.lang.String closeCol, java.lang.String... byColumns ) {
         return FigureFactory.figure().ohlcPlotBy( seriesName, t, timeCol, openCol, highCol, lowCol, closeCol, byColumns );
     }
 
@@ -2066,7 +2069,7 @@ public class PlottingConvenience {
     /**
     * See {@link io.deephaven.engine.plot.Figure#piePlot} 
     **/
-    public static  io.deephaven.engine.plot.Figure piePlot( java.lang.Comparable seriesName, io.deephaven.engine.tables.Table t, java.lang.String categories, java.lang.String values ) {
+    public static  io.deephaven.engine.plot.Figure piePlot(java.lang.Comparable seriesName, Table t, java.lang.String categories, java.lang.String values ) {
         return FigureFactory.figure().piePlot( seriesName, t, categories, values );
     }
 
@@ -2661,7 +2664,7 @@ public class PlottingConvenience {
     /**
     * See {@link io.deephaven.engine.plot.Figure#plot} 
     **/
-    public static  io.deephaven.engine.plot.Figure plot( java.lang.Comparable seriesName, io.deephaven.engine.tables.Table t, java.lang.String x, java.lang.String y ) {
+    public static  io.deephaven.engine.plot.Figure plot(java.lang.Comparable seriesName, Table t, java.lang.String x, java.lang.String y ) {
         return FigureFactory.figure().plot( seriesName, t, x, y );
     }
 
@@ -2682,7 +2685,7 @@ public class PlottingConvenience {
     /**
     * See {@link io.deephaven.engine.plot.Figure#plotBy} 
     **/
-    public static  io.deephaven.engine.plot.Figure plotBy( java.lang.Comparable seriesName, io.deephaven.engine.tables.Table t, java.lang.String x, java.lang.String y, java.lang.String... byColumns ) {
+    public static  io.deephaven.engine.plot.Figure plotBy(java.lang.Comparable seriesName, Table t, java.lang.String x, java.lang.String y, java.lang.String... byColumns ) {
         return FigureFactory.figure().plotBy( seriesName, t, x, y, byColumns );
     }
 

@@ -1,9 +1,6 @@
 package io.deephaven.engine.v2.utils;
 
-import io.deephaven.engine.rowset.MutableRowSet;
-import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetBuilderSequential;
-import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.*;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.junit.Test;
 import static org.junit.Assert.*;
@@ -210,9 +207,9 @@ public class RowSetShiftDataTest {
         final RowSetShiftData sisd = scb.build();
 
         final MutableRowSet didx = rowSet.copy();
-        disd.apply(didx);
+        RowSetShiftUtils.apply(disd, didx);
         final MutableRowSet sidx = rowSet.copy();
-        sisd.apply(sidx);
+        RowSetShiftUtils.apply(sisd, sidx);
 
         assertEquals(didx, sidx);
     }
@@ -241,9 +238,9 @@ public class RowSetShiftDataTest {
         final RowSetShiftData sisd = scb.build();
 
         final MutableRowSet didx = rowSet.copy();
-        disd.apply(didx);
+        RowSetShiftUtils.apply(disd, didx);
         final MutableRowSet sidx = rowSet.copy();
-        sisd.apply(sidx);
+        RowSetShiftUtils.apply(sisd, sidx);
 
         assertEquals(2, sisd.size());
 
@@ -265,9 +262,9 @@ public class RowSetShiftDataTest {
         final RowSetShiftData sisd = scb.build();
 
         final MutableRowSet didx = rowSet.copy();
-        disd.apply(didx);
+        RowSetShiftUtils.apply(disd, didx);
         final MutableRowSet sidx = rowSet.copy();
-        sisd.apply(sidx);
+        RowSetShiftUtils.apply(sisd, sidx);
 
         assertEquals(didx, sidx);
     }
@@ -298,9 +295,9 @@ public class RowSetShiftDataTest {
         final RowSetShiftData sisd = scb.build();
 
         final MutableRowSet didx = rowSet.copy();
-        disd.apply(didx);
+        RowSetShiftUtils.apply(disd, didx);
         final MutableRowSet sidx = rowSet.copy();
-        sisd.apply(sidx);
+        RowSetShiftUtils.apply(sisd, sidx);
 
         assertEquals(didx, sidx);
     }
@@ -331,9 +328,9 @@ public class RowSetShiftDataTest {
         final RowSetShiftData sisd = scb.build();
 
         final MutableRowSet didx = rowSet.copy();
-        disd.apply(didx);
+        RowSetShiftUtils.apply(disd, didx);
         final MutableRowSet sidx = rowSet.copy();
-        sisd.apply(sidx);
+        RowSetShiftUtils.apply(sisd, sidx);
 
         assertEquals(didx, sidx);
     }
@@ -355,9 +352,9 @@ public class RowSetShiftDataTest {
         final RowSetShiftData sisd = scb.build();
 
         final MutableRowSet didx = rowSet.copy();
-        disd.apply(didx);
+        RowSetShiftUtils.apply(disd, didx);
         final MutableRowSet sidx = rowSet.copy();
-        sisd.apply(sidx);
+        RowSetShiftUtils.apply(sisd, sidx);
 
         assertEquals(didx, sidx);
     }
@@ -389,9 +386,9 @@ public class RowSetShiftDataTest {
         final RowSetShiftData sisd = scb.build();
 
         final MutableRowSet didx = rowSet.copy();
-        disd.apply(didx);
+        RowSetShiftUtils.apply(disd, didx);
         final MutableRowSet sidx = rowSet.copy();
-        sisd.apply(sidx);
+        RowSetShiftUtils.apply(sisd, sidx);
 
         assertEquals(didx, sidx);
     }
@@ -413,9 +410,9 @@ public class RowSetShiftDataTest {
         final RowSetShiftData sisd = scb.build();
 
         final MutableRowSet didx = rowSet.copy();
-        disd.apply(didx);
+        RowSetShiftUtils.apply(disd, didx);
         final MutableRowSet sidx = rowSet.copy();
-        sisd.apply(sidx);
+        RowSetShiftUtils.apply(sisd, sidx);
 
         System.out.println(sisd);
 

@@ -4,7 +4,7 @@ import io.deephaven.engine.plot.datasets.data.IndexableData;
 import io.deephaven.engine.plot.errors.PlotInfo;
 import io.deephaven.engine.plot.filters.SelectableDataSet;
 import io.deephaven.engine.plot.util.tables.*;
-import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.table.Table;
 
 import java.util.*;
 

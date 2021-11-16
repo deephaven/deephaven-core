@@ -5,7 +5,7 @@
 package io.deephaven.engine.plot;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
-import io.deephaven.engine.tables.live.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.gui.color.Color;
 import junit.framework.TestCase;
 

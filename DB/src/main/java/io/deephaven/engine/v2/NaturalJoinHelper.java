@@ -6,8 +6,8 @@ import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.select.MatchPair;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.v2.join.JoinListenerRecorder;
 import io.deephaven.engine.v2.sources.*;
 import io.deephaven.engine.chunk.Attributes.Values;
@@ -891,7 +891,7 @@ class NaturalJoinHelper {
                     final RowSet leftModifiedPreShift;
                     if (leftKeyModifications) {
                         if (leftShifted.nonempty()) {
-                            leftModifiedPreShift = leftShifted.unapply(leftModified.copy());
+                            leftModifiedPreShift = RowSetShiftUtils.unapply(leftShifted, leftModified.copy());
                         } else {
                             leftModifiedPreShift = leftModified;
                         }

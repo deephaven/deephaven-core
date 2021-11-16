@@ -1,6 +1,6 @@
 package io.deephaven.engine.util;
 
-import io.deephaven.engine.tables.live.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.v2.*;
 import io.deephaven.engine.table.ColumnSource;
 

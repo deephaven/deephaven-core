@@ -4,9 +4,8 @@
 
 package io.deephaven.engine.v2;
 
-import io.deephaven.engine.v2.utils.AbstractIndexUpdateNotification;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.v2.utils.RowSetShiftData;
+import io.deephaven.engine.rowset.RowSetShiftData;
 import org.jetbrains.annotations.Nullable;
 
 public abstract class ShiftObliviousInstrumentedListener extends InstrumentedListenerBase
@@ -24,7 +23,7 @@ public abstract class ShiftObliviousInstrumentedListener extends InstrumentedLis
     }
 
     @Override
-    public AbstractIndexUpdateNotification getNotification(final RowSet added, final RowSet removed,
+    public Notification getNotification(final RowSet added, final RowSet removed,
             final RowSet modified) {
         return new Notification(added, removed, modified);
     }

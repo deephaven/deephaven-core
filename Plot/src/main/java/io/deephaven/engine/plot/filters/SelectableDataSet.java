@@ -6,8 +6,8 @@ package io.deephaven.engine.plot.filters;
 
 import io.deephaven.engine.plot.ChartImpl;
 import io.deephaven.engine.plot.util.tables.SwappableTable;
-import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.TableDefinition;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableDefinition;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;

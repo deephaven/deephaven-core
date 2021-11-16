@@ -1,6 +1,6 @@
 package io.deephaven.engine.v2.by;
 
-import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.table.Table;
 import org.jetbrains.annotations.NotNull;
 
 /**

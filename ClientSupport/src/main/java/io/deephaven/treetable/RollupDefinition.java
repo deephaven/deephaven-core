@@ -1,7 +1,7 @@
 package io.deephaven.treetable;
 
-import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.select.MatchPair;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.util.string.StringUtils;
 import io.deephaven.engine.v2.by.AggType;
 import io.deephaven.engine.v2.by.AggregationFactory;

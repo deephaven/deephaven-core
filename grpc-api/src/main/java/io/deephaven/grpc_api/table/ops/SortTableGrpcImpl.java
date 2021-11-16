@@ -5,7 +5,7 @@ import io.deephaven.api.Selectable;
 import io.deephaven.base.verify.Assert;
 import com.google.rpc.Code;
 import io.deephaven.engine.tables.SortPair;
-import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.table.Table;
 import io.deephaven.grpc_api.session.SessionState;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;

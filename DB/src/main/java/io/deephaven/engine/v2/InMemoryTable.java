@@ -5,7 +5,7 @@
 package io.deephaven.engine.v2;
 
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.engine.tables.TableDefinition;
+import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.v2.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.rowset.RowSetFactory;

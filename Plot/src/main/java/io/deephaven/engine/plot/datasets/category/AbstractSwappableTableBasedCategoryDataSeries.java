@@ -10,7 +10,7 @@ import io.deephaven.engine.plot.datasets.data.AssociativeDataSwappableTable;
 import io.deephaven.engine.plot.util.ArgumentValidations;
 import io.deephaven.engine.plot.util.functions.FigureImplFunction;
 import io.deephaven.engine.plot.util.tables.SwappableTable;
-import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.tables.libs.QueryLibrary;
 import io.deephaven.engine.tables.select.QueryScope;
 import io.deephaven.gui.color.Paint;

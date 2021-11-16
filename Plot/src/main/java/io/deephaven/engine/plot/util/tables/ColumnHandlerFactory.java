@@ -7,8 +7,8 @@ package io.deephaven.engine.plot.util.tables;
 import io.deephaven.engine.plot.errors.PlotInfo;
 import io.deephaven.engine.plot.errors.PlotUnsupportedOperationException;
 import io.deephaven.engine.plot.util.ArgumentValidations;
-import io.deephaven.engine.tables.DataColumn;
-import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.table.DataColumn;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.gui.color.Paint;
 

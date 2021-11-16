@@ -1,6 +1,7 @@
 package io.deephaven.engine.v2;
 
-import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableMap;
 import io.deephaven.engine.v2.by.PartitionByChunkedOperator;
 
 /**
@@ -14,7 +15,7 @@ public class RollupAttributeCopier {
     public final static PartitionByChunkedOperator.AttributeCopier LEAF_WITHCONSTITUENTS_INSTANCE = (pt, st) -> {
         pt.copyAttributes(st, BaseTable.CopyAttributeOperation.PartitionBy);
         st.setAttribute(Table.ROLLUP_LEAF_ATTRIBUTE, RollupInfo.LeafType.Constituent);
-        st.setAttribute(Table.HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE, TableMap.emptyMap());
+        st.setAttribute(Table.HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE, EmptyTableMap.INSTANCE);
         st.setAttribute(Table.REVERSE_LOOKUP_ATTRIBUTE, ReverseLookup.NULL);
     };
 

@@ -1,16 +1,16 @@
 package io.deephaven.grpc_api.table;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.tables.live.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.time.DateTimeUtils;
-import io.deephaven.engine.tables.utils.SystemicObjectTracker;
-import io.deephaven.engine.util.liveness.LivenessScopeStack;
+import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
+import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.v2.Listener;
 import io.deephaven.engine.v2.ModifiedColumnSet;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.TstUtils;
 import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.v2.utils.RowSetShiftData;
+import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.UncheckedDeephavenException;

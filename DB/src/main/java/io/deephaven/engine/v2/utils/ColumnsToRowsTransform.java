@@ -8,7 +8,7 @@ import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.impl.RowSequenceUtil;
-import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.v2.*;
 import io.deephaven.engine.v2.sort.permute.PermuteKernel;
 import io.deephaven.engine.v2.sources.AbstractColumnSource;
@@ -292,7 +292,7 @@ public class ColumnsToRowsTransform {
                         }
 
                         downstream.shifted = shiftBuilder.build();
-                        downstream.shifted.apply(resultRowSet);
+                        RowSetShiftUtils.apply(downstream.shifted, resultRowSet);
                     }
 
 

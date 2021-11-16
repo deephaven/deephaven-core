@@ -5,11 +5,8 @@
 package io.deephaven.engine.table;
 
 import io.deephaven.base.verify.Require;
-import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.chunk.Attributes.Values;
-import io.deephaven.engine.rftable.ChunkSource;
 import io.deephaven.engine.chunk.ChunkType;
-import io.deephaven.engine.rftable.DefaultChunkSource;
 import io.deephaven.engine.rowset.MutableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.TrackingMutableRowSet;
@@ -155,9 +152,7 @@ public interface ColumnSource<T>
     }
 
     @Override
-    default ChunkSource<Attributes.Values> getPrevSource() {
-        return new PrevColumnSource<>(this);
-    }
+    ColumnSource<T> getPrevSource();
 
     /**
      * Returns this {@code ColumnSource}, parameterized by {@code <TYPE>}, if the data type of this column (as given by

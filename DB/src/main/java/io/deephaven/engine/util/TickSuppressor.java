@@ -6,8 +6,8 @@ package io.deephaven.engine.util;
 
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.SharedContext;
-import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.live.UpdateGraphProcessor;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.v2.*;
 import io.deephaven.engine.chunk.util.hashing.ChunkEquals;
 import io.deephaven.engine.table.ColumnSource;

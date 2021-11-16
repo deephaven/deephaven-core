@@ -6,10 +6,7 @@ package io.deephaven.engine.v2;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.engine.rowset.MutableRowSet;
-import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.sources.DateTimeTreeMapSource;
@@ -243,7 +240,7 @@ public class GenerateTableUpdates {
             });
             final int numRowsBlattedByShift = preShiftIndexSize - rowSet.intSize();
 
-            update.shifted.apply(rowSet);
+            RowSetShiftUtils.apply(update.shifted, rowSet);
 
             // Modifies and Adds in post-shift keyspace.
             if (rowSet.isNonempty()) {
@@ -323,7 +320,7 @@ public class GenerateTableUpdates {
                 }
             }
         });
-        update.shifted.apply(rowSet);
+        RowSetShiftUtils.apply(update.shifted, rowSet);
 
         // Modifies and Adds in post-shift keyspace.
         final ColumnHolder[] cModsOnly = new ColumnHolder[columnInfo.length];

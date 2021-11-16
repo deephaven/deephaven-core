@@ -1,8 +1,8 @@
 {
  "className": "io.deephaven.engine.v2.PartitionAwareSourceTable",
  "methods": {
-  "selectDistinct": ":param columns: io.deephaven.engine.v2.select.SelectColumn...\n:return: io.deephaven.engine.tables.Table",
-  "where": ":param filters: io.deephaven.engine.v2.select.SelectFilter...\n:return: io.deephaven.engine.tables.Table"
+  "selectDistinct": ":param columns: io.deephaven.engine.v2.select.SelectColumn...\n:return: io.deephaven.engine.table.Table",
+  "where": ":param filters: io.deephaven.engine.v2.select.SelectFilter...\n:return: io.deephaven.engine.table.Table"
  },
  "path": "io.deephaven.engine.v2.PartitionAwareSourceTable",
  "text": "A source table that can filter partitions before coalescing. Refer to TableLocationKey for an explanation of\n partitioning.",

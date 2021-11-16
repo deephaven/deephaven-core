@@ -9,6 +9,7 @@
 package io.deephaven.engine.plot;
 
 
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.time.DateTime;
 
 /** An interface for constructing plots.  A Figure is immutable, and all function calls return a new immutable Figure instance.*/
@@ -94,11 +95,11 @@ public interface Figure extends java.io.Serializable, io.deephaven.engine.plot.B
 
     @Override  Figure catErrorBar( java.lang.Comparable seriesName, io.deephaven.engine.plot.filters.SelectableDataSet sds, java.lang.String categories, java.lang.String values, java.lang.String yLow, java.lang.String yHigh );
 
-    @Override  Figure catErrorBar( java.lang.Comparable seriesName, io.deephaven.engine.tables.Table t, java.lang.String categories, java.lang.String values, java.lang.String yLow, java.lang.String yHigh );
+    @Override  Figure catErrorBar(java.lang.Comparable seriesName, Table t, java.lang.String categories, java.lang.String values, java.lang.String yLow, java.lang.String yHigh );
 
     @Override  Figure catErrorBarBy( java.lang.Comparable seriesName, io.deephaven.engine.plot.filters.SelectableDataSet sds, java.lang.String categories, java.lang.String values, java.lang.String yLow, java.lang.String yHigh, java.lang.String... byColumns );
 
-    @Override  Figure catErrorBarBy( java.lang.Comparable seriesName, io.deephaven.engine.tables.Table t, java.lang.String categories, java.lang.String values, java.lang.String yLow, java.lang.String yHigh, java.lang.String... byColumns );
+    @Override  Figure catErrorBarBy(java.lang.Comparable seriesName, Table t, java.lang.String categories, java.lang.String values, java.lang.String yLow, java.lang.String yHigh, java.lang.String... byColumns );
 
     @Override <T extends java.lang.Comparable> Figure catHistPlot( java.lang.Comparable seriesName, T[] x );
 
@@ -114,7 +115,7 @@ public interface Figure extends java.io.Serializable, io.deephaven.engine.plot.B
 
     @Override  Figure catHistPlot( java.lang.Comparable seriesName, io.deephaven.engine.plot.filters.SelectableDataSet sds, java.lang.String columnName );
 
-    @Override  Figure catHistPlot( java.lang.Comparable seriesName, io.deephaven.engine.tables.Table t, java.lang.String columnName );
+    @Override  Figure catHistPlot(java.lang.Comparable seriesName, Table t, java.lang.String columnName );
 
     @Override <T0 extends java.lang.Comparable,T1 extends java.lang.Number> Figure catPlot( java.lang.Comparable seriesName, T0[] categories, T1[] values );
 
@@ -156,11 +157,11 @@ public interface Figure extends java.io.Serializable, io.deephaven.engine.plot.B
 
     @Override  Figure catPlot( java.lang.Comparable seriesName, io.deephaven.engine.plot.filters.SelectableDataSet sds, java.lang.String categories, java.lang.String values );
 
-    @Override  Figure catPlot( java.lang.Comparable seriesName, io.deephaven.engine.tables.Table t, java.lang.String categories, java.lang.String values );
+    @Override  Figure catPlot(java.lang.Comparable seriesName, Table t, java.lang.String categories, java.lang.String values );
 
     @Override  Figure catPlotBy( java.lang.Comparable seriesName, io.deephaven.engine.plot.filters.SelectableDataSet sds, java.lang.String categories, java.lang.String values, java.lang.String... byColumns );
 
-    @Override  Figure catPlotBy( java.lang.Comparable seriesName, io.deephaven.engine.tables.Table t, java.lang.String categories, java.lang.String values, java.lang.String... byColumns );
+    @Override  Figure catPlotBy(java.lang.Comparable seriesName, Table t, java.lang.String categories, java.lang.String values, java.lang.String... byColumns );
 
     @Override  Figure chart( int index );
 
@@ -172,15 +173,15 @@ public interface Figure extends java.io.Serializable, io.deephaven.engine.plot.B
 
     @Override  Figure chartTitle( io.deephaven.engine.plot.filters.SelectableDataSet sds, java.lang.String... titleColumns );
 
-    @Override  Figure chartTitle( io.deephaven.engine.tables.Table t, java.lang.String... titleColumns );
+    @Override  Figure chartTitle(Table t, java.lang.String... titleColumns );
 
     @Override  Figure chartTitle( boolean showColumnNamesInTitle, io.deephaven.engine.plot.filters.SelectableDataSet sds, java.lang.String... titleColumns );
 
-    @Override  Figure chartTitle( boolean showColumnNamesInTitle, io.deephaven.engine.tables.Table t, java.lang.String... titleColumns );
+    @Override  Figure chartTitle(boolean showColumnNamesInTitle, Table t, java.lang.String... titleColumns );
 
     @Override  Figure chartTitle( java.lang.String titleFormat, io.deephaven.engine.plot.filters.SelectableDataSet sds, java.lang.String... titleColumns );
 
-    @Override  Figure chartTitle( java.lang.String titleFormat, io.deephaven.engine.tables.Table t, java.lang.String... titleColumns );
+    @Override  Figure chartTitle(java.lang.String titleFormat, Table t, java.lang.String... titleColumns );
 
     @Override  Figure chartTitleColor( java.lang.String color );
 
@@ -268,11 +269,11 @@ public interface Figure extends java.io.Serializable, io.deephaven.engine.plot.B
 
     @Override  Figure errorBarX( java.lang.Comparable seriesName, io.deephaven.engine.plot.filters.SelectableDataSet sds, java.lang.String x, java.lang.String xLow, java.lang.String xHigh, java.lang.String y );
 
-    @Override  Figure errorBarX( java.lang.Comparable seriesName, io.deephaven.engine.tables.Table t, java.lang.String x, java.lang.String xLow, java.lang.String xHigh, java.lang.String y );
+    @Override  Figure errorBarX(java.lang.Comparable seriesName, Table t, java.lang.String x, java.lang.String xLow, java.lang.String xHigh, java.lang.String y );
 
     @Override  Figure errorBarXBy( java.lang.Comparable seriesName, io.deephaven.engine.plot.filters.SelectableDataSet sds, java.lang.String x, java.lang.String xLow, java.lang.String xHigh, java.lang.String y, java.lang.String... byColumns );
 
-    @Override  Figure errorBarXBy( java.lang.Comparable seriesName, io.deephaven.engine.tables.Table t, java.lang.String x, java.lang.String xLow, java.lang.String xHigh, java.lang.String y, java.lang.String... byColumns );
+    @Override  Figure errorBarXBy(java.lang.Comparable seriesName, Table t, java.lang.String x, java.lang.String xLow, java.lang.String xHigh, java.lang.String y, java.lang.String... byColumns );
 
     @Override <T0 extends java.lang.Number,T1 extends java.lang.Number,T2 extends java.lang.Number,T3 extends java.lang.Number,T4 extends java.lang.Number,T5 extends java.lang.Number> Figure errorBarXY( java.lang.Comparable seriesName, T0[] x, T1[] xLow, T2[] xHigh, T3[] y, T4[] yLow, T5[] yHigh );
 
@@ -350,11 +351,11 @@ public interface Figure extends java.io.Serializable, io.deephaven.engine.plot.B
 
     @Override  Figure errorBarXY( java.lang.Comparable seriesName, io.deephaven.engine.plot.filters.SelectableDataSet sds, java.lang.String x, java.lang.String xLow, java.lang.String xHigh, java.lang.String y, java.lang.String yLow, java.lang.String yHigh );
 
-    @Override  Figure errorBarXY( java.lang.Comparable seriesName, io.deephaven.engine.tables.Table t, java.lang.String x, java.lang.String xLow, java.lang.String xHigh, java.lang.String y, java.lang.String yLow, java.lang.String yHigh );
+    @Override  Figure errorBarXY(java.lang.Comparable seriesName, Table t, java.lang.String x, java.lang.String xLow, java.lang.String xHigh, java.lang.String y, java.lang.String yLow, java.lang.String yHigh );
 
     @Override  Figure errorBarXYBy( java.lang.Comparable seriesName, io.deephaven.engine.plot.filters.SelectableDataSet sds, java.lang.String x, java.lang.String xLow, java.lang.String xHigh, java.lang.String y, java.lang.String yLow, java.lang.String yHigh, java.lang.String... byColumns );
 
-    @Override  Figure errorBarXYBy( java.lang.Comparable seriesName, io.deephaven.engine.tables.Table t, java.lang.String x, java.lang.String xLow, java.lang.String xHigh, java.lang.String y, java.lang.String yLow, java.lang.String yHigh, java.lang.String... byColumns );
+    @Override  Figure errorBarXYBy(java.lang.Comparable seriesName, Table t, java.lang.String x, java.lang.String xLow, java.lang.String xHigh, java.lang.String y, java.lang.String yLow, java.lang.String yHigh, java.lang.String... byColumns );
 
     @Override <T0 extends java.lang.Number,T1 extends java.lang.Number,T2 extends java.lang.Number,T3 extends java.lang.Number> Figure errorBarY( java.lang.Comparable seriesName, T0[] x, T1[] y, T2[] yLow, T3[] yHigh );
 
@@ -432,11 +433,11 @@ public interface Figure extends java.io.Serializable, io.deephaven.engine.plot.B
 
     @Override  Figure errorBarY( java.lang.Comparable seriesName, io.deephaven.engine.plot.filters.SelectableDataSet sds, java.lang.String x, java.lang.String y, java.lang.String yLow, java.lang.String yHigh );
 
-    @Override  Figure errorBarY( java.lang.Comparable seriesName, io.deephaven.engine.tables.Table t, java.lang.String x, java.lang.String y, java.lang.String yLow, java.lang.String yHigh );
+    @Override  Figure errorBarY(java.lang.Comparable seriesName, Table t, java.lang.String x, java.lang.String y, java.lang.String yLow, java.lang.String yHigh );
 
     @Override  Figure errorBarYBy( java.lang.Comparable seriesName, io.deephaven.engine.plot.filters.SelectableDataSet sds, java.lang.String x, java.lang.String y, java.lang.String yLow, java.lang.String yHigh, java.lang.String... byColumns );
 
-    @Override  Figure errorBarYBy( java.lang.Comparable seriesName, io.deephaven.engine.tables.Table t, java.lang.String x, java.lang.String y, java.lang.String yLow, java.lang.String yHigh, java.lang.String... byColumns );
+    @Override  Figure errorBarYBy(java.lang.Comparable seriesName, Table t, java.lang.String x, java.lang.String y, java.lang.String yLow, java.lang.String yHigh, java.lang.String... byColumns );
 
     @Override  Figure figureRemoveSeries( java.lang.String... names );
 
@@ -452,7 +453,7 @@ public interface Figure extends java.io.Serializable, io.deephaven.engine.plot.B
 
     @Override  Figure gridLinesVisible( boolean visible );
 
-    @Override  Figure histPlot( java.lang.Comparable seriesName, io.deephaven.engine.tables.Table counts );
+    @Override  Figure histPlot( java.lang.Comparable seriesName, Table counts );
 
     @Override <T0 extends java.lang.Number> Figure histPlot( java.lang.Comparable seriesName, T0[] x, int nbins );
 
@@ -470,7 +471,7 @@ public interface Figure extends java.io.Serializable, io.deephaven.engine.plot.B
 
     @Override  Figure histPlot( java.lang.Comparable seriesName, io.deephaven.engine.plot.filters.SelectableDataSet sds, java.lang.String columnName, int nbins );
 
-    @Override  Figure histPlot( java.lang.Comparable seriesName, io.deephaven.engine.tables.Table t, java.lang.String columnName, int nbins );
+    @Override  Figure histPlot(java.lang.Comparable seriesName, Table t, java.lang.String columnName, int nbins );
 
     @Override <T0 extends java.lang.Number> Figure histPlot( java.lang.Comparable seriesName, T0[] x, double rangeMin, double rangeMax, int nbins );
 
@@ -488,7 +489,7 @@ public interface Figure extends java.io.Serializable, io.deephaven.engine.plot.B
 
     @Override  Figure histPlot( java.lang.Comparable seriesName, io.deephaven.engine.plot.filters.SelectableDataSet sds, java.lang.String columnName, double rangeMin, double rangeMax, int nbins );
 
-    @Override  Figure histPlot( java.lang.Comparable seriesName, io.deephaven.engine.tables.Table t, java.lang.String columnName, double rangeMin, double rangeMax, int nbins );
+    @Override  Figure histPlot(java.lang.Comparable seriesName, Table t, java.lang.String columnName, double rangeMin, double rangeMax, int nbins );
 
     @Override  Figure invert( );
 
@@ -566,11 +567,11 @@ public interface Figure extends java.io.Serializable, io.deephaven.engine.plot.B
 
     @Override  Figure ohlcPlot( java.lang.Comparable seriesName, io.deephaven.engine.plot.filters.SelectableDataSet sds, java.lang.String timeCol, java.lang.String openCol, java.lang.String highCol, java.lang.String lowCol, java.lang.String closeCol );
 
-    @Override  Figure ohlcPlot( java.lang.Comparable seriesName, io.deephaven.engine.tables.Table t, java.lang.String timeCol, java.lang.String openCol, java.lang.String highCol, java.lang.String lowCol, java.lang.String closeCol );
+    @Override  Figure ohlcPlot(java.lang.Comparable seriesName, Table t, java.lang.String timeCol, java.lang.String openCol, java.lang.String highCol, java.lang.String lowCol, java.lang.String closeCol );
 
     @Override  Figure ohlcPlotBy( java.lang.Comparable seriesName, io.deephaven.engine.plot.filters.SelectableDataSet sds, java.lang.String timeCol, java.lang.String openCol, java.lang.String highCol, java.lang.String lowCol, java.lang.String closeCol, java.lang.String... byColumns );
 
-    @Override  Figure ohlcPlotBy( java.lang.Comparable seriesName, io.deephaven.engine.tables.Table t, java.lang.String timeCol, java.lang.String openCol, java.lang.String highCol, java.lang.String lowCol, java.lang.String closeCol, java.lang.String... byColumns );
+    @Override  Figure ohlcPlotBy(java.lang.Comparable seriesName, Table t, java.lang.String timeCol, java.lang.String openCol, java.lang.String highCol, java.lang.String lowCol, java.lang.String closeCol, java.lang.String... byColumns );
 
     @Override <T0 extends java.lang.Comparable,T1 extends java.lang.Number> Figure piePlot( java.lang.Comparable seriesName, T0[] categories, T1[] values );
 
@@ -604,7 +605,7 @@ public interface Figure extends java.io.Serializable, io.deephaven.engine.plot.B
 
     @Override  Figure piePlot( java.lang.Comparable seriesName, io.deephaven.engine.plot.filters.SelectableDataSet sds, java.lang.String categories, java.lang.String values );
 
-    @Override  Figure piePlot( java.lang.Comparable seriesName, io.deephaven.engine.tables.Table t, java.lang.String categories, java.lang.String values );
+    @Override  Figure piePlot(java.lang.Comparable seriesName, Table t, java.lang.String categories, java.lang.String values );
 
     @Override <T extends java.lang.Number> Figure plot( java.lang.Comparable seriesName, groovy.lang.Closure<T> function );
 
@@ -774,13 +775,13 @@ public interface Figure extends java.io.Serializable, io.deephaven.engine.plot.B
 
     @Override  Figure plot( java.lang.Comparable seriesName, io.deephaven.engine.plot.filters.SelectableDataSet sds, java.lang.String x, java.lang.String y );
 
-    @Override  Figure plot( java.lang.Comparable seriesName, io.deephaven.engine.tables.Table t, java.lang.String x, java.lang.String y );
+    @Override  Figure plot(java.lang.Comparable seriesName, Table t, java.lang.String x, java.lang.String y );
 
     @Override  Figure plot( java.lang.Comparable seriesName, io.deephaven.engine.plot.datasets.data.IndexableNumericData x, io.deephaven.engine.plot.datasets.data.IndexableNumericData y, boolean hasXTimeAxis, boolean hasYTimeAxis );
 
     @Override  Figure plotBy( java.lang.Comparable seriesName, io.deephaven.engine.plot.filters.SelectableDataSet sds, java.lang.String x, java.lang.String y, java.lang.String... byColumns );
 
-    @Override  Figure plotBy( java.lang.Comparable seriesName, io.deephaven.engine.tables.Table t, java.lang.String x, java.lang.String y, java.lang.String... byColumns );
+    @Override  Figure plotBy(java.lang.Comparable seriesName, Table t, java.lang.String x, java.lang.String y, java.lang.String... byColumns );
 
     @Override  Figure plotOrientation( java.lang.String orientation );
 
@@ -1016,13 +1017,13 @@ public interface Figure extends java.io.Serializable, io.deephaven.engine.plot.B
 
     @Override  Figure pointColor( io.deephaven.engine.plot.filters.SelectableDataSet sds, java.lang.String keyColumn, java.lang.String valueColumn, java.lang.Object... keys );
 
-    @Override  Figure pointColor( io.deephaven.engine.tables.Table t, java.lang.String columnName );
+    @Override  Figure pointColor(Table t, java.lang.String columnName );
 
-    @Override  Figure pointColor( io.deephaven.engine.tables.Table t, java.lang.String columnName, java.lang.Object... keys );
+    @Override  Figure pointColor(Table t, java.lang.String columnName, java.lang.Object... keys );
 
-    @Override  Figure pointColor( io.deephaven.engine.tables.Table t, java.lang.String keyColumn, java.lang.String valueColumn );
+    @Override  Figure pointColor(Table t, java.lang.String keyColumn, java.lang.String valueColumn );
 
-    @Override  Figure pointColor( io.deephaven.engine.tables.Table t, java.lang.String keyColumn, java.lang.String valueColumn, java.lang.Object... keys );
+    @Override  Figure pointColor(Table t, java.lang.String keyColumn, java.lang.String valueColumn, java.lang.Object... keys );
 
     @Override  Figure pointColor( io.deephaven.gui.color.Paint color );
 
@@ -1072,13 +1073,13 @@ public interface Figure extends java.io.Serializable, io.deephaven.engine.plot.B
 
     @Override  Figure pointLabel( io.deephaven.engine.plot.filters.SelectableDataSet sds, java.lang.String keyColumn, java.lang.String valueColumn, java.lang.Object... keys );
 
-    @Override  Figure pointLabel( io.deephaven.engine.tables.Table t, java.lang.String columnName );
+    @Override  Figure pointLabel(Table t, java.lang.String columnName );
 
-    @Override  Figure pointLabel( io.deephaven.engine.tables.Table t, java.lang.String columnName, java.lang.Object... keys );
+    @Override  Figure pointLabel(Table t, java.lang.String columnName, java.lang.Object... keys );
 
-    @Override  Figure pointLabel( io.deephaven.engine.tables.Table t, java.lang.String keyColumn, java.lang.String valueColumn );
+    @Override  Figure pointLabel(Table t, java.lang.String keyColumn, java.lang.String valueColumn );
 
-    @Override  Figure pointLabel( io.deephaven.engine.tables.Table t, java.lang.String keyColumn, java.lang.String valueColumn, java.lang.Object... keys );
+    @Override  Figure pointLabel(Table t, java.lang.String keyColumn, java.lang.String valueColumn, java.lang.Object... keys );
 
     @Override  Figure pointLabel( java.lang.Comparable category, java.lang.Object label );
 
@@ -1112,13 +1113,13 @@ public interface Figure extends java.io.Serializable, io.deephaven.engine.plot.B
 
     @Override  Figure pointShape( io.deephaven.engine.plot.filters.SelectableDataSet sds, java.lang.String keyColumn, java.lang.String valueColumn, java.lang.Object... keys );
 
-    @Override  Figure pointShape( io.deephaven.engine.tables.Table t, java.lang.String columnName );
+    @Override  Figure pointShape(Table t, java.lang.String columnName );
 
-    @Override  Figure pointShape( io.deephaven.engine.tables.Table t, java.lang.String columnName, java.lang.Object... keys );
+    @Override  Figure pointShape(Table t, java.lang.String columnName, java.lang.Object... keys );
 
-    @Override  Figure pointShape( io.deephaven.engine.tables.Table t, java.lang.String keyColumn, java.lang.String valueColumn );
+    @Override  Figure pointShape(Table t, java.lang.String keyColumn, java.lang.String valueColumn );
 
-    @Override  Figure pointShape( io.deephaven.engine.tables.Table t, java.lang.String keyColumn, java.lang.String valueColumn, java.lang.Object... keys );
+    @Override  Figure pointShape(Table t, java.lang.String keyColumn, java.lang.String valueColumn, java.lang.Object... keys );
 
     @Override  Figure pointShape( io.deephaven.gui.shape.Shape shape );
 
@@ -1172,13 +1173,13 @@ public interface Figure extends java.io.Serializable, io.deephaven.engine.plot.B
 
     @Override  Figure pointSize( io.deephaven.engine.plot.filters.SelectableDataSet sds, java.lang.String keyColumn, java.lang.String valueColumn, java.lang.Object... keys );
 
-    @Override  Figure pointSize( io.deephaven.engine.tables.Table t, java.lang.String columnName );
+    @Override  Figure pointSize(Table t, java.lang.String columnName );
 
-    @Override  Figure pointSize( io.deephaven.engine.tables.Table t, java.lang.String columnName, java.lang.Object... keys );
+    @Override  Figure pointSize(Table t, java.lang.String columnName, java.lang.Object... keys );
 
-    @Override  Figure pointSize( io.deephaven.engine.tables.Table t, java.lang.String keyColumn, java.lang.String valueColumn );
+    @Override  Figure pointSize(Table t, java.lang.String keyColumn, java.lang.String valueColumn );
 
-    @Override  Figure pointSize( io.deephaven.engine.tables.Table t, java.lang.String keyColumn, java.lang.String valueColumn, java.lang.Object... keys );
+    @Override  Figure pointSize(Table t, java.lang.String keyColumn, java.lang.String valueColumn, java.lang.Object... keys );
 
     @Override  Figure pointSize( java.lang.Comparable category, double factor );
 

@@ -7,7 +7,9 @@ package io.deephaven.engine.v2.sources;
 import io.deephaven.base.Pair;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.impl.GroupingRowSetHelper;
+import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.WritableSource;
 import io.deephaven.engine.vector.*;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.vector.Vector;
@@ -99,6 +101,11 @@ public abstract class AbstractColumnSource<T> implements ColumnSource<T>, Serial
     @Override
     public Class<?> getComponentType() {
         return componentType;
+    }
+
+    @Override
+    public ColumnSource<T> getPrevSource() {
+        return new PrevColumnSource<>(this);
     }
 
     @Override

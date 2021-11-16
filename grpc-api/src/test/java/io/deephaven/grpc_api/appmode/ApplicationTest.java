@@ -2,7 +2,7 @@ package io.deephaven.grpc_api.appmode;
 
 import io.deephaven.appmode.ApplicationState;
 import io.deephaven.appmode.Field;
-import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.util.AbstractScriptSession;
 import io.deephaven.engine.util.GroovyDeephavenSession;
 import io.deephaven.engine.util.PythonDeephavenSession;

@@ -1,10 +1,10 @@
 {
  "className": "io.deephaven.engine.v2.by.AggregationControl",
  "methods": {
-  "considerGrouping": ":param inputTable: io.deephaven.engine.tables.Table\n:param sources: io.deephaven.engine.v2.sources.ColumnSource<?>[]\n:return: boolean",
+  "considerGrouping": ":param inputTable: io.deephaven.engine.table.Table\n:param sources: io.deephaven.engine.v2.sources.ColumnSource<?>[]\n:return: boolean",
   "getMaximumLoadFactor": ":return: double",
   "getTargetLoadFactor": ":return: double",
-  "initialHashTableSize": ":param inputTable: io.deephaven.engine.tables.Table\n:return: int",
+  "initialHashTableSize": ":param inputTable: io.deephaven.engine.table.Table\n:return: int",
   "shouldProbeShift": ":param shiftSize: long\n:param numStates: int\n:return: boolean"
  },
  "path": "io.deephaven.engine.v2.by.AggregationControl",

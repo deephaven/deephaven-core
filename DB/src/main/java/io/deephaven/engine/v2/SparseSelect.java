@@ -3,15 +3,12 @@ package io.deephaven.engine.v2;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.exceptions.QueryCancellationException;
-import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.live.UpdateGraphProcessor;
+import io.deephaven.engine.table.*;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
 import io.deephaven.engine.v2.sources.*;
 import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.chunk.Chunk;
-import io.deephaven.engine.table.ChunkSource;
-import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.chunk.WritableChunk;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
@@ -218,9 +215,9 @@ public class SparseSelect {
                                         if (upstream.shifted.nonempty()) {
                                             try (final RowSet currentWithoutAddsOrModifies =
                                                     source.getRowSet().minus(addedAndModified);
-                                                    final SafeCloseablePair<RowSet, RowSet> shifts = upstream.shifted
+                                                    final SafeCloseablePair<RowSet, RowSet> shifts = RowSetShiftUtils
                                                             .extractParallelShiftedRowsFromPostShiftIndex(
-                                                                    currentWithoutAddsOrModifies)) {
+                                                                    upstream.shifted, currentWithoutAddsOrModifies)) {
                                                 doShift(shifts, outputSources, modifiedColumns);
                                             }
                                         }
@@ -235,8 +232,8 @@ public class SparseSelect {
                                     if (upstream.shifted.nonempty()) {
                                         try (final RowSet currentWithoutAdds = source.getRowSet().minus(upstream.added);
                                                 final SafeCloseablePair<RowSet, RowSet> shifts =
-                                                        upstream.shifted.extractParallelShiftedRowsFromPostShiftIndex(
-                                                                currentWithoutAdds)) {
+                                                        RowSetShiftUtils.extractParallelShiftedRowsFromPostShiftIndex(
+                                                                upstream.shifted, currentWithoutAdds)) {
                                             doShift(shifts, outputSources, modifiedColumns);
                                         }
                                     }

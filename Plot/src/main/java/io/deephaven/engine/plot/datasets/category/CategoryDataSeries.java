@@ -9,7 +9,7 @@ import io.deephaven.engine.plot.LineStyle;
 import io.deephaven.engine.plot.datasets.DataSeries;
 import io.deephaven.engine.plot.filters.SelectableDataSet;
 import io.deephaven.engine.plot.util.functions.ClosureFunction;
-import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.table.Table;
 import io.deephaven.gui.color.Paint;
 import io.deephaven.gui.shape.Shape;
 import groovy.lang.Closure;

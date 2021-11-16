@@ -5,7 +5,7 @@
 package io.deephaven.engine.v2;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.v2.sources.LogicalClock;
+import io.deephaven.engine.updategraph.LogicalClock;
 
 /**
  * Shift state used by the {@link io.deephaven.engine.v2.sources.BitShiftingColumnSource}.

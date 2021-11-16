@@ -395,7 +395,7 @@ def doLocked(f, lock_type="shared"):
     :param lock_type: UGP lock type.  Valid values are "exclusive" and "shared".  "exclusive" allows only a single reader or writer to hold the lock.  "shared" allows multiple readers or a single writer to hold the lock.
     """
     ThrowingRunnable = jpy.get_type("io.deephaven.integrations.python.PythonThrowingRunnable")
-    UpdateGraphProcessor = jpy.get_type("io.deephaven.engine.tables.live.UpdateGraphProcessor")
+    UpdateGraphProcessor = jpy.get_type("io.deephaven.engine.updategraph.UpdateGraphProcessor")
 
     if lock_type == "exclusive":
         UpdateGraphProcessor.DEFAULT.exclusiveLock().doLocked(ThrowingRunnable(f))

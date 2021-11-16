@@ -5,11 +5,11 @@
 package io.deephaven.engine.util.scripts;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.TableDefinition;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.util.GroovyDeephavenSession;
-import io.deephaven.engine.util.liveness.LivenessScope;
-import io.deephaven.engine.util.liveness.LivenessScopeStack;
+import io.deephaven.engine.liveness.LivenessScope;
+import io.deephaven.engine.liveness.LivenessScopeStack;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;

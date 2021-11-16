@@ -2,6 +2,7 @@ package io.deephaven.engine.v2.utils;
 
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetShiftData;
 
 public class RowRedirectionUtilities {
     private static final long SEARCH_ITERATOR_THRESHOLD = 512;

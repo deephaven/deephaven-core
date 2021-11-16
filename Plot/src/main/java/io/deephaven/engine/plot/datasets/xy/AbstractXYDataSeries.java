@@ -19,7 +19,7 @@ import io.deephaven.engine.plot.util.functions.ClosureFunction;
 import io.deephaven.engine.plot.util.tables.ColumnHandlerFactory;
 import io.deephaven.engine.plot.util.tables.SwappableTable;
 import io.deephaven.engine.plot.util.tables.TableHandle;
-import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.table.Table;
 import io.deephaven.gui.color.Color;
 import io.deephaven.gui.color.Paint;
 import io.deephaven.gui.shape.NamedShape;

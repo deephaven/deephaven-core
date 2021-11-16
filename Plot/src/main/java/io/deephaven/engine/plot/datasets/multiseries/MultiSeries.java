@@ -7,6 +7,7 @@ package io.deephaven.engine.plot.datasets.multiseries;
 import io.deephaven.engine.plot.Series;
 import io.deephaven.engine.plot.datasets.DataSeries;
 import groovy.lang.Closure;
+import io.deephaven.engine.table.Table;
 
 import java.util.function.Function;
 
@@ -168,7 +169,7 @@ public interface MultiSeries extends Series {
     MultiSeries pointColor(final io.deephaven.engine.plot.filters.SelectableDataSet sds, final java.lang.String keyColumn, final java.lang.String valueColumn, final Object... keys);
 
 
-    MultiSeries pointColor(final io.deephaven.engine.tables.Table t, final java.lang.String keyColumn, final java.lang.String valueColumn, final Object... keys);
+    MultiSeries pointColor(final Table t, final java.lang.String keyColumn, final java.lang.String valueColumn, final Object... keys);
 
 
     <T extends io.deephaven.gui.color.Paint> MultiSeries pointColorByY(final java.util.Map<java.lang.Double, T> colors, final Object... keys);
@@ -186,7 +187,7 @@ public interface MultiSeries extends Series {
     MultiSeries pointLabel(final io.deephaven.engine.plot.filters.SelectableDataSet sds, final java.lang.String keyColumn, final java.lang.String valueColumn, final Object... keys);
 
 
-    MultiSeries pointLabel(final io.deephaven.engine.tables.Table t, final java.lang.String keyColumn, final java.lang.String valueColumn, final Object... keys);
+    MultiSeries pointLabel(final Table t, final java.lang.String keyColumn, final java.lang.String valueColumn, final Object... keys);
 
 
     <CATEGORY extends java.lang.Comparable> MultiSeries pointShape(final java.util.Map<CATEGORY, java.lang.String> shapes, final Object... keys);
@@ -201,7 +202,7 @@ public interface MultiSeries extends Series {
     MultiSeries pointShape(final io.deephaven.engine.plot.filters.SelectableDataSet sds, final java.lang.String keyColumn, final java.lang.String valueColumn, final Object... keys);
 
 
-    MultiSeries pointShape(final io.deephaven.engine.tables.Table t, final java.lang.String keyColumn, final java.lang.String valueColumn, final Object... keys);
+    MultiSeries pointShape(final Table t, final java.lang.String keyColumn, final java.lang.String valueColumn, final Object... keys);
 
 
     <CATEGORY extends java.lang.Comparable, NUMBER extends java.lang.Number> MultiSeries pointSize(final java.util.Map<CATEGORY, NUMBER> factors, final Object... keys);
@@ -234,7 +235,7 @@ public interface MultiSeries extends Series {
     MultiSeries pointSize(final io.deephaven.engine.plot.filters.SelectableDataSet sds, final java.lang.String keyColumn, final java.lang.String valueColumn, final Object... keys);
 
 
-    MultiSeries pointSize(final io.deephaven.engine.tables.Table t, final java.lang.String keyColumn, final java.lang.String valueColumn, final Object... keys);
+    MultiSeries pointSize(final Table t, final java.lang.String keyColumn, final java.lang.String valueColumn, final Object... keys);
 
 
     MultiSeries pointColor(final int[] colors, final Object... keys);
@@ -255,7 +256,7 @@ public interface MultiSeries extends Series {
     MultiSeries pointColor(final io.deephaven.engine.plot.filters.SelectableDataSet sds, final java.lang.String columnName, final Object... keys);
 
 
-    MultiSeries pointColor(final io.deephaven.engine.tables.Table t, final java.lang.String columnName, final Object... keys);
+    MultiSeries pointColor(final Table t, final java.lang.String columnName, final Object... keys);
 
 
     MultiSeries pointColorInteger(final io.deephaven.engine.plot.datasets.data.IndexableData<java.lang.Integer> colors, final Object... keys);
@@ -270,7 +271,7 @@ public interface MultiSeries extends Series {
     MultiSeries pointLabel(final io.deephaven.engine.plot.filters.SelectableDataSet sds, final java.lang.String columnName, final Object... keys);
 
 
-    MultiSeries pointLabel(final io.deephaven.engine.tables.Table t, final java.lang.String columnName, final Object... keys);
+    MultiSeries pointLabel(final Table t, final java.lang.String columnName, final Object... keys);
 
 
     MultiSeries pointShape(final io.deephaven.gui.shape.Shape[] shapes, final Object... keys);
@@ -285,7 +286,7 @@ public interface MultiSeries extends Series {
     MultiSeries pointShape(final io.deephaven.engine.plot.filters.SelectableDataSet sds, final java.lang.String columnName, final Object... keys);
 
 
-    MultiSeries pointShape(final io.deephaven.engine.tables.Table t, final java.lang.String columnName, final Object... keys);
+    MultiSeries pointShape(final Table t, final java.lang.String columnName, final Object... keys);
 
 
     <T extends java.lang.Number> MultiSeries pointSize(final T[] factors, final Object... keys);
@@ -306,7 +307,7 @@ public interface MultiSeries extends Series {
     MultiSeries pointSize(final io.deephaven.engine.plot.filters.SelectableDataSet sds, final java.lang.String columnName, final Object... keys);
 
 
-    MultiSeries pointSize(final io.deephaven.engine.tables.Table t, final java.lang.String columnName, final Object... keys);
+    MultiSeries pointSize(final Table t, final java.lang.String columnName, final Object... keys);
 
 
 

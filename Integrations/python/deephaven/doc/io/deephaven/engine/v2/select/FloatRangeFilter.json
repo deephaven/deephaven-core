@@ -2,7 +2,7 @@
  "className": "io.deephaven.engine.v2.select.FloatRangeFilter",
  "methods": {
   "copy": "Create a copy of this SelectFilter.\n\n:return: (io.deephaven.engine.v2.select.FloatRangeFilter) an independent copy of this SelectFilter.",
-  "init": "Initialize this select filter given the table definition\n\n:param tableDefinition: (io.deephaven.engine.tables.TableDefinition) - the definition of the table that will be filtered",
+  "init": "Initialize this select filter given the table definition\n\n:param tableDefinition: (io.deephaven.engine.table.TableDefinition) - the definition of the table that will be filtered",
   "makeRange": ":param columnName: java.lang.String\n:param val: java.lang.String\n:return: io.deephaven.engine.v2.select.SelectFilter",
   "toString": ":return: java.lang.String"
  },

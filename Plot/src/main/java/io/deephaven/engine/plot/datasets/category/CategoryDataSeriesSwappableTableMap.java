@@ -8,7 +8,7 @@ import io.deephaven.engine.plot.AxesImpl;
 import io.deephaven.engine.plot.TableSnapshotSeries;
 import io.deephaven.engine.plot.util.ArgumentValidations;
 import io.deephaven.engine.plot.util.tables.SwappableTable;
-import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.table.Table;
 
 import java.util.Collection;
 

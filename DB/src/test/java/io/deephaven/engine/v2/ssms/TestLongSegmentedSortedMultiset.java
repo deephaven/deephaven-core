@@ -4,13 +4,13 @@
 package io.deephaven.engine.v2.ssms;
 
 import io.deephaven.base.verify.AssertionFailure;
-import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.live.UpdateGraphProcessor;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.util.compare.LongComparisons;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
-import io.deephaven.engine.util.liveness.LivenessScope;
-import io.deephaven.engine.util.liveness.LivenessScopeStack;
+import io.deephaven.engine.liveness.LivenessScope;
+import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.v2.*;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.chunk.*;

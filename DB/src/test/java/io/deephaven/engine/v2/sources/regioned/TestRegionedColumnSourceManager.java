@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2.sources.regioned;
 
 import io.deephaven.base.verify.AssertionFailure;
-import io.deephaven.engine.tables.ColumnDefinition;
+import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.v2.ColumnToCodecMappings;
 import io.deephaven.engine.v2.RefreshingTableTestCase;
 import io.deephaven.engine.v2.locations.*;

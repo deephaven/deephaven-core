@@ -19,7 +19,8 @@ sourceSets {
 dependencies {
     compile project(':qst'),
             project(':engine-chunk'),
-            project(':engine-vector')
+            project(':engine-vector'),
+            project(':engine-time')
 }
 
 spotless {

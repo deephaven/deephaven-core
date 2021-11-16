@@ -1,6 +1,6 @@
 package io.deephaven.benchmark.engine;
 
-import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.table.Table;
 import io.deephaven.benchmarking.*;
 import io.deephaven.benchmarking.generator.EnumStringColumnGenerator;
 import io.deephaven.benchmarking.runner.TableBenchmarkState;

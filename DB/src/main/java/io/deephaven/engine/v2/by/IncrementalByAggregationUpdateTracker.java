@@ -2,6 +2,7 @@ package io.deephaven.engine.v2.by;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.*;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.v2.Listener;
 import io.deephaven.engine.v2.ModifiedColumnSet;
 import io.deephaven.engine.v2.sort.timsort.LongLongTimsortKernel;
@@ -16,7 +17,7 @@ import org.jetbrains.annotations.NotNull;
 
 /**
  * <p>
- * A tracker for accumulating changes to aggregation states for {@link io.deephaven.engine.tables.Table#groupBy}.
+ * A tracker for accumulating changes to aggregation states for {@link Table#groupBy}.
  *
  * <p>
  * The tracker is used in the initial (insert only) build phase, as well as in subsequent update passes.
@@ -597,7 +598,7 @@ class IncrementalByAggregationUpdateTracker {
 
         // Update the result TrackingMutableRowSet
         rowSet.remove(removed);
-        shiftData.apply(rowSet);
+        RowSetShiftUtils.apply(shiftData, rowSet);
         rowSet.insert(added);
 
         // Build and return the update

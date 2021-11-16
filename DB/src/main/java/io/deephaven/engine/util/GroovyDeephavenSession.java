@@ -14,7 +14,7 @@ import io.deephaven.base.StringUtils;
 import io.deephaven.compilertools.CompilerTools;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.exceptions.QueryCancellationException;
-import io.deephaven.engine.tables.live.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.tables.select.QueryScope;
 import io.deephaven.util.NameValidator;
 import io.deephaven.engine.util.scripts.ScriptPathLoader;
@@ -510,8 +510,8 @@ public class GroovyDeephavenSession extends AbstractScriptSession implements Scr
                 "import static io.deephaven.engine.v2.utils.TableLoggers.*;\n" +
                 "import static io.deephaven.engine.v2.utils.PerformanceQueries.*;\n" +
                 "import static io.deephaven.engine.tables.utils.WhereClause.whereClause;\n" +
-                "import io.deephaven.engine.tables.DataColumn;\n" +
-                "import io.deephaven.engine.tables.Table;\n" +
+                "import io.deephaven.engine.table.DataColumn;\n" +
+                "import io.deephaven.engine.table.Table;\n" +
                 "import java.lang.reflect.Array;\n" +
                 "import io.deephaven.util.type.TypeUtils;\n" +
                 "import io.deephaven.util.type.ArrayTypeUtils;\n" +

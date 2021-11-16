@@ -4,10 +4,10 @@
 
 package io.deephaven.engine.v2.utils;
 
-import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.live.NotificationQueue;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.v2.LocalTableMap;
-import io.deephaven.engine.v2.TableMap;
+import io.deephaven.engine.table.TableMap;
 import io.deephaven.util.annotations.ReferentialIntegrity;
 
 import java.util.function.Function;

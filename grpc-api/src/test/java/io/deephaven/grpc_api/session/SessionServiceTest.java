@@ -1,7 +1,7 @@
 package io.deephaven.grpc_api.session;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.util.liveness.LivenessScopeStack;
+import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.grpc_api.util.TestControlledScheduler;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.auth.AuthContext;

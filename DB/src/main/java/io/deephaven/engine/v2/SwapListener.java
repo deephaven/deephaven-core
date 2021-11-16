@@ -1,6 +1,6 @@
 package io.deephaven.engine.v2;
 
-import io.deephaven.engine.tables.live.NotificationQueue;
+import io.deephaven.engine.updategraph.NotificationQueue;
 
 public class SwapListener extends SwapListenerBase<Listener> implements Listener {
 
@@ -15,7 +15,7 @@ public class SwapListener extends SwapListenerBase<Listener> implements Listener
     }
 
     @Override
-    public synchronized NotificationQueue.IndexUpdateNotification getNotification(final Update update) {
+    public synchronized NotificationQueue.Notification getNotification(final Update update) {
         return doGetNotification(() -> eventualListener.getNotification(update));
     }
 

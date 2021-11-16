@@ -10,8 +10,8 @@ import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.plot.errors.*;
 import io.deephaven.engine.plot.util.functions.FigureImplFunction;
 import io.deephaven.engine.plot.util.tables.*;
-import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.v2.TableMap;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableMap;
 import io.deephaven.gui.color.Color;
 import io.deephaven.gui.color.Paint;
 

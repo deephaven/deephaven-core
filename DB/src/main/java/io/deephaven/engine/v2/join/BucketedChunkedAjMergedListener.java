@@ -3,7 +3,7 @@ package io.deephaven.engine.v2.join;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.tables.SortingOrder;
-import io.deephaven.engine.tables.select.MatchPair;
+import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.v2.*;
 import io.deephaven.engine.chunk.util.hashing.ChunkEquals;
 import io.deephaven.engine.v2.sort.LongSortKernel;
@@ -250,7 +250,7 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                                     // if the left is empty, we should be an rowSet entry rather than an SSA, and we can
                                     // not be empty, because we are responsive
                                     final MutableRowSet leftRowSet = asOfJoinStateManager.getLeftIndex(slot);
-                                    shiftDataForSlot.apply(leftRowSet);
+                                    RowSetShiftUtils.apply(shiftDataForSlot, leftRowSet);
                                     shiftedRowSet.close();
                                     leftRowSet.compact();
                                     continue;
@@ -386,7 +386,7 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                                     // if the left is empty, we should be an rowSet entry rather than an SSA, and we can
                                     // not be empty, because we are responsive
                                     final MutableRowSet rightRowSet = asOfJoinStateManager.getRightIndex(slot);
-                                    shiftDataForSlot.apply(rightRowSet);
+                                    RowSetShiftUtils.apply(shiftDataForSlot, rightRowSet);
                                     shiftedRowSet.close();
                                     rightRowSet.compact();
                                     continue;

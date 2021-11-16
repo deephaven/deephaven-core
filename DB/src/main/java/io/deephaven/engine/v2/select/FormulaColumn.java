@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2.select;
 
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.v2.sources.WritableSource;
+import io.deephaven.engine.table.WritableSource;
 
 public interface FormulaColumn extends SelectColumn {
 

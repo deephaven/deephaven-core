@@ -1,7 +1,7 @@
 package io.deephaven.engine.tables.remote.preview;
 
 import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.vector.Vector;
 import io.deephaven.engine.v2.BaseTable;
 import io.deephaven.engine.v2.HierarchicalTable;

@@ -4,7 +4,7 @@
 
 package io.deephaven.engine.v2;
 
-import io.deephaven.engine.tables.ColumnDefinition;
+import io.deephaven.engine.table.ColumnDefinition;
 
 /**
  * Factory for source table components.

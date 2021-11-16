@@ -5,8 +5,8 @@
 package io.deephaven.engine.util;
 
 import io.deephaven.engine.tables.select.QueryScope;
-import io.deephaven.engine.util.liveness.LivenessNode;
-import io.deephaven.engine.util.liveness.ReleasableLivenessManager;
+import io.deephaven.engine.liveness.LivenessNode;
+import io.deephaven.engine.liveness.ReleasableLivenessManager;
 import io.deephaven.engine.util.scripts.ScriptPathLoader;
 import io.deephaven.engine.util.scripts.ScriptPathLoaderState;
 import org.jetbrains.annotations.NotNull;

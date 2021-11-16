@@ -2,6 +2,6 @@
  "className": "io.deephaven.engine.v2.CrossJoinHelper",
  "methods": {},
  "path": "io.deephaven.engine.v2.CrossJoinHelper",
- "text": "Implementation for chunk-oriented aggregation operations, including Table.join(io.deephaven.engine.tables.Table).",
+ "text": "Implementation for chunk-oriented aggregation operations, including Table.join(io.deephaven.engine.table.Table).",
  "typeName": "class"
 }

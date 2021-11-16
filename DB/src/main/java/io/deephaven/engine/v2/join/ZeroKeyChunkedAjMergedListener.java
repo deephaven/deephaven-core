@@ -1,11 +1,8 @@
 package io.deephaven.engine.v2.join;
 
-import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetBuilderRandom;
-import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.tables.SortingOrder;
-import io.deephaven.engine.tables.select.MatchPair;
+import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.v2.*;
 import io.deephaven.engine.chunk.util.hashing.ChunkEquals;
 import io.deephaven.engine.v2.sort.LongSortKernel;

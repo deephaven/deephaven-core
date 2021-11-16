@@ -4,8 +4,9 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.rowset.*;
-import io.deephaven.engine.tables.select.MatchPair;
-import io.deephaven.engine.util.liveness.LivenessReferent;
+import io.deephaven.engine.table.MatchPair;
+import io.deephaven.engine.liveness.LivenessReferent;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.v2.ModifiedColumnSet;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.Listener;
@@ -26,7 +27,7 @@ import static io.deephaven.engine.v2.sources.ArrayBackedColumnSource.BLOCK_SIZE;
 
 /**
  * An {@link IterativeChunkedAggregationOperator} used in the implementation of
- * {@link io.deephaven.engine.tables.Table#groupBy}.
+ * {@link Table#groupBy}.
  */
 public final class GroupByChunkedOperator implements IterativeChunkedAggregationOperator {
 

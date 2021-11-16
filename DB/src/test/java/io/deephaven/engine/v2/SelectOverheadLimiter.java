@@ -4,13 +4,13 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.TrackingMutableRowSet;
-import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.live.UpdateGraphProcessor;
-import io.deephaven.engine.tables.live.NotificationQueue;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.v2.sources.SwitchColumnSource;
 import io.deephaven.engine.v2.sources.sparse.SparseConstants;
-import io.deephaven.engine.v2.utils.*;
 import io.deephaven.util.annotations.VisibleForTesting;
 import gnu.trove.map.hash.TLongIntHashMap;
 import org.apache.commons.lang3.mutable.MutableObject;
@@ -135,7 +135,7 @@ public class SelectOverheadLimiter {
                 if (flatResult != null) {
                     final Listener.Update upstream = flatRecorder.getUpdate();
                     rowSet.remove(upstream.removed);
-                    upstream.shifted.apply(rowSet);
+                    RowSetShiftUtils.apply(upstream.shifted, rowSet);
                     rowSet.insert(upstream.added);
                     final Listener.Update copy = upstream.copy();
                     copy.modifiedColumnSet = result.getModifiedColumnSetForUpdates();
@@ -148,7 +148,7 @@ public class SelectOverheadLimiter {
                 overheadTracker.removeIndex(upstream.removed);
                 rowSet.remove(upstream.removed);
                 upstream.shifted.forAllInIndex(rowSet, overheadTracker);
-                upstream.shifted.apply(rowSet);
+                RowSetShiftUtils.apply(upstream.shifted, rowSet);
                 overheadTracker.addIndex(upstream.added);
                 rowSet.insert(upstream.added);
 

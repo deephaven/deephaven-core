@@ -5,7 +5,7 @@
 package io.deephaven.engine.v2;
 
 import io.deephaven.datastructures.util.SmartKey;
-import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.rowset.RowSet;

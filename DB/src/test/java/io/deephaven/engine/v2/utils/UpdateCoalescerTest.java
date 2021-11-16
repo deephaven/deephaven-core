@@ -4,6 +4,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.MutableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.v2.Listener;
 import io.deephaven.engine.v2.ModifiedColumnSet;
 import io.deephaven.engine.table.ColumnSource;
@@ -394,7 +395,7 @@ public class UpdateCoalescerTest {
         final MutableRowSet rowSet = RowSetFactory.fromRange(0, 3);
         final Listener.Update agg = validateFinalIndex(rowSet, up);
         rowSet.remove(agg.removed);
-        agg.shifted.apply(rowSet);
+        RowSetShiftUtils.apply(agg.shifted, rowSet);
         rowSet.insert(agg.added);
         Assert.eqTrue(rowSet.isFlat(), "rowSet.isFlat()");
     }
@@ -416,7 +417,7 @@ public class UpdateCoalescerTest {
         final MutableRowSet rowSet = RowSetFactory.fromRange(0, 4);
         final Listener.Update agg = validateFinalIndex(rowSet, up);
         rowSet.remove(agg.removed);
-        agg.shifted.apply(rowSet);
+        RowSetShiftUtils.apply(agg.shifted, rowSet);
         rowSet.insert(agg.added);
         Assert.eqTrue(rowSet.isFlat(), "rowSet.isFlat()");
     }
@@ -437,7 +438,7 @@ public class UpdateCoalescerTest {
         final MutableRowSet rowSet = RowSetFactory.fromRange(0, 4);
         final Listener.Update agg = validateFinalIndex(rowSet, up);
         rowSet.remove(agg.removed);
-        agg.shifted.apply(rowSet);
+        RowSetShiftUtils.apply(agg.shifted, rowSet);
         rowSet.insert(agg.added);
         Assert.eqTrue(rowSet.isFlat(), "rowSet.isFlat()");
     }
@@ -458,7 +459,7 @@ public class UpdateCoalescerTest {
         final MutableRowSet rowSet = RowSetFactory.fromRange(0, 2);
         final Listener.Update agg = validateFinalIndex(rowSet, up);
         rowSet.remove(agg.removed);
-        agg.shifted.apply(rowSet);
+        RowSetShiftUtils.apply(agg.shifted, rowSet);
         rowSet.insert(agg.added);
         Assert.eqTrue(rowSet.isFlat(), "rowSet.isFlat()");
     }
@@ -476,7 +477,7 @@ public class UpdateCoalescerTest {
         final MutableRowSet rowSet = RowSetFactory.fromRange(0, 2);
         final Listener.Update agg = validateFinalIndex(rowSet, up);
         rowSet.remove(agg.removed);
-        agg.shifted.apply(rowSet);
+        RowSetShiftUtils.apply(agg.shifted, rowSet);
         rowSet.insert(agg.added);
         Assert.eqTrue(rowSet.isFlat(), "rowSet.isFlat()");
     }
@@ -494,7 +495,7 @@ public class UpdateCoalescerTest {
         final MutableRowSet rowSet = RowSetFactory.fromRange(0, 6);
         final Listener.Update agg = validateFinalIndex(rowSet, up);
         rowSet.remove(agg.removed);
-        agg.shifted.apply(rowSet);
+        RowSetShiftUtils.apply(agg.shifted, rowSet);
         rowSet.insert(agg.added);
         Assert.eqTrue(rowSet.isFlat(), "rowSet.isFlat()");
     }
@@ -512,7 +513,7 @@ public class UpdateCoalescerTest {
         final MutableRowSet rowSet = RowSetFactory.fromRange(0, 6);
         final Listener.Update agg = validateFinalIndex(rowSet, up);
         rowSet.remove(agg.removed);
-        agg.shifted.apply(rowSet);
+        RowSetShiftUtils.apply(agg.shifted, rowSet);
         rowSet.insert(agg.added);
         Assert.eqTrue(rowSet.isFlat(), "rowSet.isFlat()");
         // The remainder of the first shift conflicts with a now non-shifting element; so there should be no shifts.
@@ -536,7 +537,7 @@ public class UpdateCoalescerTest {
         final MutableRowSet rowSet = RowSetFactory.fromRange(0, 5);
         final Listener.Update agg = validateFinalIndex(rowSet, up);
         rowSet.remove(agg.removed);
-        agg.shifted.apply(rowSet);
+        RowSetShiftUtils.apply(agg.shifted, rowSet);
         rowSet.insert(agg.added);
         Assert.eqTrue(rowSet.isFlat(), "rowSet.isFlat()");
     }
@@ -598,20 +599,20 @@ public class UpdateCoalescerTest {
 
             for (Listener.Update up : updates) {
                 perAdded.remove(up.removed);
-                up.shifted.apply(perAdded);
+                RowSetShiftUtils.apply(up.shifted, perAdded);
                 perAdded.insert(up.added);
 
                 perModify.remove(up.removed);
-                up.shifted.apply(perModify);
+                RowSetShiftUtils.apply(up.shifted, perModify);
                 perModify.insert(up.modified);
 
                 perUpdate.remove(up.removed);
-                up.shifted.apply(perUpdate);
+                RowSetShiftUtils.apply(up.shifted, perUpdate);
                 perUpdate.insert(up.added);
             }
 
             aggUpdate.remove(agg.removed);
-            agg.shifted.apply(aggUpdate);
+            RowSetShiftUtils.apply(agg.shifted, aggUpdate);
             aggUpdate.insert(agg.added);
 
             Assert.equals(perUpdate, "perUpdate", aggUpdate, "aggUpdate");

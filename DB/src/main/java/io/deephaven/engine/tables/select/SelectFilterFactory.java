@@ -9,7 +9,7 @@ import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.process.ProcessEnvironment;
-import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.tables.utils.AbstractExpressionFactory;
 import io.deephaven.engine.tables.utils.ExpressionParser;
 import io.deephaven.engine.util.ColumnFormattingValues;

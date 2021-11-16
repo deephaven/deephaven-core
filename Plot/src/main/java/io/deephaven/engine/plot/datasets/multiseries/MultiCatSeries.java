@@ -10,7 +10,7 @@ import io.deephaven.engine.plot.datasets.DynamicSeriesNamer;
 import io.deephaven.engine.plot.datasets.category.*;
 import io.deephaven.engine.plot.util.ArgumentValidations;
 import io.deephaven.engine.plot.util.tables.TableBackedTableMapHandle;
-import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.v2.BaseTable;
 
 import java.util.Collection;
@@ -591,7 +591,7 @@ public class MultiCatSeries extends AbstractTableMapHandleMultiSeries<CategoryDa
     public io.deephaven.engine.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.Object[]> pointColorSeriesNameToTableStringStringMap() {
         return pointColorSeriesNameToTableStringStringMap;
     }
-    @Override public MultiCatSeries pointColor(final io.deephaven.engine.tables.Table t, final java.lang.String keyColumn, final java.lang.String valueColumn, final Object... keys) {
+    @Override public MultiCatSeries pointColor(final Table t, final java.lang.String keyColumn, final java.lang.String valueColumn, final Object... keys) {
     final io.deephaven.engine.plot.util.tables.TableHandle tHandle = new io.deephaven.engine.plot.util.tables.TableHandle(t, keyColumn, valueColumn);
     addTableHandle(tHandle);
         if(keys == null || keys.length == 0) {
@@ -712,7 +712,7 @@ public class MultiCatSeries extends AbstractTableMapHandleMultiSeries<CategoryDa
     public io.deephaven.engine.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.Object[]> pointLabelSeriesNameToTableStringStringMap() {
         return pointLabelSeriesNameToTableStringStringMap;
     }
-    @Override public MultiCatSeries pointLabel(final io.deephaven.engine.tables.Table t, final java.lang.String keyColumn, final java.lang.String valueColumn, final Object... keys) {
+    @Override public MultiCatSeries pointLabel(final Table t, final java.lang.String keyColumn, final java.lang.String valueColumn, final Object... keys) {
     final io.deephaven.engine.plot.util.tables.TableHandle tHandle = new io.deephaven.engine.plot.util.tables.TableHandle(t, keyColumn, valueColumn);
     addTableHandle(tHandle);
         if(keys == null || keys.length == 0) {
@@ -850,7 +850,7 @@ public class MultiCatSeries extends AbstractTableMapHandleMultiSeries<CategoryDa
     public io.deephaven.engine.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.Object[]> pointShapeSeriesNameToTableStringStringMap() {
         return pointShapeSeriesNameToTableStringStringMap;
     }
-    @Override public MultiCatSeries pointShape(final io.deephaven.engine.tables.Table t, final java.lang.String keyColumn, final java.lang.String valueColumn, final Object... keys) {
+    @Override public MultiCatSeries pointShape(final Table t, final java.lang.String keyColumn, final java.lang.String valueColumn, final Object... keys) {
     final io.deephaven.engine.plot.util.tables.TableHandle tHandle = new io.deephaven.engine.plot.util.tables.TableHandle(t, keyColumn, valueColumn);
     addTableHandle(tHandle);
         if(keys == null || keys.length == 0) {
@@ -1056,7 +1056,7 @@ public class MultiCatSeries extends AbstractTableMapHandleMultiSeries<CategoryDa
     public io.deephaven.engine.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.Object[]> pointSizeSeriesNameToTableStringStringMap() {
         return pointSizeSeriesNameToTableStringStringMap;
     }
-    @Override public MultiCatSeries pointSize(final io.deephaven.engine.tables.Table t, final java.lang.String keyColumn, final java.lang.String valueColumn, final Object... keys) {
+    @Override public MultiCatSeries pointSize(final Table t, final java.lang.String keyColumn, final java.lang.String valueColumn, final Object... keys) {
     final io.deephaven.engine.plot.util.tables.TableHandle tHandle = new io.deephaven.engine.plot.util.tables.TableHandle(t, keyColumn, valueColumn);
     addTableHandle(tHandle);
         if(keys == null || keys.length == 0) {

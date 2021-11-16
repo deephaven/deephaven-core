@@ -6,8 +6,8 @@ import io.deephaven.engine.rowset.MutableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.live.UpdateGraphProcessor;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.v2.remote.WrappedDelegatingTable;
 import io.deephaven.engine.v2.sources.AbstractColumnSource;
 import io.deephaven.engine.table.ColumnSource;
@@ -21,7 +21,7 @@ import java.lang.ref.WeakReference;
 import java.util.*;
 import java.util.stream.Stream;
 
-import static io.deephaven.engine.tables.Table.TREE_TABLE_FILTER_REVERSE_LOOKUP_ATTRIBUTE;
+import static io.deephaven.engine.table.Table.TREE_TABLE_FILTER_REVERSE_LOOKUP_ATTRIBUTE;
 
 /**
  * <p>

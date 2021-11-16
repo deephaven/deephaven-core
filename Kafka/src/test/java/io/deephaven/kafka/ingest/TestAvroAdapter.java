@@ -1,7 +1,7 @@
 package io.deephaven.kafka.ingest;
 
 import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.tables.TableDefinition;
+import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.chunk.*;

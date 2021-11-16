@@ -13,7 +13,6 @@ import io.deephaven.engine.chunk.Attributes.*;
 import io.deephaven.engine.chunk.ChunkType;
 import io.deephaven.engine.chunk.WritableLongChunk;
 import io.deephaven.engine.chunk.sized.SizedLongChunk;
-import io.deephaven.engine.v2.utils.*;
 
 import java.util.function.Consumer;
 
@@ -96,7 +95,7 @@ class CrossJoinModifiedSlotTracker {
             }
 
             isLeftShifted = true;
-            leftShifted.apply(leftRowSet);
+            RowSetShiftUtils.apply(leftShifted, leftRowSet);
             return this;
         }
 
@@ -174,7 +173,7 @@ class CrossJoinModifiedSlotTracker {
 
                 // then we shift
                 if (needsRightShift) {
-                    rightShifted.apply(rightRowSet);
+                    RowSetShiftUtils.apply(rightShifted, rightRowSet);
                 }
 
                 if (added.isNonempty()) {

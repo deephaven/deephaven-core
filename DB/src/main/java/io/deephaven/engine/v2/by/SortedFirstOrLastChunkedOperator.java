@@ -1,8 +1,8 @@
 package io.deephaven.engine.v2.by;
 
 import io.deephaven.engine.tables.SortingOrder;
-import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.select.MatchPair;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.v2.sort.IntSortKernel;
 import io.deephaven.engine.v2.sort.LongSortKernel;
 import io.deephaven.engine.v2.sort.permute.LongPermuteKernel;

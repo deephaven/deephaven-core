@@ -1,6 +1,6 @@
 package io.deephaven.engine.v2;
 
-import io.deephaven.engine.tables.live.NotificationQueue;
+import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.rowset.RowSet;
 
 public class ShiftObliviousSwapListener extends SwapListenerBase<ShiftObliviousListener>
@@ -17,7 +17,7 @@ public class ShiftObliviousSwapListener extends SwapListenerBase<ShiftObliviousL
     }
 
     @Override
-    public synchronized NotificationQueue.IndexUpdateNotification getNotification(
+    public synchronized NotificationQueue.Notification getNotification(
             final RowSet added, final RowSet removed, final RowSet modified) {
         return doGetNotification(() -> eventualListener.getNotification(added, removed, modified));
     }

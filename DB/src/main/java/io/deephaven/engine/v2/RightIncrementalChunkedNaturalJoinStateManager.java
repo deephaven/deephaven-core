@@ -29,7 +29,7 @@ import io.deephaven.engine.v2.utils.*;
 import org.jetbrains.annotations.NotNull;
 
 // region extra imports
-import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.table.Table;
 import org.jetbrains.annotations.Nullable;
 // endregion extra imports
 

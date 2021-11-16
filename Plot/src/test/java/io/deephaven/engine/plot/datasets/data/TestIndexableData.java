@@ -7,7 +7,7 @@ package io.deephaven.engine.plot.datasets.data;
 import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.engine.plot.BaseFigureImpl;
 import io.deephaven.engine.plot.util.tables.*;
-import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.tables.utils.TableTools;
 

@@ -7,10 +7,9 @@ package io.deephaven.engine.v2;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.v2.sources.LogicalClock;
+import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.v2.sources.ReversedColumnSource;
 import io.deephaven.engine.v2.sources.UnionRedirection;
-import io.deephaven.engine.v2.utils.*;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -161,7 +160,7 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
             }
 
             downstream.shifted = oShiftedBuilder.build();
-            downstream.shifted.apply(rowSet);
+            RowSetShiftUtils.apply(downstream.shifted, rowSet);
 
             // Update pivot logic.
             lastPivotChange = LogicalClock.DEFAULT.currentStep();

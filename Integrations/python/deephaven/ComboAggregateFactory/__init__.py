@@ -103,7 +103,7 @@ def Agg(*args):
       
     *Overload 2*  
       :param factory: (io.deephaven.engine.v2.groupBy.AggregationSpec) - aggregation factory.
-      :param matchPairs: (io.deephaven.engine.tables.select.MatchPair...) - the columns to apply the aggregation to.
+      :param matchPairs: (io.deephaven.engine.table.MatchPair...) - the columns to apply the aggregation to.
       :return: (io.deephaven.engine.v2.groupBy.AggregationFactory.AggregationElement) a AggregationElement object suitable for passing to AggCombo(AggregationElement...)
       
     *Overload 3*  
@@ -114,7 +114,7 @@ def Agg(*args):
       
     *Overload 4*  
       :param factoryType: (io.deephaven.engine.v2.groupBy.AggType) - aggregation factory type.
-      :param matchPairs: (io.deephaven.engine.tables.select.MatchPair...) - the columns to apply the aggregation to.
+      :param matchPairs: (io.deephaven.engine.table.MatchPair...) - the columns to apply the aggregation to.
       :return: (io.deephaven.engine.v2.groupBy.AggregationFactory.AggregationElement) a AggregationElement object suitable for passing to AggCombo(AggregationElement...)
     """
     
@@ -334,7 +334,7 @@ def AggPct(*args):
 @_passThrough
 def AggSortedFirst(*args):
     """
-    Create a sorted first aggregation, equivalent to SortedBy.sortedFirstBy(io.deephaven.engine.tables.Table, java.lang.String).
+    Create a sorted first aggregation, equivalent to SortedBy.sortedFirstBy(io.deephaven.engine.table.Table, java.lang.String).
     
     *Overload 1*  
       :param sortColumn: (java.lang.String) - the column to sort by
@@ -355,7 +355,7 @@ def AggSortedFirst(*args):
 @_passThrough
 def AggSortedLast(*args):
     """
-    Create a sorted last aggregation, equivalent to SortedBy.sortedLastBy(io.deephaven.engine.tables.Table, java.lang.String).
+    Create a sorted last aggregation, equivalent to SortedBy.sortedLastBy(io.deephaven.engine.table.Table, java.lang.String).
     
     *Overload 1*  
       :param sortColumn: (java.lang.String) - the column to sort by

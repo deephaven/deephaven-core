@@ -5,14 +5,14 @@
 package io.deephaven.engine.plot.util;
 
 import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.tables.ColumnDefinition;
+import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.plot.datasets.data.IndexableNumericData;
 import io.deephaven.engine.plot.errors.*;
 import io.deephaven.engine.plot.filters.SelectableDataSet;
 import io.deephaven.engine.plot.util.tables.TableHandle;
-import io.deephaven.engine.tables.DataColumn;
-import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.TableDefinition;
+import io.deephaven.engine.table.DataColumn;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.util.type.TypeUtils;
 import org.apache.commons.lang3.ClassUtils;

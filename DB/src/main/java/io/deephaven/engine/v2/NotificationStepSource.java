@@ -1,6 +1,6 @@
 package io.deephaven.engine.v2;
 
-import io.deephaven.engine.tables.live.NotificationQueue;
+import io.deephaven.engine.updategraph.NotificationQueue;
 
 /**
  * Elements of a Deephaven query DAG that can supply their notification step.

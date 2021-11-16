@@ -3,7 +3,7 @@
  "methods": {
   "by": ":param aggregationStateFactory: io.deephaven.engine.v2.by.AggregationStateFactory\n:param groupByColumns: io.deephaven.engine.v2.select.SelectColumn[]\n:return: io.deephaven.engine.v2.MemoizedOperationKey",
   "partitionBy": ":param dropKeys: boolean\n:param groupByColumns: io.deephaven.engine.v2.select.SelectColumn[]\n:return: io.deephaven.engine.v2.MemoizedOperationKey",
-  "crossJoin": ":param rightTableCandidate: io.deephaven.engine.tables.Table\n:param columnsToMatch: io.deephaven.engine.tables.select.MatchPair[]\n:param columnsToAdd: io.deephaven.engine.tables.select.MatchPair[]\n:param numRightBitsToReserve: int\n:return: io.deephaven.engine.v2.MemoizedOperationKey.CrossJoin",
+  "crossJoin": ":param rightTableCandidate: io.deephaven.engine.table.Table\n:param columnsToMatch: io.deephaven.engine.tables.select.MatchPair[]\n:param columnsToAdd: io.deephaven.engine.tables.select.MatchPair[]\n:param numRightBitsToReserve: int\n:return: io.deephaven.engine.v2.MemoizedOperationKey.CrossJoin",
   "flatten": ":return: io.deephaven.engine.v2.MemoizedOperationKey",
   "reverse": ":return: io.deephaven.engine.v2.MemoizedOperationKey",
   "rollup": ":param comboAggregateFactory: io.deephaven.engine.v2.by.ComboAggregateFactory\n:param columns: io.deephaven.engine.v2.select.SelectColumn[]\n:param includeConstituents: boolean\n:return: io.deephaven.engine.v2.MemoizedOperationKey",

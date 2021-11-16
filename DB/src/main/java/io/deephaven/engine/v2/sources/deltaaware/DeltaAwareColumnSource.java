@@ -4,14 +4,12 @@
 
 package io.deephaven.engine.v2.sources.deltaaware;
 
-import io.deephaven.engine.table.ChunkSource;
-import io.deephaven.engine.table.SharedContext;
+import io.deephaven.engine.table.*;
 import io.deephaven.engine.rowset.MutableRowSet;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.impl.RowSequenceUtil;
-import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.sources.*;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.Attributes.Values;
@@ -84,7 +82,7 @@ import org.jetbrains.annotations.NotNull;
 // Then the final item from the delta chunk: d15
 
 public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
-        implements WritableSource<T>, WritableChunkSink<Attributes.Values> {
+        implements WritableSource<T>, WritableChunkSink<Values> {
     /**
      * The initial size of the delta column source.
      */

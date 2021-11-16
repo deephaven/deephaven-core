@@ -5,7 +5,7 @@
 package io.deephaven.engine.table.iterators;
 
 import io.deephaven.base.Procedure;
-import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.rowset.RowSet;
 import org.jetbrains.annotations.NotNull;

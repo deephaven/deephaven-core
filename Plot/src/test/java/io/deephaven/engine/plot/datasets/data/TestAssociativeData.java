@@ -7,8 +7,8 @@ package io.deephaven.engine.plot.datasets.data;
 import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.engine.plot.errors.PlotIllegalArgumentException;
 import io.deephaven.engine.plot.util.tables.TableHandle;
-import io.deephaven.engine.tables.Table;
-import io.deephaven.engine.tables.live.UpdateGraphProcessor;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.tables.utils.TableTools;
 import junit.framework.TestCase;
 

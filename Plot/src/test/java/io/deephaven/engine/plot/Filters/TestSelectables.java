@@ -11,9 +11,9 @@ import io.deephaven.engine.plot.filters.SelectableDataSet;
 import io.deephaven.engine.plot.filters.SelectableDataSetOneClick;
 import io.deephaven.engine.plot.filters.Selectables;
 import io.deephaven.engine.plot.util.tables.SwappableTable;
-import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.tables.utils.TableTools;
-import io.deephaven.engine.v2.TableMap;
+import io.deephaven.engine.table.TableMap;
 
 import java.util.*;
 

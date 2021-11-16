@@ -6,7 +6,7 @@ package io.deephaven.engine.v2.locations;
 
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
-import io.deephaven.engine.tables.ColumnDefinition;
+import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.util.string.StringUtils;
 import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.v2.sources.regioned.*;

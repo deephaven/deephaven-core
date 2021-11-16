@@ -14,7 +14,7 @@ import io.deephaven.engine.plot.datasets.categoryerrorbar.CategoryErrorBarDataSe
 import io.deephaven.engine.plot.filters.SelectableDataSetSwappableTable;
 import io.deephaven.engine.plot.util.ArgumentValidations;
 import io.deephaven.engine.plot.util.tables.SwappableTable;
-import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.v2.BaseTable;
 
 import java.util.Collection;
@@ -613,7 +613,7 @@ public class MultiCatErrorBarSeriesSwappable extends AbstractSwappableMultiSerie
     public io.deephaven.engine.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.Object[]> pointColorSeriesNameToTableStringStringMap() {
         return pointColorSeriesNameToTableStringStringMap;
     }
-    @Override public MultiCatErrorBarSeriesSwappable pointColor(final io.deephaven.engine.tables.Table t, final java.lang.String keyColumn, final java.lang.String valueColumn, final Object... keys) {
+    @Override public MultiCatErrorBarSeriesSwappable pointColor(final Table t, final java.lang.String keyColumn, final java.lang.String valueColumn, final Object... keys) {
     final io.deephaven.engine.plot.util.tables.TableHandle tHandle = new io.deephaven.engine.plot.util.tables.TableHandle(t, keyColumn, valueColumn);
     addTableHandle(tHandle);
         if(keys == null || keys.length == 0) {
@@ -734,7 +734,7 @@ public class MultiCatErrorBarSeriesSwappable extends AbstractSwappableMultiSerie
     public io.deephaven.engine.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.Object[]> pointLabelSeriesNameToTableStringStringMap() {
         return pointLabelSeriesNameToTableStringStringMap;
     }
-    @Override public MultiCatErrorBarSeriesSwappable pointLabel(final io.deephaven.engine.tables.Table t, final java.lang.String keyColumn, final java.lang.String valueColumn, final Object... keys) {
+    @Override public MultiCatErrorBarSeriesSwappable pointLabel(final Table t, final java.lang.String keyColumn, final java.lang.String valueColumn, final Object... keys) {
     final io.deephaven.engine.plot.util.tables.TableHandle tHandle = new io.deephaven.engine.plot.util.tables.TableHandle(t, keyColumn, valueColumn);
     addTableHandle(tHandle);
         if(keys == null || keys.length == 0) {
@@ -872,7 +872,7 @@ public class MultiCatErrorBarSeriesSwappable extends AbstractSwappableMultiSerie
     public io.deephaven.engine.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.Object[]> pointShapeSeriesNameToTableStringStringMap() {
         return pointShapeSeriesNameToTableStringStringMap;
     }
-    @Override public MultiCatErrorBarSeriesSwappable pointShape(final io.deephaven.engine.tables.Table t, final java.lang.String keyColumn, final java.lang.String valueColumn, final Object... keys) {
+    @Override public MultiCatErrorBarSeriesSwappable pointShape(final Table t, final java.lang.String keyColumn, final java.lang.String valueColumn, final Object... keys) {
     final io.deephaven.engine.plot.util.tables.TableHandle tHandle = new io.deephaven.engine.plot.util.tables.TableHandle(t, keyColumn, valueColumn);
     addTableHandle(tHandle);
         if(keys == null || keys.length == 0) {
@@ -1078,7 +1078,7 @@ public class MultiCatErrorBarSeriesSwappable extends AbstractSwappableMultiSerie
     public io.deephaven.engine.plot.util.PlotUtils.HashMapWithDefault<String, java.lang.Object[]> pointSizeSeriesNameToTableStringStringMap() {
         return pointSizeSeriesNameToTableStringStringMap;
     }
-    @Override public MultiCatErrorBarSeriesSwappable pointSize(final io.deephaven.engine.tables.Table t, final java.lang.String keyColumn, final java.lang.String valueColumn, final Object... keys) {
+    @Override public MultiCatErrorBarSeriesSwappable pointSize(final Table t, final java.lang.String keyColumn, final java.lang.String valueColumn, final Object... keys) {
     final io.deephaven.engine.plot.util.tables.TableHandle tHandle = new io.deephaven.engine.plot.util.tables.TableHandle(t, keyColumn, valueColumn);
     addTableHandle(tHandle);
         if(keys == null || keys.length == 0) {

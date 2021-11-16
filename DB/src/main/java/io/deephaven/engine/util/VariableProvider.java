@@ -1,6 +1,6 @@
 package io.deephaven.engine.util;
 
-import io.deephaven.engine.tables.TableDefinition;
+import io.deephaven.engine.table.TableDefinition;
 
 import java.util.Set;
 

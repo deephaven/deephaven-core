@@ -1,6 +1,8 @@
 package io.deephaven.engine.v2;
 
-import io.deephaven.engine.tables.Table;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableMap;
+import io.deephaven.engine.table.TransformableTableMap;
 
 import java.util.Objects;
 

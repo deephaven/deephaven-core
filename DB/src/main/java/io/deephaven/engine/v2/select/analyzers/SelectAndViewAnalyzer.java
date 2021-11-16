@@ -2,7 +2,8 @@ package io.deephaven.engine.v2.select.analyzers;
 
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.tables.ColumnDefinition;
+import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.WritableSource;
 import io.deephaven.engine.vector.Vector;
 import io.deephaven.engine.v2.ModifiedColumnSet;
 import io.deephaven.engine.v2.Listener;
@@ -169,11 +170,11 @@ public abstract class SelectAndViewAnalyzer {
         private void ensure(boolean withModifies) {
             if (withModifies && shiftedWithModifies == null) {
                 shiftedWithModifies = SafeCloseablePair
-                        .downcast(upstream.shifted.extractParallelShiftedRowsFromPostShiftIndex(getExisting()));
+                        .downcast(RowSetShiftUtils.extractParallelShiftedRowsFromPostShiftIndex(upstream.shifted, getExisting()));
             } else if (!withModifies && shiftedWithoutModifies == null) {
                 try (final RowSet candidates = getExisting().minus(upstream.modified)) {
                     shiftedWithoutModifies = SafeCloseablePair
-                            .downcast(upstream.shifted.extractParallelShiftedRowsFromPostShiftIndex(candidates));
+                            .downcast(RowSetShiftUtils.extractParallelShiftedRowsFromPostShiftIndex(upstream.shifted, candidates));
                 }
             }
         }
