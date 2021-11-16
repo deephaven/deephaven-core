@@ -638,6 +638,11 @@ public class TestPartitionAwareSourceTable extends LiveTableTestCase {
         private DummyContext(@NotNull final Class<?> dataType, final int chunkCapacity) {
             sourceChunk = ChunkType.fromElementType(dataType).makeWritableChunk(chunkCapacity);
         }
+
+        @Override
+        public void close() {
+            sourceChunk.close();
+        }
     }
 
     @Test

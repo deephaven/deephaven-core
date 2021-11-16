@@ -536,6 +536,14 @@ public class ColumnsToRowsTransform {
                     outputPositions[ii] = WritableIntChunk.makeWritableChunk(chunkCapacity);
                 }
             }
+
+            @Override
+            public void close() {
+                tempValues.close();
+                Arrays.stream(innerContexts).forEach(Context::close);
+                Arrays.stream(innerKeys).forEach(WritableLongChunk::close);
+                Arrays.stream(outputPositions).forEach(WritableIntChunk::close);
+            }
         }
 
         @Override

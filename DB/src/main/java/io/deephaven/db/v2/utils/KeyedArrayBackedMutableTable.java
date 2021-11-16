@@ -130,13 +130,12 @@ public class KeyedArrayBackedMutableTable extends BaseArrayBackedMutableTable {
 
         final SharedContext sharedContext = SharedContext.makeSharedContext();
 
-        final Index addIndex = table.getIndex();
-
         long rowToInsert = nextRow;
         final StringBuilder errorBuilder = new StringBuilder();
 
-        try (final WritableLongChunk<Attributes.KeyIndices> destinations =
-                WritableLongChunk.makeWritableChunk(chunkCapacity)) {
+        try (final Index addIndex = table.getIndex().clone();
+                final WritableLongChunk<Attributes.KeyIndices> destinations =
+                        WritableLongChunk.makeWritableChunk(chunkCapacity)) {
             try (final ChunkSource.GetContext getContext = keySource.makeGetContext(chunkCapacity, sharedContext);
                     final ChunkBoxer.BoxerKernel boxer = ChunkBoxer.getBoxer(keySource.getChunkType(), chunkCapacity)) {
                 final Chunk<? extends Attributes.Values> keys = keySource.getChunk(getContext, addIndex);
@@ -204,8 +203,10 @@ public class KeyedArrayBackedMutableTable extends BaseArrayBackedMutableTable {
         try (final WritableLongChunk<Attributes.KeyIndices> destinations =
                 WritableLongChunk.makeWritableChunk(chunkCapacity)) {
             try (final ChunkSource.GetContext getContext = keySource.makeGetContext(chunkCapacity, sharedContext);
-                    final ChunkBoxer.BoxerKernel boxer = ChunkBoxer.getBoxer(keySource.getChunkType(), chunkCapacity)) {
-                final Chunk<? extends Attributes.Values> keys = keySource.getChunk(getContext, table.getIndex());
+                    final ChunkBoxer.BoxerKernel boxer = ChunkBoxer.getBoxer(keySource.getChunkType(), chunkCapacity);
+                    final Index tableIndex = table.getIndex().clone();) {
+
+                final Chunk<? extends Attributes.Values> keys = keySource.getChunk(getContext, tableIndex);
                 final ObjectChunk<?, ? extends Attributes.Values> boxed = boxer.box(keys);
                 destinations.setSize(0);
                 for (int ii = 0; ii < boxed.size(); ++ii) {
@@ -222,9 +223,9 @@ public class KeyedArrayBackedMutableTable extends BaseArrayBackedMutableTable {
             // null out the values, so that we do not hold onto garbage forever, we keep the keys
             for (ObjectArraySource<?> objectArraySource : arrayValueSources) {
                 try (final WritableChunkSink.FillFromContext ffc =
-                        objectArraySource.makeFillFromContext(chunkCapacity)) {
-                    final WritableObjectChunk<?, Attributes.Values> nullChunk =
-                            WritableObjectChunk.makeWritableChunk(chunkCapacity);
+                        objectArraySource.makeFillFromContext(chunkCapacity);
+                        final WritableObjectChunk<?, Attributes.Values> nullChunk =
+                                WritableObjectChunk.makeWritableChunk(chunkCapacity);) {
                     nullChunk.fillWithNullValue(0, chunkCapacity);
                     objectArraySource.fillFromChunkUnordered(ffc, nullChunk, destinations);
                 }

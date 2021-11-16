@@ -425,18 +425,18 @@ public class BarrageColumnRoundTripTest extends LiveTableTestCase {
         final ChunkType chunkType = ChunkType.fromElementType(type);
 
         WritableChunk<Attributes.Values> rtData = null;
-        final WritableChunk<Attributes.Values> data = chunkType.makeWritableChunk(4096);
+        WritableChunk<Attributes.Values> data = chunkType.makeWritableChunk(4096);
 
-        try {
-            initData.accept(data);
+        initData.accept(data);
 
-            final ChunkInputStreamGenerator generator =
-                    ChunkInputStreamGenerator.makeInputStreamGenerator(chunkType, type, data);
+        try (ChunkInputStreamGenerator generator =
+                ChunkInputStreamGenerator.makeInputStreamGenerator(chunkType, type, data)) {
 
             // full sub logic
             try (final BarrageProtoUtil.ExposedByteArrayOutputStream baos =
-                    new BarrageProtoUtil.ExposedByteArrayOutputStream()) {
-                final ChunkInputStreamGenerator.DrainableColumn column = generator.getInputStream(options, null);
+                    new BarrageProtoUtil.ExposedByteArrayOutputStream();
+                    final ChunkInputStreamGenerator.DrainableColumn column = generator.getInputStream(options, null);) {
+
                 final ArrayList<ChunkInputStreamGenerator.FieldNodeInfo> fieldNodes = new ArrayList<>();
                 column.visitFieldNodes((numElements, nullCount) -> fieldNodes
                         .add(new ChunkInputStreamGenerator.FieldNodeInfo(numElements, nullCount)));
@@ -450,13 +450,19 @@ public class BarrageColumnRoundTripTest extends LiveTableTestCase {
                         options, chunkType, type, fieldNodes.iterator(), bufferNodes.iterator(), dis);
                 Assert.eq(data.size(), "data.size()", rtData.size(), "rtData.size()");
                 validator.assertExpected(data, rtData, null);
+            } finally {
+                if (rtData != null) {
+                    rtData.close();
+                }
+                rtData = null;
             }
 
             // empty subset
             try (final BarrageProtoUtil.ExposedByteArrayOutputStream baos =
-                    new BarrageProtoUtil.ExposedByteArrayOutputStream()) {
-                final ChunkInputStreamGenerator.DrainableColumn column =
-                        generator.getInputStream(options, Index.CURRENT_FACTORY.getEmptyIndex());
+                    new BarrageProtoUtil.ExposedByteArrayOutputStream();
+                    final ChunkInputStreamGenerator.DrainableColumn column =
+                            generator.getInputStream(options, Index.CURRENT_FACTORY.getEmptyIndex());) {
+
                 final ArrayList<ChunkInputStreamGenerator.FieldNodeInfo> fieldNodes = new ArrayList<>();
                 column.visitFieldNodes((numElements, nullCount) -> fieldNodes
                         .add(new ChunkInputStreamGenerator.FieldNodeInfo(numElements, nullCount)));
@@ -468,6 +474,11 @@ public class BarrageColumnRoundTripTest extends LiveTableTestCase {
                 rtData = (WritableChunk<Attributes.Values>) ChunkInputStreamGenerator.extractChunkFromInputStream(
                         options, chunkType, type, fieldNodes.iterator(), bufferNodes.iterator(), dis);
                 Assert.eq(rtData.size(), "rtData.size()", 0);
+            } finally {
+                if (rtData != null) {
+                    rtData.close();
+                }
+                rtData = null;
             }
 
             // swiss cheese subset
@@ -480,8 +491,10 @@ public class BarrageColumnRoundTripTest extends LiveTableTestCase {
             }
             try (final BarrageProtoUtil.ExposedByteArrayOutputStream baos =
                     new BarrageProtoUtil.ExposedByteArrayOutputStream();
-                    final Index subset = builder.getIndex()) {
-                final ChunkInputStreamGenerator.DrainableColumn column = generator.getInputStream(options, subset);
+                    final Index subset = builder.getIndex();
+                    final ChunkInputStreamGenerator.DrainableColumn column =
+                            generator.getInputStream(options, subset);) {
+
                 final ArrayList<ChunkInputStreamGenerator.FieldNodeInfo> fieldNodes = new ArrayList<>();
                 column.visitFieldNodes((numElements, nullCount) -> fieldNodes
                         .add(new ChunkInputStreamGenerator.FieldNodeInfo(numElements, nullCount)));
@@ -494,11 +507,11 @@ public class BarrageColumnRoundTripTest extends LiveTableTestCase {
                         options, chunkType, type, fieldNodes.iterator(), bufferNodes.iterator(), dis);
                 Assert.eq(subset.intSize(), "subset.intSize()", rtData.size(), "rtData.size()");
                 validator.assertExpected(data, rtData, subset);
-            }
-        } finally {
-            data.close();
-            if (rtData != null) {
-                rtData.close();
+            } finally {
+                if (rtData != null) {
+                    rtData.close();
+                }
+                rtData = null;
             }
         }
     }

@@ -88,29 +88,31 @@ public class AppendOnlyArrayBackedMutableTable extends BaseArrayBackedMutableTab
     @Override
     protected void processPendingTable(Table table, boolean allowEdits, IndexChangeRecorder indexChangeRecorder,
             Consumer<String> errorNotifier) {
-        final Index addIndex = table.getIndex();
-        final long firstRow = nextRow;
-        final long lastRow = firstRow + addIndex.intSize() - 1;
-        final OrderedKeys destinations = OrderedKeys.forRange(firstRow, lastRow);
-        destinations.forAllLongs(indexChangeRecorder::addIndex);
-        nextRow = lastRow + 1;
+        try (Index addIndex = table.getIndex().clone()) {
+            final long firstRow = nextRow;
+            final long lastRow = firstRow + addIndex.intSize() - 1;
+            try (OrderedKeys destinations = OrderedKeys.forRange(firstRow, lastRow)) {
+                destinations.forAllLongs(indexChangeRecorder::addIndex);
+                nextRow = lastRow + 1;
 
-        final SharedContext sharedContext = SharedContext.makeSharedContext();
-        final int chunkCapacity = table.intSize();
+                final SharedContext sharedContext = SharedContext.makeSharedContext();
+                final int chunkCapacity = table.intSize();
 
-        getColumnSourceMap().forEach((name, cs) -> {
-            final ArrayBackedColumnSource<?> arrayBackedColumnSource = (ArrayBackedColumnSource<?>) cs;
-            arrayBackedColumnSource.ensureCapacity(nextRow);
-            final ColumnSource<?> sourceColumnSource = table.getColumnSource(name);
-            try (final WritableChunkSink.FillFromContext ffc =
-                    arrayBackedColumnSource.makeFillFromContext(chunkCapacity);
-                    final ChunkSource.GetContext getContext =
-                            sourceColumnSource.makeGetContext(chunkCapacity, sharedContext)) {
-                final Chunk<? extends Attributes.Values> valuesChunk =
-                        sourceColumnSource.getChunk(getContext, addIndex);
-                arrayBackedColumnSource.fillFromChunk(ffc, valuesChunk, destinations);
+                getColumnSourceMap().forEach((name, cs) -> {
+                    final ArrayBackedColumnSource<?> arrayBackedColumnSource = (ArrayBackedColumnSource<?>) cs;
+                    arrayBackedColumnSource.ensureCapacity(nextRow);
+                    final ColumnSource<?> sourceColumnSource = table.getColumnSource(name);
+                    try (final WritableChunkSink.FillFromContext ffc =
+                            arrayBackedColumnSource.makeFillFromContext(chunkCapacity);
+                            final ChunkSource.GetContext getContext =
+                                    sourceColumnSource.makeGetContext(chunkCapacity, sharedContext)) {
+                        final Chunk<? extends Attributes.Values> valuesChunk =
+                                sourceColumnSource.getChunk(getContext, addIndex);
+                        arrayBackedColumnSource.fillFromChunk(ffc, valuesChunk, destinations);
+                    }
+                });
             }
-        });
+        }
     }
 
     @Override
