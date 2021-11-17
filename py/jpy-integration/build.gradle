@@ -7,7 +7,7 @@ plugins {
 }
 
 evaluationDependsOn ':deephaven-jpy'
-evaluationDependsOn ':Integrations'
+evaluationDependsOn ':docker-runtime-base'
 
 sourceSets {
   // All sourcesets here are used for testing; we'll inform the idea{} plugin, below
@@ -134,7 +134,7 @@ Closure<TaskProvider<Task>> gradleTestInDocker = { String taskName, SourceSet so
         into 'classes'
       }
     }
-    parentContainers = [project(':Integrations').tasks.findByName('buildDeephavenPython')] // deephaven/runtime-base
+    parentContainers = [project(':docker-runtime-base').tasks.findByName('buildDocker')] // deephaven/runtime-base
     dockerfile {
       // base image with default java, python, wheels
       from 'deephaven/runtime-base:local-build'
@@ -166,7 +166,7 @@ Closure<TaskProvider<Task>> javaMainInDocker = { String taskName, String javaMai
         into 'classpath'
       }
     }
-    parentContainers = [project(':Integrations').tasks.findByName('buildDeephavenPython')] // deephaven/runtime-base
+    parentContainers = [project(':docker-runtime-base').tasks.findByName('buildDocker')] // deephaven/runtime-base
     imageName = 'deephaven/jpy-integration-java-to-python-tests:local-build'
     dockerfile {
       from 'deephaven/runtime-base:local-build'
@@ -217,7 +217,7 @@ Closure<TaskProvider<Task>> pyExec = { String taskName, List<String> command, bo
         into 'python'
       }
     }
-    parentContainers = [project(':Integrations').tasks.findByName('buildDeephavenPython')] // deephaven/runtime-base
+    parentContainers = [project(':docker-runtime-base').tasks.findByName('buildDocker')] // deephaven/runtime-base
     imageName = 'deephaven/jpy-integration-python-to-java-tests:local-build'
     dockerfile {
       // set up the container, env vars - things that aren't likely to change

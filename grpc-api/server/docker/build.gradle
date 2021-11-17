@@ -5,7 +5,7 @@ plugins {
   id 'com.bmuschko.docker-java-application'
 }
 
-evaluationDependsOn(":Integrations")
+evaluationDependsOn(':docker-runtime-base')
 
 dependencies {
   implementation(project(':grpc-api')) {
@@ -101,7 +101,7 @@ docker {
 
 
 // deephaven/runtime-base
-def grpcApiBase = project(':Integrations').tasks.findByName('buildDeephavenPython')
+def grpcApiBase = project(':docker-runtime-base').tasks.findByName('buildDocker')
 dockerBuildImage.dependsOn grpcApiBase
 dockerBuildImage.inputs.file grpcApiBase.outputs.files.singleFile
 // Currently, GH build-ci.yml calls dockerCreateDockerfile, and relies on buildx; so we need to
