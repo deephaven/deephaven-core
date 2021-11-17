@@ -12,6 +12,8 @@ import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.impl.RowSetFactory;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.WritableColumnSource;
+import io.deephaven.engine.table.impl.AbstractColumnSource;
+import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
 import io.deephaven.engine.updategraph.UpdateCommitter;
 import io.deephaven.util.BooleanUtils;
 

@@ -20,8 +20,9 @@ sourceSets {
 dependencies {
     compile project(':Container'),
             project(':engine-chunk'),
-            project(':engine-api'),
-            project(':engine-tuplesource')
+            project(':engine-api')
+
+    runtime project(':engine-tuplesource')
 }
 
 spotless {

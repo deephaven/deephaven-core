@@ -14,7 +14,7 @@ import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.sources.RedirectedColumnSource;
 import io.deephaven.engine.table.TupleSource;
-import io.deephaven.engine.tuplesource.TupleSourceFactory;
+import io.deephaven.engine.table.impl.tuplesource.TupleSourceFactory;
 import io.deephaven.engine.v2.utils.*;
 
 import java.util.Arrays;

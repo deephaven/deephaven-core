@@ -3,9 +3,10 @@ package io.deephaven.engine.v2.select;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.v2.sources.ReinterpretUtilities;
+import io.deephaven.engine.v2.sources.ReinterpretUtil;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.rowset.WritableRowSet;
@@ -66,7 +67,7 @@ public class DateTimeRangeFilter extends LongRangeFilter {
 
         // noinspection unchecked
         final ColumnSource<Long> dateTimeColumnSource =
-                ReinterpretUtilities.dateTimeToLongSource((ColumnSource<DateTime>) columnSource);
+                ReinterpretUtil.dateTimeToLongSource((ColumnSource<DateTime>) columnSource);
         return super.binarySearch(selection, dateTimeColumnSource, usePrev, reverse);
     }
 

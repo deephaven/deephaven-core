@@ -3,7 +3,7 @@ package io.deephaven.engine.page;
 import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.chunk.Chunk;
 import io.deephaven.engine.chunk.ChunkType;
-import io.deephaven.engine.table.DefaultChunkSource;
+import io.deephaven.engine.table.impl.DefaultChunkSource;
 import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 

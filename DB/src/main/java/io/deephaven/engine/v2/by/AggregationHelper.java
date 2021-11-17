@@ -7,6 +7,7 @@ import io.deephaven.engine.rowset.impl.RowSetFactory;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.impl.RowSequenceFactory;
+import io.deephaven.engine.table.impl.GroupingUtil;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.v2.*;
 import io.deephaven.engine.v2.select.SelectColumn;
@@ -15,7 +16,7 @@ import io.deephaven.engine.v2.sources.aggregate.AggregateColumnSource;
 import io.deephaven.engine.chunk.Attributes.OrderedRowKeys;
 import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.chunk.*;
-import io.deephaven.engine.tuplesource.SmartKeySource;
+import io.deephaven.engine.table.impl.tuplesource.SmartKeySource;
 import io.deephaven.engine.v2.utils.*;
 import io.deephaven.util.annotations.VisibleForTesting;
 import org.apache.commons.lang3.mutable.Mutable;
@@ -194,7 +195,7 @@ public class AggregationHelper {
             @NotNull final ColumnSource<T> keyColumnSource,
             @NotNull final Map<T, RowSet> groupToIndex) {
         final Pair<ArrayBackedColumnSource<T>, ObjectArraySource<TrackingWritableRowSet>> flatResultColumnSources =
-                AbstractColumnSource.groupingToFlatSources(keyColumnSource, groupToIndex);
+                GroupingUtil.groupingToFlatSources(keyColumnSource, groupToIndex);
         final ArrayBackedColumnSource<?> resultKeyColumnSource = flatResultColumnSources.getFirst();
         final ObjectArraySource<TrackingWritableRowSet> resultIndexColumnSource = flatResultColumnSources.getSecond();
 
@@ -250,7 +251,7 @@ public class AggregationHelper {
             ColumnSource<?> resultKeyColumnSource = keyHashTableSources[kci];
             if (keyColumnSources[kci] != maybeReinterpretedKeyColumnSources[kci]) {
                 resultKeyColumnSource =
-                        ReinterpretUtilities.convertToOriginal(keyColumnSources[kci].getType(), resultKeyColumnSource);
+                        ReinterpretUtil.convertToOriginal(keyColumnSources[kci].getType(), resultKeyColumnSource);
             }
             resultColumnSourceMap.put(keyColumnNames[kci],
                     new RedirectedColumnSource<>(resultIndexToHashSlot, resultKeyColumnSource));
@@ -471,7 +472,7 @@ public class AggregationHelper {
                 maybeGetGroupingForAggregation(aggregationControl, inputTable, keyColumnSources);
         if (groupingForAggregation != null) {
             final LocalTableMap staticGroupedResult = new LocalTableMap(null, inputTable.getDefinition());
-            AbstractColumnSource.forEachResponsiveGroup(groupingForAggregation, inputTable.getRowSet(),
+            GroupingUtil.forEachResponsiveGroup(groupingForAggregation, inputTable.getRowSet(),
                     (final Object key, final WritableRowSet rowSet) -> staticGroupedResult.put(key,
                             subTableSource.getSubTable(rowSet.toTracking())));
             return staticGroupedResult;
@@ -578,7 +579,7 @@ public class AggregationHelper {
         final ColumnSource<?>[] maybeReinterpretedKeyColumnSources = new ColumnSource[keyColumnSources.length];
         for (int kci = 0; kci < keyColumnSources.length; ++kci) {
             maybeReinterpretedKeyColumnSources[kci] =
-                    ReinterpretUtilities.maybeConvertToPrimitive(keyColumnSources[kci]);
+                    ReinterpretUtil.maybeConvertToPrimitive(keyColumnSources[kci]);
         }
         return maybeReinterpretedKeyColumnSources;
     }

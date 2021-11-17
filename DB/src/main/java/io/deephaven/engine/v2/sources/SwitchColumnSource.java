@@ -7,6 +7,7 @@ import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.updategraph.UpdateCommitter;
 import io.deephaven.util.SafeCloseable;

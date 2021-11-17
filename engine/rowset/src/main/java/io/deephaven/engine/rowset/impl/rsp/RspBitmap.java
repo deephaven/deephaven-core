@@ -1,23 +1,23 @@
 package io.deephaven.engine.rowset.impl.rsp;
 
+import io.deephaven.engine.chunk.Attributes;
+import io.deephaven.engine.chunk.Attributes.OrderedRowKeys;
+import io.deephaven.engine.chunk.LongChunk;
+import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.impl.OrderedLongSet;
 import io.deephaven.engine.rowset.impl.OrderedLongSetBuilderSequential;
 import io.deephaven.engine.rowset.impl.RowSetCounts;
-import io.deephaven.util.datastructures.LongAbortableConsumer;
-import io.deephaven.util.datastructures.LongRangeConsumer;
-import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.Attributes.OrderedRowKeys;
-import io.deephaven.engine.chunk.LongChunk;
-import io.deephaven.engine.v2.utils.*;
+import io.deephaven.engine.rowset.impl.RowSetUtil;
+import io.deephaven.engine.rowset.impl.rsp.container.*;
 import io.deephaven.engine.rowset.impl.singlerange.SingleRange;
 import io.deephaven.engine.rowset.impl.sortedranges.SortedRanges;
-import io.deephaven.util.datastructures.LongRangeAbortableConsumer;
 import io.deephaven.util.annotations.VisibleForTesting;
+import io.deephaven.util.datastructures.LongAbortableConsumer;
+import io.deephaven.util.datastructures.LongRangeAbortableConsumer;
+import io.deephaven.util.datastructures.LongRangeConsumer;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
-import io.deephaven.engine.rowset.impl.rsp.container.*;
 
 import java.util.PrimitiveIterator;
 import java.util.function.LongConsumer;
@@ -1957,7 +1957,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
                 curr = next = it.start();
                 currRangeEnd = it.end();
             }
-            final RowSetUtilities.Comparator comp = (long k) -> tc.compareTargetTo(k, dir);
+            final RowSetUtil.Comparator comp = (long k) -> tc.compareTargetTo(k, dir);
             int c = comp.directionToTargetFrom(curr);
             if (c < 0) {
                 return -1;

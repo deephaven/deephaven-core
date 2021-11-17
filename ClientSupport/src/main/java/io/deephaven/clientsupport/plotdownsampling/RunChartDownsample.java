@@ -18,7 +18,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
 import io.deephaven.engine.v2.*;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.v2.sources.ReinterpretUtilities;
+import io.deephaven.engine.v2.sources.ReinterpretUtil;
 import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.chunk.Chunk;
 import io.deephaven.engine.chunk.LongChunk;
@@ -282,7 +282,7 @@ public class RunChartDownsample implements Function.Unary<Table, Table> {
 
             final ColumnSource xSource = sourceTable.getColumnSource(key.xColumnName);
             if (xSource.getType() == DateTime.class) {
-                this.xColumnSource = ReinterpretUtilities.dateTimeToLongSource(xSource);
+                this.xColumnSource = ReinterpretUtil.dateTimeToLongSource(xSource);
             } else if (xSource.allowsReinterpret(long.class)) {
                 // noinspection unchecked
                 this.xColumnSource = xSource.reinterpret(long.class);

@@ -4,7 +4,7 @@ import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.util.compare.FloatComparisons;
-import io.deephaven.engine.v2.select.chunkfilters.FloatRangeComparator;
+import io.deephaven.engine.table.impl.chunkfilter.FloatRangeComparator;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.gui.table.filters.Condition;

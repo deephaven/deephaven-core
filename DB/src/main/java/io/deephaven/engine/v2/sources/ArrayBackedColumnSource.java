@@ -4,7 +4,8 @@
 
 package io.deephaven.engine.v2.sources;
 
-import io.deephaven.engine.table.DefaultGetContext;
+import io.deephaven.engine.table.impl.AbstractColumnSource;
+import io.deephaven.engine.table.impl.DefaultGetContext;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.util.type.ArrayTypeUtils;
@@ -108,12 +109,6 @@ public abstract class ArrayBackedColumnSource<T>
     private static final int LOG_INUSE_BLOCK_SIZE = LOG_BLOCK_SIZE - LOG_INUSE_BITSET_SIZE;
     private static final int IN_USE_BLOCK_SIZE = 1 << LOG_INUSE_BLOCK_SIZE;
     static final int IN_USE_MASK = (1 << LOG_INUSE_BITSET_SIZE) - 1;
-
-    /**
-     * Minimum average run length in an {@link RowSequence} that should trigger {@link Chunk}-filling by key ranges
-     * instead of individual keys.
-     */
-    static final long USE_RANGES_AVERAGE_RUN_LENGTH = 5;
 
     static final SoftRecycler<long[]> inUseRecycler = new SoftRecycler<>(DEFAULT_RECYCLER_CAPACITY,
             () -> new long[IN_USE_BLOCK_SIZE],

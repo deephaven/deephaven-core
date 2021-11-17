@@ -7,12 +7,13 @@
 
 package io.deephaven.engine.v2.sources;
 
-import io.deephaven.engine.table.DefaultGetContext;
+import io.deephaven.engine.table.impl.DefaultGetContext;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.impl.RowSetFactory;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.WritableColumnSource;
+import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
 import io.deephaven.engine.updategraph.UpdateCommitter;
 import io.deephaven.engine.vector.Vector;
 

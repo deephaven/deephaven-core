@@ -3,6 +3,8 @@ package io.deephaven.engine.v2.sources;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.impl.AbstractColumnSource;
+import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.util.BooleanUtils;

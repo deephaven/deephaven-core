@@ -1,6 +1,6 @@
 package io.deephaven.engine.v2.select;
 
-import io.deephaven.engine.table.DefaultChunkSource;
+import io.deephaven.engine.table.impl.DefaultChunkSource;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.vector.Vector;
 import io.deephaven.engine.table.ChunkSource;

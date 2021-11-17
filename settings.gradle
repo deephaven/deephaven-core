@@ -148,11 +148,14 @@ project(':engine-chunk').projectDir = file('engine/chunk')
 include(':engine-vector')
 project(':engine-vector').projectDir = file('engine/vector')
 
-include(':engine-tuple')
-project(':engine-tuple').projectDir = file('engine/tuple')
+include(':engine-function')
+project(':engine-function').projectDir = file('engine/function')
 
 include(':engine-time')
 project(':engine-time').projectDir = file('engine/time')
+
+include(':engine-tuple')
+project(':engine-tuple').projectDir = file('engine/tuple')
 
 include(':engine-api')
 project(':engine-api').projectDir = file('engine/api')
@@ -160,14 +163,11 @@ project(':engine-api').projectDir = file('engine/api')
 include(':engine-rowset')
 project(':engine-rowset').projectDir = file('engine/rowset')
 
+include(':engine-base')
+project(':engine-base').projectDir = file('engine/base')
+
 include(':engine-tuplesource')
 project(':engine-tuplesource').projectDir = file('engine/tuplesource')
-
-include(':engine-sources')
-project(':engine-sources').projectDir = file('engine/sources')
-
-include(':engine-function')
-project(':engine-function').projectDir = file('engine/function')
 
 include(':engine-table')
 project(':engine-table').projectDir = file('engine/table')

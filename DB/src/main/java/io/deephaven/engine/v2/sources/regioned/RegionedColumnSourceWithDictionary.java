@@ -8,7 +8,7 @@ import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
 import io.deephaven.engine.v2.*;
 import io.deephaven.engine.v2.locations.ColumnLocation;
-import io.deephaven.engine.v2.sources.ColumnSourceGetDefaults;
+import io.deephaven.engine.table.impl.ColumnSourceGetDefaults;
 import io.deephaven.engine.v2.sources.RowIdSource;
 import io.deephaven.engine.chunk.Attributes.DictionaryKeys;
 import io.deephaven.engine.chunk.Attributes.Values;

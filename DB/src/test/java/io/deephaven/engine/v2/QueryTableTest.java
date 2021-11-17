@@ -29,7 +29,7 @@ import io.deephaven.engine.liveness.SingletonLivenessManager;
 import io.deephaven.engine.v2.remote.ConstructSnapshot;
 import io.deephaven.engine.v2.remote.InitialSnapshotTable;
 import io.deephaven.engine.v2.select.*;
-import io.deephaven.engine.v2.sources.AbstractColumnSource;
+import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.v2.utils.*;
 import io.deephaven.test.types.OutOfBandTest;

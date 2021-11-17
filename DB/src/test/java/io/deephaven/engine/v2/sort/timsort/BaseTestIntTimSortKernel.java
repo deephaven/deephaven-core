@@ -13,7 +13,7 @@ import io.deephaven.engine.tuple.generated.IntLongLongTuple;
 import io.deephaven.engine.tuple.generated.IntLongTuple;
 import io.deephaven.engine.v2.sort.findruns.IntFindRunsKernel;
 import io.deephaven.engine.v2.sort.partition.IntPartitionKernel;
-import io.deephaven.engine.v2.sources.AbstractColumnSource;
+import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.Attributes.*;

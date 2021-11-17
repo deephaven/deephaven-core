@@ -5,16 +5,17 @@
 package io.deephaven.engine.rowset.impl;
 
 import io.deephaven.base.verify.Require;
-import io.deephaven.engine.rowset.*;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetBuilderRandom;
+import io.deephaven.engine.rowset.RowSetBuilderSequential;
+import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.TupleSource;
+import io.deephaven.engine.table.impl.tuplesource.TupleSourceFactory;
 import io.deephaven.engine.tuple.EmptyTuple;
 import io.deephaven.engine.updategraph.LogicalClock;
-import io.deephaven.engine.v2.sources.ColumnSource;
-import io.deephaven.engine.v2.sources.LogicalClock;
-import io.deephaven.engine.tuplesource.TupleSource;
-import io.deephaven.engine.tuplesource.TupleSourceFactory;
 
+import java.lang.ref.SoftReference;
 import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.UnaryOperator;
@@ -26,27 +27,34 @@ import java.util.stream.Collectors;
  */
 public abstract class GroupingRowSetHelper extends WritableRowSetImpl implements TrackingWritableRowSet {
 
-    /*
-     * TODO (https://github.com/deephaven/deephaven-core/issues/1521): We need to do something better than
-     * weakly-reachable List<ColumnSource>s here. Indices are probably cleaned up well before we want right now. Values
-     * are only cleaned up on access. Both are sub-par. Worse, the keys are often strongly reachable from the values.
-     */
-
     /**
      * These mappings last forever, and only include column sources that are immutable. Whenever this RowSet is changed,
      * we must clear the mappings.
      */
-    private transient WeakHashMap<List<ColumnSource>, MappingInfo> mappings = null;
+    private transient WeakHashMap<ColumnSource, MappingInfo> mappings = null;
 
     /**
      * These mappings do not survive past a single LogicalClock tick or any RowSet changes.
      */
-    private transient WeakHashMap<List<ColumnSource>, MappingInfo> ephemeralMappings = null;
+    private transient WeakHashMap<ColumnSource, MappingInfo> ephemeralMappings = null;
 
     /**
      * These prev mappings do not survive past a single LogicalClock tick or any RowSet changes.
      */
-    private transient WeakHashMap<List<ColumnSource>, MappingInfo> ephemeralPrevMappings = null;
+    private transient WeakHashMap<ColumnSource, MappingInfo> ephemeralPrevMappings = null;
+
+    private static class MappingInfo {
+
+        private final SoftReference<Map<Object, RowSet>> mapping;
+        private final WeakHashMap<ColumnSource, MappingInfo> nested;
+        private final long creationTick;
+
+        private MappingInfo(final TupleSource tupleSource, final Map<Object, RowSet> mapping, final long creationTick) {
+            this.tupleSource = tupleSource;
+            this.mapping = mapping;
+            this.creationTick = creationTick;
+        }
+    }
 
     protected GroupingRowSetHelper(final OrderedLongSet impl) {
         super(impl);
@@ -61,19 +69,6 @@ public abstract class GroupingRowSetHelper extends WritableRowSetImpl implements
     @Override
     protected void postMutationHook() {
         clearMappings();
-    }
-
-    private static class MappingInfo {
-
-        private final TupleSource tupleSource;
-        private final Map<Object, RowSet> mapping;
-        private final long creationTick;
-
-        private MappingInfo(final TupleSource tupleSource, final Map<Object, RowSet> mapping, final long creationTick) {
-            this.tupleSource = tupleSource;
-            this.mapping = mapping;
-            this.creationTick = creationTick;
-        }
     }
 
     private Map<Object, RowSet> lookupMapping(List<ColumnSource> columnSourceKey) {
@@ -148,7 +143,7 @@ public abstract class GroupingRowSetHelper extends WritableRowSetImpl implements
         return groupingCandidate != null || keyColumns.length == 1 && keyColumns[0].getGroupToRange() != null;
     }
 
-    public static Map<Object, RowSet> getGrouping(
+    private static Map<Object, RowSet> getGrouping(
             final RowSet thisRowSet,
             final UnaryOperator<RowSet> indexOp,
             final WeakHashMap<List<ColumnSource>, MappingInfo> mappings,
@@ -260,7 +255,8 @@ public abstract class GroupingRowSetHelper extends WritableRowSetImpl implements
             final UnaryOperator<RowSet> indexOp,
             final WeakHashMap<List<ColumnSource>, MappingInfo> mappings,
             final WeakHashMap<List<ColumnSource>, MappingInfo> ephemeralMappings,
-            final BiConsumer<Object, RowSet> resultCollector, TupleSource tupleSource,
+            final BiConsumer<Object, RowSet> resultCollector,
+            final TupleSource tupleSource,
             final List<ColumnSource> keyColumns) {
         // we can generate the grouping partially from our constituents
         final ColumnSource[] groupedKeyColumns =
@@ -271,22 +267,6 @@ public abstract class GroupingRowSetHelper extends WritableRowSetImpl implements
         final TupleSource groupedTupleSource = TupleSourceFactory.makeTupleSource(groupedKeyColumns);
         final Map<Object, RowSet> groupedColumnsGrouping =
                 getGrouping(thisRowSet, indexOp, mappings, ephemeralMappings, groupedTupleSource);
-        generatePartialGroupingSecondHalf(groupedKeyColumns, notGroupedKeyColumns, groupedTupleSource,
-                groupedColumnsGrouping,
-                resultCollector, tupleSource, keyColumns);
-    }
-
-    private void generatePartialGrouping(final BiConsumer<Object, RowSet> resultCollector,
-            final TupleSource tupleSource,
-            final List<ColumnSource> keyColumns) {
-        // we can generate the grouping partially from our constituents
-        final ColumnSource[] groupedKeyColumns =
-                keyColumns.stream().filter(cs -> cs.getGroupToRange() != null).toArray(ColumnSource[]::new);
-        final ColumnSource[] notGroupedKeyColumns =
-                keyColumns.stream().filter(cs -> cs.getGroupToRange() == null).toArray(ColumnSource[]::new);
-
-        final TupleSource groupedTupleSource = TupleSourceFactory.makeTupleSource(groupedKeyColumns);
-        final Map<Object, RowSet> groupedColumnsGrouping = getGrouping(groupedTupleSource);
         generatePartialGroupingSecondHalf(groupedKeyColumns, notGroupedKeyColumns, groupedTupleSource,
                 groupedColumnsGrouping,
                 resultCollector, tupleSource, keyColumns);

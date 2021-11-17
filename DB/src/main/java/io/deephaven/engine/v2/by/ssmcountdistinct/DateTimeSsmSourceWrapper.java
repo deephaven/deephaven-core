@@ -4,9 +4,9 @@ import io.deephaven.engine.vector.LongVector;
 import io.deephaven.engine.vector.ObjectVector;
 import io.deephaven.engine.vector.ObjectVectorDirect;
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.v2.sources.AbstractColumnSource;
-import io.deephaven.engine.v2.sources.ColumnSourceGetDefaults;
-import io.deephaven.engine.v2.sources.MutableColumnSourceGetDefaults;
+import io.deephaven.engine.table.impl.AbstractColumnSource;
+import io.deephaven.engine.table.impl.ColumnSourceGetDefaults;
+import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
 import io.deephaven.engine.v2.ssms.LongSegmentedSortedMultiset;
 import org.jetbrains.annotations.NotNull;
 

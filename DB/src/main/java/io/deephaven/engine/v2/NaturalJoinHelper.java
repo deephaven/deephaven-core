@@ -6,6 +6,9 @@ import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.rowset.impl.RowSetFactory;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.rowset.*;
+import io.deephaven.engine.table.impl.AbstractColumnSource;
+import io.deephaven.engine.table.impl.GroupingUtil;
+import io.deephaven.engine.table.impl.ImmutableColumnSourceGetDefaults;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.v2.join.JoinListenerRecorder;
 import io.deephaven.engine.v2.sources.*;
@@ -134,7 +137,7 @@ class NaturalJoinHelper {
 
                         // noinspection unchecked,rawtypes
                         final Pair<ArrayBackedColumnSource<?>, ObjectArraySource<WritableRowSet>> flatResultColumnSources =
-                                AbstractColumnSource.groupingToFlatSources(
+                                GroupingUtil.groupingToFlatSources(
                                         (ColumnSource) bucketingContext.leftSources[0], grouping, leftTable.getRowSet(),
                                         groupingSize);
                         final ArrayBackedColumnSource<?> groupSource = flatResultColumnSources.getFirst();
@@ -184,7 +187,7 @@ class NaturalJoinHelper {
                     final MutableInt groupingSize = new MutableInt();
                     // noinspection unchecked,rawtypes
                     final Pair<ArrayBackedColumnSource<?>, ObjectArraySource<RowSet>> flatResultColumnSources =
-                            AbstractColumnSource.groupingToFlatSources((ColumnSource) bucketingContext.leftSources[0],
+                            GroupingUtil.groupingToFlatSources((ColumnSource) bucketingContext.leftSources[0],
                                     grouping, leftTable.getRowSet(), groupingSize);
                     final ArrayBackedColumnSource<?> groupSource = flatResultColumnSources.getFirst();
                     final ObjectArraySource<RowSet> rowSetSource = flatResultColumnSources.getSecond();

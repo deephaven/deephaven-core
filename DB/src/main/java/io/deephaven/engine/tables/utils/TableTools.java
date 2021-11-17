@@ -31,7 +31,7 @@ import io.deephaven.engine.v2.replay.Replayer;
 import io.deephaven.engine.v2.replay.ReplayerInterface;
 import io.deephaven.engine.v2.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.v2.sources.ReinterpretUtilities;
+import io.deephaven.engine.v2.sources.ReinterpretUtil;
 import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.v2.utils.*;
@@ -1521,7 +1521,7 @@ public class TableTools {
     private static void processColumnForFingerprint(RowSequence ok, ColumnSource<?> col, DataOutputStream outputStream)
             throws IOException {
         if (col.getType() == DateTime.class) {
-            col = ReinterpretUtilities.dateTimeToLongSource(col);
+            col = ReinterpretUtil.dateTimeToLongSource(col);
         }
 
         final int chunkSize = 1 << 16;

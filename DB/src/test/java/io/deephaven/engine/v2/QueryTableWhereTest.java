@@ -6,6 +6,7 @@ package io.deephaven.engine.v2;
 
 import io.deephaven.engine.exceptions.QueryCancellationException;
 import io.deephaven.engine.table.ShiftObliviousListener;
+import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 import io.deephaven.engine.tables.SortingOrder;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
@@ -17,7 +18,7 @@ import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.tables.verify.TableAssertions;
 import io.deephaven.engine.v2.QueryTableTestBase.TableComparator;
 import io.deephaven.engine.v2.select.*;
-import io.deephaven.engine.v2.select.chunkfilters.IntRangeComparator;
+import io.deephaven.engine.table.impl.chunkfilter.IntRangeComparator;
 import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.v2.sources.UnionRedirection;
 import io.deephaven.engine.chunk.*;
@@ -734,7 +735,7 @@ public class QueryTableWhereTest {
         }
     }
 
-    private static class TestChunkFilter implements io.deephaven.engine.v2.select.ChunkFilter {
+    private static class TestChunkFilter implements ChunkFilter {
         final CountDownLatch latch = new CountDownLatch(1);
         final ChunkFilter actualFilter;
         final long sleepDurationNanos;

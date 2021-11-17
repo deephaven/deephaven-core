@@ -17,9 +17,9 @@ import java.util.stream.Stream;
  */
 public class TupleSourceCodeGenerator {
 
-    private static final String OUTPUT_PACKAGE = "io.deephaven.engine.tuplesource.generated";
+    private static final String OUTPUT_PACKAGE = "io.deephaven.engine.table.impl.tuplesource.generated";
     private static final File OUTPUT_RELATIVE_PATH =
-            new File("engine/tuplesource/src/main/java/io/deephaven/engine/tuplesource/generated");
+            new File("engine/tuplesource/src/main/java/io/deephaven/engine/table/impl/tuplesource/generated");
 
     private static final String CS = "$cs$";
     private static final String VAL = "$val$";
@@ -30,7 +30,7 @@ public class TupleSourceCodeGenerator {
             "org.jetbrains.annotations.NotNull",
             "io.deephaven.datastructures.util.SmartKey",
             "io.deephaven.engine.table.TupleSource",
-            "io.deephaven.engine.tuplesource.AbstractTupleSource",
+            "io.deephaven.engine.table.impl.tuplesource.AbstractTupleSource",
             "io.deephaven.engine.table.ColumnSource",
             "io.deephaven.engine.table.WritableColumnSource",
             "io.deephaven.engine.chunk.Attributes",
@@ -221,7 +221,7 @@ public class TupleSourceCodeGenerator {
 
     private static final String TWO_COLUMN_FACTORY_SIMPLE_NAME = "TwoColumnTupleSourceFactory";
     private static final String TWO_COLUMN_FACTORY_NAME =
-            "io.deephaven.engine.tuplesource." + TWO_COLUMN_FACTORY_SIMPLE_NAME;
+            "io.deephaven.engine.table.impl.tuplesource." + TWO_COLUMN_FACTORY_SIMPLE_NAME;
 
     private String generateTwoColumnTupleSource(@NotNull final String className, @NotNull final ColumnSourceType type1,
             @NotNull final ColumnSourceType type2) {
@@ -500,7 +500,7 @@ public class TupleSourceCodeGenerator {
 
     private static final String THREE_COLUMN_FACTORY_SIMPLE_NAME = "ThreeColumnTupleSourceFactory";
     private static final String THREE_COLUMN_FACTORY_NAME =
-            "io.deephaven.engine.tuplesource." + THREE_COLUMN_FACTORY_SIMPLE_NAME;
+            "io.deephaven.engine.table.impl.tuplesource." + THREE_COLUMN_FACTORY_SIMPLE_NAME;
 
     private String generateThreeColumnTupleSource(@NotNull final String className,
             @NotNull final ColumnSourceType type1, @NotNull final ColumnSourceType type2,
@@ -513,7 +513,7 @@ public class TupleSourceCodeGenerator {
         final String tupleClassName = TupleCodeGenerator.getTupleClassName(type1.getInternalClassName(),
                 type2.getInternalClassName(), type3.getInternalClassName());
         final String[] extraImports = new String[] {TupleCodeGenerator.getTupleImport(tupleClassName),
-                "io.deephaven.engine.tuplesource.ThreeColumnTupleSourceFactory"};
+                "io.deephaven.engine.table.impl.tuplesource.ThreeColumnTupleSourceFactory"};
 
         code.append("package ").append(OUTPUT_PACKAGE).append(';').append(NEW_LINE);
 

@@ -8,7 +8,7 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.v2.locations.ColumnLocation;
 import io.deephaven.engine.v2.sources.DeferredGroupingColumnSource;
-import io.deephaven.engine.v2.sources.ImmutableColumnSource;
+import io.deephaven.engine.table.impl.ImmutableColumnSource;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.util.annotations.VisibleForTesting;

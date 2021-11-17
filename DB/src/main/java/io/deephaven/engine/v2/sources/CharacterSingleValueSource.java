@@ -5,6 +5,7 @@
 package io.deephaven.engine.v2.sources;
 
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
 import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.chunk.Attributes;

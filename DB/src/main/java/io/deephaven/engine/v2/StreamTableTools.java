@@ -10,7 +10,7 @@ import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
 import io.deephaven.engine.v2.remote.ConstructSnapshot;
 import io.deephaven.engine.v2.sources.ArrayBackedColumnSource;
-import io.deephaven.engine.v2.sources.ReinterpretUtilities;
+import io.deephaven.engine.v2.sources.ReinterpretUtil;
 import io.deephaven.engine.v2.utils.*;
 import org.apache.commons.lang3.mutable.Mutable;
 import org.apache.commons.lang3.mutable.MutableObject;
@@ -61,11 +61,11 @@ public class StreamTableTools {
                             columns.put(nameColumnSourceEntry.getKey(), newColumn);
                             // for the source columns, we would like to read primitives instead of objects in cases
                             // where it is possible
-                            sourceColumns[colIdx] = ReinterpretUtilities.maybeConvertToPrimitive(existingColumn);
+                            sourceColumns[colIdx] = ReinterpretUtil.maybeConvertToPrimitive(existingColumn);
                             // for the destination sources, we know they are array backed sources that will actually
                             // store primitives and we can fill efficiently
                             destColumns[colIdx++] =
-                                    (WritableColumnSource<?>) ReinterpretUtilities.maybeConvertToPrimitive(newColumn);
+                                    (WritableColumnSource<?>) ReinterpretUtil.maybeConvertToPrimitive(newColumn);
                         }
 
 

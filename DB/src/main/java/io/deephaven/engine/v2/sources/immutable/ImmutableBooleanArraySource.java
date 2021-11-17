@@ -1,8 +1,8 @@
 package io.deephaven.engine.v2.sources.immutable;
 
 import io.deephaven.util.BooleanUtils;
-import io.deephaven.engine.v2.sources.AbstractColumnSource;
-import io.deephaven.engine.v2.sources.ImmutableColumnSourceGetDefaults;
+import io.deephaven.engine.table.impl.AbstractColumnSource;
+import io.deephaven.engine.table.impl.ImmutableColumnSourceGetDefaults;
 
 public class ImmutableBooleanArraySource extends AbstractColumnSource<Boolean> implements ImmutableColumnSourceGetDefaults.ForBoolean {
     private final byte[] data;

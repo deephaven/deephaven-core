@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2.sources.regioned;
 
 import io.deephaven.base.string.cache.StringCache;
-import io.deephaven.engine.table.DefaultChunkSource;
+import io.deephaven.engine.table.impl.DefaultChunkSource;
 import io.deephaven.engine.util.string.StringUtils;
 import io.deephaven.engine.chunk.Attributes.Any;
 import io.deephaven.engine.chunk.*;

@@ -926,7 +926,7 @@ public class RspBitmapTest {
                 long expected = k;
                 while (!rb.contains(expected))
                     --expected;
-                final RowSetUtilities.Comparator tc0 = (rKey) -> Long.compare(finalK, rKey);
+                final RowSetUtil.Comparator tc0 = (rKey) -> Long.compare(finalK, rKey);
                 it.search(tc0);
                 final long r0 = it.start();
                 assertEquals(msg, expected, r0);
@@ -969,7 +969,7 @@ public class RspBitmapTest {
                     assertEquals(arr[i], v);
                     expected = v;
                 }
-                final RowSetUtilities.Comparator tc0 = (rKey) -> Long.compare(finalV, rKey);
+                final RowSetUtil.Comparator tc0 = (rKey) -> Long.compare(finalV, rKey);
                 it.search(tc0);
                 final long res = it.start();
                 assertEquals(pfxMsg + " && v == " + v, expected, res);
@@ -985,7 +985,7 @@ public class RspBitmapTest {
                 final RspRangeIterator it0 = rb.getRangeIterator();
                 assertTrue(it0.hasNext());
                 it0.next();
-                final RowSetUtilities.Comparator tc0 = (rKey) -> Long.compare(vjm1, rKey);
+                final RowSetUtil.Comparator tc0 = (rKey) -> Long.compare(vjm1, rKey);
                 it0.search(tc0);
                 final long r0 = it0.start();
                 assertEquals(msg, vi, r0);
@@ -1805,7 +1805,7 @@ public class RspBitmapTest {
                 final String m3 = m2 + " && w==" + w;
                 final long preStart = it.start();
                 final long ww = w;
-                final RowSetUtilities.Comparator comp = (k) -> Long.compare(ww, k);
+                final RowSetUtil.Comparator comp = (k) -> Long.compare(ww, k);
                 it.search(comp);
                 assertEquals(m3, preStart, it.start());
                 final RspRangeIterator it2 = rb.getRangeIterator();
@@ -1814,7 +1814,7 @@ public class RspBitmapTest {
                 it2.search(comp);
                 assertEquals(m3, preStart, it2.start());
             }
-            final RowSetUtilities.Comparator comp = (k) -> Long.compare(v, k);
+            final RowSetUtil.Comparator comp = (k) -> Long.compare(v, k);
             it.search(comp);
             assertEquals(m2, v, it.start());
             final RspRangeIterator it2 = rb.getRangeIterator();
@@ -2738,7 +2738,7 @@ public class RspBitmapTest {
         final RspRangeIterator rit = rb.getRangeIterator();
         assertTrue(rit.hasNext());
         rit.next();
-        RowSetUtilities.Comparator comp = (long k) -> Long.compare(2, k);
+        RowSetUtil.Comparator comp = (long k) -> Long.compare(2, k);
         rit.search(comp);
         assertEquals(2, rit.start());
     }

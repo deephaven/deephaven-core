@@ -10,7 +10,7 @@ import io.deephaven.engine.rowset.impl.RowSetFactory;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.v2.QueryTable;
 import io.deephaven.engine.v2.BaseTable;
-import io.deephaven.engine.v2.sources.AbstractColumnSource;
+import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.ColumnSource;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.list.array.TLongArrayList;

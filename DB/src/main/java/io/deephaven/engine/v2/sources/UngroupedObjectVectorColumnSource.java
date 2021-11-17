@@ -6,6 +6,7 @@ package io.deephaven.engine.v2.sources;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
 import io.deephaven.engine.vector.ObjectVector;
 
 public class UngroupedObjectVectorColumnSource<T> extends UngroupedColumnSource<T>

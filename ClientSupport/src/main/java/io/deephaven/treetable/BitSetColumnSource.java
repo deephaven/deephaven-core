@@ -1,8 +1,8 @@
 package io.deephaven.treetable;
 
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.v2.sources.AbstractColumnSource;
-import io.deephaven.engine.v2.sources.ImmutableColumnSourceGetDefaults;
+import io.deephaven.engine.table.impl.AbstractColumnSource;
+import io.deephaven.engine.table.impl.ImmutableColumnSourceGetDefaults;
 
 import java.util.BitSet;
 

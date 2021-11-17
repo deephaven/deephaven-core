@@ -4,9 +4,6 @@
 
 package io.deephaven.engine.updategraph;
 
-import io.deephaven.engine.updategraph.TerminalNotification;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-
 import java.lang.ref.WeakReference;
 import java.util.function.Consumer;
 

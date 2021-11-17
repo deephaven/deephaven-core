@@ -6,7 +6,7 @@ import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.chunk.Chunk;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.chunk.ObjectChunk;
-import io.deephaven.engine.v2.utils.ChunkBoxer;
+import io.deephaven.engine.table.impl.chunkboxer.ChunkBoxer;
 import io.deephaven.engine.rowset.RowSequence;
 
 public class SimpleKeyOrValueSerializer<SERIALIZED_TYPE> implements KeyOrValueSerializer<SERIALIZED_TYPE> {

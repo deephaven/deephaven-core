@@ -1,6 +1,8 @@
 package io.deephaven.engine.v2.sources;
 
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.impl.AbstractColumnSource;
+import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
 import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.rowset.RowSet;

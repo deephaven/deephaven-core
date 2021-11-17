@@ -13,6 +13,7 @@ import io.deephaven.engine.chunk.Chunk;
 import io.deephaven.engine.chunk.LongChunk;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
 import io.deephaven.engine.updategraph.LogicalClock;
 import org.jetbrains.annotations.NotNull;
 

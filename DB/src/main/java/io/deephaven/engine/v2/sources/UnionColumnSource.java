@@ -7,6 +7,7 @@ package io.deephaven.engine.v2.sources;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.impl.ShiftedRowSequence;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.engine.chunk.Attributes.*;

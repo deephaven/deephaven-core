@@ -10,6 +10,7 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.impl.RowSetFactory;
 import io.deephaven.engine.rowset.impl.RowSequenceFactory;
+import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.updategraph.UpdateCommitter;
 import io.deephaven.engine.v2.sources.*;
 import io.deephaven.engine.chunk.*;

@@ -6,6 +6,7 @@ import io.deephaven.engine.updategraph.LogicalClock;
 
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 
 /**
  * <p>
@@ -37,45 +38,34 @@ public interface TrackingRowSet extends RowSet {
      */
     long findPrev(long rowKey);
 
-    boolean hasGrouping(ColumnSource... keyColumns);
-
-    Map<Object, RowSet> getGrouping(TupleSource tupleSource);
-
-    Map<Object, RowSet> getPrevGrouping(TupleSource tupleSource);
-
-    void copyImmutableGroupings(TupleSource source, TupleSource dest);
-
     /**
-     * Return a grouping that contains row keys that match the values in {@code keys}.
-     *
-     * @param keys A set of values that {@code TupleSource} should match. For a single {@link ColumnSource}, the values
-     *        within the set are the values that we would like to find. For compound {@link TupleSource} instances, the
-     *        values are SmartKeys.
-     * @param tupleSource The tuple factory for singular or compound keys
-     * @return A map from keys to {@link RowSet}, for each of the {@code keys} present in this {@link RowSet row set's}
-     *         view of {@code tupleSource}
+     * @return A {@link RowSetIndexer} associated with this {@link RowSet}
      */
-    Map<Object, RowSet> getGroupingForKeySet(Set<Object> keys, TupleSource tupleSource);
+    RowSetIndexer indexer(Function<RowSet, RowSetIndexer> indexerFactory);
 
-    /**
-     * Return a subset that contains row keys that match the values in keySet.
-     *
-     * @param keySet a set of values that keyColumns should match. For a single keyColumns, the values within the set
-     *        are the values that we would like to find. For multiple keyColumns, the values are SmartKeys.
-     * @param tupleSource the tuple factory for the keyColumn
-     * @return an WritableRowSet containing only keys that match keySet.
-     */
-    /**
-     * Return a subset that contains row keys that match the values in {@code keys}.
-     *
-     * @param keys A set of values that {@code TupleSource} should match. For a single {@link ColumnSource}, the values
-     *        within the set are the values that we would like to find. For compound {@link TupleSource} instances, the
-     *        values are SmartKeys.
-     * @param tupleSource The tuple factory for singular or compound keys
-     * @return A {@link WritableRowSet} with all row keys from this RowSet whose value in {@code tupleSource} was present
-     *         in {@code keys}
-     */
-    RowSet getSubSetForKeySet(Set<Object> keys, TupleSource tupleSource);
+    default boolean hasGrouping(ColumnSource... keyColumns) {
+        return indexer().hasGrouping(keyColumns);
+    }
+
+    default Map<Object, RowSet> getGrouping(TupleSource tupleSource) {
+        return indexer().getGrouping(tupleSource);
+    }
+
+    default Map<Object, RowSet> getPrevGrouping(TupleSource tupleSource) {
+        return indexer().getPrevGrouping(tupleSource);
+    }
+
+    default void copyImmutableGroupings(TupleSource source, TupleSource dest) {
+        indexer().copyImmutableGroupings(source, dest);
+    }
+
+    default Map<Object, RowSet> getGroupingForKeySet(Set<Object> keys, TupleSource tupleSource) {
+        return getGroupingForKeySet(keys, tupleSource);
+    }
+
+    default RowSet getSubSetForKeySet(Set<Object> keys, TupleSource tupleSource) {
+        return getSubSetForKeySet(keys, tupleSource);
+    }
 
     @Override
     default TrackingWritableRowSet writableCast() {

@@ -4,18 +4,18 @@
 
 package io.deephaven.engine.v2.sources;
 
-import io.deephaven.engine.table.DefaultChunkSource;
+import io.deephaven.engine.table.impl.DefaultChunkSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.WritableColumnSource;
+import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.Attributes.Values;
-import io.deephaven.engine.rftable.chunkfillers.chunkfillers.ChunkFiller;
+import io.deephaven.engine.table.impl.chunkfillers.ChunkFiller;
 import io.deephaven.engine.rowset.RowSequence;
 import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.util.QueryConstants.NULL_LONG;
-import static io.deephaven.engine.v2.sources.ArrayBackedColumnSource.USE_RANGES_AVERAGE_RUN_LENGTH;
 import static io.deephaven.engine.v2.sources.sparse.SparseConstants.*;
 import static io.deephaven.engine.v2.sources.sparse.SparseConstants.IN_USE_MASK;
 

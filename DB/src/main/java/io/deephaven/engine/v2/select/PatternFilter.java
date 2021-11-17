@@ -10,6 +10,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collections;

@@ -8,6 +8,7 @@
 package io.deephaven.engine.v2.sources;
 
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
 import io.deephaven.engine.vector.DoubleVector;
 
 import static io.deephaven.util.QueryConstants.NULL_DOUBLE;

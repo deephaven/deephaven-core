@@ -2,7 +2,7 @@ package io.deephaven.engine.v2.sources.aggregate;
 
 import io.deephaven.engine.vector.Vector;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.v2.sources.MutableColumnSourceGetDefaults;
+import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
 import io.deephaven.engine.v2.sources.UngroupableColumnSource;
 import io.deephaven.engine.v2.sources.UngroupedColumnSource;
 import io.deephaven.util.SimpleTypeMap;

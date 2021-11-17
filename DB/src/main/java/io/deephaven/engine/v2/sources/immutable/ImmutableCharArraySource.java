@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2.sources.immutable;
 
-import io.deephaven.engine.v2.sources.AbstractColumnSource;
-import io.deephaven.engine.v2.sources.ImmutableColumnSourceGetDefaults;
+import io.deephaven.engine.table.impl.AbstractColumnSource;
+import io.deephaven.engine.table.impl.ImmutableColumnSourceGetDefaults;
 import io.deephaven.util.type.TypeUtils;
 
 import static io.deephaven.util.QueryConstants.NULL_CHAR;

@@ -19,7 +19,7 @@ import io.deephaven.engine.v2.select.FormulaColumn;
 import io.deephaven.engine.v2.select.NullSelectColumn;
 import io.deephaven.engine.v2.select.SelectColumn;
 import io.deephaven.engine.v2.select.SourceColumn;
-import io.deephaven.engine.v2.sources.ReinterpretUtilities;
+import io.deephaven.engine.v2.sources.ReinterpretUtil;
 import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.rowset.RowSet;
@@ -425,12 +425,12 @@ public class ParquetTableWriter {
         Class<DATA_TYPE> columnType = columnSource.getType();
         if (columnType == DateTime.class) {
             // noinspection unchecked
-            columnSource = (ColumnSource<DATA_TYPE>) ReinterpretUtilities.dateTimeToLongSource(columnSource);
+            columnSource = (ColumnSource<DATA_TYPE>) ReinterpretUtil.dateTimeToLongSource(columnSource);
             columnType = columnSource.getType();
         }
         if (columnType == Boolean.class) {
             // noinspection unchecked
-            columnSource = (ColumnSource<DATA_TYPE>) ReinterpretUtilities.booleanToByteSource(columnSource);
+            columnSource = (ColumnSource<DATA_TYPE>) ReinterpretUtil.booleanToByteSource(columnSource);
         }
         ColumnWriter columnWriter = rowGroupWriter.addColumn(name);
 

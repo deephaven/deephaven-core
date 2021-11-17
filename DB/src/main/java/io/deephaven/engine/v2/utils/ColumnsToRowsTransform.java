@@ -12,7 +12,7 @@ import io.deephaven.engine.rowset.impl.RowSequenceFactory;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.v2.*;
 import io.deephaven.engine.v2.sort.permute.PermuteKernel;
-import io.deephaven.engine.v2.sources.AbstractColumnSource;
+import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.v2.sources.BitShiftingColumnSource;
 import io.deephaven.engine.chunk.*;
 import org.apache.commons.lang3.mutable.MutableInt;

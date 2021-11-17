@@ -1,6 +1,8 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableFactory;
+import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.v2.InMemoryTable;
@@ -27,6 +29,14 @@ import java.util.stream.StreamSupport;
 
 public enum TableCreatorImpl implements TableCreator<Table> {
     INSTANCE;
+
+    public static final class TableCreatorProvider implements TableFactory.TableCreatorProvider {
+
+        @Override
+        public TableCreator<Table> get() {
+            return INSTANCE;
+        }
+    }
 
     public static Table create(TableSpec table) {
         return table.logic().create(INSTANCE);

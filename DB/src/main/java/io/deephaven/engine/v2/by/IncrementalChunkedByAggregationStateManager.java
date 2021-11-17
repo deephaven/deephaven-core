@@ -12,6 +12,7 @@ import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.impl.RowSequenceFactory;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.impl.PrevColumnSource;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.chunk.util.hashing.*;
 // this is ugly to have twice, but we do need it twice for replication

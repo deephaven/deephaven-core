@@ -15,10 +15,10 @@ import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.time.TimeProvider;
 import io.deephaven.engine.v2.*;
-import io.deephaven.engine.v2.sources.AbstractColumnSource;
+import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.updategraph.LogicalClock;
-import io.deephaven.engine.v2.sources.MutableColumnSourceGetDefaults;
+import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
 import io.deephaven.base.RAPriQueue;
 import gnu.trove.map.hash.TLongObjectHashMap;
 

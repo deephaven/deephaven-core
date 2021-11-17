@@ -6,7 +6,7 @@ package io.deephaven.engine.v2.sources;
 import io.deephaven.engine.rowset.impl.RowSetFactory;
 import io.deephaven.engine.table.ChunkSink;
 import io.deephaven.engine.table.ChunkSource;
-import io.deephaven.engine.table.DefaultGetContext;
+import io.deephaven.engine.table.impl.DefaultGetContext;
 import io.deephaven.engine.chunk.ObjectChunk;
 
 import io.deephaven.engine.chunk.WritableObjectChunk;

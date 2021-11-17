@@ -1,15 +1,15 @@
 package io.deephaven.engine.rowset.impl.rsp;
 
-import io.deephaven.util.datastructures.LongRangeAbortableConsumer;
-import io.deephaven.util.datastructures.LongRangeIterator;
-import io.deephaven.engine.v2.utils.RowSetUtilities;
+import io.deephaven.engine.rowset.impl.RowSetUtil;
+import io.deephaven.engine.rowset.impl.rsp.container.ContainerUtil;
+import io.deephaven.engine.rowset.impl.rsp.container.SearchRangeIterator;
 import io.deephaven.engine.rowset.impl.rsp.container.SingletonContainer;
 import io.deephaven.util.SafeCloseable;
-import io.deephaven.engine.rowset.impl.rsp.container.SearchRangeIterator;
-import io.deephaven.engine.rowset.impl.rsp.container.ContainerUtil;
+import io.deephaven.util.datastructures.LongRangeAbortableConsumer;
+import io.deephaven.util.datastructures.LongRangeIterator;
 
+import static io.deephaven.engine.rowset.impl.RowSetUtil.Comparator;
 import static io.deephaven.engine.rowset.impl.rsp.RspArray.*;
-import static io.deephaven.engine.v2.utils.RowSetUtilities.Comparator;
 
 public class RspRangeIterator implements LongRangeIterator, SafeCloseable {
     private RspArray.SpanCursorForward p;
@@ -289,7 +289,7 @@ public class RspRangeIterator implements LongRangeIterator, SafeCloseable {
      */
     public void search(final Comparator comp) {
         if (!hasNext()) {
-            start = RowSetUtilities.rangeSearch(start, end, comp);
+            start = RowSetUtil.rangeSearch(start, end, comp);
             return;
         }
         int c = comp.directionToTargetFrom(end);
@@ -298,7 +298,7 @@ public class RspRangeIterator implements LongRangeIterator, SafeCloseable {
                 start = end;
                 return;
             }
-            start = RowSetUtilities.rangeSearch(start, end - 1, comp);
+            start = RowSetUtil.rangeSearch(start, end - 1, comp);
             return;
         }
         final long oldSpanKey = p.spanKey();
@@ -324,7 +324,7 @@ public class RspRangeIterator implements LongRangeIterator, SafeCloseable {
                     start = end;
                     return;
                 }
-                start = RowSetUtilities.rangeSearch(start, end - 1, comp);
+                start = RowSetUtil.rangeSearch(start, end - 1, comp);
                 return;
             }
             if (!hasNext() || p.spanKey() != targetSpanKey) {
@@ -339,7 +339,7 @@ public class RspRangeIterator implements LongRangeIterator, SafeCloseable {
             nextInterval();
             return;
         }
-        start = RowSetUtilities.rangeSearch(start, end, comp);
+        start = RowSetUtil.rangeSearch(start, end, comp);
     }
 
     @Override

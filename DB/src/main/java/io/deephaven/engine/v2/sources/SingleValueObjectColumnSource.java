@@ -5,6 +5,8 @@
 package io.deephaven.engine.v2.sources;
 
 import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.table.impl.AbstractColumnSource;
+import io.deephaven.engine.table.impl.ImmutableColumnSourceGetDefaults;
 
 /**
  * ColumnSource implementation for columns of a single unique value.

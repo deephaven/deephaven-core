@@ -5,8 +5,9 @@ package io.deephaven.engine.v2.select;
 
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 import io.deephaven.util.compare.ShortComparisons;
-import io.deephaven.engine.v2.select.chunkfilters.ShortRangeComparator;
+import io.deephaven.engine.table.impl.chunkfilter.ShortRangeComparator;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;

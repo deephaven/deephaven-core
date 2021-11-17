@@ -1,6 +1,7 @@
 package io.deephaven.engine.v2.sources;
 
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.impl.ColumnSourceGetDefaults;
 import org.jetbrains.annotations.NotNull;
 
 /**

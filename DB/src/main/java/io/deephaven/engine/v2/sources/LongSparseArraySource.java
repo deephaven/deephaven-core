@@ -5,6 +5,7 @@
 package io.deephaven.engine.v2.sources;
 
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
 
 import static io.deephaven.util.type.TypeUtils.box;
 import static io.deephaven.util.type.TypeUtils.unbox;

@@ -16,7 +16,7 @@ import io.deephaven.engine.tuple.generated.ObjectLongLongTuple;
 import io.deephaven.engine.tuple.generated.ObjectLongTuple;
 import io.deephaven.engine.v2.sort.findruns.ObjectFindRunsKernel;
 import io.deephaven.engine.v2.sort.partition.ObjectPartitionKernel;
-import io.deephaven.engine.v2.sources.AbstractColumnSource;
+import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.Attributes.*;

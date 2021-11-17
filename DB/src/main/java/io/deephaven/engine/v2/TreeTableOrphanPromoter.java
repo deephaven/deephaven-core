@@ -10,7 +10,7 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.v2.remote.WrappedDelegatingTable;
-import io.deephaven.engine.v2.sources.AbstractColumnSource;
+import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.util.QueryConstants;
 import gnu.trove.list.TLongList;
 import gnu.trove.list.array.TLongArrayList;

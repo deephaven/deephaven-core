@@ -2,7 +2,7 @@ package io.deephaven.engine.v2.snapshot;
 
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.WritableColumnSource;
-import io.deephaven.engine.rftable.chunkfillers.chunkfillers.ChunkFiller;
+import io.deephaven.engine.table.impl.chunkfillers.ChunkFiller;
 import io.deephaven.engine.v2.utils.ChunkUtils;
 import io.deephaven.engine.rowset.RowSet;
 import org.jetbrains.annotations.NotNull;

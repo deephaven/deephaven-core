@@ -9,7 +9,7 @@ import io.deephaven.engine.chunk.util.hashing.ToIntFunctor;
 import io.deephaven.engine.chunk.util.hashing.ToIntegerCast;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.sources.IntegerSparseArraySource;
-import io.deephaven.engine.v2.sources.ReinterpretUtilities;
+import io.deephaven.engine.v2.sources.ReinterpretUtil;
 import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.chunk.ChunkType;
 import io.deephaven.engine.v2.sources.regioned.SymbolTableSource;
@@ -70,11 +70,11 @@ class BucketingContext implements SafeCloseable {
             }
 
             if (leftType == DateTime.class) {
-                leftSources[ii] = ReinterpretUtilities.dateTimeToLongSource(leftSources[ii]);
-                rightSources[ii] = ReinterpretUtilities.dateTimeToLongSource(rightSources[ii]);
+                leftSources[ii] = ReinterpretUtil.dateTimeToLongSource(leftSources[ii]);
+                rightSources[ii] = ReinterpretUtil.dateTimeToLongSource(rightSources[ii]);
             } else if (leftType == boolean.class || leftType == Boolean.class) {
-                leftSources[ii] = ReinterpretUtilities.booleanToByteSource(leftSources[ii]);
-                rightSources[ii] = ReinterpretUtilities.booleanToByteSource(rightSources[ii]);
+                leftSources[ii] = ReinterpretUtil.booleanToByteSource(leftSources[ii]);
+                rightSources[ii] = ReinterpretUtil.booleanToByteSource(rightSources[ii]);
                 if (leftSources.length == 1) {
                     uniqueValues = true;
                     maximumUniqueValue = BooleanUtils.TRUE_BOOLEAN_AS_BYTE;

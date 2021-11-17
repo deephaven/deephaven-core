@@ -9,6 +9,7 @@ package io.deephaven.engine.v2.sources;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
 import io.deephaven.util.compare.FloatComparisons;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.Attributes.*;

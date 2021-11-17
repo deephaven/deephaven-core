@@ -5,6 +5,7 @@
 package io.deephaven.engine.v2.sources;
 
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
 
 public class UngroupedBooleanArrayColumnSource extends UngroupedColumnSource<Boolean> implements MutableColumnSourceGetDefaults.ForBoolean {
     private ColumnSource<boolean[]> innerSource;

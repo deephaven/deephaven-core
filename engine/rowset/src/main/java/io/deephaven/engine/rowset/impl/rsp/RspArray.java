@@ -2,32 +2,26 @@ package io.deephaven.engine.rowset.impl.rsp;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.impl.OrderedLongSet;
 import io.deephaven.engine.rowset.impl.RefCountedCow;
 import io.deephaven.engine.rowset.impl.RowSequenceFactory;
-import io.deephaven.util.datastructures.LongAbortableConsumer;
-import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.impl.rsp.container.*;
 import io.deephaven.engine.rowset.impl.singlerange.SingleRange;
 import io.deephaven.engine.rowset.impl.sortedranges.SortedRanges;
 import io.deephaven.engine.rowset.impl.sortedranges.SortedRangesInt;
+import io.deephaven.util.annotations.VisibleForTesting;
+import io.deephaven.util.datastructures.LongAbortableConsumer;
 import io.deephaven.util.datastructures.LongRangeAbortableConsumer;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.apache.commons.lang3.mutable.MutableObject;
-import io.deephaven.engine.rowset.impl.rsp.container.Container;
-import io.deephaven.engine.rowset.impl.rsp.container.ArrayContainer;
-import io.deephaven.engine.rowset.impl.rsp.container.BitmapContainer;
-import io.deephaven.engine.rowset.impl.rsp.container.TwoValuesContainer;
-import io.deephaven.engine.rowset.impl.rsp.container.SingleRangeContainer;
-import io.deephaven.engine.rowset.impl.rsp.container.RunContainer;
-import io.deephaven.engine.rowset.impl.rsp.container.SearchRangeIterator;
-import io.deephaven.util.annotations.VisibleForTesting;
 
 import java.util.PrimitiveIterator;
 import java.util.function.IntToLongFunction;
 import java.util.function.LongConsumer;
 
-import static io.deephaven.engine.v2.utils.RowSetUtilities.Comparator;
+import static io.deephaven.engine.rowset.impl.RowSetUtil.Comparator;
 
 /**
  *

@@ -7,6 +7,7 @@ package io.deephaven.engine.v2.sources;
 import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.table.ChunkSink;
 import io.deephaven.engine.table.WritableColumnSource;
+import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.v2.utils.ShiftData;
 
 import java.io.IOException;

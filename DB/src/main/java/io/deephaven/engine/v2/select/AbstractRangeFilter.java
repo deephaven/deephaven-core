@@ -1,6 +1,7 @@
 package io.deephaven.engine.v2.select;
 
 import io.deephaven.engine.rowset.WritableRowSet;
+import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 import io.deephaven.engine.tables.SortingOrder;
 import io.deephaven.engine.v2.SortedColumnsAttribute;
 import io.deephaven.engine.table.Table;

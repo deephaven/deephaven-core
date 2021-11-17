@@ -5,6 +5,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.impl.RowSetFactory;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.rowset.*;
+import io.deephaven.engine.table.impl.GroupingUtil;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.tables.SortingOrder;
 import io.deephaven.engine.chunk.util.hashing.ChunkEquals;
@@ -65,19 +66,19 @@ public class AsOfJoinHelper {
                 .map(mp -> leftTable.getColumnSource(mp.leftColumn)).toArray(ColumnSource[]::new);
         final ColumnSource<?>[] leftSources = new ColumnSource[originalLeftSources.length];
         for (int ii = 0; ii < leftSources.length; ++ii) {
-            leftSources[ii] = ReinterpretUtilities.maybeConvertToPrimitive(originalLeftSources[ii]);
+            leftSources[ii] = ReinterpretUtil.maybeConvertToPrimitive(originalLeftSources[ii]);
         }
         final ColumnSource<?>[] originalRightSources = Arrays.stream(columnsToMatch).limit(keyColumnCount)
                 .map(mp -> rightTable.getColumnSource(mp.rightColumn)).toArray(ColumnSource[]::new);
         final ColumnSource<?>[] rightSources = new ColumnSource[originalLeftSources.length];
         for (int ii = 0; ii < leftSources.length; ++ii) {
-            rightSources[ii] = ReinterpretUtilities.maybeConvertToPrimitive(originalRightSources[ii]);
+            rightSources[ii] = ReinterpretUtil.maybeConvertToPrimitive(originalRightSources[ii]);
         }
 
         final ColumnSource<?> leftStampSource =
-                ReinterpretUtilities.maybeConvertToPrimitive(leftTable.getColumnSource(stampPair.left()));
+                ReinterpretUtil.maybeConvertToPrimitive(leftTable.getColumnSource(stampPair.left()));
         final ColumnSource<?> originalRightStampSource = rightTable.getColumnSource(stampPair.right());
-        final ColumnSource<?> rightStampSource = ReinterpretUtilities.maybeConvertToPrimitive(originalRightStampSource);
+        final ColumnSource<?> rightStampSource = ReinterpretUtil.maybeConvertToPrimitive(originalRightStampSource);
 
         if (leftStampSource.getType() != rightStampSource.getType()) {
             throw new IllegalArgumentException("Can not aj() with different stamp types: left="
@@ -166,7 +167,7 @@ public class AsOfJoinHelper {
         if (leftGrouping != null) {
             final MutableInt groupSize = new MutableInt();
             // noinspection unchecked,rawtypes
-            leftGroupedSources = AbstractColumnSource.groupingToFlatSources((ColumnSource) leftSources[0], leftGrouping,
+            leftGroupedSources = GroupingUtil.groupingToFlatSources((ColumnSource) leftSources[0], leftGrouping,
                     leftTable.getRowSet(), groupSize);
             leftGroupingSize = groupSize.intValue();
         } else {
@@ -179,7 +180,7 @@ public class AsOfJoinHelper {
         if (rightGrouping != null) {
             final MutableInt groupSize = new MutableInt();
             // noinspection unchecked,rawtypes
-            rightGroupedSources = AbstractColumnSource.groupingToFlatSources((ColumnSource) rightSources[0],
+            rightGroupedSources = GroupingUtil.groupingToFlatSources((ColumnSource) rightSources[0],
                     rightGrouping, rightTable.getRowSet(), groupSize);
             rightGroupingSize = groupSize.intValue();
         } else {

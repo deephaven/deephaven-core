@@ -1,6 +1,7 @@
 package io.deephaven.engine.v2.sources;
 
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.v2.CrossJoinShiftState;
 import io.deephaven.engine.v2.join.dupexpand.DupExpandKernel;
 import io.deephaven.engine.table.SharedContext;

@@ -26,7 +26,7 @@ import java.util.Map;
  * to a null value for all {@code get} and {@code getPrev} methods.
  */
 public interface ColumnSource<T>
-        extends DefaultChunkSource.WithPrev<Values>, ElementSource<T>, TupleSource<T>, Releasable {
+        extends ChunkSource.WithPrev<Values>, ElementSource<T>, TupleSource<T>, Releasable {
 
     ColumnSource[] ZERO_LENGTH_COLUMN_SOURCE_ARRAY = new ColumnSource[0];
 

@@ -26,7 +26,7 @@ import io.deephaven.engine.v2.RollupInfo;
 import io.deephaven.engine.table.TableMap;
 import io.deephaven.engine.v2.by.ssmminmax.SsmChunkedMinMaxOperator;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.v2.sources.ReinterpretUtilities;
+import io.deephaven.engine.v2.sources.ReinterpretUtil;
 import io.deephaven.engine.v2.sources.SingleValueObjectColumnSource;
 import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.table.ChunkSource;
@@ -1264,7 +1264,7 @@ public class AggregationFactory implements AggregationSpec {
                                 final ColumnSource<?> columnSource = table.getColumnSource(mp.right());
                                 final Class<?> type = columnSource.getType();
                                 final ColumnSource<?> inputSource = columnSource.getType() == DateTime.class
-                                        ? ReinterpretUtilities.dateTimeToLongSource(columnSource)
+                                        ? ReinterpretUtil.dateTimeToLongSource(columnSource)
                                         : columnSource;
 
                                 final String resultName = mp.left();

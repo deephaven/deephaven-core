@@ -1,9 +1,9 @@
 package io.deephaven.engine.v2.by.ssmcountdistinct;
 
 import io.deephaven.engine.vector.CharVector;
-import io.deephaven.engine.v2.sources.AbstractColumnSource;
-import io.deephaven.engine.v2.sources.ColumnSourceGetDefaults;
-import io.deephaven.engine.v2.sources.MutableColumnSourceGetDefaults;
+import io.deephaven.engine.table.impl.AbstractColumnSource;
+import io.deephaven.engine.table.impl.ColumnSourceGetDefaults;
+import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
 import io.deephaven.engine.v2.sources.ObjectArraySource;
 import io.deephaven.engine.v2.ssms.CharSegmentedSortedMultiset;
 import io.deephaven.engine.rowset.RowSet;

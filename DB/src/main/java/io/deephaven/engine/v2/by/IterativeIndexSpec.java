@@ -5,7 +5,8 @@
 package io.deephaven.engine.v2.by;
 
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.v2.sources.*;
+import io.deephaven.engine.table.impl.AbstractColumnSource;
+import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
 import io.deephaven.engine.v2.utils.WritableRowRedirection;
 import io.deephaven.engine.v2.utils.RowRedirection;
 import org.jetbrains.annotations.NotNull;

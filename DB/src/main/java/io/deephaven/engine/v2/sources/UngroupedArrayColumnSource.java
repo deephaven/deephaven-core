@@ -5,6 +5,7 @@
 package io.deephaven.engine.v2.sources;
 
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
 
 public class UngroupedArrayColumnSource<T> extends UngroupedColumnSource<T>
         implements MutableColumnSourceGetDefaults.ForObject<T> {

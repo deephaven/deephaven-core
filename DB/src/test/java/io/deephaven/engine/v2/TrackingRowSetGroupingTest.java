@@ -11,7 +11,7 @@ import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.TupleSource;
-import io.deephaven.engine.tuplesource.TupleSourceFactory;
+import io.deephaven.engine.table.impl.tuplesource.TupleSourceFactory;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.test.types.OutOfBandTest;
 import org.apache.commons.lang3.mutable.MutableInt;

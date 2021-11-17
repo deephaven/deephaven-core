@@ -3,6 +3,7 @@ package io.deephaven.engine.v2.select;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 import io.deephaven.util.compare.ObjectComparisons;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.chunk.*;
@@ -54,7 +55,7 @@ public class ComparableRangeFilter extends AbstractRangeFilter {
     }
 
     public static ChunkFilter makeComparableChunkFilter(Comparable lower, Comparable upper, boolean lowerInclusive,
-            boolean upperInclusive) {
+                                                        boolean upperInclusive) {
         if (lowerInclusive) {
             if (upperInclusive) {
                 return new InclusiveInclusiveComparableChunkFilter(lower, upper);

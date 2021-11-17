@@ -7,6 +7,7 @@ package io.deephaven.engine.v2.sources;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.WritableColumnSource;
+import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.chunk.Attributes;
@@ -22,7 +23,6 @@ import io.deephaven.util.SoftRecycler;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static io.deephaven.engine.v2.sources.ArrayBackedColumnSource.USE_RANGES_AVERAGE_RUN_LENGTH;
 import static io.deephaven.engine.v2.sources.sparse.SparseConstants.*;
 
 import java.util.Arrays;

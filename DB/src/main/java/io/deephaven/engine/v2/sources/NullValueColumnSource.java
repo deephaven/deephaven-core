@@ -10,6 +10,7 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.util.QueryConstants;

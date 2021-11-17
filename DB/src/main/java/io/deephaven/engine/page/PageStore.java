@@ -1,8 +1,8 @@
 package io.deephaven.engine.page;
 
 import io.deephaven.engine.table.ChunkSource;
-import io.deephaven.engine.table.DefaultChunkSource;
-import io.deephaven.engine.table.DefaultGetContext;
+import io.deephaven.engine.table.impl.DefaultChunkSource;
+import io.deephaven.engine.table.impl.DefaultGetContext;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.impl.RowSequenceFactory;

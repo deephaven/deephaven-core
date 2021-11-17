@@ -5,6 +5,7 @@ import static io.deephaven.engine.chunk.Attributes.Values;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.v2.CrossJoinStateManager;
 import io.deephaven.engine.v2.join.dupexpand.DupExpandKernel;
 import io.deephaven.engine.v2.sort.permute.PermuteKernel;

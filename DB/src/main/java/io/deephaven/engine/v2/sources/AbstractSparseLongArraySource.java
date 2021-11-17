@@ -7,7 +7,7 @@
 
 package io.deephaven.engine.v2.sources;
 
-import io.deephaven.engine.table.DefaultGetContext;
+import io.deephaven.engine.table.impl.DefaultGetContext;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.Attributes.OrderedRowKeyRanges;
 import io.deephaven.engine.chunk.Attributes.RowKeys;
@@ -18,6 +18,7 @@ import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.impl.RowSetFactory;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.WritableColumnSource;
+import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
 import io.deephaven.engine.updategraph.UpdateCommitter;
 import io.deephaven.engine.v2.sources.sparse.LongOneOrN;
 import io.deephaven.engine.rowset.RowSequence;

@@ -4,6 +4,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.v2.utils.RowRedirection;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.engine.v2.join.dupexpand.DupExpandKernel;

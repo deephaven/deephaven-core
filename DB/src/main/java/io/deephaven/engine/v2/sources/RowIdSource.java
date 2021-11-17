@@ -4,6 +4,9 @@
 
 package io.deephaven.engine.v2.sources;
 
+import io.deephaven.engine.table.impl.AbstractColumnSource;
+import io.deephaven.engine.table.impl.ImmutableColumnSourceGetDefaults;
+
 @AbstractColumnSource.IsSerializable(value = true)
 public class RowIdSource extends AbstractColumnSource<Long> implements ImmutableColumnSourceGetDefaults.ForLong {
     public static final RowIdSource INSTANCE = new RowIdSource();
