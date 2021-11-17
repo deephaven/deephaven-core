@@ -15,7 +15,10 @@ public class TableAttributesDefinition {
             LAYOUT_HINTS_ATTRIBUTE = "LayoutHints",
             PLUGIN_NAME = "PluginName";
 
-    private static final String HIERARCHICAL_COLUMN_NAME = "hierarchicalColumnName";
+    private static final String HIERARCHICAL_COLUMN_NAME =
+            HIERARCHICAL_SOURCE_INFO_ATTRIBUTE + ".hierarchicalColumnName";
+    private static final String HIERARCHICAL_BY_COLUMN = HIERARCHICAL_SOURCE_INFO_ATTRIBUTE + ".byColumns";
+    private static final String HIERARCHICAL_LEAF_TYPE = HIERARCHICAL_SOURCE_INFO_ATTRIBUTE + ".leafType";
 
     // special cased attributes that have a complex type yet are always sent
     private RollupDefinition rollupDefinition;// rollup subtype of "HierarchicalSourceTableInfo"
@@ -29,9 +32,8 @@ public class TableAttributesDefinition {
         if (map.containsKey(HIERARCHICAL_SOURCE_INFO_ATTRIBUTE + "." + HIERARCHICAL_COLUMN_NAME)) {
             // marker present for tree table metadata
             rollupDefinition = new RollupDefinition();
-            rollupDefinition.setByColumns(map.get(HIERARCHICAL_COLUMN_NAME + "." + "byColumns").split(","));
-            rollupDefinition.setLeafType(
-                    RollupDefinition.LeafType.valueOf(map.get(HIERARCHICAL_COLUMN_NAME + "." + "leafType")));
+            rollupDefinition.setByColumns(map.get(HIERARCHICAL_BY_COLUMN).split(","));
+            rollupDefinition.setLeafType(RollupDefinition.LeafType.valueOf(map.get(HIERARCHICAL_LEAF_TYPE)));
         }
     }
 
