@@ -53,7 +53,8 @@ When the repository version does not match the source-controlled version, there 
 describing the steps to take to update the versions.
 
 There is a [nightly image check workflow](/.github/workflows/nightly-image-check.yml) that will run and notify when the
-repository version and source-controlled versions differ.
+repository version and source-controlled versions differ. To silence known out-of-date images from triggering every
+workflow run, the `deephaven.registry.ignoreOutOfDate` gradle property may be set to `true`.
 
 When updating an external image, it may be best practice to only update one external image at a time per PR.
 This can usually be done automatically via:

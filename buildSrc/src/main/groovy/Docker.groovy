@@ -490,8 +490,10 @@ class Docker {
     static TaskProvider<? extends DockerBuildImage> registryRegister(Project project) {
 
         String imageName = project.property('deephaven.registry.imageName')
-        String imageId =  project.property('deephaven.registry.imageId')
-
+        String imageId = project.property('deephaven.registry.imageId')
+        boolean ignoreOutOfDate = project.hasProperty('deephaven.registry.ignoreOutOfDate') ?
+                'true' == project.property('deephaven.registry.ignoreOutOfDate') :
+                false
 
         def pullImage = project.tasks.register('pullImage', DockerPullImage) { pull ->
             pull.group = 'Docker Registry'
@@ -537,7 +539,7 @@ class Docker {
                             "This is an unexpected situation, unless you are manually building the image.")
                 }
                 if (!(imageId in message.repoDigests)) {
-                    throw new RuntimeException("The imageId for '${imageName}' appears to be out-of-sync with the (local) repository. " +
+                    String text = "The imageId for '${imageName}' appears to be out-of-sync with the (local) repository. " +
                             "Possible repo digests are '${message.repoDigests}'.\n" +
                             "Consider running one of the following, and retrying the compare, to see if the issue persists:\n" +
                             "\t`./gradlew ${project.name}:${pullImage.get().name}`, or\n" +
@@ -545,7 +547,12 @@ class Docker {
                             "If the image is still out-of-sync, it's likely that there is a new release for '${imageName}'.\n" +
                             "You may run:\n" +
                             "\t`./gradlew ${project.name}:${bumpImage.get().name}`, or\n" +
-                            "\tmanually update '${project.projectDir}/gradle.properties' to bring the build logic up-to-date.")
+                            "\tmanually update '${project.projectDir}/gradle.properties' to bring the build logic up-to-date."
+                    if (ignoreOutOfDate) {
+                        inspect.logger.warn(text)
+                    } else {
+                        throw new RuntimeException(text)
+                    }
                 }
             }
             inspect.onError {error ->
