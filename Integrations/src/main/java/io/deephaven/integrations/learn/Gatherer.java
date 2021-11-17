@@ -35,7 +35,7 @@ public class Gatherer {
      *         handle passing the memory reference as a 1d java array here.
      */
     public static boolean[] tensorBuffer2DBoolean(final IndexSet indexSet,
-                                                  final ColumnSource<?>[] columnSources) {
+            final ColumnSource<?>[] columnSources) {
 
         final int nRows = indexSet.getSize();
         final int nCols = columnSources.length;
@@ -66,7 +66,7 @@ public class Gatherer {
      *         handle passing the memory reference as a 1d java array here.
      */
     public static byte[] tensorBuffer2DByte(final IndexSet indexSet,
-                                            final ColumnSource<?>[] columnSources) {
+            final ColumnSource<?>[] columnSources) {
 
         final int nRows = indexSet.getSize();
         final int nCols = columnSources.length;
@@ -98,7 +98,7 @@ public class Gatherer {
      */
 
     public static short[] tensorBuffer2DShort(final IndexSet indexSet,
-                                              final ColumnSource<?>[] columnSources) {
+            final ColumnSource<?>[] columnSources) {
 
         final int nRows = indexSet.getSize();
         final int nCols = columnSources.length;
@@ -129,7 +129,7 @@ public class Gatherer {
      *         handle passing the memory reference as a 1d java array here.
      */
     public static int[] tensorBuffer2DInt(final IndexSet indexSet,
-                                          final ColumnSource<?>[] columnSources) {
+            final ColumnSource<?>[] columnSources) {
 
         final int nRows = indexSet.getSize();
         final int nCols = columnSources.length;
@@ -161,7 +161,7 @@ public class Gatherer {
      */
 
     public static long[] tensorBuffer2DLong(final IndexSet indexSet,
-                                            final ColumnSource<?>[] columnSources) {
+            final ColumnSource<?>[] columnSources) {
 
         final int nRows = indexSet.getSize();
         final int nCols = columnSources.length;
@@ -193,7 +193,7 @@ public class Gatherer {
      */
 
     public static float[] tensorBuffer2DFloat(final IndexSet indexSet,
-                                              final ColumnSource<?>[] columnSources) {
+            final ColumnSource<?>[] columnSources) {
 
         final int nRows = indexSet.getSize();
         final int nCols = columnSources.length;
@@ -224,7 +224,7 @@ public class Gatherer {
      *         handle passing the memory reference as a 1d java array here.
      */
     public static double[] tensorBuffer2DDouble(final IndexSet indexSet,
-                                                final ColumnSource<?>[] columnSources) {
+            final ColumnSource<?>[] columnSources) {
 
         final int nRows = indexSet.getSize();
         final int nCols = columnSources.length;
