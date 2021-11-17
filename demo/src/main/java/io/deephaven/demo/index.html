@@ -4,8 +4,9 @@
     <style>
       :root {
         --background: #1a171a;
-        --blue: #65c4d8;
+        --primary: #65c4d8;
         --grey: #6e6a6e;
+        --success: #9ecd6f;
       }
       body {
         color: #fff;
@@ -48,14 +49,14 @@
       #bar {
         box-sizing: border-box;
         width: 0%;
-        background-color: var(--blue);
+        background-color: var(--primary);
         border: 1px solid var(--background);
         height: 14px;
-        transition: width 0.5s ease-out, background-color 0.2s linear;
+        transition: all 0.5s ease-out;
       }
       #log {
         box-sizing: border-box;
-        height: 200px;
+        height: 240px;
         width: 100%;
         padding: 3px;
         color: var(--grey);
@@ -79,7 +80,7 @@
         color: #fff;
       }
       a:hover {
-        color: var(--blue);
+        color: var(--primary);
       }
 
       @keyframes dots {
@@ -187,11 +188,9 @@
         bar.style.width = percent + "%";
       }
       function appendLog(text) {
-        var t = document.createTextNode(text + "\n");
+        var t = document.createTextNode("> " + text + "\n");
         log.appendChild(t);
       }
-
-      setProgress(1);
 
       /**
        * Progress bar is fake, sorry. We know warm starts take <4 seconds.
@@ -199,11 +198,15 @@
        * Under heavy load, it may take longer, recommend users try later after 60s.
        *
        * progress: 0-100 bar percent done
-       * time: time until next step in ms
+       * time: time of step in ms
        * text: appended to log
        */
 
       var choreograph = [
+        {
+          progress: 1,
+          time: 250,
+        },
         {
           progress: 10,
           time: 500,
@@ -215,28 +218,28 @@
           text: 'Assigned machine name "' + name + '"',
         },
         {
-          progress: 55,
-          time: 1000,
+          progress: 50,
+          time: 2500,
           text: "Fetching warm machine from pool",
         },
         {
-          progress: 60,
-          time: 2000,
+          progress: 57,
+          time: 4000,
           text: "Waiting for machine from pool",
         },
         {
-          progress: 65,
-          time: 3000,
+          progress: 67,
+          time: 6000,
           text: "No machine available, expanding pool",
         },
         {
-          progress: 80,
-          time: 1000,
+          progress: 77,
+          time: 12000,
           text: "Performing cold start",
         },
         {
           progress: 89,
-          time: 15000,
+          time: 20000,
           text: "Cold start in progress, please continue to wait",
         },
         {
@@ -256,26 +259,27 @@
         },
         {
           progress: 0,
-          time: 10000,
+          time: 250,
           text: "Unable to expand pool",
         },
       ];
 
       // can be called at anytime to skip to end
       function finish() {
+        bar.style.transitionTimingFunction = "linear";
         choreograph.push({
           progress: 95,
-          time: 500,
+          time: 750,
           text: "Waiting for gRPC api health check",
         });
         choreograph.push({
           progress: 100,
-          time: 750,
+          time: 500,
           text: "gRPC api ready to connect",
         });
         choreograph.push({
           progress: 100,
-          time: 500,
+          time: 0,
           text: "Attempting re-direct (or click link above when ready)",
         });
         play(choreograph.length - 3);
@@ -284,48 +288,32 @@
       var timeout;
       function play(step) {
         clearTimeout(timeout);
+
+        bar.style.transitionDuration = choreograph[step].time / 1000 + "s";
+        setProgress(choreograph[step].progress);
+
+        if (choreograph[step].text !== undefined) {
+          appendLog(choreograph[step].text);
+        }
+
         timeout = setTimeout(() => {
-          if (
-            step == choreograph.length - 1 &&
-            choreograph[step].progress == 0
-          ) {
+          if (step < choreograph.length - 1) {
+            play(step + 1);
+            return;
+          }
+
+          // last step
+          if (choreograph[step].progress == 0) {
             // try again later
             title.classList.remove("waiting");
             title.textContent = "Demo cluster at capacity, try again later.";
-          } else if (
-            step == choreograph.length - 1 &&
-            choreograph[step].progress == 100
-          ) {
-            // finished
-            bar.style.removeProperty("transition-duration");
-            bar.style.removeProperty("transition-timing-function");
-            bar.style.backgroundColor = "#9ecd6f";
+          } else if (choreograph[step].progress == 100) {
+            // finished successfully
             title.classList.remove("waiting");
-
+            bar.style.backgroundColor = "var(--success)";
             title.innerHTML =
               "Demo machine <a href='" + uri + "'>" + name + "</a> ready!";
-          } else if (
-            step + 1 < choreograph.length &&
-            choreograph[step + 1].time > 10000
-          ) {
-            // for long dwell time, change animation to move linear, rather than step
-            bar.style.transitionDuration =
-              choreograph[step + 1].time / 1000 + "s";
-            bar.style.transitionTimingFunction = "linear";
-          } else {
-            bar.style.removeProperty("transition-duration");
-            bar.style.removeProperty("transition-timing-function");
           }
-
-          if (choreograph[step].progress !== undefined) {
-            setProgress(choreograph[step].progress);
-          }
-          if (choreograph[step].text !== undefined) {
-            appendLog(choreograph[step].text);
-          }
-
-          // move to next step
-          if (step + 1 < choreograph.length) play(step + 1);
         }, choreograph[step].time);
       }
 
