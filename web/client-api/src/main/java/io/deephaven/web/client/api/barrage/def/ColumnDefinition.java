@@ -1,7 +1,5 @@
 package io.deephaven.web.client.api.barrage.def;
 
-import java.io.Serializable;
-
 public class ColumnDefinition {
     private int columnIndex;
     private String name;
@@ -18,7 +16,7 @@ public class ColumnDefinition {
 
     // Indicates that this is a style column for the row
     private boolean forRow;
-    private boolean inputTableKeyColumn;
+    private boolean isInputTableKeyColumn;
     private String description;
 
     public String getName() {
@@ -122,11 +120,11 @@ public class ColumnDefinition {
     }
 
     public void setInputTableKeyColumn(boolean inputTableKeyColumn) {
-        this.inputTableKeyColumn = inputTableKeyColumn;
+        this.isInputTableKeyColumn = inputTableKeyColumn;
     }
 
-    public boolean getInputTableKeyColumn() {
-        return inputTableKeyColumn;
+    public boolean isInputTableKeyColumn() {
+        return isInputTableKeyColumn;
     }
 
     public void setDescription(String description) {

@@ -29,7 +29,7 @@ public class TableAttributesDefinition {
     public TableAttributesDefinition(Map<String, String> keys, Set<String> remainingAttributes) {
         map = keys;
         this.remainingAttributeKeys = remainingAttributes;
-        if (map.containsKey(HIERARCHICAL_SOURCE_INFO_ATTRIBUTE + "." + HIERARCHICAL_COLUMN_NAME)) {
+        if (map.containsKey(HIERARCHICAL_COLUMN_NAME)) {
             // marker present for tree table metadata
             rollupDefinition = new RollupDefinition();
             rollupDefinition.setByColumns(map.get(HIERARCHICAL_BY_COLUMN).split(","));

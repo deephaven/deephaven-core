@@ -410,7 +410,7 @@ public final class ClientTableState extends TableConfig {
                         isPartitionColumn,
                         format == null || format.isNumberFormatColumn() ? null : format.getColumnIndex(),
                         definition.getDescription(),
-                        definition.getInputTableKeyColumn());
+                        definition.isInputTableKeyColumn());
 
                 if (definition.isVisible()) {
                     columns1[columns1.length] = allColumns[allColumns.length - 1];

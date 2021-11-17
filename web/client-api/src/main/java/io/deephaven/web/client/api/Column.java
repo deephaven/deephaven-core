@@ -32,7 +32,7 @@ public class Column {
     private String constituentType;
 
     private String description;
-    private final boolean inputTableKeyColumn;
+    private final boolean isInputTableKeyColumn;
 
     @JsMethod(namespace = "dh.Column")
     public static CustomColumn formatRowColor(String expression) {
@@ -56,7 +56,7 @@ public class Column {
         this.isPartitionColumn = isPartitionColumn;
         this.formatStringColumnIndex = formatStringColumnIndex;
         this.description = description;
-        this.inputTableKeyColumn = inputTableKeyColumn;
+        this.isInputTableKeyColumn = inputTableKeyColumn;
     }
 
     @JsMethod
@@ -137,7 +137,7 @@ public class Column {
     }
 
     public boolean isInputTableKeyColumn() {
-        return inputTableKeyColumn;
+        return isInputTableKeyColumn;
     }
 
     @JsMethod

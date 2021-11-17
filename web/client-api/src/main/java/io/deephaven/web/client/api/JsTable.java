@@ -225,7 +225,6 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
                 keyCols[keyCols.length] = getColumns().getAt(i).getName();
             } else {
                 valueCols[valueCols.length] = getColumns().getAt(i).getName();
-
             }
         }
         return Promise.resolve(new JsInputTable(this, keyCols, valueCols));
