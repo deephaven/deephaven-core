@@ -12,7 +12,7 @@ import java.util.List;
  */
 @Immutable
 @NodeStyle
-public abstract class ByTable extends TableBase implements SingleParentTable {
+public abstract class ByTable extends ByTableBase {
 
     public static Builder builder() {
         return ImmutableByTable.builder();
