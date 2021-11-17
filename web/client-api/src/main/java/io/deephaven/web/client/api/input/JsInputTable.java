@@ -5,6 +5,7 @@ import elemental2.promise.Promise;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.inputtable_pb.AddTableRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.inputtable_pb.DeleteTableRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.BatchTableRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ExportedTableCreationResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.MergeTablesRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.SelectOrUpdateRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.TableReference;
@@ -13,6 +14,7 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Tic
 import io.deephaven.web.client.api.Callbacks;
 import io.deephaven.web.client.api.Column;
 import io.deephaven.web.client.api.JsTable;
+import io.deephaven.web.client.api.barrage.stream.ResponseStreamWrapper;
 import io.deephaven.web.shared.fu.JsRunnable;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsOptional;
@@ -140,11 +142,13 @@ public class JsInputTable {
         // for each table, make a view on that table of only key columns, then union the tables and drop together
         final List<JsRunnable> cleanups = new ArrayList<>();
         final Ticket ticketToDelete;
+        final Promise<?> failureToReport;
         if (tablesToDelete.length == 1) {
             JsTable onlyTable = tablesToDelete[0];
             // don't try too hard to find matching columns, if it looks like we have a match go for it
             if (onlyTable.getColumns().length == keys.length && onlyTable.findColumns(keys).length == keys.length) {
                 ticketToDelete = onlyTable.getHandle().makeTicket();
+                failureToReport = Promise.resolve((Object) null);
             } else {
                 // view the only table
                 ticketToDelete = table.getConnection().getConfig().newTicket();
@@ -154,9 +158,8 @@ public class JsInputTable {
                 view.setSourceId(onlyTable.state().getHandle().makeTableReference());
                 view.setResultId(ticketToDelete);
                 view.setColumnSpecsList(keys);
-                table.getConnection().tableServiceClient().view(view, table.getConnection().metadata(),
-                        (fail, success) -> {
-                        });
+                failureToReport = Callbacks.grpcUnaryPromise(c -> table.getConnection().tableServiceClient()
+                        .view(view, table.getConnection().metadata(), c::apply));
             }
         } else {
             // there is more than one table here, construct a merge after making a view of each table
@@ -182,7 +185,17 @@ public class JsInputTable {
             mergeRequest.setResultId(ticketToDelete);
             batch.addOps(new Operation()).setMerge(mergeRequest);
 
-            table.getConnection().tableServiceClient().batch(batch, table.getConnection().metadata());
+            failureToReport = new Promise<>((resolve, reject) -> {
+                ResponseStreamWrapper<ExportedTableCreationResponse> wrapper = ResponseStreamWrapper.of(
+                        table.getConnection().tableServiceClient().batch(batch, table.getConnection().metadata()));
+                wrapper.onData(response -> {
+                    // kill the promise on the first failure we see
+                    if (!response.getSuccess()) {
+                        reject.onInvoke(response.getErrorInfo());
+                    }
+                });
+                wrapper.onEnd(status -> resolve.onInvoke((Object) null));
+            });
         }
 
         // perform the delete on the current input table
@@ -197,7 +210,9 @@ public class JsInputTable {
             return Promise.resolve(this);
         }, err -> {
             cleanups.forEach(JsRunnable::run);
-            return (Promise) Promise.reject(err);
+            // first emit any earlier errors, then if there were not, emit whatever we got from the server for the final
+            // call
+            return (Promise) failureToReport.then(ignore -> Promise.reject(err));
         });
     }
 
