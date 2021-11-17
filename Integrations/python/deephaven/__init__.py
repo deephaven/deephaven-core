@@ -36,7 +36,7 @@ Additionally, the following methods have been imported into the main deephaven n
 
 * from TableManipulation import ColumnRenderersBuilder, DistinctFormatter,
        DownsampledWhereFilter, DynamicTableWriter, LayoutHintBuilder,  
-       SmartKey, SortPair, TotalsTableBuilder, WindowCheck
+       Replayer, SmartKey, SortPair, TotalsTableBuilder, WindowCheck
 
 For ease of namespace population in a python console, consider::
 
@@ -58,7 +58,7 @@ __all__ = [
     "convertToJavaHashMap",  # from conversion_utils
 
     'ColumnRenderersBuilder', 'DistinctFormatter', 'DownsampledWhereFilter', 'DynamicTableWriter', 
-    'LayoutHintBuilder', 'SmartKey', 'SortPair', 'TotalsTableBuilder', 'WindowCheck',  # from TableManipulation
+    'LayoutHintBuilder', 'Replayer', 'SmartKey', 'SortPair', 'TotalsTableBuilder', 'WindowCheck',  # from TableManipulation
 
     "cals", "caf", "dbtu", "figw", "mavg", "npy", "plt", "pt", "ttools", "tloggers"  # subpackages with abbreviated names
 ]
@@ -122,10 +122,10 @@ def initialize():
     import deephaven.TableManipulation
     deephaven.TableManipulation._defineSymbols()
     global ColumnRenderersBuilder, DistinctFormatter, DownsampledWhereFilter, DynamicTableWriter, \
-        LayoutHintBuilder, SmartKey, SortPair, TotalsTableBuilder
+        LayoutHintBuilder, Replayer, SmartKey, SortPair, TotalsTableBuilder
     from deephaven.TableManipulation import ColumnRenderersBuilder, DistinctFormatter, \
-        DownsampledWhereFilter, DynamicTableWriter, LayoutHintBuilder, SmartKey, SortPair, \
-        TotalsTableBuilder
+        DownsampledWhereFilter, DynamicTableWriter, LayoutHintBuilder, Replayer, SmartKey, \
+        SortPair, TotalsTableBuilder
 
     WindowCheck._defineSymbols()
 
