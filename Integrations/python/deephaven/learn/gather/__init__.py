@@ -2,7 +2,7 @@
 # Copyright (c) 2016 - 2021 Deephaven Data Labs and Patent Pending
 # 
 """
-Utilities for getting Deephaven table data into Python objects
+Utilities for gathering Deephaven table data into Python objects
 """
 
 import numpy as np
@@ -43,7 +43,7 @@ except Exception as e:
     pass
 
 @_passThrough
-def table_to_numpy_2d(idx, cols, np_dtype = None, transpose = False, squeeze = False):
+def table_to_numpy_2d(idx, cols, np_dtype = None):
     """
     Convert Deephaven table data to a 2d NumPy array of the appropriate size
 
@@ -61,30 +61,23 @@ def table_to_numpy_2d(idx, cols, np_dtype = None, transpose = False, squeeze = F
         np_dtype = np.intc
 
     if np_dtype == np.bool_:
-        buffer = _gatherer.tensorBuffer2Dboolean(transpose, idx, cols,)
+        buffer = _gatherer.tensorBuffer2DBoolean(idx, cols,)
     elif np_dtype == np.byte:
-        buffer = _gatherer.tensorBuffer2Dbyte(transpose, idx, cols)
-    elif np_dtype == np.double:
-        buffer = _gatherer.tensorBuffer2Ddouble(transpose, idx, cols)
-    elif np_dtype == np.intc:
-        buffer = _gatherer.tensorBuffer2Dint(transpose, idx, cols)
-    elif np_dtype == np.int_:
-        buffer = _gatherer.tensorBuffer2Dlong(transpose, idx, cols)
+        buffer = _gatherer.tensorBuffer2DByte(idx, cols)
     elif np_dtype == np.short:
-        buffer = _gatherer.tensorBuffer2Dshort(transpose, idx, cols)
+        buffer = _gatherer.tensorBuffer2DShort(idx, cols)
+    elif np_dtype == np.intc:
+        buffer = _gatherer.tensorBuffer2DInt(idx, cols)
+    elif np_dtype == np.int_:
+        buffer = _gatherer.tensorBuffer2DLong(idx, cols)
     elif np_dtype == np.single:
-        buffer = _gatherer.tensorBuffer2Dfloat(transpose, idx, cols)
+        buffer = _gatherer.tensorBuffer2DFloat(idx, cols)
+    elif np_dtype == np.double:
+        buffer = _gatherer.tensorBuffer2DDouble(idx, cols)
     else:
         raise ValueError("Data type {input_type} is not supported.".format(input_type = np_dtype))
 
     tensor = np.frombuffer(buffer, dtype = np_dtype)
+    tensor.shape = (idx.getSize(), len(cols))
 
-    if transpose:
-        tensor.shape = (len(cols), idx.getSize())
-    else:
-        tensor.shape = (idx.getSize(), len(cols))
-
-    if squeeze:
-        return np.squeeze(tensor)
-    else:
-        return tensor
+    return tensor
