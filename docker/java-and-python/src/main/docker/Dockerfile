@@ -1,4 +1,4 @@
-FROM debian:buster-slim as java_base
+FROM deephaven/debian:local-build as java_base
 ARG ZULU_REPO_VER=1.0.0-3
 RUN set -eux; \
     if [ -f /etc/dpkg/dpkg.cfg.d/docker ]; then \

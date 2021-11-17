@@ -2,12 +2,12 @@ plugins {
     id 'com.bmuschko.docker-remote-api'
 }
 
+evaluationDependsOn Docker.registryProject('python')
+
 configurations {
     compile.extendsFrom fishConfig, jdom
     testCompile.extendsFrom fishBaseTest
 }
-
-evaluationDependsOn ':docker-java-and-python'
 
 dependencies {
 
@@ -175,7 +175,7 @@ TaskProvider<Task> generatePyDoc = Docker.registerDockerTask(project, "generateP
     }
 
     dockerfile {
-        from 'docker.io/library/python:3.7.10'
+        from 'deephaven/python:local-build'
 
         runCommand 'pip3 install beautifulsoup4==4.9.3 lxml==4.6.3'
 
@@ -187,7 +187,7 @@ TaskProvider<Task> generatePyDoc = Docker.registerDockerTask(project, "generateP
                       '''
     }
 
-    parentContainers = [ project(':docker-java-and-python').tasks.findByName('buildDocker') ]
+    parentContainers = [ Docker.registryTask(project, 'python') ]
     imageName = 'deephaven/pydocs:local-build'
     copyOut {
         into("$devRoot/Integrations/python/deephaven")

@@ -1,4 +1,4 @@
-FROM docker.io/library/node:14.18.1 AS node
+FROM deephaven/node:local-build AS node
 WORKDIR /usr/src/app
 
 FROM node as build
