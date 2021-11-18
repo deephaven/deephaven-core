@@ -1,4 +1,4 @@
-package io.deephaven.figures;
+package io.deephaven.grpc_api.console.figure;
 
 import io.deephaven.api.Selectable;
 import io.deephaven.plot.*;
