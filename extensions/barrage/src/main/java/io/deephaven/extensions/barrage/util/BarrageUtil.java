@@ -21,12 +21,11 @@ import io.deephaven.db.util.config.MutableInputTable;
 import io.deephaven.db.v2.HierarchicalTableInfo;
 import io.deephaven.db.v2.RollupInfo;
 import io.deephaven.db.v2.sources.chunk.ChunkType;
+import io.deephaven.grpc_api.util.MessageHelper;
 import io.deephaven.grpc_api.util.SchemaHelper;
 import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
 import io.deephaven.util.type.TypeUtils;
 import org.apache.arrow.flatbuf.KeyValue;
-import org.apache.arrow.flatbuf.Message;
-import org.apache.arrow.flatbuf.MetadataVersion;
 import org.apache.arrow.util.Collections2;
 import org.apache.arrow.vector.types.TimeUnit;
 import org.apache.arrow.vector.types.Types;
@@ -38,7 +37,6 @@ import org.apache.commons.lang3.mutable.MutableObject;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.nio.ByteBuffer;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
@@ -57,8 +55,6 @@ import java.util.function.Function;
 import java.util.function.IntFunction;
 
 public class BarrageUtil {
-    // per flight specification: 0xFFFFFFFF value is the first 4 bytes of a valid IPC message
-    private static final int IPC_CONTINUATION_TOKEN = -1;
 
     public static final long FLATBUFFER_MAGIC = 0x6E687064;
 
@@ -87,20 +83,6 @@ public class BarrageUtil {
             DBDateTime.class,
             Boolean.class));
 
-    public static int wrapInMessage(final FlatBufferBuilder builder, final int headerOffset, final byte headerType) {
-        return wrapInMessage(builder, headerOffset, headerType, 0);
-    }
-
-    public static int wrapInMessage(final FlatBufferBuilder builder, final int headerOffset, final byte headerType,
-            final int bodyLength) {
-        Message.startMessage(builder);
-        Message.addHeaderType(builder, headerType);
-        Message.addHeader(builder, headerOffset);
-        Message.addVersion(builder, MetadataVersion.V5);
-        Message.addBodyLength(builder, bodyLength);
-        return Message.endMessage(builder);
-    }
-
     public static ByteString schemaBytesFromTable(final Table table) {
         return schemaBytesFromTable(table.getDefinition(), table.getAttributes());
     }
@@ -112,30 +94,10 @@ public class BarrageUtil {
 
         final FlatBufferBuilder builder = new FlatBufferBuilder();
         final int schemaOffset = BarrageUtil.makeSchemaPayload(builder, table, attributes);
-        builder.finish(wrapInMessage(builder, schemaOffset,
+        builder.finish(MessageHelper.wrapInMessage(builder, schemaOffset,
                 org.apache.arrow.flatbuf.MessageHeader.Schema));
 
-        final ByteBuffer msg = builder.dataBuffer();
-
-        int padding = msg.remaining() % 8;
-        if (padding != 0) {
-            padding = 8 - padding;
-        }
-
-        // 4 * 2 is for two ints; IPC_CONTINUATION_TOKEN followed by size of schema payload
-        final byte[] byteMsg = new byte[msg.remaining() + 4 * 2 + padding];
-        intToBytes(IPC_CONTINUATION_TOKEN, byteMsg, 0);
-        intToBytes(msg.remaining(), byteMsg, 4);
-        msg.get(byteMsg, 8, msg.remaining());
-
-        return ByteStringAccess.wrap(byteMsg);
-    }
-
-    private static void intToBytes(int value, byte[] bytes, int offset) {
-        bytes[offset + 3] = (byte) (value >>> 24);
-        bytes[offset + 2] = (byte) (value >>> 16);
-        bytes[offset + 1] = (byte) (value >>> 8);
-        bytes[offset] = (byte) (value);
+        return ByteStringAccess.wrap(MessageHelper.toIpcBytes(builder));
     }
 
     public static int makeSchemaPayload(final FlatBufferBuilder builder,

@@ -18,6 +18,7 @@ import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.util.DefensiveDrainable;
 import io.deephaven.db.v2.sources.chunk.WritableLongChunk;
 import io.deephaven.db.v2.sources.chunk.WritableObjectChunk;
+import io.deephaven.grpc_api.util.MessageHelper;
 import org.apache.arrow.flatbuf.Buffer;
 import org.apache.arrow.flatbuf.FieldNode;
 import org.apache.arrow.flatbuf.RecordBatch;
@@ -78,7 +79,7 @@ public class BarrageStreamGenerator implements
                 final Map<String, Object> attributes) {
             final FlatBufferBuilder builder = new FlatBufferBuilder();
             final int schemaOffset = BarrageUtil.makeSchemaPayload(builder, table, attributes);
-            builder.finish(BarrageUtil.wrapInMessage(builder, schemaOffset,
+            builder.finish(MessageHelper.wrapInMessage(builder, schemaOffset,
                     org.apache.arrow.flatbuf.MessageHeader.Schema));
             return new SchemaView(builder.dataBuffer());
         }
@@ -361,7 +362,7 @@ public class BarrageStreamGenerator implements
         RecordBatch.addLength(header, numRows);
         final int headerOffset = RecordBatch.endRecordBatch(header);
 
-        header.finish(BarrageUtil.wrapInMessage(header, headerOffset,
+        header.finish(MessageHelper.wrapInMessage(header, headerOffset,
                 org.apache.arrow.flatbuf.MessageHeader.RecordBatch, size.intValue()));
 
         // now create the proto header

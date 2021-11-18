@@ -4,6 +4,7 @@ import io.deephaven.client.impl.TableHandle.Lifecycle;
 import io.deephaven.client.impl.TableHandle.TableHandleException;
 import io.deephaven.qst.LabeledValues;
 import io.deephaven.qst.table.EmptyTable;
+import io.deephaven.qst.table.InputTable;
 import io.deephaven.qst.table.LabeledTables;
 import io.deephaven.qst.table.MergeTable;
 import io.deephaven.qst.table.NewTable;
@@ -11,7 +12,6 @@ import io.deephaven.qst.table.TableSpec;
 import io.deephaven.qst.table.TicketTable;
 import io.deephaven.qst.table.TimeTable;
 
-import java.util.Collection;
 import java.util.Objects;
 
 public abstract class TableHandleManagerBase implements TableHandleManager {
@@ -48,6 +48,11 @@ public abstract class TableHandleManagerBase implements TableHandleManager {
     @Override
     public final TableHandle of(TicketTable ticketTable) {
         return handle(ticketTable);
+    }
+
+    @Override
+    public final TableHandle of(InputTable inputTable) {
+        return handle(inputTable);
     }
 
     @Override

@@ -7,6 +7,9 @@ import io.deephaven.qst.table.ByTable;
 import io.deephaven.qst.table.EmptyTable;
 import io.deephaven.qst.table.ExactJoinTable;
 import io.deephaven.qst.table.HeadTable;
+import io.deephaven.qst.table.InMemoryAppendOnlyInputTable;
+import io.deephaven.qst.table.InMemoryKeyBackedInputTable;
+import io.deephaven.qst.table.InputTable;
 import io.deephaven.qst.table.Join;
 import io.deephaven.qst.table.JoinTable;
 import io.deephaven.qst.table.LeftJoinTable;
@@ -149,6 +152,21 @@ public class LabelBuilder extends TableVisitorGeneric {
     @Override
     public void visit(TicketTable ticketTable) {
         sb.append("ticketTable(...)");
+    }
+
+    @Override
+    public void visit(InputTable inputTable) {
+        inputTable.walk(new InputTable.Visitor() {
+            @Override
+            public void visit(InMemoryAppendOnlyInputTable inMemoryAppendOnly) {
+                sb.append("InMemoryAppendOnlyInputTable(...)");
+            }
+
+            @Override
+            public void visit(InMemoryKeyBackedInputTable inMemoryKeyBacked) {
+                sb.append("InMemoryKeyBackedInputTable(...)");
+            }
+        });
     }
 
     private void join(String name, Join j) {
