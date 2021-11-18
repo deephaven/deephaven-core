@@ -2,7 +2,7 @@
  * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
  */
 
-package io.deephaven.engine.tables.lang;
+package io.deephaven.engine.table.impl.lang;
 
 import io.deephaven.engine.vector.IntVector;
 

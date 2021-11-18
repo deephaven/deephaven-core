@@ -30,8 +30,8 @@ abstract class BaseAddOnlyFirstOrLastChunkedOperator implements IterativeChunked
         this.resultColumns = new LinkedHashMap<>(resultPairs.length);
         for (final MatchPair mp : resultPairs) {
             // noinspection unchecked
-            resultColumns.put(mp.left(),
-                    new RedirectedColumnSource(rowRedirection, originalTable.getColumnSource(mp.right())));
+            resultColumns.put(mp.leftColumn(),
+                    new RedirectedColumnSource(rowRedirection, originalTable.getColumnSource(mp.rightColumn())));
         }
         if (exposeRedirectionAs != null) {
             resultColumns.put(exposeRedirectionAs, redirections);

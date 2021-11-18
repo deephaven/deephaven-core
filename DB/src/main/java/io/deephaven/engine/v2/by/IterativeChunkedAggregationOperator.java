@@ -16,7 +16,7 @@ import io.deephaven.engine.chunk.Attributes.ChunkPositions;
 import io.deephaven.engine.chunk.Attributes.RowKeys;
 import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.v2.utils.UpdatePerformanceTracker;
+import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 

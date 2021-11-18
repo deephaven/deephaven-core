@@ -8,6 +8,8 @@ import io.deephaven.base.Procedure;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.DataColumn;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
+import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.tables.utils.csv.CsvSpecs;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.time.TimeZone;

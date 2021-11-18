@@ -4,9 +4,7 @@
 
 package io.deephaven.engine.v2;
 
-import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.compilertools.CompilerTools;
 import io.deephaven.engine.table.DataColumn;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.v2.by.*;

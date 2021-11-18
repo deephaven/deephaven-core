@@ -46,9 +46,9 @@ public final class GroupByChunkedOperator implements IterativeChunkedAggregation
         this.registeredWithHelper = registeredWithHelper;
         live = inputTable.isRefreshing();
         rowSets = new ObjectArraySource<>(WritableRowSet.class);
-        resultColumns = Arrays.stream(resultColumnPairs).collect(Collectors.toMap(MatchPair::left,
+        resultColumns = Arrays.stream(resultColumnPairs).collect(Collectors.toMap(MatchPair::leftColumn,
                 matchPair -> AggregateColumnSource
-                        .make(inputTable.getColumnSource(matchPair.right()), rowSets),
+                        .make(inputTable.getColumnSource(matchPair.rightColumn()), rowSets),
                 Assert::neverInvoked, LinkedHashMap::new));
         inputColumnNames = MatchPair.getRightColumns(resultColumnPairs);
         if (live) {

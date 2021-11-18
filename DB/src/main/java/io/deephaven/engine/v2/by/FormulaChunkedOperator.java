@@ -18,7 +18,7 @@ import io.deephaven.engine.v2.select.FormulaColumn;
 import io.deephaven.engine.v2.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.ChunkSink.FillFromContext;
 import io.deephaven.engine.table.WritableColumnSource;
-import io.deephaven.engine.v2.utils.UpdatePerformanceTracker;
+import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 

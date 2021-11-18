@@ -113,7 +113,7 @@ class SnapshotState {
                     .filter(p -> source.hasColumns(p.rightColumn)) // Filter out any columns that don't exist in the
                                                                    // parent
                                                                    // this is a concern for the Count aggregation.
-                    .collect(Collectors.toMap(MatchPair::left, MatchPair::right));
+                    .collect(Collectors.toMap(MatchPair::leftColumn, MatchPair::rightColumn));
             includedConstituentColumns = new HashSet<>();
         } else {
             constituentCopiers = null;

@@ -318,6 +318,9 @@ public interface Table extends
     @ConcurrentMethod
     Table where(Collection<? extends Filter> filters);
 
+    @ConcurrentMethod
+    Table where(Filter... filters);
+
     @Override
     @ConcurrentMethod
     Table where(String... filters);
@@ -344,6 +347,19 @@ public interface Table extends
     Table whereNotIn(Table rightTable, Collection<? extends JoinMatch> columnsToMatch);
 
     Table whereNotIn(Table rightTable, String... columnsToMatch);
+
+    /**
+     * Filters according to an expression in disjunctive normal form.
+     * <p>
+     * The input is an array of clauses, which in turn are a collection of filters.
+     *
+     * @param filtersToApply each inner collection is a set of filters, all of which must match for the clause to be
+     *        true. If any one of the collections in the array evaluates to true, the row is part of the output table.
+     * @return a new table, with the filters applied
+     */
+    @SuppressWarnings("unchecked")
+    @ConcurrentMethod
+    Table whereOneOf(Collection<? extends Filter>... filtersToApply);
 
     /**
      * Applies the provided filters to the table disjunctively.

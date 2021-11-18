@@ -24,7 +24,7 @@ import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.v2.utils.AbstractNotification;
 import io.deephaven.engine.v2.utils.AsyncClientErrorNotifier;
 import io.deephaven.engine.v2.utils.AsyncErrorLogger;
-import io.deephaven.engine.v2.utils.UpdatePerformanceTracker;
+import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.util.Utils;
 import io.deephaven.internal.log.LoggerFactory;
 import org.jetbrains.annotations.NotNull;

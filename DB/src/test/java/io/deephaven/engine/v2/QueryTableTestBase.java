@@ -2,6 +2,7 @@ package io.deephaven.engine.v2;
 
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.tables.utils.TableDiff;
 import io.deephaven.engine.v2.utils.RowSet;

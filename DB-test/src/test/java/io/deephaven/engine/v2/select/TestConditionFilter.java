@@ -2,7 +2,7 @@ package io.deephaven.engine.v2.select;
 
 import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.tables.lang.LanguageFunctionUtil;
+import io.deephaven.engine.table.impl.lang.LanguageFunctionUtil;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;

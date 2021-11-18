@@ -11,7 +11,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ColumnDefinition;
-import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
+import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.v2.locations.ColumnLocation;
 import io.deephaven.engine.v2.locations.KeyRangeGroupingProvider;
 import org.jetbrains.annotations.NotNull;

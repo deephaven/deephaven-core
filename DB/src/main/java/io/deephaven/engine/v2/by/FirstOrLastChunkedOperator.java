@@ -35,8 +35,8 @@ public class FirstOrLastChunkedOperator implements IterativeChunkedAggregationOp
         this.resultColumns = new LinkedHashMap<>(resultPairs.length);
         for (final MatchPair mp : resultPairs) {
             // noinspection unchecked
-            resultColumns.put(mp.left(),
-                    new RedirectedColumnSource(rowRedirection, originalTable.getColumnSource(mp.right())));
+            resultColumns.put(mp.leftColumn(),
+                    new RedirectedColumnSource(rowRedirection, originalTable.getColumnSource(mp.rightColumn())));
         }
         exposeRedirections = exposeRedirectionAs != null;
         if (exposeRedirectionAs != null) {
@@ -275,8 +275,8 @@ public class FirstOrLastChunkedOperator implements IterativeChunkedAggregationOp
         private DuplicateOperator(MatchPair[] resultPairs, Table table, String exposeRedirectionAs) {
             for (final MatchPair mp : resultPairs) {
                 // noinspection unchecked
-                resultColumns.put(mp.left(),
-                        new RedirectedColumnSource(rowRedirection, table.getColumnSource(mp.right())));
+                resultColumns.put(mp.leftColumn(),
+                        new RedirectedColumnSource(rowRedirection, table.getColumnSource(mp.rightColumn())));
             }
             if (exposeRedirectionAs != null) {
                 resultColumns.put(exposeRedirectionAs, redirections);
@@ -443,8 +443,8 @@ public class FirstOrLastChunkedOperator implements IterativeChunkedAggregationOp
             this.resultColumns = new LinkedHashMap<>(resultPairs.length);
             for (final MatchPair mp : resultPairs) {
                 // noinspection unchecked
-                resultColumns.put(mp.left(),
-                        new RedirectedColumnSource(rowRedirection, table.getColumnSource(mp.right())));
+                resultColumns.put(mp.leftColumn(),
+                        new RedirectedColumnSource(rowRedirection, table.getColumnSource(mp.rightColumn())));
             }
             exposeRedirections = exposeRedirectionAs != null;
             if (exposeRedirections) {

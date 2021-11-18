@@ -26,6 +26,10 @@ public abstract class FilterOr extends FilterBase implements Iterable<Filter> {
         return builder().addFilters(filters).build();
     }
 
+    public static FilterOr of(Iterable<? extends Filter> filters) {
+        return builder().addAllFilters(filters).build();
+    }
+
     /**
      * The filters.
      *

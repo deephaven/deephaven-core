@@ -1,5 +1,9 @@
-package com.github.javaparser;
+package io.deephaven.engine.table.impl.lang;
 
+import com.github.javaparser.JavaParser;
+import com.github.javaparser.ParseResult;
+import com.github.javaparser.ParseStart;
+import com.github.javaparser.Providers;
 import com.github.javaparser.ast.expr.Expression;
 
 import java.io.IOException;
@@ -8,7 +12,8 @@ import java.io.StringReader;
 /**
  * Helpful class which parses expressions and performs extra "this is exactly one expression" validation
  */
-public class ExpressionParser {
+public class JavaExpressionParser {
+
     public static Expression parseExpression(String expression) {
         StringReader sr = new StringReader(expression);
         ParseResult<Expression> result = new JavaParser().parse(ParseStart.EXPRESSION, Providers.provider(sr));

@@ -151,7 +151,7 @@ public class BarrageUtil {
 
                 // mark columns to indicate their sources
                 for (final MatchPair matchPair : rollupInfo.getMatchPairs()) {
-                    putMetadata(getExtraMetadata.apply(matchPair.left()), "rollup.sourceColumn", matchPair.right());
+                    putMetadata(getExtraMetadata.apply(matchPair.leftColumn()), "rollup.sourceColumn", matchPair.rightColumn());
                 }
             }
         }

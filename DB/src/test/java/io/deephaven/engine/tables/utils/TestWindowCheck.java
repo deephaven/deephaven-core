@@ -11,7 +11,6 @@ import io.deephaven.engine.v2.*;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.time.TimeProvider;
-import io.deephaven.engine.v2.utils.UpdatePerformanceTracker;
 import io.deephaven.test.junit4.EngineCleanup;
 import io.deephaven.test.types.OutOfBandTest;
 import junit.framework.TestCase;

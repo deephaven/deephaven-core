@@ -7,7 +7,7 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.sources.IntegerSparseArraySource;
 import io.deephaven.engine.v2.sources.regioned.SymbolTableSource;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.v2.utils.UpdatePerformanceTracker;
+import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.test.types.OutOfBandTest;
 import junit.framework.TestCase;
 

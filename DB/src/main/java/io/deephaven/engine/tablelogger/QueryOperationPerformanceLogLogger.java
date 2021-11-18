@@ -4,6 +4,7 @@
 
 package io.deephaven.engine.tablelogger;
 
+import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.tablelogger.*;
@@ -144,7 +145,7 @@ public class QueryOperationPerformanceLogLogger
                 .add("InputSizeLong", long.class)
                 .add("WasInterrupted", Boolean.class);
         columnNames = cols.getColumnNames();
-        columnDbTypes = cols.getDbTypes();
+        columnDbTypes = cols.getTypes();
     }
 
     @Override

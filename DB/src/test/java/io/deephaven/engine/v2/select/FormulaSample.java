@@ -19,7 +19,7 @@ import io.deephaven.util.type.TypeUtils;
 
 import java.util.concurrent.ConcurrentHashMap;
 
-import static io.deephaven.engine.tables.lang.LanguageFunctionUtil.*;
+import static io.deephaven.engine.table.impl.lang.LanguageFunctionUtil.*;
 
 public class FormulaSample extends io.deephaven.engine.v2.select.Formula {
     public static final io.deephaven.engine.v2.select.formula.FormulaFactory __FORMULA_FACTORY = FormulaSample::new;

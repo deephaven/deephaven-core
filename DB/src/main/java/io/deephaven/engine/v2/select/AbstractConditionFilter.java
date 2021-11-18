@@ -6,7 +6,7 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.vector.ObjectVector;
-import io.deephaven.engine.tables.lang.LanguageParser;
+import io.deephaven.engine.table.impl.lang.LanguageParser;
 import io.deephaven.engine.tables.libs.QueryLibrary;
 import io.deephaven.engine.tables.select.Param;
 import io.deephaven.engine.tables.select.QueryScope;

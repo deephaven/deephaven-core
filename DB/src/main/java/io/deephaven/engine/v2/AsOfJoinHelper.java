@@ -76,8 +76,8 @@ public class AsOfJoinHelper {
         }
 
         final ColumnSource<?> leftStampSource =
-                ReinterpretUtil.maybeConvertToPrimitive(leftTable.getColumnSource(stampPair.left()));
-        final ColumnSource<?> originalRightStampSource = rightTable.getColumnSource(stampPair.right());
+                ReinterpretUtil.maybeConvertToPrimitive(leftTable.getColumnSource(stampPair.leftColumn()));
+        final ColumnSource<?> originalRightStampSource = rightTable.getColumnSource(stampPair.rightColumn());
         final ColumnSource<?> rightStampSource = ReinterpretUtil.maybeConvertToPrimitive(originalRightStampSource);
 
         if (leftStampSource.getType() != rightStampSource.getType()) {
@@ -611,7 +611,7 @@ public class AsOfJoinHelper {
 
         final ModifiedColumnSet rightMatchColumns =
                 rightTable.newModifiedColumnSet(MatchPair.getRightColumns(columnsToMatch));
-        final ModifiedColumnSet rightStampColumn = rightTable.newModifiedColumnSet(stampPair.right());
+        final ModifiedColumnSet rightStampColumn = rightTable.newModifiedColumnSet(stampPair.rightColumn());
         final ModifiedColumnSet rightAddedColumns = result.newModifiedColumnSet(MatchPair.getLeftColumns(columnsToAdd));
         final ModifiedColumnSet.Transformer rightTransformer =
                 rightTable.newModifiedColumnSetTransformer(result, columnsToAdd);
@@ -1156,7 +1156,7 @@ public class AsOfJoinHelper {
         }
 
         final QueryTable result = makeResult(leftTable, rightTable, rowRedirection, columnsToAdd, true);
-        final ModifiedColumnSet rightStampColumn = rightTable.newModifiedColumnSet(stampPair.right());
+        final ModifiedColumnSet rightStampColumn = rightTable.newModifiedColumnSet(stampPair.rightColumn());
         final ModifiedColumnSet allRightColumns = result.newModifiedColumnSet(MatchPair.getLeftColumns(columnsToAdd));
         final ModifiedColumnSet.Transformer rightTransformer =
                 rightTable.newModifiedColumnSetTransformer(result, columnsToAdd);
@@ -1437,7 +1437,7 @@ public class AsOfJoinHelper {
                 return result;
             }
 
-            final ModifiedColumnSet leftStampColumn = leftTable.newModifiedColumnSet(stampPair.left());
+            final ModifiedColumnSet leftStampColumn = leftTable.newModifiedColumnSet(stampPair.leftColumn());
             final ModifiedColumnSet allRightColumns =
                     result.newModifiedColumnSet(MatchPair.getLeftColumns(columnsToAdd));
             final ModifiedColumnSet.Transformer leftTransformer =
@@ -1523,11 +1523,11 @@ public class AsOfJoinHelper {
         final Map<String, ColumnSource<?>> columnSources = new LinkedHashMap<>(leftTable.getColumnSourceMap());
         Arrays.stream(columnsToAdd).forEach(mp -> {
             final RedirectedColumnSource<?> rightSource =
-                    new RedirectedColumnSource<>(rowRedirection, rightTable.getColumnSource(mp.right()));
+                    new RedirectedColumnSource<>(rowRedirection, rightTable.getColumnSource(mp.rightColumn()));
             if (refreshing) {
                 rightSource.startTrackingPrevValues();
             }
-            columnSources.put(mp.left(), rightSource);
+            columnSources.put(mp.leftColumn(), rightSource);
         });
         if (refreshing) {
             rowRedirection.writableCast().startTrackingPrevValues();

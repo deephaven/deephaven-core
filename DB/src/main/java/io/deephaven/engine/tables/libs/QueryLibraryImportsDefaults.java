@@ -8,7 +8,7 @@ import io.deephaven.engine.table.DataColumn;
 import io.deephaven.engine.table.Table;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.engine.table.Context;
-import io.deephaven.engine.tables.lang.LanguageFunctionUtil;
+import io.deephaven.engine.table.impl.lang.LanguageFunctionUtil;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.time.Period;

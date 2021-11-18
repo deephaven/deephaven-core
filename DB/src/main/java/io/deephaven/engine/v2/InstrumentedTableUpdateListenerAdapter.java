@@ -12,7 +12,7 @@ import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.liveness.Liveness;
 import io.deephaven.engine.v2.utils.AsyncErrorLogger;
 import io.deephaven.engine.v2.utils.AsyncClientErrorNotifier;
-import io.deephaven.engine.v2.utils.UpdatePerformanceTracker;
+import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.util.Utils;
 import io.deephaven.util.annotations.ReferentialIntegrity;
 import org.jetbrains.annotations.NotNull;

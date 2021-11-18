@@ -20,10 +20,12 @@ import java.util.*;
 /**
  * The interface for a query table to perform retrieve values from a column for select like operations.
  */
-public interface SelectColumn {
+public interface SelectColumn extends Selectable {
 
     static SelectColumn of(Selectable selectable) {
-        return selectable.expression().walk(new ExpressionAdapter(selectable.newColumn())).getOut();
+        return (selectable instanceof SelectColumn)
+                ? (SelectColumn) selectable
+                : selectable.expression().walk(new ExpressionAdapter(selectable.newColumn())).getOut();
     }
 
     static SelectColumn[] from(Selectable... selectables) {
@@ -182,4 +184,18 @@ public interface SelectColumn {
             out = SelectColumnFactory.getExpression(String.format("%s=%dL", lhs.name(), rhs));
         }
     }
+
+    // region Selectable impl
+
+    @Override
+    default ColumnName newColumn() {
+        return ColumnName.of(getName());
+    }
+
+    @Override
+    default Expression expression() {
+        throw new UnsupportedOperationException("SelectColumns do not implement expression");
+    }
+
+    // endregion Selectable impl
 }

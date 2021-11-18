@@ -31,7 +31,7 @@ import io.deephaven.engine.vector.Vector;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
+import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.engine.util.IterableUtils;
 import io.deephaven.engine.liveness.Liveness;
@@ -365,7 +365,7 @@ public class QueryTable extends BaseTable {
                                                                          MatchPair... matchPairs) {
         final ModifiedColumnSet[] columnSets = new ModifiedColumnSet[matchPairs.length];
         for (int ii = 0; ii < matchPairs.length; ++ii) {
-            columnSets[ii] = resultTable.newModifiedColumnSet(matchPairs[ii].left());
+            columnSets[ii] = resultTable.newModifiedColumnSet(matchPairs[ii].leftColumn());
         }
         return newModifiedColumnSetTransformer(MatchPair.getRightColumns(matchPairs), columnSets);
     }
@@ -603,7 +603,7 @@ public class QueryTable extends BaseTable {
         List<ColumnName> optimizedOrder = optimized.stream()
                 .map(AggregationFactory.AggregationElement::getResultPairs)
                 .flatMap(Stream::of)
-                .map(MatchPair::left)
+                .map(MatchPair::leftColumn)
                 .map(ColumnName::of)
                 .collect(Collectors.toList());
         List<ColumnName> userOrder = AggregationOutputs.of(aggregations).collect(Collectors.toList());
@@ -2037,7 +2037,7 @@ public class QueryTable extends BaseTable {
         }
 
         final Set<String> columnsToMatchSet =
-                Arrays.stream(columnsToMatch).map(MatchPair::right).collect(Collectors.toCollection(HashSet::new));
+                Arrays.stream(columnsToMatch).map(MatchPair::rightColumn).collect(Collectors.toCollection(HashSet::new));
 
         final Map<String, Selectable> columnsToAddSelectColumns = new LinkedHashMap<>();
         final List<String> columnsToUngroupBy = new ArrayList<>();

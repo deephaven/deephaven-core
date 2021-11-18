@@ -12,7 +12,7 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.TableMap;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.updategraph.NotificationQueue;
-import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
+import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.util.systemicmarking.SystemicObject;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.engine.tables.utils.TableToolsMergeHelper;

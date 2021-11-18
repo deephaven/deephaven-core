@@ -85,7 +85,7 @@ public class ProcessMemoryLogLogger extends TableLoggerImpl2<ProcessMemoryLogLog
                 .add("IntervalCollections", long.class)
                 .add("IntervalCollectionTimeNanos", long.class);
         columnNames = cols.getColumnNames();
-        columnDbTypes = cols.getDbTypes();
+        columnDbTypes = cols.getTypes();
     }
 
     @Override

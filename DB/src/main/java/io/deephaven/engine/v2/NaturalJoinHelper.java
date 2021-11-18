@@ -145,7 +145,7 @@ class NaturalJoinHelper {
 
                         final Table leftTableGrouped = new QueryTable(
                                 RowSetFactory.flat(groupingSize.intValue()).toTracking(),
-                                Collections.singletonMap(columnsToMatch[0].left(), groupSource));
+                                Collections.singletonMap(columnsToMatch[0].leftColumn(), groupSource));
 
                         final ColumnSource<?>[] groupedSourceArray = {groupSource};
                         jsm.buildFromLeftSide(leftTableGrouped, groupedSourceArray, leftHashSlots);
@@ -194,7 +194,7 @@ class NaturalJoinHelper {
 
                     final Table leftTableGrouped = new QueryTable(
                             RowSetFactory.flat(groupingSize.intValue()).toTracking(),
-                            Collections.singletonMap(columnsToMatch[0].left(), groupSource));
+                            Collections.singletonMap(columnsToMatch[0].leftColumn(), groupSource));
 
                     final ColumnSource<?>[] groupedSourceArray = {groupSource};
                     final StaticChunkedNaturalJoinStateManager jsm =
@@ -401,11 +401,11 @@ class NaturalJoinHelper {
         final Map<String, ColumnSource<?>> columnSourceMap = new LinkedHashMap<>(leftTable.getColumnSourceMap());
         for (MatchPair mp : columnsToAdd) {
             final RedirectedColumnSource<?> redirectedColumnSource =
-                    new RedirectedColumnSource<>(rowRedirection, rightTable.getColumnSource(mp.right()));
+                    new RedirectedColumnSource<>(rowRedirection, rightTable.getColumnSource(mp.rightColumn()));
             if (rightRefreshingColumns) {
                 redirectedColumnSource.startTrackingPrevValues();
             }
-            columnSourceMap.put(mp.left(), redirectedColumnSource);
+            columnSourceMap.put(mp.leftColumn(), redirectedColumnSource);
         }
         if (rightRefreshingColumns) {
             if (rowRedirection.isWritable()) {

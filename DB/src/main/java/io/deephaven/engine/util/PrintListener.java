@@ -2,6 +2,7 @@ package io.deephaven.engine.util;
 
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
+import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.v2.InstrumentedTableUpdateListener;
 import io.deephaven.util.annotations.ScriptApi;
@@ -67,7 +68,7 @@ public class PrintListener extends InstrumentedTableUpdateListener {
 
     @Override
     public void onFailureInternal(Throwable originalException,
-            io.deephaven.engine.v2.utils.UpdatePerformanceTracker.Entry sourceEntry) {
+            UpdatePerformanceTracker.Entry sourceEntry) {
         System.out.println("Error for: " + description);
         originalException.printStackTrace();
     }

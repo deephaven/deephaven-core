@@ -11,6 +11,7 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
+import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.engine.updategraph.*;
 import io.deephaven.hash.KeyedObjectHashSet;
 import io.deephaven.base.log.LogOutput;
@@ -23,7 +24,7 @@ import io.deephaven.io.logger.Logger;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import io.deephaven.engine.NotSortableException;
-import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
+import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.liveness.LivenessReferent;
@@ -1076,7 +1077,7 @@ public abstract class BaseTable extends LivenessArtifact
         if (renamedColumns != null) {
             for (MatchPair mp : renamedColumns) {
                 // Only the last grouping matters.
-                columnMapping.forcePut(mp.left(), mp.right());
+                columnMapping.forcePut(mp.leftColumn(), mp.rightColumn());
             }
         }
 
@@ -1210,9 +1211,9 @@ public abstract class BaseTable extends LivenessArtifact
 
         if (renamedColumns != null && renamedColumns.length != 0) {
             for (final MatchPair mp : renamedColumns) {
-                final String desc = sourceDescriptions.remove(mp.right());
+                final String desc = sourceDescriptions.remove(mp.rightColumn());
                 if (desc != null) {
-                    sourceDescriptions.put(mp.left(), desc);
+                    sourceDescriptions.put(mp.leftColumn(), desc);
                 }
             }
         }
@@ -1281,9 +1282,9 @@ public abstract class BaseTable extends LivenessArtifact
             Stream.concat(joinedColumns == null ? Stream.empty() : Arrays.stream(joinedColumns),
                     addColumns == null ? Stream.empty() : Arrays.stream(addColumns))
                     .forEach(mp -> {
-                        final String desc = rightDescriptions.get(mp.right());
+                        final String desc = rightDescriptions.get(mp.rightColumn());
                         if (desc != null) {
-                            sourceDescriptions.putIfAbsent(mp.left(), desc);
+                            sourceDescriptions.putIfAbsent(mp.leftColumn(), desc);
                         }
                     });
         }

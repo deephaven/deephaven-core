@@ -94,8 +94,8 @@ public class ZeroKeyChunkedAjMergedListener extends MergedListener {
         stampChunkEquals = ChunkEquals.makeEqual(stampChunkType);
         stampCompact = CompactKernel.makeCompact(stampChunkType);
 
-        leftStampColumn = leftTable.newModifiedColumnSet(stampPair.left());
-        rightStampColumn = rightTable.newModifiedColumnSet(stampPair.right());
+        leftStampColumn = leftTable.newModifiedColumnSet(stampPair.leftColumn());
+        rightStampColumn = rightTable.newModifiedColumnSet(stampPair.rightColumn());
         allRightColumns = result.newModifiedColumnSet(MatchPair.getLeftColumns(columnsToAdd));
         leftTransformer =
                 leftTable.newModifiedColumnSetTransformer(result, leftTable.getDefinition().getColumnNamesArray());

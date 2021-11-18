@@ -15,7 +15,7 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
+import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.v2.*;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.sources.ReinterpretUtil;

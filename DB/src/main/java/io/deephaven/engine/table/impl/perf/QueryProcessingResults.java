@@ -2,10 +2,9 @@
  * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
  */
 
-package io.deephaven.engine.tables.remotequery;
+package io.deephaven.engine.table.impl.perf;
 
 import io.deephaven.util.QueryConstants;
-import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
 
 import java.io.Serializable;
 

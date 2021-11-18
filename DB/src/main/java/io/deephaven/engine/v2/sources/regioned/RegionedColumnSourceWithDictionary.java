@@ -5,7 +5,7 @@ import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
-import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
+import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.v2.*;
 import io.deephaven.engine.v2.locations.ColumnLocation;
 import io.deephaven.engine.table.impl.ColumnSourceGetDefaults;

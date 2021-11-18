@@ -854,7 +854,7 @@ public class AggregationFactory implements AggregationSpec {
         final Map<String, List<AggregationElement>> usedColumns = new LinkedHashMap<>();
 
         for (final AggregationElement aggregationElement : underlyingAggregations) {
-            Stream.of(aggregationElement.getResultPairs()).map(MatchPair::left)
+            Stream.of(aggregationElement.getResultPairs()).map(MatchPair::leftColumn)
                     .forEach(rl -> usedColumns.computeIfAbsent(rl, x -> new ArrayList<>()).add(aggregationElement));
         }
 
@@ -1053,14 +1053,14 @@ public class AggregationFactory implements AggregationSpec {
                                     final boolean isStdVar = isStd || isVar;
                                     if (isAverage || isStdVar) {
                                         final String runningSumName =
-                                                mp.left() + ROLLUP_RUNNING_SUM_COLUMN_ID + ROLLUP_COLUMN_SUFFIX;
+                                                mp.leftColumn() + ROLLUP_RUNNING_SUM_COLUMN_ID + ROLLUP_COLUMN_SUFFIX;
                                         final String runningSum2Name =
-                                                mp.left() + ROLLUP_RUNNING_SUM2_COLUMN_ID + ROLLUP_COLUMN_SUFFIX;
+                                                mp.leftColumn() + ROLLUP_RUNNING_SUM2_COLUMN_ID + ROLLUP_COLUMN_SUFFIX;
                                         final String nonNullName =
-                                                mp.left() + ROLLUP_NONNULL_COUNT_COLUMN_ID + ROLLUP_COLUMN_SUFFIX;
-                                        final String nanName = mp.left() + ROLLUP_NAN_COLUMN_ID + ROLLUP_COLUMN_SUFFIX;
-                                        final String picName = mp.left() + ROLLUP_PIC_COLUMN_ID + ROLLUP_COLUMN_SUFFIX;
-                                        final String nicName = mp.left() + ROLLUP_NIC_COLUMN_ID + ROLLUP_COLUMN_SUFFIX;
+                                                mp.leftColumn() + ROLLUP_NONNULL_COUNT_COLUMN_ID + ROLLUP_COLUMN_SUFFIX;
+                                        final String nanName = mp.leftColumn() + ROLLUP_NAN_COLUMN_ID + ROLLUP_COLUMN_SUFFIX;
+                                        final String picName = mp.leftColumn() + ROLLUP_PIC_COLUMN_ID + ROLLUP_COLUMN_SUFFIX;
+                                        final String nicName = mp.leftColumn() + ROLLUP_NIC_COLUMN_ID + ROLLUP_COLUMN_SUFFIX;
 
                                         final boolean isFloatingPoint = table.hasColumns(nanName);
 
@@ -1120,22 +1120,22 @@ public class AggregationFactory implements AggregationSpec {
                                             operators.add(nicSum);
 
                                             if (isAverage) {
-                                                if (table.getColumnSource(mp.left())
+                                                if (table.getColumnSource(mp.leftColumn())
                                                         .getChunkType() == ChunkType.Float) {
-                                                    operators.add(new FloatChunkedReAvgOperator(mp.left(), runningSum,
+                                                    operators.add(new FloatChunkedReAvgOperator(mp.leftColumn(), runningSum,
                                                             nonNull, nanSum, picSum, nicSum));
-                                                } else if (table.getColumnSource(mp.left())
+                                                } else if (table.getColumnSource(mp.leftColumn())
                                                         .getChunkType() == ChunkType.Double) {
-                                                    operators.add(new DoubleChunkedReAvgOperator(mp.left(), runningSum,
+                                                    operators.add(new DoubleChunkedReAvgOperator(mp.leftColumn(), runningSum,
                                                             nonNull, nanSum, picSum, nicSum));
                                                 } else {
                                                     throw new UnsupportedOperationException();
                                                 }
                                             } else {
-                                                if (table.getColumnSource(mp.left()).getChunkType() == ChunkType.Float
-                                                        || table.getColumnSource(mp.left())
+                                                if (table.getColumnSource(mp.leftColumn()).getChunkType() == ChunkType.Float
+                                                        || table.getColumnSource(mp.leftColumn())
                                                                 .getChunkType() == ChunkType.Double) {
-                                                    operators.add(new FloatChunkedReVarOperator(mp.left(), isStd,
+                                                    operators.add(new FloatChunkedReVarOperator(mp.leftColumn(), isStd,
                                                             runningSum, runningSum2, nonNull, nanSum, picSum, nicSum));
                                                 } else {
                                                     throw new UnsupportedOperationException();
@@ -1166,7 +1166,7 @@ public class AggregationFactory implements AggregationSpec {
                                                 final BigIntegerChunkedSumOperator runningSum2 =
                                                         new BigIntegerChunkedSumOperator(false, runningSum2Name);
                                                 operators.add(runningSum2);
-                                                operators.add(new BigIntegerChunkedReVarOperator(mp.left(), isStd,
+                                                operators.add(new BigIntegerChunkedReVarOperator(mp.leftColumn(), isStd,
                                                         runningSum, runningSum2, nonNull));
                                             } else if (isBigDecimal) {
                                                 final BigDecimalChunkedSumOperator runningSum =
@@ -1175,7 +1175,7 @@ public class AggregationFactory implements AggregationSpec {
                                                 final BigDecimalChunkedSumOperator runningSum2 =
                                                         new BigDecimalChunkedSumOperator(false, runningSum2Name);
                                                 operators.add(runningSum2);
-                                                operators.add(new BigDecimalChunkedReVarOperator(mp.left(), isStd,
+                                                operators.add(new BigDecimalChunkedReVarOperator(mp.leftColumn(), isStd,
                                                         runningSum, runningSum2, nonNull));
                                             } else {
                                                 final DoubleChunkedSumOperator runningSum =
@@ -1184,7 +1184,7 @@ public class AggregationFactory implements AggregationSpec {
                                                 final DoubleChunkedSumOperator runningSum2 =
                                                         new DoubleChunkedSumOperator(false, runningSum2Name);
                                                 operators.add(runningSum2);
-                                                operators.add(new IntegralChunkedReVarOperator(mp.left(), isStd,
+                                                operators.add(new IntegralChunkedReVarOperator(mp.leftColumn(), isStd,
                                                         runningSum, runningSum2, nonNull));
                                             }
                                             // our final operator is updated if any input changes
@@ -1199,19 +1199,19 @@ public class AggregationFactory implements AggregationSpec {
                                                 final BigIntegerChunkedSumOperator runningSum =
                                                         new BigIntegerChunkedSumOperator(false, runningSumName);
                                                 operators.add(runningSum);
-                                                operators.add(new BigIntegerChunkedReAvgOperator(mp.left(), runningSum,
+                                                operators.add(new BigIntegerChunkedReAvgOperator(mp.leftColumn(), runningSum,
                                                         nonNull));
                                             } else if (isBigDecimal) {
                                                 final BigDecimalChunkedSumOperator runningSum =
                                                         new BigDecimalChunkedSumOperator(false, runningSumName);
                                                 operators.add(runningSum);
-                                                operators.add(new BigDecimalChunkedReAvgOperator(mp.left(), runningSum,
+                                                operators.add(new BigDecimalChunkedReAvgOperator(mp.leftColumn(), runningSum,
                                                         nonNull));
                                             } else {
                                                 final LongChunkedSumOperator runningSum =
                                                         new LongChunkedSumOperator(false, runningSumName);
                                                 operators.add(runningSum);
-                                                operators.add(new IntegralChunkedReAvgOperator(mp.left(), runningSum,
+                                                operators.add(new IntegralChunkedReAvgOperator(mp.leftColumn(), runningSum,
                                                         nonNull));
                                             }
 
@@ -1221,10 +1221,10 @@ public class AggregationFactory implements AggregationSpec {
                                         return;
                                     } else if (isCountDistinct || isDistinct || isAggUnique) {
                                         final String ssmColName =
-                                                mp.left() + ROLLUP_DISTINCT_SSM_COLUMN_ID + ROLLUP_COLUMN_SUFFIX;
+                                                mp.leftColumn() + ROLLUP_DISTINCT_SSM_COLUMN_ID + ROLLUP_COLUMN_SUFFIX;
                                         final ColumnSource<SegmentedSortedMultiSet<?>> ssmSource =
                                                 table.getColumnSource(ssmColName);
-                                        final ColumnSource<?> lastLevelResult = table.getColumnSource(mp.left());
+                                        final ColumnSource<?> lastLevelResult = table.getColumnSource(mp.leftColumn());
                                         final boolean countNulls;
                                         final IterativeChunkedAggregationOperator op;
                                         if (isDistinct) {
@@ -1232,21 +1232,21 @@ public class AggregationFactory implements AggregationSpec {
                                             countNulls =
                                                     ((DistinctSpec) inputAggregationSpec).countNulls();
                                             op = IterativeOperatorSpec.getDistinctChunked(
-                                                    lastLevelResult.getComponentType(), mp.left(), countNulls, true,
+                                                    lastLevelResult.getComponentType(), mp.leftColumn(), countNulls, true,
                                                     true);
                                         } else if (isCountDistinct) {
                                             // noinspection ConstantConditions
                                             countNulls = ((CountDistinctSpec) inputAggregationSpec)
                                                     .countNulls();
                                             op = IterativeOperatorSpec.getCountDistinctChunked(
-                                                    ssmSource.getComponentType(), mp.left(), countNulls, true, true);
+                                                    ssmSource.getComponentType(), mp.leftColumn(), countNulls, true, true);
                                         } else {
                                             // noinspection ConstantConditions
                                             countNulls =
                                                     ((UniqueSpec) inputAggregationSpec).countNulls();
                                             // noinspection ConstantConditions
                                             op = IterativeOperatorSpec.getUniqueChunked(
-                                                    lastLevelResult.getType(), mp.left(), countNulls, true,
+                                                    lastLevelResult.getType(), mp.leftColumn(), countNulls, true,
                                                     ((UniqueSpec) inputAggregationSpec).getNoKeyValue(),
                                                     ((UniqueSpec) inputAggregationSpec)
                                                             .getNonUniqueValue(),
@@ -1261,13 +1261,13 @@ public class AggregationFactory implements AggregationSpec {
                                     }
                                 }
 
-                                final ColumnSource<?> columnSource = table.getColumnSource(mp.right());
+                                final ColumnSource<?> columnSource = table.getColumnSource(mp.rightColumn());
                                 final Class<?> type = columnSource.getType();
                                 final ColumnSource<?> inputSource = columnSource.getType() == DateTime.class
                                         ? ReinterpretUtil.dateTimeToLongSource(columnSource)
                                         : columnSource;
 
-                                final String resultName = mp.left();
+                                final String resultName = mp.leftColumn();
                                 final boolean hasSource;
                                 if (isMinMax) {
                                     final boolean isMinimum =
@@ -1310,7 +1310,7 @@ public class AggregationFactory implements AggregationSpec {
                                 } else {
                                     inputColumns.add(null);
                                 }
-                                inputNames.add(new String[] {mp.right()});
+                                inputNames.add(new String[] {mp.rightColumn()});
                             });
                         } else if (isFirst || isLast) {
                             inputColumns.add(null);
@@ -1365,7 +1365,7 @@ public class AggregationFactory implements AggregationSpec {
                             final AggregationFormulaSpec formulaStateFactory =
                                     (AggregationFormulaSpec) inputAggregationSpec;
                             final GroupByChunkedOperator groupByChunkedOperator = new GroupByChunkedOperator((QueryTable) table, false,
-                                    Arrays.stream(comboMatchPairs).map(MatchPair::right)
+                                    Arrays.stream(comboMatchPairs).map(MatchPair::rightColumn)
                                             .map(MatchPairFactory::getExpression).toArray(MatchPair[]::new));
                             final FormulaChunkedOperator formulaChunkedOperator = new FormulaChunkedOperator(
                                     groupByChunkedOperator, true, formulaStateFactory.getFormula(),
@@ -1391,19 +1391,19 @@ public class AggregationFactory implements AggregationSpec {
                             operators.add(weightOperator);
 
                             inputNames.add(Stream
-                                    .concat(Stream.of(weightName), Arrays.stream(comboMatchPairs).map(MatchPair::right))
+                                    .concat(Stream.of(weightName), Arrays.stream(comboMatchPairs).map(MatchPair::rightColumn))
                                     .toArray(String[]::new));
 
                             Arrays.stream(comboMatchPairs).forEach(mp -> {
-                                final ColumnSource<?> columnSource = table.getColumnSource(mp.right());
+                                final ColumnSource<?> columnSource = table.getColumnSource(mp.rightColumn());
                                 inputColumns.add(columnSource);
-                                inputNames.add(new String[] {weightName, mp.right()});
+                                inputNames.add(new String[] {weightName, mp.rightColumn()});
                                 if (isWeightedAverage) {
                                     operators.add(new ChunkedWeightedAverageOperator(columnSource.getChunkType(),
-                                            weightOperator, mp.left()));
+                                            weightOperator, mp.leftColumn()));
                                 } else {
                                     operators.add(new DoubleChunkedWeightedSumOperator(columnSource.getChunkType(),
-                                            weightOperator, mp.left()));
+                                            weightOperator, mp.leftColumn()));
                                 }
                             });
                         } else {

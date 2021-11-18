@@ -2,7 +2,7 @@
  * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
  */
 
-package io.deephaven.engine.tables.lang;
+package io.deephaven.engine.table.impl.lang;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
@@ -12,7 +12,6 @@ import io.deephaven.engine.tables.select.Param;
 import io.deephaven.engine.tables.select.QueryScope;
 import io.deephaven.engine.vector.Vector;
 import io.deephaven.util.type.TypeUtils;
-import com.github.javaparser.ExpressionParser;
 import com.github.javaparser.ast.*;
 import com.github.javaparser.ast.body.*;
 // Java 8 needs this import due to a conflict in java.lang.reflect, don't remove it
@@ -128,7 +127,7 @@ public final class LanguageParser extends GenericVisitorAdapter<Class<?>, Langua
 
         final VisitArgs printer = VisitArgs.create();
         try {
-            Expression expr = ExpressionParser.parseExpression(expression);
+            Expression expr = JavaExpressionParser.parseExpression(expression);
 
             Class<?> type = expr.accept(this, printer);
 

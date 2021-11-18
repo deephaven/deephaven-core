@@ -9,7 +9,6 @@ import io.deephaven.api.RawString;
 import io.deephaven.api.Strings;
 import io.deephaven.api.filter.*;
 import io.deephaven.api.value.Value;
-import io.deephaven.api.value.Value.Visitor;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
@@ -27,10 +26,12 @@ import java.util.Objects;
 /**
  * Interface for individual filters within a where clause.
  */
-public interface WhereFilter {
+public interface WhereFilter extends Filter {
 
     static WhereFilter of(Filter filter) {
-        return filter.walk(new Adapter(false)).getOut();
+        return (filter instanceof WhereFilter)
+                ? (WhereFilter) filter
+                : filter.walk(new Adapter(false)).getOut();
     }
 
     static WhereFilter ofInverted(Filter filter) {
@@ -296,7 +297,7 @@ public interface WhereFilter {
 
             @Override
             public void visit(ColumnName lhs) {
-                preferred.rhs().walk(new Visitor() {
+                preferred.rhs().walk(new Value.Visitor() {
                     @Override
                     public void visit(ColumnName rhs) {
                         out = SelectFilterFactory.getExpression(Strings.of(original));
@@ -339,4 +340,18 @@ public interface WhereFilter {
             }
         }
     }
+
+    // region Filter impl
+
+    @Override
+    default FilterNot not() {
+        throw new UnsupportedOperationException("WhereFilters do not implement not");
+    }
+
+    @Override
+    default <V extends Visitor> V walk(V visitor) {
+        throw new UnsupportedOperationException("WhereFilters do not implement walk");
+    }
+
+    // endregion Filter impl
 }

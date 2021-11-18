@@ -4,7 +4,7 @@ import io.deephaven.base.StringUtils;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.tables.select.MatchPairFactory;
-import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
+import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.liveness.Liveness;
 import io.deephaven.engine.liveness.LivenessArtifact;
@@ -12,7 +12,7 @@ import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.updategraph.DynamicNode;
-import io.deephaven.engine.v2.utils.UpdatePerformanceTracker;
+import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -182,7 +182,7 @@ public class TableMapProxyHandler extends LivenessArtifact implements Invocation
                 MatchPair... matchPairs) {
             final ModifiedColumnSet[] columnSets = new ModifiedColumnSet[matchPairs.length];
             for (int ii = 0; ii < matchPairs.length; ++ii) {
-                columnSets[ii] = resultTable.newModifiedColumnSet(matchPairs[ii].left());
+                columnSets[ii] = resultTable.newModifiedColumnSet(matchPairs[ii].leftColumn());
             }
             return newModifiedColumnSetTransformer(MatchPair.getRightColumns(matchPairs), columnSets);
         }
@@ -342,8 +342,8 @@ public class TableMapProxyHandler extends LivenessArtifact implements Invocation
 
                     final Map<Object, Object> joinKeyToTableKey = new HashMap<>();
 
-                    final String[] leftKeyNames = keyColumns.stream().map(MatchPair::left).toArray(String[]::new);
-                    final String[] rightKeyNames = keyColumns.stream().map(MatchPair::right).toArray(String[]::new);
+                    final String[] leftKeyNames = keyColumns.stream().map(MatchPair::leftColumn).toArray(String[]::new);
+                    final String[] rightKeyNames = keyColumns.stream().map(MatchPair::rightColumn).toArray(String[]::new);
 
                     for (Object tableKey : underlyingTableMap.getKeySet()) {
                         final Table leftTable = underlyingTableMap.get(tableKey);

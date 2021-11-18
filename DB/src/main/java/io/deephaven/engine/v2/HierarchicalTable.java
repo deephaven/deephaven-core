@@ -4,7 +4,7 @@ import io.deephaven.engine.tables.SortPair;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.tables.select.SelectColumnFactory;
-import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
+import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.v2.by.AggregationFactory;
 import io.deephaven.engine.v2.by.AggregationSpec;
 import io.deephaven.engine.v2.select.SelectColumn;

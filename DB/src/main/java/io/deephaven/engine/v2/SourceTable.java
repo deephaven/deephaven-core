@@ -10,7 +10,7 @@ import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
-import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
+import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.v2.locations.ImmutableTableLocationKey;
 import io.deephaven.engine.v2.locations.TableDataException;
 import io.deephaven.engine.v2.locations.TableLocationProvider;

@@ -1,4 +1,4 @@
-package io.deephaven.engine.tables.utils;
+package io.deephaven.engine.table.impl.perf;
 
 import io.deephaven.configuration.Configuration;
 

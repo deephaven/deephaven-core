@@ -196,7 +196,7 @@ class RollupSnapshotImpl<CLIENT_TYPE extends TreeTableClientTableManager.Client<
         }
 
         final Map<String, String> nameMap = getInfo().getMatchPairs().stream()
-                .collect(Collectors.toMap(MatchPair::left, MatchPair::right));
+                .collect(Collectors.toMap(MatchPair::leftColumn, MatchPair::rightColumn));
 
         // Note that we can't use getSourceTable() here because it won't have been initialized until after
         // getSnapshot() is invoked.

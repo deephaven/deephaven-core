@@ -9,6 +9,7 @@ import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.updategraph.DynamicNode;
@@ -19,7 +20,6 @@ import io.deephaven.engine.chunk.Chunk;
 import io.deephaven.engine.chunk.WritableBooleanChunk;
 import io.deephaven.engine.chunk.WritableLongChunk;
 import io.deephaven.engine.table.impl.tuplesource.TupleSourceFactory;
-import io.deephaven.engine.v2.utils.*;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 
@@ -63,13 +63,13 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
 
         this.setTable = setTable;
         final ColumnSource[] setColumns =
-                Arrays.stream(matchPairs).map(mp -> setTable.getColumnSource(mp.right())).toArray(ColumnSource[]::new);
+                Arrays.stream(matchPairs).map(mp -> setTable.getColumnSource(mp.rightColumn())).toArray(ColumnSource[]::new);
         setTupleSource = TupleSourceFactory.makeTupleSource(setColumns);
 
         setTable.getRowSet().forAllRowKeys((final long v) -> addKey(makeKey(v)));
 
         if (DynamicNode.isDynamicAndIsRefreshing(setTable)) {
-            final String[] columnNames = Arrays.stream(matchPairs).map(MatchPair::right).toArray(String[]::new);
+            final String[] columnNames = Arrays.stream(matchPairs).map(MatchPair::rightColumn).toArray(String[]::new);
             final ModifiedColumnSet modTokenSet = setTable.newModifiedColumnSet(columnNames);
             setUpdateListener = new InstrumentedTableUpdateListenerAdapter(
                     "DynamicWhereFilter(" + Arrays.toString(setColumnsNames) + ")", setTable, false) {
@@ -177,7 +177,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
         }
 
         final ColumnSource[] keyColumns =
-                Arrays.stream(matchPairs).map(mp -> table.getColumnSource(mp.left())).toArray(ColumnSource[]::new);
+                Arrays.stream(matchPairs).map(mp -> table.getColumnSource(mp.leftColumn())).toArray(ColumnSource[]::new);
         final TupleSource tupleSource = TupleSourceFactory.makeTupleSource(keyColumns);
         final TrackingRowSet trackingSelection = selection.isTracking() ? selection.trackingCast() : null;
 
@@ -187,7 +187,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
                 liveValuesArray = liveValues.toArray(CollectionUtil.ZERO_LENGTH_OBJECT_ARRAY);
                 liveValuesArrayValid = true;
             }
-            return table.getColumnSource(matchPairs[0].left()).match(!inclusion, false, false, selection,
+            return table.getColumnSource(matchPairs[0].leftColumn()).match(!inclusion, false, false, selection,
                     liveValuesArray);
         }
 
@@ -225,7 +225,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
 
     private WritableRowSet filterGrouping(TrackingRowSet selection, Table table) {
         final ColumnSource[] keyColumns =
-                Arrays.stream(matchPairs).map(mp -> table.getColumnSource(mp.left())).toArray(ColumnSource[]::new);
+                Arrays.stream(matchPairs).map(mp -> table.getColumnSource(mp.leftColumn())).toArray(ColumnSource[]::new);
         final TupleSource tupleSource = TupleSourceFactory.makeTupleSource(keyColumns);
         return filterGrouping(selection, tupleSource);
     }

@@ -1,4 +1,4 @@
-package io.deephaven.engine.tables.lang;
+package io.deephaven.engine.table.impl.lang;
 
 public enum LanguageParserDummyEnum {
     ONE("One"), TWO("Two"), THREE("Red"), FOUR("Blue");

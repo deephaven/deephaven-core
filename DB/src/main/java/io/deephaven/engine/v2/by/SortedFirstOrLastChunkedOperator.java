@@ -41,8 +41,8 @@ public class SortedFirstOrLastChunkedOperator implements IterativeChunkedAggrega
         this.resultColumns = new LinkedHashMap<>();
         for (final MatchPair mp : resultNames) {
             // noinspection unchecked,rawtypes
-            resultColumns.put(mp.left(),
-                    new RedirectedColumnSource(rowRedirection, originalTable.getColumnSource(mp.right())));
+            resultColumns.put(mp.leftColumn(),
+                    new RedirectedColumnSource(rowRedirection, originalTable.getColumnSource(mp.rightColumn())));
         }
     }
 

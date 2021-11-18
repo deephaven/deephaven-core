@@ -106,7 +106,7 @@ public class ProcessMetricsLogLogger
                 .add("Sum2", long.class)
                 .add("Stdev", long.class);
         columnNames = cols.getColumnNames();
-        columnDbTypes = cols.getDbTypes();
+        columnDbTypes = cols.getTypes();
     }
 
     @Override

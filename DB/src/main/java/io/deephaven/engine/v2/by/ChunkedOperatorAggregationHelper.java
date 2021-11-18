@@ -11,6 +11,7 @@ import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.table.impl.GroupingUtil;
 import io.deephaven.engine.table.impl.PrevColumnSource;
+import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.util.BooleanUtils;

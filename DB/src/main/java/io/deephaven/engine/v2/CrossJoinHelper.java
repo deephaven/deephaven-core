@@ -1208,8 +1208,8 @@ public class CrossJoinHelper {
         }
 
         for (MatchPair mp : columnsToAdd) {
-            final T wrappedSource = newRightColumnSource.apply(rightTable.getColumnSource(mp.right()));
-            columnSourceMap.put(mp.left(), wrappedSource);
+            final T wrappedSource = newRightColumnSource.apply(rightTable.getColumnSource(mp.rightColumn()));
+            columnSourceMap.put(mp.leftColumn(), wrappedSource);
         }
 
         return new QueryTable(resultRowSet, columnSourceMap);

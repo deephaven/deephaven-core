@@ -7,7 +7,7 @@ import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.v2.InstrumentedTableUpdateListenerAdapter;
 import io.deephaven.engine.v2.select.IncrementalReleaseFilter;
 import io.deephaven.engine.v2.select.RollingReleaseFilter;
-import io.deephaven.engine.v2.utils.UpdatePerformanceTracker;
+import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 
 import java.util.function.BiFunction;
 import java.util.function.Function;

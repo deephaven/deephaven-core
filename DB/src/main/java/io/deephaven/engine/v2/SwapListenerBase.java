@@ -12,7 +12,7 @@ import io.deephaven.engine.updategraph.EmptyNotification;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.v2.remote.ConstructSnapshot;
 import io.deephaven.engine.updategraph.LogicalClock;
-import io.deephaven.engine.v2.utils.UpdatePerformanceTracker;
+import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import org.jetbrains.annotations.NotNull;
 
 /**

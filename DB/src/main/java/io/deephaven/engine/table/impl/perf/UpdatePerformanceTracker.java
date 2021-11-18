@@ -2,7 +2,7 @@
  * Copyright (c) 2016-2019 Deephaven Data Labs and Patent Pending
  */
 
-package io.deephaven.engine.v2.utils;
+package io.deephaven.engine.table.impl.perf;
 
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.Assert;
@@ -13,9 +13,10 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.tablelogger.UpdatePerformanceLogLogger;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.time.DateTimeUtils;
-import io.deephaven.engine.tables.utils.QueryPerformanceLogThreshold;
-import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
 import io.deephaven.engine.v2.*;
+import io.deephaven.engine.v2.utils.MemoryTableLogger;
+import io.deephaven.engine.v2.utils.MemoryTableLoggers;
+import io.deephaven.engine.v2.utils.RuntimeMemory;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.io.logger.Logger;
@@ -31,8 +32,8 @@ import java.util.Queue;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static io.deephaven.engine.tables.lang.LanguageFunctionUtil.minus;
-import static io.deephaven.engine.tables.lang.LanguageFunctionUtil.plus;
+import static io.deephaven.engine.table.impl.lang.LanguageFunctionUtil.minus;
+import static io.deephaven.engine.table.impl.lang.LanguageFunctionUtil.plus;
 
 /**
  * <p>

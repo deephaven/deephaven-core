@@ -64,7 +64,7 @@ public class ProcessInfoLogLogger extends TableLoggerImpl2<ProcessInfoLogLogger.
                 .add("Key", String.class)
                 .add("Value", String.class);
         columnNames = cols.getColumnNames();
-        columnDbTypes = cols.getDbTypes();
+        columnDbTypes = cols.getTypes();
     }
 
     @Override

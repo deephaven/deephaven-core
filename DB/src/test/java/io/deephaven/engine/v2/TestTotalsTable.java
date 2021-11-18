@@ -11,7 +11,7 @@ import io.deephaven.engine.util.TotalsTableBuilder;
 import io.deephaven.engine.vector.DoubleVectorDirect;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.v2.utils.UpdatePerformanceTracker;
+import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.libs.primitives.*;
 import io.deephaven.util.QueryConstants;
 import org.junit.After;

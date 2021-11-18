@@ -1,11 +1,11 @@
 package io.deephaven.grpc_api.runner;
 
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
+import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.util.AbstractScriptSession;
 import io.deephaven.engine.v2.utils.MemoryTableLoggers;
 import io.deephaven.engine.v2.utils.ProcessMemoryTracker;
-import io.deephaven.engine.v2.utils.UpdatePerformanceTracker;
+import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.grpc_api.appmode.ApplicationInjector;
 import io.deephaven.grpc_api.console.ConsoleServiceGrpcImpl;
 import io.deephaven.grpc_api.log.LogInit;

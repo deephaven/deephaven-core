@@ -11,7 +11,7 @@ import io.deephaven.engine.chunk.WritableLongChunk;
 import io.deephaven.engine.vector.LongVector;
 import io.deephaven.engine.vector.Vector;
 
-import static io.deephaven.engine.tables.lang.LanguageFunctionUtil.*;
+import static io.deephaven.engine.table.impl.lang.LanguageFunctionUtil.*;
 
 public class FormulaKernelSample implements io.deephaven.engine.v2.select.formula.FormulaKernel {
     public static final io.deephaven.engine.v2.select.formula.FormulaKernelFactory __FORMULA_KERNEL_FACTORY = FormulaKernelSample::new;

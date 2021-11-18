@@ -13,7 +13,7 @@ import io.deephaven.engine.chunk.LongChunk;
 import io.deephaven.engine.chunk.ShortChunk;
 import io.deephaven.engine.rowset.TrackingRowSet;
 
-import static io.deephaven.engine.tables.lang.LanguageFunctionUtil.*;
+import static io.deephaven.engine.table.impl.lang.LanguageFunctionUtil.*;
 import static io.deephaven.engine.chunk.Attributes.*;
 
 public class FilterKernelSample implements io.deephaven.engine.v2.select.ConditionFilter.FilterKernel<FilterKernel.Context>{

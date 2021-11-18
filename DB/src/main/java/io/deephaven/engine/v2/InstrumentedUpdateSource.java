@@ -4,7 +4,7 @@
 
 package io.deephaven.engine.v2;
 
-import io.deephaven.engine.v2.utils.UpdatePerformanceTracker;
+import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 
 public abstract class InstrumentedUpdateSource implements Runnable {
 

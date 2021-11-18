@@ -2,8 +2,9 @@
  * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
  */
 
-package io.deephaven.engine.tables.utils;
+package io.deephaven.engine.table.impl.perf;
 
+import io.deephaven.engine.tables.utils.QueryState;
 import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.v2.utils.RuntimeMemory;
 import io.deephaven.util.QueryConstants;
@@ -11,7 +12,7 @@ import io.deephaven.util.profiling.ThreadProfiler;
 
 import java.io.Serializable;
 
-import static io.deephaven.engine.tables.lang.LanguageFunctionUtil.minus;
+import static io.deephaven.engine.table.impl.lang.LanguageFunctionUtil.minus;
 import static io.deephaven.util.QueryConstants.*;
 
 /**

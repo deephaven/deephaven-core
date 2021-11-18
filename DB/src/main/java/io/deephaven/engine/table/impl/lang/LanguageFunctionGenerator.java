@@ -2,7 +2,7 @@
  * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
  */
 
-package io.deephaven.engine.tables.lang;
+package io.deephaven.engine.table.impl.lang;
 
 import io.deephaven.util.type.TypeUtils;
 import com.github.javaparser.ast.expr.BinaryExpr;
@@ -317,7 +317,7 @@ public class LanguageFunctionGenerator {
                         " */\n" +
                         "\n");
 
-        buf.append("package io.deephaven.engine.tables.lang;\n\n");
+        buf.append("package io.deephaven.engine.table.impl.lang;\n\n");
 
         buf.append("import io.deephaven.util.QueryConstants;\n");
         buf.append("import org.jpy.PyObject;\n\n");
@@ -362,7 +362,7 @@ public class LanguageFunctionGenerator {
                 .append(" */\n")
                 .append("\n");
 
-        testBuf.append("package io.deephaven.engine.tables.lang;\n\n");
+        testBuf.append("package io.deephaven.engine.table.impl.lang;\n\n");
 
         testBuf.append("import io.deephaven.util.QueryConstants;\n\n");
         testBuf.append("import junit.framework.TestCase;\n\n");

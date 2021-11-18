@@ -60,10 +60,10 @@ public abstract class BaseStreamFirstOrLastChunkedOperator implements IterativeC
         final Map<String, ArrayBackedColumnSource<?>> resultColumnsMutable = new LinkedHashMap<>(numResultColumns);
         for (int ci = 0; ci < numResultColumns; ++ci) {
             final MatchPair resultPair = resultPairs[ci];
-            final ColumnSource<?> streamSource = streamTable.getColumnSource(resultPair.right());
+            final ColumnSource<?> streamSource = streamTable.getColumnSource(resultPair.rightColumn());
             final ArrayBackedColumnSource<?> resultSource = ArrayBackedColumnSource.getMemoryColumnSource(0,
                     streamSource.getType(), streamSource.getComponentType());
-            resultColumnsMutable.put(resultPair.left(), resultSource);
+            resultColumnsMutable.put(resultPair.leftColumn(), resultSource);
             inputColumns[ci] = ReinterpretUtil.maybeConvertToPrimitive(streamSource);
             // Note that ArrayBackedColumnSources implementations reinterpret very efficiently where applicable.
             outputColumns[ci] = (WritableColumnSource<?>) ReinterpretUtil.maybeConvertToPrimitive(resultSource);

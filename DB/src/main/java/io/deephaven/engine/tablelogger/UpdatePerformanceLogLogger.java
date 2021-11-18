@@ -11,8 +11,8 @@ import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.tablelogger.*;
 
-import static io.deephaven.engine.v2.utils.UpdatePerformanceTracker.IntervalLevelDetails;
-import static io.deephaven.engine.v2.utils.UpdatePerformanceTracker.Entry;
+import static io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker.IntervalLevelDetails;
+import static io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker.Entry;
 
 public class UpdatePerformanceLogLogger
         extends TableLoggerImpl2<UpdatePerformanceLogLogger.ISetter> {
@@ -155,7 +155,7 @@ public class UpdatePerformanceLogLogger
         ;
 
         columnNames = cols.getColumnNames();
-        columnDbTypes = cols.getDbTypes();
+        columnDbTypes = cols.getTypes();
     }
 
     @Override

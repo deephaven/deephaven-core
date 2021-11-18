@@ -2,7 +2,7 @@
  * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
  */
 
-package io.deephaven.engine.tables.utils;
+package io.deephaven.engine.table.impl.perf;
 
 import io.deephaven.base.Function;
 import io.deephaven.base.Procedure;
@@ -12,6 +12,8 @@ import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.chunk.util.pools.ChunkPoolInstrumentation;
 import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.tables.utils.QueryState;
+import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.updategraph.UpdateGraphLock;
 import io.deephaven.util.FunctionalInterfaces;
 import io.deephaven.util.QueryConstants;
@@ -25,8 +27,8 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
-import static io.deephaven.engine.tables.lang.LanguageFunctionUtil.minus;
-import static io.deephaven.engine.tables.lang.LanguageFunctionUtil.plus;
+import static io.deephaven.engine.table.impl.lang.LanguageFunctionUtil.minus;
+import static io.deephaven.engine.table.impl.lang.LanguageFunctionUtil.plus;
 
 /**
  * Query performance instrumentation tools. Manages a hierarchy of {@link QueryPerformanceNugget} instances.

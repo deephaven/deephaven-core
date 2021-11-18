@@ -39,7 +39,7 @@ class BucketingContext implements SafeCloseable {
 
     BucketingContext(final String listenerPrefix, final QueryTable leftTable, final QueryTable rightTable,
             MatchPair[] columnsToMatch, MatchPair[] columnsToAdd, JoinControl control) {
-        final List<String> conflicts = Arrays.stream(columnsToAdd).map(MatchPair::left)
+        final List<String> conflicts = Arrays.stream(columnsToAdd).map(MatchPair::leftColumn)
                 .filter(cn -> leftTable.getColumnSourceMap().containsKey(cn)).collect(Collectors.toList());
         if (!conflicts.isEmpty()) {
             throw new RuntimeException("Conflicting column names " + conflicts);

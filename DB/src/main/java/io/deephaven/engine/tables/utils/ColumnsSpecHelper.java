@@ -7,20 +7,21 @@ import java.util.ArrayList;
  * buildWriter methods in TableWriterFactory.
  */
 public class ColumnsSpecHelper {
-    private final ArrayList<String> names = new ArrayList<>();
-    private final ArrayList<Class> dbTypes = new ArrayList<>();
 
-    public ColumnsSpecHelper add(final String name, final Class dbType) {
+    private final ArrayList<String> names = new ArrayList<>();
+    private final ArrayList<Class> types = new ArrayList<>();
+
+    public ColumnsSpecHelper add(final String name, final Class type) {
         names.add(name);
-        dbTypes.add(dbType);
+        types.add(type);
         return this;
     }
 
     public String[] getColumnNames() {
-        return names.toArray(new String[names.size()]);
+        return names.toArray(new String[0]);
     }
 
-    public Class[] getDbTypes() {
-        return dbTypes.toArray(new Class[dbTypes.size()]);
+    public Class[] getTypes() {
+        return types.toArray(new Class[0]);
     }
 }

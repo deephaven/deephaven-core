@@ -509,7 +509,8 @@ public class GroovyDeephavenSession extends AbstractScriptSession implements Scr
                 "import static io.deephaven.engine.tables.utils.TableTools.*;\n" +
                 "import static io.deephaven.engine.v2.utils.TableLoggers.*;\n" +
                 "import static io.deephaven.engine.v2.utils.PerformanceQueries.*;\n" +
-                "import static io.deephaven.engine.tables.utils.WhereClause.whereClause;\n" +
+                "import io.deephaven.api.*;\n" +
+                "import io.deephaven.api.filter.*;\n" +
                 "import io.deephaven.engine.table.DataColumn;\n" +
                 "import io.deephaven.engine.table.Table;\n" +
                 "import java.lang.reflect.Array;\n" +
@@ -529,7 +530,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession implements Scr
                 "import static io.deephaven.libs.GroovyStaticImports.*;\n" +
                 "import static io.deephaven.engine.time.DateTimeUtils.*;\n" +
                 "import static io.deephaven.engine.time.TimeZone.*;\n" +
-                "import static io.deephaven.engine.tables.lang.LanguageFunctionUtil.*;\n" +
+                "import static io.deephaven.engine.table.impl.lang.LanguageFunctionUtil.*;\n" +
                 "import static io.deephaven.api.agg.Aggregation.*;\n" +
                 StringUtils.joinStrings(scriptImports, "\n") + "\n";
         return new Pair<>(commandPrefix, commandPrefix + command

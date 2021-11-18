@@ -2,7 +2,7 @@
  * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
  */
 
-package io.deephaven.engine.tables.lang;
+package io.deephaven.engine.table.impl.lang;
 
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
@@ -11,7 +11,7 @@ import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.vector.*;
-import io.deephaven.engine.tables.lang.LanguageParser.QueryLanguageParseException;
+import io.deephaven.engine.table.impl.lang.LanguageParser.QueryLanguageParseException;
 import io.deephaven.engine.vector.Vector;
 import io.deephaven.utils.test.PropertySaver;
 import io.deephaven.util.QueryConstants;
@@ -27,7 +27,7 @@ import java.awt.*;
 import java.util.*;
 import java.util.List;
 
-import static io.deephaven.engine.tables.lang.LanguageParser.isWideningPrimitiveConversion;
+import static io.deephaven.engine.table.impl.lang.LanguageParser.isWideningPrimitiveConversion;
 
 @SuppressWarnings("InstantiatingObjectToGetClassObject")
 public class TestLanguageParser extends BaseArrayTestCase {
@@ -1393,13 +1393,13 @@ public class TestLanguageParser extends BaseArrayTestCase {
              */
             try {
                 expression =
-                        "io.deephaven.engine.tables.lang.LanguageParserDummyClass.interpolate(myDoubleVector.toArray(),myDoubleVector.toArray(),new double[]{myDouble},io.deephaven.engine.tables.lang.NestedEnum.ONE,false)[0]";
+                        "io.deephaven.engine.table.impl.lang.LanguageParserDummyClass.interpolate(myDoubleVector.toArray(),myDoubleVector.toArray(),new double[]{myDouble},io.deephaven.engine.table.impl.lang.NestedEnum.ONE,false)[0]";
                 resultExpression =
-                        "io.deephaven.engine.tables.lang.LanguageParserDummyClass.interpolate(myDoubleVector.toArray(),myDoubleVector.toArray(),new double[]{myDouble},io.deephaven.engine.tables.lang.NestedEnum.ONE,false)[0]";
+                        "io.deephaven.engine.table.impl.lang.LanguageParserDummyClass.interpolate(myDoubleVector.toArray(),myDoubleVector.toArray(),new double[]{myDouble},io.deephaven.engine.table.impl.lang.NestedEnum.ONE,false)[0]";
                 check(expression, resultExpression, String.class, new String[] {});
                 fail("Should have thrown a LanguageParser.QueryLanguageParseException");
             } catch (LanguageParser.QueryLanguageParseException ex) {
-                if (!ex.getMessage().contains("Scope      : io.deephaven.engine.tables.lang.NestedEnum") ||
+                if (!ex.getMessage().contains("Scope      : io.deephaven.engine.table.impl.lang.NestedEnum") ||
                         !ex.getMessage().contains("Field Name : ONE")) {
                     fail("Useless exception message!\n\nOriginal exception:\n" + ExceptionUtils.getStackTrace(ex));
                 }
@@ -1447,8 +1447,8 @@ public class TestLanguageParser extends BaseArrayTestCase {
         resultExpression = "LanguageParserDummyInterface.AnEnum.THING_ONE";
         check(expression, resultExpression, LanguageParserDummyInterface.AnEnum.class, new String[] {});
 
-        expression = "io.deephaven.engine.tables.lang.LanguageParserDummyInterface.AnEnum.THING_ONE";
-        resultExpression = "io.deephaven.engine.tables.lang.LanguageParserDummyInterface.AnEnum.THING_ONE";
+        expression = "io.deephaven.engine.table.impl.lang.LanguageParserDummyInterface.AnEnum.THING_ONE";
+        resultExpression = "io.deephaven.engine.table.impl.lang.LanguageParserDummyInterface.AnEnum.THING_ONE";
         check(expression, resultExpression, LanguageParserDummyInterface.AnEnum.class, new String[] {});
 
         expression = "LanguageParserDummyClass.SubclassOfLanguageParserDummyClass.EnumInInterface.THING_ONE";
@@ -1737,8 +1737,8 @@ public class TestLanguageParser extends BaseArrayTestCase {
         resultExpression = "new HashSet<String>()";
         check(expression, resultExpression, HashSet.class, new String[] {});
 
-        expression = "new io.deephaven.engine.tables.lang.LanguageParserDummyClass()";
-        resultExpression = "new io.deephaven.engine.tables.lang.LanguageParserDummyClass()";
+        expression = "new io.deephaven.engine.table.impl.lang.LanguageParserDummyClass()";
+        resultExpression = "new io.deephaven.engine.table.impl.lang.LanguageParserDummyClass()";
         check(expression, resultExpression, LanguageParserDummyClass.class, new String[] {});
 
         expression = "new LanguageParserDummyClass()";
@@ -1847,9 +1847,9 @@ public class TestLanguageParser extends BaseArrayTestCase {
 
     public void testInnerClasses() throws Exception {
         LanguageParser.Result result =
-                new LanguageParser("io.deephaven.engine.tables.lang.TestLanguageParser.InnerEnum.YEAH!=null", null,
+                new LanguageParser("io.deephaven.engine.table.impl.lang.TestLanguageParser.InnerEnum.YEAH!=null", null,
                         null, staticImports, null, null).getResult();
-        assertEquals("!eq(io.deephaven.engine.tables.lang.TestLanguageParser.InnerEnum.YEAH, null)",
+        assertEquals("!eq(io.deephaven.engine.table.impl.lang.TestLanguageParser.InnerEnum.YEAH, null)",
                 result.getConvertedExpression());
     }
 
@@ -1880,9 +1880,9 @@ public class TestLanguageParser extends BaseArrayTestCase {
 
         // There is a test for an erroneous version of this expression in testBadFieldAccess():
         expression =
-                "io.deephaven.engine.tables.lang.LanguageParserDummyClass.interpolate(myDoubleVector.toArray(),myDoubleVector.toArray(),new double[]{myDouble},io.deephaven.engine.tables.lang.LanguageParserDummyClass.NestedEnum.ONE,false)[0]";
+                "io.deephaven.engine.table.impl.lang.LanguageParserDummyClass.interpolate(myDoubleVector.toArray(),myDoubleVector.toArray(),new double[]{myDouble},io.deephaven.engine.table.impl.lang.LanguageParserDummyClass.NestedEnum.ONE,false)[0]";
         resultExpression =
-                "io.deephaven.engine.tables.lang.LanguageParserDummyClass.interpolate(myDoubleVector.toArray(), myDoubleVector.toArray(), new double[]{ myDouble }, io.deephaven.engine.tables.lang.LanguageParserDummyClass.NestedEnum.ONE, false)[0]";
+                "io.deephaven.engine.table.impl.lang.LanguageParserDummyClass.interpolate(myDoubleVector.toArray(), myDoubleVector.toArray(), new double[]{ myDouble }, io.deephaven.engine.table.impl.lang.LanguageParserDummyClass.NestedEnum.ONE, false)[0]";
         check(expression, resultExpression, double.class, new String[] {"myDouble", "myDoubleVector"});
 
         // For good measure, same test as above w/ implicit array conversions:

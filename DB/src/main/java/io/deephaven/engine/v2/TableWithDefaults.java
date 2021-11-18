@@ -7,6 +7,7 @@ package io.deephaven.engine.v2;
 import io.deephaven.api.*;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.filter.Filter;
+import io.deephaven.api.filter.FilterAnd;
 import io.deephaven.api.filter.FilterOr;
 import io.deephaven.base.Pair;
 import io.deephaven.base.StringUtils;
@@ -15,10 +16,11 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.iterators.*;
 import io.deephaven.engine.tables.select.AjMatchPairFactory;
 import io.deephaven.engine.tables.select.MatchPairFactory;
+import io.deephaven.engine.tables.select.WouldMatchPairFactory;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.updategraph.ConcurrentMethod;
-import io.deephaven.engine.tables.utils.QueryPerformanceNugget;
-import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
+import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
+import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.util.ColumnFormattingValues;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.vector.Vector;
@@ -207,10 +209,15 @@ public interface TableWithDefaults extends Table {
     default ShortColumnIterator shortColumnIterator(@NotNull final String columnName) {
         return new ShortColumnIterator(this, columnName);
     }
-
     // -----------------------------------------------------------------------------------------------------------------
     // Filter Operations
     // -----------------------------------------------------------------------------------------------------------------
+
+    @Override
+    @ConcurrentMethod
+    default Table where(Filter... filters) {
+        return where(List.of(filters));
+    }
 
     @Override
     @ConcurrentMethod
@@ -232,6 +239,22 @@ public interface TableWithDefaults extends Table {
     @Override
     default Table whereNotIn(Table rightTable, String... columnsToMatch) {
         return whereNotIn(rightTable, JoinMatch.from(columnsToMatch));
+    }
+
+    /**
+     * Filters according to an expression in disjunctive normal form.
+     * <p>
+     * The input is an array of clauses, which in turn are a collection of filters.
+     *
+     * @param filtersToApply each inner collection is a set of filters, all of must which match for the clause to be
+     *        true. If any one of the collections in the array evaluates to true, the row is part of the output table.
+     * @return a new table, with the filters applied.
+     */
+    @SuppressWarnings("unchecked")
+    @Override
+    @ConcurrentMethod
+    default Table whereOneOf(Collection<? extends Filter>... filtersToApply) {
+        return where(FilterOr.of(Stream.of(filtersToApply).map(FilterAnd::of).collect(Collectors.toList())));
     }
 
     @Override

@@ -12,7 +12,7 @@ import io.deephaven.engine.table.TupleSource;
 import io.deephaven.engine.table.impl.tuplesource.TupleSourceFactory;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.TrackingRowSet;
-import io.deephaven.engine.v2.utils.UpdatePerformanceTracker;
+import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import junit.framework.TestCase;
 
 import java.util.*;

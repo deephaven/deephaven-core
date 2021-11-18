@@ -7,6 +7,8 @@ package io.deephaven.engine.tables.utils;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
+import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.time.TimeZone;
 import io.deephaven.engine.table.ColumnSource;

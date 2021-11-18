@@ -3,7 +3,7 @@ package io.deephaven.engine.tables.verify;
 import io.deephaven.engine.table.TableUpdateListener;
 import io.deephaven.engine.tables.SortingOrder;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.tables.utils.QueryPerformanceRecorder;
+import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.v2.*;
 import io.deephaven.engine.v2.sortcheck.SortCheck;
 import io.deephaven.engine.table.ColumnSource;

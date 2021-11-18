@@ -1,6 +1,6 @@
 package io.deephaven.engine.v2.utils.codegen;
 
-import io.deephaven.engine.tables.lang.LanguageFunctionUtil;
+import io.deephaven.engine.table.impl.lang.LanguageFunctionUtil;
 import io.deephaven.util.type.TypeUtils;
 
 /**
