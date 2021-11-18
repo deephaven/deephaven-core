@@ -4,7 +4,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.exceptions.OutOfKeySpaceException;
 import io.deephaven.engine.rowset.*;
-import io.deephaven.engine.rowset.impl.RowSetFactory;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.util.datastructures.LongRangeConsumer;

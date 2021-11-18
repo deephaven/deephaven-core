@@ -8,7 +8,7 @@ import io.deephaven.engine.rowset.RowSet;
 
 /**
  * A simple extension to the TreeMapSource that will not actually change any map values, and is thus immutable. We need
- * to have an immutable source available for use with the TrackingRowSetGroupingTest, and this fits the bill.
+ * to have an immutable source available for use with the TestRowSetIndexer, and this fits the bill.
  */
 public class ImmutableTreeMapSource<T> extends TreeMapSource<T> {
     public ImmutableTreeMapSource(Class<T> type, RowSet rowSet, T[] data) {

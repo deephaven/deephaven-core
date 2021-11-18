@@ -4,7 +4,7 @@ import static io.deephaven.engine.chunk.Attributes.OrderedRowKeyRanges;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.impl.RowSequenceFactory;
+import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.rowset.impl.TrackingWritableRowSetImpl;
 import io.deephaven.util.datastructures.LongAbortableConsumer;
 import io.deephaven.engine.rowset.RowSequence;

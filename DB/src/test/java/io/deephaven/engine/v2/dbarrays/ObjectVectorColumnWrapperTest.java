@@ -4,7 +4,7 @@ import gnu.trove.list.TLongList;
 import gnu.trove.list.array.TLongArrayList;
 import io.deephaven.engine.v2.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.v2.sources.IntegerArraySource;
-import io.deephaven.engine.rowset.impl.RowSetFactory;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.vector.*;
 import junit.framework.TestCase;
 

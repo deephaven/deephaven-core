@@ -4,7 +4,7 @@ import io.deephaven.base.Pair;
 import io.deephaven.base.SleepUtil;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.impl.RowSetFactory;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.TableUpdateImpl;

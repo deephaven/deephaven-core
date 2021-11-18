@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2.join;
 
 import io.deephaven.engine.rowset.*;
-import io.deephaven.engine.rowset.impl.RowSetFactory;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.tables.SortingOrder;

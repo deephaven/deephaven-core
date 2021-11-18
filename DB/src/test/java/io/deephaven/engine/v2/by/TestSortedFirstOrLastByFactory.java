@@ -10,7 +10,7 @@ import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.util.SortedBy;
 import io.deephaven.engine.v2.*;
-import io.deephaven.engine.rowset.impl.RowSetFactory;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.test.types.OutOfBandTest;
 import junit.framework.TestCase;

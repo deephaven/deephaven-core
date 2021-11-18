@@ -4,7 +4,7 @@
 
 package io.deephaven.engine.v2.select;
 
-import io.deephaven.engine.exceptions.QueryCancellationException;
+import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
@@ -44,7 +44,7 @@ public class ConjunctiveFilter extends ComposedFilter {
 
         for (WhereFilter filter : componentFilters) {
             if (Thread.interrupted()) {
-                throw new QueryCancellationException("interrupted while filtering");
+                throw new CancellationException("interrupted while filtering");
             }
 
             try (final SafeCloseable ignored = matched) { // Ensure we close old matched

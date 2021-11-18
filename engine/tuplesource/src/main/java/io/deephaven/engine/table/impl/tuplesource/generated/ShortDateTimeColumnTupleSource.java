@@ -1,9 +1,10 @@
 package io.deephaven.engine.table.impl.tuplesource.generated;
 
 import io.deephaven.datastructures.util.SmartKey;
-import io.deephaven.engine.chunk.Attributes;
+import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.chunk.Chunk;
 import io.deephaven.engine.chunk.ObjectChunk;
+import io.deephaven.engine.chunk.ShortChunk;
 import io.deephaven.engine.chunk.WritableChunk;
 import io.deephaven.engine.chunk.WritableObjectChunk;
 import io.deephaven.engine.table.ColumnSource;
@@ -116,10 +117,10 @@ public class ShortDateTimeColumnTupleSource extends AbstractTupleSource<ShortLon
         throw new IllegalArgumentException("Bad elementIndex for 2 element tuple: " + elementIndex);
     }
 
-    protected void convertChunks(@NotNull WritableChunk<? super Attributes.Values> destination, int chunkSize, Chunk<Attributes.Values> [] chunks) {
-        WritableObjectChunk<ShortLongTuple, ? super Attributes.Values> destinationObjectChunk = destination.asWritableObjectChunk();
-        ShortChunk<Attributes.Values> chunk1 = chunks[0].asShortChunk();
-        ObjectChunk<DateTime, Attributes.Values> chunk2 = chunks[1].asObjectChunk();
+    protected void convertChunks(@NotNull WritableChunk<? super Values> destination, int chunkSize, Chunk<Values> [] chunks) {
+        WritableObjectChunk<ShortLongTuple, ? super Values> destinationObjectChunk = destination.asWritableObjectChunk();
+        ShortChunk<Values> chunk1 = chunks[0].asShortChunk();
+        ObjectChunk<DateTime, Values> chunk2 = chunks[1].asObjectChunk();
         for (int ii = 0; ii < chunkSize; ++ii) {
             destinationObjectChunk.set(ii, new ShortLongTuple(chunk1.get(ii), DateTimeUtils.nanos(chunk2.get(ii))));
         }

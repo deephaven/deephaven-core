@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2.select.analyzers;
 
 import io.deephaven.engine.rowset.*;
-import io.deephaven.engine.rowset.impl.RowSetFactory;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.ModifiedColumnSet;

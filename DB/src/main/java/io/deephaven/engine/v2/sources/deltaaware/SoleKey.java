@@ -1,8 +1,8 @@
 package io.deephaven.engine.v2.sources.deltaaware;
 
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.impl.RowSetFactory;
-import io.deephaven.engine.rowset.impl.RowSequenceFactory;
+import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.util.datastructures.LongAbortableConsumer;
 import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.chunk.LongChunk;

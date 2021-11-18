@@ -6,10 +6,10 @@ package io.deephaven.engine.v2;
 import io.deephaven.base.verify.Require;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.exceptions.OutOfKeySpaceException;
-import io.deephaven.engine.rowset.impl.RowSetFactory;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.rowset.*;
-import io.deephaven.engine.rowset.impl.RowSequenceFactory;
+import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.chunk.util.hashing.*;
 // this is ugly to have twice, but we do need it twice for replication
@@ -347,7 +347,7 @@ class RightIncrementalChunkedCrossJoinStateManager
     }
 
     void rightShift(final RowSet filterIndex, final RowSetShiftData shifted, final CrossJoinModifiedSlotTracker tracker) {
-        shifted.forAllInIndex(filterIndex, (ii, delta) -> {
+        shifted.forAllInRowSet(filterIndex, (ii, delta) -> {
             final long slot = rightIndexToSlot.get(ii);
             if (slot == RowSequence.NULL_ROW_KEY) {
                 // right-ticking w/static-left does not maintain group states that will never be used
@@ -552,7 +552,7 @@ class RightIncrementalChunkedCrossJoinStateManager
     }
 
     void leftShift(final RowSet filterIndex, final RowSetShiftData shifted, final CrossJoinModifiedSlotTracker tracker) {
-        shifted.forAllInIndex(filterIndex, (ii, delta) -> {
+        shifted.forAllInRowSet(filterIndex, (ii, delta) -> {
             final long slot = leftIndexToSlot.get(ii);
             if (slot == RowSequence.NULL_ROW_KEY) {
                 // This might happen if an rowSet is moving from one slot to another; we shift after removes but before

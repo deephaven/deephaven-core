@@ -10,7 +10,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.chunk.util.pools.ChunkPoolInstrumentation;
-import io.deephaven.engine.exceptions.QueryCancellationException;
+import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.UpdateGraphLock;
 import io.deephaven.util.FunctionalInterfaces;
@@ -186,7 +186,7 @@ public class QueryPerformanceRecorder implements Serializable {
             return QueryPerformanceNugget.DUMMY_NUGGET;
         }
         if (Thread.interrupted()) {
-            throw new QueryCancellationException("interrupted in QueryPerformanceNugget");
+            throw new CancellationException("interrupted in QueryPerformanceNugget");
         }
         if (catchAllNugget != null) {
             stopCatchAll(false);

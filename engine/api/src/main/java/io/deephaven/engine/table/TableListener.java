@@ -28,7 +28,7 @@ public interface TableListener extends LivenessNode {
      * @param sourceEntry performance tracking
      * @return exception notification
      */
-    ErrorNotification getErrorNotification(Throwable originalException, Entry sourceEntry);
+    NotificationQueue.ErrorNotification getErrorNotification(Throwable originalException, Entry sourceEntry);
 
     /**
      * Interface for instrumentation entries used by update graph nodes.
@@ -36,9 +36,4 @@ public interface TableListener extends LivenessNode {
     interface Entry extends LogOutputAppendable {
     }
 
-    /**
-     * Marker interface for error notifications, only relevant to unit testing framework.
-     */
-    interface ErrorNotification extends NotificationQueue.Notification {
-    }
 }

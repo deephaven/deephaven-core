@@ -10,7 +10,7 @@ import io.deephaven.engine.v2.sources.ObjectArraySource;
 import io.deephaven.engine.chunk.Attributes.*;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.rowset.impl.RowSequenceFactory;
+import io.deephaven.engine.rowset.RowSequenceFactory;
 
 import java.math.BigDecimal;
 import java.util.Collections;

@@ -10,7 +10,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.engine.rowset.*;
-import io.deephaven.engine.rowset.impl.RowSetFactory;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.PrevColumnSource;
@@ -158,16 +158,6 @@ public class TstUtils {
             data[i] = new StringSetWrapper(Arrays.asList(v));
         }
         return c(colName, data);
-    }
-
-    public static WritableRowSet getRandomIndex(long minValue, int size, Random random) {
-        final RowSetBuilderRandom builder = RowSetFactory.builderRandom();
-        long previous = minValue;
-        for (int i = 0; i < size; i++) {
-            previous += (1 + random.nextInt(100));
-            builder.addKey(previous);
-        }
-        return builder.build();
     }
 
     public static ColumnHolder getRandomIntCol(String colName, int size, Random random) {

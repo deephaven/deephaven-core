@@ -1,9 +1,11 @@
 package io.deephaven.engine.table.impl.tuplesource.generated;
 
 import io.deephaven.datastructures.util.SmartKey;
-import io.deephaven.engine.chunk.Attributes;
+import io.deephaven.engine.chunk.Attributes.Values;
+import io.deephaven.engine.chunk.ByteChunk;
 import io.deephaven.engine.chunk.Chunk;
-import io.deephaven.engine.chunk.ObjectChunk;
+import io.deephaven.engine.chunk.FloatChunk;
+import io.deephaven.engine.chunk.ShortChunk;
 import io.deephaven.engine.chunk.WritableChunk;
 import io.deephaven.engine.chunk.WritableObjectChunk;
 import io.deephaven.engine.table.ColumnSource;
@@ -134,11 +136,11 @@ public class ShortReinterpretedBooleanFloatColumnTupleSource extends AbstractTup
     }
 
     @Override
-    protected void convertChunks(@NotNull WritableChunk<? super Attributes.Values> destination, int chunkSize, Chunk<Attributes.Values> [] chunks) {
-        WritableObjectChunk<ShortByteFloatTuple, ? super Attributes.Values> destinationObjectChunk = destination.asWritableObjectChunk();
-        ShortChunk<Attributes.Values> chunk1 = chunks[0].asShortChunk();
-        ByteChunk<Attributes.Values> chunk2 = chunks[1].asByteChunk();
-        FloatChunk<Attributes.Values> chunk3 = chunks[2].asFloatChunk();
+    protected void convertChunks(@NotNull WritableChunk<? super Values> destination, int chunkSize, Chunk<Values> [] chunks) {
+        WritableObjectChunk<ShortByteFloatTuple, ? super Values> destinationObjectChunk = destination.asWritableObjectChunk();
+        ShortChunk<Values> chunk1 = chunks[0].asShortChunk();
+        ByteChunk<Values> chunk2 = chunks[1].asByteChunk();
+        FloatChunk<Values> chunk3 = chunks[2].asFloatChunk();
         for (int ii = 0; ii < chunkSize; ++ii) {
             destinationObjectChunk.set(ii, new ShortByteFloatTuple(chunk1.get(ii), chunk2.get(ii), chunk3.get(ii)));
         }

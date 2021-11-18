@@ -7,7 +7,7 @@ import io.deephaven.engine.chunk.WritableByteChunk;
 import io.deephaven.engine.chunk.WritableChunk;
 import io.deephaven.engine.page.ChunkPage;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.rowset.impl.RowSequenceFactory;
+import io.deephaven.engine.rowset.RowSequenceFactory;
 import org.jetbrains.annotations.NotNull;
 
 /**

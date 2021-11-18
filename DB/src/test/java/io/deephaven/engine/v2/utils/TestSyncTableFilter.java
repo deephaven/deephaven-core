@@ -6,7 +6,7 @@ package io.deephaven.engine.v2.utils;
 
 import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.impl.RowSetFactory;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableMap;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;

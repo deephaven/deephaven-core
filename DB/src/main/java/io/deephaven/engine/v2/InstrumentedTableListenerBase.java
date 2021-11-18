@@ -133,7 +133,7 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
         }
     }
 
-    public class ErrorNotification extends AbstractNotification implements TableListener.ErrorNotification {
+    public class ErrorNotification extends AbstractNotification implements NotificationQueue.ErrorNotification {
 
         private final Throwable originalException;
         private final UpdatePerformanceTracker.Entry sourceEntry;

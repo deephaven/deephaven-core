@@ -9,7 +9,7 @@ import io.deephaven.engine.tables.utils.ParquetTools;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.utils.ColumnHolder;
-import io.deephaven.engine.rowset.impl.RowSetFactory;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import org.junit.After;
 

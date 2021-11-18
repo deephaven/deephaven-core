@@ -2,6 +2,7 @@ package io.deephaven.engine.rowset.impl.sortedranges;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.impl.*;
 import io.deephaven.util.datastructures.LongAbortableConsumer;

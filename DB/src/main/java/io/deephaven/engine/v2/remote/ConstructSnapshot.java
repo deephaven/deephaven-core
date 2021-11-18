@@ -13,14 +13,14 @@ import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.impl.RowSetFactory;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.v2.ShiftObliviousInstrumentedListener;
 import io.deephaven.engine.v2.sources.ReinterpretUtil;
 import io.deephaven.engine.v2.utils.*;
 import io.deephaven.io.log.LogEntry;
 import io.deephaven.engine.table.ColumnDefinition;
-import io.deephaven.engine.exceptions.QueryCancellationException;
+import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.updategraph.NotificationQueue;
@@ -1125,7 +1125,7 @@ public class ConstructSnapshot {
                     Thread.sleep(delay);
                     delay *= 2;
                 } catch (InterruptedException interruptIsCancel) {
-                    throw new QueryCancellationException("Interrupt detected", interruptIsCancel);
+                    throw new CancellationException("Interrupt detected", interruptIsCancel);
                 }
             }
         }

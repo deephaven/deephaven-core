@@ -13,7 +13,6 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.AssertionFailure;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.util.datastructures.LongRangeIterator;
-import io.deephaven.engine.v2.TstUtils;
 import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.chunk.LongChunk;
 import io.deephaven.engine.chunk.WritableLongChunk;
@@ -195,7 +194,7 @@ public class WritableRowSetImplTest extends TestCase {
     public void testSerializeRandom() throws IOException, ClassNotFoundException {
         final Random random = new Random(42);
         for (int ii = 0; ii < 100; ++ii) {
-            final RowSet rowSet = TstUtils.getRandomIndex(0, 100000, random);
+            final RowSet rowSet = RowSetTstUtils.getRandomRowSet(0, 100000, random);
             final RowSet copy = (RowSet) doSerDeser(rowSet);
             assertEquals(rowSet, copy);
         }
@@ -221,7 +220,7 @@ public class WritableRowSetImplTest extends TestCase {
         final Random random = new Random(42);
 
         for (int ii = 0; ii < 10; ++ii) {
-            final RowSet rowSet = TstUtils.getRandomIndex(0, 100000, random);
+            final RowSet rowSet = RowSetTstUtils.getRandomRowSet(0, 100000, random);
 
             final DoSerDerWithSize doSerDerWithSize = new DoSerDerWithSize(rowSet).invoke();
             final Object desIndex = doSerDerWithSize.getDeserialized();

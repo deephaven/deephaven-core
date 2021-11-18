@@ -1,8 +1,9 @@
 package io.deephaven.engine.table.impl.tuplesource.generated;
 
 import io.deephaven.datastructures.util.SmartKey;
-import io.deephaven.engine.chunk.Attributes;
+import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.chunk.Chunk;
+import io.deephaven.engine.chunk.DoubleChunk;
 import io.deephaven.engine.chunk.ObjectChunk;
 import io.deephaven.engine.chunk.WritableChunk;
 import io.deephaven.engine.chunk.WritableObjectChunk;
@@ -133,11 +134,11 @@ public class DoubleObjectDoubleColumnTupleSource extends AbstractTupleSource<Dou
     }
 
     @Override
-    protected void convertChunks(@NotNull WritableChunk<? super Attributes.Values> destination, int chunkSize, Chunk<Attributes.Values> [] chunks) {
-        WritableObjectChunk<DoubleObjectDoubleTuple, ? super Attributes.Values> destinationObjectChunk = destination.asWritableObjectChunk();
-        DoubleChunk<Attributes.Values> chunk1 = chunks[0].asDoubleChunk();
-        ObjectChunk<Object, Attributes.Values> chunk2 = chunks[1].asObjectChunk();
-        DoubleChunk<Attributes.Values> chunk3 = chunks[2].asDoubleChunk();
+    protected void convertChunks(@NotNull WritableChunk<? super Values> destination, int chunkSize, Chunk<Values> [] chunks) {
+        WritableObjectChunk<DoubleObjectDoubleTuple, ? super Values> destinationObjectChunk = destination.asWritableObjectChunk();
+        DoubleChunk<Values> chunk1 = chunks[0].asDoubleChunk();
+        ObjectChunk<Object, Values> chunk2 = chunks[1].asObjectChunk();
+        DoubleChunk<Values> chunk3 = chunks[2].asDoubleChunk();
         for (int ii = 0; ii < chunkSize; ++ii) {
             destinationObjectChunk.set(ii, new DoubleObjectDoubleTuple(chunk1.get(ii), chunk2.get(ii), chunk3.get(ii)));
         }

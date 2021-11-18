@@ -1,5 +1,9 @@
 package io.deephaven.engine.util.parametrized;
 
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.TableMap;
+
 import java.util.Objects;
 import java.util.function.BiFunction;
 

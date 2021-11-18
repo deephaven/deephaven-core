@@ -1,23 +1,25 @@
 package io.deephaven.engine.rowset.impl.sortedranges;
 
-import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.impl.RowSetFactory;
-import io.deephaven.engine.rowset.impl.OrderedLongSet;
-import io.deephaven.engine.rowset.impl.OrderedLongSetBuilderSequential;
-import io.deephaven.engine.rowset.impl.TrackingWritableRowSetImpl;
-import io.deephaven.engine.rowset.impl.rsp.RspBitmap;
-import io.deephaven.engine.rowset.impl.singlerange.SingleRange;
-import io.deephaven.test.types.OutOfBandTest;
-import io.deephaven.util.Shuffle;
 import gnu.trove.iterator.TLongIterator;
 import gnu.trove.list.array.TLongArrayList;
 import gnu.trove.set.TLongSet;
 import gnu.trove.set.hash.TLongHashSet;
+import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.impl.OrderedLongSet;
+import io.deephaven.engine.rowset.impl.OrderedLongSetBuilderSequential;
+import io.deephaven.engine.rowset.impl.TrackingWritableRowSetImpl;
+import io.deephaven.engine.rowset.impl.ValidationSet;
+import io.deephaven.engine.rowset.impl.rsp.RspBitmap;
+import io.deephaven.engine.rowset.impl.singlerange.SingleRange;
+import io.deephaven.engine.testutil.Shuffle;
+import io.deephaven.test.types.OutOfBandTest;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -25,7 +27,6 @@ import java.util.PrimitiveIterator;
 import java.util.Random;
 import java.util.function.IntConsumer;
 import java.util.function.LongConsumer;
-import org.junit.experimental.categories.Category;
 
 import static org.junit.Assert.*;
 

@@ -5,8 +5,8 @@
 package io.deephaven.engine.rowset.impl;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.rowset.*;
 import io.deephaven.util.datastructures.LongAbortableConsumer;
-import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.chunk.Attributes.RowKeys;
 import io.deephaven.engine.chunk.Attributes.OrderedRowKeys;
@@ -26,7 +26,7 @@ public class RowSequenceRowKeysChunkImpl implements RowSequence {
         this.toReleaseChunk = null;
     }
 
-    static RowSequenceRowKeysChunkImpl makeByWrapping(final LongChunk<OrderedRowKeys> backingChunk) {
+    public static RowSequenceRowKeysChunkImpl makeByWrapping(final LongChunk<OrderedRowKeys> backingChunk) {
         return new RowSequenceRowKeysChunkImpl(backingChunk);
     }
 
@@ -34,7 +34,7 @@ public class RowSequenceRowKeysChunkImpl implements RowSequence {
         this.backingChunk = this.toReleaseChunk = backingChunk;
     }
 
-    static RowSequenceRowKeysChunkImpl makeByTaking(final WritableLongChunk<OrderedRowKeys> backingChunkToOwn) {
+    public static RowSequenceRowKeysChunkImpl makeByTaking(final WritableLongChunk<OrderedRowKeys> backingChunkToOwn) {
         return new RowSequenceRowKeysChunkImpl(backingChunkToOwn);
     }
 
@@ -154,7 +154,7 @@ public class RowSequenceRowKeysChunkImpl implements RowSequence {
         if (asRangesChunk != null) {
             return asRangesChunk;
         }
-        return asRangesChunk = ChunkUtils.convertToOrderedKeyRanges(backingChunk);
+        return asRangesChunk = RowKeyChunkUtil.convertToOrderedKeyRanges(backingChunk);
     }
 
     @Override
@@ -167,7 +167,7 @@ public class RowSequenceRowKeysChunkImpl implements RowSequence {
 
     @Override
     public final void fillRowKeyRangesChunk(final WritableLongChunk<Attributes.OrderedRowKeyRanges> chunkToFill) {
-        ChunkUtils.convertToOrderedKeyRanges(backingChunk, chunkToFill);
+        RowKeyChunkUtil.convertToOrderedKeyRanges(backingChunk, chunkToFill);
     }
 
     @Override

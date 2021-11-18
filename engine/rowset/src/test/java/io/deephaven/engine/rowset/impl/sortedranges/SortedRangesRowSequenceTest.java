@@ -1,11 +1,12 @@
 package io.deephaven.engine.rowset.impl.sortedranges;
 
-import static io.deephaven.engine.v2.utils.TstRowSetUtil.sortedRangesFromString;
 import static org.junit.Assert.*;
 
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.impl.RowSequenceTestBase;
 import io.deephaven.engine.rowset.impl.TrackingWritableRowSetImpl;
+import io.deephaven.engine.rowset.impl.TstRowSetUtil;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.Test;
 
@@ -136,7 +137,7 @@ public class SortedRangesRowSequenceTest extends RowSequenceTestBase {
 
     @Test
     public void testOkNextWithLengthCase0() {
-        final SortedRanges sr = sortedRangesFromString(
+        final SortedRanges sr = TstRowSetUtil.sortedRangesFromString(
                 "0-21,23,25-32,34-38,40-43,45-48,50-63,65-66,68,70,72-73");
         assertNotNull(sr);
         for (int step = 1; step < 7; ++step) {

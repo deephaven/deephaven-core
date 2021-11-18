@@ -1,6 +1,7 @@
 package io.deephaven.engine.rowset.impl;
 
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
+import io.deephaven.engine.rowset.RowSetFactory;
 
 import java.text.DecimalFormat;
 import java.text.NumberFormat;

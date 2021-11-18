@@ -1,9 +1,10 @@
 package io.deephaven.engine.table.impl.tuplesource.generated;
 
 import io.deephaven.datastructures.util.SmartKey;
-import io.deephaven.engine.chunk.Attributes;
+import io.deephaven.engine.chunk.Attributes.Values;
+import io.deephaven.engine.chunk.ByteChunk;
 import io.deephaven.engine.chunk.Chunk;
-import io.deephaven.engine.chunk.ObjectChunk;
+import io.deephaven.engine.chunk.ShortChunk;
 import io.deephaven.engine.chunk.WritableChunk;
 import io.deephaven.engine.chunk.WritableObjectChunk;
 import io.deephaven.engine.table.ColumnSource;
@@ -115,10 +116,10 @@ public class ReinterpretedBooleanShortColumnTupleSource extends AbstractTupleSou
         throw new IllegalArgumentException("Bad elementIndex for 2 element tuple: " + elementIndex);
     }
 
-    protected void convertChunks(@NotNull WritableChunk<? super Attributes.Values> destination, int chunkSize, Chunk<Attributes.Values> [] chunks) {
-        WritableObjectChunk<ByteShortTuple, ? super Attributes.Values> destinationObjectChunk = destination.asWritableObjectChunk();
-        ByteChunk<Attributes.Values> chunk1 = chunks[0].asByteChunk();
-        ShortChunk<Attributes.Values> chunk2 = chunks[1].asShortChunk();
+    protected void convertChunks(@NotNull WritableChunk<? super Values> destination, int chunkSize, Chunk<Values> [] chunks) {
+        WritableObjectChunk<ByteShortTuple, ? super Values> destinationObjectChunk = destination.asWritableObjectChunk();
+        ByteChunk<Values> chunk1 = chunks[0].asByteChunk();
+        ShortChunk<Values> chunk2 = chunks[1].asShortChunk();
         for (int ii = 0; ii < chunkSize; ++ii) {
             destinationObjectChunk.set(ii, new ByteShortTuple(chunk1.get(ii), chunk2.get(ii)));
         }

@@ -5,6 +5,7 @@
 package io.deephaven.engine.rowset.impl;
 
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.util.datastructures.LongAbortableConsumer;
 import io.deephaven.util.datastructures.LongRangeConsumer;

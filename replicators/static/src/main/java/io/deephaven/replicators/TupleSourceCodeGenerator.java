@@ -1,6 +1,8 @@
 package io.deephaven.replicators;
 
+import io.deephaven.base.ClassUtil;
 import io.deephaven.util.text.Indenter;
+import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -33,10 +35,9 @@ public class TupleSourceCodeGenerator {
             "io.deephaven.engine.table.impl.tuplesource.AbstractTupleSource",
             "io.deephaven.engine.table.ColumnSource",
             "io.deephaven.engine.table.WritableColumnSource",
-            "io.deephaven.engine.chunk.Attributes",
+            "io.deephaven.engine.chunk.Attributes.Values",
             "io.deephaven.engine.chunk.Chunk",
             "io.deephaven.engine.chunk.WritableChunk",
-            "io.deephaven.engine.chunk.ObjectChunk",
             "io.deephaven.engine.chunk.WritableObjectChunk",
     };
 
@@ -101,9 +102,12 @@ public class TupleSourceCodeGenerator {
             this.unboxing = unboxing;
             this.cast = cast;
             isPrimitive = !elementClassName.contains(".");
-            chunkTypeName = isPrimitive ? getElementClassSimpleNameBoxed() : "Object";
+            chunkTypeName = isPrimitive
+                    ? elementClassName.substring(0, 1).toUpperCase() + elementClassName.substring(1)
+                    : "Object";
             chunkClassName = chunkTypeName + "Chunk";
-            this.imports = imports;
+            this.imports = Stream.concat(Stream.of("io.deephaven.engine.chunk." + chunkClassName), Stream.of(imports))
+                    .toArray(String[]::new);
         }
 
         String getNameText() {
@@ -123,7 +127,11 @@ public class TupleSourceCodeGenerator {
 
         String getElementClassSimpleNameBoxed() {
             if (isPrimitive) {
-                return elementClassName.substring(0, 1).toUpperCase() + elementClassName.substring(1);
+                try {
+                    return TypeUtils.getBoxedType(ClassUtil.lookupClass(elementClassName)).getSimpleName();
+                } catch (ClassNotFoundException e) {
+                    throw new IllegalStateException("Unrecognized primitive class name " + elementClassName, e);
+                }
             }
             return elementClassName.substring(elementClassName.lastIndexOf('.') + 1);
         }
@@ -134,9 +142,9 @@ public class TupleSourceCodeGenerator {
 
         String getValuesChunkTypeString() {
             if (isPrimitive) {
-                return chunkClassName + "<Attributes.Values>";
+                return chunkClassName + "<Values>";
             }
-            return chunkClassName + '<' + getElementClassSimpleName() + ", Attributes.Values>";
+            return chunkClassName + '<' + getElementClassSimpleName() + ", Values>";
         }
 
         ColumnSourceType getReinterpretAsType() {
@@ -183,7 +191,8 @@ public class TupleSourceCodeGenerator {
     }
 
     private static ColumnSourceType forPrimitive(final String elementClassName) {
-        return Arrays.stream(ColumnSourceType.values()).filter(cst -> cst.getElementClassName().equals(elementClassName))
+        return Arrays.stream(ColumnSourceType.values())
+                .filter(cst -> cst.getElementClassName().equals(elementClassName))
                 .findFirst()
                 .orElseThrow(() -> new RuntimeException("Could not find type for: " + elementClassName));
     }
@@ -438,10 +447,10 @@ public class TupleSourceCodeGenerator {
         code.append(NEW_LINE);
 
         code.append(indenter).append(
-                "protected void convertChunks(@NotNull WritableChunk<? super Attributes.Values> destination, int chunkSize, Chunk<Attributes.Values> [] chunks) {")
+                "protected void convertChunks(@NotNull WritableChunk<? super Values> destination, int chunkSize, Chunk<Values> [] chunks) {")
                 .append(NEW_LINE);
         code.append(indenter.increaseLevel()).append("WritableObjectChunk<").append(tupleClassName)
-                .append(", ? super Attributes.Values> destinationObjectChunk = destination.asWritableObjectChunk();")
+                .append(", ? super Values> destinationObjectChunk = destination.asWritableObjectChunk();")
                 .append(NEW_LINE);
         code.append(indenter).append(type1.getValuesChunkTypeString()).append(" chunk1 = chunks[0].as")
                 .append(type1.chunkTypeName).append("Chunk();").append(NEW_LINE);
@@ -748,10 +757,10 @@ public class TupleSourceCodeGenerator {
 
         code.append(indenter).append("@Override").append((NEW_LINE));
         code.append(indenter).append(
-                "protected void convertChunks(@NotNull WritableChunk<? super Attributes.Values> destination, int chunkSize, Chunk<Attributes.Values> [] chunks) {")
+                "protected void convertChunks(@NotNull WritableChunk<? super Values> destination, int chunkSize, Chunk<Values> [] chunks) {")
                 .append(NEW_LINE);
         code.append(indenter.increaseLevel()).append("WritableObjectChunk<").append(tupleClassName)
-                .append(", ? super Attributes.Values> destinationObjectChunk = destination.asWritableObjectChunk();")
+                .append(", ? super Values> destinationObjectChunk = destination.asWritableObjectChunk();")
                 .append(NEW_LINE);
         code.append(indenter).append(type1.getValuesChunkTypeString()).append(" chunk1 = chunks[0].as")
                 .append(type1.chunkTypeName).append("Chunk();").append(NEW_LINE);

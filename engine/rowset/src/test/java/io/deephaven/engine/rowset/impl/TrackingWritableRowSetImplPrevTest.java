@@ -1,14 +1,16 @@
 package io.deephaven.engine.rowset.impl;
 
-import io.deephaven.engine.rowset.TrackingWritableRowSet;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.TrackingRowSet;
-import io.deephaven.engine.tables.live.UpdateGraphProcessor;
-import io.deephaven.engine.v2.sources.LogicalClock;
+import io.deephaven.engine.rowset.TrackingWritableRowSet;
+import io.deephaven.engine.updategraph.LogicalClock;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class TrackingWritableRowSetImplPrevTest {
     @Before

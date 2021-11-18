@@ -1,9 +1,10 @@
 package io.deephaven.engine.table.impl.tuplesource.generated;
 
 import io.deephaven.datastructures.util.SmartKey;
-import io.deephaven.engine.chunk.Attributes;
+import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.chunk.Chunk;
-import io.deephaven.engine.chunk.ObjectChunk;
+import io.deephaven.engine.chunk.DoubleChunk;
+import io.deephaven.engine.chunk.LongChunk;
 import io.deephaven.engine.chunk.WritableChunk;
 import io.deephaven.engine.chunk.WritableObjectChunk;
 import io.deephaven.engine.table.ColumnSource;
@@ -114,10 +115,10 @@ public class DoubleLongColumnTupleSource extends AbstractTupleSource<DoubleLongT
         throw new IllegalArgumentException("Bad elementIndex for 2 element tuple: " + elementIndex);
     }
 
-    protected void convertChunks(@NotNull WritableChunk<? super Attributes.Values> destination, int chunkSize, Chunk<Attributes.Values> [] chunks) {
-        WritableObjectChunk<DoubleLongTuple, ? super Attributes.Values> destinationObjectChunk = destination.asWritableObjectChunk();
-        DoubleChunk<Attributes.Values> chunk1 = chunks[0].asDoubleChunk();
-        LongChunk<Attributes.Values> chunk2 = chunks[1].asLongChunk();
+    protected void convertChunks(@NotNull WritableChunk<? super Values> destination, int chunkSize, Chunk<Values> [] chunks) {
+        WritableObjectChunk<DoubleLongTuple, ? super Values> destinationObjectChunk = destination.asWritableObjectChunk();
+        DoubleChunk<Values> chunk1 = chunks[0].asDoubleChunk();
+        LongChunk<Values> chunk2 = chunks[1].asLongChunk();
         for (int ii = 0; ii < chunkSize; ++ii) {
             destinationObjectChunk.set(ii, new DoubleLongTuple(chunk1.get(ii), chunk2.get(ii)));
         }

@@ -6,7 +6,7 @@ package io.deephaven.extensions.barrage.chunk;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.rowset.impl.RowSequenceFactory;
+import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.util.datastructures.LongSizedDataStructure;

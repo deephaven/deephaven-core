@@ -5,10 +5,10 @@
 package io.deephaven.engine.v2.utils;
 
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.engine.rowset.impl.RowSetFactory;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.rowset.*;
-import io.deephaven.engine.rowset.impl.RowSequenceFactory;
+import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.v2.*;
 import io.deephaven.engine.v2.sort.permute.PermuteKernel;

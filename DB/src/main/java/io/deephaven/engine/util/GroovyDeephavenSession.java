@@ -13,7 +13,7 @@ import io.deephaven.base.Pair;
 import io.deephaven.base.StringUtils;
 import io.deephaven.compilertools.CompilerTools;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.exceptions.QueryCancellationException;
+import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.tables.select.QueryScope;
 import io.deephaven.api.util.NameValidator;
@@ -244,7 +244,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession implements Scr
             try {
                 UpdateGraphProcessor.DEFAULT.exclusiveLock().doLockedInterruptibly(() -> evaluateCommand(lastCommand));
             } catch (InterruptedException e) {
-                throw new QueryCancellationException(e.getMessage() != null ? e.getMessage() : "Query interrupted",
+                throw new CancellationException(e.getMessage() != null ? e.getMessage() : "Query interrupted",
                         maybeRewriteStackTrace(scriptName, currentScriptName, e, lastCommand, commandPrefix));
             } catch (Exception e) {
                 throw wrapAndRewriteStackTrace(scriptName, currentScriptName, e, lastCommand, commandPrefix);

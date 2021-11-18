@@ -8,7 +8,7 @@ import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.base.testing.BaseCachedJMockTestCase;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.impl.RowSetFactory;
+import io.deephaven.engine.rowset.RowSetFactory;
 
 public class TestKeyedTableListener extends BaseCachedJMockTestCase {
 

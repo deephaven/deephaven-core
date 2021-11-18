@@ -2,7 +2,7 @@ package io.deephaven.clientsupport.plotdownsampling;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.*;
-import io.deephaven.engine.rowset.impl.RowSetFactory;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.impl.RowSetUtil;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.chunk.Attributes;

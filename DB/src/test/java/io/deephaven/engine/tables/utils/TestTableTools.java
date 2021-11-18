@@ -9,7 +9,7 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.compilertools.CompilerTools;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.impl.RowSetFactory;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
@@ -624,17 +624,17 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
     public void testMerge2() {
         Random random = new Random(0);
         int size = random.nextInt(10);
-        final QueryTable table1 = TstUtils.testRefreshingTable(getRandomIndex(0, size, random).toTracking(),
+        final QueryTable table1 = TstUtils.testRefreshingTable(RowSetTstUtils.getRandomRowSet(0, size, random).toTracking(),
                 getRandomStringCol("Sym", size, random),
                 getRandomIntCol("intCol", size, random),
                 getRandomDoubleCol("doubleCol", size, random));
         size = random.nextInt(10);
-        final QueryTable table2 = TstUtils.testRefreshingTable(getRandomIndex(0, size, random).toTracking(),
+        final QueryTable table2 = TstUtils.testRefreshingTable(RowSetTstUtils.getRandomRowSet(0, size, random).toTracking(),
                 getRandomStringCol("Sym", size, random),
                 getRandomIntCol("intCol", size, random),
                 getRandomDoubleCol("doubleCol", size, random));
         size = random.nextInt(10);
-        final QueryTable table3 = TstUtils.testRefreshingTable(getRandomIndex(0, size, random).toTracking(),
+        final QueryTable table3 = TstUtils.testRefreshingTable(RowSetTstUtils.getRandomRowSet(0, size, random).toTracking(),
                 getRandomStringCol("Sym", size, random),
                 getRandomIntCol("intCol", size, random),
                 getRandomDoubleCol("doubleCol", size, random));
@@ -650,22 +650,22 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
     public void testMergeIterative() {
         Random random = new Random(0);
         int size = 3;
-        final QueryTable table1 = TstUtils.testRefreshingTable(getRandomIndex(0, size, random).toTracking(),
+        final QueryTable table1 = TstUtils.testRefreshingTable(RowSetTstUtils.getRandomRowSet(0, size, random).toTracking(),
                 getRandomStringCol("Sym", size, random),
                 getRandomIntCol("intCol", size, random),
                 getRandomDoubleCol("doubleCol", size, random));
         size = 3;
-        final QueryTable table2 = TstUtils.testRefreshingTable(getRandomIndex(0, size, random).toTracking(),
+        final QueryTable table2 = TstUtils.testRefreshingTable(RowSetTstUtils.getRandomRowSet(0, size, random).toTracking(),
                 getRandomStringCol("Sym", size, random),
                 getRandomIntCol("intCol", size, random),
                 getRandomDoubleCol("doubleCol", size, random));
         size = 3;
-        final QueryTable table3 = TstUtils.testRefreshingTable(getRandomIndex(0, size, random).toTracking(),
+        final QueryTable table3 = TstUtils.testRefreshingTable(RowSetTstUtils.getRandomRowSet(0, size, random).toTracking(),
                 getRandomStringCol("Sym", size, random),
                 getRandomIntCol("intCol", size, random),
                 getRandomDoubleCol("doubleCol", size, random));
         size = 50;
-        final QueryTable staticTable = TstUtils.testTable(getRandomIndex(0, size, random).toTracking(),
+        final QueryTable staticTable = TstUtils.testTable(RowSetTstUtils.getRandomRowSet(0, size, random).toTracking(),
                 getRandomStringCol("Sym", size, random),
                 getRandomIntCol("intCol", size, random),
                 getRandomDoubleCol("doubleCol", size, random));
@@ -1068,7 +1068,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
     private void addRows(Random random, QueryTable table1) {
         int size;
         size = random.nextInt(10);
-        final RowSet newRowSet = getRandomIndex(table1.getRowSet().lastRowKey(), size, random);
+        final RowSet newRowSet = RowSetTstUtils.getRandomRowSet(table1.getRowSet().lastRowKey(), size, random);
         TstUtils.addToTable(table1, newRowSet, getRandomStringCol("Sym", size, random),
                 getRandomIntCol("intCol", size, random),
                 getRandomDoubleCol("doubleCol", size, random));

@@ -6,7 +6,7 @@ package io.deephaven.modelfarm;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
-import io.deephaven.engine.exceptions.QueryCancellationException;
+import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
@@ -230,9 +230,9 @@ public abstract class ModelFarmBase<DATATYPE> implements ModelFarm {
                                     queryDataRetrievalOperation.retrieveData(usePrev);
                                     return true; // This indicates that the snapshot ran OK, not that the data is OK.
                                 });
-                    } catch (QueryCancellationException e) {
+                    } catch (CancellationException e) {
                         log.warn(e).append(
-                                "ModelFarmBase.getData(SNAPSHOT): QueryCancellationException.  The ModelFarm is probably shutting down.")
+                                "ModelFarmBase.getData(SNAPSHOT): CancellationException.  The ModelFarm is probably shutting down.")
                                 .endl();
                     }
                 };

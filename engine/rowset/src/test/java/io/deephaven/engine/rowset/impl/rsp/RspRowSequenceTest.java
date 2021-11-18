@@ -9,9 +9,11 @@ import io.deephaven.engine.chunk.LongChunk;
 import io.deephaven.engine.chunk.WritableLongChunk;
 import io.deephaven.engine.chunk.util.pools.ChunkPoolReleaseTracking;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.impl.RowSetFactory;
-import io.deephaven.engine.rowset.impl.RowSequenceFactory;
+import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.RowSequenceFactory;
+import io.deephaven.engine.rowset.impl.RowSequenceTestBase;
 import io.deephaven.engine.rowset.impl.TrackingWritableRowSetImpl;
+import io.deephaven.engine.rowset.impl.TstRowSetUtil;
 import org.junit.Test;
 
 import java.util.Random;

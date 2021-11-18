@@ -506,7 +506,7 @@ public abstract class RowSequenceTestBase {
             final String msg, final long[] expected, final RowSequence rowSequence) {
         final LongChunk<Attributes.OrderedRowKeys> expectedIndices = LongChunk.chunkWrap(expected);
         try (final WritableLongChunk<OrderedRowKeyRanges> expectedRanges =
-                ChunkUtils.convertToOrderedKeyRanges(expectedIndices)) {
+                RowKeyChunkUtil.convertToOrderedKeyRanges(expectedIndices)) {
 
             // size must be identical
             assertEquals(msg, expectedIndices.size(), rowSequence.size());

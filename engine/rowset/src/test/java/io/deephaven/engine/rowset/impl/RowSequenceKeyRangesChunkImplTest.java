@@ -8,6 +8,7 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.chunk.Attributes.OrderedRowKeyRanges;
 import io.deephaven.engine.chunk.LongChunk;
 import io.deephaven.engine.chunk.WritableLongChunk;
+import io.deephaven.engine.rowset.RowSequenceFactory;
 import org.junit.Test;
 
 import static org.junit.Assert.*;
@@ -17,7 +18,7 @@ public class RowSequenceKeyRangesChunkImplTest extends RowSequenceTestBase {
     @Override
     protected RowSequence create(long... values) {
         return RowSequenceFactory.takeKeyRangesChunkAndMakeRowSequence(
-                ChunkUtils.convertToOrderedKeyRanges(LongChunk.chunkWrap(values)));
+                RowKeyChunkUtil.convertToOrderedKeyRanges(LongChunk.chunkWrap(values)));
     }
 
     @Test

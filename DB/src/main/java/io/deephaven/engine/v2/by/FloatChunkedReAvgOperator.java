@@ -10,7 +10,7 @@ import io.deephaven.engine.v2.sources.FloatArraySource;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.Attributes.*;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.rowset.impl.RowSequenceFactory;
+import io.deephaven.engine.rowset.RowSequenceFactory;
 
 import java.util.Collections;
 import java.util.Map;

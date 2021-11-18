@@ -2,7 +2,7 @@ package io.deephaven.engine.v2;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.*;
-import io.deephaven.engine.rowset.impl.RowSetFactory;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.v2.select.WhereFilter;
@@ -401,7 +401,7 @@ public class TreeTableFilter implements Function<Table, Table>, MemoizedOperatio
                 }
 
                 // Now we must shift all maintained state.
-                upstream.shifted().forAllInIndex(resultRowSet, (key, delta) -> {
+                upstream.shifted().forAllInRowSet(resultRowSet, (key, delta) -> {
                     final Object parentId = parentSource.getPrev(key);
                     if (parentId == null) {
                         return;

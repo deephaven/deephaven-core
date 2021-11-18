@@ -7,7 +7,7 @@ package io.deephaven.engine.v2.locations.impl;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderRandom;
-import io.deephaven.engine.rowset.impl.RowSetFactory;
+import io.deephaven.engine.rowset.RowSetFactory;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.LinkedHashMap;

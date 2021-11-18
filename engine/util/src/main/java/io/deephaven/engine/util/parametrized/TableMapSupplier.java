@@ -3,7 +3,14 @@ package io.deephaven.engine.util.parametrized;
 import io.deephaven.base.Function;
 import io.deephaven.base.WeakReferenceManager;
 import io.deephaven.engine.liveness.LivenessReferent;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.TableMap;
+import io.deephaven.engine.table.impl.TableMapFunctionAdapter;
 import io.deephaven.util.annotations.ReferentialIntegrity;
+import org.apache.commons.lang3.mutable.MutableObject;
+import org.jetbrains.annotations.NotNull;
+
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -12,8 +19,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
-import org.apache.commons.lang3.mutable.MutableObject;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * A TableMapSupplier uses a source TableMap and applies a set of operations in the get method.
@@ -48,12 +53,8 @@ public class TableMapSupplier implements TableMap {
         sourceMap.addListener(internalListener);
     }
 
-    private TableMapSupplier(TableMap sourceMap, List<TransformTablesFunction> functions, boolean sentinel) { // sentinel
-                                                                                                              // forces
-                                                                                                              // new
-                                                                                                              // type-signature
-                                                                                                              // for
-                                                                                                              // constructor
+    private TableMapSupplier(TableMap sourceMap, List<TransformTablesFunction> functions, boolean sentinel) {
+        // sentinel forces new type-signature for constructor
         this.sourceMap = sourceMap;
         this.functions = new ArrayList<>(functions);
         sourceMap.addListener(internalListener);

@@ -16,7 +16,8 @@ import io.deephaven.barrage.flatbuf.BarrageModColumnMetadata;
 import io.deephaven.barrage.flatbuf.BarrageUpdateMetadata;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
-import io.deephaven.engine.rowset.impl.RowSetFactory;
+import io.deephaven.engine.rowset.impl.ExternalizableRowSetUtil;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.v2.utils.*;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
@@ -574,7 +575,7 @@ public class BarrageStreamGenerator implements
             // noinspection UnstableApiUsage
             try (final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream();
                     final LittleEndianDataOutputStream oos = new LittleEndianDataOutputStream(baos)) {
-                ExternalizableRowSetUtils.writeExternalCompressedDeltas(oos, rowSet);
+                ExternalizableRowSetUtil.writeExternalCompressedDeltas(oos, rowSet);
                 oos.flush();
                 raw = baos.peekBuffer();
                 len = baos.size();
@@ -608,7 +609,7 @@ public class BarrageStreamGenerator implements
             try (final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream();
                     final LittleEndianDataOutputStream oos = new LittleEndianDataOutputStream(baos);
                     final RowSet viewOfOriginal = original.intersect(viewport)) {
-                ExternalizableRowSetUtils.writeExternalCompressedDeltas(oos, viewOfOriginal);
+                ExternalizableRowSetUtil.writeExternalCompressedDeltas(oos, viewOfOriginal);
                 oos.flush();
                 nraw = baos.peekBuffer();
                 nlen = baos.size();
@@ -671,9 +672,9 @@ public class BarrageStreamGenerator implements
                     final RowSet dest = destBuilder.build();
                     final ExposedByteArrayOutputStream baos = new ExposedByteArrayOutputStream();
                     final LittleEndianDataOutputStream oos = new LittleEndianDataOutputStream(baos)) {
-                ExternalizableRowSetUtils.writeExternalCompressedDeltas(oos, sRange);
-                ExternalizableRowSetUtils.writeExternalCompressedDeltas(oos, eRange);
-                ExternalizableRowSetUtils.writeExternalCompressedDeltas(oos, dest);
+                ExternalizableRowSetUtil.writeExternalCompressedDeltas(oos, sRange);
+                ExternalizableRowSetUtil.writeExternalCompressedDeltas(oos, eRange);
+                ExternalizableRowSetUtil.writeExternalCompressedDeltas(oos, dest);
                 oos.flush();
                 raw = baos.peekBuffer();
                 len = baos.size();

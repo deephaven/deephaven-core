@@ -2,7 +2,7 @@ package io.deephaven.engine.v2;
 
 import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.engine.exceptions.QueryCancellationException;
+import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
@@ -320,7 +320,7 @@ public class SparseSelect {
                 try {
                     futures[columnIndex].get();
                 } catch (InterruptedException e) {
-                    throw new QueryCancellationException("Interupted in sparseSelect()", e);
+                    throw new CancellationException("Interupted in sparseSelect()", e);
                 } catch (ExecutionException e) {
                     throw new RuntimeException("sparseSelect copy failed", e);
                 }
@@ -393,7 +393,7 @@ public class SparseSelect {
                 try {
                     futures[columnIndex].get();
                 } catch (InterruptedException e) {
-                    throw new QueryCancellationException("Interupted in sparseSelect()", e);
+                    throw new CancellationException("Interupted in sparseSelect()", e);
                 } catch (ExecutionException e) {
                     throw new RuntimeException("sparseSelect shift failed", e);
                 }

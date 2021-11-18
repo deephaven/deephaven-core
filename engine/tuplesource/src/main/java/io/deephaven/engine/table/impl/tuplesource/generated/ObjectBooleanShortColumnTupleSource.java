@@ -1,9 +1,10 @@
 package io.deephaven.engine.table.impl.tuplesource.generated;
 
 import io.deephaven.datastructures.util.SmartKey;
-import io.deephaven.engine.chunk.Attributes;
+import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.chunk.Chunk;
 import io.deephaven.engine.chunk.ObjectChunk;
+import io.deephaven.engine.chunk.ShortChunk;
 import io.deephaven.engine.chunk.WritableChunk;
 import io.deephaven.engine.chunk.WritableObjectChunk;
 import io.deephaven.engine.table.ColumnSource;
@@ -134,11 +135,11 @@ public class ObjectBooleanShortColumnTupleSource extends AbstractTupleSource<Obj
     }
 
     @Override
-    protected void convertChunks(@NotNull WritableChunk<? super Attributes.Values> destination, int chunkSize, Chunk<Attributes.Values> [] chunks) {
-        WritableObjectChunk<ObjectByteShortTuple, ? super Attributes.Values> destinationObjectChunk = destination.asWritableObjectChunk();
-        ObjectChunk<Object, Attributes.Values> chunk1 = chunks[0].asObjectChunk();
-        ObjectChunk<Boolean, Attributes.Values> chunk2 = chunks[1].asObjectChunk();
-        ShortChunk<Attributes.Values> chunk3 = chunks[2].asShortChunk();
+    protected void convertChunks(@NotNull WritableChunk<? super Values> destination, int chunkSize, Chunk<Values> [] chunks) {
+        WritableObjectChunk<ObjectByteShortTuple, ? super Values> destinationObjectChunk = destination.asWritableObjectChunk();
+        ObjectChunk<Object, Values> chunk1 = chunks[0].asObjectChunk();
+        ObjectChunk<Boolean, Values> chunk2 = chunks[1].asObjectChunk();
+        ShortChunk<Values> chunk3 = chunks[2].asShortChunk();
         for (int ii = 0; ii < chunkSize; ++ii) {
             destinationObjectChunk.set(ii, new ObjectByteShortTuple(chunk1.get(ii), BooleanUtils.booleanAsByte(chunk2.get(ii)), chunk3.get(ii)));
         }

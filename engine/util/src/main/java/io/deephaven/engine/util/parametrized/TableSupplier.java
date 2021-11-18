@@ -1,32 +1,25 @@
 package io.deephaven.engine.util.parametrized;
 
 import io.deephaven.base.Function;
-import io.deephaven.engine.table.TableMap;
-import io.deephaven.engine.table.TransformTablesFunction;
-import io.deephaven.io.logger.Logger;
-import io.deephaven.util.process.ProcessEnvironment;
-import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.liveness.LivenessReferent;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.TableMap;
+import io.deephaven.engine.tables.utils.TableTools;
+import io.deephaven.io.logger.Logger;
 import io.deephaven.util.annotations.ScriptApi;
+import io.deephaven.util.process.ProcessEnvironment;
+import org.jetbrains.annotations.NotNull;
+
 import java.lang.ref.WeakReference;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.function.BiFunction;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * TableSupplier creates a Proxy to a Table with a list of Table operations to be applied when a filter method is
@@ -47,7 +40,7 @@ public class TableSupplier extends LivenessArtifact implements InvocationHandler
             HIJACKED_DELEGATIONS.put(Table.class.getMethod("hasColumns", String[].class), (proxy, method,
                     args) -> ((TableSupplier) Proxy.getInvocationHandler(proxy)).hasColumns((String[]) args[0]));
             HIJACKED_DELEGATIONS.put(Table.class.getMethod("partitionBy", String[].class), (proxy, method,
-                                                                                            args) -> ((TableSupplier) Proxy.getInvocationHandler(proxy)).partitionBy((String[]) args[0]));
+                    args) -> ((TableSupplier) Proxy.getInvocationHandler(proxy)).partitionBy((String[]) args[0]));
             HIJACKED_DELEGATIONS.put(Table.class.getMethod("partitionBy", boolean.class, String[].class),
                     (proxy, method, args) -> ((TableSupplier) Proxy.getInvocationHandler(proxy))
                             .partitionBy((Boolean) args[0], (String[]) args[1]));

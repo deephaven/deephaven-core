@@ -5,155 +5,20 @@
 package io.deephaven.engine.v2.utils;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.table.ChunkSink;
-import io.deephaven.engine.table.WritableColumnSource;
-import io.deephaven.util.datastructures.SizeException;
-import io.deephaven.engine.table.SharedContext;
-import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.Attributes.Any;
-import io.deephaven.engine.chunk.Attributes.OrderedRowKeys;
-import io.deephaven.engine.chunk.Attributes.OrderedRowKeyRanges;
+import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.table.ChunkSink;
+import io.deephaven.engine.table.ChunkSource;
+import io.deephaven.engine.table.SharedContext;
+import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseableArray;
-import io.deephaven.util.annotations.VisibleForTesting;
 
 import java.util.Objects;
 
 public class ChunkUtils {
     private static final int COPY_DATA_CHUNK_SIZE = 16384;
-
-    /**
-     * Generates a {@link LongChunk< OrderedRowKeyRanges >} from {@link LongChunk< Attributes.OrderedRowKeys >} chunk.
-     *
-     * @param chunk the chunk to convert
-     * @return the generated chunk
-     */
-    public static WritableLongChunk<Attributes.OrderedRowKeyRanges> convertToOrderedKeyRanges(
-            final LongChunk<Attributes.OrderedRowKeys> chunk) {
-        return convertToOrderedKeyRanges(chunk, Chunk.MAXIMUM_SIZE);
-    }
-
-    @VisibleForTesting
-    static WritableLongChunk<OrderedRowKeyRanges> convertToOrderedKeyRanges(
-            final LongChunk<Attributes.OrderedRowKeys> chunk,
-            final long maxChunkSize) {
-        if (chunk.size() == 0) {
-            return WritableLongChunk.makeWritableChunk(0);
-        }
-
-        // First we'll count the number of ranges so that we can allocate the exact amount of space needed.
-        long numRanges = 1;
-        for (int idx = 1; idx < chunk.size(); ++idx) {
-            if (chunk.get(idx - 1) + 1 != chunk.get(idx)) {
-                ++numRanges;
-            }
-        }
-
-        final long newSize = numRanges * 2L;
-        if (newSize > maxChunkSize) {
-            throw new SizeException("Cannot expand RowKeys Chunk into KeyRanges Chunk.", newSize, maxChunkSize);
-        }
-
-        final WritableLongChunk<Attributes.OrderedRowKeyRanges> newChunk =
-                WritableLongChunk.makeWritableChunk((int) newSize);
-
-        convertToOrderedKeyRanges(chunk, newChunk);
-
-        return newChunk;
-    }
-
-    /**
-     * Fills {@code OrderedRowKeyRanges} into {@code dest} from the provided {@code chunk} and specified source range.
-     *
-     * @param chunk the chunk to convert
-     * @param dest the chunk to fill with ranges
-     */
-    public static void convertToOrderedKeyRanges(final LongChunk<Attributes.OrderedRowKeys> chunk,
-            final WritableLongChunk<OrderedRowKeyRanges> dest) {
-        int destOffset = 0;
-        if (chunk.size() == 0) {
-            dest.setSize(destOffset);
-            return;
-        }
-
-        int srcOffset = 0;
-        dest.set(destOffset++, chunk.get(srcOffset));
-        for (++srcOffset; srcOffset < chunk.size(); ++srcOffset) {
-            if (chunk.get(srcOffset - 1) + 1 != chunk.get(srcOffset)) {
-                // we now know that the currently open range ends at srcOffset - 1
-                dest.set(destOffset++, chunk.get(srcOffset - 1));
-                dest.set(destOffset++, chunk.get(srcOffset));
-            }
-        }
-        dest.set(destOffset++, chunk.get(srcOffset - 1));
-
-        dest.setSize(destOffset);
-    }
-
-    /**
-     * Generates a {@link LongChunk< OrderedRowKeys >} from {@link LongChunk< Attributes.OrderedRowKeyRanges >} chunk.
-     *
-     * @param chunk the chunk to convert
-     * @return the generated chunk
-     */
-    public static LongChunk<OrderedRowKeys> convertToOrderedKeyIndices(
-            final LongChunk<Attributes.OrderedRowKeyRanges> chunk) {
-        return convertToOrderedKeyIndices(0, chunk);
-    }
-
-    /**
-     * Generates a {@link LongChunk< Attributes.OrderedRowKeys >} from {@link LongChunk< Attributes.OrderedRowKeyRanges
-     * >} chunk.
-     *
-     * @param srcOffset the offset into {@code chunk} to begin including in the generated chunk
-     * @param chunk the chunk to convert
-     * @return the generated chunk
-     */
-    public static LongChunk<Attributes.OrderedRowKeys> convertToOrderedKeyIndices(int srcOffset,
-            final LongChunk<Attributes.OrderedRowKeyRanges> chunk) {
-        srcOffset += srcOffset % 2; // ensure that we are using the correct range edges
-
-        long numElements = 0;
-        for (int idx = 0; idx < chunk.size(); idx += 2) {
-            numElements += chunk.get(idx + 1) - chunk.get(idx) + 1;
-        }
-
-        // Note that maximum range is [0, Long.MAX_VALUE] and all ranges are non-overlapping. Therefore we will never
-        // overflow past Long.MIN_VALUE.
-        if (numElements < 0 || numElements > Chunk.MAXIMUM_SIZE) {
-            throw new SizeException("Cannot expand OrderedRowKeyRanges Chunk into OrderedRowKeys Chunk.", numElements,
-                    Chunk.MAXIMUM_SIZE);
-        }
-
-        final WritableLongChunk<Attributes.OrderedRowKeys> newChunk =
-                WritableLongChunk.makeWritableChunk((int) numElements);
-        convertToOrderedKeyIndices(srcOffset, chunk, newChunk, 0);
-        return newChunk;
-    }
-
-    /**
-     * Generates a {@link LongChunk< Attributes.OrderedRowKeys >} from {@link LongChunk< OrderedRowKeyRanges >} chunk.
-     *
-     * @param srcOffset the offset into {@code chunk} to begin including in the generated chunk
-     * @param chunk the chunk to convert
-     * @param dest the chunk to fill with indices
-     */
-    public static void convertToOrderedKeyIndices(int srcOffset, final LongChunk<OrderedRowKeyRanges> chunk,
-            final WritableLongChunk<Attributes.OrderedRowKeys> dest, int destOffset) {
-        srcOffset += srcOffset & 1; // ensure that we are using the correct range edges
-
-        for (int idx = srcOffset; idx + 1 < chunk.size() && destOffset < dest.size(); idx += 2) {
-            final long start = chunk.get(idx);
-            final long range = chunk.get(idx + 1) - start + 1; // note that due to checks above, range cannot overflow
-            for (long jdx = 0; jdx < range && destOffset < dest.size(); ++jdx) {
-                dest.set(destOffset++, start + jdx);
-            }
-        }
-
-        dest.setSize(destOffset);
-    }
 
     /**
      * Produce a pretty key for error messages from an element within parallel chunks.
@@ -520,9 +385,9 @@ public class ChunkUtils {
         }
         dest.ensureCapacity(destAllKeys.lastRowKey() + 1);
         try (final ChunkSource.GetContext srcContext = src.makeGetContext(minSize);
-             final ChunkSink.FillFromContext destContext = dest.makeFillFromContext(minSize);
-             final RowSequence.Iterator srcIter = srcAllKeys.getRowSequenceIterator();
-             final RowSequence.Iterator destIter = destAllKeys.getRowSequenceIterator()) {
+                final ChunkSink.FillFromContext destContext = dest.makeFillFromContext(minSize);
+                final RowSequence.Iterator srcIter = srcAllKeys.getRowSequenceIterator();
+                final RowSequence.Iterator destIter = destAllKeys.getRowSequenceIterator()) {
             while (srcIter.hasMore()) {
                 Assert.assertion(destIter.hasMore(), "destIter.hasMore()");
                 final RowSequence srcNextKeys = srcIter.getNextRowSequenceWithLength(minSize);
@@ -569,10 +434,10 @@ public class ChunkUtils {
         final ChunkSink.FillFromContext[] destContexts = new ChunkSink.FillFromContext[sources.length];
 
         try (final SharedContext sharedContext = SharedContext.makeSharedContext();
-             final RowSequence.Iterator srcIter = srcAllKeys.getRowSequenceIterator();
-             final RowSequence.Iterator destIter = destAllKeys.getRowSequenceIterator();
-             final SafeCloseableArray<ChunkSource.GetContext> ignored = new SafeCloseableArray<>(sourceContexts);
-             final SafeCloseableArray<ChunkSink.FillFromContext> ignored2 =
+                final RowSequence.Iterator srcIter = srcAllKeys.getRowSequenceIterator();
+                final RowSequence.Iterator destIter = destAllKeys.getRowSequenceIterator();
+                final SafeCloseableArray<ChunkSource.GetContext> ignored = new SafeCloseableArray<>(sourceContexts);
+                final SafeCloseableArray<ChunkSink.FillFromContext> ignored2 =
                         new SafeCloseableArray<>(destContexts)) {
 
             for (int ss = 0; ss < sources.length; ++ss) {
@@ -609,8 +474,8 @@ public class ChunkUtils {
             return;
         }
         try (final ChunkSink.FillFromContext destContext = dest.makeFillFromContext(minSize);
-             final WritableChunk<T> chunk = dest.getChunkType().makeWritableChunk(minSize);
-             final RowSequence.Iterator iter = allKeys.getRowSequenceIterator()) {
+                final WritableChunk<T> chunk = dest.getChunkType().makeWritableChunk(minSize);
+                final RowSequence.Iterator iter = allKeys.getRowSequenceIterator()) {
             chunk.fillWithNullValue(0, minSize);
             while (iter.hasMore()) {
                 try (final RowSequence nextKeys = iter.getNextRowSequenceWithLength(COPY_DATA_CHUNK_SIZE)) {

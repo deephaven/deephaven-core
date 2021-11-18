@@ -12,8 +12,6 @@ import io.deephaven.engine.table.TupleSource;
 import io.deephaven.engine.table.impl.DefaultChunkSource;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -25,7 +23,7 @@ public abstract class AbstractTupleSource<TUPLE_TYPE>
 
     public AbstractTupleSource(ColumnSource... columnSources) {
         this.columnSources = columnSources;
-        this.listColumnSources = Collections.unmodifiableList(Arrays.asList(columnSources));
+        this.listColumnSources = List.of(columnSources);
     }
 
     @Override

@@ -3,7 +3,7 @@ package io.deephaven.engine.v2;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.impl.RowSetFactory;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.table.ModifiedColumnSet;
@@ -150,7 +150,7 @@ public class SelectOverheadLimiter {
                 final TableUpdate upstream = inputRecorder.getValue().getUpdate();
                 overheadTracker.removeIndex(upstream.removed());
                 rowSet.remove(upstream.removed());
-                upstream.shifted().forAllInIndex(rowSet, overheadTracker);
+                upstream.shifted().forAllInRowSet(rowSet, overheadTracker);
                 RowSetShiftUtils.apply(upstream.shifted(), rowSet);
                 overheadTracker.addIndex(upstream.added());
                 rowSet.insert(upstream.added());

@@ -435,12 +435,12 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
 
     @Override
     public final void writeExternal(@NotNull final ObjectOutput out) throws IOException {
-        ExternalizableRowSetUtils.writeExternalCompressedDeltas(out, this);
+        ExternalizableRowSetUtil.writeExternalCompressedDeltas(out, this);
     }
 
     @Override
     public void readExternal(@NotNull final ObjectInput in) throws IOException {
-        try (final RowSet readRowSet = ExternalizableRowSetUtils.readExternalCompressedDelta(in)) {
+        try (final RowSet readRowSet = ExternalizableRowSetUtil.readExternalCompressedDelta(in)) {
             assign(getInnerSet(readRowSet).ixCowRef());
         }
     }

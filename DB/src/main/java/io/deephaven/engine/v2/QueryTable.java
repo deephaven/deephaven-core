@@ -16,9 +16,9 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.engine.exceptions.QueryCancellationException;
+import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.rowset.*;
-import io.deephaven.engine.rowset.impl.RowSetFactory;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.tables.*;
@@ -1300,7 +1300,7 @@ public class QueryTable extends BaseTable {
 
         for (WhereFilter filter : filters) {
             if (Thread.interrupted()) {
-                throw new QueryCancellationException("interrupted while filtering");
+                throw new CancellationException("interrupted while filtering");
             }
             try (final SafeCloseable ignored = matched) { // Ensure we close old matched
                 matched = filter.filter(matched, fullSet, this, usePrev);

@@ -18,7 +18,7 @@ public class RowRedirectionUtilities {
         };
 
         if (shiftData.getEffectiveSize() >= SEARCH_ITERATOR_THRESHOLD) {
-            shiftData.forAllInIndex(filterIndex, applyOneShift);
+            shiftData.forAllInRowSet(filterIndex, applyOneShift);
         } else {
             shiftData.apply((start, end, delta) -> {
                 final long len = end - start + 1;

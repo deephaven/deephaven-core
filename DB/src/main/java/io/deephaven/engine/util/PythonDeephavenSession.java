@@ -7,8 +7,8 @@ package io.deephaven.engine.util;
 import io.deephaven.base.FileUtils;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.exceptions.OperationException;
-import io.deephaven.engine.exceptions.QueryCancellationException;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.tables.libs.QueryLibrary;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
@@ -178,7 +178,7 @@ public class PythonDeephavenSession extends AbstractScriptSession implements Scr
                 evaluator.evalScript(command);
             });
         } catch (InterruptedException e) {
-            throw new QueryCancellationException(e.getMessage() != null ? e.getMessage() : "Query interrupted", e);
+            throw new CancellationException(e.getMessage() != null ? e.getMessage() : "Query interrupted", e);
         }
     }
 

@@ -6,7 +6,7 @@ import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ChunkSink;
 import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.rowset.impl.RowSequenceFactory;
+import io.deephaven.engine.rowset.RowSequenceFactory;
 import junit.framework.TestCase;
 
 import java.util.Random;

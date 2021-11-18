@@ -7,7 +7,7 @@ import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.TrackingRowSet;
-import io.deephaven.engine.rowset.impl.RowSequenceFactory;
+import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.tables.SortingOrder;
 import io.deephaven.engine.table.Table;
@@ -331,7 +331,7 @@ public class SortHelpers {
         }
     }
 
-    private static final String SORTED_INDEX_COLUMN_NAME = "GroupingRowSetHelper";
+    private static final String SORTED_INDEX_COLUMN_NAME = "SortedIndex";
     private static final String SORTED_INDEX_COLUMN_UPDATE = SORTED_INDEX_COLUMN_NAME + "=i";
 
     private static SortMapping doSymbolTableMapping(SortingOrder order, ColumnSource<Comparable<?>> columnSource,

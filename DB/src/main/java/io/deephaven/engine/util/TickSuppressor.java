@@ -11,7 +11,7 @@ import io.deephaven.engine.v2.*;
 import io.deephaven.engine.chunk.util.hashing.ChunkEquals;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
-import io.deephaven.engine.rowset.impl.RowSetFactory;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.util.SafeCloseableArray;
 import org.apache.commons.lang3.mutable.MutableInt;

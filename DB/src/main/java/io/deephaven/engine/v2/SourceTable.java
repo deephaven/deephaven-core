@@ -18,7 +18,7 @@ import io.deephaven.engine.v2.locations.impl.TableLocationSubscriptionBuffer;
 import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.impl.RowSetFactory;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.QueryConstants;

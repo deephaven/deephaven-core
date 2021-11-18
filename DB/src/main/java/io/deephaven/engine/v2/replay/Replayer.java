@@ -5,7 +5,7 @@
 package io.deephaven.engine.v2.replay;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.exceptions.QueryCancellationException;
+import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.time.DateTime;
@@ -126,7 +126,7 @@ public class Replayer implements ReplayerInterface, Runnable {
      * interval, the method returns.
      *
      * @param maxTimeMillis maximum number of milliseconds to wait.
-     * @throws QueryCancellationException thread was interrupted.
+     * @throws CancellationException thread was interrupted.
      */
     @Override
     public void waitDone(long maxTimeMillis) {
@@ -139,7 +139,7 @@ public class Replayer implements ReplayerInterface, Runnable {
                 try {
                     ltmCondition.await(expiryTime - System.currentTimeMillis(), TimeUnit.MILLISECONDS);
                 } catch (InterruptedException interruptIsCancel) {
-                    throw new QueryCancellationException("Interrupt detected", interruptIsCancel);
+                    throw new CancellationException("Interrupt detected", interruptIsCancel);
                 }
             }
         });

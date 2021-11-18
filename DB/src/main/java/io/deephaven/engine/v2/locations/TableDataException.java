@@ -4,7 +4,7 @@
 
 package io.deephaven.engine.v2.locations;
 
-import io.deephaven.engine.exceptions.QueryCancellationException;
+import io.deephaven.engine.exceptions.CancellationException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -35,7 +35,7 @@ public class TableDataException extends RuntimeException {
                 || cause instanceof FileLockInterruptionException
                 || cause instanceof InterruptedIOException
                 || cause instanceof InterruptedNamingException
-                || cause instanceof QueryCancellationException);
+                || cause instanceof CancellationException);
     }
 
     public TableDataException(@NotNull final String message) {

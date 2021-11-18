@@ -17,8 +17,8 @@ sourceSets {
 }
 
 dependencies {
-    compile project(':engine-api'),
-            project(':engine-rowset')
+    compile project(':engine-rowset'),
+            project(':engine-api')
 }
 
 spotless {

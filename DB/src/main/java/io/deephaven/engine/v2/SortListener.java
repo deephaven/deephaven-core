@@ -9,8 +9,8 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.rowset.*;
-import io.deephaven.engine.rowset.impl.RowSequenceFactory;
-import io.deephaven.engine.rowset.impl.RowSetFactory;
+import io.deephaven.engine.rowset.RowSequenceFactory;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
@@ -207,7 +207,7 @@ public class SortListener extends BaseTable.ListenerImpl {
             // handle upstream shifts; note these never effect the sorted output keyspace
             final SortMappingAggregator mappingChanges = closer.add(new SortMappingAggregator());
             try (final RowSet prevRowSet = parent.getRowSet().getPrevRowSet()) {
-                upstream.shifted().forAllInIndex(prevRowSet, (key, delta) -> {
+                upstream.shifted().forAllInRowSet(prevRowSet, (key, delta) -> {
                     final long dst = reverseLookup.remove(key);
                     if (dst != REVERSE_LOOKUP_NO_ENTRY_VALUE) {
                         mappingChanges.append(dst, key + delta);

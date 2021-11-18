@@ -17,7 +17,7 @@ import io.deephaven.engine.v2.locations.impl.StandaloneTableLocationKey;
 import io.deephaven.engine.v2.sources.DeferredGroupingColumnSource;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.impl.RowSetFactory;
+import io.deephaven.engine.rowset.RowSetFactory;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;

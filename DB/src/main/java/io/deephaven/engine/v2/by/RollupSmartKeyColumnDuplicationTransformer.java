@@ -2,7 +2,7 @@ package io.deephaven.engine.v2.by;
 
 import io.deephaven.engine.v2.RollupInfo;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.impl.tuplesource.SmartKeySource;
+import io.deephaven.engine.table.impl.SmartKeySource;
 
 import java.util.Arrays;
 import java.util.Map;

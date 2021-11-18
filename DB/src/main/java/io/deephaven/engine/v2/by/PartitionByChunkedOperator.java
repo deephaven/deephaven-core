@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2.by;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.rowset.impl.RowSetFactory;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.impl.WritableRowSetImpl;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.rowset.*;
@@ -19,7 +19,7 @@ import io.deephaven.engine.v2.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.v2.sources.ObjectArraySource;
 import io.deephaven.engine.chunk.Attributes.*;
 import io.deephaven.engine.chunk.*;
-import io.deephaven.engine.table.impl.tuplesource.SmartKeySource;
+import io.deephaven.engine.table.impl.SmartKeySource;
 import io.deephaven.engine.v2.utils.*;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.mutable.MutableInt;

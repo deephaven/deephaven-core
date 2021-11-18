@@ -6,6 +6,7 @@ package io.deephaven.engine.rowset.impl;
 
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.chunk.LongChunk;
+import io.deephaven.engine.rowset.RowSequenceFactory;
 
 public class RowSequenceRowKeysChunkImplTest extends RowSequenceTestBase {
 

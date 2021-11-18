@@ -17,7 +17,7 @@ sourceSets {
 }
 
 dependencies {
-    compile project(':engine-api')
+    compile project(':engine-table')
 }
 
 spotless {

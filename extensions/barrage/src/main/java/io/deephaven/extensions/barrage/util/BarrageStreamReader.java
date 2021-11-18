@@ -14,7 +14,8 @@ import io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
 import io.deephaven.barrage.flatbuf.BarrageModColumnMetadata;
 import io.deephaven.barrage.flatbuf.BarrageUpdateMetadata;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.impl.RowSetFactory;
+import io.deephaven.engine.rowset.impl.ExternalizableRowSetUtil;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.v2.utils.*;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
@@ -234,7 +235,7 @@ public class BarrageStreamReader implements BarrageMessageConsumer.StreamReader<
         // noinspection UnstableApiUsage
         try (final LittleEndianDataInputStream is =
                 new LittleEndianDataInputStream(new ByteBufferBackedInputStream(bb))) {
-            return ExternalizableRowSetUtils.readExternalCompressedDelta(is);
+            return ExternalizableRowSetUtil.readExternalCompressedDelta(is);
         }
     }
 
@@ -249,9 +250,9 @@ public class BarrageStreamReader implements BarrageMessageConsumer.StreamReader<
         // noinspection UnstableApiUsage
         try (final LittleEndianDataInputStream is =
                 new LittleEndianDataInputStream(new ByteBufferBackedInputStream(bb))) {
-            sRowSet = ExternalizableRowSetUtils.readExternalCompressedDelta(is);
-            eRowSet = ExternalizableRowSetUtils.readExternalCompressedDelta(is);
-            dRowSet = ExternalizableRowSetUtils.readExternalCompressedDelta(is);
+            sRowSet = ExternalizableRowSetUtil.readExternalCompressedDelta(is);
+            eRowSet = ExternalizableRowSetUtil.readExternalCompressedDelta(is);
+            dRowSet = ExternalizableRowSetUtil.readExternalCompressedDelta(is);
         }
 
         try (final RowSet.Iterator sit = sRowSet.iterator();

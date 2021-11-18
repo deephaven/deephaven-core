@@ -3,8 +3,8 @@ package io.deephaven.engine.v2.utils;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderRandom;
-import io.deephaven.engine.rowset.impl.RowSetFactory;
-import io.deephaven.engine.rowset.impl.RowSequenceFactory;
+import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.chunk.Attributes.OrderedRowKeys;
 import io.deephaven.engine.chunk.Attributes.OrderedRowKeyRanges;
@@ -38,7 +38,7 @@ public class RowSequenceBench {
         indicesChunk = WritableLongChunk.makeWritableChunk(chunkSz);
         rangesChunk = WritableLongChunk.makeWritableChunk(chunkSz);
         final RowSetBuilderRandom ib = RowSetFactory.builderRandom();
-        final TestValues.Builder tb = new TestValues.Builder() {
+        final TstValues.Builder tb = new TstValues.Builder() {
             @Override
             public void add(final long v) {
                 ib.addKey(v);
@@ -49,7 +49,7 @@ public class RowSequenceBench {
                 ix = ib.build();
             }
         };
-        TestValues.setup(tb, 16 * 1024 * 1024, TestValues.asymmetric);
+        TstValues.setup(tb, 16 * 1024 * 1024, TstValues.asymmetric);
         final WritableLongChunk<OrderedRowKeys> fixedCostChunk =
                 WritableLongChunk.makeWritableChunk(fixedCostChunkSz);
         final Random r = new Random(1);

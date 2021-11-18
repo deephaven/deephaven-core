@@ -2,7 +2,7 @@ package io.deephaven.engine.v2.utils;
 
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.impl.RowSetFactory;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.impl.ComplementRangeIterator;
 import org.junit.Test;
 

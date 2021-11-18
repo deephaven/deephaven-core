@@ -157,6 +157,9 @@ project(':engine-time').projectDir = file('engine/time')
 include(':engine-tuple')
 project(':engine-tuple').projectDir = file('engine/tuple')
 
+include(':engine-updategraph')
+project(':engine-updategraph').projectDir = file('engine/updategraph')
+
 include(':engine-api')
 project(':engine-api').projectDir = file('engine/api')
 

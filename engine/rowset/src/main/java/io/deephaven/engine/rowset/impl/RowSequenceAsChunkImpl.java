@@ -8,6 +8,7 @@ import io.deephaven.engine.chunk.LongChunk;
 import io.deephaven.engine.chunk.WritableLongChunk;
 
 public abstract class RowSequenceAsChunkImpl implements RowSequence {
+
     private WritableLongChunk<OrderedRowKeys> keyIndicesChunk;
     private boolean keyIndicesChunkInvalidated;
     private WritableLongChunk<Attributes.OrderedRowKeyRanges> keyRangesChunk;

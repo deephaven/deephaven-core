@@ -20,7 +20,9 @@ dependencies {
     compile project(':qst'),
             project(':engine-chunk'),
             project(':engine-vector'),
-            project(':engine-time')
+            project(':engine-time'),
+            project(':engine-updategraph'),
+            project(':engine-rowset')
 
     compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
 }

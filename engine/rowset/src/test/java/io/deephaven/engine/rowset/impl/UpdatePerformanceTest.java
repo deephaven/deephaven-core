@@ -1,5 +1,6 @@
 package io.deephaven.engine.rowset.impl;
 
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderRandom;
@@ -40,11 +41,11 @@ public class UpdatePerformanceTest {
         // we create the base rowSet one and copy it before every run of update.
         void cloneBase();
 
-        TestValues.Builder baseBuilder();
+        TstValues.Builder baseBuilder();
 
-        TestValues.Builder addBuilder();
+        TstValues.Builder addBuilder();
 
-        TestValues.Builder removeBuilder();
+        TstValues.Builder removeBuilder();
 
         void normalizeAddRemove();
 
@@ -74,8 +75,8 @@ public class UpdatePerformanceTest {
                 getParallelRunner(), getSequentialRunner()
         };
 
-        private TestValues.Builder builder(final int i) {
-            return new TestValues.Builder() {
+        private TstValues.Builder builder(final int i) {
+            return new TstValues.Builder() {
                 private final RowSetBuilderRandom b = RowSetFactory.builderRandom();
 
                 @Override
@@ -101,17 +102,17 @@ public class UpdatePerformanceTest {
         }
 
         @Override
-        public TestValues.Builder baseBuilder() {
+        public TstValues.Builder baseBuilder() {
             return builder(3);
         }
 
         @Override
-        public TestValues.Builder addBuilder() {
+        public TstValues.Builder addBuilder() {
             return builder(1);
         }
 
         @Override
-        public TestValues.Builder removeBuilder() {
+        public TstValues.Builder removeBuilder() {
             return builder(2);
         }
 
@@ -191,8 +192,8 @@ public class UpdatePerformanceTest {
     static class RspBitmapUpdateStrategy implements UpdateStrategy {
         private RspBitmap rbs[] = new RspBitmap[4];
 
-        private TestValues.Builder builder(final int i) {
-            return new TestValues.Builder() {
+        private TstValues.Builder builder(final int i) {
+            return new TstValues.Builder() {
                 private RspBitmap r = new RspBitmap();
 
                 @Override
@@ -219,17 +220,17 @@ public class UpdatePerformanceTest {
         }
 
         @Override
-        public TestValues.Builder baseBuilder() {
+        public TstValues.Builder baseBuilder() {
             return builder(3);
         }
 
         @Override
-        public TestValues.Builder addBuilder() {
+        public TstValues.Builder addBuilder() {
             return builder(1);
         }
 
         @Override
-        public TestValues.Builder removeBuilder() {
+        public TstValues.Builder removeBuilder() {
             return builder(2);
         }
 
@@ -294,11 +295,11 @@ public class UpdatePerformanceTest {
     }
 
     public static void setupStrategy(final UpdateStrategy s, final int sz,
-            final TestValues.Config c, final String pref, final boolean print) {
-        final TestValues.Builder baseBuilder = s.baseBuilder();
-        final TestValues.Builder addBuilder = s.addBuilder();
-        final TestValues.Builder removeBuilder = s.removeBuilder();
-        TestValues.setup3(baseBuilder, addBuilder, removeBuilder, sz, c);
+            final TstValues.Config c, final String pref, final boolean print) {
+        final TstValues.Builder baseBuilder = s.baseBuilder();
+        final TstValues.Builder addBuilder = s.addBuilder();
+        final TstValues.Builder removeBuilder = s.removeBuilder();
+        TstValues.setup3(baseBuilder, addBuilder, removeBuilder, sz, c);
         s.normalizeAddRemove();
         if (!print) {
             return;
@@ -330,7 +331,7 @@ public class UpdatePerformanceTest {
         long trick = 0;
         for (int i = 0; i < steps; ++i) {
             final UpdateStrategy st = f.make();
-            TestValues.Builder b = st.baseBuilder();
+            TstValues.Builder b = st.baseBuilder();
             b.add(ra.nextInt(max));
             b.done();
             b = st.addBuilder();
@@ -351,15 +352,15 @@ public class UpdatePerformanceTest {
     final static boolean runIndexParallel = true;
     final static boolean runIndexSequential = false;
     final static boolean runRspBitmap = true;
-    static final TestValues.Config configs[] = {TestValues.dense}; // { TestValues.sparse, TestValues.dense,
-                                                                   // TestValues.asymmetric };
+    static final TstValues.Config configs[] = {TstValues.dense}; // { TstValues.sparse, TstValues.dense,
+                                                                   // TstValues.asymmetric };
     final static boolean doCrc32Check = true;
 
     static final String me = UpdatePerformanceTest.class.getSimpleName();
     static final double s2ns = 1e9;
 
     static void runStep(
-            final TestValues.Config c, final int sn, final UpdateStrategy[] ss, final int[][] rs,
+            final TstValues.Config c, final int sn, final UpdateStrategy[] ss, final int[][] rs,
             final String stepName, final int sz, final int runs, final boolean check, final boolean print) {
         final Runtime rt = Runtime.getRuntime();
         System.out.println(me + ": Running " + c.name + " " + stepName + " sz=" + nf(sz));
@@ -419,18 +420,18 @@ public class UpdatePerformanceTest {
     }
 
     // Having separate warmup and full methods helps separate them in JProfiler.
-    static void runStepWarmup(final TestValues.Config c, final int sn, final UpdateStrategy ss[], final int[][] rs,
+    static void runStepWarmup(final TstValues.Config c, final int sn, final UpdateStrategy ss[], final int[][] rs,
             final int sz, final int runs) {
         runStep(c, sn, ss, rs, "warmup", sz, runs, false, false);
     }
 
-    static void runStepFull(final TestValues.Config c, final int sn, final UpdateStrategy ss[], final int[][] rs,
+    static void runStepFull(final TstValues.Config c, final int sn, final UpdateStrategy ss[], final int[][] rs,
             final int sz, final int runs, final boolean check) {
         runStep(c, sn, ss, rs, "full test", sz, runs, check, true);
     }
 
     static void run(
-            final TestValues.Config c, final int sn, final UpdateStrategy[] ss, final int[][] rs,
+            final TstValues.Config c, final int sn, final UpdateStrategy[] ss, final int[][] rs,
             final int warmupSz, final int warmupRuns, final int fullSz, final int fullRuns, final boolean check) {
         runStepWarmup(c, sn, ss, rs, warmupSz, warmupRuns);
         runStepFull(c, sn, ss, rs, fullSz, fullRuns, check);
@@ -472,7 +473,7 @@ public class UpdatePerformanceTest {
         final int warmupRuns = 200;
         final int fullSz = 50 * 1000 * 1000;
         final int fullRuns = 40;
-        for (TestValues.Config c : configs) {
+        for (TstValues.Config c : configs) {
             run(c, sn, ss, rs, warmupSz, warmupRuns, fullSz, fullRuns, doCrc32Check);
         }
     }

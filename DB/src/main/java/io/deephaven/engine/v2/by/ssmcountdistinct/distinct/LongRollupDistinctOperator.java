@@ -9,7 +9,7 @@ package io.deephaven.engine.v2.by.ssmcountdistinct.distinct;
 
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.impl.RowSetFactory;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.updategraph.UpdateCommitter;

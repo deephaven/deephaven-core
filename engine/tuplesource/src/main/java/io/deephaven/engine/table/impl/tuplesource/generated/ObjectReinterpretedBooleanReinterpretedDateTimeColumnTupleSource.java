@@ -1,8 +1,10 @@
 package io.deephaven.engine.table.impl.tuplesource.generated;
 
 import io.deephaven.datastructures.util.SmartKey;
-import io.deephaven.engine.chunk.Attributes;
+import io.deephaven.engine.chunk.Attributes.Values;
+import io.deephaven.engine.chunk.ByteChunk;
 import io.deephaven.engine.chunk.Chunk;
+import io.deephaven.engine.chunk.LongChunk;
 import io.deephaven.engine.chunk.ObjectChunk;
 import io.deephaven.engine.chunk.WritableChunk;
 import io.deephaven.engine.chunk.WritableObjectChunk;
@@ -136,11 +138,11 @@ public class ObjectReinterpretedBooleanReinterpretedDateTimeColumnTupleSource ex
     }
 
     @Override
-    protected void convertChunks(@NotNull WritableChunk<? super Attributes.Values> destination, int chunkSize, Chunk<Attributes.Values> [] chunks) {
-        WritableObjectChunk<ObjectByteLongTuple, ? super Attributes.Values> destinationObjectChunk = destination.asWritableObjectChunk();
-        ObjectChunk<Object, Attributes.Values> chunk1 = chunks[0].asObjectChunk();
-        ByteChunk<Attributes.Values> chunk2 = chunks[1].asByteChunk();
-        LongChunk<Attributes.Values> chunk3 = chunks[2].asLongChunk();
+    protected void convertChunks(@NotNull WritableChunk<? super Values> destination, int chunkSize, Chunk<Values> [] chunks) {
+        WritableObjectChunk<ObjectByteLongTuple, ? super Values> destinationObjectChunk = destination.asWritableObjectChunk();
+        ObjectChunk<Object, Values> chunk1 = chunks[0].asObjectChunk();
+        ByteChunk<Values> chunk2 = chunks[1].asByteChunk();
+        LongChunk<Values> chunk3 = chunks[2].asLongChunk();
         for (int ii = 0; ii < chunkSize; ++ii) {
             destinationObjectChunk.set(ii, new ObjectByteLongTuple(chunk1.get(ii), chunk2.get(ii), chunk3.get(ii)));
         }

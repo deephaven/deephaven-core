@@ -6,7 +6,6 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
-import io.deephaven.engine.rowset.impl.GroupingRowSetHelper;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.v2.sources.ObjectArraySource;
@@ -52,7 +51,6 @@ public class GroupingUtil {
                             @Override
                             public long[] apply(@NotNull final Map.Entry<TYPE, RowSet> entry) {
                                 final RowSet rowSet = entry.getValue();
-                                Assert.instanceOf(rowSet, "rowSet", GroupingRowSetHelper.class);
                                 Assert.gt(rowSet.firstRowKey(), "rowSet.firstRowKey()", prevLastKey, "prevLastKey");
                                 prevLastKey = rowSet.lastRowKey();
                                 return new long[]{currentSize, currentSize += rowSet.size()};

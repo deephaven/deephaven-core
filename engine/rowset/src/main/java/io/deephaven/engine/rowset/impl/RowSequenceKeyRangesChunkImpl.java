@@ -4,11 +4,9 @@
 
 package io.deephaven.engine.rowset.impl;
 
-import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetBuilderSequential;
+import io.deephaven.engine.rowset.*;
 import io.deephaven.util.datastructures.LongAbortableConsumer;
 import io.deephaven.util.datastructures.SizeException;
-import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.chunk.Attributes.OrderedRowKeys;
 import io.deephaven.engine.chunk.Attributes.OrderedRowKeyRanges;
@@ -46,7 +44,7 @@ public class RowSequenceKeyRangesChunkImpl implements RowSequence {
         this(backingChunkToOwn, backingChunkToOwn);
     }
 
-    static RowSequenceKeyRangesChunkImpl makeByTaking(
+    public static RowSequenceKeyRangesChunkImpl makeByTaking(
             final WritableLongChunk<Attributes.OrderedRowKeyRanges> backingChunkToOwn) {
         return new RowSequenceKeyRangesChunkImpl(backingChunkToOwn);
     }
@@ -55,7 +53,7 @@ public class RowSequenceKeyRangesChunkImpl implements RowSequence {
         this(backingChunk, null);
     }
 
-    static RowSequenceKeyRangesChunkImpl makeByWrapping(final LongChunk<OrderedRowKeyRanges> backingChunk) {
+    public static RowSequenceKeyRangesChunkImpl makeByWrapping(final LongChunk<OrderedRowKeyRanges> backingChunk) {
         return new RowSequenceKeyRangesChunkImpl(backingChunk);
     }
 

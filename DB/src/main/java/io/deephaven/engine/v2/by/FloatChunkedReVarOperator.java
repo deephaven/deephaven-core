@@ -13,7 +13,7 @@ import io.deephaven.engine.chunk.Attributes.ChunkPositions;
 import io.deephaven.engine.chunk.Attributes.RowKeys;
 import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.rowset.impl.RowSequenceFactory;
+import io.deephaven.engine.rowset.RowSequenceFactory;
 
 import java.util.Collections;
 import java.util.Map;

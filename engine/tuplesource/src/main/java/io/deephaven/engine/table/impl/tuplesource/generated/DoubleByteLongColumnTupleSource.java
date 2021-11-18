@@ -1,9 +1,11 @@
 package io.deephaven.engine.table.impl.tuplesource.generated;
 
 import io.deephaven.datastructures.util.SmartKey;
-import io.deephaven.engine.chunk.Attributes;
+import io.deephaven.engine.chunk.Attributes.Values;
+import io.deephaven.engine.chunk.ByteChunk;
 import io.deephaven.engine.chunk.Chunk;
-import io.deephaven.engine.chunk.ObjectChunk;
+import io.deephaven.engine.chunk.DoubleChunk;
+import io.deephaven.engine.chunk.LongChunk;
 import io.deephaven.engine.chunk.WritableChunk;
 import io.deephaven.engine.chunk.WritableObjectChunk;
 import io.deephaven.engine.table.ColumnSource;
@@ -133,11 +135,11 @@ public class DoubleByteLongColumnTupleSource extends AbstractTupleSource<DoubleB
     }
 
     @Override
-    protected void convertChunks(@NotNull WritableChunk<? super Attributes.Values> destination, int chunkSize, Chunk<Attributes.Values> [] chunks) {
-        WritableObjectChunk<DoubleByteLongTuple, ? super Attributes.Values> destinationObjectChunk = destination.asWritableObjectChunk();
-        DoubleChunk<Attributes.Values> chunk1 = chunks[0].asDoubleChunk();
-        ByteChunk<Attributes.Values> chunk2 = chunks[1].asByteChunk();
-        LongChunk<Attributes.Values> chunk3 = chunks[2].asLongChunk();
+    protected void convertChunks(@NotNull WritableChunk<? super Values> destination, int chunkSize, Chunk<Values> [] chunks) {
+        WritableObjectChunk<DoubleByteLongTuple, ? super Values> destinationObjectChunk = destination.asWritableObjectChunk();
+        DoubleChunk<Values> chunk1 = chunks[0].asDoubleChunk();
+        ByteChunk<Values> chunk2 = chunks[1].asByteChunk();
+        LongChunk<Values> chunk3 = chunks[2].asLongChunk();
         for (int ii = 0; ii < chunkSize; ++ii) {
             destinationObjectChunk.set(ii, new DoubleByteLongTuple(chunk1.get(ii), chunk2.get(ii), chunk3.get(ii)));
         }

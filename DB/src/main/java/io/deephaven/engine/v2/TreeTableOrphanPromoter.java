@@ -5,7 +5,7 @@ import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
-import io.deephaven.engine.rowset.impl.RowSetFactory;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
@@ -336,7 +336,7 @@ public class TreeTableOrphanPromoter implements Function.Unary<Table, Table> {
                                         prevIndex.remove(upstream.getModifiedPreShift());
                                     }
 
-                                    upstream.shifted().forAllInIndex(prevIndex, (key, shiftDelta) -> {
+                                    upstream.shifted().forAllInRowSet(prevIndex, (key, shiftDelta) -> {
                                         final Object oldParent = parentSource.getPrev(key);
                                         final Object newParent = parentSource.get(key + shiftDelta);
                                         if (oldParent != null && Objects.equals(oldParent, newParent)) {

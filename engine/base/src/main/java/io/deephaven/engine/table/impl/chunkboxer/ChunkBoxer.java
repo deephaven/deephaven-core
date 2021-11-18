@@ -57,7 +57,6 @@ public class ChunkBoxer {
         }
     }
 
-
     private static abstract class BoxerCommon implements ChunkBoxer.BoxerKernel {
         final WritableObjectChunk<Object, Attributes.Values> objectChunk;
 

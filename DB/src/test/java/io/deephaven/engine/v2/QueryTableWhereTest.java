@@ -4,7 +4,7 @@
 
 package io.deephaven.engine.v2;
 
-import io.deephaven.engine.exceptions.QueryCancellationException;
+import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.table.ShiftObliviousListener;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 import io.deephaven.engine.tables.SortingOrder;
@@ -806,7 +806,7 @@ public class QueryTableWhereTest {
         assertEquals(2_000_000, firstCounter.invokes);
         assertEquals(0, secondCounter.invokes);
         assertNotNull(caught);
-        assertEquals(QueryCancellationException.class, caught.getClass());
+        assertEquals(CancellationException.class, caught.getClass());
 
         QueryScope.addParam("firstCounter", null);
         QueryScope.addParam("secondCounter", null);
@@ -868,7 +868,7 @@ public class QueryTableWhereTest {
         assertTrue(slowCounter.invokedValues < 2_000_000L);
         assertEquals(1 << 20, slowCounter.invokedValues);
         assertNotNull(caught.getValue());
-        assertEquals(QueryCancellationException.class, caught.getValue().getClass());
+        assertEquals(CancellationException.class, caught.getValue().getClass());
 
         QueryScope.addParam("slowCounter", null);
     }

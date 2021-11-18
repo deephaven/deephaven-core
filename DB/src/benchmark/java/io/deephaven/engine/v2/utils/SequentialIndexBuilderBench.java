@@ -1,7 +1,7 @@
 package io.deephaven.engine.v2.utils;
 
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
-import io.deephaven.engine.rowset.impl.RowSetFactory;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.impl.rsp.RspBitmap;
 import io.deephaven.benchmarking.BenchUtil;
 import org.openjdk.jmh.annotations.*;

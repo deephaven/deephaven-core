@@ -6,6 +6,7 @@ package io.deephaven.engine.table;
 
 import io.deephaven.base.Function;
 import io.deephaven.engine.liveness.LivenessNode;
+import io.deephaven.engine.table.impl.TableMapFunctionAdapter;
 
 import java.util.Map.Entry;
 import java.util.function.BiFunction;

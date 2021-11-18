@@ -4,15 +4,17 @@
 
 package io.deephaven.engine.rowset.impl;
 
+import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
-import io.deephaven.engine.v2.sources.LogicalClock;
+import io.deephaven.engine.updategraph.LogicalClock;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.io.ObjectInput;
+import java.util.function.Function;
 
-public class TrackingWritableRowSetImpl extends GroupingRowSetHelper {
+public class TrackingWritableRowSetImpl extends WritableRowSetImpl implements TrackingWritableRowSet {
 
     private transient OrderedLongSet prevInnerSet;
     /**
@@ -21,6 +23,7 @@ public class TrackingWritableRowSetImpl extends GroupingRowSetHelper {
      */
     private transient volatile long changeTimeStep;
 
+    private transient volatile TrackingRowSet.Indexer indexer;
 
     public TrackingWritableRowSetImpl() {
         this(OrderedLongSet.EMPTY);
@@ -30,11 +33,6 @@ public class TrackingWritableRowSetImpl extends GroupingRowSetHelper {
         super(innerSet);
         this.prevInnerSet = OrderedLongSet.EMPTY;
         changeTimeStep = -1;
-    }
-
-    @Override
-    public void preMutationHook() {
-        checkAndGetPrev();
     }
 
     private OrderedLongSet checkAndGetPrev() {
@@ -54,6 +52,36 @@ public class TrackingWritableRowSetImpl extends GroupingRowSetHelper {
     }
 
     @Override
+    public <INDEXER_TYPE extends TrackingRowSet.Indexer> INDEXER_TYPE indexer(
+            @NotNull final Function<TrackingRowSet, INDEXER_TYPE> indexerFactory) {
+        // noinspection unchecked
+        INDEXER_TYPE localIndexer = (INDEXER_TYPE) indexer;
+        if (localIndexer == null) {
+            synchronized (this) {
+                // noinspection unchecked
+                localIndexer = (INDEXER_TYPE) indexer;
+                if (localIndexer == null) {
+                    indexer = localIndexer = indexerFactory.apply(this);
+                }
+            }
+        }
+        return localIndexer;
+    }
+
+    @Override
+    public void preMutationHook() {
+        checkAndGetPrev();
+    }
+
+    @Override
+    protected void postMutationHook() {
+        final TrackingRowSet.Indexer localIndexer = indexer;
+        if (localIndexer != null) {
+            localIndexer.rowSetChanged();
+        }
+    }
+
+    @Override
     public TrackingWritableRowSet toTracking() {
         throw new UnsupportedOperationException("Already tracking! You must copy() before toTracking()");
     }
@@ -63,6 +91,7 @@ public class TrackingWritableRowSetImpl extends GroupingRowSetHelper {
         prevInnerSet.ixRelease();
         prevInnerSet = null; // Force NPE on use after tracking
         changeTimeStep = -1;
+        indexer = null;
         super.close();
     }
 

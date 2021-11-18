@@ -6,9 +6,9 @@ import io.deephaven.engine.rowset.RowSetBuilderRandom;
 /**
  * {@link RowSetBuilderRandom} implementation that uses an adaptive pattern based on workload.
  */
-class AdaptiveRowSetBuilderRandom implements RowSetBuilderRandom {
+public class AdaptiveRowSetBuilderRandom implements RowSetBuilderRandom {
 
-    private final AdaptiveOrderedLongSetBuilderRandom builder = new AdaptiveOrderedLongSetBuilderRandom();
+    private final OrderedLongSet.BuilderRandom builder = new AdaptiveOrderedLongSetBuilderRandom();
 
     @Override
     public WritableRowSet build() {

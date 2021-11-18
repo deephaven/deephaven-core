@@ -9,7 +9,7 @@ import io.deephaven.engine.chunk.WritableChunk;
 import io.deephaven.engine.chunk.WritableIntChunk;
 import io.deephaven.engine.chunk.WritableLongChunk;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.rowset.impl.RowSequenceFactory;
+import io.deephaven.engine.rowset.RowSequenceFactory;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.jetbrains.annotations.NotNull;

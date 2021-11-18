@@ -1,8 +1,9 @@
 package io.deephaven.engine.table.impl.tuplesource.generated;
 
 import io.deephaven.datastructures.util.SmartKey;
-import io.deephaven.engine.chunk.Attributes;
+import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.chunk.Chunk;
+import io.deephaven.engine.chunk.FloatChunk;
 import io.deephaven.engine.chunk.ObjectChunk;
 import io.deephaven.engine.chunk.WritableChunk;
 import io.deephaven.engine.chunk.WritableObjectChunk;
@@ -116,10 +117,10 @@ public class DateTimeFloatColumnTupleSource extends AbstractTupleSource<LongFloa
         throw new IllegalArgumentException("Bad elementIndex for 2 element tuple: " + elementIndex);
     }
 
-    protected void convertChunks(@NotNull WritableChunk<? super Attributes.Values> destination, int chunkSize, Chunk<Attributes.Values> [] chunks) {
-        WritableObjectChunk<LongFloatTuple, ? super Attributes.Values> destinationObjectChunk = destination.asWritableObjectChunk();
-        ObjectChunk<DateTime, Attributes.Values> chunk1 = chunks[0].asObjectChunk();
-        FloatChunk<Attributes.Values> chunk2 = chunks[1].asFloatChunk();
+    protected void convertChunks(@NotNull WritableChunk<? super Values> destination, int chunkSize, Chunk<Values> [] chunks) {
+        WritableObjectChunk<LongFloatTuple, ? super Values> destinationObjectChunk = destination.asWritableObjectChunk();
+        ObjectChunk<DateTime, Values> chunk1 = chunks[0].asObjectChunk();
+        FloatChunk<Values> chunk2 = chunks[1].asFloatChunk();
         for (int ii = 0; ii < chunkSize; ++ii) {
             destinationObjectChunk.set(ii, new LongFloatTuple(DateTimeUtils.nanos(chunk1.get(ii)), chunk2.get(ii)));
         }

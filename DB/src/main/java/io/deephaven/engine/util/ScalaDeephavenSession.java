@@ -4,7 +4,7 @@
 
 package io.deephaven.engine.util;
 
-import io.deephaven.engine.exceptions.QueryCancellationException;
+import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.tables.select.QueryScope;
 import io.deephaven.engine.util.scripts.ScriptPathLoader;
@@ -148,7 +148,7 @@ public class ScalaDeephavenSession extends AbstractScriptSession implements Scri
             result = UpdateGraphProcessor.DEFAULT.exclusiveLock()
                     .computeLockedInterruptibly(() -> interpreter.interpret(command));
         } catch (InterruptedException e) {
-            throw new QueryCancellationException(e.getMessage() != null ? e.getMessage() : "Query interrupted", e);
+            throw new CancellationException(e.getMessage() != null ? e.getMessage() : "Query interrupted", e);
         }
 
         if (!(result instanceof Results.Success$)) {

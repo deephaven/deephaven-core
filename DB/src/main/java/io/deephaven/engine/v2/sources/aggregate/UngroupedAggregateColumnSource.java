@@ -3,7 +3,7 @@ package io.deephaven.engine.v2.sources.aggregate;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.rowset.impl.RowSequenceFactory;
+import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.v2.sources.UngroupedColumnSource;
 import io.deephaven.engine.chunk.Attributes.Any;

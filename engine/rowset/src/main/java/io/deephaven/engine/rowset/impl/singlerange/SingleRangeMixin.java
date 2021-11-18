@@ -1,6 +1,6 @@
 package io.deephaven.engine.rowset.impl.singlerange;
 
-import io.deephaven.engine.rowset.impl.RowSequenceFactory;
+import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.util.datastructures.LongAbortableConsumer;
 import io.deephaven.util.datastructures.LongRangeAbortableConsumer;
 import io.deephaven.engine.rowset.RowSequence;

@@ -12,7 +12,7 @@ import io.deephaven.engine.v2.sources.regioned.RegionedColumnSource;
 import io.deephaven.engine.v2.sources.regioned.RegionedPageStore;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
-import io.deephaven.engine.rowset.impl.RowSetFactory;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.parquet.ColumnChunkReader;
 import io.deephaven.parquet.ParquetFileReader;
 import io.deephaven.parquet.RowGroupReader;
