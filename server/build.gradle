@@ -1,0 +1,42 @@
+plugins {
+    id 'java-library'
+}
+
+dependencies {
+    implementation project(':engine-table')
+    implementation project(':extensions-csv')
+    implementation project(':extensions-parquet-table')
+    implementation project(':Util');
+    implementation project(':java-client-barrage-dagger')
+    implementation project(':proto:proto-backplane-grpc-flight')
+    implementation project(':open-api-lang-tools')
+    implementation project(':log-factory')
+    implementation project(':application-mode')
+    implementation 'com.github.f4b6a3:uuid-creator:3.6.0'
+
+
+    Classpaths.inheritFlatbuffer(project, 'implementation')
+
+    Classpaths.inheritDagger(project)
+    Classpaths.inheritDagger(project, /* test */ true)
+
+    implementation project(':Plot')
+
+    implementation project(':ClientSupport')
+
+    if ('true' == project.findProperty('extensions.classgraph.enabled')) {
+        runtimeOnly project(':extensions-classgraph')
+    }
+    if ('true' == project.findProperty('extensions.suanshu.enabled')) {
+        runtimeOnly project(':extensions-suanshu')
+    }
+
+    testCompile TestTools.projectDependency(project, 'engine-table'),
+            TestTools.projectDependency(project, 'Util')
+
+    runtimeOnly project(':Numerics'), project(':Integrations'), project(':extensions-kafka')
+    Classpaths.inheritAssertJ(project)
+
+    testRuntimeOnly project(':log-to-slf4j')
+    Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
+}

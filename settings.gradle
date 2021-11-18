@@ -8,11 +8,23 @@ rootProject.name='Deephaven Community Core'
 
 String[] bins = ['configs', 'test-configs' ]
 
-String[] mods = [ 'Util', 'Numerics', 'TableLogger', 'Plot',
-        'CompilerTools', 'Generators',
-        'Integrations', 'ModelFarm', 'ClientSupport',
-        'BenchmarkSupport', 'python-engine-test', 'Parquet',
-        'grpc-api', 'table-api', 'qst']
+String[] mods = [
+        'Util',
+        'Numerics',
+        'TableLogger',
+        'Plot',
+        'CompilerTools',
+        'Generators',
+        'Integrations',
+        'ModelFarm',
+        'ClientSupport',
+        'BenchmarkSupport',
+        'python-engine-test',
+        'Parquet',
+        'grpc-api',
+        'server',
+        'table-api',
+        'qst']
 
         // new web projects; these modules are intended to form a complete, modular web application,
         // with heavy dependency isolation that should enable very fast rebuilds.
