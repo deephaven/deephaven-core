@@ -241,7 +241,9 @@ public class MatchFilter extends SelectFilterImpl {
                     @Override
                     Object convertStringLiteral(String str) {
                         if (str.length() > 1) {
-                            if (str.length() == 3 && str.charAt(0) == '\'' && str.charAt(2) == '\'') {
+                            // TODO: #1517 Allow escaping of chars
+                            if (str.length() == 3 && ((str.charAt(0) == '\'' && str.charAt(2) == '\'')
+                                    || (str.charAt(0) == '"' && str.charAt(2) == '"'))) {
                                 return str.charAt(1);
                             } else {
                                 throw new IllegalArgumentException(
