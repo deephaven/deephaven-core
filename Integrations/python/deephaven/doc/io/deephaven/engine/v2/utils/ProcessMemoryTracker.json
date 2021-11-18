@@ -1,9 +1,9 @@
 {
- "className": "io.deephaven.engine.v2.utils.ProcessMemoryTracker",
+ "className": "io.deephaven.engine.table.impl.utils.ProcessMemoryTracker",
  "methods": {
-  "getInstance": ":return: io.deephaven.engine.v2.utils.ProcessMemoryTracker",
-  "getQueryTable": ":return: io.deephaven.engine.v2.QueryTable"
+  "getInstance": ":return: io.deephaven.engine.table.impl.utils.ProcessMemoryTracker",
+  "getQueryTable": ":return: io.deephaven.engine.table.impl.QueryTable"
  },
- "path": "io.deephaven.engine.v2.utils.ProcessMemoryTracker",
+ "path": "io.deephaven.engine.table.impl.utils.ProcessMemoryTracker",
  "typeName": "class"
 }

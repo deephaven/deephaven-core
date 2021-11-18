@@ -1,9 +1,9 @@
 {
- "className": "io.deephaven.engine.v2.utils.ShiftInversionHelper",
+ "className": "io.deephaven.engine.table.impl.utils.ShiftInversionHelper",
  "methods": {
   "mapToPrevKeyspace": "Converts post-keyspace key to pre-keyspace key. It expects to be invoked in ascending key order.\n\n:param key: long\n:param isEnd: boolean\n:return: long"
  },
- "path": "io.deephaven.engine.v2.utils.ShiftInversionHelper",
+ "path": "io.deephaven.engine.table.impl.utils.ShiftInversionHelper",
  "text": "Helper utility for inverting row key shifts.",
  "typeName": "class"
 }

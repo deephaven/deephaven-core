@@ -1,10 +1,10 @@
 {
- "className": "io.deephaven.engine.v2.remote.DeltaUpdates",
+ "className": "io.deephaven.engine.table.impl.remote.DeltaUpdates",
  "methods": {
-  "asUpdate": ":param modified: io.deephaven.engine.v2.utils.RowSet\n:param mcs: io.deephaven.engine.v2.ModifiedColumnSet\n:return: io.deephaven.engine.v2.Listener.Update",
-  "clone": ":return: io.deephaven.engine.v2.remote.DeltaUpdates",
+  "asUpdate": ":param modified: io.deephaven.engine.table.impl.utils.RowSet\n:param mcs: io.deephaven.engine.table.impl.ModifiedColumnSet\n:return: io.deephaven.engine.table.impl.Listener.Update",
+  "clone": ":return: io.deephaven.engine.table.impl.remote.DeltaUpdates",
   "toString": ":return: java.lang.String"
  },
- "path": "io.deephaven.engine.v2.remote.DeltaUpdates",
+ "path": "io.deephaven.engine.table.impl.remote.DeltaUpdates",
  "typeName": "class"
 }

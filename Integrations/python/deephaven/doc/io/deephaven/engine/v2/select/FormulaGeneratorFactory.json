@@ -1,8 +1,8 @@
 {
- "className": "io.deephaven.engine.v2.select.FormulaGeneratorFactory",
+ "className": "io.deephaven.engine.table.impl.select.FormulaGeneratorFactory",
  "methods": {
-  "forFormula": ":param formulaString: java.lang.String\n:param columnName: java.lang.String\n:return: io.deephaven.engine.v2.select.FormulaGenerator"
+  "forFormula": ":param formulaString: java.lang.String\n:param columnName: java.lang.String\n:return: io.deephaven.engine.table.impl.select.FormulaGenerator"
  },
- "path": "io.deephaven.engine.v2.select.FormulaGeneratorFactory",
+ "path": "io.deephaven.engine.table.impl.select.FormulaGeneratorFactory",
  "typeName": "interface"
 }

@@ -1,11 +1,11 @@
 {
- "className": "io.deephaven.engine.v2.utils.UpdatePerformanceTracker",
+ "className": "io.deephaven.engine.table.impl.utils.UpdatePerformanceTracker",
  "methods": {
-  "getEntry": "Get a new entry to track the performance characteristics of a single recurring update event.\n\n:param description: (java.lang.String) - log entry description\n:return: (io.deephaven.engine.v2.utils.UpdatePerformanceTracker.Entry) UpdatePerformanceTracker.Entry",
-  "getInstance": ":return: io.deephaven.engine.v2.utils.UpdatePerformanceTracker",
-  "getQueryTable": ":return: io.deephaven.engine.v2.QueryTable"
+  "getEntry": "Get a new entry to track the performance characteristics of a single recurring update event.\n\n:param description: (java.lang.String) - log entry description\n:return: (io.deephaven.engine.table.impl.utils.UpdatePerformanceTracker.Entry) UpdatePerformanceTracker.Entry",
+  "getInstance": ":return: io.deephaven.engine.table.impl.utils.UpdatePerformanceTracker",
+  "getQueryTable": ":return: io.deephaven.engine.table.impl.QueryTable"
  },
- "path": "io.deephaven.engine.v2.utils.UpdatePerformanceTracker",
+ "path": "io.deephaven.engine.table.impl.utils.UpdatePerformanceTracker",
  "text": "This tool is meant to track periodic update events that take place in an UpdateGraphProcessor. This generally\n includes:\n \n* Update source run() invocations\n* Table ShiftObliviousListener notifications (see ShiftObliviousInstrumentedListener)\n* Table Listener notifications (see\n InstrumentedListener)\n\n (1)",
  "typeName": "class"
 }

@@ -7,14 +7,14 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.tables.SortingOrder;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.v2.BaseTable;
+import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.ModifiedColumnSet;
-import io.deephaven.engine.v2.sortcheck.SortCheck;
+import io.deephaven.engine.table.impl.sortcheck.SortCheck;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.chunk.Chunk;
 import io.deephaven.engine.table.ChunkSource;
-import io.deephaven.engine.v2.utils.*;
+import io.deephaven.engine.table.impl.utils.*;
 import io.deephaven.engine.rowset.RowSequence;
 
 public class SortedAssertionInstrumentedListenerAdapter extends BaseTable.ListenerImpl {

@@ -11,7 +11,7 @@ import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.process.ProcessEnvironment;
-import io.deephaven.engine.v2.NotificationStepSource;
+import io.deephaven.engine.table.impl.NotificationStepSource;
 import io.deephaven.util.FunctionalInterfaces;
 
 import java.util.ArrayDeque;

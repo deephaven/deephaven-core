@@ -1,9 +1,9 @@
 {
- "className": "io.deephaven.engine.v2.sort.megamerge.ObjectLongMegaMergeDescendingKernel",
+ "className": "io.deephaven.engine.table.impl.sort.megamerge.ObjectLongMegaMergeDescendingKernel",
  "methods": {
-  "createContext": ":return: io.deephaven.engine.v2.sort.megamerge.ObjectLongMegaMergeDescendingKernel.ObjectLongMegaMergeDescendingKernelContext<ATTR,KEY_INDICES>",
-  "merge": ":param destinationKeys: io.deephaven.engine.v2.sources.LongArraySource\n:param destinationValues: io.deephaven.engine.v2.sources.ObjectArraySource\n:param destinationOffset: long\n:param destinationSize: long\n:param keysChunk: io.deephaven.engine.chunk.LongChunk<KEY_INDICES>\n:param valuesChunk: io.deephaven.engine.chunk.ObjectChunk<java.lang.Object,ATTR>"
+  "createContext": ":return: io.deephaven.engine.table.impl.sort.megamerge.ObjectLongMegaMergeDescendingKernel.ObjectLongMegaMergeDescendingKernelContext<ATTR,KEY_INDICES>",
+  "merge": ":param destinationKeys: io.deephaven.engine.table.impl.sources.LongArraySource\n:param destinationValues: io.deephaven.engine.table.impl.sources.ObjectArraySource\n:param destinationOffset: long\n:param destinationSize: long\n:param keysChunk: io.deephaven.engine.chunk.LongChunk<KEY_INDICES>\n:param valuesChunk: io.deephaven.engine.chunk.ObjectChunk<java.lang.Object,ATTR>"
  },
- "path": "io.deephaven.engine.v2.sort.megamerge.ObjectLongMegaMergeDescendingKernel",
+ "path": "io.deephaven.engine.table.impl.sort.megamerge.ObjectLongMegaMergeDescendingKernel",
  "typeName": "class"
 }

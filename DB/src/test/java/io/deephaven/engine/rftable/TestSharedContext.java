@@ -1,20 +1,20 @@
 package io.deephaven.engine.rftable;
 
-import static io.deephaven.engine.v2.TstUtils.getTable;
+import static io.deephaven.engine.table.impl.TstUtils.getTable;
 
 import io.deephaven.engine.table.ResettableContext;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.v2.QueryTable;
-import io.deephaven.engine.v2.TstUtils;
+import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.TstUtils;
 import joptsimple.internal.Strings;
 import org.junit.Test;
 
 import java.util.Random;
 import java.util.function.Consumer;
 
-import static io.deephaven.engine.v2.TstUtils.initColumnInfos;
+import static io.deephaven.engine.table.impl.TstUtils.initColumnInfos;
 import static org.junit.Assert.*;
 
 public class TestSharedContext {

@@ -15,7 +15,7 @@ import io.deephaven.engine.plot.filters.SelectableDataSetSwappableTable;
 import io.deephaven.engine.plot.util.ArgumentValidations;
 import io.deephaven.engine.plot.util.tables.SwappableTable;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.v2.BaseTable;
+import io.deephaven.engine.table.impl.BaseTable;
 
 import java.util.Collection;
 

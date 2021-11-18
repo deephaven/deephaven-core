@@ -7,7 +7,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.util.QueryConstants;
-import io.deephaven.engine.v2.sources.FloatArraySource;
+import io.deephaven.engine.table.impl.sources.FloatArraySource;
 import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.chunk.Chunk;
 import org.jetbrains.annotations.Nullable;

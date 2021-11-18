@@ -1,5 +1,5 @@
 {
- "className": "io.deephaven.engine.v2.utils.PerformanceQueries",
+ "className": "io.deephaven.engine.table.impl.utils.PerformanceQueries",
  "methods": {
   "approxRatio": ":param v0: long\n:param v1: long\n:return: float",
   "processInfo": "Gets the information for a process.\n\n:param processInfoId: (java.lang.String) - id\n:param type: (java.lang.String) - type\n:param key: (java.lang.String) - key\n:return: (java.lang.String) process information",
@@ -9,6 +9,6 @@
   "queryUpdatePerformance": "Takes in a query id and returns a view for that query's update performance data.\n\n:param evaluationNumber: (long) - evaluation number\n:return: (io.deephaven.engine.table.Table) query update performance table.",
   "queryUpdatePerformanceMap": "Creates a map of query update performance tables.\n\n:param evaluationNumber: (long) - evaluation number\n:return: (java.util.Map<java.lang.String,io.deephaven.engine.table.Table>) map of query update performance tables."
  },
- "path": "io.deephaven.engine.v2.utils.PerformanceQueries",
+ "path": "io.deephaven.engine.table.impl.utils.PerformanceQueries",
  "typeName": "class"
 }

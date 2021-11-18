@@ -46,7 +46,7 @@ def _defineSymbols():
     if _java_type_ is None:
         # This will raise an exception if the desired object is not the classpath
         _java_type_ = jpy.get_type("io.deephaven.kafka.KafkaTools")
-        _stream_table_tools_ = jpy.get_type("io.deephaven.engine.v2.StreamTableTools")
+        _stream_table_tools_ = jpy.get_type("io.deephaven.engine.table.impl.StreamTableTools")
         _avro_schema_jtype_ = jpy.get_type("org.apache.avro.Schema")
         _consume_jtype_= jpy.get_type("io.deephaven.kafka.KafkaTools$Consume")
         SEEK_TO_BEGINNING = getattr(_java_type_, 'SEEK_TO_BEGINNING')

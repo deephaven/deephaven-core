@@ -1,6 +1,6 @@
 {
- "className": "io.deephaven.engine.v2.sources.AbstractColumnSource$DefaultedImmutable",
+ "className": "io.deephaven.engine.table.impl.sources.AbstractColumnSource$DefaultedImmutable",
  "methods": {},
- "path": "io.deephaven.engine.v2.sources.AbstractColumnSource.DefaultedImmutable",
+ "path": "io.deephaven.engine.table.impl.sources.AbstractColumnSource.DefaultedImmutable",
  "typeName": "class"
 }

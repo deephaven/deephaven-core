@@ -5,7 +5,7 @@
 package io.deephaven.engine.tables.libs;
 
 import com.github.f4b6a3.uuid.UuidCreator;
-import io.deephaven.engine.v2.utils.codegen.CodeGenerator;
+import io.deephaven.engine.table.impl.utils.codegen.CodeGenerator;
 import groovy.lang.GroovyClassLoader;
 import io.deephaven.util.annotations.VisibleForTesting;
 

@@ -5,7 +5,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.tables.select.QueryScope;
 import io.deephaven.engine.tables.utils.TableTools;
-import io.deephaven.engine.v2.select.IncrementalReleaseFilter;
+import io.deephaven.engine.table.impl.select.IncrementalReleaseFilter;
 import io.deephaven.test.junit4.EngineCleanup;
 import io.deephaven.test.types.ParallelTest;
 import org.junit.Rule;

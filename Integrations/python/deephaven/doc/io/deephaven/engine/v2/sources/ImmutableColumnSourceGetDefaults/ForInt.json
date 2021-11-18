@@ -1,7 +1,7 @@
 {
- "className": "io.deephaven.engine.v2.sources.ImmutableColumnSourceGetDefaults$ForInt",
+ "className": "io.deephaven.engine.table.impl.sources.ImmutableColumnSourceGetDefaults$ForInt",
  "methods": {},
- "path": "io.deephaven.engine.v2.sources.ImmutableColumnSourceGetDefaults.ForInt",
+ "path": "io.deephaven.engine.table.impl.sources.ImmutableColumnSourceGetDefaults.ForInt",
  "text": "Default interface for immutable int ColumnSource implementations.",
  "typeName": "interface"
 }

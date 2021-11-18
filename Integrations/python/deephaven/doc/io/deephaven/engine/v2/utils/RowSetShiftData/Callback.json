@@ -1,8 +1,8 @@
 {
- "className": "io.deephaven.engine.v2.utils.RowSetShiftData$Callback",
+ "className": "io.deephaven.engine.table.impl.utils.RowSetShiftData$Callback",
  "methods": {
   "shift": "Process the shift.\n\n:param beginRange: (long) - start of range (inclusive)\n:param endRange: (long) - end of range (inclusive)\n:param shiftDelta: (long) - amount range has moved by"
  },
- "path": "io.deephaven.engine.v2.utils.RowSetShiftData.Callback",
+ "path": "io.deephaven.engine.table.impl.utils.RowSetShiftData.Callback",
  "typeName": "interface"
 }

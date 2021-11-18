@@ -1,8 +1,8 @@
 {
- "className": "io.deephaven.engine.v2.select.setinclusion.IntSetInclusionKernel",
+ "className": "io.deephaven.engine.table.impl.select.setinclusion.IntSetInclusionKernel",
  "methods": {
   "matchValues": ":param values: io.deephaven.engine.chunk.Chunk<io.deephaven.engine.chunk.Attributes.Values>\n:param matches: io.deephaven.engine.chunk.WritableBooleanChunk"
  },
- "path": "io.deephaven.engine.v2.select.setinclusion.IntSetInclusionKernel",
+ "path": "io.deephaven.engine.table.impl.select.setinclusion.IntSetInclusionKernel",
  "typeName": "class"
 }

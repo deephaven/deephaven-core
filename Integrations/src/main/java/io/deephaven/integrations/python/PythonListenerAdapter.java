@@ -6,7 +6,7 @@ package io.deephaven.integrations.python;
 
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
-import io.deephaven.engine.v2.InstrumentedTableUpdateListenerAdapter;
+import io.deephaven.engine.table.impl.InstrumentedTableUpdateListenerAdapter;
 import io.deephaven.util.annotations.ScriptApi;
 import org.jpy.PyObject;
 

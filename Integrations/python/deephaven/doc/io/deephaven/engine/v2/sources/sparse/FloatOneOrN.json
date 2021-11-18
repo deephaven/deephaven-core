@@ -1,6 +1,6 @@
 {
- "className": "io.deephaven.engine.v2.sources.sparse.FloatOneOrN",
+ "className": "io.deephaven.engine.table.impl.sources.sparse.FloatOneOrN",
  "methods": {},
- "path": "io.deephaven.engine.v2.sources.sparse.FloatOneOrN",
+ "path": "io.deephaven.engine.table.impl.sources.sparse.FloatOneOrN",
  "typeName": "class"
 }

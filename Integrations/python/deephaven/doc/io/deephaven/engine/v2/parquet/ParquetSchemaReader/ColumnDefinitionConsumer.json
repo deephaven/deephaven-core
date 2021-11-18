@@ -1,8 +1,8 @@
 {
- "className": "io.deephaven.engine.v2.parquet.ParquetSchemaReader$ColumnDefinitionConsumer",
+ "className": "io.deephaven.engine.table.impl.parquet.ParquetSchemaReader$ColumnDefinitionConsumer",
  "methods": {
-  "accept": ":param def: io.deephaven.engine.v2.parquet.ParquetSchemaReader.ParquetMessageDefinition"
+  "accept": ":param def: io.deephaven.engine.table.impl.parquet.ParquetSchemaReader.ParquetMessageDefinition"
  },
- "path": "io.deephaven.engine.v2.parquet.ParquetSchemaReader.ColumnDefinitionConsumer",
+ "path": "io.deephaven.engine.table.impl.parquet.ParquetSchemaReader.ColumnDefinitionConsumer",
  "typeName": "interface"
 }

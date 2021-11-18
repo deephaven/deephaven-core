@@ -1,8 +1,8 @@
 {
- "className": "io.deephaven.engine.v2.sources.regioned.ColumnRegionChar$Null",
+ "className": "io.deephaven.engine.table.impl.sources.regioned.ColumnRegionChar$Null",
  "methods": {
   "getChar": "Get a single char from this region.\n\n:param elementIndex: (long) - Element (char) rowSet in the table's address space\n:return: (char) The char value at the specified element (char) rowSet"
  },
- "path": "io.deephaven.engine.v2.sources.regioned.ColumnRegionChar.Null",
+ "path": "io.deephaven.engine.table.impl.sources.regioned.ColumnRegionChar.Null",
  "typeName": "class"
 }

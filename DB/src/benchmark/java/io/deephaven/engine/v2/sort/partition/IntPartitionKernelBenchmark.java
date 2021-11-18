@@ -1,11 +1,11 @@
 /* ---------------------------------------------------------------------------------------------------------------------
  * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharPartitionKernelBenchmark and regenerate
  * ------------------------------------------------------------------------------------------------------------------ */
-package io.deephaven.engine.v2.sort.partition;
+package io.deephaven.engine.table.impl.sort.partition;
 
 import io.deephaven.engine.tuple.generated.IntLongTuple;
-import io.deephaven.engine.v2.sort.timsort.BaseTestIntTimSortKernel;
-import io.deephaven.engine.v2.sort.timsort.TestTimSortKernel;
+import io.deephaven.engine.table.impl.sort.timsort.BaseTestIntTimSortKernel;
+import io.deephaven.engine.table.impl.sort.timsort.TestTimSortKernel;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;

@@ -1,5 +1,5 @@
 {
- "className": "io.deephaven.engine.v2.utils.IntColumnSourceMutableRowRedirection",
+ "className": "io.deephaven.engine.table.impl.utils.IntColumnSourceMutableRowRedirection",
  "methods": {
   "fillChunk": "Lookup each element in a RowSequence and write the result to a WritableLongChunk.\n\n:param fillContext: (io.deephaven.engine.chunk.ChunkSource.FillContext) - The FillContext\n:param innerRowKeys: (io.deephaven.engine.chunk.WritableLongChunk<? extendsio.deephaven.engine.chunk.Attributes.RowKeys>) - The result chunk\n:param outerRowKeys: (io.deephaven.engine.structures.RowSequence) - The row keys to lookup in this RowRedirection",
   "fillPrevChunk": "Lookup each element in a RowSequence and write the result to a WritableLongChunk, using previous\n values.\n\n:param fillContext: (io.deephaven.engine.chunk.ChunkSource.FillContext) - The FillContext\n:param innerRowKeys: (io.deephaven.engine.chunk.WritableLongChunk<? extendsio.deephaven.engine.chunk.Attributes.RowKeys>) - The result chunk\n:param outerRowKeys: (io.deephaven.engine.structures.RowSequence) - The row keys to lookup in this RowRedirection",
@@ -12,6 +12,6 @@
   "removeVoid": "Like MutableRowRedirection.remove(long) (long, long)}, but without requiring the implementation to provide a return value. May\n be more efficient in some cases.\n\n:param outerRowKey: (long) - The outer row key to map from",
   "startTrackingPrevValues": "Initiate previous value tracking."
  },
- "path": "io.deephaven.engine.v2.utils.IntColumnSourceMutableRowRedirection",
+ "path": "io.deephaven.engine.table.impl.utils.IntColumnSourceMutableRowRedirection",
  "typeName": "class"
 }

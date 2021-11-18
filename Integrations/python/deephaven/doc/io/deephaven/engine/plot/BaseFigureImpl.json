@@ -15,7 +15,7 @@
   "getSessionId": ":return: int",
   "getTableFunctionMap": ":return: java.util.Map<io.deephaven.engine.table.Table,java.util.Set<java.util.function.Function<io.deephaven.engine.table.Table,io.deephaven.engine.table.Table>>>",
   "getTableHandles": "Gets the table handles associated with this figure.\n\n:return: (java.util.Set<io.deephaven.engine.plot.util.tables.TableHandle>) table handles associated with this figure.",
-  "getTableMapFunctionMap": ":return: java.util.Map<io.deephaven.engine.v2.TableMap,java.util.Set<java.util.function.Function<io.deephaven.engine.v2.TableMap,io.deephaven.engine.v2.TableMap>>>",
+  "getTableMapFunctionMap": ":return: java.util.Map<io.deephaven.engine.table.impl.TableMap,java.util.Set<java.util.function.Function<io.deephaven.engine.table.impl.TableMap,io.deephaven.engine.table.impl.TableMap>>>",
   "getTableMapHandles": "Gets the table maps associated with this figure.\n\n:return: (java.util.Set<io.deephaven.engine.plot.util.tables.TableMapHandle>) table handles associated with this figure.",
   "getTitle": "Gets the title of this Figure.\n\n:return: (java.lang.String) this Figure's title",
   "getTitleColor": "Gets the Paint of this Figure's title.\n\n:return: (io.deephaven.gui.color.Paint) this Figure's title's Paint",

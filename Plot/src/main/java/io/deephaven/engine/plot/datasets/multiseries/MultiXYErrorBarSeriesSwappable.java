@@ -13,7 +13,7 @@ import io.deephaven.engine.plot.util.ArgumentValidations;
 import io.deephaven.engine.plot.util.tables.SwappableTable;
 import io.deephaven.engine.plot.util.tables.TableHandle;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.v2.BaseTable;
+import io.deephaven.engine.table.impl.BaseTable;
 
 /**
  * XY MultiSeries suitable for error bar plots.

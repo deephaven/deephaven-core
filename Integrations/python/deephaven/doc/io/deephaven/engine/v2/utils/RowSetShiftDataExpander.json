@@ -1,12 +1,12 @@
 {
- "className": "io.deephaven.engine.v2.utils.RowSetShiftDataExpander",
+ "className": "io.deephaven.engine.table.impl.utils.RowSetShiftDataExpander",
  "methods": {
-  "getAdded": "Fetch the resulting rowSet of added values.\n\n:return: (io.deephaven.engine.v2.utils.RowSet) added rowSet",
-  "getModified": "Fetch the resulting rowSet of modified values.\n\n:return: (io.deephaven.engine.v2.utils.RowSet) modified rowSet",
-  "getRemoved": "Fetch the resulting rowSet of removed values.\n\n:return: (io.deephaven.engine.v2.utils.RowSet) removed rowSet",
-  "validate": "Perform backwards compatible validation checks.\n\n:param update: (io.deephaven.engine.v2.Listener.Update) - The update originally passed at construction time, used only for logging debug info on error\n:param sourceRowSet: (io.deephaven.engine.v2.utils.TrackingRowSet) - The underlying rowSet that apply to added/removed/modified"
+  "getAdded": "Fetch the resulting rowSet of added values.\n\n:return: (io.deephaven.engine.table.impl.utils.RowSet) added rowSet",
+  "getModified": "Fetch the resulting rowSet of modified values.\n\n:return: (io.deephaven.engine.table.impl.utils.RowSet) modified rowSet",
+  "getRemoved": "Fetch the resulting rowSet of removed values.\n\n:return: (io.deephaven.engine.table.impl.utils.RowSet) removed rowSet",
+  "validate": "Perform backwards compatible validation checks.\n\n:param update: (io.deephaven.engine.table.impl.Listener.Update) - The update originally passed at construction time, used only for logging debug info on error\n:param sourceRowSet: (io.deephaven.engine.table.impl.utils.TrackingRowSet) - The underlying rowSet that apply to added/removed/modified"
  },
- "path": "io.deephaven.engine.v2.utils.RowSetShiftDataExpander",
+ "path": "io.deephaven.engine.table.impl.utils.RowSetShiftDataExpander",
  "text": "Expands Listener.onUpdate(Listener.Update)'s Update into a backward compatible ARM (added, removed, modified)\n by expanding keyspace shifts.\n\n Using this is almost always less efficient than using the Update directly.",
  "typeName": "class"
 }

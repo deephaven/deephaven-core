@@ -1,8 +1,8 @@
 {
- "className": "io.deephaven.engine.v2.utils.reverse.ShortReverseKernel",
+ "className": "io.deephaven.engine.table.impl.utils.reverse.ShortReverseKernel",
  "methods": {
   "reverse": "Note: Java generics information - <T extends io.deephaven.engine.chunk.Attributes.Any>\n\n:param chunkToReverse: io.deephaven.engine.chunk.WritableShortChunk<T>"
  },
- "path": "io.deephaven.engine.v2.utils.reverse.ShortReverseKernel",
+ "path": "io.deephaven.engine.table.impl.utils.reverse.ShortReverseKernel",
  "typeName": "class"
 }

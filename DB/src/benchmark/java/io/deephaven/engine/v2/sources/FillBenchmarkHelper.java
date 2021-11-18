@@ -1,4 +1,4 @@
-package io.deephaven.engine.v2.sources;
+package io.deephaven.engine.table.impl.sources;
 
 import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.chunk.LongChunk;

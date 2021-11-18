@@ -1,10 +1,10 @@
 {
- "className": "io.deephaven.engine.v2.utils.OrderedLongSetBuilderSequential",
+ "className": "io.deephaven.engine.table.impl.utils.OrderedLongSetBuilderSequential",
  "methods": {
-  "appendTreeIndexImpl": ":param shiftAmount: long\n:param ix: io.deephaven.engine.v2.utils.OrderedLongSet\n:param acquire: boolean",
-  "getRspBitmap": ":return: io.deephaven.engine.v2.utils.rsp.RspBitmap",
-  "getTreeIndexImpl": ":return: io.deephaven.engine.v2.utils.OrderedLongSet"
+  "appendTreeIndexImpl": ":param shiftAmount: long\n:param ix: io.deephaven.engine.table.impl.utils.OrderedLongSet\n:param acquire: boolean",
+  "getRspBitmap": ":return: io.deephaven.engine.table.impl.utils.rsp.RspBitmap",
+  "getTreeIndexImpl": ":return: io.deephaven.engine.table.impl.utils.OrderedLongSet"
  },
- "path": "io.deephaven.engine.v2.utils.OrderedLongSetBuilderSequential",
+ "path": "io.deephaven.engine.table.impl.utils.OrderedLongSetBuilderSequential",
  "typeName": "class"
 }

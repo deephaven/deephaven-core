@@ -135,8 +135,8 @@ def convertSchema(schema, keyValueMetadata, readInstructionsIn):
     :param schema: (org.apache.parquet.schema.MessageType) - Parquet schema. DO NOT RELY ON ParquetMetadataConverter FOR THIS! USE
             ParquetFileReader!
     :param keyValueMetadata: (java.util.Map<java.lang.String,java.lang.String>) - Parquet key-value metadata map
-    :param readInstructionsIn: (io.deephaven.engine.v2.parquet.ParquetInstructions) - Input conversion ParquetInstructions
-    :return: (io.deephaven.base.Pair<java.util.List<io.deephaven.engine.table.ColumnDefinition<?>>,io.deephaven.engine.v2.parquet.ParquetInstructions>) A Pair with ColumnDefinitions and adjusted ParquetInstructions
+    :param readInstructionsIn: (io.deephaven.engine.table.impl.parquet.ParquetInstructions) - Input conversion ParquetInstructions
+    :return: (io.deephaven.base.Pair<java.util.List<io.deephaven.engine.table.ColumnDefinition<?>>,io.deephaven.engine.table.impl.parquet.ParquetInstructions>) A Pair with ColumnDefinitions and adjusted ParquetInstructions
     """
     
     return _java_type_.convertSchema(schema, keyValueMetadata, readInstructionsIn)
@@ -169,8 +169,8 @@ def getParquetFileReader(parquetFile):
 def readParquetSchemaAndTable(source, readInstructionsIn, instructionsOut):
     """
     :param source: java.io.File
-    :param readInstructionsIn: io.deephaven.engine.v2.parquet.ParquetInstructions
-    :param instructionsOut: org.apache.commons.lang3.mutable.MutableObject<io.deephaven.engine.v2.parquet.ParquetInstructions>
+    :param readInstructionsIn: io.deephaven.engine.table.impl.parquet.ParquetInstructions
+    :param instructionsOut: org.apache.commons.lang3.mutable.MutableObject<io.deephaven.engine.table.impl.parquet.ParquetInstructions>
     :return: io.deephaven.engine.table.Table
     """
     
@@ -182,8 +182,8 @@ def readPartitionedTable(locationKeyFinder, readInstructions, tableDefinition):
     """
     Reads in a table from files discovered with locationKeyFinder using the provided table definition.
     
-    :param locationKeyFinder: (io.deephaven.engine.v2.locations.impl.TableLocationKeyFinder<io.deephaven.engine.v2.locations.parquet.local.ParquetTableLocationKey>) - The source of location keys to include
-    :param readInstructions: (io.deephaven.engine.v2.parquet.ParquetInstructions) - Instructions for customizations while reading
+    :param locationKeyFinder: (io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder<io.deephaven.engine.table.impl.locations.parquet.local.ParquetTableLocationKey>) - The source of location keys to include
+    :param readInstructions: (io.deephaven.engine.table.impl.parquet.ParquetInstructions) - Instructions for customizations while reading
     :param tableDefinition: (io.deephaven.engine.table.TableDefinition) - The table's definition
     :return: (io.deephaven.engine.table.Table) The table
     """
@@ -197,8 +197,8 @@ def readPartitionedTableInferSchema(locationKeyFinder, readInstructions):
     Reads in a table from files discovered with locationKeyFinder using a definition built from the first
      location found, which must have non-null partition values for all partition keys.
     
-    :param locationKeyFinder: (io.deephaven.engine.v2.locations.impl.TableLocationKeyFinder<io.deephaven.engine.v2.locations.parquet.local.ParquetTableLocationKey>) - The source of location keys to include
-    :param readInstructions: (io.deephaven.engine.v2.parquet.ParquetInstructions) - Instructions for customizations while reading
+    :param locationKeyFinder: (io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder<io.deephaven.engine.table.impl.locations.parquet.local.ParquetTableLocationKey>) - The source of location keys to include
+    :param readInstructions: (io.deephaven.engine.table.impl.parquet.ParquetInstructions) - Instructions for customizations while reading
     :return: (io.deephaven.engine.table.Table) The table
     """
     
@@ -211,7 +211,7 @@ def readPartitionedTableWithMetadata(directory, readInstructions):
     Reads in a table using metadata files found in the supplied directory.
     
     :param directory: (java.io.File) - The source of location keys to include
-    :param readInstructions: (io.deephaven.engine.v2.parquet.ParquetInstructions) - Instructions for customizations while reading
+    :param readInstructions: (io.deephaven.engine.table.impl.parquet.ParquetInstructions) - Instructions for customizations while reading
     :return: (io.deephaven.engine.table.Table) The table
     """
     
@@ -223,8 +223,8 @@ def readSingleFileTable(tableLocationKey, readInstructions, tableDefinition):
     """
     Reads in a table from a single parquet file using the provided table definition.
     
-    :param tableLocationKey: (io.deephaven.engine.v2.locations.parquet.local.ParquetTableLocationKey) - The location keys to include
-    :param readInstructions: (io.deephaven.engine.v2.parquet.ParquetInstructions) - Instructions for customizations while reading
+    :param tableLocationKey: (io.deephaven.engine.table.impl.locations.parquet.local.ParquetTableLocationKey) - The location keys to include
+    :param readInstructions: (io.deephaven.engine.table.impl.parquet.ParquetInstructions) - Instructions for customizations while reading
     :param tableDefinition: (io.deephaven.engine.table.TableDefinition) - The table's definition
     :return: (io.deephaven.engine.table.Table) The table
     """
@@ -243,7 +243,7 @@ def readTable(*args):
       
     *Overload 2*  
       :param sourceFilePath: (java.lang.String) - The file or directory to examine
-      :param readInstructions: (io.deephaven.engine.v2.parquet.ParquetInstructions) - Instructions for customizations while reading
+      :param readInstructions: (io.deephaven.engine.table.impl.parquet.ParquetInstructions) - Instructions for customizations while reading
       :return: (io.deephaven.engine.table.Table) table
       
     *Overload 3*  
@@ -252,7 +252,7 @@ def readTable(*args):
       
     *Overload 4*  
       :param sourceFile: (java.io.File) - The file or directory to examine
-      :param readInstructions: (io.deephaven.engine.v2.parquet.ParquetInstructions) - Instructions for customizations while reading
+      :param readInstructions: (io.deephaven.engine.table.impl.parquet.ParquetInstructions) - Instructions for customizations while reading
       :return: (io.deephaven.engine.table.Table) table
     """
     
@@ -277,7 +277,7 @@ def writeParquetTables(sources, tableDefinition, writeInstructions, destinations
     
     :param sources: (io.deephaven.engine.table.Table[]) - The tables to write
     :param tableDefinition: (io.deephaven.engine.table.TableDefinition) - The common schema for all the tables to write
-    :param writeInstructions: (io.deephaven.engine.v2.parquet.ParquetInstructions) - Write instructions for customizations while writing
+    :param writeInstructions: (io.deephaven.engine.table.impl.parquet.ParquetInstructions) - Write instructions for customizations while writing
     :param destinations: (java.io.File[]) - The destinations paths. Any non existing directories in the paths provided are created. If
             there is an error any intermediate directories previously created are removed; note this makes this method
             unsafe for concurrent use
@@ -316,7 +316,7 @@ def writeTable(*args):
       :param destFile: (java.io.File) - destination file; its path must end in ".parquet". Any non existing directories in the path are
               created If there is an error any intermediate directories previously created are removed; note this makes
               this method unsafe for concurrent use
-      :param writeInstructions: (io.deephaven.engine.v2.parquet.ParquetInstructions) - instructions for customizations while writing
+      :param writeInstructions: (io.deephaven.engine.table.impl.parquet.ParquetInstructions) - instructions for customizations while writing
       
     *Overload 5*  
       :param sourceTable: (io.deephaven.engine.table.Table) - source table
@@ -324,7 +324,7 @@ def writeTable(*args):
               If there is an error any intermediate directories previously created are removed; note this makes this
               method unsafe for concurrent use
       :param definition: (io.deephaven.engine.table.TableDefinition) - table definition to use (instead of the one implied by the table itself)
-      :param writeInstructions: (io.deephaven.engine.v2.parquet.ParquetInstructions) - instructions for customizations while writing
+      :param writeInstructions: (io.deephaven.engine.table.impl.parquet.ParquetInstructions) - instructions for customizations while writing
       
     *Overload 6*  
       :param sourceTable: (io.deephaven.engine.table.Table) - source table
@@ -332,7 +332,7 @@ def writeTable(*args):
               created If there is an error any intermediate directories previously created are removed; note this makes
               this method unsafe for concurrent use
       :param definition: (io.deephaven.engine.table.TableDefinition) - table definition to use (instead of the one implied by the table itself)
-      :param writeInstructions: (io.deephaven.engine.v2.parquet.ParquetInstructions) - instructions for customizations while writing
+      :param writeInstructions: (io.deephaven.engine.table.impl.parquet.ParquetInstructions) - instructions for customizations while writing
     """
     
     return _custom_writeTable(*args)

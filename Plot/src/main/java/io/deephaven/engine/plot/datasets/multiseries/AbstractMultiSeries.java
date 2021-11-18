@@ -19,7 +19,7 @@ import io.deephaven.engine.plot.errors.PlotUnsupportedOperationException;
 import io.deephaven.engine.plot.util.ArgumentValidations;
 import io.deephaven.engine.plot.util.functions.ClosureFunction;
 import io.deephaven.engine.tables.libs.QueryLibrary;
-import io.deephaven.engine.v2.*;
+import io.deephaven.engine.table.impl.*;
 import groovy.lang.Closure;
 
 import io.deephaven.internal.log.LoggerFactory;

@@ -6,10 +6,10 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.updategraph.NotificationQueue;
-import io.deephaven.engine.v2.*;
+import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.v2.sources.UnionColumnSource;
-import io.deephaven.engine.v2.sources.UnionSourceManager;
+import io.deephaven.engine.table.impl.sources.UnionColumnSource;
+import io.deephaven.engine.table.impl.sources.UnionSourceManager;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;

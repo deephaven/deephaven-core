@@ -1,4 +1,4 @@
-package io.deephaven.engine.v2.utils;
+package io.deephaven.engine.table.impl.utils;
 
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.chunk.*;

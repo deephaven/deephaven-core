@@ -12,7 +12,7 @@ import io.deephaven.engine.plot.filters.SelectableDataSetOneClick;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.tables.utils.TableTools;
-import io.deephaven.engine.v2.utils.ColumnHolder;
+import io.deephaven.engine.table.impl.utils.ColumnHolder;
 import junit.framework.TestCase;
 
 import java.util.concurrent.atomic.AtomicInteger;

@@ -1,6 +1,6 @@
 {
- "className": "io.deephaven.engine.v2.locations.parquet.ColumnChunkPageStore$CreatorResult",
+ "className": "io.deephaven.engine.table.impl.locations.parquet.ColumnChunkPageStore$CreatorResult",
  "methods": {},
- "path": "io.deephaven.engine.v2.locations.parquet.ColumnChunkPageStore.CreatorResult",
+ "path": "io.deephaven.engine.table.impl.locations.parquet.ColumnChunkPageStore.CreatorResult",
  "typeName": "class"
 }

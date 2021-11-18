@@ -1,6 +1,6 @@
 {
- "className": "io.deephaven.engine.v2.parquet.SchemaMappingException",
+ "className": "io.deephaven.engine.table.impl.parquet.SchemaMappingException",
  "methods": {},
- "path": "io.deephaven.engine.v2.parquet.SchemaMappingException",
+ "path": "io.deephaven.engine.table.impl.parquet.SchemaMappingException",
  "typeName": "class"
 }

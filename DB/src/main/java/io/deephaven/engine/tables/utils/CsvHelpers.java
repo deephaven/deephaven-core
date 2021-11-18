@@ -13,7 +13,7 @@ import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.tables.utils.csv.CsvSpecs;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.time.TimeZone;
-import io.deephaven.engine.v2.InMemoryTable;
+import io.deephaven.engine.table.impl.InMemoryTable;
 import io.deephaven.io.streams.BzipFileOutputStream;
 import io.deephaven.util.annotations.ScriptApi;
 import org.jetbrains.annotations.Nullable;

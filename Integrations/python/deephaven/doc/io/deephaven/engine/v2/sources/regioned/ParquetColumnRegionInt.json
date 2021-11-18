@@ -1,9 +1,9 @@
 {
- "className": "io.deephaven.engine.v2.sources.regioned.ParquetColumnRegionInt",
+ "className": "io.deephaven.engine.table.impl.sources.regioned.ParquetColumnRegionInt",
  "methods": {
   "getInt": "Get a single int from this region.\n\n:param elementIndex: (long) - Element (int) rowSet in the table's address space\n:return: (int) The int value at the specified element (int) rowSet"
  },
- "path": "io.deephaven.engine.v2.sources.regioned.ParquetColumnRegionInt",
+ "path": "io.deephaven.engine.table.impl.sources.regioned.ParquetColumnRegionInt",
  "text": "ColumnRegionInt implementation for regions that support fetching primitive ints from\n column chunk page stores.",
  "typeName": "class"
 }

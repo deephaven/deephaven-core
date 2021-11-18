@@ -5,11 +5,11 @@ import io.deephaven.base.formatters.FormatBitSet;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.ConcurrentMethod;
-import io.deephaven.engine.v2.HierarchicalTable;
-import io.deephaven.engine.v2.HierarchicalTableInfo;
-import io.deephaven.engine.v2.RollupInfo;
-import io.deephaven.engine.v2.TreeTableInfo;
-import io.deephaven.engine.v2.select.WhereFilter;
+import io.deephaven.engine.table.impl.HierarchicalTable;
+import io.deephaven.engine.table.impl.HierarchicalTableInfo;
+import io.deephaven.engine.table.impl.RollupInfo;
+import io.deephaven.engine.table.impl.TreeTableInfo;
+import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.table.sort.SortDirective;
 import org.jetbrains.annotations.NotNull;
 

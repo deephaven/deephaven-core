@@ -1,6 +1,6 @@
 {
- "className": "io.deephaven.engine.v2.by.ssmcountdistinct.BucketSsmDistinctContext",
+ "className": "io.deephaven.engine.table.impl.by.ssmcountdistinct.BucketSsmDistinctContext",
  "methods": {},
- "path": "io.deephaven.engine.v2.by.ssmcountdistinct.BucketSsmDistinctContext",
+ "path": "io.deephaven.engine.table.impl.by.ssmcountdistinct.BucketSsmDistinctContext",
  "typeName": "class"
 }

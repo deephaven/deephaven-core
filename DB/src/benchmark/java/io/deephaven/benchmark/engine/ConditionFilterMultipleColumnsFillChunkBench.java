@@ -1,9 +1,9 @@
 package io.deephaven.benchmark.engine;
 
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.v2.select.ConditionFilter;
-import io.deephaven.engine.v2.select.IncrementalReleaseFilter;
-import io.deephaven.engine.v2.select.WhereFilter;
+import io.deephaven.engine.table.impl.select.ConditionFilter;
+import io.deephaven.engine.table.impl.select.IncrementalReleaseFilter;
+import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.chunk.WritableLongChunk;
 import io.deephaven.benchmarking.BenchUtil;
 import io.deephaven.benchmarking.BenchmarkTable;

@@ -7,8 +7,8 @@ import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.v2.sources.ArrayBackedColumnSource;
-import io.deephaven.engine.v2.sources.ObjectArraySource;
+import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
+import io.deephaven.engine.table.impl.sources.ObjectArraySource;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -20,7 +20,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static io.deephaven.engine.v2.sources.ArrayBackedColumnSource.getMemoryColumnSource;
+import static io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource.getMemoryColumnSource;
 
 /**
  * Utilities for creating or interacting with grouping information.

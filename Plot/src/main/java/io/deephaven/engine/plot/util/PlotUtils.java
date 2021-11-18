@@ -19,13 +19,13 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.tables.select.QueryScope;
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.v2.by.AggregationFactory;
-import io.deephaven.engine.v2.by.KeyOnlyFirstOrLastBySpec;
+import io.deephaven.engine.table.impl.by.AggregationFactory;
+import io.deephaven.engine.table.impl.by.KeyOnlyFirstOrLastBySpec;
 import io.deephaven.gui.color.ColorPaletteArray;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.tables.utils.TableTools;
-import io.deephaven.engine.v2.BaseTable;
-import io.deephaven.engine.v2.by.AggType;
+import io.deephaven.engine.table.impl.BaseTable;
+import io.deephaven.engine.table.impl.by.AggType;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.gui.color.Color;
 import io.deephaven.gui.color.ColorPalette;
@@ -40,7 +40,7 @@ import java.util.function.Function;
 import java.util.stream.IntStream;
 
 import static io.deephaven.util.QueryConstants.*;
-import static io.deephaven.engine.v2.by.AggregationFactory.*;
+import static io.deephaven.engine.table.impl.by.AggregationFactory.*;
 import static io.deephaven.engine.function.IntegerNumericPrimitives.abs;
 
 /**

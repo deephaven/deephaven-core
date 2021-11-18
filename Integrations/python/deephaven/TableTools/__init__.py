@@ -380,7 +380,7 @@ def byteCol(name, *data):
     
     :param name: name for the column
     :param data: variable argument for the data
-    :return: (io.deephaven.engine.v2.utils.ColumnHolder) a Deephaven ColumnHolder object
+    :return: (io.deephaven.engine.table.impl.utils.ColumnHolder) a Deephaven ColumnHolder object
     
     data structure:
       * an int or list of ints
@@ -399,7 +399,7 @@ def charCol(name, *data):
     
     :param name: name for the column
     :param data: variable argument for the data
-    :return: (io.deephaven.engine.v2.utils.ColumnHolder) a Deephaven ColumnHolder object
+    :return: (io.deephaven.engine.table.impl.utils.ColumnHolder) a Deephaven ColumnHolder object
     
     `data` structure:
       * an int
@@ -419,7 +419,7 @@ def col(name, *data):
     
     :param name: name for the column
     :param data: variable argument for the data
-    :return: (io.deephaven.engine.v2.utils.ColumnHolder) a Deephaven ColumnHolder object
+    :return: (io.deephaven.engine.table.impl.utils.ColumnHolder) a Deephaven ColumnHolder object
     
     data structure:
       * an int, bool, float, datetime, date, string or iterable of (one) such
@@ -471,7 +471,7 @@ def dateTimeCol(name, *data):
     
     :param name: (java.lang.String) - name of the column
     :param data: (io.deephaven.engine.time.DateTime...) - a list of values for the column
-    :return: (io.deephaven.engine.v2.utils.ColumnHolder) a Deephaven ColumnHolder object
+    :return: (io.deephaven.engine.table.impl.utils.ColumnHolder) a Deephaven ColumnHolder object
     """
     
     return _java_type_.dateTimeCol(name, *data)
@@ -524,7 +524,7 @@ def doubleCol(name, *data):
     
     :param name: name for the column
     :param data: variable argument for the data
-    :return: (io.deephaven.engine.v2.utils.ColumnHolder) a Deephaven ColumnHolder object
+    :return: (io.deephaven.engine.table.impl.utils.ColumnHolder) a Deephaven ColumnHolder object
     
     data structure:
       * an int or float or list of ints or floats
@@ -555,7 +555,7 @@ def floatCol(name, *data):
     
     :param name: name for the column
     :param data: variable argument for the data
-    :return: (io.deephaven.engine.v2.utils.ColumnHolder) a Deephaven ColumnHolder object
+    :return: (io.deephaven.engine.table.impl.utils.ColumnHolder) a Deephaven ColumnHolder object
     
     data structure:
       * a int or float or list of ints or floats
@@ -612,7 +612,7 @@ def intCol(name, *data):
     
     :param name: name for the column
     :param data: variable argument for the data
-    :return: (io.deephaven.engine.v2.utils.ColumnHolder) a Deephaven ColumnHolder object
+    :return: (io.deephaven.engine.table.impl.utils.ColumnHolder) a Deephaven ColumnHolder object
     
     data structure:
       * an int or list of ints
@@ -631,7 +631,7 @@ def longCol(name, *data):
     
     :param name: name for the column
     :param data: variable argument for the data
-    :return: (io.deephaven.engine.v2.utils.ColumnHolder) a Deephaven ColumnHolder object
+    :return: (io.deephaven.engine.table.impl.utils.ColumnHolder) a Deephaven ColumnHolder object
     
     data structure:
       * an int or list of ints
@@ -716,12 +716,12 @@ def newTable(*args):
       :return: (io.deephaven.engine.table.Table) an empty Deephaven Table
       
     *Overload 4*  
-      :param columnHolders: (io.deephaven.engine.v2.utils.ColumnHolder...) - a list of ColumnHolders from which to create the table
+      :param columnHolders: (io.deephaven.engine.table.impl.utils.ColumnHolder...) - a list of ColumnHolders from which to create the table
       :return: (io.deephaven.engine.table.Table) a Deephaven Table
       
     *Overload 5*  
       :param definition: io.deephaven.engine.table.TableDefinition
-      :param columnHolders: io.deephaven.engine.v2.utils.ColumnHolder...
+      :param columnHolders: io.deephaven.engine.table.impl.utils.ColumnHolder...
       :return: io.deephaven.engine.table.Table
     """
     
@@ -852,7 +852,7 @@ def shortCol(name, *data):
         
     :param name: name for the column
     :param data: variable argument for the data
-    :return: (io.deephaven.engine.v2.utils.ColumnHolder) a Deephaven ColumnHolder object
+    :return: (io.deephaven.engine.table.impl.utils.ColumnHolder) a Deephaven ColumnHolder object
     
     data structure:
       * an int or list of ints
@@ -1006,7 +1006,7 @@ def stringCol(name, *data):
     
     :param name: (java.lang.String) - name of the column
     :param data: (java.lang.String...) - a list of values for the column
-    :return: (io.deephaven.engine.v2.utils.ColumnHolder) a Deephaven ColumnHolder object
+    :return: (io.deephaven.engine.table.impl.utils.ColumnHolder) a Deephaven ColumnHolder object
     """
     
     return _java_type_.stringCol(name, *data)
@@ -1023,7 +1023,7 @@ def timeTable(*args):
       
     *Overload 2*  
       :param period: (java.lang.String) - time interval between new row additions
-      :param replayer: (io.deephaven.engine.v2.replay.ReplayerInterface) - data replayer
+      :param replayer: (io.deephaven.engine.table.impl.replay.ReplayerInterface) - data replayer
       :return: (io.deephaven.engine.table.Table) time table
       
     *Overload 3*  
@@ -1034,7 +1034,7 @@ def timeTable(*args):
     *Overload 4*  
       :param startTime: (io.deephaven.engine.time.DateTime) - start time for adding new rows
       :param period: (java.lang.String) - time interval between new row additions
-      :param replayer: (io.deephaven.engine.v2.replay.ReplayerInterface) - data replayer
+      :param replayer: (io.deephaven.engine.table.impl.replay.ReplayerInterface) - data replayer
       :return: (io.deephaven.engine.table.Table) time table
       
     *Overload 5*  
@@ -1045,7 +1045,7 @@ def timeTable(*args):
     *Overload 6*  
       :param startTime: (java.lang.String) - start time for adding new rows
       :param period: (java.lang.String) - time interval between new row additions
-      :param replayer: (io.deephaven.engine.v2.replay.ReplayerInterface) - data replayer
+      :param replayer: (io.deephaven.engine.table.impl.replay.ReplayerInterface) - data replayer
       :return: (io.deephaven.engine.table.Table) time table
       
     *Overload 7*  
@@ -1054,7 +1054,7 @@ def timeTable(*args):
       
     *Overload 8*  
       :param periodNanos: (long) - time interval between new row additions in nanoseconds.
-      :param replayer: (io.deephaven.engine.v2.replay.ReplayerInterface) - data replayer
+      :param replayer: (io.deephaven.engine.table.impl.replay.ReplayerInterface) - data replayer
       :return: (io.deephaven.engine.table.Table) time table
       
     *Overload 9*  
@@ -1065,7 +1065,7 @@ def timeTable(*args):
     *Overload 10*  
       :param startTime: (io.deephaven.engine.time.DateTime) - start time for adding new rows
       :param periodNanos: (long) - time interval between new row additions in nanoseconds.
-      :param replayer: (io.deephaven.engine.v2.replay.ReplayerInterface) - data replayer
+      :param replayer: (io.deephaven.engine.table.impl.replay.ReplayerInterface) - data replayer
       :return: (io.deephaven.engine.table.Table) time table
       
     *Overload 11*  
@@ -1076,7 +1076,7 @@ def timeTable(*args):
     *Overload 12*  
       :param startTime: (java.lang.String) - start time for adding new rows
       :param periodNanos: (long) - time interval between new row additions in nanoseconds.
-      :param replayer: (io.deephaven.engine.v2.replay.ReplayerInterface) - data replayer
+      :param replayer: (io.deephaven.engine.table.impl.replay.ReplayerInterface) - data replayer
       :return: (io.deephaven.engine.table.Table) time table
       
     *Overload 13*  

@@ -1,5 +1,5 @@
 {
- "className": "io.deephaven.engine.v2.sources.ColumnSourceGetDefaults$ForByte",
+ "className": "io.deephaven.engine.table.impl.sources.ColumnSourceGetDefaults$ForByte",
  "methods": {
   "get": ":param index: long\n:return: java.lang.Byte",
   "getBoolean": ":param index: long\n:return: java.lang.Boolean",
@@ -10,7 +10,7 @@
   "getLong": ":param index: long\n:return: long",
   "getShort": ":param index: long\n:return: short"
  },
- "path": "io.deephaven.engine.v2.sources.ColumnSourceGetDefaults.ForByte",
+ "path": "io.deephaven.engine.table.impl.sources.ColumnSourceGetDefaults.ForByte",
  "text": "Default interface for byte ColumnSource implementations.",
  "typeName": "interface"
 }

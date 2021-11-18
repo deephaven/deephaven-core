@@ -1,8 +1,8 @@
 {
- "className": "io.deephaven.engine.v2.locations.impl.FilteredTableDataService$LocationKeyFilter",
+ "className": "io.deephaven.engine.table.impl.locations.impl.FilteredTableDataService$LocationKeyFilter",
  "methods": {
-  "accept": "Determine whether a TableLocationKey should be visible via this service.\n\n:param locationKey: (io.deephaven.engine.v2.locations.TableLocationKey) - The location key\n:return: (boolean) True if the location key should be visible, false otherwise"
+  "accept": "Determine whether a TableLocationKey should be visible via this service.\n\n:param locationKey: (io.deephaven.engine.table.impl.locations.TableLocationKey) - The location key\n:return: (boolean) True if the location key should be visible, false otherwise"
  },
- "path": "io.deephaven.engine.v2.locations.impl.FilteredTableDataService.LocationKeyFilter",
+ "path": "io.deephaven.engine.table.impl.locations.impl.FilteredTableDataService.LocationKeyFilter",
  "typeName": "interface"
 }

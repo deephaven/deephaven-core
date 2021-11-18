@@ -1,6 +1,6 @@
 {
- "className": "io.deephaven.engine.v2.sources.sparse.ByteOneOrN",
+ "className": "io.deephaven.engine.table.impl.sources.sparse.ByteOneOrN",
  "methods": {},
- "path": "io.deephaven.engine.v2.sources.sparse.ByteOneOrN",
+ "path": "io.deephaven.engine.table.impl.sources.sparse.ByteOneOrN",
  "typeName": "class"
 }

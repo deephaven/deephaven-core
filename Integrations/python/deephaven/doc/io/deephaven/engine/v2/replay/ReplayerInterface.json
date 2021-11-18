@@ -1,8 +1,8 @@
 {
- "className": "io.deephaven.engine.v2.replay.ReplayerInterface",
+ "className": "io.deephaven.engine.table.impl.replay.ReplayerInterface",
  "methods": {
   "currentTime": "Simulated time.\n\n:return: (io.deephaven.engine.tables.utils.DateTime) simulated time.",
-  "getHandle": "Gets a handle to the replayer.\n\n:return: (io.deephaven.engine.v2.replay.ReplayerHandle) handle to the replayer.",
+  "getHandle": "Gets a handle to the replayer.\n\n:return: (io.deephaven.engine.table.impl.replay.ReplayerHandle) handle to the replayer.",
   "isDone": "Has the replayer finished replaying all data.\n\n:return: (boolean) true if the replayer has finished replaying all data; false otherwise.",
   "replay": "Prepares a historical table for replaying.\n\n:param dataSource: (io.deephaven.engine.table.Table) - historical table to replay\n:param timeColumn: (java.lang.String) - column in the table containing timestamps\n:return: (io.deephaven.engine.table.Table) dynamic, replayed version of the table.",
   "replayGrouped": "Prepares a grouped historical table for replaying.  This method can be faster than the ungrouped replay, but\n the performance increase comes with a cost.  Within a group, the data ordering is maintained.  Between groups,\n data ordering is not maintained for a time interval.\n\n:param dataSource: (io.deephaven.engine.table.Table) - historical table to replay\n:param timeColumn: (java.lang.String) - column in the table containing timestamps\n:param byColumn: java.lang.String\n:return: (io.deephaven.engine.table.Table) dynamic, replayed version of the table.",
@@ -13,7 +13,7 @@
   "start": "Starts replaying data.",
   "waitDone": "Wait a specified interval for the replayer to complete.  If the replayer has not completed by the\n end of the interval, the method returns.\n\n:param maxTimeMillis: (long) - maximum number of milliseconds to wait."
  },
- "path": "io.deephaven.engine.v2.replay.ReplayerInterface",
+ "path": "io.deephaven.engine.table.impl.replay.ReplayerInterface",
  "text": "An interface for replaying historical data as simulated real-time data.",
  "typeName": "interface"
 }

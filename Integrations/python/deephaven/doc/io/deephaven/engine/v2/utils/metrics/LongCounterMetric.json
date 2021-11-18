@@ -1,8 +1,8 @@
 {
- "className": "io.deephaven.engine.v2.utils.metrics.LongCounterMetric",
+ "className": "io.deephaven.engine.table.impl.utils.metrics.LongCounterMetric",
  "methods": {
   "sample": ":param n: long"
  },
- "path": "io.deephaven.engine.v2.utils.metrics.LongCounterMetric",
+ "path": "io.deephaven.engine.table.impl.utils.metrics.LongCounterMetric",
  "typeName": "class"
 }

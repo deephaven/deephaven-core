@@ -3,17 +3,17 @@ package io.deephaven.engine.util.systemicmarking;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.tables.utils.TableTools;
-import io.deephaven.engine.v2.ErrorListener;
-import io.deephaven.engine.v2.QueryTable;
-import io.deephaven.engine.v2.RefreshingTableTestCase;
-import io.deephaven.engine.v2.TstUtils;
-import io.deephaven.engine.v2.select.FormulaEvaluationException;
+import io.deephaven.engine.table.impl.ErrorListener;
+import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.RefreshingTableTestCase;
+import io.deephaven.engine.table.impl.TstUtils;
+import io.deephaven.engine.table.impl.select.FormulaEvaluationException;
 import junit.framework.TestCase;
 
 import java.util.List;
 
-import static io.deephaven.engine.v2.TstUtils.c;
-import static io.deephaven.engine.v2.TstUtils.i;
+import static io.deephaven.engine.table.impl.TstUtils.c;
+import static io.deephaven.engine.table.impl.TstUtils.i;
 
 public class TestSystemicObjectMarking extends RefreshingTableTestCase {
     public void testSystemicObjectMarking() {

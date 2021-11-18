@@ -1,9 +1,9 @@
 {
- "className": "io.deephaven.engine.v2.sources.ColumnSourceGetDefaults$ForLong",
+ "className": "io.deephaven.engine.table.impl.sources.ColumnSourceGetDefaults$ForLong",
  "methods": {
   "get": ":param index: long\n:return: java.lang.Long"
  },
- "path": "io.deephaven.engine.v2.sources.ColumnSourceGetDefaults.ForLong",
+ "path": "io.deephaven.engine.table.impl.sources.ColumnSourceGetDefaults.ForLong",
  "text": "Default interface for long ColumnSource implementations.",
  "typeName": "interface"
 }

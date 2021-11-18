@@ -1,6 +1,6 @@
 // Functions to gather performnace data for individual queries.
 
-import io.deephaven.engine.v2.utils.PerformanceQueries
+import io.deephaven.engine.table.impl.utils.PerformanceQueries
 
 queryUpdatePerformanceSet = { int evaluationNumber ->
     tables = PerformanceQueries.queryUpdatePerformanceMap(evaluationNumber)

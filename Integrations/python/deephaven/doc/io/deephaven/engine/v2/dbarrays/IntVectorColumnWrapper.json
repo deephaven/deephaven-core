@@ -1,5 +1,5 @@
 {
- "className": "io.deephaven.engine.v2.dbarrays.IntVectorColumnWrapper",
+ "className": "io.deephaven.engine.table.impl.dbarrays.IntVectorColumnWrapper",
  "methods": {
   "get": ":param i: long\n:return: int",
   "size": "The size of this data structure.\n\n:return: (long) The size",
@@ -7,6 +7,6 @@
   "subVectorByPositions": ":param positions: long[]\n:return: io.deephaven.engine.vector.IntVector",
   "toArray": "*Overload 1*  \n  :return: int[]\n  \n*Overload 2*  \n  :param shouldBeNullIfOutofBounds: boolean\n  :param maxSize: int\n  :return: int[]"
  },
- "path": "io.deephaven.engine.v2.dbarrays.IntVectorColumnWrapper",
+ "path": "io.deephaven.engine.table.impl.dbarrays.IntVectorColumnWrapper",
  "typeName": "class"
 }

@@ -1,8 +1,8 @@
 {
- "className": "io.deephaven.engine.v2.hashing.TNullableLongLongMap",
+ "className": "io.deephaven.engine.table.impl.hashing.TNullableLongLongMap",
  "methods": {
   "capacity": ":return: int"
  },
- "path": "io.deephaven.engine.v2.hashing.TNullableLongLongMap",
+ "path": "io.deephaven.engine.table.impl.hashing.TNullableLongLongMap",
  "typeName": "interface"
 }

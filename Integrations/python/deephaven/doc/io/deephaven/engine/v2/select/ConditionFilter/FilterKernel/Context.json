@@ -1,8 +1,8 @@
 {
- "className": "io.deephaven.engine.v2.select.ConditionFilter$FilterKernel$Context",
+ "className": "io.deephaven.engine.table.impl.select.ConditionFilter$FilterKernel$Context",
  "methods": {
   "close": "Release any resources associated with this context. The context should not be used afterwards."
  },
- "path": "io.deephaven.engine.v2.select.ConditionFilter.FilterKernel.Context",
+ "path": "io.deephaven.engine.table.impl.select.ConditionFilter.FilterKernel.Context",
  "typeName": "class"
 }

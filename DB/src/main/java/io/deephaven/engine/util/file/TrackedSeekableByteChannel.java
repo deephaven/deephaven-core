@@ -1,6 +1,6 @@
 package io.deephaven.engine.util.file;
 
-import io.deephaven.engine.v2.locations.TableDataException;
+import io.deephaven.engine.table.impl.locations.TableDataException;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;

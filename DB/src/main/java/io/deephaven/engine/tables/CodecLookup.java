@@ -5,7 +5,7 @@ import io.deephaven.engine.vector.ObjectVector;
 import io.deephaven.engine.vector.Vector;
 import io.deephaven.engine.tables.libs.StringSet;
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.v2.ColumnToCodecMappings;
+import io.deephaven.engine.table.impl.ColumnToCodecMappings;
 import io.deephaven.util.codec.CodecCache;
 import io.deephaven.util.codec.ExternalizableCodec;
 import io.deephaven.util.codec.ObjectCodec;

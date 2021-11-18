@@ -9,12 +9,12 @@
   "getKeyColumnsOrdered": ":return: java.lang.String[]",
   "getPlotInfo": ":return: io.deephaven.engine.plot.errors.PlotInfo",
   "getTableDefinition": ":return: io.deephaven.engine.table.TableDefinition",
-  "getTableMap": ":return: io.deephaven.engine.v2.TableMap",
+  "getTableMap": ":return: io.deephaven.engine.table.impl.TableMap",
   "id": ":return: int",
   "isOneClickMap": ":return: boolean",
   "setKeyColumnsOrdered": ":param orderedKeyColumns: java.lang.String[]",
   "setOneClickMap": ":param isOneClick: boolean",
-  "setTableMap": ":param tableMap: io.deephaven.engine.v2.TableMap"
+  "setTableMap": ":param tableMap: io.deephaven.engine.table.impl.TableMap"
  },
  "path": "io.deephaven.engine.plot.util.tables.TableMapHandle",
  "text": "Holds a TableMap.",

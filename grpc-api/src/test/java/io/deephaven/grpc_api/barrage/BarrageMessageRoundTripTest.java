@@ -23,10 +23,9 @@ import io.deephaven.engine.updategraph.UpdateSourceCombiner;
 import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.tables.utils.TableDiff;
 import io.deephaven.engine.tables.utils.TableTools;
-import io.deephaven.engine.v2.*;
-import io.deephaven.engine.v2.sources.chunk.ChunkType;
-import io.deephaven.engine.v2.utils.BarrageMessage;
-import io.deephaven.engine.v2.utils.RowSetShiftData;
+import io.deephaven.engine.table.impl.*;
+import io.deephaven.engine.chunk.ChunkType;
+import io.deephaven.engine.table.impl.utils.*;
 import io.deephaven.grpc_api.arrow.ArrowModule;
 import io.deephaven.grpc_api.util.Scheduler;
 import io.deephaven.grpc_api.util.TestControlledScheduler;
@@ -48,7 +47,7 @@ import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-import static io.deephaven.engine.v2.TstUtils.*;
+import static io.deephaven.engine.table.impl.TstUtils.*;
 
 @Category(OutOfBandTest.class)
 public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {

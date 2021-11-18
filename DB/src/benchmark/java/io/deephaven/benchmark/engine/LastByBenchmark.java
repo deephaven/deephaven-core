@@ -4,7 +4,7 @@ import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.tables.utils.TableTools;
-import io.deephaven.engine.v2.QueryTable;
+import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.benchmarking.*;
 import io.deephaven.benchmarking.generator.ColumnGenerator;
 import io.deephaven.benchmarking.generator.EnumStringColumnGenerator;
@@ -20,7 +20,7 @@ import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 
-import static io.deephaven.engine.v2.by.AggregationFactory.*;
+import static io.deephaven.engine.table.impl.by.AggregationFactory.*;
 
 @SuppressWarnings("unused")
 @State(Scope.Thread)

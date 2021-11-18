@@ -1,10 +1,10 @@
 {
- "className": "io.deephaven.engine.v2.utils.MemoryTableLogger",
+ "className": "io.deephaven.engine.table.impl.utils.MemoryTableLogger",
  "methods": {
-  "getQueryTable": ":return: io.deephaven.engine.v2.QueryTable",
+  "getQueryTable": ":return: io.deephaven.engine.table.impl.QueryTable",
   "getTableLogger": ":return: MemoryTableLogger.T",
-  "getTableWriter": ":return: io.deephaven.engine.v2.utils.DynamicTableWriter"
+  "getTableWriter": ":return: io.deephaven.engine.table.impl.utils.DynamicTableWriter"
  },
- "path": "io.deephaven.engine.v2.utils.MemoryTableLogger",
+ "path": "io.deephaven.engine.table.impl.utils.MemoryTableLogger",
  "typeName": "class"
 }

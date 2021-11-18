@@ -1,6 +1,6 @@
 {
- "className": "io.deephaven.engine.v2.TableMapTransformThreadPool",
+ "className": "io.deephaven.engine.table.impl.TableMapTransformThreadPool",
  "methods": {},
- "path": "io.deephaven.engine.v2.TableMapTransformThreadPool",
+ "path": "io.deephaven.engine.table.impl.TableMapTransformThreadPool",
  "typeName": "class"
 }

@@ -2,7 +2,7 @@ package io.deephaven.engine.tables.verify;
 
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
-import io.deephaven.engine.v2.BaseTable;
+import io.deephaven.engine.table.impl.BaseTable;
 
 public class AppendOnlyAssertionInstrumentedListenerAdapter extends BaseTable.ListenerImpl {
 

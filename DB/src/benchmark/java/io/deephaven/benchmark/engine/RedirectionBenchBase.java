@@ -2,7 +2,7 @@ package io.deephaven.benchmark.engine;
 
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.v2.select.IncrementalReleaseFilter;
+import io.deephaven.engine.table.impl.select.IncrementalReleaseFilter;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.chunk.Attributes;

@@ -1,12 +1,12 @@
 {
- "className": "io.deephaven.engine.v2.utils.KeyHolder",
+ "className": "io.deephaven.engine.table.impl.utils.KeyHolder",
  "methods": {
-  "addDependent": ":param dependent: io.deephaven.engine.v2.utils.KeyHolder",
+  "addDependent": ":param dependent: io.deephaven.engine.table.impl.utils.KeyHolder",
   "getKey": ":return: long",
   "getPrevKey": ":return: long",
-  "removeDependent": ":param dependent: io.deephaven.engine.v2.utils.KeyHolder",
+  "removeDependent": ":param dependent: io.deephaven.engine.table.impl.utils.KeyHolder",
   "setKey": ":param key: long"
  },
- "path": "io.deephaven.engine.v2.utils.KeyHolder",
+ "path": "io.deephaven.engine.table.impl.utils.KeyHolder",
  "typeName": "interface"
 }

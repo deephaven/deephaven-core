@@ -4,7 +4,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.time.DateTimeUtils;
-import io.deephaven.engine.v2.select.*;
+import io.deephaven.engine.table.impl.select.*;
 import io.deephaven.benchmarking.*;
 import io.deephaven.benchmarking.runner.TableBenchmarkState;
 import org.openjdk.jmh.annotations.*;

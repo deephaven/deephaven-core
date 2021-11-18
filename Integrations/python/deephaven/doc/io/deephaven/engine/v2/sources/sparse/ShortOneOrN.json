@@ -1,6 +1,6 @@
 {
- "className": "io.deephaven.engine.v2.sources.sparse.ShortOneOrN",
+ "className": "io.deephaven.engine.table.impl.sources.sparse.ShortOneOrN",
  "methods": {},
- "path": "io.deephaven.engine.v2.sources.sparse.ShortOneOrN",
+ "path": "io.deephaven.engine.table.impl.sources.sparse.ShortOneOrN",
  "typeName": "class"
 }

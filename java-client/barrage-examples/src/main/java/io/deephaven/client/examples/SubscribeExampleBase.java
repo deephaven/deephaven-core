@@ -2,7 +2,7 @@ package io.deephaven.client.examples;
 
 import io.deephaven.client.impl.BarrageSubscription;
 import io.deephaven.engine.table.TableUpdate;
-import io.deephaven.engine.v2.InstrumentedTableUpdateListener;
+import io.deephaven.engine.table.impl.InstrumentedTableUpdateListener;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.client.impl.BarrageSession;
 import io.deephaven.client.impl.TableHandle;

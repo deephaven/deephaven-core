@@ -1,7 +1,7 @@
 package io.deephaven.engine.tables;
 
-import io.deephaven.engine.v2.select.SelectColumn;
-import io.deephaven.engine.v2.select.analyzers.SelectAndViewAnalyzer;
+import io.deephaven.engine.table.impl.select.SelectColumn;
+import io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer;
 
 public class SelectValidationResult {
     private final SelectAndViewAnalyzer analyzer;

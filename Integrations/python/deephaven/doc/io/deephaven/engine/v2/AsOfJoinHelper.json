@@ -1,6 +1,6 @@
 {
- "className": "io.deephaven.engine.v2.AsOfJoinHelper",
+ "className": "io.deephaven.engine.table.impl.AsOfJoinHelper",
  "methods": {},
- "path": "io.deephaven.engine.v2.AsOfJoinHelper",
+ "path": "io.deephaven.engine.table.impl.AsOfJoinHelper",
  "typeName": "class"
 }

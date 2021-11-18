@@ -7,13 +7,14 @@ package io.deephaven.engine.table.impl.indexer;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.RefreshingTableTestCase;
+import io.deephaven.engine.table.impl.TstUtils;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.TupleSource;
 import io.deephaven.engine.table.impl.tuplesource.TupleSourceFactory;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.v2.RefreshingTableTestCase;
 import io.deephaven.test.types.OutOfBandTest;
 import org.apache.commons.lang3.mutable.MutableInt;
 
@@ -22,7 +23,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 import org.junit.experimental.categories.Category;
 
-import static io.deephaven.engine.v2.TstUtils.getTable;
+import static io.deephaven.engine.table.impl.TstUtils.getTable;
+
 
 @SuppressWarnings("ClassInitializerMayBeStatic")
 @Category(OutOfBandTest.class)

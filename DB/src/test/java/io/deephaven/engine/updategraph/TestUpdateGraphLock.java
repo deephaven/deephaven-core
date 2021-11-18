@@ -1,7 +1,7 @@
 package io.deephaven.engine.updategraph;
 
 import io.deephaven.engine.updategraph.UpdateGraphLock;
-import io.deephaven.engine.v2.RefreshingTableTestCase;
+import io.deephaven.engine.table.impl.RefreshingTableTestCase;
 import io.deephaven.engine.updategraph.LogicalClock;
 import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableBoolean;

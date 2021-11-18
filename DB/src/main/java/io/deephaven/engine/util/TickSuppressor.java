@@ -7,7 +7,7 @@ package io.deephaven.engine.util;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.v2.*;
+import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.chunk.util.hashing.ChunkEquals;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;

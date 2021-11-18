@@ -1,6 +1,6 @@
 {
- "className": "io.deephaven.engine.v2.utils.BarrageMessage$AddColumnData",
+ "className": "io.deephaven.engine.table.impl.utils.BarrageMessage$AddColumnData",
  "methods": {},
- "path": "io.deephaven.engine.v2.utils.BarrageMessage.AddColumnData",
+ "path": "io.deephaven.engine.table.impl.utils.BarrageMessage.AddColumnData",
  "typeName": "class"
 }

@@ -2,7 +2,7 @@ package io.deephaven.treetable;
 
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.liveness.LivenessReferent;
-import io.deephaven.engine.v2.QueryTableTestBase;
+import io.deephaven.engine.table.impl.QueryTableTestBase;
 
 import java.lang.ref.WeakReference;
 import java.lang.reflect.InvocationHandler;

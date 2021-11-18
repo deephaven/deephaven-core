@@ -1,13 +1,13 @@
 {
- "className": "io.deephaven.engine.v2.utils.sortedranges.SortedRangesInt",
+ "className": "io.deephaven.engine.table.impl.utils.sortedranges.SortedRangesInt",
  "methods": {
   "bytesAllocated": ":return: int",
   "bytesUsed": ":return: int",
-  "deepCopy": "Get a deep copy of the current object, not shared with anybody.\n\n Note this is not thread safe.\n\n:return: (io.deephaven.engine.v2.utils.sortedranges.SortedRangesInt) A full, deep copy of this object with a reference count of 1 (not shared).",
+  "deepCopy": "Get a deep copy of the current object, not shared with anybody.\n\n Note this is not thread safe.\n\n:return: (io.deephaven.engine.table.impl.utils.sortedranges.SortedRangesInt) A full, deep copy of this object with a reference count of 1 (not shared).",
   "freeArray": ":param arr: int[]",
   "isDense": ":return: boolean",
-  "tryMakePackedType": ":param maxPos: int\n:param first: long\n:param isDense: boolean\n:return: io.deephaven.engine.v2.utils.sortedranges.SortedRanges"
+  "tryMakePackedType": ":param maxPos: int\n:param first: long\n:param isDense: boolean\n:return: io.deephaven.engine.table.impl.utils.sortedranges.SortedRanges"
  },
- "path": "io.deephaven.engine.v2.utils.sortedranges.SortedRangesInt",
+ "path": "io.deephaven.engine.table.impl.utils.sortedranges.SortedRangesInt",
  "typeName": "class"
 }

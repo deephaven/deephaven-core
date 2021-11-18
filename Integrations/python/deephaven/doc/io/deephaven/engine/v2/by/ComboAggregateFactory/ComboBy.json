@@ -1,13 +1,13 @@
 {
- "className": "io.deephaven.engine.v2.by.ComboAggregateFactory$ComboBy",
+ "className": "io.deephaven.engine.table.impl.by.ComboAggregateFactory$ComboBy",
  "methods": {
-  "forRollup": ":return: io.deephaven.engine.v2.by.ComboAggregateFactory.ComboBy",
-  "getMemoKey": ":return: io.deephaven.engine.v2.by.AggregationMemoKey",
+  "forRollup": ":return: io.deephaven.engine.table.impl.by.ComboAggregateFactory.ComboBy",
+  "getMemoKey": ":return: io.deephaven.engine.table.impl.by.AggregationMemoKey",
   "getResultPairs": ":return: io.deephaven.engine.tables.select.MatchPair[]",
   "getSourceColumns": ":return: java.lang.String[]",
-  "getUnderlyingStateFactory": ":return: io.deephaven.engine.v2.by.AggregationStateFactory",
-  "optimize": "**Incompatible overloads text - text from the first overload:**\n\nEquivalent to optimize(Collections.singleton(aggregation)).\n\n*Overload 1*  \n  :param aggregation: (io.deephaven.api.agg.Aggregation) - the aggregation\n  :return: (java.util.List<io.deephaven.engine.v2.by.ComboAggregateFactory.ComboBy>) the optimized combos\n  \n*Overload 2*  \n  :param aggregations: (java.util.Collection<? extendsio.deephaven.api.agg.Aggregation>) - the aggregations\n  :return: (java.util.List<io.deephaven.engine.v2.by.ComboAggregateFactory.ComboBy>) the optimized combos"
+  "getUnderlyingStateFactory": ":return: io.deephaven.engine.table.impl.by.AggregationStateFactory",
+  "optimize": "**Incompatible overloads text - text from the first overload:**\n\nEquivalent to optimize(Collections.singleton(aggregation)).\n\n*Overload 1*  \n  :param aggregation: (io.deephaven.api.agg.Aggregation) - the aggregation\n  :return: (java.util.List<io.deephaven.engine.table.impl.by.ComboAggregateFactory.ComboBy>) the optimized combos\n  \n*Overload 2*  \n  :param aggregations: (java.util.Collection<? extendsio.deephaven.api.agg.Aggregation>) - the aggregations\n  :return: (java.util.List<io.deephaven.engine.table.impl.by.ComboAggregateFactory.ComboBy>) the optimized combos"
  },
- "path": "io.deephaven.engine.v2.by.ComboAggregateFactory.ComboBy",
+ "path": "io.deephaven.engine.table.impl.by.ComboAggregateFactory.ComboBy",
  "typeName": "interface"
 }

@@ -1,8 +1,8 @@
 {
- "className": "io.deephaven.engine.v2.sources.SinkFiller",
+ "className": "io.deephaven.engine.table.impl.sources.SinkFiller",
  "methods": {
-  "create": ":param chunkType: io.deephaven.engine.chunk.ChunkType\n:return: io.deephaven.engine.v2.sources.SinkFiller"
+  "create": ":param chunkType: io.deephaven.engine.chunk.ChunkType\n:return: io.deephaven.engine.table.impl.sources.SinkFiller"
  },
- "path": "io.deephaven.engine.v2.sources.SinkFiller",
+ "path": "io.deephaven.engine.table.impl.sources.SinkFiller",
  "typeName": "class"
 }

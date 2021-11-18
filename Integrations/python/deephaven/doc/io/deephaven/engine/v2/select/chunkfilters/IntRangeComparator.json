@@ -1,8 +1,8 @@
 {
- "className": "io.deephaven.engine.v2.select.chunkfilters.IntRangeComparator",
+ "className": "io.deephaven.engine.table.impl.select.chunkfilters.IntRangeComparator",
  "methods": {
-  "makeIntFilter": ":param lower: int\n:param upper: int\n:param lowerInclusive: boolean\n:param upperInclusive: boolean\n:return: io.deephaven.engine.v2.select.ChunkFilter.IntChunkFilter"
+  "makeIntFilter": ":param lower: int\n:param upper: int\n:param lowerInclusive: boolean\n:param upperInclusive: boolean\n:return: io.deephaven.engine.table.impl.select.ChunkFilter.IntChunkFilter"
  },
- "path": "io.deephaven.engine.v2.select.chunkfilters.IntRangeComparator",
+ "path": "io.deephaven.engine.table.impl.select.chunkfilters.IntRangeComparator",
  "typeName": "class"
 }

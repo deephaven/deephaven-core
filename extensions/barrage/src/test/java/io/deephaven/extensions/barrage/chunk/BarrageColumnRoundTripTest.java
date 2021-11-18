@@ -8,7 +8,7 @@ import com.google.common.io.LittleEndianDataInputStream;
 import gnu.trove.list.array.TLongArrayList;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.v2.RefreshingTableTestCase;
+import io.deephaven.engine.table.impl.RefreshingTableTestCase;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;

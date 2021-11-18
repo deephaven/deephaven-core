@@ -1,7 +1,7 @@
 {
- "className": "io.deephaven.engine.v2.locations.parquet.ColumnChunkPageStore",
+ "className": "io.deephaven.engine.table.impl.locations.parquet.ColumnChunkPageStore",
  "methods": {
-  "create": "Note: Java generics information - <ATTR extends io.deephaven.engine.chunk.Attributes.Any>\n\n:param pageCache: io.deephaven.engine.v2.locations.parquet.PageCache<ATTR>\n:param columnChunkReader: io.deephaven.parquet.ColumnChunkReader\n:param mask: long\n:param toPage: io.deephaven.engine.v2.locations.parquet.topage.ToPage<ATTR,?>\n:return: io.deephaven.engine.v2.locations.parquet.ColumnChunkPageStore.CreatorResult<ATTR>",
+  "create": "Note: Java generics information - <ATTR extends io.deephaven.engine.chunk.Attributes.Any>\n\n:param pageCache: io.deephaven.engine.table.impl.locations.parquet.PageCache<ATTR>\n:param columnChunkReader: io.deephaven.parquet.ColumnChunkReader\n:param mask: long\n:param toPage: io.deephaven.engine.table.impl.locations.parquet.topage.ToPage<ATTR,?>\n:return: io.deephaven.engine.table.impl.locations.parquet.ColumnChunkPageStore.CreatorResult<ATTR>",
   "firstRowOffset": ":return: (long) the first row of this page, after applying the PagingChunkSource.mask(), which refers to the first row of this\n         page.",
   "getChunkType": "Get the most suitable ChunkType for use with this ChunkSource.\n\n:return: (io.deephaven.engine.chunk.ChunkType) The ChunkType",
   "getPageContaining": "These implementations don't use the FillContext parameter, so we're create a helper method to ignore it.\n\n:param row: long\n:return: io.deephaven.engine.page.ChunkPage<ColumnChunkPageStore.ATTR>",
@@ -9,6 +9,6 @@
   "size": ":return: long",
   "usesDictionaryOnEveryPage": ":return: boolean"
  },
- "path": "io.deephaven.engine.v2.locations.parquet.ColumnChunkPageStore",
+ "path": "io.deephaven.engine.table.impl.locations.parquet.ColumnChunkPageStore",
  "typeName": "class"
 }

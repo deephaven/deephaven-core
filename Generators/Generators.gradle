@@ -221,15 +221,15 @@ def pythonStaticMethodsArgs = ['io.deephaven.engine.time.calendar.Calendars',
                                'io.deephaven.engine.tables.utils.TableTools',
                                     '/Generators/src/main/java/io/deephaven/pythonPreambles/TableToolsPreamble.txt',
                                     '/Integrations/python/deephaven/TableTools/__init__.py',
-                               'io.deephaven.engine.v2.by.ComboAggregateFactory',
+                               'io.deephaven.engine.table.impl.by.ComboAggregateFactory',
                                     '/Integrations/python/deephaven/ComboAggregateFactory/__init__.py',
                                'io.deephaven.engine.plot.colors.ColorMaps',
                                    '/Integrations/python/deephaven/Plot/ColorMaps/__init__.py',
                                'io.deephaven.engine.tables.utils.WindowCheck',
                                     '/Integrations/python/deephaven/TableManipulation/WindowCheck.py',
-                               'io.deephaven.engine.v2.utils.TableLoggers',
+                               'io.deephaven.engine.table.impl.utils.TableLoggers',
                                     '/Integrations/python/deephaven/TableLoggers/__init__.py',
-                               'io.deephaven.engine.v2.utils.PerformanceQueries',
+                               'io.deephaven.engine.table.impl.utils.PerformanceQueries',
                                     '/Integrations/python/deephaven/PerformanceQueries/__init__.py']
 
 task generatePythonIntegrationStaticMethods(type: JavaExec, dependsOn: 'classes') {

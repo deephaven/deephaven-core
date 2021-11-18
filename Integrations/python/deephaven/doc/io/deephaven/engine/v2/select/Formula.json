@@ -1,13 +1,13 @@
 {
- "className": "io.deephaven.engine.v2.select.Formula",
+ "className": "io.deephaven.engine.table.impl.select.Formula",
  "methods": {
-  "fillChunk": ":param context: io.deephaven.engine.v2.select.Formula.FillContext\n:param destination: io.deephaven.engine.chunk.WritableChunk<? superio.deephaven.engine.chunk.Attributes.Values>\n:param rowSequence: io.deephaven.engine.structures.RowSequence",
-  "fillPrevChunk": ":param context: io.deephaven.engine.v2.select.Formula.FillContext\n:param destination: io.deephaven.engine.chunk.WritableChunk<? superio.deephaven.engine.chunk.Attributes.Values>\n:param rowSequence: io.deephaven.engine.structures.RowSequence",
+  "fillChunk": ":param context: io.deephaven.engine.table.impl.select.Formula.FillContext\n:param destination: io.deephaven.engine.chunk.WritableChunk<? superio.deephaven.engine.chunk.Attributes.Values>\n:param rowSequence: io.deephaven.engine.structures.RowSequence",
+  "fillPrevChunk": ":param context: io.deephaven.engine.table.impl.select.Formula.FillContext\n:param destination: io.deephaven.engine.chunk.WritableChunk<? superio.deephaven.engine.chunk.Attributes.Values>\n:param rowSequence: io.deephaven.engine.structures.RowSequence",
   "get": ":param key: long\n:return: java.lang.Object",
   "getBoolean": ":param key: long\n:return: java.lang.Boolean",
   "getByte": ":param key: long\n:return: byte",
   "getChar": ":param key: long\n:return: char",
-  "getChunk": ":param context: io.deephaven.engine.v2.select.Formula.GetContext\n:param rowSequence: io.deephaven.engine.structures.RowSequence\n:return: io.deephaven.engine.chunk.Chunk<io.deephaven.engine.chunk.Attributes.Values>",
+  "getChunk": ":param context: io.deephaven.engine.table.impl.select.Formula.GetContext\n:param rowSequence: io.deephaven.engine.structures.RowSequence\n:return: io.deephaven.engine.chunk.Chunk<io.deephaven.engine.chunk.Attributes.Values>",
   "getDouble": ":param key: long\n:return: double",
   "getFloat": ":param key: long\n:return: float",
   "getInt": ":param key: long\n:return: int",
@@ -16,18 +16,18 @@
   "getPrevBoolean": ":param key: long\n:return: java.lang.Boolean",
   "getPrevByte": ":param key: long\n:return: byte",
   "getPrevChar": ":param key: long\n:return: char",
-  "getPrevChunk": ":param context: io.deephaven.engine.v2.select.Formula.GetContext\n:param rowSequence: io.deephaven.engine.structures.RowSequence\n:return: io.deephaven.engine.chunk.Chunk<io.deephaven.engine.chunk.Attributes.Values>",
+  "getPrevChunk": ":param context: io.deephaven.engine.table.impl.select.Formula.GetContext\n:param rowSequence: io.deephaven.engine.structures.RowSequence\n:return: io.deephaven.engine.chunk.Chunk<io.deephaven.engine.chunk.Attributes.Values>",
   "getPrevDouble": ":param key: long\n:return: double",
   "getPrevFloat": ":param key: long\n:return: float",
   "getPrevInt": ":param key: long\n:return: int",
   "getPrevLong": ":param key: long\n:return: long",
   "getPrevShort": ":param key: long\n:return: short",
-  "getRowSet": ":return: io.deephaven.engine.v2.utils.TrackingRowSet",
+  "getRowSet": ":return: io.deephaven.engine.table.impl.utils.TrackingRowSet",
   "getShort": ":param key: long\n:return: short",
-  "makeFillContext": ":param chunkCapacity: int\n:return: io.deephaven.engine.v2.select.Formula.FillContext",
-  "makeGetContext": ":param chunkCapacity: int\n:return: io.deephaven.engine.v2.select.Formula.GetContext"
+  "makeFillContext": ":param chunkCapacity: int\n:return: io.deephaven.engine.table.impl.select.Formula.FillContext",
+  "makeGetContext": ":param chunkCapacity: int\n:return: io.deephaven.engine.table.impl.select.Formula.GetContext"
  },
- "path": "io.deephaven.engine.v2.select.Formula",
+ "path": "io.deephaven.engine.table.impl.select.Formula",
  "text": "The Formula class is used within a FormulaColumn to compute individual table cell values.",
  "typeName": "class"
 }

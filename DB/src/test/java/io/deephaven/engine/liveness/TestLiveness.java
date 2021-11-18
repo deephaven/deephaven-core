@@ -3,7 +3,7 @@ package io.deephaven.engine.liveness;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.tables.utils.TableTools;
-import io.deephaven.engine.v2.TstUtils;
+import io.deephaven.engine.table.impl.TstUtils;
 import junit.framework.TestCase;
 import org.junit.After;
 import org.junit.Before;

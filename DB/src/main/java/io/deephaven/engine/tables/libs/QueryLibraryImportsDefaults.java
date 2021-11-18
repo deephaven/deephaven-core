@@ -75,7 +75,7 @@ public class QueryLibraryImportsDefaults implements QueryLibraryImports {
                 io.deephaven.engine.chunk.WritableDoubleChunk.class,
                 io.deephaven.engine.chunk.WritableObjectChunk.class,
                 Context.class,
-                io.deephaven.engine.v2.select.ConditionFilter.FilterKernel.class,
+                io.deephaven.engine.table.impl.select.ConditionFilter.FilterKernel.class,
                 RowSequence.class));
     }
 

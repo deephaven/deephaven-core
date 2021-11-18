@@ -1,4 +1,4 @@
-package io.deephaven.engine.v2.sort.timsort;
+package io.deephaven.engine.table.impl.sort.timsort;
 
 import io.deephaven.engine.tuple.generated.CharLongTuple;
 import org.openjdk.jmh.annotations.*;

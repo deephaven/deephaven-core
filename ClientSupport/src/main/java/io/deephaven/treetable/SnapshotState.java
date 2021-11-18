@@ -15,9 +15,9 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.engine.util.ColumnFormattingValues;
-import io.deephaven.engine.v2.HierarchicalTable;
-import io.deephaven.engine.v2.HierarchicalTableInfo;
-import io.deephaven.engine.v2.RollupInfo;
+import io.deephaven.engine.table.impl.HierarchicalTable;
+import io.deephaven.engine.table.impl.HierarchicalTableInfo;
+import io.deephaven.engine.table.impl.RollupInfo;
 import io.deephaven.engine.table.TableMap;
 import io.deephaven.engine.table.ColumnSource;
 

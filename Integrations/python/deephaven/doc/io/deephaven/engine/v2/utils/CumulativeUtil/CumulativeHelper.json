@@ -1,10 +1,10 @@
 {
- "className": "io.deephaven.engine.v2.utils.CumulativeUtil$CumulativeHelper",
+ "className": "io.deephaven.engine.table.impl.utils.CumulativeUtil$CumulativeHelper",
  "methods": {
   "get": ":param key: java.lang.Object\n:return: double",
   "put": ":param key: java.lang.Object\n:param val: double\n:return: double"
  },
- "path": "io.deephaven.engine.v2.utils.CumulativeUtil.CumulativeHelper",
+ "path": "io.deephaven.engine.table.impl.utils.CumulativeUtil.CumulativeHelper",
  "text": "Provides a helper class with a map to cache previous row values when performing rolling or cumulative\n aggregations.",
  "typeName": "class"
 }

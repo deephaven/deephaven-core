@@ -8,7 +8,7 @@ import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.liveness.LivenessScope;
-import io.deephaven.engine.v2.*;
+import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.chunk.ObjectChunk;
 import io.deephaven.engine.rowset.RowSequence;

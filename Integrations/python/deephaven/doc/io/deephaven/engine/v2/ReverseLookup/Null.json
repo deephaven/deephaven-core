@@ -1,12 +1,12 @@
 {
- "className": "io.deephaven.engine.v2.ReverseLookup$Null",
+ "className": "io.deephaven.engine.table.impl.ReverseLookup$Null",
  "methods": {
   "get": "Gets the rowSet value where key exists in the table, or the no-entry-value if it is not found in the table.\n\n:param key: (java.lang.Object) - a single object for a single column, or a SmartKey for\n        multiple columns\n:return: (long) the row rowSet where key exists in the table",
   "getKeyColumns": ":return: (java.lang.String[]) the key columns this reverse lookup is indexed on",
   "getNoEntryValue": "Returns the value that will be returned from ReverseLookup.get(java.lang.Object) or if no entry exists for a given key.\n\n:return: long",
   "getPrev": "Gets the rowSet value where key previously in the table, or the no-entry-value if it is was not found in the\n table.\n\n:param key: (java.lang.Object) - a single object for a single column, or a SmartKey for\n        multiple columns\n:return: (long) the row rowSet where key previously existed in the table"
  },
- "path": "io.deephaven.engine.v2.ReverseLookup.Null",
+ "path": "io.deephaven.engine.table.impl.ReverseLookup.Null",
  "text": "A null implementation of a reverse lookup, suitable for a table without any key columns.",
  "typeName": "class"
 }

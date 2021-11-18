@@ -1,8 +1,8 @@
 {
- "className": "io.deephaven.engine.v2.locations.impl.FunctionConsistencyMonitor",
+ "className": "io.deephaven.engine.table.impl.locations.impl.FunctionConsistencyMonitor",
  "methods": {
   "start": "Starts a consistent block around the inputProviders.\n\n:return: io.deephaven.util.SafeCloseable"
  },
- "path": "io.deephaven.engine.v2.locations.impl.FunctionConsistencyMonitor",
+ "path": "io.deephaven.engine.table.impl.locations.impl.FunctionConsistencyMonitor",
  "typeName": "class"
 }

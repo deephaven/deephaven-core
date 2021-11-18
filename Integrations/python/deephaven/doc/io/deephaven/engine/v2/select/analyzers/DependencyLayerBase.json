@@ -1,9 +1,9 @@
 {
- "className": "io.deephaven.engine.v2.select.analyzers.DependencyLayerBase",
+ "className": "io.deephaven.engine.table.impl.select.analyzers.DependencyLayerBase",
  "methods": {
-  "getInner": ":return: io.deephaven.engine.v2.select.analyzers.SelectAndViewAnalyzer",
+  "getInner": ":return: io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer",
   "updateColumnDefinitionsFromTopLayer": ":param columnDefinitions: java.util.Map<java.lang.String,io.deephaven.engine.tables.ColumnDefinition<?>>"
  },
- "path": "io.deephaven.engine.v2.select.analyzers.DependencyLayerBase",
+ "path": "io.deephaven.engine.table.impl.select.analyzers.DependencyLayerBase",
  "typeName": "class"
 }

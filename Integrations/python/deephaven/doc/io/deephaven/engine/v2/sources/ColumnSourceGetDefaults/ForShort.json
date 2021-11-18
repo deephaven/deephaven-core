@@ -1,5 +1,5 @@
 {
- "className": "io.deephaven.engine.v2.sources.ColumnSourceGetDefaults$ForShort",
+ "className": "io.deephaven.engine.table.impl.sources.ColumnSourceGetDefaults$ForShort",
  "methods": {
   "get": ":param index: long\n:return: java.lang.Short",
   "getBoolean": ":param index: long\n:return: java.lang.Boolean",
@@ -10,7 +10,7 @@
   "getInt": ":param index: long\n:return: int",
   "getLong": ":param index: long\n:return: long"
  },
- "path": "io.deephaven.engine.v2.sources.ColumnSourceGetDefaults.ForShort",
+ "path": "io.deephaven.engine.table.impl.sources.ColumnSourceGetDefaults.ForShort",
  "text": "Default interface for short ColumnSource implementations.",
  "typeName": "interface"
 }

@@ -1,10 +1,10 @@
 {
- "className": "io.deephaven.engine.v2.utils.RowSetCounts",
+ "className": "io.deephaven.engine.table.impl.utils.RowSetCounts",
  "methods": {
-  "sampleRsp": ":param rb: io.deephaven.engine.v2.utils.rsp.RspBitmap",
-  "sampleSingleRange": ":param sr: io.deephaven.engine.v2.utils.singlerange.SingleRange",
-  "sampleSortedRanges": ":param sr: io.deephaven.engine.v2.utils.sortedranges.SortedRanges"
+  "sampleRsp": ":param rb: io.deephaven.engine.table.impl.utils.rsp.RspBitmap",
+  "sampleSingleRange": ":param sr: io.deephaven.engine.table.impl.utils.singlerange.SingleRange",
+  "sampleSortedRanges": ":param sr: io.deephaven.engine.table.impl.utils.sortedranges.SortedRanges"
  },
- "path": "io.deephaven.engine.v2.utils.RowSetCounts",
+ "path": "io.deephaven.engine.table.impl.utils.RowSetCounts",
  "typeName": "class"
 }

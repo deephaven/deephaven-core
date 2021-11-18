@@ -4,7 +4,7 @@ import io.deephaven.engine.tables.SortingOrder;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.tables.utils.TableTools;
-import io.deephaven.engine.v2.*;
+import io.deephaven.engine.table.impl.*;
 import io.deephaven.test.junit4.EngineCleanup;
 import io.deephaven.util.QueryConstants;
 import junit.framework.TestCase;
@@ -15,7 +15,7 @@ import java.util.Optional;
 import java.util.Random;
 
 import static io.deephaven.engine.tables.utils.TableTools.*;
-import static io.deephaven.engine.v2.TstUtils.*;
+import static io.deephaven.engine.table.impl.TstUtils.*;
 
 public class TestTableAssertions {
     @Rule

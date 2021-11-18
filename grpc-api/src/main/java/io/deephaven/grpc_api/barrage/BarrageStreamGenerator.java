@@ -19,7 +19,7 @@ import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.impl.ExternalizableRowSetUtil;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
-import io.deephaven.engine.v2.utils.*;
+import io.deephaven.engine.table.impl.utils.*;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.util.DefensiveDrainable;
 import io.deephaven.engine.chunk.WritableLongChunk;

@@ -1,11 +1,11 @@
 package io.deephaven.engine.util;
 
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.v2.*;
+import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.ColumnSource;
 
-import static io.deephaven.engine.v2.TstUtils.c;
-import static io.deephaven.engine.v2.TstUtils.i;
+import static io.deephaven.engine.table.impl.TstUtils.c;
+import static io.deephaven.engine.table.impl.TstUtils.i;
 
 public class TestToMapListener extends RefreshingTableTestCase {
     public void testToMap() {

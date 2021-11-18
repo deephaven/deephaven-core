@@ -1,5 +1,6 @@
 package io.deephaven.test.junit4;
 
+import io.deephaven.engine.table.impl.QueryTableTestBase;
 import io.deephaven.engine.v2.QueryTableTestBase;
 import io.deephaven.engine.v2.RefreshingTableTestCase;
 import org.junit.rules.TestRule;

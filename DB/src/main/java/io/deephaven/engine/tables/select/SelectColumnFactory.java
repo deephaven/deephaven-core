@@ -8,7 +8,7 @@ import io.deephaven.base.Pair;
 import io.deephaven.engine.tables.utils.AbstractExpressionFactory;
 import io.deephaven.engine.tables.utils.ExpressionParser;
 import io.deephaven.engine.util.ColumnFormattingValues;
-import io.deephaven.engine.v2.select.*;
+import io.deephaven.engine.table.impl.select.*;
 
 import java.util.Arrays;
 import java.util.Collection;

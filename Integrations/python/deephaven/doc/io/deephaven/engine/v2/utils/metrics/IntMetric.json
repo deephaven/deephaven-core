@@ -1,8 +1,8 @@
 {
- "className": "io.deephaven.engine.v2.utils.metrics.IntMetric",
+ "className": "io.deephaven.engine.table.impl.utils.metrics.IntMetric",
  "methods": {
   "sample": ":param v: int"
  },
- "path": "io.deephaven.engine.v2.utils.metrics.IntMetric",
+ "path": "io.deephaven.engine.table.impl.utils.metrics.IntMetric",
  "typeName": "interface"
 }

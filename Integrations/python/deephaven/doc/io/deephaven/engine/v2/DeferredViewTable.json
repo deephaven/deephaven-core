@@ -1,10 +1,10 @@
 {
- "className": "io.deephaven.engine.v2.DeferredViewTable",
+ "className": "io.deephaven.engine.table.impl.DeferredViewTable",
  "methods": {
-  "selectDistinct": ":param columns: io.deephaven.engine.v2.select.SelectColumn...\n:return: io.deephaven.engine.table.Table",
-  "where": ":param filters: io.deephaven.engine.v2.select.SelectFilter...\n:return: io.deephaven.engine.table.Table"
+  "selectDistinct": ":param columns: io.deephaven.engine.table.impl.select.SelectColumn...\n:return: io.deephaven.engine.table.Table",
+  "where": ":param filters: io.deephaven.engine.table.impl.select.SelectFilter...\n:return: io.deephaven.engine.table.Table"
  },
- "path": "io.deephaven.engine.v2.DeferredViewTable",
+ "path": "io.deephaven.engine.table.impl.DeferredViewTable",
  "text": "An uncoalesced table with view and where operations to be applied after UncoalescedTable.coalesce() is forced.",
  "typeName": "class"
 }

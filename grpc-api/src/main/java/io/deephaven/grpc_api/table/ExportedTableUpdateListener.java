@@ -6,10 +6,10 @@ package io.deephaven.grpc_api.table;
 
 import com.google.rpc.Code;
 import io.deephaven.engine.table.TableUpdate;
-import io.deephaven.engine.v2.BaseTable;
-import io.deephaven.engine.v2.InstrumentedTableUpdateListener;
-import io.deephaven.engine.v2.NotificationStepReceiver;
-import io.deephaven.engine.v2.SwapListener;
+import io.deephaven.engine.table.impl.BaseTable;
+import io.deephaven.engine.table.impl.InstrumentedTableUpdateListener;
+import io.deephaven.engine.table.impl.NotificationStepReceiver;
+import io.deephaven.engine.table.impl.SwapListener;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.grpc_api.session.SessionState;

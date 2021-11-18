@@ -1,9 +1,9 @@
 {
- "className": "io.deephaven.engine.v2.sources.regioned.ParquetColumnRegionFloat",
+ "className": "io.deephaven.engine.table.impl.sources.regioned.ParquetColumnRegionFloat",
  "methods": {
   "getFloat": "Get a single float from this region.\n\n:param elementIndex: (long) - Element (float) rowSet in the table's address space\n:return: (float) The float value at the specified element (float) rowSet"
  },
- "path": "io.deephaven.engine.v2.sources.regioned.ParquetColumnRegionFloat",
+ "path": "io.deephaven.engine.table.impl.sources.regioned.ParquetColumnRegionFloat",
  "text": "ColumnRegionFloat implementation for regions that support fetching primitive floats from\n column chunk page stores.",
  "typeName": "class"
 }

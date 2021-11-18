@@ -1,8 +1,8 @@
 {
- "className": "io.deephaven.engine.v2.select.formula.FormulaFactory",
+ "className": "io.deephaven.engine.table.impl.select.formula.FormulaFactory",
  "methods": {
-  "createFormula": ":param rowSet: io.deephaven.engine.v2.utils.TrackingRowSet\n:param initLazyMap: boolean\n:param columnsToData: java.util.Map<java.lang.String,? extendsio.deephaven.engine.v2.sources.ColumnSource>\n:param params: io.deephaven.engine.tables.select.Param...\n:return: io.deephaven.engine.v2.select.Formula"
+  "createFormula": ":param rowSet: io.deephaven.engine.table.impl.utils.TrackingRowSet\n:param initLazyMap: boolean\n:param columnsToData: java.util.Map<java.lang.String,? extendsio.deephaven.engine.table.impl.sources.ColumnSource>\n:param params: io.deephaven.engine.tables.select.Param...\n:return: io.deephaven.engine.table.impl.select.Formula"
  },
- "path": "io.deephaven.engine.v2.select.formula.FormulaFactory",
+ "path": "io.deephaven.engine.table.impl.select.formula.FormulaFactory",
  "typeName": "interface"
 }

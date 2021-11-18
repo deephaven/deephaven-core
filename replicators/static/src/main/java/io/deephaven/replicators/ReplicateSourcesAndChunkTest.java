@@ -19,30 +19,30 @@ public class ReplicateSourcesAndChunkTest {
     public static void main(String[] args) throws IOException {
         ReplicateSourcesAndChunks.main(args);
 
-        charToAllButBoolean("DB/src/test/java/io/deephaven/engine/v2/sources/TestCharacterArraySource.java");
+        charToAllButBoolean("DB/src/test/java/io/deephaven/engine/table/impl/sources/TestCharacterArraySource.java");
         fixupBooleanColumnSourceTest(
-                charToBooleanAsByte("DB/src/test/java/io/deephaven/engine/v2/sources/TestCharacterArraySource.java",
+                charToBooleanAsByte("DB/src/test/java/io/deephaven/engine/table/impl/sources/TestCharacterArraySource.java",
                         Collections.emptyMap()));
         fixupObjectColumnSourceTest(
-                charToObject("DB/src/test/java/io/deephaven/engine/v2/sources/TestCharacterArraySource.java"));
+                charToObject("DB/src/test/java/io/deephaven/engine/table/impl/sources/TestCharacterArraySource.java"));
 
-        charToAllButBoolean("DB/src/test/java/io/deephaven/engine/v2/sources/TestCharacterSparseArraySource.java");
+        charToAllButBoolean("DB/src/test/java/io/deephaven/engine/table/impl/sources/TestCharacterSparseArraySource.java");
         fixupBooleanColumnSourceTest(charToBooleanAsByte(
-                "DB/src/test/java/io/deephaven/engine/v2/sources/TestCharacterSparseArraySource.java",
+                "DB/src/test/java/io/deephaven/engine/table/impl/sources/TestCharacterSparseArraySource.java",
                 Collections.emptyMap()));
         fixupObjectColumnSourceTest(
-                charToObject("DB/src/test/java/io/deephaven/engine/v2/sources/TestCharacterSparseArraySource.java"));
+                charToObject("DB/src/test/java/io/deephaven/engine/table/impl/sources/TestCharacterSparseArraySource.java"));
 
-        charToAll("DB/src/test/java/io/deephaven/engine/v2/sources/chunk/TestCharChunk.java");
-        fixupChunkTest(charToObject("DB/src/test/java/io/deephaven/engine/v2/sources/chunk/TestCharChunk.java"));
+        charToAll("DB/src/test/java/io/deephaven/engine/table/impl/sources/chunk/TestCharChunk.java");
+        fixupChunkTest(charToObject("DB/src/test/java/io/deephaven/engine/table/impl/sources/chunk/TestCharChunk.java"));
 
         charToAllButBoolean(
-                "DB/src/test/java/io/deephaven/engine/v2/sources/deltaaware/TestCharacterDeltaAwareColumnSource.java");
+                "DB/src/test/java/io/deephaven/engine/table/impl/sources/deltaaware/TestCharacterDeltaAwareColumnSource.java");
         fixupBooleanDeltaAwareColumnSourceTest(charToBooleanAsByte(
-                "DB/src/test/java/io/deephaven/engine/v2/sources/deltaaware/TestCharacterDeltaAwareColumnSource.java",
+                "DB/src/test/java/io/deephaven/engine/table/impl/sources/deltaaware/TestCharacterDeltaAwareColumnSource.java",
                 Collections.emptyMap()));
         fixupObjectDeltaAwareColumnSourceTest(charToObject(
-                "DB/src/test/java/io/deephaven/engine/v2/sources/deltaaware/TestCharacterDeltaAwareColumnSource.java"));
+                "DB/src/test/java/io/deephaven/engine/table/impl/sources/deltaaware/TestCharacterDeltaAwareColumnSource.java"));
     }
 
     private static void fixupObjectColumnSourceTest(String objectPath) throws IOException {

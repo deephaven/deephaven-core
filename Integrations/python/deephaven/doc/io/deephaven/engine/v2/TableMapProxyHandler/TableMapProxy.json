@@ -1,6 +1,6 @@
 {
- "className": "io.deephaven.engine.v2.TableMapProxyHandler$TableMapProxy",
+ "className": "io.deephaven.engine.table.impl.TableMapProxyHandler$TableMapProxy",
  "methods": {},
- "path": "io.deephaven.engine.v2.TableMapProxyHandler.TableMapProxy",
+ "path": "io.deephaven.engine.table.impl.TableMapProxyHandler.TableMapProxy",
  "typeName": "interface"
 }

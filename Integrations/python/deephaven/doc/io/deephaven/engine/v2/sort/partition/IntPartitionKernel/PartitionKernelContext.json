@@ -1,9 +1,9 @@
 {
- "className": "io.deephaven.engine.v2.sort.partition.IntPartitionKernel$PartitionKernelContext",
+ "className": "io.deephaven.engine.table.impl.sort.partition.IntPartitionKernel$PartitionKernelContext",
  "methods": {
-  "getPartitions": ":param resetBuilders: boolean\n:return: io.deephaven.engine.v2.utils.RowSet[]",
+  "getPartitions": ":param resetBuilders: boolean\n:return: io.deephaven.engine.table.impl.utils.RowSet[]",
   "getPivots": ":return: io.deephaven.engine.util.tuples.generated.IntLongTuple[]"
  },
- "path": "io.deephaven.engine.v2.sort.partition.IntPartitionKernel.PartitionKernelContext",
+ "path": "io.deephaven.engine.table.impl.sort.partition.IntPartitionKernel.PartitionKernelContext",
  "typeName": "class"
 }

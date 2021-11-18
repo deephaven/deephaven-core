@@ -8,7 +8,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.util.annotations.ScriptApi;
 import org.jpy.PyObject;
-import io.deephaven.engine.v2.ShiftObliviousInstrumentedListenerAdapter;
+import io.deephaven.engine.table.impl.ShiftObliviousInstrumentedListenerAdapter;
 
 
 /**

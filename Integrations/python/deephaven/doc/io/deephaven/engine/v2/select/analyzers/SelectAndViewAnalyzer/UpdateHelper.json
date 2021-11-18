@@ -1,6 +1,6 @@
 {
- "className": "io.deephaven.engine.v2.select.analyzers.SelectAndViewAnalyzer$UpdateHelper",
+ "className": "io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer$UpdateHelper",
  "methods": {},
- "path": "io.deephaven.engine.v2.select.analyzers.SelectAndViewAnalyzer.UpdateHelper",
+ "path": "io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer.UpdateHelper",
  "typeName": "class"
 }

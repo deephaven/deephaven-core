@@ -1,5 +1,5 @@
 {
- "className": "io.deephaven.engine.v2.ssms.ShortSegmentedSortedMultiset",
+ "className": "io.deephaven.engine.table.impl.ssms.ShortSegmentedSortedMultiset",
  "methods": {
   "countChunk": ":return: io.deephaven.engine.chunk.LongChunk<?>",
   "equals": ":param o: java.lang.Object\n:return: boolean",
@@ -21,9 +21,9 @@
   "hashCode": ":return: int",
   "insert": "Insert new valuesToInsert into this SSMS. The valuesToInsert to insert must be sorted, without duplicates.\n\n The valuesToInsert and counts chunks will be modified during this call, and the resulting chunks are undefined.\n\n:param valuesToInsert: (io.deephaven.engine.chunk.WritableChunk<? extendsio.deephaven.engine.chunk.Attributes.Values>) - the valuesToInsert to insert\n:param counts: (io.deephaven.engine.chunk.WritableIntChunk<io.deephaven.engine.chunk.Attributes.ChunkLengths>) - the number of times each value occurs\n:return: (boolean) true if any new values were inserted",
   "keyChunk": ":return: io.deephaven.engine.chunk.ShortChunk<?>",
-  "moveBackToFront": "Remove count elements from the back of this SSM and add them to the front of the destination SSM.\n \n The minimum element of this SSM must be less than or equal to the maximum of destination.\n\n:param untypedDestination: (io.deephaven.engine.v2.ssms.SegmentedSortedMultiSet) - the SegmentedSortedMultiSet to prepend count elements to\n:param count: (long) - how many elements to move to the destination",
-  "moveFrontToBack": "Remove count elements from the front of this SSM and add them to the back of the destination SSM.\n \n The minimum element of this SSM must be greater than or equal to the maximum of destination.\n\n:param untypedDestination: (io.deephaven.engine.v2.ssms.SegmentedSortedMultiSet) - the SegmentedSortedMultiSet to append count elements to\n:param count: (long) - how many elements to move to the destination",
-  "remove": "Remove valuesToRemove from this SSA.  The valuesToRemove to remove must be sorted.\n\n:param removeContext: (io.deephaven.engine.v2.ssms.SegmentedSortedMultiSet.RemoveContext) - removalContext\n:param valuesToRemove: (io.deephaven.engine.chunk.WritableChunk<? extendsio.deephaven.engine.chunk.Attributes.Values>) - the valuesToRemove to remove\n:param counts: io.deephaven.engine.chunk.WritableIntChunk<io.deephaven.engine.chunk.Attributes.ChunkLengths>\n:return: (boolean) true if any values were removed.",
+  "moveBackToFront": "Remove count elements from the back of this SSM and add them to the front of the destination SSM.\n \n The minimum element of this SSM must be less than or equal to the maximum of destination.\n\n:param untypedDestination: (io.deephaven.engine.table.impl.ssms.SegmentedSortedMultiSet) - the SegmentedSortedMultiSet to prepend count elements to\n:param count: (long) - how many elements to move to the destination",
+  "moveFrontToBack": "Remove count elements from the front of this SSM and add them to the back of the destination SSM.\n \n The minimum element of this SSM must be greater than or equal to the maximum of destination.\n\n:param untypedDestination: (io.deephaven.engine.table.impl.ssms.SegmentedSortedMultiSet) - the SegmentedSortedMultiSet to append count elements to\n:param count: (long) - how many elements to move to the destination",
+  "remove": "Remove valuesToRemove from this SSA.  The valuesToRemove to remove must be sorted.\n\n:param removeContext: (io.deephaven.engine.table.impl.ssms.SegmentedSortedMultiSet.RemoveContext) - removalContext\n:param valuesToRemove: (io.deephaven.engine.chunk.WritableChunk<? extendsio.deephaven.engine.chunk.Attributes.Values>) - the valuesToRemove to remove\n:param counts: io.deephaven.engine.chunk.WritableIntChunk<io.deephaven.engine.chunk.Attributes.ChunkLengths>\n:return: (boolean) true if any values were removed.",
   "setTrackDeltas": ":param shouldTrackDeltas: boolean",
   "size": "The size of this data structure.\n\n:return: (long) the size of the set (i.e. the number of unique elements).",
   "subVector": ":param fromIndex: long\n:param toIndex: long\n:return: io.deephaven.engine.vector.ShortVector",
@@ -32,6 +32,6 @@
   "toString": ":return: java.lang.String",
   "totalSize": ":return: (long) the total size of the set in elements (i.e. if A exists twice, 2 is returned not one)"
  },
- "path": "io.deephaven.engine.v2.ssms.ShortSegmentedSortedMultiset",
+ "path": "io.deephaven.engine.table.impl.ssms.ShortSegmentedSortedMultiset",
  "typeName": "class"
 }

@@ -1,6 +1,6 @@
 {
- "className": "io.deephaven.engine.v2.utils.RowSetBuilderRandom$Helper",
+ "className": "io.deephaven.engine.table.impl.utils.RowSetBuilderRandom$Helper",
  "methods": {},
- "path": "io.deephaven.engine.v2.utils.RowSetBuilderRandom.Helper",
+ "path": "io.deephaven.engine.table.impl.utils.RowSetBuilderRandom.Helper",
  "typeName": "class"
 }

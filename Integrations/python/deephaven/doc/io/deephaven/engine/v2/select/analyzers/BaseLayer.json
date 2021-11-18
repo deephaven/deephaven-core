@@ -1,10 +1,10 @@
 {
- "className": "io.deephaven.engine.v2.select.analyzers.BaseLayer",
+ "className": "io.deephaven.engine.table.impl.select.analyzers.BaseLayer",
  "methods": {
-  "applyUpdate": "Apply this update to this SelectAndViewAnalyzer.\n\n:param upstream: (io.deephaven.engine.v2.Listener.Update) - the upstream update\n:param toClear: (io.deephaven.engine.v2.utils.RowSet) - rows that used to exist and no longer exist\n:param helper: (io.deephaven.engine.v2.select.analyzers.SelectAndViewAnalyzer.UpdateHelper) - convenience class that memoizes reusable calculations for this update",
-  "getInner": ":return: io.deephaven.engine.v2.select.analyzers.SelectAndViewAnalyzer",
+  "applyUpdate": "Apply this update to this SelectAndViewAnalyzer.\n\n:param upstream: (io.deephaven.engine.table.impl.Listener.Update) - the upstream update\n:param toClear: (io.deephaven.engine.table.impl.utils.RowSet) - rows that used to exist and no longer exist\n:param helper: (io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer.UpdateHelper) - convenience class that memoizes reusable calculations for this update",
+  "getInner": ":return: io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer",
   "updateColumnDefinitionsFromTopLayer": ":param columnDefinitions: java.util.Map<java.lang.String,io.deephaven.engine.tables.ColumnDefinition<?>>"
  },
- "path": "io.deephaven.engine.v2.select.analyzers.BaseLayer",
+ "path": "io.deephaven.engine.table.impl.select.analyzers.BaseLayer",
  "typeName": "class"
 }

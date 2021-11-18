@@ -1,9 +1,9 @@
 {
- "className": "io.deephaven.engine.v2.locations.parquet.topage.ToDateTimePage",
+ "className": "io.deephaven.engine.table.impl.locations.parquet.topage.ToDateTimePage",
  "methods": {
-  "create": "Note: Java generics information - <ATTR extends io.deephaven.engine.chunk.Attributes.Any>\n\n:param nativeType: java.lang.Class<?>\n:param unit: org.apache.parquet.schema.LogicalTypeAnnotation.TimeUnit\n:return: io.deephaven.engine.v2.locations.parquet.topage.ToPage<ATTR,io.deephaven.engine.tables.utils.DateTime[]>",
+  "create": "Note: Java generics information - <ATTR extends io.deephaven.engine.chunk.Attributes.Any>\n\n:param nativeType: java.lang.Class<?>\n:param unit: org.apache.parquet.schema.LogicalTypeAnnotation.TimeUnit\n:return: io.deephaven.engine.table.impl.locations.parquet.topage.ToPage<ATTR,io.deephaven.engine.tables.utils.DateTime[]>",
   "getNativeComponentType": ":return: (java.lang.Class<io.deephaven.engine.tables.utils.DateTime>) The native type for the elements of engine arrays produced by this object."
  },
- "path": "io.deephaven.engine.v2.locations.parquet.topage.ToDateTimePage",
+ "path": "io.deephaven.engine.table.impl.locations.parquet.topage.ToDateTimePage",
  "typeName": "class"
 }

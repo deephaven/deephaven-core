@@ -1,9 +1,9 @@
 {
- "className": "io.deephaven.engine.v2.JoinControl",
+ "className": "io.deephaven.engine.table.impl.JoinControl",
  "methods": {
   "leftChunkSize": ":return: int",
   "rightChunkSize": ":return: int"
  },
- "path": "io.deephaven.engine.v2.JoinControl",
+ "path": "io.deephaven.engine.table.impl.JoinControl",
  "typeName": "class"
 }

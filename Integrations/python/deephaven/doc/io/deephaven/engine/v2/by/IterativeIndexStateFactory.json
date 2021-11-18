@@ -1,6 +1,6 @@
 {
- "className": "io.deephaven.engine.v2.by.IterativeIndexStateFactory",
+ "className": "io.deephaven.engine.table.impl.by.IterativeIndexStateFactory",
  "methods": {},
- "path": "io.deephaven.engine.v2.by.IterativeIndexStateFactory",
+ "path": "io.deephaven.engine.table.impl.by.IterativeIndexStateFactory",
  "typeName": "class"
 }

@@ -1,5 +1,5 @@
 {
- "className": "io.deephaven.engine.v2.sources.ColumnSourceGetDefaults$LongBacked",
+ "className": "io.deephaven.engine.table.impl.sources.ColumnSourceGetDefaults$LongBacked",
  "methods": {
   "getBoolean": ":param index: long\n:return: java.lang.Boolean",
   "getByte": ":param index: long\n:return: byte",
@@ -9,7 +9,7 @@
   "getInt": ":param index: long\n:return: int",
   "getShort": ":param index: long\n:return: short"
  },
- "path": "io.deephaven.engine.v2.sources.ColumnSourceGetDefaults.LongBacked",
+ "path": "io.deephaven.engine.table.impl.sources.ColumnSourceGetDefaults.LongBacked",
  "text": "Default interface for long-backed ColumnSource implementations.",
  "typeName": "interface"
 }

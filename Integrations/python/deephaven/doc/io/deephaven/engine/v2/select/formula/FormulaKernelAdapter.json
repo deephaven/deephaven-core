@@ -1,8 +1,8 @@
 {
- "className": "io.deephaven.engine.v2.select.formula.FormulaKernelAdapter",
+ "className": "io.deephaven.engine.table.impl.select.formula.FormulaKernelAdapter",
  "methods": {
-  "fillChunk": ":param __context: io.deephaven.engine.v2.select.Formula.FillContext\n:param __destination: io.deephaven.engine.chunk.WritableChunk<? superio.deephaven.engine.chunk.Attributes.Values>\n:param __rowSequence: io.deephaven.engine.structures.RowSequence",
-  "fillPrevChunk": ":param __context: io.deephaven.engine.v2.select.Formula.FillContext\n:param __destination: io.deephaven.engine.chunk.WritableChunk<? superio.deephaven.engine.chunk.Attributes.Values>\n:param __rowSequence: io.deephaven.engine.structures.RowSequence",
+  "fillChunk": ":param __context: io.deephaven.engine.table.impl.select.Formula.FillContext\n:param __destination: io.deephaven.engine.chunk.WritableChunk<? superio.deephaven.engine.chunk.Attributes.Values>\n:param __rowSequence: io.deephaven.engine.structures.RowSequence",
+  "fillPrevChunk": ":param __context: io.deephaven.engine.table.impl.select.Formula.FillContext\n:param __destination: io.deephaven.engine.chunk.WritableChunk<? superio.deephaven.engine.chunk.Attributes.Values>\n:param __rowSequence: io.deephaven.engine.structures.RowSequence",
   "get": ":param k: long\n:return: java.lang.Object",
   "getBoolean": ":param k: long\n:return: java.lang.Boolean",
   "getByte": ":param k: long\n:return: byte",
@@ -21,8 +21,8 @@
   "getPrevLong": ":param k: long\n:return: long",
   "getPrevShort": ":param k: long\n:return: short",
   "getShort": ":param k: long\n:return: short",
-  "makeFillContext": ":param chunkCapacity: int\n:return: io.deephaven.engine.v2.select.formula.FormulaKernelAdapter.AdapterContext"
+  "makeFillContext": ":param chunkCapacity: int\n:return: io.deephaven.engine.table.impl.select.formula.FormulaKernelAdapter.AdapterContext"
  },
- "path": "io.deephaven.engine.v2.select.formula.FormulaKernelAdapter",
+ "path": "io.deephaven.engine.table.impl.select.formula.FormulaKernelAdapter",
  "typeName": "class"
 }

@@ -5,7 +5,7 @@ import com.google.rpc.Code;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.time.DateTimeUtils;
-import io.deephaven.engine.v2.TimeTable;
+import io.deephaven.engine.table.impl.TimeTable;
 import io.deephaven.grpc_api.session.SessionState;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.grpc_api.util.Scheduler;

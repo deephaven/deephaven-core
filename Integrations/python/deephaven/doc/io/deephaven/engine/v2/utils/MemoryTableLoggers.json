@@ -1,16 +1,16 @@
 {
- "className": "io.deephaven.engine.v2.utils.MemoryTableLoggers",
+ "className": "io.deephaven.engine.table.impl.utils.MemoryTableLoggers",
  "methods": {
-  "getInstance": ":return: io.deephaven.engine.v2.utils.MemoryTableLoggers",
+  "getInstance": ":return: io.deephaven.engine.table.impl.utils.MemoryTableLoggers",
   "getProcessInfo": ":return: io.deephaven.process.ProcessInfo",
-  "getProcessInfoQueryTable": ":return: io.deephaven.engine.v2.QueryTable",
-  "getProcessMetricsQueryTable": ":return: io.deephaven.engine.v2.QueryTable",
+  "getProcessInfoQueryTable": ":return: io.deephaven.engine.table.impl.QueryTable",
+  "getProcessMetricsQueryTable": ":return: io.deephaven.engine.table.impl.QueryTable",
   "getQoplLogger": ":return: io.deephaven.engine.tablelogger.QueryOperationPerformanceLogLogger",
-  "getQoplLoggerQueryTable": ":return: io.deephaven.engine.v2.QueryTable",
+  "getQoplLoggerQueryTable": ":return: io.deephaven.engine.table.impl.QueryTable",
   "getQplLogger": ":return: io.deephaven.engine.tablelogger.QueryPerformanceLogLogger",
-  "getQplLoggerQueryTable": ":return: io.deephaven.engine.v2.QueryTable",
+  "getQplLoggerQueryTable": ":return: io.deephaven.engine.table.impl.QueryTable",
   "maybeStartStatsCollection": ":return: boolean"
  },
- "path": "io.deephaven.engine.v2.utils.MemoryTableLoggers",
+ "path": "io.deephaven.engine.table.impl.utils.MemoryTableLoggers",
  "typeName": "class"
 }

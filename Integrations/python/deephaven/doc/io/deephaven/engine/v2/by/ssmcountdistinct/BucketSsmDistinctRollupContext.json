@@ -1,6 +1,6 @@
 {
- "className": "io.deephaven.engine.v2.by.ssmcountdistinct.BucketSsmDistinctRollupContext",
+ "className": "io.deephaven.engine.table.impl.by.ssmcountdistinct.BucketSsmDistinctRollupContext",
  "methods": {},
- "path": "io.deephaven.engine.v2.by.ssmcountdistinct.BucketSsmDistinctRollupContext",
+ "path": "io.deephaven.engine.table.impl.by.ssmcountdistinct.BucketSsmDistinctRollupContext",
  "typeName": "class"
 }

@@ -1,6 +1,6 @@
 {
- "className": "io.deephaven.engine.v2.replay.ReplayLastByGroupedTable",
+ "className": "io.deephaven.engine.table.impl.replay.ReplayLastByGroupedTable",
  "methods": {},
- "path": "io.deephaven.engine.v2.replay.ReplayLastByGroupedTable",
+ "path": "io.deephaven.engine.table.impl.replay.ReplayLastByGroupedTable",
  "typeName": "class"
 }

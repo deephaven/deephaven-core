@@ -1,9 +1,9 @@
 {
- "className": "io.deephaven.engine.v2.sources.regioned.ColumnRegionDouble$Constant",
+ "className": "io.deephaven.engine.table.impl.sources.regioned.ColumnRegionDouble$Constant",
  "methods": {
   "fillChunkAppend": "Appends the values repeating value length times to destination.\n\n:param context: io.deephaven.engine.chunk.ChunkSource.FillContext\n:param destination: io.deephaven.engine.chunk.WritableChunk<? superColumnRegionDouble.Constant.ATTR>\n:param length: int",
   "getDouble": "Get a single double from this region.\n\n:param elementIndex: (long) - Element (double) rowSet in the table's address space\n:return: (double) The double value at the specified element (double) rowSet"
  },
- "path": "io.deephaven.engine.v2.sources.regioned.ColumnRegionDouble.Constant",
+ "path": "io.deephaven.engine.table.impl.sources.regioned.ColumnRegionDouble.Constant",
  "typeName": "class"
 }

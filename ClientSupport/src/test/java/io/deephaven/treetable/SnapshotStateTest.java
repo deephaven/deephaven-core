@@ -3,9 +3,9 @@ package io.deephaven.treetable;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.tables.libs.QueryLibrary;
 import io.deephaven.engine.tables.utils.TableTools;
-import io.deephaven.engine.v2.BaseTable;
-import io.deephaven.engine.v2.HierarchicalTable;
-import io.deephaven.engine.v2.QueryTableTestBase;
+import io.deephaven.engine.table.impl.BaseTable;
+import io.deephaven.engine.table.impl.HierarchicalTable;
+import io.deephaven.engine.table.impl.QueryTableTestBase;
 import org.junit.Test;
 
 import java.io.IOException;

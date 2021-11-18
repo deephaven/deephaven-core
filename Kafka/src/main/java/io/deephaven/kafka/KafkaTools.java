@@ -20,8 +20,8 @@ import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
-import io.deephaven.engine.v2.LocalTableMap;
-import io.deephaven.engine.v2.StreamTableTools;
+import io.deephaven.engine.table.impl.LocalTableMap;
+import io.deephaven.engine.table.impl.StreamTableTools;
 import io.deephaven.engine.table.TableMap;
 import io.deephaven.engine.table.TransformableTableMap;
 import io.deephaven.internal.log.LoggerFactory;
@@ -870,7 +870,7 @@ public class KafkaTools {
          * to downstream operations and visualizations.
          * <p>
          * See {@link Table#STREAM_TABLE_ATTRIBUTE} for a detailed explanation of stream table semantics, and
-         * {@link io.deephaven.engine.v2.StreamTableTools} for related tooling.
+         * {@link io.deephaven.engine.table.impl.StreamTableTools} for related tooling.
          */
         Stream(false, false),
         /**

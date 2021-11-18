@@ -1,8 +1,8 @@
 {
- "className": "io.deephaven.engine.v2.utils.IndexPeformanceTest",
+ "className": "io.deephaven.engine.table.impl.utils.IndexPeformanceTest",
  "methods": {
   "main": ":param args: java.lang.String[]"
  },
- "path": "io.deephaven.engine.v2.utils.IndexPeformanceTest",
+ "path": "io.deephaven.engine.table.impl.utils.IndexPeformanceTest",
  "typeName": "class"
 }

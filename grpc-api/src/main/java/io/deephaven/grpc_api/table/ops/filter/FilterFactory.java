@@ -4,7 +4,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.tables.select.SelectFilterFactory;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.time.TimeZone;
-import io.deephaven.engine.v2.select.*;
+import io.deephaven.engine.table.impl.select.*;
 import io.deephaven.proto.backplane.grpc.CaseSensitivity;
 import io.deephaven.proto.backplane.grpc.CompareCondition;
 import io.deephaven.proto.backplane.grpc.Condition;

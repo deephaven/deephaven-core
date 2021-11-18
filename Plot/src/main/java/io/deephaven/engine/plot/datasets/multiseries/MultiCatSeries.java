@@ -11,7 +11,7 @@ import io.deephaven.engine.plot.datasets.category.*;
 import io.deephaven.engine.plot.util.ArgumentValidations;
 import io.deephaven.engine.plot.util.tables.TableBackedTableMapHandle;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.v2.BaseTable;
+import io.deephaven.engine.table.impl.BaseTable;
 
 import java.util.Collection;
 

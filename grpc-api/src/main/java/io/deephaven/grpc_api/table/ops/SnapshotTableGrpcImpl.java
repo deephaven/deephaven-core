@@ -6,7 +6,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.tables.select.SelectColumnFactory;
 import io.deephaven.engine.tables.utils.TableTools;
-import io.deephaven.engine.v2.select.SelectColumn;
+import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.util.FunctionalInterfaces;
 import io.deephaven.grpc_api.session.SessionState;
 import io.deephaven.grpc_api.table.validation.ColumnExpressionValidator;

@@ -30,7 +30,7 @@ def _defineSymbols():
     global _java_type_
     if _java_type_ is None:
         # This will raise an exception if the desired object is not the classpath
-        _java_type_ = jpy.get_type("io.deephaven.engine.v2.utils.PerformanceQueries")
+        _java_type_ = jpy.get_type("io.deephaven.engine.table.impl.utils.PerformanceQueries")
 
 
 # every module method should be decorated with @_passThrough

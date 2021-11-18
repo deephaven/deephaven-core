@@ -1,6 +1,6 @@
 package io.deephaven.integrations.learn;
 
-import io.deephaven.engine.v2.InMemoryTable;
+import io.deephaven.engine.table.impl.InMemoryTable;
 import io.deephaven.engine.table.ColumnSource;
 import org.junit.Assert;
 import org.junit.BeforeClass;

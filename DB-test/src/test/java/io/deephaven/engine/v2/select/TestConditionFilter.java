@@ -1,4 +1,4 @@
-package io.deephaven.engine.v2.select;
+package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
@@ -32,7 +32,7 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import static io.deephaven.engine.v2.select.FormulaTestUtil.*;
+import static io.deephaven.engine.table.impl.select.FormulaTestUtil.*;
 import static org.jpy.PyLib.getMainGlobals;
 import static org.junit.Assert.fail;
 

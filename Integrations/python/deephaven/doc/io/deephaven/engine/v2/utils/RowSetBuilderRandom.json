@@ -1,16 +1,16 @@
 {
- "className": "io.deephaven.engine.v2.utils.RowSetBuilderRandom",
+ "className": "io.deephaven.engine.table.impl.utils.RowSetBuilderRandom",
  "methods": {
   "addKey": ":param rowKey: long",
   "addKeys": ":param it: java.util.PrimitiveIterator.OfLong",
   "addOrderedRowKeysChunk": "*Overload 1*  \n  :param chunk: io.deephaven.engine.chunk.LongChunk<? extendsio.deephaven.engine.chunk.Attributes.OrderedRowKeys>\n  \n*Overload 2*  \n  :param chunk: io.deephaven.engine.chunk.IntChunk<? extendsio.deephaven.engine.chunk.Attributes.OrderedRowKeys>",
   "addRange": ":param firstRowKey: long\n:param lastRowKey: long",
-  "addRanges": ":param it: io.deephaven.engine.v2.utils.LongRangeIterator",
+  "addRanges": ":param it: io.deephaven.engine.table.impl.utils.LongRangeIterator",
   "addRowKeysChunk": "*Overload 1*  \n  :param chunk: io.deephaven.engine.chunk.LongChunk<? extendsio.deephaven.engine.chunk.Attributes.RowKeys>\n  \n*Overload 2*  \n  :param chunk: io.deephaven.engine.chunk.IntChunk<? extendsio.deephaven.engine.chunk.Attributes.RowKeys>",
-  "addRowSet": ":param rowSet: io.deephaven.engine.v2.utils.RowSet",
-  "build": ":return: io.deephaven.engine.v2.utils.MutableRowSet"
+  "addRowSet": ":param rowSet: io.deephaven.engine.table.impl.utils.RowSet",
+  "build": ":return: io.deephaven.engine.table.impl.utils.MutableRowSet"
  },
- "path": "io.deephaven.engine.v2.utils.RowSetBuilderRandom",
+ "path": "io.deephaven.engine.table.impl.utils.RowSetBuilderRandom",
  "text": "Builder interface for RowSet construction in arbitrary order.",
  "typeName": "interface"
 }

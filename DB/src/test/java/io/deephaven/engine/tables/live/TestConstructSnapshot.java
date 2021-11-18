@@ -2,8 +2,8 @@ package io.deephaven.engine.tables.live;
 
 import io.deephaven.base.SleepUtil;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.v2.RefreshingTableTestCase;
-import io.deephaven.engine.v2.remote.ConstructSnapshot;
+import io.deephaven.engine.table.impl.RefreshingTableTestCase;
+import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.updategraph.LogicalClock;
 import org.apache.commons.lang3.mutable.MutableLong;
 

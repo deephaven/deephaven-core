@@ -1,7 +1,7 @@
 {
- "className": "io.deephaven.engine.v2.locations.util.TableDataRefreshService$Helper",
+ "className": "io.deephaven.engine.table.impl.locations.util.TableDataRefreshService$Helper",
  "methods": {},
- "path": "io.deephaven.engine.v2.locations.util.TableDataRefreshService.Helper",
+ "path": "io.deephaven.engine.table.impl.locations.util.TableDataRefreshService.Helper",
  "text": "Static helper class for holding and building the shared instance.",
  "typeName": "class"
 }

@@ -1,8 +1,8 @@
 {
- "className": "io.deephaven.engine.v2.utils.reverse.LongReverseKernel",
+ "className": "io.deephaven.engine.table.impl.utils.reverse.LongReverseKernel",
  "methods": {
   "reverse": "Note: Java generics information - <T extends io.deephaven.engine.chunk.Attributes.Any>\n\n:param chunkToReverse: io.deephaven.engine.chunk.WritableLongChunk<T>"
  },
- "path": "io.deephaven.engine.v2.utils.reverse.LongReverseKernel",
+ "path": "io.deephaven.engine.table.impl.utils.reverse.LongReverseKernel",
  "typeName": "class"
 }

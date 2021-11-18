@@ -1,9 +1,9 @@
 {
- "className": "io.deephaven.engine.v2.utils.AsyncErrorLogger",
+ "className": "io.deephaven.engine.table.impl.utils.AsyncErrorLogger",
  "methods": {
   "getErrorLog": ":return: io.deephaven.engine.table.Table",
-  "log": ":param time: io.deephaven.engine.tables.utils.DateTime\n:param entry: io.deephaven.engine.v2.utils.UpdatePerformanceTracker.Entry\n:param sourceEntry: io.deephaven.engine.v2.utils.UpdatePerformanceTracker.Entry\n:param originalException: java.lang.Throwable"
+  "log": ":param time: io.deephaven.engine.tables.utils.DateTime\n:param entry: io.deephaven.engine.table.impl.utils.UpdatePerformanceTracker.Entry\n:param sourceEntry: io.deephaven.engine.table.impl.utils.UpdatePerformanceTracker.Entry\n:param originalException: java.lang.Throwable"
  },
- "path": "io.deephaven.engine.v2.utils.AsyncErrorLogger",
+ "path": "io.deephaven.engine.table.impl.utils.AsyncErrorLogger",
  "typeName": "class"
 }

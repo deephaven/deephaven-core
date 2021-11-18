@@ -1,13 +1,13 @@
 {
- "className": "io.deephaven.engine.v2.by.ComboAggregateFactory$ComboByImpl",
+ "className": "io.deephaven.engine.table.impl.by.ComboAggregateFactory$ComboByImpl",
  "methods": {
-  "forRollup": ":return: io.deephaven.engine.v2.by.ComboAggregateFactory.ComboBy",
-  "getMemoKey": ":return: io.deephaven.engine.v2.by.AggregationMemoKey",
+  "forRollup": ":return: io.deephaven.engine.table.impl.by.ComboAggregateFactory.ComboBy",
+  "getMemoKey": ":return: io.deephaven.engine.table.impl.by.AggregationMemoKey",
   "getResultPairs": ":return: io.deephaven.engine.tables.select.MatchPair[]",
   "getSourceColumns": ":return: java.lang.String[]",
-  "getUnderlyingStateFactory": ":return: io.deephaven.engine.v2.by.AggregationStateFactory",
+  "getUnderlyingStateFactory": ":return: io.deephaven.engine.table.impl.by.AggregationStateFactory",
   "toString": ":return: java.lang.String"
  },
- "path": "io.deephaven.engine.v2.by.ComboAggregateFactory.ComboByImpl",
+ "path": "io.deephaven.engine.table.impl.by.ComboAggregateFactory.ComboByImpl",
  "typeName": "class"
 }

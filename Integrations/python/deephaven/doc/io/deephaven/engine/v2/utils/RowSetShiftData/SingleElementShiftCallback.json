@@ -1,8 +1,8 @@
 {
- "className": "io.deephaven.engine.v2.utils.RowSetShiftData$SingleElementShiftCallback",
+ "className": "io.deephaven.engine.table.impl.utils.RowSetShiftData$SingleElementShiftCallback",
  "methods": {
   "shift": "Process the shift.\n\n:param key: (long) - the key to shift\n:param shiftDelta: (long) - amount key has moved by"
  },
- "path": "io.deephaven.engine.v2.utils.RowSetShiftData.SingleElementShiftCallback",
+ "path": "io.deephaven.engine.table.impl.utils.RowSetShiftData.SingleElementShiftCallback",
  "typeName": "interface"
 }

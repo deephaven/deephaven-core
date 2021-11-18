@@ -12,8 +12,8 @@ import io.deephaven.io.logger.StreamLoggerImpl;
 import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.util.WorkerPythonEnvironment;
-import io.deephaven.engine.v2.select.MatchFilter;
-import io.deephaven.engine.v2.select.WhereFilter;
+import io.deephaven.engine.table.impl.select.MatchFilter;
+import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.jpy.PythonTest;
 
 import java.util.Collections;

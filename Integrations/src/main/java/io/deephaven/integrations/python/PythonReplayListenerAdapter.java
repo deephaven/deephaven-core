@@ -7,7 +7,7 @@ package io.deephaven.integrations.python;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
-import io.deephaven.engine.v2.InstrumentedTableUpdateListenerAdapter;
+import io.deephaven.engine.table.impl.InstrumentedTableUpdateListenerAdapter;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;

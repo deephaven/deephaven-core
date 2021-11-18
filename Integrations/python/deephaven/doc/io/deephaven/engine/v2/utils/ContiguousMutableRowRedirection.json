@@ -1,5 +1,5 @@
 {
- "className": "io.deephaven.engine.v2.utils.ContiguousMutableRowRedirection",
+ "className": "io.deephaven.engine.table.impl.utils.ContiguousMutableRowRedirection",
  "methods": {
   "fillChunk": "Lookup each element in a RowSequence and write the result to a WritableLongChunk.\n\n:param fillContext: (io.deephaven.engine.chunk.ChunkSource.FillContext) - The FillContext\n:param innerRowKeys: (io.deephaven.engine.chunk.WritableLongChunk<? extendsio.deephaven.engine.chunk.Attributes.RowKeys>) - The result chunk\n:param outerRowKeys: (io.deephaven.engine.structures.RowSequence) - The row keys to lookup in this RowRedirection",
   "fillPrevChunk": "Lookup each element in a RowSequence and write the result to a WritableLongChunk, using previous\n values.\n\n:param fillContext: (io.deephaven.engine.chunk.ChunkSource.FillContext) - The FillContext\n:param innerRowKeys: (io.deephaven.engine.chunk.WritableLongChunk<? extendsio.deephaven.engine.chunk.Attributes.RowKeys>) - The result chunk\n:param outerRowKeys: (io.deephaven.engine.structures.RowSequence) - The row keys to lookup in this RowRedirection",
@@ -10,6 +10,6 @@
   "startTrackingPrevValues": "Initiate previous value tracking.",
   "toString": ":return: java.lang.String"
  },
- "path": "io.deephaven.engine.v2.utils.ContiguousMutableRowRedirection",
+ "path": "io.deephaven.engine.table.impl.utils.ContiguousMutableRowRedirection",
  "typeName": "class"
 }

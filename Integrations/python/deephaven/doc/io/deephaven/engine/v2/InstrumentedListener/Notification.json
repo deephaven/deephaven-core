@@ -1,7 +1,7 @@
 {
- "className": "io.deephaven.engine.v2.InstrumentedListener$Notification",
+ "className": "io.deephaven.engine.table.impl.InstrumentedListener$Notification",
  "methods": {},
- "path": "io.deephaven.engine.v2.InstrumentedListener.Notification",
+ "path": "io.deephaven.engine.table.impl.InstrumentedListener.Notification",
  "text": "Delivers the desired update, bracketed by performance instrumentation.",
  "typeName": "class"
 }

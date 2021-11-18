@@ -1,8 +1,8 @@
 {
- "className": "io.deephaven.engine.v2.sort.megamerge.IntLongMegaMergeKernel$IntLongMegaMergeKernelContext",
+ "className": "io.deephaven.engine.table.impl.sort.megamerge.IntLongMegaMergeKernel$IntLongMegaMergeKernelContext",
  "methods": {
-  "merge": ":param indexDestinationSource: io.deephaven.engine.v2.sources.LongArraySource\n:param valuesDestinationSource: io.deephaven.engine.v2.sources.ArrayBackedColumnSource<?>\n:param destinationOffset: long\n:param destinationSize: long\n:param indexKeys: io.deephaven.engine.chunk.LongChunk<IntLongMegaMergeKernel.IntLongMegaMergeKernelContext.KEY_INDICES>\n:param valuesToMerge: io.deephaven.engine.chunk.Chunk<IntLongMegaMergeKernel.IntLongMegaMergeKernelContext.ATTR>"
+  "merge": ":param indexDestinationSource: io.deephaven.engine.table.impl.sources.LongArraySource\n:param valuesDestinationSource: io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource<?>\n:param destinationOffset: long\n:param destinationSize: long\n:param indexKeys: io.deephaven.engine.chunk.LongChunk<IntLongMegaMergeKernel.IntLongMegaMergeKernelContext.KEY_INDICES>\n:param valuesToMerge: io.deephaven.engine.chunk.Chunk<IntLongMegaMergeKernel.IntLongMegaMergeKernelContext.ATTR>"
  },
- "path": "io.deephaven.engine.v2.sort.megamerge.IntLongMegaMergeKernel.IntLongMegaMergeKernelContext",
+ "path": "io.deephaven.engine.table.impl.sort.megamerge.IntLongMegaMergeKernel.IntLongMegaMergeKernelContext",
  "typeName": "class"
 }

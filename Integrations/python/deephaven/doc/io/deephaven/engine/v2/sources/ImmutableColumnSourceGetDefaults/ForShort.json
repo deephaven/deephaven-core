@@ -1,7 +1,7 @@
 {
- "className": "io.deephaven.engine.v2.sources.ImmutableColumnSourceGetDefaults$ForShort",
+ "className": "io.deephaven.engine.table.impl.sources.ImmutableColumnSourceGetDefaults$ForShort",
  "methods": {},
- "path": "io.deephaven.engine.v2.sources.ImmutableColumnSourceGetDefaults.ForShort",
+ "path": "io.deephaven.engine.table.impl.sources.ImmutableColumnSourceGetDefaults.ForShort",
  "text": "Default interface for immutable short ColumnSource implementations.",
  "typeName": "interface"
 }

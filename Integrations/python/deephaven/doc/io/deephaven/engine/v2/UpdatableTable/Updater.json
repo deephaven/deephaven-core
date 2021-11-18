@@ -1,7 +1,7 @@
 {
- "className": "io.deephaven.engine.v2.UpdatableTable$Updater",
+ "className": "io.deephaven.engine.table.impl.UpdatableTable$Updater",
  "methods": {},
- "path": "io.deephaven.engine.v2.UpdatableTable.Updater",
+ "path": "io.deephaven.engine.table.impl.UpdatableTable.Updater",
  "text": "Updater function interface.",
  "typeName": "interface"
 }

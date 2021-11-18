@@ -1,14 +1,13 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.TableFactory;
+import io.deephaven.engine.table.impl.utils.AppendOnlyArrayBackedMutableTable;
+import io.deephaven.engine.table.impl.utils.KeyedArrayBackedMutableTable;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.time.DateTimeUtils;
-import io.deephaven.engine.v2.InMemoryTable;
-import io.deephaven.engine.v2.UpdatableTable;
-import io.deephaven.engine.v2.utils.AppendOnlyArrayBackedMutableTable;
-import io.deephaven.engine.v2.utils.KeyedArrayBackedMutableTable;
 import io.deephaven.qst.TableCreator;
 import io.deephaven.qst.table.EmptyTable;
 import io.deephaven.qst.table.InMemoryAppendOnlyInputTable;

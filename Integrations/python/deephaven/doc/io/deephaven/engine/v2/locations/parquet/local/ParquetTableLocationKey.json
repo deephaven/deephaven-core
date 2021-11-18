@@ -1,5 +1,5 @@
 {
- "className": "io.deephaven.engine.v2.locations.parquet.local.ParquetTableLocationKey",
+ "className": "io.deephaven.engine.table.impl.locations.parquet.local.ParquetTableLocationKey",
  "methods": {
   "getFileReader": "Get a previously-set or on-demand created ParquetFileReader for\n this location key's file.\n\n:return: (io.deephaven.parquet.ParquetFileReader) A ParquetFileReader for this location key's file.",
   "getImplementationName": "Get a name for the implementing class. Useful for abstract classes that implement\n LogOutputAppendable or override toString.\n \n The default implementation is correct, but not suitable for high-frequency usage.\n\n:return: (java.lang.String) A name for the implementing class",
@@ -9,7 +9,7 @@
   "setMetadata": "Set the ParquetMetadata that will be returned by getMetadata() ()}. Pass null to force\n on-demand construction at the next invocation.\n\n:param metadata: (org.apache.parquet.hadoop.metadata.ParquetMetadata) - The new ParquetMetadata",
   "setRowGroupIndices": "Set the RowGroup indices that will be returned by getRowGroupIndices()\n\n:param rowGroupIndices: (int[]) - The new RowGroup indices"
  },
- "path": "io.deephaven.engine.v2.locations.parquet.local.ParquetTableLocationKey",
+ "path": "io.deephaven.engine.table.impl.locations.parquet.local.ParquetTableLocationKey",
  "text": "TableLocationKey implementation for use with data stored in the parquet format.",
  "typeName": "class"
 }

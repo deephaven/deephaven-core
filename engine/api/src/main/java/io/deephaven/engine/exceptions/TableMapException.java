@@ -3,7 +3,7 @@ package io.deephaven.engine.exceptions;
 import io.deephaven.UncheckedDeephavenException;
 
 /**
- * An exception denoting a problem with a {@link io.deephaven.engine.v2.TableMap} operation
+ * An exception denoting a problem with a {@link io.deephaven.engine.table.impl.TableMap} operation
  */
 public class TableMapException extends UncheckedDeephavenException {
 

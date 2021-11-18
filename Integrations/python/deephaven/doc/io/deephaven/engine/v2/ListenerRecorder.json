@@ -1,20 +1,20 @@
 {
- "className": "io.deephaven.engine.v2.ListenerRecorder",
+ "className": "io.deephaven.engine.table.impl.ListenerRecorder",
  "methods": {
-  "getAdded": ":return: io.deephaven.engine.v2.utils.RowSet",
-  "getExpandedARM": "The caller is responsible for closing the RowSetShiftDataExpander.\n\n:return: (io.deephaven.engine.v2.utils.RowSetShiftDataExpander) a backwards compatible version of added / removed / modified that account for shifting",
-  "getModified": ":return: io.deephaven.engine.v2.utils.RowSet",
-  "getModifiedColumnSet": ":return: io.deephaven.engine.v2.ModifiedColumnSet",
-  "getModifiedPreShift": ":return: io.deephaven.engine.v2.utils.RowSet",
+  "getAdded": ":return: io.deephaven.engine.table.impl.utils.RowSet",
+  "getExpandedARM": "The caller is responsible for closing the RowSetShiftDataExpander.\n\n:return: (io.deephaven.engine.table.impl.utils.RowSetShiftDataExpander) a backwards compatible version of added / removed / modified that account for shifting",
+  "getModified": ":return: io.deephaven.engine.table.impl.utils.RowSet",
+  "getModifiedColumnSet": ":return: io.deephaven.engine.table.impl.ModifiedColumnSet",
+  "getModifiedPreShift": ":return: io.deephaven.engine.table.impl.utils.RowSet",
   "getNotificationStep": ":return: long",
-  "getRemoved": ":return: io.deephaven.engine.v2.utils.RowSet",
-  "getShifted": ":return: io.deephaven.engine.v2.utils.RowSetShiftData",
-  "getUpdate": ":return: io.deephaven.engine.v2.Listener.Update",
-  "onUpdate": "Process notification of table changes.\n\n:param upstream: (io.deephaven.engine.v2.Listener.Update) - The set of upstream table updates.",
+  "getRemoved": ":return: io.deephaven.engine.table.impl.utils.RowSet",
+  "getShifted": ":return: io.deephaven.engine.table.impl.utils.RowSetShiftData",
+  "getUpdate": ":return: io.deephaven.engine.table.impl.Listener.Update",
+  "onUpdate": "Process notification of table changes.\n\n:param upstream: (io.deephaven.engine.table.impl.Listener.Update) - The set of upstream table updates.",
   "recordedVariablesAreValid": ":return: boolean",
-  "setMergedListener": ":param mergedListener: io.deephaven.engine.v2.MergedListener"
+  "setMergedListener": ":param mergedListener: io.deephaven.engine.table.impl.MergedListener"
  },
- "path": "io.deephaven.engine.v2.ListenerRecorder",
+ "path": "io.deephaven.engine.table.impl.ListenerRecorder",
  "text": "A listener recorder stores references to added, removed, modified, and shifted indices; and then notifies a\n MergedListener that a change has occurred. The combination of a ListenerRecorder and\n MergedListener should be used when a table has multiple sources, such that each table can process all of it's\n dependencies at once and fire a single notification to its children.",
  "typeName": "class"
 }

@@ -7,7 +7,7 @@ import io.deephaven.engine.table.TableUpdateListener;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.time.DateTimeUtils;
-import io.deephaven.engine.v2.*;
+import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.time.TimeProvider;
@@ -23,7 +23,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import static io.deephaven.engine.tables.utils.TableTools.intCol;
-import static io.deephaven.engine.v2.TstUtils.*;
+import static io.deephaven.engine.table.impl.TstUtils.*;
 
 @Category(OutOfBandTest.class)
 public class TestWindowCheck {

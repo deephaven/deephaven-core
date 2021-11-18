@@ -1,8 +1,8 @@
 {
- "className": "io.deephaven.engine.v2.sources.regioned.ColumnRegionReferencing$Converter",
+ "className": "io.deephaven.engine.table.impl.sources.regioned.ColumnRegionReferencing$Converter",
  "methods": {
   "convertRegion": "Converts all the native source values represented by rowSequence from a single region into\n the destination chunk by appending.\n\n:param destination: io.deephaven.engine.chunk.WritableChunk<? superColumnRegionReferencing.Converter.ATTR>\n:param source: io.deephaven.engine.chunk.Chunk<? extendsColumnRegionReferencing.Converter.ATTR>\n:param rowSequence: io.deephaven.engine.structures.RowSequence"
  },
- "path": "io.deephaven.engine.v2.sources.regioned.ColumnRegionReferencing.Converter",
+ "path": "io.deephaven.engine.table.impl.sources.regioned.ColumnRegionReferencing.Converter",
  "typeName": "interface"
 }

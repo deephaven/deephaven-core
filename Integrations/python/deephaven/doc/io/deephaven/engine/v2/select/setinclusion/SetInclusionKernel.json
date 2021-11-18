@@ -1,9 +1,9 @@
 {
- "className": "io.deephaven.engine.v2.select.setinclusion.SetInclusionKernel",
+ "className": "io.deephaven.engine.table.impl.select.setinclusion.SetInclusionKernel",
  "methods": {
-  "makeKernel": ":param type: io.deephaven.engine.chunk.ChunkType\n:param values: java.util.Collection<java.lang.Object>\n:param inclusion: boolean\n:return: io.deephaven.engine.v2.select.setinclusion.SetInclusionKernel",
+  "makeKernel": ":param type: io.deephaven.engine.chunk.ChunkType\n:param values: java.util.Collection<java.lang.Object>\n:param inclusion: boolean\n:return: io.deephaven.engine.table.impl.select.setinclusion.SetInclusionKernel",
   "matchValues": ":param values: io.deephaven.engine.chunk.Chunk<io.deephaven.engine.chunk.Attributes.Values>\n:param matches: io.deephaven.engine.chunk.WritableBooleanChunk"
  },
- "path": "io.deephaven.engine.v2.select.setinclusion.SetInclusionKernel",
+ "path": "io.deephaven.engine.table.impl.select.setinclusion.SetInclusionKernel",
  "typeName": "interface"
 }

@@ -9,9 +9,9 @@ import io.deephaven.engine.tables.libs.QueryLibrary;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.tables.select.SelectFilterFactory;
 import io.deephaven.engine.tables.utils.TableTools;
-import io.deephaven.engine.v2.*;
-import io.deephaven.engine.v2.select.WhereFilter;
-import io.deephaven.engine.v2.sources.ArrayBackedColumnSource;
+import io.deephaven.engine.table.impl.*;
+import io.deephaven.engine.table.impl.select.WhereFilter;
+import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.table.sort.SortDirective;
@@ -29,8 +29,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static io.deephaven.engine.v2.TstUtils.*;
-import static io.deephaven.engine.v2.by.AggregationFactory.*;
+import static io.deephaven.engine.table.impl.TstUtils.*;
+import static io.deephaven.engine.table.impl.by.AggregationFactory.*;
 import static io.deephaven.treetable.TreeTableConstants.*;
 import static org.junit.Assert.assertArrayEquals;
 

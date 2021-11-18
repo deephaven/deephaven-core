@@ -1,17 +1,17 @@
 {
- "className": "io.deephaven.engine.v2.utils.TrackingMutableRowSetImpl",
+ "className": "io.deephaven.engine.table.impl.utils.TrackingMutableRowSetImpl",
  "methods": {
   "close": "Free any resources associated with this object.\n \n Using any RowSequence methods after close() is an error and may produce exceptions or undefined\n results.",
   "findPrev": "Returns the position in [0..(size-1)] where the row key is found in the previous rowSet. If not found, then\n return (-(position it would be) - 1), as in Array.binarySearch.\n\n:param rowKey: (long) - The row key to search for\n:return: (long) A position from [0..(size-1)] if the row key was found. If the row key was not found, then\n         (-position - 1) as in Array.binarySearch",
   "firstRowKeyPrev": ":return: long",
   "getPrev": ":param pos: long\n:return: long",
-  "getPrevRowSet": ":return: io.deephaven.engine.v2.utils.MutableRowSet",
+  "getPrevRowSet": ":return: io.deephaven.engine.table.impl.utils.MutableRowSet",
   "initializePreviousValue": "Initializes our previous value from the current value.\n \n This call is used by operations that manipulate a RowSet while constructing it, but need to set the state at the\n end of the initial operation to the current state.\n \n Calling this in other circumstances will yield undefined results.",
   "lastRowKeyPrev": ":return: long",
   "readExternal": ":param in: java.io.ObjectInput",
   "sizePrev": ":return: long",
-  "toTracking": "Destructively convert this MutableRowSet into a TrackingMutableRowSet.\n \n This is really only suitable when the caller \"owns\" this MutableRowSet. Programming errors may occur if the any\n code holds onto references to {@link this} rather than the result, because there may be ambiguity about resource\n ownership.\n \n Implementations are free to transfer ownership of resources from this object to the result. As such, it is an\n error to directly use this object afterwards; callers must instead use the returned result.\n \n It is an error to invoke this on an instance that is already tracking.\n\n:return: (io.deephaven.engine.v2.utils.TrackingMutableRowSet) A TrackingMutableRowSet constructed from this MutableRowSet, or this if already tracking"
+  "toTracking": "Destructively convert this MutableRowSet into a TrackingMutableRowSet.\n \n This is really only suitable when the caller \"owns\" this MutableRowSet. Programming errors may occur if the any\n code holds onto references to {@link this} rather than the result, because there may be ambiguity about resource\n ownership.\n \n Implementations are free to transfer ownership of resources from this object to the result. As such, it is an\n error to directly use this object afterwards; callers must instead use the returned result.\n \n It is an error to invoke this on an instance that is already tracking.\n\n:return: (io.deephaven.engine.table.impl.utils.TrackingMutableRowSet) A TrackingMutableRowSet constructed from this MutableRowSet, or this if already tracking"
  },
- "path": "io.deephaven.engine.v2.utils.TrackingMutableRowSetImpl",
+ "path": "io.deephaven.engine.table.impl.utils.TrackingMutableRowSetImpl",
  "typeName": "class"
 }

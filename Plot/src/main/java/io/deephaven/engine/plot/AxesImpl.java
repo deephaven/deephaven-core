@@ -40,7 +40,7 @@ import io.deephaven.engine.plot.util.tables.*;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.v2.by.AggregationFactory;
+import io.deephaven.engine.table.impl.by.AggregationFactory;
 import io.deephaven.gui.color.Color;
 import io.deephaven.gui.color.Paint;
 import io.deephaven.engine.time.calendar.BusinessCalendar;
@@ -53,7 +53,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static io.deephaven.engine.plot.datasets.interval.IntervalXYDataSeriesArray.*;
-import static io.deephaven.engine.v2.by.AggregationFactory.AggLast;
+import static io.deephaven.engine.table.impl.by.AggregationFactory.AggLast;
 
 /**
  * Chart's axes.

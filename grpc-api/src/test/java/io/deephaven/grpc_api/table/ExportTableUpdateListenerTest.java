@@ -7,8 +7,8 @@ import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.table.ModifiedColumnSet;
-import io.deephaven.engine.v2.QueryTable;
-import io.deephaven.engine.v2.TstUtils;
+import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.TstUtils;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.proto.backplane.grpc.Ticket;
@@ -29,8 +29,8 @@ import java.util.ArrayDeque;
 import java.util.Queue;
 import java.util.UUID;
 
-import static io.deephaven.engine.v2.TstUtils.addToTable;
-import static io.deephaven.engine.v2.TstUtils.i;
+import static io.deephaven.engine.table.impl.TstUtils.addToTable;
+import static io.deephaven.engine.table.impl.TstUtils.i;
 
 public class ExportTableUpdateListenerTest {
 

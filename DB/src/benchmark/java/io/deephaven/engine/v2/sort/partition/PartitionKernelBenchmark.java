@@ -1,4 +1,4 @@
-package io.deephaven.engine.v2.sort.partition;
+package io.deephaven.engine.table.impl.sort.partition;
 
 import org.openjdk.jmh.results.RunResult;
 import org.openjdk.jmh.runner.Runner;

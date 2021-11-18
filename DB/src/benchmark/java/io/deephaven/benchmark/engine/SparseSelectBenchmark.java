@@ -3,7 +3,7 @@ package io.deephaven.benchmark.engine;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.v2.SparseSelect;
+import io.deephaven.engine.table.impl.SparseSelect;
 import io.deephaven.benchmarking.BenchUtil;
 import io.deephaven.benchmarking.BenchmarkTable;
 import io.deephaven.benchmarking.BenchmarkTableBuilder;

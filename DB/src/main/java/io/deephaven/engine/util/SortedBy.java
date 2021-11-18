@@ -3,9 +3,9 @@ package io.deephaven.engine.util;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.tables.select.SelectColumnFactory;
-import io.deephaven.engine.v2.by.SortedFirstBy;
-import io.deephaven.engine.v2.by.SortedLastBy;
-import io.deephaven.engine.v2.select.SelectColumn;
+import io.deephaven.engine.table.impl.by.SortedFirstBy;
+import io.deephaven.engine.table.impl.by.SortedLastBy;
+import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.util.annotations.ScriptApi;
 import org.jetbrains.annotations.NotNull;
 

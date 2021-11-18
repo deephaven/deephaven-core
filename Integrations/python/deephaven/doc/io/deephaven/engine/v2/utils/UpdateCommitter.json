@@ -1,6 +1,6 @@
 {
- "className": "io.deephaven.engine.v2.utils.UpdateCommitter",
+ "className": "io.deephaven.engine.table.impl.utils.UpdateCommitter",
  "methods": {},
- "path": "io.deephaven.engine.v2.utils.UpdateCommitter",
+ "path": "io.deephaven.engine.table.impl.utils.UpdateCommitter",
  "typeName": "class"
 }

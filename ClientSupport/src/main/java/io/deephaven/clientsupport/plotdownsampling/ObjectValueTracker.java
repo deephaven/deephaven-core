@@ -6,7 +6,7 @@ import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.v2.sources.ObjectArraySource;
+import io.deephaven.engine.table.impl.sources.ObjectArraySource;
 import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.chunk.Chunk;
 import org.jetbrains.annotations.Nullable;

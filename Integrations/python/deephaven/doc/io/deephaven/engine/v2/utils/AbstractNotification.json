@@ -1,5 +1,5 @@
 {
- "className": "io.deephaven.engine.v2.utils.AbstractNotification",
+ "className": "io.deephaven.engine.table.impl.utils.AbstractNotification",
  "methods": {
   "append": ":param output: io.deephaven.base.log.LogOutput\n:return: io.deephaven.base.log.LogOutput",
   "getNext": "Get the next node after this node.\n\n:return: (io.deephaven.engine.tables.live.NotificationQueue.Notification) This node's next node",
@@ -10,7 +10,7 @@
   "setPrev": "Set this node's previous node.\n\n:param other: (io.deephaven.engine.tables.live.NotificationQueue.Notification) - This node's new previous node",
   "toString": ":return: java.lang.String"
  },
- "path": "io.deephaven.engine.v2.utils.AbstractNotification",
+ "path": "io.deephaven.engine.table.impl.utils.AbstractNotification",
  "text": "Common base class for notifications.",
  "typeName": "class"
 }

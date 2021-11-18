@@ -1,10 +1,10 @@
 {
- "className": "io.deephaven.engine.v2.by.AggregationHelper",
+ "className": "io.deephaven.engine.table.impl.by.AggregationHelper",
  "methods": {
-  "by": "*Overload 1*  \n  :param inputTable: io.deephaven.engine.v2.QueryTable\n  :param keyColumns: io.deephaven.engine.v2.select.SelectColumn...\n  :return: io.deephaven.engine.v2.QueryTable\n  \n*Overload 2*  \n  :param aggregationControl: io.deephaven.engine.v2.by.AggregationControl\n  :param inputTable: io.deephaven.engine.v2.QueryTable\n  :param keyColumns: io.deephaven.engine.v2.select.SelectColumn...\n  :return: io.deephaven.engine.v2.QueryTable",
-  "partitionBy": "*Overload 1*  \n  :param inputTable: io.deephaven.engine.v2.QueryTable\n  :param dropKeyColumns: boolean\n  :param keyColumnNames: java.lang.String...\n  :return: io.deephaven.engine.v2.LocalTableMap\n  \n*Overload 2*  \n  :param aggregationControl: io.deephaven.engine.v2.by.AggregationControl\n  :param inputTable: io.deephaven.engine.v2.QueryTable\n  :param dropKeyColumns: boolean\n  :param keyColumnNames: java.lang.String...\n  :return: io.deephaven.engine.v2.LocalTableMap"
+  "by": "*Overload 1*  \n  :param inputTable: io.deephaven.engine.table.impl.QueryTable\n  :param keyColumns: io.deephaven.engine.table.impl.select.SelectColumn...\n  :return: io.deephaven.engine.table.impl.QueryTable\n  \n*Overload 2*  \n  :param aggregationControl: io.deephaven.engine.table.impl.by.AggregationControl\n  :param inputTable: io.deephaven.engine.table.impl.QueryTable\n  :param keyColumns: io.deephaven.engine.table.impl.select.SelectColumn...\n  :return: io.deephaven.engine.table.impl.QueryTable",
+  "partitionBy": "*Overload 1*  \n  :param inputTable: io.deephaven.engine.table.impl.QueryTable\n  :param dropKeyColumns: boolean\n  :param keyColumnNames: java.lang.String...\n  :return: io.deephaven.engine.table.impl.LocalTableMap\n  \n*Overload 2*  \n  :param aggregationControl: io.deephaven.engine.table.impl.by.AggregationControl\n  :param inputTable: io.deephaven.engine.table.impl.QueryTable\n  :param dropKeyColumns: boolean\n  :param keyColumnNames: java.lang.String...\n  :return: io.deephaven.engine.table.impl.LocalTableMap"
  },
- "path": "io.deephaven.engine.v2.by.AggregationHelper",
- "text": "Implementation for chunk-oriented aggregation operations, including Table.by(io.deephaven.engine.v2.by.AggregationStateFactory, io.deephaven.engine.v2.select.SelectColumn...) and Table.partitionBy(boolean, java.lang.String...).",
+ "path": "io.deephaven.engine.table.impl.by.AggregationHelper",
+ "text": "Implementation for chunk-oriented aggregation operations, including Table.by(io.deephaven.engine.table.impl.by.AggregationStateFactory, io.deephaven.engine.table.impl.select.SelectColumn...) and Table.partitionBy(boolean, java.lang.String...).",
  "typeName": "class"
 }

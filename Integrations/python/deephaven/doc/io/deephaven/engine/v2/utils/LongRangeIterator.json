@@ -1,12 +1,12 @@
 {
- "className": "io.deephaven.engine.v2.utils.LongRangeIterator",
+ "className": "io.deephaven.engine.table.impl.utils.LongRangeIterator",
  "methods": {
   "end": ":return: long",
-  "forAllLongRanges": ":param lrc: io.deephaven.engine.v2.utils.LongRangeConsumer",
-  "forEachLongRange": ":param lrc: io.deephaven.engine.v2.utils.LongRangeAbortableConsumer\n:return: boolean",
+  "forAllLongRanges": ":param lrc: io.deephaven.engine.table.impl.utils.LongRangeConsumer",
+  "forEachLongRange": ":param lrc: io.deephaven.engine.table.impl.utils.LongRangeAbortableConsumer\n:return: boolean",
   "hasNext": ":return: boolean",
   "start": ":return: long"
  },
- "path": "io.deephaven.engine.v2.utils.LongRangeIterator",
+ "path": "io.deephaven.engine.table.impl.utils.LongRangeIterator",
  "typeName": "interface"
 }

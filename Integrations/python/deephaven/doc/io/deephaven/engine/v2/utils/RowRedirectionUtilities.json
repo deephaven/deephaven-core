@@ -1,6 +1,6 @@
 {
- "className": "io.deephaven.engine.v2.utils.RowRedirectionUtilities",
+ "className": "io.deephaven.engine.table.impl.utils.RowRedirectionUtilities",
  "methods": {},
- "path": "io.deephaven.engine.v2.utils.RowRedirectionUtilities",
+ "path": "io.deephaven.engine.table.impl.utils.RowRedirectionUtilities",
  "typeName": "class"
 }

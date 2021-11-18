@@ -1,8 +1,8 @@
 {
- "className": "io.deephaven.engine.v2.utils.ShiftData$ShiftCallback",
+ "className": "io.deephaven.engine.table.impl.utils.ShiftData$ShiftCallback",
  "methods": {
   "shift": ":param start: long\n:param end: long\n:param offset: long"
  },
- "path": "io.deephaven.engine.v2.utils.ShiftData.ShiftCallback",
+ "path": "io.deephaven.engine.table.impl.utils.ShiftData.ShiftCallback",
  "typeName": "interface"
 }

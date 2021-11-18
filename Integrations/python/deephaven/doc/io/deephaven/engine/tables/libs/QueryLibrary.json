@@ -2,7 +2,7 @@
  "className": "io.deephaven.engine.tables.libs.QueryLibrary",
  "methods": {
   "getClassImports": ":return: java.util.Collection<java.lang.Class<?>>",
-  "getImportStatement": ":return: io.deephaven.engine.v2.utils.codegen.CodeGenerator",
+  "getImportStatement": ":return: io.deephaven.engine.table.impl.utils.codegen.CodeGenerator",
   "getLibrary": ":return: io.deephaven.engine.tables.libs.QueryLibrary",
   "getPackageImports": ":return: java.util.Collection<java.lang.Package>",
   "getStaticImports": ":return: java.util.Collection<java.lang.Class<?>>",

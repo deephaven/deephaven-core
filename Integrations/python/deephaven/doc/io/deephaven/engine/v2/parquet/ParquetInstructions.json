@@ -1,7 +1,7 @@
 {
- "className": "io.deephaven.engine.v2.parquet.ParquetInstructions",
+ "className": "io.deephaven.engine.table.impl.parquet.ParquetInstructions",
  "methods": {
-  "builder": ":return: io.deephaven.engine.v2.parquet.ParquetInstructions.Builder",
+  "builder": ":return: io.deephaven.engine.table.impl.parquet.ParquetInstructions.Builder",
   "getCodecArgs": ":param columnName: java.lang.String\n:return: java.lang.String",
   "getCodecName": ":param columnName: java.lang.String\n:return: java.lang.String",
   "getColumnNameFromParquetColumnName": ":param parquetColumnName: java.lang.String\n:return: java.lang.String",
@@ -12,12 +12,12 @@
   "getMaximumDictionaryKeys": ":return: (int) The maximum number of unique keys the writer should add to a dictionary page before switching to\n         non-dictionary encoding; never evaluated for non-String columns, ignored if\n         useDictionary(String)",
   "getParquetColumnNameFromColumnNameOrDefault": ":param columnName: java.lang.String\n:return: java.lang.String",
   "isLegacyParquet": ":return: boolean",
-  "sameColumnNamesAndCodecMappings": ":param i1: io.deephaven.engine.v2.parquet.ParquetInstructions\n:param i2: io.deephaven.engine.v2.parquet.ParquetInstructions\n:return: boolean",
+  "sameColumnNamesAndCodecMappings": ":param i1: io.deephaven.engine.table.impl.parquet.ParquetInstructions\n:param i2: io.deephaven.engine.table.impl.parquet.ParquetInstructions\n:return: boolean",
   "setDefaultCompressionCodecName": "Set the default for getCompressionCodecName().\n\n:param name: (java.lang.String) - The new default",
   "setDefaultMaximumDictionaryKeys": "Set the default for getMaximumDictionaryKeys().\n\n:param maximumDictionaryKeys: (int) - The new default",
   "useDictionary": ":param columnName: java.lang.String\n:return: (boolean) A hint that the writer should use dictionary-based encoding for writing this column; never evaluated for\n         non-String columns, defaults to false"
  },
- "path": "io.deephaven.engine.v2.parquet.ParquetInstructions",
+ "path": "io.deephaven.engine.table.impl.parquet.ParquetInstructions",
  "text": "This class provides instructions intended for read and write parquet operations (which take it as an optional\n argument) specifying desired transformations. Examples are mapping column names and use of specific codecs during\n (de)serialization.",
  "typeName": "class"
 }

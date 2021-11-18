@@ -1,8 +1,8 @@
 {
- "className": "io.deephaven.engine.v2.utils.copy.ReplicateCopyKernel",
+ "className": "io.deephaven.engine.table.impl.utils.copy.ReplicateCopyKernel",
  "methods": {
   "main": ":param args: java.lang.String[]"
  },
- "path": "io.deephaven.engine.v2.utils.copy.ReplicateCopyKernel",
+ "path": "io.deephaven.engine.table.impl.utils.copy.ReplicateCopyKernel",
  "typeName": "class"
 }

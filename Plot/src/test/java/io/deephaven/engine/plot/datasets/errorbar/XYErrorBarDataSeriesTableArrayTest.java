@@ -13,11 +13,11 @@ import io.deephaven.engine.plot.util.tables.TableHandle;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.tables.utils.TableTools;
-import io.deephaven.engine.v2.QueryTable;
-import io.deephaven.engine.v2.TstUtils;
+import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.TstUtils;
 
-import static io.deephaven.engine.v2.TstUtils.*;
-import static io.deephaven.engine.v2.TstUtils.i;
+import static io.deephaven.engine.table.impl.TstUtils.*;
+import static io.deephaven.engine.table.impl.TstUtils.i;
 
 public class XYErrorBarDataSeriesTableArrayTest extends BaseArrayTestCase {
 

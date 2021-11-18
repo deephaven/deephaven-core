@@ -4,9 +4,9 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.updategraph.DynamicNode;
-import io.deephaven.engine.v2.InstrumentedTableUpdateListenerAdapter;
-import io.deephaven.engine.v2.select.IncrementalReleaseFilter;
-import io.deephaven.engine.v2.select.RollingReleaseFilter;
+import io.deephaven.engine.table.impl.InstrumentedTableUpdateListenerAdapter;
+import io.deephaven.engine.table.impl.select.IncrementalReleaseFilter;
+import io.deephaven.engine.table.impl.select.RollingReleaseFilter;
 import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 
 import java.util.function.BiFunction;

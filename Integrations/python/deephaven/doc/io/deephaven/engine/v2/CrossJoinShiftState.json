@@ -1,5 +1,5 @@
 {
- "className": "io.deephaven.engine.v2.CrossJoinShiftState",
+ "className": "io.deephaven.engine.table.impl.CrossJoinShiftState",
  "methods": {
   "getMasked": ":param index: long\n:return: long",
   "getNumShiftBits": ":return: int",
@@ -8,7 +8,7 @@
   "getPrevShifted": ":param index: long\n:return: long",
   "getShifted": ":param index: long\n:return: long"
  },
- "path": "io.deephaven.engine.v2.CrossJoinShiftState",
+ "path": "io.deephaven.engine.table.impl.CrossJoinShiftState",
  "text": "Shift state used by the BitShiftingColumnSource.",
  "typeName": "class"
 }

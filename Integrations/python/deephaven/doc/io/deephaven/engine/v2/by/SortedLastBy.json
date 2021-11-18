@@ -1,6 +1,6 @@
 {
- "className": "io.deephaven.engine.v2.by.SortedLastBy",
+ "className": "io.deephaven.engine.table.impl.by.SortedLastBy",
  "methods": {},
- "path": "io.deephaven.engine.v2.by.SortedLastBy",
+ "path": "io.deephaven.engine.table.impl.by.SortedLastBy",
  "typeName": "class"
 }

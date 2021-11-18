@@ -69,8 +69,8 @@ try:
 except Exception as e:
     pass
 
-__ObjectColumnSource__ = 'io.deephaven.engine.v2.sources.immutable.ImmutableObjectArraySource'
-__DatetimeColumnSource__ = 'io.deephaven.engine.v2.sources.immutable.ImmutableDateTimeArraySource'
+__ObjectColumnSource__ = 'io.deephaven.engine.table.impl.sources.immutable.ImmutableObjectArraySource'
+__DatetimeColumnSource__ = 'io.deephaven.engine.table.impl.sources.immutable.ImmutableDateTimeArraySource'
 __ArrayConversionUtility__ = 'io.deephaven.integrations.common.PrimitiveArrayConversionUtility'
 
 NULL_CHAR = 65535                                         #: Null value for char.
@@ -147,13 +147,13 @@ _javaTypeToVectorType = {
 }
 
 _javaTypeToImmutableColumnSource = {
-    'byte': 'io.deephaven.engine.v2.sources.immutable.ImmutableByteArraySource',
-    'short': 'io.deephaven.engine.v2.sources.immutable.ImmutableShortArraySource',
-    'int': 'io.deephaven.engine.v2.sources.immutable.ImmutableIntArraySource',
-    'long': 'io.deephaven.engine.v2.sources.immutable.ImmutableLongArraySource',
-    'float': 'io.deephaven.engine.v2.sources.immutable.ImmutableFloatArraySource',
-    'double': 'io.deephaven.engine.v2.sources.immutable.ImmutableDoubleArraySource',
-    'char': 'io.deephaven.engine.v2.sources.immutable.ImmutableCharArraySource',
+    'byte': 'io.deephaven.engine.table.impl.sources.immutable.ImmutableByteArraySource',
+    'short': 'io.deephaven.engine.table.impl.sources.immutable.ImmutableShortArraySource',
+    'int': 'io.deephaven.engine.table.impl.sources.immutable.ImmutableIntArraySource',
+    'long': 'io.deephaven.engine.table.impl.sources.immutable.ImmutableLongArraySource',
+    'float': 'io.deephaven.engine.table.impl.sources.immutable.ImmutableFloatArraySource',
+    'double': 'io.deephaven.engine.table.impl.sources.immutable.ImmutableDoubleArraySource',
+    'char': 'io.deephaven.engine.table.impl.sources.immutable.ImmutableCharArraySource',
 }
 
 ###########################################################################################################
@@ -387,7 +387,7 @@ def _booleanColumnSource(array, columnName, typ):
 
 def _charColumnSource(array, columnName, typ):
     # Assumed to be called strictly by _convertNdarrayToImmutableSource...no error checking at all performed
-    colClassType = 'io.deephaven.engine.v2.sources.immutable.ImmutableCharArraySource'
+    colClassType = 'io.deephaven.engine.table.impl.sources.immutable.ImmutableCharArraySource'
     try:
         return colClassType, _makeJavaArray(array, 'char')
     except Exception as e:
@@ -675,7 +675,7 @@ def makeJavaArray(data, name, convertUnknownToString=False):
     if junk is None:
         raise ValueError("Conversion failed")
     elif len(junk) in [2, 3]:
-        if junk[0] == 'io.deephaven.engine.v2.sources.immutable.ImmutableDateTimeArraySource':
+        if junk[0] == 'io.deephaven.engine.table.impl.sources.immutable.ImmutableDateTimeArraySource':
             return jpy.get_type(__ArrayConversionUtility__).translateArrayLongToDateTime(junk[1])
         else:
             return junk[1]
@@ -891,7 +891,7 @@ class NULL_CONVERSION(object):
 
 def _isVectorType(type_name): \
         return type_name.startswith('io.deephaven.engine.vector.') or \
-               type_name.startswith('io.deephaven.engine.v2.dbarrays.')
+               type_name.startswith('io.deephaven.engine.table.impl.dbarrays.')
 
 def _isVector(obj):
     try:

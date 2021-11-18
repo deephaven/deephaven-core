@@ -1,5 +1,5 @@
 {
- "className": "io.deephaven.engine.v2.by.ssmcountdistinct.DateTimeSsmSourceWrapper$ValueWrapper",
+ "className": "io.deephaven.engine.table.impl.by.ssmcountdistinct.DateTimeSsmSourceWrapper$ValueWrapper",
  "methods": {
   "equals": ":param o: java.lang.Object\n:return: boolean",
   "fillChunk": ":param destChunk: io.deephaven.engine.chunk.WritableChunk",
@@ -17,6 +17,6 @@
   "toChunk": ":return: io.deephaven.engine.chunk.Chunk<io.deephaven.engine.chunk.Attributes.Values>",
   "toString": ":return: java.lang.String"
  },
- "path": "io.deephaven.engine.v2.by.ssmcountdistinct.DateTimeSsmSourceWrapper.ValueWrapper",
+ "path": "io.deephaven.engine.table.impl.by.ssmcountdistinct.DateTimeSsmSourceWrapper.ValueWrapper",
  "typeName": "class"
 }

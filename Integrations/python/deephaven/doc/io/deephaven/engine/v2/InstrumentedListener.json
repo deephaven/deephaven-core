@@ -1,8 +1,8 @@
 {
- "className": "io.deephaven.engine.v2.InstrumentedListener",
+ "className": "io.deephaven.engine.table.impl.InstrumentedListener",
  "methods": {
-  "getNotification": "Creates a notification for the table changes.\n\n:param update: (io.deephaven.engine.v2.Listener.Update) - The set of upstream table updates.\n:return: (io.deephaven.engine.v2.utils.AbstractIndexUpdateNotification) table change notification"
+  "getNotification": "Creates a notification for the table changes.\n\n:param update: (io.deephaven.engine.table.impl.Listener.Update) - The set of upstream table updates.\n:return: (io.deephaven.engine.table.impl.utils.AbstractIndexUpdateNotification) table change notification"
  },
- "path": "io.deephaven.engine.v2.InstrumentedListener",
+ "path": "io.deephaven.engine.table.impl.InstrumentedListener",
  "typeName": "class"
 }
