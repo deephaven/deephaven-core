@@ -24,7 +24,7 @@ import org.apache.arrow.vector.Float4Vector;
 import org.apache.arrow.vector.Float8Vector;
 import org.apache.arrow.vector.IntVector;
 import org.apache.arrow.vector.SmallIntVector;
-import org.apache.arrow.vector.TimeStampNanoVector;
+import org.apache.arrow.vector.TimeStampNanoTZVector;
 import org.apache.arrow.vector.TinyIntVector;
 import org.apache.arrow.vector.UInt2Vector;
 import org.apache.arrow.vector.VarCharVector;
@@ -179,7 +179,7 @@ public class FieldVectorAdapter implements Array.Visitor, PrimitiveArray.Visitor
 
     void visitInstantArray(GenericArray<Instant> instantArray) {
         Field field = FieldAdapter.instantField(name);
-        TimeStampNanoVector vector = new TimeStampNanoVector(field, allocator);
+        TimeStampNanoTZVector vector = new TimeStampNanoTZVector(field, allocator);
         VectorHelper.fill(vector, instantArray.values());
         out = vector;
     }

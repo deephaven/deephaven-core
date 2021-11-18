@@ -17,6 +17,7 @@ import io.deephaven.qst.type.PrimitiveType;
 import io.deephaven.qst.type.ShortType;
 import io.deephaven.qst.type.StringType;
 import io.deephaven.qst.type.Type;
+import org.apache.arrow.vector.types.TimeUnit;
 import org.apache.arrow.vector.types.Types.MinorType;
 import org.apache.arrow.vector.types.pojo.ArrowType;
 import org.apache.arrow.vector.types.pojo.Field;
@@ -78,7 +79,8 @@ public class FieldAdapter implements Type.Visitor, PrimitiveType.Visitor {
     }
 
     public static Field instantField(String name) {
-        return field(name, MinorType.TIMESTAMPNANO.getType(), "io.deephaven.db.tables.utils.DBDateTime");
+        return field(name, new ArrowType.Timestamp(TimeUnit.NANOSECOND, "UTC"),
+                "io.deephaven.db.tables.utils.DBDateTime");
     }
 
     private static Field field(String name, ArrowType arrowType, String deephavenType) {
