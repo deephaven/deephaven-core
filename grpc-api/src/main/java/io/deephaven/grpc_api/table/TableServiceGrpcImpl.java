@@ -9,6 +9,7 @@ import io.deephaven.db.tables.Table;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.grpc_api.session.SessionService;
 import io.deephaven.grpc_api.session.SessionState;
+import io.deephaven.grpc_api.session.SessionState.ExportBuilder;
 import io.deephaven.grpc_api.session.TicketRouter;
 import io.deephaven.grpc_api.table.ops.GrpcTableOperation;
 import io.deephaven.grpc_api.util.ExportTicketHelper;
@@ -52,8 +53,8 @@ import io.grpc.stub.StreamObserver;
 import javax.inject.Inject;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyExecute;
@@ -273,32 +274,12 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
             final SessionState session = sessionService.getCurrentSession();
 
             // step 1: initialize exports
-            final List<BatchExportBuilder> exportBuilders = request.getOpsList().stream()
-                    .map(op -> new BatchExportBuilder(session, op))
+            final List<BatchExportBuilder<?>> exportBuilders = request.getOpsList().stream()
+                    .map(op -> createBatchExportBuilder(session, op))
                     .collect(Collectors.toList());
 
             // step 2: resolve dependencies
-            final Function<TableReference, SessionState.ExportObject<Table>> resolver = ref -> {
-                // operations are allowed to return null for optional dependencies
-                if (ref == null) {
-                    return null;
-                }
-
-                switch (ref.getRefCase()) {
-                    case TICKET:
-                        return ticketRouter.resolve(session, ref.getTicket(), "sourceId");
-                    case BATCH_OFFSET:
-                        final int offset = ref.getBatchOffset();
-                        if (offset < 0 || offset >= exportBuilders.size()) {
-                            throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT,
-                                    "invalid table reference: " + ref);
-                        }
-                        return exportBuilders.get(offset).exportBuilder.getExport();
-                    default:
-                        throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "invalid table reference: " + ref);
-                }
-            };
-            exportBuilders.forEach(export -> export.resolveDependencies(resolver));
+            exportBuilders.forEach(export -> export.resolveDependencies(session, exportBuilders));
 
             // step 3: check for cyclical dependencies; this is our only opportunity to check non-export cycles
             // TODO: check for cycles
@@ -307,7 +288,7 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
             final AtomicInteger remaining = new AtomicInteger(exportBuilders.size());
 
             for (int i = 0; i < exportBuilders.size(); ++i) {
-                final BatchExportBuilder exportBuilder = exportBuilders.get(i);
+                final BatchExportBuilder<?> exportBuilder = exportBuilders.get(i);
                 final int exportId = exportBuilder.exportBuilder.getExportId();
 
                 final TableReference resultId;
@@ -420,8 +401,7 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
             final TableReference resultRef = TableReference.newBuilder().setTicket(resultId).build();
 
             final List<SessionState.ExportObject<Table>> dependencies = operation.getTableReferences(request).stream()
-                    .map(TableReference::getTicket)
-                    .map((ticket) -> ticketRouter.<Table>resolve(session, ticket, "sourceId"))
+                    .map(ref -> resolveOneShotReference(session, ref))
                     .collect(Collectors.toList());
 
             session.newExport(resultId, "resultId")
@@ -438,24 +418,57 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
         });
     }
 
-    private class BatchExportBuilder {
-        final GrpcTableOperation<Object> operation;
-        final Object request;
-        final SessionState.ExportBuilder<Table> exportBuilder;
+    private SessionState.ExportObject<Table> resolveOneShotReference(SessionState session, TableReference ref) {
+        if (!ref.hasTicket()) {
+            throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION,
+                    "One-shot operations must use ticket references");
+        }
+        return ticketRouter.resolve(session, ref.getTicket(), "sourceId");
+    }
+
+    private SessionState.ExportObject<Table> resolveBatchReference(SessionState session,
+            List<BatchExportBuilder<?>> exportBuilders, TableReference ref) {
+        switch (ref.getRefCase()) {
+            case TICKET:
+                return ticketRouter.resolve(session, ref.getTicket(), "sourceId");
+            case BATCH_OFFSET:
+                final int offset = ref.getBatchOffset();
+                if (offset < 0 || offset >= exportBuilders.size()) {
+                    throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "invalid table reference: " + ref);
+                }
+                return exportBuilders.get(offset).exportBuilder.getExport();
+            default:
+                throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, "invalid table reference: " + ref);
+        }
+    }
+
+    private <T> BatchExportBuilder<T> createBatchExportBuilder(SessionState session, BatchTableRequest.Operation op) {
+        final GrpcTableOperation<T> operation = getOp(op.getOpCase());
+        final T request = operation.getRequestFromOperation(op);
+        operation.validateRequest(request);
+
+        final Ticket resultId = operation.getResultTicket(request);
+        final ExportBuilder<Table> exportBuilder =
+                resultId.getTicket().isEmpty() ? session.nonExport() : session.newExport(resultId, "resultId");
+        return new BatchExportBuilder<>(operation, request, exportBuilder);
+    }
+
+    private class BatchExportBuilder<T> {
+        private final GrpcTableOperation<T> operation;
+        private final T request;
+        private final SessionState.ExportBuilder<Table> exportBuilder;
 
         List<SessionState.ExportObject<Table>> dependencies;
 
-        BatchExportBuilder(final SessionState session, final BatchTableRequest.Operation op) {
-            operation = getOp(op.getOpCase()); // get operation from op code
-            request = operation.getRequestFromOperation(op);
-            final Ticket resultId = operation.getResultTicket(request);
-            exportBuilder =
-                    resultId.getTicket().isEmpty() ? session.nonExport() : session.newExport(resultId, "resultId");
+        BatchExportBuilder(GrpcTableOperation<T> operation, T request, ExportBuilder<Table> exportBuilder) {
+            this.operation = Objects.requireNonNull(operation);
+            this.request = Objects.requireNonNull(request);
+            this.exportBuilder = Objects.requireNonNull(exportBuilder);
         }
 
-        void resolveDependencies(final Function<TableReference, SessionState.ExportObject<Table>> resolveReference) {
+        void resolveDependencies(SessionState session, List<BatchExportBuilder<?>> exportBuilders) {
             dependencies = operation.getTableReferences(request).stream()
-                    .map(resolveReference)
+                    .map(ref -> resolveBatchReference(session, exportBuilders, ref))
                     .collect(Collectors.toList());
             exportBuilder.require(dependencies);
         }

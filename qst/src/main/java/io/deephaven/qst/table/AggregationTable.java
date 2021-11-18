@@ -14,7 +14,7 @@ import java.util.List;
  */
 @Immutable
 @NodeStyle
-public abstract class AggregationTable extends TableBase implements SingleParentTable {
+public abstract class AggregationTable extends ByTableBase {
 
     public static Builder builder() {
         return ImmutableAggregationTable.builder();

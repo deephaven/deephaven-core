@@ -80,6 +80,7 @@ import io.deephaven.proto.backplane.grpc.UnstructuredFilterTableRequest;
 import io.deephaven.qst.table.AggregationTable;
 import io.deephaven.qst.table.AsOfJoinTable;
 import io.deephaven.qst.table.ByTable;
+import io.deephaven.qst.table.ByTableBase;
 import io.deephaven.qst.table.EmptyTable;
 import io.deephaven.qst.table.ExactJoinTable;
 import io.deephaven.qst.table.HeadTable;
@@ -88,7 +89,6 @@ import io.deephaven.qst.table.LeftJoinTable;
 import io.deephaven.qst.table.MergeTable;
 import io.deephaven.qst.table.NaturalJoinTable;
 import io.deephaven.qst.table.NewTable;
-import io.deephaven.qst.table.ParentsVisitor;
 import io.deephaven.qst.table.ReverseAsOfJoinTable;
 import io.deephaven.qst.table.ReverseTable;
 import io.deephaven.qst.table.SelectTable;
@@ -405,21 +405,12 @@ class BatchTableRequestBuilder {
 
         @Override
         public void visit(ByTable byTable) {
-            ComboAggregateRequest.Builder builder = ComboAggregateRequest.newBuilder()
-                    .setResultId(ticket).setSourceId(ref(byTable.parent()));
-            for (Selectable column : byTable.columns()) {
-                builder.addGroupByColumns(Strings.of(column));
-            }
-            out = op(Builder::setComboAggregate, builder);
+            out = op(Builder::setComboAggregate, singleAgg(byTable, AggType.ARRAY));
         }
 
         @Override
         public void visit(AggregationTable aggregationTable) {
-            ComboAggregateRequest.Builder builder = ComboAggregateRequest.newBuilder()
-                    .setResultId(ticket).setSourceId(ref(aggregationTable.parent()));
-            for (Selectable column : aggregationTable.columns()) {
-                builder.addGroupByColumns(Strings.of(column));
-            }
+            ComboAggregateRequest.Builder builder = groupByColumns(aggregationTable);
             for (Aggregation aggregation : aggregationTable.aggregations()) {
                 builder.addAllAggregates(AggregationAdapter.of(aggregation));
             }
@@ -443,6 +434,20 @@ class BatchTableRequestBuilder {
                 builder.addColumnSpecs(Strings.of(column));
             }
             return builder.build();
+        }
+
+        private ComboAggregateRequest singleAgg(ByTableBase base, AggType type) {
+            return groupByColumns(base).addAggregates(Aggregate.newBuilder().setType(type).build()).build();
+        }
+
+        private ComboAggregateRequest.Builder groupByColumns(ByTableBase base) {
+            ComboAggregateRequest.Builder builder = ComboAggregateRequest.newBuilder()
+                    .setResultId(ticket)
+                    .setSourceId(ref(base.parent()));
+            for (Selectable column : base.columns()) {
+                builder.addGroupByColumns(Strings.of(column));
+            }
+            return builder;
         }
     }
 
