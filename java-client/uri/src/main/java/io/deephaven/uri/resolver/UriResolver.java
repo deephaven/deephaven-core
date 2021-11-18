@@ -1,4 +1,4 @@
-package io.deephaven.grpc_api.uri;
+package io.deephaven.uri.resolver;
 
 import java.net.URI;
 import java.util.Set;

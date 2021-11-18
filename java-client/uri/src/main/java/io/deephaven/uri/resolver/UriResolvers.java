@@ -1,7 +1,5 @@
-package io.deephaven.grpc_api.uri;
+package io.deephaven.uri.resolver;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import java.net.URI;
 import java.util.Collections;
 import java.util.HashMap;
@@ -13,13 +11,11 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-@Singleton
 public final class UriResolvers {
 
     private final Set<UriResolver> resolvers;
     private final Map<String, Set<UriResolver>> map;
 
-    @Inject
     public UriResolvers(Set<UriResolver> resolvers) {
         this.resolvers = Objects.requireNonNull(resolvers);
         map = new HashMap<>();
