@@ -35,7 +35,7 @@ def _defineSymbols():
     global _plotting_convenience_
     if _plotting_convenience_ is None:
         # an exception will be raised if not in the jvm classpath
-        _plotting_convenience_ = jpy.get_type("io.deephaven.engine.plot.PlottingConvenience")
+        _plotting_convenience_ = jpy.get_type("io.deephaven.plot.PlottingConvenience")
 
 
 @wrapt.decorator

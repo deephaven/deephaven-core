@@ -6,7 +6,7 @@ package io.deephaven.grpc_api.console;
 
 import com.google.rpc.Code;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.plot.FigureWidget;
+import io.deephaven.plot.FigureWidget;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.util.DelegatingScriptSession;
 import io.deephaven.engine.util.ExportedObjectType;

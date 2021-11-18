@@ -52,9 +52,9 @@ for( String n : calendarNames() ) {
 ///////////////////// Plotting /////////////////////
 
 //todo what about these commented out imports?
-// import static io.deephaven.engine.plot.LineStyle.LineEndStyle
-// import static io.deephaven.engine.plot.LineStyle.LineJoinStyle
-// import static io.deephaven.engine.plot.Font.FontStyle
+// import static io.deephaven.plot.LineStyle.LineEndStyle
+// import static io.deephaven.plot.LineStyle.LineJoinStyle
+// import static io.deephaven.plot.Font.FontStyle
 //////////////////// Colors ////////////////////////
 
 for( String c : io.deephaven.gui.color.Color.colorNames() ) {

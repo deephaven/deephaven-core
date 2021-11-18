@@ -32,7 +32,7 @@ public class PythonStaticGenerator {
             "io.deephaven.engine.time.DateTimeUtils,diff",
             "io.deephaven.engine.time.DateTimeUtils,yearDiff",
             "io.deephaven.engine.time.DateTimeUtils,dayDiff",
-            "io.deephaven.engine.plot.colors.ColorMaps,closureMap",
+            "io.deephaven.plot.colors.ColorMaps,closureMap",
             "io.deephaven.kafka.KafkaTools,consumeToTable",
             "io.deephaven.kafka.KafkaTools.Consume,jsonSpec",
             "io.deephaven.kafka.KafkaTools.Consume,avroSpec",

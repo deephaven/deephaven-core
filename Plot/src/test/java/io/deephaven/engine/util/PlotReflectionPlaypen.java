@@ -1,6 +1,6 @@
 package io.deephaven.engine.util;
 
-import io.deephaven.engine.plot.Figure;
+import io.deephaven.plot.Figure;
 import io.deephaven.engine.table.Table;
 
 import java.lang.reflect.Method;

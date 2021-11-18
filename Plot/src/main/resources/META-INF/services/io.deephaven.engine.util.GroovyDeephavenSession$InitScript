@@ -1,2 +1,2 @@
 io.deephaven.engine.util.PerformanceScript
-io.deephaven.engine.plot.PlottingScript
+io.deephaven.plot.PlottingScript
