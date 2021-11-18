@@ -45,7 +45,7 @@ public class FieldAdapter implements Type.Visitor, PrimitiveType.Visitor {
     }
 
     public static Field booleanField(String name) {
-        // TODO: ticket number
+        // TODO(deephaven-core#43): Do not reinterpret bool as byte
         return field(name, MinorType.TINYINT.getType(), "boolean");
     }
 

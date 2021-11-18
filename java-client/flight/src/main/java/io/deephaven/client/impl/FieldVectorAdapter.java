@@ -115,7 +115,7 @@ public class FieldVectorAdapter implements Array.Visitor, PrimitiveArray.Visitor
 
     @Override
     public void visit(BooleanArray booleanArray) {
-        // TODO: ticket number
+        // TODO(deephaven-core#43): Do not reinterpret bool as byte
         Field field = FieldAdapter.booleanField(name);
         TinyIntVector vector = new TinyIntVector(field, allocator);
         VectorHelper.fill(vector, booleanArray.values(), 0, booleanArray.size());

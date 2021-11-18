@@ -33,7 +33,7 @@ class AddToInputTable extends FlightExampleBase {
         final List<TableHandle> handles = flight.session().batch().execute(Arrays.asList(timestamp, timestampLastBy));
         try (
                 final TableHandle timestampHandle = handles.get(0);
-                final TableHandle timestampLastByHandle = handles.get(2)) {
+                final TableHandle timestampLastByHandle = handles.get(1)) {
 
             // publish so we can see in a UI
             flight.session().publish("timestamp", timestampHandle).get(5, TimeUnit.SECONDS);

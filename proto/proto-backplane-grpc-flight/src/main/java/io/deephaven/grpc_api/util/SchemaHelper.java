@@ -1,6 +1,5 @@
 package io.deephaven.grpc_api.util;
 
-import com.google.flatbuffers.FlatBufferBuilder;
 import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
 import org.apache.arrow.flatbuf.Message;
 import org.apache.arrow.flatbuf.MessageHeader;
