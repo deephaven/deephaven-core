@@ -222,21 +222,22 @@ public final class SessionImpl extends SessionBase {
 
     @Override
     public CompletableFuture<? extends ConsoleSession> console(String type) {
-        final StartConsoleRequest request =
-                StartConsoleRequest.newBuilder().setSessionType(type).setResultId(exportTicketCreator.create()).build();
+        final ExportId consoleId = new ExportId(exportTicketCreator.createExportId());
+        final StartConsoleRequest request = StartConsoleRequest.newBuilder().setSessionType(type)
+                .setResultId(consoleId.ticketId().ticket()).build();
         final ConsoleHandler handler = new ConsoleHandler(request);
         consoleService.startConsole(request, handler);
         return handler.future();
     }
 
     @Override
-    public CompletableFuture<Void> publish(String name, HasTicket ticket) {
+    public CompletableFuture<Void> publish(String name, HasTicketId ticketId) {
         if (!SourceVersion.isName(name)) {
             throw new IllegalArgumentException("Invalid name");
         }
         PublishObserver observer = new PublishObserver();
         consoleService.bindTableToVariable(BindTableToVariableRequest.newBuilder()
-                .setVariableName(name).setTableId(ticket.ticket()).build(), observer);
+                .setVariableName(name).setTableId(ticketId.ticketId().ticket()).build(), observer);
         return observer.future;
     }
 
@@ -287,22 +288,23 @@ public final class SessionImpl extends SessionBase {
     }
 
     @Override
-    public Ticket newTicket() {
-        return exportTicketCreator.create();
+    public ExportId newExportId() {
+        return new ExportId(exportTicketCreator.createExportId());
     }
 
     @Override
-    public CompletableFuture<Void> release(Ticket ticket) {
+    public CompletableFuture<Void> release(ExportId exportId) {
         final ReleaseTicketObserver observer = new ReleaseTicketObserver();
-        sessionService.release(ReleaseRequest.newBuilder().setId(ticket).build(), observer);
+        sessionService.release(
+                ReleaseRequest.newBuilder().setId(exportId.ticketId().ticket()).build(), observer);
         return observer.future;
     }
 
     @Override
-    public CompletableFuture<Void> addToInputTable(HasTicket destination, HasTicket source) {
+    public CompletableFuture<Void> addToInputTable(HasTicketId destination, HasTicketId source) {
         final AddTableRequest request = AddTableRequest.newBuilder()
-                .setInputTable(destination.ticket())
-                .setTableToAdd(source.ticket())
+                .setInputTable(destination.ticketId().ticket())
+                .setTableToAdd(source.ticketId().ticket())
                 .build();
         final AddToInputTableObserver observer = new AddToInputTableObserver();
         inputTableService.addTableToInputTable(request, observer);
@@ -310,10 +312,10 @@ public final class SessionImpl extends SessionBase {
     }
 
     @Override
-    public CompletableFuture<Void> deleteFromInputTable(HasTicket destination, HasTicket source) {
+    public CompletableFuture<Void> deleteFromInputTable(HasTicketId destination, HasTicketId source) {
         final DeleteTableRequest request = DeleteTableRequest.newBuilder()
-                .setInputTable(destination.ticket())
-                .setTableToRemove(source.ticket())
+                .setInputTable(destination.ticketId().ticket())
+                .setTableToRemove(source.ticketId().ticket())
                 .build();
         final DeleteFromInputTableObserver observer = new DeleteFromInputTableObserver();
         inputTableService.deleteTableFromInputTable(request, observer);

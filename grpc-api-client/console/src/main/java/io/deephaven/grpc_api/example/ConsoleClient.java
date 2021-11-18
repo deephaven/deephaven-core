@@ -4,7 +4,7 @@
 
 package io.deephaven.grpc_api.example;
 
-import io.deephaven.grpc_api.console.ScopeTicketResolver;
+import io.deephaven.grpc_api.util.FlightScopeTicketHelper;
 import io.deephaven.grpc_api.util.ExportTicketHelper;
 import io.deephaven.io.log.LogEntry;
 import io.deephaven.io.logger.Logger;
@@ -195,7 +195,7 @@ public class ConsoleClient {
                                 tableServiceGrpc.fetchTable(FetchTableRequest.newBuilder()
                                         .setResultId(ExportTicketHelper.wrapExportIdInTicket(nextId++))
                                         .setSourceId(TableReference.newBuilder()
-                                                .setTicket(ScopeTicketResolver.ticketForName(table.getTitle())))
+                                                .setTicket(FlightScopeTicketHelper.ticketForName(table.getTitle())))
                                         .build(),
                                         new ResponseBuilder<ExportedTableCreationResponse>()
                                                 .onNext(this::onExportedTableCreationResponse)

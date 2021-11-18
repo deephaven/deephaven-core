@@ -295,8 +295,7 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
                 if (exportId == SessionState.NON_EXPORT_ID) {
                     resultId = TableReference.newBuilder().setBatchOffset(i).build();
                 } else {
-                    resultId = TableReference.newBuilder().setTicket(ExportTicketHelper.wrapExportIdInTicket(exportId))
-                            .build();
+                    resultId = ExportTicketHelper.tableReference(exportId);
                 }
 
                 exportBuilder.exportBuilder.onError((result, errorContext, dependentId) -> {

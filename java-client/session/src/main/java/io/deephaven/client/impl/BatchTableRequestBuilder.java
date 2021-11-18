@@ -43,6 +43,7 @@ import io.deephaven.api.filter.FilterIsNull;
 import io.deephaven.api.filter.FilterNot;
 import io.deephaven.api.filter.FilterOr;
 import io.deephaven.api.value.Value;
+import io.deephaven.grpc_api.util.ExportTicketHelper;
 import io.deephaven.proto.backplane.grpc.AndCondition;
 import io.deephaven.proto.backplane.grpc.AsOfJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
@@ -82,13 +83,13 @@ import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.proto.backplane.grpc.TimeTableRequest;
 import io.deephaven.proto.backplane.grpc.UnstructuredFilterTableRequest;
 import io.deephaven.qst.table.AggregationTable;
-import io.deephaven.qst.table.InMemoryAppendOnlyInputTable;
 import io.deephaven.qst.table.AsOfJoinTable;
 import io.deephaven.qst.table.ByTable;
 import io.deephaven.qst.table.ByTableBase;
 import io.deephaven.qst.table.EmptyTable;
 import io.deephaven.qst.table.ExactJoinTable;
 import io.deephaven.qst.table.HeadTable;
+import io.deephaven.qst.table.InMemoryAppendOnlyInputTable;
 import io.deephaven.qst.table.InMemoryKeyBackedInputTable;
 import io.deephaven.qst.table.InputTable;
 import io.deephaven.qst.table.JoinTable;
@@ -125,14 +126,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
 
 class BatchTableRequestBuilder {
 
     interface ExportLookup {
-        Optional<Ticket> ticket(TableSpec spec);
+        OptionalInt ticket(TableSpec spec);
     }
 
     static BatchTableRequest buildNoChecks(ExportLookup lookup, Collection<TableSpec> postOrder) {
@@ -140,7 +141,10 @@ class BatchTableRequestBuilder {
         final BatchTableRequest.Builder builder = BatchTableRequest.newBuilder();
         int ix = 0;
         for (TableSpec table : postOrder) {
-            final Ticket ticket = lookup.ticket(table).orElse(Ticket.getDefaultInstance());
+            final OptionalInt exportId = lookup.ticket(table);
+            final Ticket ticket =
+                    exportId.isPresent() ? ExportTicketHelper.wrapExportIdInTicket(exportId.getAsInt())
+                            : Ticket.getDefaultInstance();
             final Operation operation =
                     table.walk(new OperationAdapter(ticket, indices, lookup)).getOut();
             builder.addOps(operation);
@@ -170,9 +174,9 @@ class BatchTableRequestBuilder {
         }
 
         private TableReference ref(TableSpec table) {
-            Optional<Ticket> existing = lookup.ticket(table);
+            OptionalInt existing = lookup.ticket(table);
             if (existing.isPresent()) {
-                return TableReference.newBuilder().setTicket(existing.get()).build();
+                return ExportTicketHelper.tableReference(existing.getAsInt());
             }
             final Integer ix = indices.get(table);
             if (ix != null) {

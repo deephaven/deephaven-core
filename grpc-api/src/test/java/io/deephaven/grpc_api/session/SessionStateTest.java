@@ -12,6 +12,7 @@ import io.deephaven.db.util.liveness.LivenessReferent;
 import io.deephaven.db.util.liveness.LivenessScope;
 import io.deephaven.db.util.liveness.LivenessScopeStack;
 import io.deephaven.db.util.liveness.LivenessStateException;
+import io.deephaven.grpc_api.util.ExportTicketHelper;
 import io.deephaven.grpc_api.util.TestControlledScheduler;
 import io.deephaven.proto.backplane.grpc.ExportNotification;
 import io.deephaven.proto.backplane.grpc.Ticket;
@@ -33,7 +34,6 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import static io.deephaven.grpc_api.util.ExportTicketHelper.wrapExportIdInTicket;
 import static io.deephaven.grpc_api.util.ExportTicketHelper.ticketToExportId;
 import static io.deephaven.proto.backplane.grpc.ExportNotification.State.CANCELLED;
 import static io.deephaven.proto.backplane.grpc.ExportNotification.State.DEPENDENCY_FAILED;
@@ -91,7 +91,8 @@ public class SessionStateTest {
 
         // assert lookup is same object
         Assert.eq(session.getExport(nextExportId - 1), "session.getExport(nextExport - 1)", exportObj, "exportObj");
-        Assert.equals(exportObj.getExportId(), "exportObj.getExportId()", wrapExportIdInTicket(nextExportId - 1),
+        Assert.equals(exportObj.getExportId(), "exportObj.getExportId()",
+                ExportTicketHelper.wrapExportIdInTicket(nextExportId - 1),
                 "nextExportId - 1");
 
         // release
@@ -137,7 +138,8 @@ public class SessionStateTest {
         // assert lookup is same object
         Assert.eq(session.getExport(nextExportId - 1),
                 "session.getExport(nextExport - 1)", exportObj, "exportObj");
-        Assert.equals(exportObj.getExportId(), "exportObj.getExportId()", wrapExportIdInTicket(nextExportId - 1),
+        Assert.equals(exportObj.getExportId(), "exportObj.getExportId()",
+                ExportTicketHelper.wrapExportIdInTicket(nextExportId - 1),
                 "nextExportId - 1");
 
         // release

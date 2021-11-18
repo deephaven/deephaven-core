@@ -2,7 +2,7 @@ package io.deephaven.grpc_api.appmode;
 
 import com.google.common.base.Objects;
 import io.deephaven.appmode.ApplicationState;
-import io.deephaven.grpc_api.console.ScopeTicketResolver;
+import io.deephaven.grpc_api.util.FlightScopeTicketHelper;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import org.jetbrains.annotations.Nullable;
 
@@ -37,7 +37,7 @@ public class AppFieldId {
 
     public Ticket getTicket() {
         if (app == null) {
-            return ScopeTicketResolver.ticketForName(fieldName);
+            return FlightScopeTicketHelper.ticketForName(fieldName);
         }
         return ApplicationTicketResolver.ticketForName(app, fieldName);
     }
