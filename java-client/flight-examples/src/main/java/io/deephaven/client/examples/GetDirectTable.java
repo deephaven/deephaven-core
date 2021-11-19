@@ -4,7 +4,7 @@ import io.deephaven.client.impl.FlightSession;
 import io.deephaven.client.impl.HasTicketId;
 import org.apache.arrow.flight.FlightStream;
 
-abstract class GetDirect extends FlightExampleBase {
+abstract class GetDirectTable extends FlightExampleBase {
 
     public abstract HasTicketId ticketId();
 
