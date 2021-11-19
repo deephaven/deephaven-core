@@ -2,7 +2,7 @@ package io.deephaven.grpc_api.util;
 
 import java.nio.ByteBuffer;
 
-class ByteHelper {
+public class ByteHelper {
     public static String byteBufToHex(final ByteBuffer ticket) {
         StringBuilder sb = new StringBuilder();
         for (int i = ticket.position(); i < ticket.limit(); ++i) {

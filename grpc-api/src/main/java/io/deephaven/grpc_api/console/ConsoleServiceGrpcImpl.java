@@ -21,7 +21,6 @@ import io.deephaven.grpc_api.session.SessionState;
 import io.deephaven.grpc_api.session.SessionState.ExportBuilder;
 import io.deephaven.grpc_api.session.TicketRouter;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
-import io.deephaven.grpc_api.util.FlightScopeTicketHelper;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.LogBuffer;
 import io.deephaven.io.logger.LogBufferRecord;
@@ -203,7 +202,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
 
     private static VariableDefinition makeVariableDefinition(Map.Entry<String, ExportedObjectType> entry) {
         return VariableDefinition.newBuilder().setTitle(entry.getKey()).setType(entry.getValue().name())
-                .setId(FlightScopeTicketHelper.ticketForName(entry.getKey())).build();
+                .setId(ScopeTicketResolver.ticketForName(entry.getKey())).build();
     }
 
     @Override
