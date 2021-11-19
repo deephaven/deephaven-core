@@ -104,6 +104,8 @@ docker {
 def grpcApiBase = project(':docker-runtime-base').tasks.findByName('buildDocker')
 dockerBuildImage.dependsOn grpcApiBase
 dockerBuildImage.inputs.file grpcApiBase.outputs.files.singleFile
+
+// TODO(deephaven-core#1596): Remove extra dependencies for build-ci.yml
 // Currently, GH build-ci.yml calls dockerCreateDockerfile, and relies on buildx; so we need to
 // make sure that dockerCreateDockerfile has the proper dependencies.
 // If we change how our build works in the future (so that gradle is responsible for pushing the
