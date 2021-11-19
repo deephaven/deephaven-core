@@ -11,7 +11,7 @@ String[] bins = ['configs', 'test-configs' ]
 String[] mods = [ 'Util', 'Numerics', 'TableLogger', 'DB', 'Plot',
         'CompilerTools', 'Generators',
         'Integrations', 'ModelFarm', 'ClientSupport',
-        'BenchmarkSupport', 'DB-test', 'DbTypes', 'DbTypesImpl', 'Parquet',
+        'BenchmarkSupport', 'DB-test', 'Parquet',
         'Kafka', 'grpc-api', 'table-api', 'qst']
 
         // new web projects; these modules are intended to form a complete, modular web application,

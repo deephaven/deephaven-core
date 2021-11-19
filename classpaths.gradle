@@ -37,8 +37,6 @@ configurations {
     dhDb.extendsFrom fishStats, fishNumerics, jdom, commonsCsv, commonsCli, commonsLang3, jacksonDatabind
     dhDbTest.extendsFrom dhDb, mxj, fishDataTest
     dhPlot.extendsFrom dhDb
-    dhDbTypes.extendsFrom fishBase, commonsIo
-    dhDbTypesImpl.extendsFrom fishBase, commonsIo
     dhBenchmarkSupport.extendsFrom fishData, commonsCsv
     dhIntegrations.extendsFrom math3
     dhKafka.extendsFrom dhDb

@@ -139,10 +139,6 @@ logroot=/var/log/deephaven
 
 defaultLogDir=<logroot>/misc
 
-# DbTypes default impls
-DbTypes.DbFile.impl=io.deephaven.dbtypes.DbFileImpl$Factory
-DbTypes.DbImage.impl=io.deephaven.dbtypes.DbImageImpl$Factory
-
 # Restricts what Parquet codecs are visible in the GUI
 Parquet.supportedCodecs=UNCOMPRESSED,SNAPPY
 
