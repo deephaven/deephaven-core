@@ -5,6 +5,8 @@ plugins {
     id 'com.bmuschko.docker-remote-api'
 }
 
+evaluationDependsOn Docker.registryProject('alpine')
+
 def dockerLicenses = License.createFrom(project).syncDockerLicense()
 
 def prepareDocker = project.tasks.register('prepareDocker', Sync) {
@@ -20,6 +22,7 @@ def prepareDocker = project.tasks.register('prepareDocker', Sync) {
 
 def buildDocker = Docker.registerDockerImage(project, 'buildDocker') {
     inputs.files prepareDocker.get().outputs.files
+    inputs.files Docker.registryFiles(project, 'alpine')
     images.add('deephaven/grpc-proxy:local-build')
 }
 

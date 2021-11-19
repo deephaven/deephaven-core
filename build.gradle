@@ -103,11 +103,14 @@ Set<Project> modsAreBin = subprojects.findAll {it.name in ['bin', 'configs', 'te
 
 Set<Project> modsAreExternal = subprojects.findAll {it.name in ['ParquetHadoop', 'deephaven-jpy'] }
 
-Set<Project> modsRegular = subprojects - modsAreBasic - modsAreBin
+def registryLocation = rootProject.file('docker/registry')
+Set<Project> modsAreDockerRegistry = subprojects.findAll { it.projectDir.parentFile == registryLocation }
 
-Set<Project> modsJava = subprojects - modsAreBasic
+Set<Project> modsRegular = subprojects - modsAreBasic - modsAreBin - modsAreDockerRegistry
 
-Set<Project> modsSpotless = subprojects - modsAreExternal - modsAreBasic
+Set<Project> modsJava = subprojects - modsAreBasic - modsAreDockerRegistry
+
+Set<Project> modsSpotless = subprojects - modsAreExternal - modsAreBasic - modsAreDockerRegistry
 
 allprojects {
 
@@ -172,6 +175,11 @@ configure(modsJava) {
     def license = License.createFrom(p)
     license.register()
     p.ext.license = license
+}
+
+configure(modsAreDockerRegistry) {
+    Project p ->
+        p.plugins.apply('io.deephaven.docker-registry-conventions')
 }
 
 // setup standard sourceSets for non-bin modules

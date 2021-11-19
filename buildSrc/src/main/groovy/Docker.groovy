@@ -5,8 +5,11 @@ import com.bmuschko.gradle.docker.tasks.container.DockerRemoveContainer
 import com.bmuschko.gradle.docker.tasks.container.DockerStartContainer
 import com.bmuschko.gradle.docker.tasks.container.DockerWaitContainer
 import com.bmuschko.gradle.docker.tasks.image.DockerBuildImage
+import com.bmuschko.gradle.docker.tasks.image.DockerInspectImage
+import com.bmuschko.gradle.docker.tasks.image.DockerPullImage
 import com.bmuschko.gradle.docker.tasks.image.DockerRemoveImage
 import com.bmuschko.gradle.docker.tasks.image.Dockerfile
+import com.github.dockerjava.api.command.InspectImageResponse
 import com.github.dockerjava.api.exception.DockerException
 import groovy.transform.CompileStatic
 import org.gradle.api.Action
@@ -14,6 +17,7 @@ import org.gradle.api.GradleException
 import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.file.CopySpec
+import org.gradle.api.file.FileCollection
 import org.gradle.api.tasks.Sync
 import org.gradle.api.tasks.TaskProvider
 import org.gradle.util.ConfigureUtil
@@ -454,6 +458,7 @@ class Docker {
     }
 
     static TaskProvider<? extends Task> buildPyWheel(Project project, String taskName, String imgName, String sourcePath) {
+        project.evaluationDependsOn(registryProject('python'))
         return registerDockerTask(project, taskName) { DockerTaskConfig config ->
             config.copyIn { Sync sync ->
                 sync.from(sourcePath) { CopySpec copySpec ->
@@ -463,7 +468,7 @@ class Docker {
             config.imageName = "${imgName}:local-build"
             config.dockerfile { Dockerfile action ->
                 // set up the container, env vars - things that aren't likely to change
-                action.from 'docker.io/library/python:3.7.10 as sources'
+                action.from 'deephaven/python:local-build as sources'
                 action.arg 'DEEPHAVEN_VERSION'
                 action.environmentVariable 'DEEPHAVEN_VERSION', project.version.toString()
                 action.workingDir '/usr/src/app'
@@ -473,10 +478,121 @@ class Docker {
                       test -n "${DEEPHAVEN_VERSION}";\\
                       python setup.py bdist_wheel'''
             }
+            config.parentContainers = [ registryTask(project, 'python') ]
             config.containerOutPath='/usr/src/app/dist'
             config.copyOut { Sync sync ->
                 sync.into "build/wheel${taskName}"
             }
         }
+    }
+
+
+    static TaskProvider<? extends DockerBuildImage> registryRegister(Project project) {
+
+        String imageName = project.property('deephaven.registry.imageName')
+        String imageId = project.property('deephaven.registry.imageId')
+        boolean ignoreOutOfDate = project.hasProperty('deephaven.registry.ignoreOutOfDate') ?
+                'true' == project.property('deephaven.registry.ignoreOutOfDate') :
+                false
+
+        def pullImage = project.tasks.register('pullImage', DockerPullImage) { pull ->
+            pull.group = 'Docker Registry'
+            pull.description = "Release management task: Pulls '${imageName}'"
+            pull.image.set imageName
+        }
+
+        def bumpImage = project.tasks.register('bumpImage', DockerInspectImage) {inspect ->
+            inspect.group = 'Docker Registry'
+            inspect.description = "Release management task: Updates the gradle.properties file for '${imageName}'"
+            inspect.imageId.set imageName
+            inspect.mustRunAfter pullImage
+            inspect.onNext { InspectImageResponse message ->
+                if (message.repoDigests.isEmpty()) {
+                    throw new RuntimeException("Image '${imageName}' from the (local) repository does not have a repo digest. " +
+                            "This is an unexpected situation, unless you are manually building the image.")
+                }
+                if (message.repoDigests.size() > 1) {
+                    throw new RuntimeException("Unable to bump the imageId for '${imageName}' since there are mulitple digests: '${message.repoDigests}'.\n" +
+                            "Please update the property `deephaven.registry.imageId` in the file '${project.projectDir}/gradle.properties' manually.")
+                }
+                def repoDigest = message.repoDigests.get(0)
+
+                if (repoDigest != imageId) {
+                    new File(project.projectDir, 'gradle.properties').text =
+                            "deephaven.registry.imageName=${imageName}\n" +
+                                    "deephaven.registry.imageId=${repoDigest}\n"
+                    inspect.logger.quiet("Updated imageId for '${imageName}' to '${repoDigest}' from '${imageId}'.")
+                } else {
+                    inspect.logger.quiet("ImageId for '${imageName}' already up-to-date.")
+                }
+            }
+        }
+
+        project.tasks.register('compareImage', DockerInspectImage) {inspect ->
+            inspect.group = 'Docker Registry'
+            inspect.description = "Release management task: Compares the (local) repository contents for '${imageName}' against source-control contents."
+            inspect.imageId.set imageName
+            inspect.mustRunAfter pullImage
+            inspect.onNext { InspectImageResponse message ->
+                if (message.repoDigests.isEmpty()) {
+                    throw new RuntimeException("Image '${imageName}' from the (local) repository does not have a repo digest. " +
+                            "This is an unexpected situation, unless you are manually building the image.")
+                }
+                if (!(imageId in message.repoDigests)) {
+                    String text = "The imageId for '${imageName}' appears to be out-of-sync with the (local) repository. " +
+                            "Possible repo digests are '${message.repoDigests}'.\n" +
+                            "Consider running one of the following, and retrying the compare, to see if the issue persists:\n" +
+                            "\t`./gradlew ${project.name}:${pullImage.get().name}`, or\n" +
+                            "\t`docker pull ${imageName}`\n\n" +
+                            "If the image is still out-of-sync, it's likely that there is a new release for '${imageName}'.\n" +
+                            "You may run:\n" +
+                            "\t`./gradlew ${project.name}:${bumpImage.get().name}`, or\n" +
+                            "\tmanually update '${project.projectDir}/gradle.properties' to bring the build logic up-to-date."
+                    if (ignoreOutOfDate) {
+                        inspect.logger.warn(text)
+                    } else {
+                        throw new RuntimeException(text)
+                    }
+                }
+            }
+            inspect.onError {error ->
+                if (error.message.contains('no such image')) {
+                    throw new RuntimeException("Unable to find the image '${imageName}' in the (local) repository.\n" +
+                            "Consider running one of the following:\n" +
+                            "\t`./gradlew ${project.name}:${pullImage.get().name}`, or\n" +
+                            "\t`docker pull ${imageName}`, or\n" +
+                            "\t`docker tag <source> ${imageName}`")
+                }
+                throw error
+            }
+        }
+
+        def dockerfile = project.tasks.register('dockerfile', Dockerfile) { dockerfile ->
+            dockerfile.description = "Internal task: creates a dockerfile, to be (built) tagged as 'deephaven/${project.projectDir.name}:local-build'."
+            dockerfile.from(imageId)
+        }
+
+        // Note: even though this is a "build" task, it's really a pull-if-absent + tag task.
+        registerDockerImage(project, 'tagLocalBuild') { DockerBuildImage build ->
+            def dockerFileTask = dockerfile.get()
+
+            build.group = 'Docker Registry'
+            build.description = "Creates 'deephaven/${project.projectDir.name}:local-build'."
+            build.inputs.files dockerFileTask.outputs.files
+            build.dockerFile.set dockerFileTask.outputs.files.singleFile
+            build.images.add("deephaven/${project.projectDir.name}:local-build".toString())
+        }
+    }
+
+    static String registryProject(String name) {
+        ":docker-${name}"
+    }
+
+    static Task registryTask(Project project, String name) {
+        project.project(":docker-${name}").tasks.findByName('tagLocalBuild')
+    }
+
+    static FileCollection registryFiles(Project project, String name) {
+        registryTask(project, name).outputs.files
     }
 }
