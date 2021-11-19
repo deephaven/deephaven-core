@@ -18,7 +18,7 @@ smtp.mx.domain=io.deephaven
 Calendar.default=USNYSE
 # The etc path is where things are installed on a server, the configs path is
 # for development. This needs to be overridden for a console from a launcher.
-Calendar.internalPath=<devroot>/etc/calendar;<devroot>/configs/calendar;/etc/sysconfig/deephaven.d/calendars
+Calendar.importPath=/default_calendar_imports.txt
 
 # Plot Themes
 Plot.theme.default=LIGHT

@@ -794,15 +794,17 @@ public class GroovyDeephavenSession extends AbstractScriptSession implements Scr
         }
     }
 
-    // note: Calendars has an implicit dependency to calendar config paths, which aren't currently
-    // present
-    /*
-     * public static class Calendars implements InitScript {
-     *
-     * @Override public String getScriptPath() { return "groovy/2-calendars.groovy"; }
-     *
-     * @Override public int priority() { return 2; } }
-     */
+    public static class Calendars implements InitScript {
+        @Override
+        public String getScriptPath() {
+            return "groovy/2-calendars.groovy";
+        }
+
+        @Override
+        public int priority() {
+            return 2;
+        }
+    }
 
     public static class CountMetrics implements InitScript {
         @Override

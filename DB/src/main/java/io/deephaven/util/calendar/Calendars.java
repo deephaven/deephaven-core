@@ -8,21 +8,21 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.db.tables.utils.NameValidator;
-import io.deephaven.util.files.ResourceResolution;
 import io.deephaven.internal.log.LoggerFactory;
 import org.jetbrains.annotations.NotNull;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URL;
+import java.io.InputStreamReader;
 import java.nio.file.NoSuchFileException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 /**
  * A collection of business calendars.
@@ -30,9 +30,8 @@ import java.util.function.BiConsumer;
 public class Calendars implements Map<String, BusinessCalendar> {
 
     private static final Logger logger = LoggerFactory.getLogger(Calendars.class);
-    private static final String SUFFIX = ".calendar";
-    private static final String BUSINESS_CALENDAR_PROP_INTERNAL = "Calendar.internalPath";
-    private static final String BUSINESS_CALENDAR_PROP_USER = "Calendar.resourcePath";
+    private static final String BUSINESS_CALENDAR_PROP_INTERNAL = "Calendar.importPath";
+    private static final String BUSINESS_CALENDAR_PROP_USER = "Calendar.userImportPath";
     private static final Calendars instance = new Calendars();
     private static final String defaultName = Configuration.getInstance().getProperty("Calendar.default");
 
@@ -88,7 +87,7 @@ public class Calendars implements Map<String, BusinessCalendar> {
      * @return names of all available calendars
      */
     public static String[] calendarNames() {
-        return instance.keySet().stream().toArray(String[]::new);
+        return instance.keySet().toArray(String[]::new);
     }
 
 
@@ -108,46 +107,49 @@ public class Calendars implements Map<String, BusinessCalendar> {
     }
 
     private void loadProperty(final Configuration configuration, final String property) {
-        final String locations = configuration.getProperty(property);
+        final String location = configuration.getProperty(property);
         try {
-            load(configuration, locations);
+            load(location);
         } catch (NoSuchFileException e) {
-            logger.warn().append("Problem loading calendars. locations=").append(locations).append(e).endl();
+            logger.warn().append("Problem loading calendars. importPath=").append(location).append(e).endl();
         }
     }
 
-    private void load(final Configuration configuration, final String businessCalendarLocations)
+    private void load(final String businessCalendarConfig)
             throws NoSuchFileException {
-        final ResourceResolution resourceResolution =
-                new io.deephaven.util.files.ResourceResolution(configuration, ";", businessCalendarLocations);
+        final InputStream configToLoad = this.getClass().getResourceAsStream(businessCalendarConfig);
 
-        final BiConsumer<URL, String> consumer = (URL, filePath) -> {
+        if (configToLoad == null) {
+            logger.warn("Could not find " + businessCalendarConfig + " on classpath");
+            throw new RuntimeException("Could not open " + businessCalendarConfig + " from classpath");
+        }
+
+        final Consumer<String> consumer = (filePath) -> {
             try {
-                final InputStream inputStream = URL.openStream();
+                final InputStream inputStream = this.getClass().getResourceAsStream(filePath);
                 if (inputStream != null) {
                     final File calendarFile = inputStreamToFile(inputStream);
                     final BusinessCalendar businessCalendar = DefaultBusinessCalendar.getInstance(calendarFile);
                     addCalendar(businessCalendar);
                     calendarFile.deleteOnExit();
                 } else {
-                    logger.warn("Could not open " + URL);
-                    throw new RuntimeException("Could not open " + URL);
+                    logger.warn("Could not open " + filePath + " from classpath");
+                    throw new RuntimeException("Could not open " + filePath + " from classpath");
                 }
             } catch (IOException e) {
-                logger.warn("Problem loading calendar: locations=" + businessCalendarLocations, e);
-                throw new RuntimeException("Problem loading calendar: locations=" + businessCalendarLocations, e);
+                logger.warn("Problem loading calendar: location=" + businessCalendarConfig, e);
+                throw new RuntimeException("Problem loading calendar: location=" + businessCalendarConfig, e);
             }
         };
 
-
-        try {
-            resourceResolution.findResources(SUFFIX, consumer);
+        try (final BufferedReader config = new BufferedReader(new InputStreamReader(configToLoad))) {
+            config.lines().forEach(consumer);
         } catch (NoSuchFileException e) {
-            logger.warn("Problem loading calendar: locations=" + businessCalendarLocations, e);
+            logger.warn("Problem loading calendar: location=" + businessCalendarConfig, e);
             throw e;
         } catch (IOException e) {
-            logger.warn("Problem loading calendar: locations=" + businessCalendarLocations, e);
-            throw new RuntimeException("Problem loading calendar: locations=" + businessCalendarLocations, e);
+            logger.warn("Problem loading calendar: location=" + businessCalendarConfig, e);
+            throw new RuntimeException("Problem loading calendar: location=" + businessCalendarConfig, e);
         }
     }
 
