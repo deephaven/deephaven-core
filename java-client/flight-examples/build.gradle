@@ -154,6 +154,30 @@ task createKeyValueInputTableScript(type: CreateStartScripts) {
             '-XX:+UseStringDeduplication' ]
 }
 
+task createGetApplicationTableScript(type: CreateStartScripts) {
+    mainClassName = 'io.deephaven.client.examples.GetApplicationTable'
+    applicationName = 'get-application-table'
+    outputDir = new File(project.buildDir, name)
+    classpath = startScripts.classpath
+    defaultJvmOpts = [
+            '-server',
+            '-XX:+UseG1GC',
+            '-XX:MaxGCPauseMillis=100',
+            '-XX:+UseStringDeduplication' ]
+}
+
+task createGetScopeTableScript(type: CreateStartScripts) {
+    mainClassName = 'io.deephaven.client.examples.GetScopeTable'
+    applicationName = 'get-scope-table'
+    outputDir = new File(project.buildDir, name)
+    classpath = startScripts.classpath
+    defaultJvmOpts = [
+            '-server',
+            '-XX:+UseG1GC',
+            '-XX:MaxGCPauseMillis=100',
+            '-XX:+UseStringDeduplication' ]
+}
+
 applicationDistribution.into('bin') {
     from(createGetSchemaScripts)
     from(createGetTsvScripts)
@@ -166,6 +190,8 @@ applicationDistribution.into('bin') {
     from(createDoPutTableScript)
     from(createAddToInputTableScript)
     from(createKeyValueInputTableScript)
+    from(createGetApplicationTableScript)
+    from(createGetScopeTableScript)
     fileMode = 0755
 }
 
