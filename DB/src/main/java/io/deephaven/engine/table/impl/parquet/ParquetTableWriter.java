@@ -1,14 +1,16 @@
 package io.deephaven.engine.table.impl.parquet;
 
+import io.deephaven.UncheckedDeephavenException;
+import io.deephaven.api.ColumnName;
+import io.deephaven.api.RawString;
+import io.deephaven.api.Selectable;
+import io.deephaven.api.agg.First;
+import io.deephaven.api.agg.Last;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.tables.*;
 import io.deephaven.engine.vector.Vector;
-import io.deephaven.engine.tables.libs.QueryLibrary;
 import io.deephaven.engine.tables.libs.StringSet;
-import io.deephaven.engine.tables.select.QueryScope;
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.tables.utils.TableTools;
-import io.deephaven.engine.table.impl.InMemoryTable;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.locations.parquet.local.TrackedSeekableChannelsProvider;
 import io.deephaven.engine.table.impl.parquet.metadata.CodecInfo;
@@ -28,7 +30,6 @@ import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.codec.ObjectCodec;
 import io.deephaven.util.type.TypeUtils;
-import gnu.trove.list.array.TLongArrayList;
 import io.deephaven.parquet.ColumnWriter;
 import io.deephaven.parquet.ParquetFileWriter;
 import io.deephaven.parquet.RowGroupWriter;
@@ -43,7 +44,6 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.nio.*;
 import java.nio.file.Path;
@@ -614,7 +614,6 @@ public class ParquetTableWriter {
         }
     }
 
-
     private static <DATA_TYPE> TransferObject<?> getDestinationBuffer(
             final ColumnSource<DATA_TYPE> columnSource,
             final ColumnDefinition<DATA_TYPE> columnDefinition,
@@ -932,118 +931,21 @@ public class ParquetTableWriter {
         }
     }
 
-
-    private static boolean isRange(RowSet rowSet) {
-        return rowSet.size() == (rowSet.lastRowKey() - rowSet.firstRowKey() + 1);
-    }
-
-
-    public static class RangeCollector {
-        private boolean firstStep = true;
-        private Object lastValue;
-        TLongArrayList beginPos = new TLongArrayList();
-        TLongArrayList endPos = new TLongArrayList();
-        private long pos = 0;
-
-        public boolean next(Object current) {
-            boolean result = firstStep | !Objects.equals(lastValue, current);
-            lastValue = current;
-            if (result) {
-                if (!firstStep) {
-                    endPos.add(pos);
-                } else {
-                    firstStep = false;
-                }
-                beginPos.add(pos);
-            }
-            pos++;
-            return result;
-        }
-
-        public void close() {
-            if (pos > 0) {
-                endPos.add(pos);
-            }
-        }
-
-        public long[] beginPos() {
-            return beginPos.toArray();
-        }
-
-        public long[] endPos() {
-            return endPos.toArray();
-        }
-    }
-
-
     private static Table groupingAsTable(Table tableToSave, String columnName) {
-        Map<?, RowSet> grouping = tableToSave.getRowSet().getGrouping(tableToSave.getColumnSource(columnName));
-        RangeCollector collector;
-        QueryScope.getScope().putParam("__range_collector_" + columnName + "__", collector = new RangeCollector());
-        Table firstOfTheKey =
-                tableToSave.view(columnName).where("__range_collector_" + columnName + "__.next(" + columnName + ")");
-
-        Table contiguousOccurrences = firstOfTheKey.countBy("c", columnName).where("c != 1");
-        if (contiguousOccurrences.size() != 0) {
-            throw new RuntimeException(
-                    "Disk grouping is not possible for column because some indices are not contiguous");
+        final QueryTable coalesced = (QueryTable) tableToSave.coalesce();
+        final Table tableToGroup = coalesced.isRefreshing() ? coalesced.silent() : coalesced;
+        tableToGroup.setAttribute(Table.STREAM_TABLE_ATTRIBUTE, true); // We want persistent first/last-by
+        final Table grouped = tableToGroup
+                .view(List.of(Selectable.of(ColumnName.of(GROUPING_KEY), ColumnName.of(columnName)),
+                        Selectable.of(ColumnName.of(BEGIN_POS), RawString.of("ii")),  // Range start, inclusive
+                        Selectable.of(ColumnName.of(END_POS), RawString.of("ii+1")))) // Range end, exclusive
+                .aggBy(List.of(First.of(ColumnName.of(BEGIN_POS)), Last.of(ColumnName.of(END_POS))),
+                        List.of(ColumnName.of(GROUPING_KEY)));
+        final Table invalid = grouped.where(BEGIN_POS + " != 0 && " + BEGIN_POS + " != "+ END_POS + "_[ii-1]");
+        if (!invalid.isEmpty()) {
+            throw new UncheckedDeephavenException(
+                    "Range grouping is not possible for column because some indices are not contiguous");
         }
-        Object columnValues = firstOfTheKey.getColumn(columnName).getDirect();
-        collector.close();
-        return new InMemoryTable(new String[] {GROUPING_KEY, BEGIN_POS, END_POS},
-                new Object[] {columnValues, collector.beginPos(), collector.endPos()});
-    }
-
-    public static class SomeSillyTest implements Serializable {
-        private static final long serialVersionUID = 6668727512367188538L;
-        final int value;
-
-        public SomeSillyTest(int value) {
-            this.value = value;
-        }
-
-        @Override
-        public String toString() {
-            return "SomeSillyTest{" +
-                    "value=" + value +
-                    '}';
-        }
-
-        @Override
-        public boolean equals(Object obj) {
-            if (!(obj instanceof SomeSillyTest)) {
-                return false;
-            }
-            return value == ((SomeSillyTest) obj).value;
-        }
-    }
-
-    private static Table getTableFlat() {
-        QueryLibrary.importClass(SomeSillyTest.class);
-        return TableTools.emptyTable(10).select(
-                "someStringColumn = i % 10 == 0?null:(`` + (i % 101))",
-                "nonNullString = `` + (i % 60)",
-                "someIntColumn = i",
-                "someNullableInts = i%5 != 0?i:null",
-                "someLongColumn = ii",
-                "someDoubleColumn = i*1.1",
-                "someFloatColumn = (float)(i*1.1)",
-                "someBoolColum = i % 3 == 0?true:i%3 == 1?false:null",
-                "someShortColumn = (short)i",
-                "someByteColumn = (byte)i",
-                "someCharColumn = (char)i",
-                "someTime = DateTime.now() + i",
-                "someKey = `` + (int)(i /100)",
-                "nullKey = i < -1?`123`:null",
-                "someSerializable = new SomeSillyTest(i)");
-    }
-
-    private static Table getGroupedTable() {
-        Table t = getTableFlat();
-        QueryLibrary.importClass(StringSetArrayWrapper.class);
-        Table result = t.groupBy("groupKey = i % 100 + (int)(i/10)")
-                .update("someStringSet = new StringSetArrayWrapper(nonNullString)");
-        TableTools.show(result);
-        return result;
+        return grouped;
     }
 }

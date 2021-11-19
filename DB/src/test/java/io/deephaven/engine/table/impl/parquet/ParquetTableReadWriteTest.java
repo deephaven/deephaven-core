@@ -19,6 +19,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.Serializable;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -49,7 +50,7 @@ public class ParquetTableReadWriteTest {
     }
 
     private static Table getTableFlat(int size, boolean includeSerializable) {
-        QueryLibrary.importClass(ParquetTableWriter.SomeSillyTest.class);
+        QueryLibrary.importClass(SomeSillyTest.class);
         ArrayList<String> columns =
                 new ArrayList<>(Arrays.asList("someStringColumn = i % 10 == 0?null:(`` + (i % 101))",
                         "nonNullString = `` + (i % 60)",
@@ -73,7 +74,7 @@ public class ParquetTableReadWriteTest {
     }
 
     private static Table getOneColumnTableFlat(int size) {
-        QueryLibrary.importClass(ParquetTableWriter.SomeSillyTest.class);
+        QueryLibrary.importClass(SomeSillyTest.class);
         return TableTools.emptyTable(size).select(
                 // "someBoolColumn = i % 3 == 0?true:i%3 == 1?false:null"
                 "someIntColumn = i % 3 == 0 ? null:i");
@@ -92,8 +93,32 @@ public class ParquetTableReadWriteTest {
         return result;
     }
 
+    public static class SomeSillyTest implements Serializable {
+        private static final long serialVersionUID = 6668727512367188538L;
+        final int value;
+
+        public SomeSillyTest(int value) {
+            this.value = value;
+        }
+
+        @Override
+        public String toString() {
+            return "SomeSillyTest{" +
+                    "value=" + value +
+                    '}';
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (!(obj instanceof SomeSillyTest)) {
+                return false;
+            }
+            return value == ((SomeSillyTest) obj).value;
+        }
+    }
+
     private static Table getEmptyArray(int size) {
-        QueryLibrary.importClass(ParquetTableWriter.SomeSillyTest.class);
+        QueryLibrary.importClass(SomeSillyTest.class);
         return TableTools.emptyTable(size).select(
                 "someEmptyString = new String[0]",
                 "someEmptyInt = new int[0]",
