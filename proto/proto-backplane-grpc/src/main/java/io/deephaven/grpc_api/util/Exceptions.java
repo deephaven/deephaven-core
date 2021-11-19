@@ -9,6 +9,7 @@ import com.google.rpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.protobuf.StatusProto;
 
+// TODO change package
 public class Exceptions {
     public static StatusRuntimeException statusRuntimeException(final Code statusCode,
             final String details) {
