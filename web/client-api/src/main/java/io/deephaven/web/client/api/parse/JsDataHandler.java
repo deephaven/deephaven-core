@@ -180,8 +180,8 @@ public enum JsDataHandler {
                 } else if (data[i] instanceof LongWrapper) {
                     value = ((LongWrapper) data[i]).getWrapped();
                 } else if (Js.typeof(data[i]).equals("string")) {
-                    String str = (String) data[i];
-                    if (str.trim().length() == 0) {
+                    String str = ((String) data[i]).trim().replaceAll(",", "");
+                    if (str.length() == 0) {
                         value = NULL_LONG;
                     } else {
                         value = Long.parseLong(str);
@@ -411,7 +411,7 @@ public enum JsDataHandler {
             // we aren't expecting a long here, so bring it down to double
             return ((LongWrapper) data).asNumber();
         }
-        String asString = data.toString().trim();
+        String asString = data.toString().trim().replaceAll(",", "");
         if (asString.isEmpty()) {
             return null;
         }
