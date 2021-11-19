@@ -97,11 +97,14 @@ public class JsInputTable {
             // noinspection unchecked,rawtypes
             return (Promise) Promise.reject("Must provide at least one table");
         }
+        final boolean closeIntermediateTable;
         final Promise<JsTable> mergePromise;
         if (tablesToAdd.length == 1) {
             mergePromise = Promise.resolve(tablesToAdd[0]);
+            closeIntermediateTable = false;
         } else {
             mergePromise = table.getConnection().mergeTables(tablesToAdd, this.table);
+            closeIntermediateTable = true;
         }
 
         return mergePromise
@@ -114,13 +117,13 @@ public class JsInputTable {
                         table.getConnection().inputTableServiceClient().addTableToInputTable(addTableRequest,
                                 table.getConnection().metadata(), c::apply);
                     }).then(success -> {
-                        if (merged != tablesToAdd[0]) {
+                        if (closeIntermediateTable) {
                             // this is an intermediate table for the merge, close it
                             merged.close();
                         }
                         return Promise.resolve(success);
                     }, failure -> {
-                        if (merged != tablesToAdd[0]) {
+                        if (closeIntermediateTable) {
                             // this is an intermediate table for the merge, close it
                             merged.close();
                         }

@@ -56,7 +56,7 @@ public enum JsDataHandler {
         public void write(Object[] data, ParseContext context, JsConsumer<Node> addNode,
                 JsConsumer<Uint8Array> addBuffer) {
             int nullCount = 0;
-            BitSet nulls = new BitSet(data.length);
+            BitSet validity = new BitSet(data.length);
             Int32Array positions = makeBuffer(data.length + 1, 4, Int32Array::new);
             // work out the total length we'll need for the payload, plus padding
             int payloadLength =
@@ -66,8 +66,10 @@ public enum JsDataHandler {
             int lastOffset = 0;
             for (int i = 0; i < data.length; i++) {
                 if (data[i] == null) {
+                    nullCount++;
                     continue;
                 }
+                validity.set(i);
                 String str = data[i].toString();
                 positions.setAt(i, (double) lastOffset);
                 byte[] bytes = str.getBytes(StandardCharsets.UTF_8);
@@ -77,7 +79,7 @@ public enum JsDataHandler {
             positions.setAt(data.length, (double) lastOffset);
 
             // validity, positions, payload
-            addBuffer.apply(makeValidityBuffer(nullCount, nulls));
+            addBuffer.apply(makeValidityBuffer(nullCount, validity));
             addBuffer.apply(new Uint8Array(positions.buffer));
             addBuffer.apply(payload);
 
@@ -94,7 +96,7 @@ public enum JsDataHandler {
         public void write(Object[] data, ParseContext context, JsConsumer<Node> addNode,
                 JsConsumer<Uint8Array> addBuffer) {
             int nullCount = 0;
-            BitSet nulls = new BitSet(data.length);
+            BitSet validity = new BitSet(data.length);
             // using float because we can convert longs to
             // doubles, though not cheaply
             Float64Array payload = new Float64Array(data.length);
@@ -121,13 +123,13 @@ public enum JsDataHandler {
                 if (dateValue == NULL_LONG) {
                     nullCount++;
                 } else {
-                    nulls.set(i);
+                    validity.set(i);
                 }
                 payload.setAt(i, Double.longBitsToDouble(dateValue));
             }
 
             // validity, then payload
-            addBuffer.apply(makeValidityBuffer(nullCount, nulls));
+            addBuffer.apply(makeValidityBuffer(nullCount, validity));
             addBuffer.apply(new Uint8Array(payload.buffer));
 
             addNode.apply(new Node(data.length, nullCount));
@@ -167,7 +169,7 @@ public enum JsDataHandler {
         public void write(Object[] data, ParseContext context, JsConsumer<Node> addNode,
                 JsConsumer<Uint8Array> addBuffer) {
             int nullCount = 0;
-            BitSet nulls = new BitSet(data.length);
+            BitSet validity = new BitSet(data.length);
             // using float because we can convert longs to
             // doubles, though not cheaply
             Float64Array payload = new Float64Array(data.length);
@@ -191,13 +193,13 @@ public enum JsDataHandler {
                 if (value == NULL_LONG) {
                     nullCount++;
                 } else {
-                    nulls.set(i);
+                    validity.set(i);
                 }
                 payload.setAt(i, Double.longBitsToDouble(value));
             }
 
             // validity, then payload
-            addBuffer.apply(makeValidityBuffer(nullCount, nulls));
+            addBuffer.apply(makeValidityBuffer(nullCount, validity));
             addBuffer.apply(new Uint8Array(payload.buffer));
 
             addNode.apply(new Node(data.length, nullCount));
@@ -262,7 +264,7 @@ public enum JsDataHandler {
         public void write(Object[] data, ParseContext context, JsConsumer<Node> addNode,
                 JsConsumer<Uint8Array> addBuffer) {
             int nullCount = 0;
-            BitSet nulls = new BitSet(data.length);
+            BitSet validity = new BitSet(data.length);
             Int8Array payload = makeBuffer(data.length, Int8Array.BYTES_PER_ELEMENT, Int8Array::new);
             for (int i = 0; i < data.length; i++) {
                 Object val = data[i];
@@ -308,13 +310,15 @@ public enum JsDataHandler {
 
                 // write the value, and mark non-null if necessary
                 if (boolValue != NULL_BOOLEAN_AS_BYTE) {
-                    nulls.set(i);
+                    validity.set(i);
+                } else {
+                    nullCount++;
                 }
                 payload.setAt(i, (double) boolValue);
             }
 
             // validity, then payload
-            addBuffer.apply(makeValidityBuffer(nullCount, nulls));
+            addBuffer.apply(makeValidityBuffer(nullCount, validity));
             addBuffer.apply(new Uint8Array(Js.<TypedArray>uncheckedCast(payload).buffer));
 
             addNode.apply(new Node(data.length, nullCount));
@@ -369,7 +373,7 @@ public enum JsDataHandler {
     private static void writeSimpleNumbers(Object[] data, JsConsumer<Node> addNode, JsConsumer<Uint8Array> addBuffer,
             double bytesPerElement, double nullValue, JsFunction<ArrayBuffer, ? extends TypedArray> bufferConstructor) {
         int nullCount = 0;
-        BitSet nulls = new BitSet(data.length);
+        BitSet validity = new BitSet(data.length);
         JsArrayLike<Double> payload = makeBuffer(data.length, bytesPerElement, bufferConstructor);
         for (int i = 0; i < data.length; i++) {
             Double doubleFromData = doubleFromData(data[i]);
@@ -378,12 +382,12 @@ public enum JsDataHandler {
                 nullCount++;
             } else {
                 payload.setAt(i, doubleFromData);
-                nulls.set(i);
+                validity.set(i);
             }
         }
 
         // validity, then payload
-        addBuffer.apply(makeValidityBuffer(nullCount, nulls));
+        addBuffer.apply(makeValidityBuffer(nullCount, validity));
         addBuffer.apply(new Uint8Array(Js.<TypedArray>uncheckedCast(payload).buffer));
 
         addNode.apply(new Node(data.length, nullCount));
