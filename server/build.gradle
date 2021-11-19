@@ -7,8 +7,12 @@ dependencies {
     implementation project(':extensions-csv')
     implementation project(':extensions-parquet-table')
     implementation project(':Util');
-    implementation project(':java-client-barrage-dagger')
-    implementation project(':proto:proto-backplane-grpc-flight')
+    implementation(project(':java-client-barrage-dagger')) {
+        exclude(group: 'io.grpc', module: 'grpc-netty')
+    }
+    implementation(project(':proto:proto-backplane-grpc-flight')) {
+        exclude(group: 'io.grpc', module: 'grpc-netty')
+    }
     implementation project(':open-api-lang-tools')
     implementation project(':log-factory')
     implementation project(':application-mode')
