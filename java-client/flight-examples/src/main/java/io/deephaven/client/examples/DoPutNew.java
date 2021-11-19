@@ -3,6 +3,7 @@ package io.deephaven.client.examples;
 import io.deephaven.client.impl.ExportId;
 import io.deephaven.client.impl.FlightSession;
 import io.deephaven.client.impl.HasTicketId;
+import io.deephaven.client.impl.ScopeId;
 import io.deephaven.client.impl.TableHandle;
 import io.deephaven.qst.table.TableSpec;
 import org.apache.arrow.flight.FlightStream;
@@ -82,7 +83,7 @@ class DoPutNew extends FlightExampleBase {
     private void direct(FlightSession flight) throws Exception {
         try (final TableHandle sourceHandle = flight.session().execute(table());
                 final FlightStream doGet = flight.stream(sourceHandle)) {
-            flight.putScope(variableName, doGet);
+            flight.put(new ScopeId(variableName), doGet);
         }
     }
 

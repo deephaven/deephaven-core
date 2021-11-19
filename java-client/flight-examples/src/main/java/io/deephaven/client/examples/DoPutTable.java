@@ -3,6 +3,7 @@ package io.deephaven.client.examples;
 import io.deephaven.client.impl.ExportId;
 import io.deephaven.client.impl.FlightSession;
 import io.deephaven.client.impl.HasTicketId;
+import io.deephaven.client.impl.ScopeId;
 import io.deephaven.client.impl.TableHandle;
 import io.deephaven.qst.column.header.ColumnHeader;
 import io.deephaven.qst.table.NewTable;
@@ -90,7 +91,7 @@ class DoPutTable extends FlightExampleBase {
 
     private void direct(FlightSession flight) {
         // This version is most efficient, but the RHS is ephemeral and can't be re-referenced
-        flight.putScope(variableName, newTable(), bufferAllocator);
+        flight.put(new ScopeId(variableName), newTable(), bufferAllocator);
     }
 
     public static void main(String[] args) {

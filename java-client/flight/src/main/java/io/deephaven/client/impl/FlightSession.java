@@ -174,45 +174,6 @@ public class FlightSession implements AutoCloseable {
     }
 
     /**
-     * Creates a new server side query scope table backed by the server semantics for DoPut with a {@link NewTable}
-     * payload.
-     *
-     * <p>
-     * Equivalent to {@code put(new ScopeId(variableName), table, allocator)}.
-     *
-     * @param variableName the variable name
-     * @param table the table
-     * @param allocator the allocator
-     * @return the scope ID
-     * @see ScopeId
-     * @see #put(HasPathId, NewTable, BufferAllocator)
-     */
-    public ScopeId putScope(String variableName, NewTable table, BufferAllocator allocator) {
-        final ScopeId id = new ScopeId(variableName);
-        put(id, table, allocator);
-        return id;
-    }
-
-    /**
-     * Creates a new server side query scope table backed by the server semantics for DoPut with a {@link FlightStream}
-     * payload.
-     *
-     * <p>
-     * Equivalent to {@code put(new ScopeId(variableName), input)}.
-     *
-     * @param variableName the variable name
-     * @param input the input
-     * @return the scope ID
-     * @see ScopeId
-     * @see #put(HasPathId, FlightStream)
-     */
-    public ScopeId putScope(String variableName, FlightStream input) {
-        final ScopeId id = new ScopeId(variableName);
-        put(id, input);
-        return id;
-    }
-
-    /**
      * Performs a DoPut against the {@code pathId} with a {@link FlightStream} payload.
      *
      * @param pathId the path ID

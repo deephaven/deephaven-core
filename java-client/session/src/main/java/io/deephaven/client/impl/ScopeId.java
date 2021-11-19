@@ -5,7 +5,7 @@ import io.deephaven.grpc_api.util.ScopeTicketHelper;
 import java.util.Objects;
 
 /**
- * An opaque holder for a query scope variable.
+ * An opaque holder for a query scope variable ID.
  */
 public final class ScopeId implements HasTicketId, HasPathId {
 
