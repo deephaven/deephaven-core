@@ -1,4 +1,4 @@
-package io.deephaven.grpc_api.flight;
+package io.deephaven.server.test;
 
 import dagger.BindsInstance;
 import dagger.Component;
@@ -6,37 +6,46 @@ import dagger.Module;
 import dagger.Provides;
 import dagger.multibindings.IntoSet;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.table.Table;
+import io.deephaven.db.tables.Table;
+import io.deephaven.db.tables.utils.TableDiff;
+import io.deephaven.db.tables.utils.TableTools;
+import io.deephaven.db.util.AbstractScriptSession;
+import io.deephaven.db.util.NoLanguageDeephavenSession;
+import io.deephaven.db.util.liveness.LivenessScopeStack;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.util.TableDiff;
-import io.deephaven.engine.util.TableTools;
-import io.deephaven.engine.util.AbstractScriptSession;
-import io.deephaven.engine.util.NoLanguageDeephavenSession;
-import io.deephaven.engine.liveness.LivenessScopeStack;
-import io.deephaven.grpc_api.arrow.FlightServiceGrpcBinding;
-import io.deephaven.grpc_api.auth.AuthContextModule;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
-import io.deephaven.grpc_api.console.GlobalSessionProvider;
-import io.deephaven.grpc_api.console.ScopeTicketResolver;
-import io.deephaven.grpc_api.arrow.ArrowModule;
-import io.deephaven.grpc_api.session.SessionModule;
-import io.deephaven.grpc_api.session.SessionService;
-import io.deephaven.grpc_api.session.SessionServiceGrpcImpl;
-import io.deephaven.grpc_api.session.SessionState;
-import io.deephaven.grpc_api.session.TicketResolver;
 import io.deephaven.grpc_api.util.FlightExportTicketHelper;
-import io.deephaven.grpc_api.util.Scheduler;
-import io.deephaven.grpc_api.util.ScopeTicketHelper;
 import io.deephaven.proto.backplane.grpc.HandshakeRequest;
 import io.deephaven.proto.backplane.grpc.HandshakeResponse;
 import io.deephaven.proto.backplane.grpc.SessionServiceGrpc;
+import io.deephaven.server.arrow.ArrowModule;
+import io.deephaven.server.arrow.FlightServiceGrpcBinding;
+import io.deephaven.server.auth.AuthContextModule;
+import io.deephaven.server.console.GlobalSessionProvider;
+import io.deephaven.server.console.ScopeTicketResolver;
+import io.deephaven.server.session.SessionModule;
+import io.deephaven.server.session.SessionService;
+import io.deephaven.server.session.SessionServiceGrpcImpl;
+import io.deephaven.server.session.SessionState;
+import io.deephaven.server.session.TicketResolver;
+import io.deephaven.server.util.Scheduler;
 import io.deephaven.util.SafeCloseable;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.Server;
 import io.grpc.ServerInterceptor;
 import io.grpc.netty.NettyServerBuilder;
-import org.apache.arrow.flight.*;
+import org.apache.arrow.flight.AsyncPutListener;
+import org.apache.arrow.flight.CallHeaders;
+import org.apache.arrow.flight.CallStatus;
+import org.apache.arrow.flight.Criteria;
+import org.apache.arrow.flight.FlightClient;
+import org.apache.arrow.flight.FlightClientMiddleware;
+import org.apache.arrow.flight.FlightDescriptor;
+import org.apache.arrow.flight.FlightInfo;
+import org.apache.arrow.flight.FlightStream;
+import org.apache.arrow.flight.Location;
+import org.apache.arrow.flight.Ticket;
 import org.apache.arrow.flight.impl.Flight;
 import org.apache.arrow.memory.RootAllocator;
 import org.apache.arrow.vector.VectorSchemaRoot;
@@ -52,7 +61,6 @@ import org.junit.rules.ExternalResource;
 
 import javax.inject.Named;
 import javax.inject.Singleton;
-
 import java.io.IOException;
 import java.util.EnumSet;
 import java.util.Set;
@@ -68,7 +76,7 @@ import static org.junit.Assert.*;
  * Deliberately much lower in scope (and running time) than BarrageMessageRoundTripTest, the only purpose of this test
  * is to verify that we can round trip
  */
-public class FlightMessageRoundTripTest {
+public abstract class FlightMessageRoundTripTest {
     @Module
     public static class FlightTestModule {
         @IntoSet
@@ -133,12 +141,7 @@ public class FlightMessageRoundTripTest {
                 .withSessionTokenExpireTmMs(60_000_000)
                 .build();
 
-        NettyServerBuilder serverBuilder = NettyServerBuilder.forPort(0);
-        component.interceptors().forEach(serverBuilder::intercept);
-        serverBuilder.addService(component.sessionGrpcService());
-        serverBuilder.addService(component.flightService());
-        server = serverBuilder.build().start();
-        int actualPort = server.getPort();
+        int actualPort = startServer(component);
 
         scriptSession = component.scriptSession();
 
@@ -170,6 +173,15 @@ public class FlightMessageRoundTripTest {
         sessionToken = UUID.fromString(response.getSessionToken().toStringUtf8());
 
         currentSession = component.sessionService().getSessionForToken(sessionToken);
+    }
+
+    protected /*abstract*/ int startServer(io.deephaven.server.test.FlightMessageRoundTripTest.TestComponent component) throws IOException {
+        NettyServerBuilder serverBuilder = NettyServerBuilder.forPort(0);
+        component.interceptors().forEach(serverBuilder::intercept);
+        serverBuilder.addService(component.sessionGrpcService());
+        serverBuilder.addService(component.flightService());
+        server = serverBuilder.build().start();
+        return server.getPort();
     }
 
     @After
@@ -215,7 +227,7 @@ public class FlightMessageRoundTripTest {
     @Test
     public void testSimpleEmptyTableDoGet() {
         Flight.Ticket simpleTableTicket = FlightExportTicketHelper.exportIdToFlightTicket(1);
-        currentSession.newExport(simpleTableTicket, "test")
+        currentSession.newExport(simpleTableTicket, "")
                 .submit(() -> TableTools.emptyTable(10).update("I=i"));
 
         FlightStream stream = client.getStream(new Ticket(simpleTableTicket.getTicket().toByteArray()));
@@ -392,7 +404,7 @@ public class FlightMessageRoundTripTest {
         // flight ticket can be resolved).
         final Flight.Ticket ticket = FlightExportTicketHelper.exportIdToFlightTicket(1);
         final Table table = TableTools.emptyTable(10).update("I = i");
-        currentSession.newExport(ticket, "test").submit(() -> table);
+        currentSession.newExport(ticket, "").submit(() -> table);
 
         // test fetch info from export ticket
         final FlightInfo info = client.getInfo(FlightDescriptor.path("export", "1"));
@@ -429,7 +441,7 @@ public class FlightMessageRoundTripTest {
     private void assertRoundTripDataEqual(Table deephavenTable) throws InterruptedException, ExecutionException {
         // bind the table in the session
         Flight.Ticket dhTableTicket = FlightExportTicketHelper.exportIdToFlightTicket(nextTicket++);
-        currentSession.newExport(dhTableTicket, "test").submit(() -> deephavenTable);
+        currentSession.newExport(dhTableTicket, "").submit(() -> deephavenTable);
 
         // fetch with DoGet
         FlightStream stream = client.getStream(new Ticket(dhTableTicket.getTicket().toByteArray()));

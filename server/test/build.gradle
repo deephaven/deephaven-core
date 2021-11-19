@@ -1,0 +1,20 @@
+// Utility project for testing server implementations with vanilla flight client
+plugins {
+    id 'java-library'
+}
+dependencies {
+    implementation project(':Base')
+    implementation project(':engine-table')//Table, LTM, TableDiff, TableTools, ScriptSession
+    implementation project(':server')
+    implementation project(':proto:proto-backplane-grpc-flight')
+    implementation project(':extensions-barrage')
+
+    Classpaths.inheritArrow(project, 'flight-core', 'implementation')
+
+    Classpaths.inheritDagger(project)
+
+//    Classpaths.inheritJUnitPlatform(project, 'api')
+    implementation 'junit:junit:4.13.2'
+
+
+}
