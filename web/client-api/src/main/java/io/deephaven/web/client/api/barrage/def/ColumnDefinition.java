@@ -1,8 +1,6 @@
-package io.deephaven.web.shared.data;
+package io.deephaven.web.client.api.barrage.def;
 
-import java.io.Serializable;
-
-public class ColumnDefinition implements Serializable {
+public class ColumnDefinition {
     private int columnIndex;
     private String name;
     private String type;
@@ -18,6 +16,8 @@ public class ColumnDefinition implements Serializable {
 
     // Indicates that this is a style column for the row
     private boolean forRow;
+    private boolean isInputTableKeyColumn;
+    private String description;
 
     public String getName() {
         return name;
@@ -117,5 +117,21 @@ public class ColumnDefinition implements Serializable {
 
     public void setStyleColumnName(String styleColumn) {
         this.styleColumn = styleColumn;
+    }
+
+    public void setInputTableKeyColumn(boolean inputTableKeyColumn) {
+        this.isInputTableKeyColumn = inputTableKeyColumn;
+    }
+
+    public boolean isInputTableKeyColumn() {
+        return isInputTableKeyColumn;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public String getDescription() {
+        return description;
     }
 }

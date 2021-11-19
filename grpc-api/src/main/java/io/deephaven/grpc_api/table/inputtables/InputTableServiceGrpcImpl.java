@@ -64,6 +64,10 @@ public class InputTableServiceGrpcImpl extends InputTableServiceGrpc.InputTableS
                         // actually add the tables contents
                         try {
                             mutableInputTable.add(table);
+                            GrpcUtil.safelyExecuteLocked(responseObserver, () -> {
+                                responseObserver.onNext(AddTableResponse.getDefaultInstance());
+                                responseObserver.onCompleted();
+                            });
                         } catch (IOException ioException) {
                             throw GrpcUtil.statusRuntimeException(Code.DATA_LOSS, "Error adding table to input table");
                         }
@@ -111,6 +115,10 @@ public class InputTableServiceGrpcImpl extends InputTableServiceGrpc.InputTableS
                         // actually delete the table's contents
                         try {
                             mutableInputTable.delete(tableToDelete);
+                            GrpcUtil.safelyExecuteLocked(responseObserver, () -> {
+                                responseObserver.onNext(DeleteTableResponse.getDefaultInstance());
+                                responseObserver.onCompleted();
+                            });
                         } catch (IOException ioException) {
                             throw GrpcUtil.statusRuntimeException(Code.DATA_LOSS,
                                     "Error deleting table from inputtable");

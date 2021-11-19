@@ -5,6 +5,7 @@ import elemental2.core.Uint8Array;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ApplyPreviewColumnsRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.AsOfJoinTablesRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ComboAggregateRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.CreateInputTableRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.CrossJoinTablesRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.DropColumnsRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.EmptyTableRequest;
@@ -207,6 +208,122 @@ public class Operation {
 
             @JsProperty
             void setSourceId(Object sourceId);
+        }
+
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface CreateInputTableFieldType {
+            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+            public interface GetSchemaUnionType {
+                @JsOverlay
+                static Operation.ToObjectReturnType.CreateInputTableFieldType.GetSchemaUnionType of(
+                        Object o) {
+                    return Js.cast(o);
+                }
+
+                @JsOverlay
+                default String asString() {
+                    return Js.asString(this);
+                }
+
+                @JsOverlay
+                default Uint8Array asUint8Array() {
+                    return Js.cast(this);
+                }
+
+                @JsOverlay
+                default boolean isString() {
+                    return (Object) this instanceof String;
+                }
+
+                @JsOverlay
+                default boolean isUint8Array() {
+                    return (Object) this instanceof Uint8Array;
+                }
+            }
+
+            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+            public interface KindFieldType {
+                @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                public interface InMemoryKeyBackedFieldType {
+                    @JsOverlay
+                    static Operation.ToObjectReturnType.CreateInputTableFieldType.KindFieldType.InMemoryKeyBackedFieldType create() {
+                        return Js.uncheckedCast(JsPropertyMap.of());
+                    }
+
+                    @JsProperty
+                    JsArray<String> getKeyColumnsList();
+
+                    @JsProperty
+                    void setKeyColumnsList(JsArray<String> keyColumnsList);
+
+                    @JsOverlay
+                    default void setKeyColumnsList(String[] keyColumnsList) {
+                        setKeyColumnsList(Js.<JsArray<String>>uncheckedCast(keyColumnsList));
+                    }
+                }
+
+                @JsOverlay
+                static Operation.ToObjectReturnType.CreateInputTableFieldType.KindFieldType create() {
+                    return Js.uncheckedCast(JsPropertyMap.of());
+                }
+
+                @JsProperty
+                Object getInMemoryAppendOnly();
+
+                @JsProperty
+                Operation.ToObjectReturnType.CreateInputTableFieldType.KindFieldType.InMemoryKeyBackedFieldType getInMemoryKeyBacked();
+
+                @JsProperty
+                void setInMemoryAppendOnly(Object inMemoryAppendOnly);
+
+                @JsProperty
+                void setInMemoryKeyBacked(
+                        Operation.ToObjectReturnType.CreateInputTableFieldType.KindFieldType.InMemoryKeyBackedFieldType inMemoryKeyBacked);
+            }
+
+            @JsOverlay
+            static Operation.ToObjectReturnType.CreateInputTableFieldType create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            Operation.ToObjectReturnType.CreateInputTableFieldType.KindFieldType getKind();
+
+            @JsProperty
+            Object getResultId();
+
+            @JsProperty
+            Operation.ToObjectReturnType.CreateInputTableFieldType.GetSchemaUnionType getSchema();
+
+            @JsProperty
+            Object getSourceTableId();
+
+            @JsProperty
+            void setKind(Operation.ToObjectReturnType.CreateInputTableFieldType.KindFieldType kind);
+
+            @JsProperty
+            void setResultId(Object resultId);
+
+            @JsProperty
+            void setSchema(
+                    Operation.ToObjectReturnType.CreateInputTableFieldType.GetSchemaUnionType schema);
+
+            @JsOverlay
+            default void setSchema(String schema) {
+                setSchema(
+                        Js.<Operation.ToObjectReturnType.CreateInputTableFieldType.GetSchemaUnionType>uncheckedCast(
+                                schema));
+            }
+
+            @JsOverlay
+            default void setSchema(Uint8Array schema) {
+                setSchema(
+                        Js.<Operation.ToObjectReturnType.CreateInputTableFieldType.GetSchemaUnionType>uncheckedCast(
+                                schema));
+            }
+
+            @JsProperty
+            void setSourceTableId(Object sourceTableId);
         }
 
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -1479,6 +1596,9 @@ public class Operation {
         Operation.ToObjectReturnType.ComboAggregateFieldType getComboAggregate();
 
         @JsProperty
+        Operation.ToObjectReturnType.CreateInputTableFieldType getCreateInputTable();
+
+        @JsProperty
         Operation.ToObjectReturnType.CrossJoinFieldType getCrossJoin();
 
         @JsProperty
@@ -1568,6 +1688,10 @@ public class Operation {
 
         @JsProperty
         void setComboAggregate(Operation.ToObjectReturnType.ComboAggregateFieldType comboAggregate);
+
+        @JsProperty
+        void setCreateInputTable(
+                Operation.ToObjectReturnType.CreateInputTableFieldType createInputTable);
 
         @JsProperty
         void setCrossJoin(Operation.ToObjectReturnType.CrossJoinFieldType crossJoin);
@@ -1823,6 +1947,122 @@ public class Operation {
 
             @JsProperty
             void setSourceId(Object sourceId);
+        }
+
+        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+        public interface CreateInputTableFieldType {
+            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+            public interface GetSchemaUnionType {
+                @JsOverlay
+                static Operation.ToObjectReturnType0.CreateInputTableFieldType.GetSchemaUnionType of(
+                        Object o) {
+                    return Js.cast(o);
+                }
+
+                @JsOverlay
+                default String asString() {
+                    return Js.asString(this);
+                }
+
+                @JsOverlay
+                default Uint8Array asUint8Array() {
+                    return Js.cast(this);
+                }
+
+                @JsOverlay
+                default boolean isString() {
+                    return (Object) this instanceof String;
+                }
+
+                @JsOverlay
+                default boolean isUint8Array() {
+                    return (Object) this instanceof Uint8Array;
+                }
+            }
+
+            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+            public interface KindFieldType {
+                @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+                public interface InMemoryKeyBackedFieldType {
+                    @JsOverlay
+                    static Operation.ToObjectReturnType0.CreateInputTableFieldType.KindFieldType.InMemoryKeyBackedFieldType create() {
+                        return Js.uncheckedCast(JsPropertyMap.of());
+                    }
+
+                    @JsProperty
+                    JsArray<String> getKeyColumnsList();
+
+                    @JsProperty
+                    void setKeyColumnsList(JsArray<String> keyColumnsList);
+
+                    @JsOverlay
+                    default void setKeyColumnsList(String[] keyColumnsList) {
+                        setKeyColumnsList(Js.<JsArray<String>>uncheckedCast(keyColumnsList));
+                    }
+                }
+
+                @JsOverlay
+                static Operation.ToObjectReturnType0.CreateInputTableFieldType.KindFieldType create() {
+                    return Js.uncheckedCast(JsPropertyMap.of());
+                }
+
+                @JsProperty
+                Object getInMemoryAppendOnly();
+
+                @JsProperty
+                Operation.ToObjectReturnType0.CreateInputTableFieldType.KindFieldType.InMemoryKeyBackedFieldType getInMemoryKeyBacked();
+
+                @JsProperty
+                void setInMemoryAppendOnly(Object inMemoryAppendOnly);
+
+                @JsProperty
+                void setInMemoryKeyBacked(
+                        Operation.ToObjectReturnType0.CreateInputTableFieldType.KindFieldType.InMemoryKeyBackedFieldType inMemoryKeyBacked);
+            }
+
+            @JsOverlay
+            static Operation.ToObjectReturnType0.CreateInputTableFieldType create() {
+                return Js.uncheckedCast(JsPropertyMap.of());
+            }
+
+            @JsProperty
+            Operation.ToObjectReturnType0.CreateInputTableFieldType.KindFieldType getKind();
+
+            @JsProperty
+            Object getResultId();
+
+            @JsProperty
+            Operation.ToObjectReturnType0.CreateInputTableFieldType.GetSchemaUnionType getSchema();
+
+            @JsProperty
+            Object getSourceTableId();
+
+            @JsProperty
+            void setKind(Operation.ToObjectReturnType0.CreateInputTableFieldType.KindFieldType kind);
+
+            @JsProperty
+            void setResultId(Object resultId);
+
+            @JsProperty
+            void setSchema(
+                    Operation.ToObjectReturnType0.CreateInputTableFieldType.GetSchemaUnionType schema);
+
+            @JsOverlay
+            default void setSchema(String schema) {
+                setSchema(
+                        Js.<Operation.ToObjectReturnType0.CreateInputTableFieldType.GetSchemaUnionType>uncheckedCast(
+                                schema));
+            }
+
+            @JsOverlay
+            default void setSchema(Uint8Array schema) {
+                setSchema(
+                        Js.<Operation.ToObjectReturnType0.CreateInputTableFieldType.GetSchemaUnionType>uncheckedCast(
+                                schema));
+            }
+
+            @JsProperty
+            void setSourceTableId(Object sourceTableId);
         }
 
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
@@ -3096,6 +3336,9 @@ public class Operation {
         Operation.ToObjectReturnType0.ComboAggregateFieldType getComboAggregate();
 
         @JsProperty
+        Operation.ToObjectReturnType0.CreateInputTableFieldType getCreateInputTable();
+
+        @JsProperty
         Operation.ToObjectReturnType0.CrossJoinFieldType getCrossJoin();
 
         @JsProperty
@@ -3185,6 +3428,10 @@ public class Operation {
 
         @JsProperty
         void setComboAggregate(Operation.ToObjectReturnType0.ComboAggregateFieldType comboAggregate);
+
+        @JsProperty
+        void setCreateInputTable(
+                Operation.ToObjectReturnType0.CreateInputTableFieldType createInputTable);
 
         @JsProperty
         void setCrossJoin(Operation.ToObjectReturnType0.CrossJoinFieldType crossJoin);
@@ -3286,6 +3533,8 @@ public class Operation {
 
     public native void clearComboAggregate();
 
+    public native void clearCreateInputTable();
+
     public native void clearCrossJoin();
 
     public native void clearDropColumns();
@@ -3345,6 +3594,8 @@ public class Operation {
     public native AsOfJoinTablesRequest getAsOfJoin();
 
     public native ComboAggregateRequest getComboAggregate();
+
+    public native CreateInputTableRequest getCreateInputTable();
 
     public native CrossJoinTablesRequest getCrossJoin();
 
@@ -3407,6 +3658,8 @@ public class Operation {
     public native boolean hasAsOfJoin();
 
     public native boolean hasComboAggregate();
+
+    public native boolean hasCreateInputTable();
 
     public native boolean hasCrossJoin();
 
@@ -3475,6 +3728,10 @@ public class Operation {
     public native void setComboAggregate();
 
     public native void setComboAggregate(ComboAggregateRequest value);
+
+    public native void setCreateInputTable();
+
+    public native void setCreateInputTable(CreateInputTableRequest value);
 
     public native void setCrossJoin();
 

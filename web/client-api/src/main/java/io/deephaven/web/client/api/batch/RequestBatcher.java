@@ -8,6 +8,7 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.Batc
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ExportedTableCreationResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.TableReference;
 import io.deephaven.web.client.api.*;
+import io.deephaven.web.client.api.barrage.stream.ResponseStreamWrapper;
 import io.deephaven.web.client.api.batch.BatchBuilder.BatchOp;
 import io.deephaven.web.client.api.filter.FilterCondition;
 import io.deephaven.web.client.fu.JsLog;

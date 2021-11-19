@@ -2,7 +2,6 @@ package io.deephaven.web.client.api;
 
 import elemental2.core.Global;
 import elemental2.core.JsArray;
-import elemental2.core.JsString;
 import elemental2.dom.CustomEventInit;
 import elemental2.dom.DomGlobal;
 import elemental2.promise.IThenable.ThenOnFulfilledCallbackFn;
@@ -16,6 +15,8 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.RunC
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.SelectDistinctRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.SnapshotTableRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.runchartdownsamplerequest.ZoomRange;
+import io.deephaven.web.client.api.barrage.def.ColumnDefinition;
+import io.deephaven.web.client.api.barrage.def.TableAttributesDefinition;
 import io.deephaven.web.client.api.batch.RequestBatcher;
 import io.deephaven.web.client.api.filter.FilterCondition;
 import io.deephaven.web.client.api.input.JsInputTable;
@@ -217,16 +218,16 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
         if (!hasInputTable) {
             return Js.uncheckedCast(Promise.reject("Table is not an InputTable"));
         }
-        return new Promise<>((resolve, reject) -> {
-            // workerConnection.getServer().fetchInputTable(getHeadHandle(), Callbacks.of((success, fail) -> {
-            // if (fail == null) {
-            // resolve.onInvoke(new JsInputTable(this, success.getKeys(), success.getValues()));
-            // } else {
-            // reject.onInvoke(fail);
-            // }
-            // }));
-            throw new UnsupportedOperationException("inputTable");
-        });
+        String[] keyCols = new String[0];
+        String[] valueCols = new String[0];
+        for (int i = 0; i < getColumns().length; i++) {
+            if (getColumns().getAt(i).isInputTableKeyColumn()) {
+                keyCols[keyCols.length] = getColumns().getAt(i).getName();
+            } else {
+                valueCols[valueCols.length] = getColumns().getAt(i).getName();
+            }
+        }
+        return Promise.resolve(new JsInputTable(this, keyCols, valueCols));
     }
 
     @JsMethod
@@ -255,31 +256,22 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
     public String[] getAttributes() {
         TableAttributesDefinition attrs = lastVisibleState().getTableDef().getAttributes();
         return Stream.concat(
-                attrs.getAsMap().keySet().stream(),
-                Stream.of(attrs.getRemainingKeys())).toArray(String[]::new);
+                Arrays.stream(attrs.getKeys()),
+                attrs.getRemainingAttributeKeys().stream()).toArray(String[]::new);
     }
 
     @JsMethod
     public Object getAttribute(String attributeName) {
         TableAttributesDefinition attrs = lastVisibleState().getTableDef().getAttributes();
         // If the value was present as something easy to serialize, return it.
-        String value = attrs.getAsMap().get(attributeName);
+        String value = attrs.getValue(attributeName);
         if (value != null) {
             return value;
         }
 
-        // Else check to see if it was present in the remaining keys (things that werent serialized)
-        boolean found = false;
-        for (int i = 0; i < attrs.getRemainingKeys().length; i++) {
-            if (attrs.getRemainingKeys()[i].equals(attributeName)) {
-                found = true;
-                break;
-            }
-        }
-
-        // If not, return the value null - this shouldn't be used to detect absence of an attribute,
-        // use getAttributes() for that.
-        if (!found) {
+        // Else check to see if it was present in the remaining keys (things that werent serialized).
+        // This shouldn't be used to detect the absence of an attribute, use getAttributes() for that
+        if (!attrs.getRemainingAttributeKeys().contains(attributeName)) {
             return null;
         }
 
