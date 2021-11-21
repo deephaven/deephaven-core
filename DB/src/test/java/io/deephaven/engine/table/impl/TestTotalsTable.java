@@ -12,7 +12,6 @@ import io.deephaven.engine.vector.DoubleVectorDirect;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
-import io.deephaven.libs.primitives.*;
 import io.deephaven.util.QueryConstants;
 import org.junit.After;
 import org.junit.Before;
@@ -60,7 +59,7 @@ public class TestTotalsTable extends RefreshingTableTestCase {
 
         final TotalsTableBuilder builder = new TotalsTableBuilder();
         final Table totals = UpdateGraphProcessor.DEFAULT.exclusiveLock()
-                .computeLocked(() -> TotalsTableBuilder.makeTotalsTable(queryTable.setTotalsTable(builder)));
+                .computeLocked(() -> TotalsTableBuilder.makeTotalsTable(builder.applyToTable(queryTable)));
         final Map<String, ? extends ColumnSource> resultColumns = totals.getColumnSourceMap();
         assertEquals(1, totals.size());
         assertEquals(new LinkedHashSet<>(Arrays.asList("intCol", "intCol2", "doubleCol", "doubleNullCol", "doubleCol2",
@@ -151,21 +150,21 @@ public class TestTotalsTable extends RefreshingTableTestCase {
                     public Table e() {
                         final TotalsTableBuilder totalsTableBuilder = new TotalsTableBuilder();
                         return UpdateGraphProcessor.DEFAULT.exclusiveLock()
-                                .computeLocked(() -> queryTable.setTotalsTable(totalsTableBuilder));
+                                .computeLocked(() -> totalsTableBuilder.applyToTable(queryTable));
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
                         final TotalsTableBuilder totalsTableBuilder = new TotalsTableBuilder();
                         return UpdateGraphProcessor.DEFAULT.exclusiveLock().computeLocked(() -> TotalsTableBuilder
-                                .makeTotalsTable(queryTable.setTotalsTable(totalsTableBuilder)));
+                                .makeTotalsTable(totalsTableBuilder.applyToTable(queryTable)));
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
                         final TotalsTableBuilder totalsTableBuilder = new TotalsTableBuilder();
                         return UpdateGraphProcessor.DEFAULT.exclusiveLock().computeLocked(() -> TotalsTableBuilder
-                                .makeTotalsTable(queryTable.setTotalsTable(totalsTableBuilder)));
+                                .makeTotalsTable(totalsTableBuilder.applyToTable(queryTable)));
                     }
                 },
         };

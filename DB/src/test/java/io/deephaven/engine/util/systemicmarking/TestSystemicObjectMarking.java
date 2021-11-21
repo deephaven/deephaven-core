@@ -41,8 +41,8 @@ public class TestSystemicObjectMarking extends RefreshingTableTestCase {
 
         assertFalse(updated.isFailed());
         assertTrue(updated2.isFailed());
-        assertNotNull(errorListener2.originalException);
-        assertEquals("In formula: LC = Str2.toLowerCase()", errorListener2.originalException.getMessage());
+        assertNotNull(errorListener2.originalException());
+        assertEquals("In formula: LC = Str2.toLowerCase()", errorListener2.originalException().getMessage());
 
         try {
             updated2.listenForUpdates(new ErrorListener(updated2));
@@ -59,13 +59,12 @@ public class TestSystemicObjectMarking extends RefreshingTableTestCase {
                 TstUtils.addToTable(source, i(7, 8), c("Str", "g", null), c("Str2", "G", "H"));
                 source.notifyListeners(i(7, 8), i(), i());
             });
-            return null;
         }, TestSystemicObjectMarking::isNpe);
 
         assertTrue(updated.isFailed());
         assertTrue(updated2.isFailed());
-        assertNotNull(errorListener.originalException);
-        assertEquals("In formula: UC = Str.toUpperCase()", errorListener.originalException.getMessage());
+        assertNotNull(errorListener.originalException());
+        assertEquals("In formula: UC = Str.toUpperCase()", errorListener.originalException().getMessage());
 
     }
 

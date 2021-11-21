@@ -8,7 +8,7 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.TrackingRowSet;
-import io.deephaven.engine.table.impl.PrevColumnSource;
+import io.deephaven.engine.table.iterators.ColumnIterator;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;

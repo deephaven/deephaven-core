@@ -4,37 +4,35 @@
 
 package io.deephaven.engine.table.impl;
 
+import com.google.common.collect.BiMap;
+import com.google.common.collect.HashBiMap;
 import io.deephaven.base.Base64;
 import io.deephaven.base.StringUtils;
-import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.rowset.RowSetShiftData;
-import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.TableUpdateImpl;
-import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
-import io.deephaven.engine.updategraph.*;
-import io.deephaven.hash.KeyedObjectHashSet;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.reference.WeakSimpleReference;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.io.log.impl.LogOutputStringImpl;
-import io.deephaven.io.logger.Logger;
-import com.google.common.collect.BiMap;
-import com.google.common.collect.HashBiMap;
 import io.deephaven.engine.NotSortableException;
-import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
-import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.liveness.LivenessReferent;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.RowSetShiftData;
+import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.SourceColumn;
 import io.deephaven.engine.table.impl.select.SwitchColumn;
-import io.deephaven.engine.table.impl.utils.*;
-import io.deephaven.util.annotations.ReferentialIntegrity;
+import io.deephaven.engine.table.impl.utils.RowSetShiftDataExpander;
+import io.deephaven.engine.updategraph.*;
+import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
+import io.deephaven.hash.KeyedObjectHashSet;
 import io.deephaven.internal.log.LoggerFactory;
+import io.deephaven.io.log.impl.LogOutputStringImpl;
+import io.deephaven.io.logger.Logger;
+import io.deephaven.util.annotations.ReferentialIntegrity;
 import io.deephaven.util.datastructures.SimpleReferenceManager;
 import io.deephaven.util.datastructures.hash.IdentityKeyedObjectKey;
 import org.apache.commons.lang3.mutable.Mutable;
@@ -831,7 +829,8 @@ public abstract class BaseTable extends LivenessArtifact
      *
      * @param e error
      * @param sourceEntry performance tracking
-     */ /**
+     */
+    /**
      * Initiate failure delivery to this table's listeners. Will notify direct listeners before completing, and enqueue
      * notifications for all other listeners.
      *
@@ -839,7 +838,7 @@ public abstract class BaseTable extends LivenessArtifact
      * @param sourceEntry performance tracking
      */
     public final void notifyListenersOnError(final Throwable e,
-                                             @Nullable final UpdatePerformanceTracker.Entry sourceEntry) {
+            @Nullable final TableListener.Entry sourceEntry) {
         isFailed = true;
         UpdateGraphProcessor.DEFAULT.requestSignal(updateGraphProcessorCondition);
 
@@ -901,7 +900,7 @@ public abstract class BaseTable extends LivenessArtifact
 
         @ReferentialIntegrity
         private final Table parent;
-        private final Table dependent; // TODO-RWC: Should I make this a BaseTable?
+        private final BaseTable dependent; // TODO-RWC: Should I make this a BaseTable?
 
         public ShiftObliviousListenerImpl(String description, Table parent, BaseTable dependent) {
             super(description);
@@ -920,7 +919,7 @@ public abstract class BaseTable extends LivenessArtifact
         }
 
         @Override
-        public final void onFailureInternal(Throwable originalException, UpdatePerformanceTracker.Entry sourceEntry) {
+        public final void onFailureInternal(Throwable originalException, Entry sourceEntry) {
             onFailureInternalWithDependent(dependent, originalException, sourceEntry);
         }
 
@@ -945,10 +944,10 @@ public abstract class BaseTable extends LivenessArtifact
 
         @ReferentialIntegrity
         private final Table parent;
-        private final Table dependent;
+        private final BaseTable dependent;
         private final boolean canReuseModifiedColumnSet;
 
-        public ListenerImpl(String description, Table parent, Table dependent) {
+        public ListenerImpl(String description, Table parent, BaseTable dependent) {
             super(description);
             this.parent = parent;
             this.dependent = dependent;
@@ -981,7 +980,7 @@ public abstract class BaseTable extends LivenessArtifact
         }
 
         @Override
-        public void onFailureInternal(Throwable originalException, UpdatePerformanceTracker.Entry sourceEntry) {
+        public void onFailureInternal(Throwable originalException, Entry sourceEntry) {
             onFailureInternalWithDependent(dependent, originalException, sourceEntry);
         }
 

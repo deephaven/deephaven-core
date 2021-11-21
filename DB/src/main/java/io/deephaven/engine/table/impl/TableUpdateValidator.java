@@ -40,7 +40,7 @@ public class TableUpdateValidator implements QueryTable.Operation {
         return validator;
     }
 
-    private final Table tableToValidate;
+    private final QueryTable tableToValidate;
     private final ModifiedColumnSet validationMCS;
     private ColumnInfo[] columnInfos;
 
@@ -49,7 +49,7 @@ public class TableUpdateValidator implements QueryTable.Operation {
     private SharedContext sharedContext;
     private final String description;
 
-    private TableUpdateValidator(final String description, final Table tableToValidate) {
+    private TableUpdateValidator(final String description, final QueryTable tableToValidate) {
         this.description = description == null ? tableToValidate.getDescription() : description;
         this.tableToValidate = tableToValidate;
         this.validationMCS = tableToValidate.newModifiedColumnSet(
@@ -169,7 +169,7 @@ public class TableUpdateValidator implements QueryTable.Operation {
 
             // shift columns first because they use tracking rowSet
             Arrays.stream(columnInfos).forEach((ci) -> upstream.shifted().apply(ci));
-            RowSetShiftUtils.apply(upstream.shifted(), rowSet);
+            upstream.shifted().apply( rowSet);
 
             if (aggressiveUpdateValidation) {
                 final RowSet unmodified = rowSet.minus(upstream.modified());
@@ -314,7 +314,7 @@ public class TableUpdateValidator implements QueryTable.Operation {
         ChunkSink.FillFromContext expectedFillFromContext;
         WritableBooleanChunk equalValuesDest;
 
-        private ColumnInfo(Table tableToValidate, String columnName) {
+        private ColumnInfo(QueryTable tableToValidate, String columnName) {
             this.name = columnName;
             this.modifiedColumnSet = tableToValidate.newModifiedColumnSet(columnName);
 

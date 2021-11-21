@@ -2,10 +2,11 @@
  * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
  */
 
-package io.deephaven.engine.table.impl;
+package io.deephaven.engine.table.impl.indexer;
 
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.impl.QueryTable;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.InvocationHandler;
@@ -30,7 +31,7 @@ class CountingTable {
 
     private static <T> ColumnSource<T> getCountingColumnSource(final ColumnSource<T> inputColumnSource) {
         // noinspection unchecked
-        return (ColumnSource<T>) Proxy.newProxyInstance(TestRowSetIndexer.class.getClassLoader(),
+        return (ColumnSource<T>) Proxy.newProxyInstance(CountingTable.class.getClassLoader(),
                 new Class[] {MethodCounter.class, ColumnSource.class},
                 new CountingColumnSourceInvocationHandler(inputColumnSource));
     }

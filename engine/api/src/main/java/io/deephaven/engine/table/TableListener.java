@@ -35,5 +35,4 @@ public interface TableListener extends LivenessNode {
      */
     interface Entry extends LogOutputAppendable {
     }
-
 }

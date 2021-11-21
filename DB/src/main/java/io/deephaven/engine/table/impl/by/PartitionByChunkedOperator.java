@@ -9,7 +9,6 @@ import io.deephaven.engine.rowset.impl.OrderedLongSet;
 import io.deephaven.engine.rowset.impl.OrderedLongSetBuilderSequential;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.chunkboxer.ChunkBoxer;
-import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
@@ -879,7 +878,7 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
                         modifiedTable.getRowSet().writableCast().remove(downstream.removed());
                     }
                     if (downstream.shifted().nonempty()) {
-                        RowSetShiftUtils.apply(downstream.shifted(), ((WritableRowSet) modifiedTable.getRowSet()));
+                        downstream.shifted().apply(((WritableRowSet) modifiedTable.getRowSet()));
                     }
                     if (downstream.added().isNonempty()) {
                         modifiedTable.getRowSet().writableCast().insert(downstream.added());
@@ -922,9 +921,8 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
     }
 
     @Override
-    public void propagateFailure(@NotNull final Throwable originalException,
-            @NotNull UpdatePerformanceTracker.Entry sourceEntry) {
-        tableMap.values().forEach(st -> st.notifyListenersOnError(originalException, sourceEntry));
+    public void propagateFailure(@NotNull final Throwable originalException, @NotNull TableListener.Entry sourceEntry) {
+        tableMap.values().forEach(st -> ((BaseTable) st).notifyListenersOnError(originalException, sourceEntry));
     }
 
     @Override
@@ -936,5 +934,4 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
     public boolean unchunkedIndex() {
         return true;
     }
-
 }

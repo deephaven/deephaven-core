@@ -84,8 +84,7 @@ class IncrementalBenchmark {
                         public void onUpdate(TableUpdate upstream) {}
 
                         @Override
-                        public void onFailureInternal(Throwable originalException,
-                                UpdatePerformanceTracker.Entry sourceEntry) {
+                        public void onFailureInternal(Throwable originalException, Entry sourceEntry) {
                             originalException.printStackTrace();
                             System.exit(1);
                         }

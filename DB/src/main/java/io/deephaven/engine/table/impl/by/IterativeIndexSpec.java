@@ -16,7 +16,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public abstract class IterativeIndexSpec extends ReaggregatableStatefactory {
-    static final String REDIRECTION_INDEX_PREFIX = "RowRedirection_";
+    static final String ROW_REDIRECTION_PREFIX = "RowRedirection_";
     private final Map<String, ColumnSource> nameToDestColumns = new LinkedHashMap<>();
     final protected RowRedirection rowRedirection = WritableRowRedirection.FACTORY.createRowRedirection(8);
     private boolean firstTime;
@@ -41,7 +41,7 @@ public abstract class IterativeIndexSpec extends ReaggregatableStatefactory {
 
     @NotNull
     private String getRedirectionName() {
-        return REDIRECTION_INDEX_PREFIX + rollupColumnIdentifier + AggregationFactory.ROLLUP_COLUMN_SUFFIX;
+        return ROW_REDIRECTION_PREFIX + rollupColumnIdentifier + AggregationFactory.ROLLUP_COLUMN_SUFFIX;
     }
 
     @Override

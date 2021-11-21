@@ -77,7 +77,7 @@ public abstract class ShiftObliviousInstrumentedListenerAdapter extends ShiftObl
      * @param sourceEntry the performance tracker entry that was active when the error occurred
      */
     @Override
-    public void onFailureInternal(Throwable originalException, UpdatePerformanceTracker.Entry sourceEntry) {
+    public void onFailureInternal(Throwable originalException, Entry sourceEntry) {
         try {
             AsyncErrorLogger.log(DateTimeUtils.currentTime(), sourceEntry, sourceEntry, originalException);
             AsyncClientErrorNotifier.reportError(originalException);

@@ -20,7 +20,7 @@ import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.impl.select.FormulaColumn;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.Attributes.Values;
-import io.deephaven.util.Shuffle;
+import io.deephaven.engine.testutil.Shuffle;
 import junit.framework.TestCase;
 import org.junit.After;
 import org.junit.Before;

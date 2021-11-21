@@ -84,7 +84,7 @@ public class TableUpdateImpl implements TableUpdate {
                 localPrevModified = prevModified;
                 if (localPrevModified == null) {
                     localPrevModified = modified().copy();
-                    RowSetShiftUtils.unapply(shifted(), localPrevModified);
+                    shifted().unapply(localPrevModified);
                     // this volatile write ensures prevModified is visible only after it is shifted
                     prevModified = localPrevModified;
                 }

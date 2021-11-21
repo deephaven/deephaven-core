@@ -96,8 +96,10 @@ public class TickSuppressor {
 
         UpdateGraphProcessor.DEFAULT.checkInitiateTableOperation();
 
+        final QueryTable coalesced = (QueryTable) input.coalesce();
+
         final QueryTable resultTable =
-                new QueryTable(input.getDefinition(), input.getRowSet(), input.getColumnSourceMap());
+                new QueryTable(coalesced.getDefinition(), coalesced.getRowSet(), coalesced.getColumnSourceMap());
         ((BaseTable) input).copyAttributes(resultTable, BaseTable.CopyAttributeOperation.Filter);
 
         final String[] columnNames = input.getDefinition().getColumnNamesArray();
@@ -106,17 +108,17 @@ public class TickSuppressor {
         final ColumnSource[] inputSources = new ColumnSource[columnNames.length];
         final ChunkEquals[] equalityKernel = new ChunkEquals[columnNames.length];
         for (int cc = 0; cc < outputModifiedColumnSets.length; ++cc) {
-            inputModifiedColumnSets[cc] = input.newModifiedColumnSet(columnNames[cc]);
+            inputModifiedColumnSets[cc] = coalesced.newModifiedColumnSet(columnNames[cc]);
             outputModifiedColumnSets[cc] = resultTable.newModifiedColumnSet(columnNames[cc]);
-            inputSources[cc] = input.getColumnSource(columnNames[cc]);
+            inputSources[cc] = coalesced.getColumnSource(columnNames[cc]);
             equalityKernel[cc] = ChunkEquals.makeEqual(inputSources[cc].getChunkType());
         }
 
 
         final BaseTable.ListenerImpl listener =
-                new BaseTable.ListenerImpl("removeSpuriousModifications", input, resultTable) {
+                new BaseTable.ListenerImpl("removeSpuriousModifications", coalesced, resultTable) {
                     final ModifiedColumnSet.Transformer identityTransformer =
-                            input.newModifiedColumnSetIdentityTransformer(resultTable);
+                            coalesced.newModifiedColumnSetIdentityTransformer(resultTable);
 
                     @Override
                     public void onUpdate(TableUpdate upstream) {
@@ -220,7 +222,7 @@ public class TickSuppressor {
                         resultTable.notifyListeners(downstream);
                     }
                 };
-        input.listenForUpdates(listener);
+        coalesced.listenForUpdates(listener);
 
         return resultTable;
     }

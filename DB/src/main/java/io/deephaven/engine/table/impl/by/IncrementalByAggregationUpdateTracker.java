@@ -600,7 +600,7 @@ class IncrementalByAggregationUpdateTracker {
 
         // Update the result TrackingWritableRowSet
         rowSet.remove(removed);
-        RowSetShiftUtils.apply(shiftData, rowSet);
+        shiftData.apply(rowSet);
         rowSet.insert(added);
 
         // Build and return the update

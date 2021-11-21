@@ -250,8 +250,7 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
                         public void onUpdate(TableUpdate upstream) {}
 
                         @Override
-                        public void onFailureInternal(Throwable originalException,
-                                UpdatePerformanceTracker.Entry sourceEntry) {
+                        public void onFailureInternal(Throwable originalException, Entry sourceEntry) {
                             TestCase.fail(originalException.getMessage());
                         }
                     };

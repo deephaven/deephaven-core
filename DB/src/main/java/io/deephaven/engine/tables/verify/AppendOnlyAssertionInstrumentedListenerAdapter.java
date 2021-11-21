@@ -9,7 +9,7 @@ public class AppendOnlyAssertionInstrumentedListenerAdapter extends BaseTable.Li
     private final String description;
 
     public AppendOnlyAssertionInstrumentedListenerAdapter(String description, Table parent,
-            Table dependent) {
+            BaseTable dependent) {
         super(
                 "assertAppendOnly(" + (description == null ? "" : description) + ')',
                 parent, dependent);

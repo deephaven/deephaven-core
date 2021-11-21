@@ -283,7 +283,7 @@ public class QueryTableSelectUpdateTest {
             }
 
             @Override
-            public void onFailureInternal(Throwable originalException, UpdatePerformanceTracker.Entry sourceEntry) {
+            public void onFailureInternal(Throwable originalException, Entry sourceEntry) {
                 exception = originalException;
             }
 

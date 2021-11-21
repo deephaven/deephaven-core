@@ -1,5 +1,5 @@
 {
- "className": "io.deephaven.libs.primitives.BooleanPrimitives",
+ "className": "io.deephaven.engine.function.BooleanPrimitives",
  "methods": {
   "and": "**Incompatible overloads text - text from the first overload:**\n\nAnds all of the values in the array together.\n\n*Overload 1*  \n  :param values: (java.lang.Boolean...) - values.\n  :return: (java.lang.Boolean) logical and of all the values in the array.\n  \n*Overload 2*  \n  :param values: (boolean...) - values.\n  :return: (java.lang.Boolean) logical and of all the values in the array.\n  \n*Overload 3*  \n  :param values: (io.deephaven.engine.vector.ObjectVector<java.lang.Boolean>) - values.\n  :return: (java.lang.Boolean) logical and of all the values in the array.\n  \n*Overload 4*  \n  :param values: (java.lang.Boolean[]) - values.\n  :param nullValue: (java.lang.Boolean) - value to use in place of null values.\n  :return: (java.lang.Boolean) logical and of all the values in the array.\n  \n*Overload 5*  \n  :param values: (io.deephaven.engine.vector.ObjectVector<java.lang.Boolean>) - values.\n  :param nullValue: (java.lang.Boolean) - value to use in place of null values.\n  :return: (java.lang.Boolean) logical and of all the values in the array.",
   "array": "Converts a primitive array to a Vector.\n\n:param values: (java.lang.Boolean[]) - primitive array\n:return: (io.deephaven.engine.vector.BooleanVector) Vector.",
@@ -14,7 +14,7 @@
   "sum": "**Incompatible overloads text - text from the first overload:**\n\nReturns the sum of the values in an array.  For booleans, this is equivalent to \"or\".\n\n*Overload 1*  \n  :param values: (java.lang.Boolean...) - values.\n  :return: (java.lang.Boolean) sum of the values.  This is equivalent to \"or\".\n  \n*Overload 2*  \n  :param values: (boolean...) - values.\n  :return: (java.lang.Boolean) sum of the values.  This is equivalent to \"or\".",
   "vec": "Converts a Vector to a primitive array.\n\n:param values: (io.deephaven.engine.vector.BooleanVector) - Vector\n:return: (java.lang.Boolean[]) primitive array."
  },
- "path": "io.deephaven.libs.primitives.BooleanPrimitives",
+ "path": "io.deephaven.engine.function.BooleanPrimitives",
  "text": "A set of commonly used functions that can be applied to Boolean types.",
  "typeName": "class"
 }

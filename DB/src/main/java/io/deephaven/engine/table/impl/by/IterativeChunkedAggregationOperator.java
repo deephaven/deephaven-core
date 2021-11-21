@@ -7,6 +7,7 @@ package io.deephaven.engine.table.impl.by;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.table.ModifiedColumnSet;
+import io.deephaven.engine.table.TableListener;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.ColumnSource;
@@ -16,7 +17,6 @@ import io.deephaven.engine.chunk.Attributes.ChunkPositions;
 import io.deephaven.engine.chunk.Attributes.RowKeys;
 import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 
@@ -312,12 +312,11 @@ public interface IterativeChunkedAggregationOperator {
 
     /**
      * Called on error to propagate listener failure to this operator.
-     *
-     * @param originalException The error {@link Throwable}
+     *  @param originalException The error {@link Throwable}
      * @param sourceEntry The UpdatePerformanceTracker.Entry for the failed listener
      */
     default void propagateFailure(@NotNull final Throwable originalException,
-            @NotNull final UpdatePerformanceTracker.Entry sourceEntry) {}
+                                  @NotNull final TableListener.Entry sourceEntry) {}
 
     /**
      * Make a {@link BucketedContext} suitable for this operator if necessary.

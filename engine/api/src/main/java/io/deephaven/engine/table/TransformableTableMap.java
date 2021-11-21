@@ -93,7 +93,7 @@ public interface TransformableTableMap {
          *
          * @param transformableTableMap the TransformableTableMap to convert into a Table
          */
-        AsTableBuilder(TransformableTableMap transformableTableMap) {
+        public AsTableBuilder(TransformableTableMap transformableTableMap) {
             this.transformableTableMap = transformableTableMap;
         }
 

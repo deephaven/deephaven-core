@@ -1,20 +1,21 @@
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.engine.tables.SortPair;
-import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.MatchPair;
-import io.deephaven.engine.tables.select.SelectColumnFactory;
-import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
-import io.deephaven.engine.table.impl.by.AggregationFactory;
-import io.deephaven.engine.table.impl.by.AggregationSpec;
-import io.deephaven.engine.table.impl.select.SelectColumn;
-import io.deephaven.engine.table.impl.select.WhereFilter;
+import io.deephaven.api.JoinMatch;
+import io.deephaven.api.Selectable;
+import io.deephaven.api.SortColumn;
+import io.deephaven.api.agg.Aggregation;
+import io.deephaven.api.filter.Filter;
 import io.deephaven.engine.rowset.TrackingRowSet;
+import io.deephaven.engine.table.MatchPair;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
+import io.deephaven.engine.tables.select.SelectColumnFactory;
 import org.apache.commons.lang3.mutable.Mutable;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
+import java.util.Collection;
 
 /**
  * This class is an extension of QueryTable that overrides many methods from {@link Table} which are not valid to
@@ -158,32 +159,32 @@ public class HierarchicalTable extends QueryTable {
     }
 
     @Override
-    public Table lastBy(SelectColumn... groupByColumns) {
+    public Table lastBy(Selectable... groupByColumns) {
         return throwUnsupported("lastBy()");
     }
 
     @Override
-    public Table firstBy(SelectColumn... groupByColumns) {
+    public Table firstBy(Selectable... groupByColumns) {
         return throwUnsupported("firstBy()");
     }
 
     @Override
-    public Table minBy(SelectColumn[] selectColumns) {
+    public Table minBy(Selectable... groupByColumns) {
         return throwUnsupported("minBy()");
     }
 
     @Override
-    public Table maxBy(SelectColumn[] selectColumns) {
+    public Table maxBy(Selectable... groupByColumns) {
         return throwUnsupported("maxBy()");
     }
 
     @Override
-    public Table medianBy(SelectColumn[] selectColumns) {
+    public Table medianBy(Selectable... groupByColumns) {
         return throwUnsupported("medianBy()");
     }
 
     @Override
-    public Table countBy(String countColumnName, SelectColumn... groupByColumns) {
+    public Table countBy(String countColumnName, Selectable... groupByColumns) {
         return throwUnsupported("countBy()");
     }
 
@@ -203,9 +204,14 @@ public class HierarchicalTable extends QueryTable {
     }
 
     @Override
-    public Table by(@SuppressWarnings("rawtypes") AggregationSpec aggregationSpec,
-            SelectColumn... groupByColumns) {
+    public Table groupBy(Collection<? extends Selectable> groupByColumns) {
         return throwUnsupported("groupBy()");
+    }
+
+    @Override
+    public Table aggBy(Collection<? extends Aggregation> aggregations,
+            Collection<? extends Selectable> groupByColumns) {
+        return throwUnsupported("aggBy()");
     }
 
     @Override
@@ -219,78 +225,83 @@ public class HierarchicalTable extends QueryTable {
     }
 
     @Override
-    public Table applyToAllBy(String formulaColumn, String columnParamName, SelectColumn... groupByColumns) {
+    public Table applyToAllBy(String formulaColumn, String columnParamName,
+                              Collection<? extends Selectable> groupByColumns) {
         return throwUnsupported("applyToAllBy()");
     }
 
     @Override
-    public Table sumBy(SelectColumn... groupByColumns) {
+    public Table sumBy(Selectable... groupByColumns) {
         return throwUnsupported("sumBy()");
     }
 
     @Override
-    public Table absSumBy(SelectColumn... groupByColumns) {
+    public Table absSumBy(Selectable... groupByColumns) {
         return throwUnsupported("absSumBy()");
     }
 
     @Override
-    public Table avgBy(SelectColumn... groupByColumns) {
+    public Table avgBy(Selectable... groupByColumns) {
         return throwUnsupported("avgBy()");
     }
 
     @Override
-    public Table wavgBy(String weightColumn, SelectColumn... groupByColumns) {
+    public Table wavgBy(String weightColumn, Selectable... groupByColumns) {
         return throwUnsupported("wavgBy()");
     }
 
     @Override
-    public Table stdBy(SelectColumn... groupByColumns) {
+    public Table stdBy(Selectable... groupByColumns) {
         return throwUnsupported("stdBy()");
     }
 
     @Override
-    public Table varBy(SelectColumn... groupByColumns) {
+    public Table varBy(Selectable... groupByColumns) {
         return throwUnsupported("varBy()");
     }
 
     @Override
-    public Table where(WhereFilter... filters) {
+    public Table where(Collection<? extends Filter> filters) {
         return throwUnsupported("where()");
     }
 
     @Override
-    public Table whereIn(GroupStrategy groupStrategy, Table rightTable, boolean inclusion,
-            MatchPair... columnsToMatch) {
+    public Table whereIn(Table rightTable, Collection<? extends JoinMatch> columnsToMatch) {
         return throwUnsupported("whereIn()");
     }
 
     @Override
-    public Table select(SelectColumn... selectColumns) {
+    public Table whereNotIn(Table rightTable, Collection<? extends JoinMatch> columnsToMatch) {
+        return throwUnsupported("whereIn()");
+    }
+
+    @Override
+    public Table select(Collection<? extends Selectable> selectColumns) {
         return throwUnsupported("select()");
     }
 
     @Override
-    public Table selectDistinct(SelectColumn... columns) {
+    public Table selectDistinct(Collection<? extends Selectable> columns) {
         return throwUnsupported("selectDistinct()");
     }
 
     @Override
-    public Table update(SelectColumn... columns) {
+    public Table update(Collection<? extends Selectable> columns) {
         return throwUnsupported("update()");
     }
 
     @Override
-    public Table view(SelectColumn... columns) {
+    public Table view(Collection<? extends Selectable> columns) {
         return throwUnsupported("view()");
     }
 
     @Override
-    public Table updateView(SelectColumn... columns) {
+    public Table updateView(Collection<? extends Selectable> columns) {
         return throwUnsupported("updateView()");
     }
 
     @Override
-    public Table lazyUpdate(SelectColumn... columns) {
+    public Table lazyUpdate(Collection<? extends Selectable> columns) {
         return throwUnsupported("lazyUpdate()");
     }
 
@@ -299,19 +310,14 @@ public class HierarchicalTable extends QueryTable {
         return throwUnsupported("flatten()");
     }
 
-    @SuppressWarnings("deprecation")
-    @Override
-    public void addColumnGrouping(String columnName) {
-        throwUnsupported("addColumnGrouping()");
-    }
-
     @Override
     public LocalTableMap partitionBy(boolean dropKeys, String... keyColumnNames) {
         return throwUnsupported("partitionBy()");
     }
 
     @Override
-    public Table rollup(AggregationFactory aggregationFactory, SelectColumn... columns) {
+    public Table rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents,
+            Selectable... columns) {
         return throwUnsupported("rollup()");
     }
 
@@ -321,7 +327,7 @@ public class HierarchicalTable extends QueryTable {
     }
 
     @Override
-    public Table sort(SortPair... columnsToSortBy) {
+    public Table sort(Collection<SortColumn> columnsToSortBy) {
         return throwUnsupported("sort()");
     }
 

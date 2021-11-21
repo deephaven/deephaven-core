@@ -2,11 +2,10 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.impl.indexer.RowSetIndexer;
 import io.deephaven.engine.table.impl.sources.regioned.SymbolTableSource;
 import io.deephaven.engine.table.impl.sources.sparse.SparseConstants;
 import io.deephaven.util.annotations.VisibleForTesting;
-
-import static io.deephaven.engine.table.MatchPair.matchString;
 
 @VisibleForTesting
 public class JoinControl {
@@ -40,7 +39,7 @@ public class JoinControl {
 
     boolean useGrouping(Table leftTable, ColumnSource<?>[] leftSources) {
         return !leftTable.isRefreshing() && leftSources.length == 1
-                && leftTable.getRowSet().hasGrouping(leftSources[0]);
+                && RowSetIndexer.of(leftTable.getRowSet()).hasGrouping(leftSources[0]);
     }
 
     boolean buildLeft(QueryTable leftTable, Table rightTable) {

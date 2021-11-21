@@ -201,7 +201,7 @@ public class ExportedTableUpdateListener implements StreamObserver<ExportNotific
         }
 
         @Override
-        public void onFailureInternal(final Throwable error, final UpdatePerformanceTracker.Entry sourceEntry) {
+        public void onFailureInternal(final Throwable error, final Entry sourceEntry) {
             sendUpdateMessage(ExportTicketHelper.wrapExportIdInTicket(exportId), table.size(), error);
         }
     }

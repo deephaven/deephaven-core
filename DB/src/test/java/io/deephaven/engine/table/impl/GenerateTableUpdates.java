@@ -244,7 +244,7 @@ public class GenerateTableUpdates {
             });
             final int numRowsBlattedByShift = preShiftIndexSize - rowSet.intSize();
 
-            RowSetShiftUtils.apply(update.shifted(), rowSet);
+            update.shifted().apply(rowSet);
 
             // Modifies and Adds in post-shift keyspace.
             if (rowSet.isNonempty()) {
@@ -324,7 +324,7 @@ public class GenerateTableUpdates {
                 }
             }
         });
-        RowSetShiftUtils.apply(update.shifted(), rowSet);
+        update.shifted().apply(rowSet);
 
         // Modifies and Adds in post-shift keyspace.
         final ColumnHolder[] cModsOnly = new ColumnHolder[columnInfo.length];

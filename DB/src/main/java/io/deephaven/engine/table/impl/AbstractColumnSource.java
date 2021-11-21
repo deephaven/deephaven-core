@@ -278,7 +278,7 @@ public abstract class AbstractColumnSource<T> implements
         defaultFillPrevChunk(context, destination, rowSequence);
     }
 
-    final void defaultFillPrevChunk(@SuppressWarnings("unused") @NotNull final FillContext context,
+    protected final void defaultFillPrevChunk(@SuppressWarnings("unused") @NotNull final FillContext context,
             @NotNull final WritableChunk<? super Values> destination,
             @NotNull final RowSequence rowSequence) {
         final ChunkFiller filler = ChunkFiller.forChunkType(destination.getChunkType());

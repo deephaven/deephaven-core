@@ -66,9 +66,10 @@ dependencies {
             project(':engine-base'),
             project(':engine-tuplesource'),
             project(':engine-table'),
-            project(':engine-util'),
             "org.flywaydb:flyway-core:5.2.4",
             'com.github.f4b6a3:uuid-creator:3.6.0'
+
+    testImplementation TestTools.projectDependency(project, 'engine-rowset')
 
     annotationProcessor 'org.immutables:value:2.8.1'
     compileOnly project(':util-immutables')

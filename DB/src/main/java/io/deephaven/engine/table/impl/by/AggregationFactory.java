@@ -13,17 +13,12 @@ import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.vector.Vector;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.tables.select.MatchPairFactory;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.tuple.generated.ByteDoubleTuple;
-import io.deephaven.engine.table.impl.BaseTable;
-import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.table.impl.ReverseLookup;
-import io.deephaven.engine.table.impl.RollupAttributeCopier;
-import io.deephaven.engine.table.impl.RollupInfo;
-import io.deephaven.engine.table.TableMap;
 import io.deephaven.engine.table.impl.by.ssmminmax.SsmChunkedMinMaxOperator;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtil;
@@ -1497,7 +1492,7 @@ public class AggregationFactory implements AggregationSpec {
 
     @NotNull
     private static String makeRedirectionName(IterativeIndexSpec inputAggregationStateFactory) {
-        return IterativeIndexSpec.REDIRECTION_INDEX_PREFIX + inputAggregationStateFactory.rollupColumnIdentifier
+        return IterativeIndexSpec.ROW_REDIRECTION_PREFIX + inputAggregationStateFactory.rollupColumnIdentifier
                 + ROLLUP_COLUMN_SUFFIX;
     }
 
@@ -1571,7 +1566,7 @@ public class AggregationFactory implements AggregationSpec {
 
     private static void setLeafRollupAttributes(QueryTable table) {
         table.setAttribute(Table.ROLLUP_LEAF_ATTRIBUTE, RollupInfo.LeafType.Normal);
-        table.setAttribute(Table.HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE, TableMap.emptyMap());
+        table.setAttribute(Table.HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE, EmptyTableMap.INSTANCE);
         table.setAttribute(Table.REVERSE_LOOKUP_ATTRIBUTE, ReverseLookup.NULL);
     }
 

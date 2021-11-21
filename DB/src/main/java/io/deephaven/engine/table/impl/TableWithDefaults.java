@@ -241,35 +241,14 @@ public interface TableWithDefaults extends Table {
         return whereNotIn(rightTable, JoinMatch.from(columnsToMatch));
     }
 
-    /**
-     * Filters according to an expression in disjunctive normal form.
-     * <p>
-     * The input is an array of clauses, which in turn are a collection of filters.
-     *
-     * @param filtersToApply each inner collection is a set of filters, all of must which match for the clause to be
-     *        true. If any one of the collections in the array evaluates to true, the row is part of the output table.
-     * @return a new table, with the filters applied.
-     */
-    @SuppressWarnings("unchecked")
-    @Override
-    @ConcurrentMethod
-    default Table whereOneOf(Collection<? extends Filter>... filtersToApply) {
-        return where(FilterOr.of(Stream.of(filtersToApply).map(FilterAnd::of).collect(Collectors.toList())));
-    }
-
-    @Override
-    @ConcurrentMethod
-    default Table whereOneOf(String... filtersToApply) {
-        final FilterOr.Builder orBuilder = FilterOr.builder();
-        for (final String filterToApply : filtersToApply) {
-            orBuilder.addFilters(RawString.of(filterToApply));
-        }
-        return where(Collections.singleton(orBuilder.build()));
-    }
-
     // -----------------------------------------------------------------------------------------------------------------
     // Column Selection Operations
     // -----------------------------------------------------------------------------------------------------------------
+
+    @Override
+    default Table select(Selectable... columns) {
+        return select(List.of(columns));
+    }
 
     @Override
     default Table select(String... columns) {
@@ -279,6 +258,12 @@ public interface TableWithDefaults extends Table {
     @Override
     default Table select() {
         return select(getDefinition().getColumnNamesArray());
+    }
+
+    @Override
+    @ConcurrentMethod
+    default Table selectDistinct(Selectable... columns) {
+        return selectDistinct(List.of(columns));
     }
 
     @Override
@@ -294,8 +279,18 @@ public interface TableWithDefaults extends Table {
     }
 
     @Override
+    default Table update(Selectable... newColumns) {
+        return update(List.of(newColumns));
+    }
+
+    @Override
     default Table update(String... newColumns) {
         return update(Selectable.from((newColumns)));
+    }
+
+    @Override
+    default Table lazyUpdate(Selectable... newColumns) {
+        return lazyUpdate(List.of(newColumns));
     }
 
     @Override
@@ -304,9 +299,19 @@ public interface TableWithDefaults extends Table {
     }
 
     @Override
+    default Table view(Selectable... columns) {
+        return view(List.of(columns));
+    }
+
+    @Override
     @ConcurrentMethod
     default Table view(String... columns) {
         return view(Selectable.from(columns));
+    }
+
+    @Override
+    default Table updateView(Selectable... newColumns) {
+        return updateView(List.of(newColumns));
     }
 
     @Override
@@ -693,14 +698,14 @@ public interface TableWithDefaults extends Table {
 
     @Override
     @ConcurrentMethod
-    default Table applyToAllBy(String formulaColumn, Selectable... groupByColumns) {
+    default Table applyToAllBy(String formulaColumn, Collection<? extends Selectable> groupByColumns) {
         return applyToAllBy(formulaColumn, "each", groupByColumns);
     }
 
     @Override
     @ConcurrentMethod
     default Table applyToAllBy(String formulaColumn, String... groupByColumns) {
-        return applyToAllBy(formulaColumn, Selectable.from(groupByColumns).toArray(ZERO_LENGTH_SELECTABLE_ARRAY));
+        return applyToAllBy(formulaColumn, Selectable.from(groupByColumns));
     }
 
     @Override

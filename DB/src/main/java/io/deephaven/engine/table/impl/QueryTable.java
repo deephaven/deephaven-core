@@ -20,7 +20,7 @@ import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.TableUpdateImpl;
+import io.deephaven.engine.table.impl.indexer.RowSetIndexer;
 import io.deephaven.engine.tables.*;
 import io.deephaven.engine.tables.select.MatchPairFactory;
 import io.deephaven.engine.tables.select.SelectColumnFactory;
@@ -967,10 +967,11 @@ public class QueryTable extends BaseTable {
     }
 
     @Override
-    public Table applyToAllBy(String formulaColumn, String columnParamName, Selectable... groupByColumns) {
+    public Table applyToAllBy(String formulaColumn, String columnParamName,
+                              Collection<? extends Selectable> groupByColumns) {
         final QueryTable tableToUse = (QueryTable) dropColumnFormats();
         return QueryPerformanceRecorder.withNugget(
-                "applyToAllBy(" + formulaColumn + ',' + columnParamName + ',' + Arrays.toString(groupByColumns) + ")",
+                "applyToAllBy(" + formulaColumn + ',' + columnParamName + ',' + groupByColumns + ")",
                 sizeForInstrumentation(),
                 () -> tableToUse.by(new AggregationFormulaSpec(formulaColumn, columnParamName),
                         SelectColumn.from(groupByColumns)));
@@ -1170,7 +1171,7 @@ public class QueryTable extends BaseTable {
 
             // Note that removed must be propagated to listeners in pre-shift keyspace.
             if (shiftData != null) {
-                RowSetShiftUtils.unapply(shiftData, postShiftRemovals);
+                shiftData.unapply(postShiftRemovals);
             }
             removed.insert(postShiftRemovals);
 
@@ -1328,7 +1329,7 @@ public class QueryTable extends BaseTable {
 
                     final Table distinctValues = rightTable.selectDistinct(MatchPair.getRightColumns(columnsToMatch));
                     final DynamicWhereFilter dynamicWhereFilter =
-                            new DynamicWhereFilter(distinctValues, inclusion, columnsToMatch);
+                            new DynamicWhereFilter((QueryTable) distinctValues, inclusion, columnsToMatch);
                     final Table where = whereInternal(dynamicWhereFilter);
                     if (distinctValues.isRefreshing()) {
                         where.addParentReference(distinctValues);
@@ -1531,8 +1532,11 @@ public class QueryTable extends BaseTable {
                                 (DeferredGroupingColumnSource<?>) selectedColumnSource;
                         // noinspection unchecked,rawtypes
                         deferredGroupingSelectedSource.setGroupToRange((Map) originalColumnSource.getGroupToRange());
-                    } else if (rowSet.hasGrouping(originalColumnSource)) {
-                        rowSet.copyImmutableGroupings(originalColumnSource, selectedColumnSource);
+                    } else {
+                        final RowSetIndexer indexer = RowSetIndexer.of(rowSet);
+                        if (indexer.hasGrouping(originalColumnSource)) {
+                            indexer.copyImmutableGroupings(originalColumnSource, selectedColumnSource);
+                        }
                     }
                 }
             }
@@ -3368,7 +3372,7 @@ public class QueryTable extends BaseTable {
             currentMapping.remove(removed);
 
             // shift keyspace
-            RowSetShiftUtils.apply(recorder.getShifted(), currentMapping);
+            recorder.getShifted().apply(currentMapping);
 
             // compute added against filters
             final WritableRowSet added =
@@ -3397,7 +3401,7 @@ public class QueryTable extends BaseTable {
             currentMapping.update(added, modsToRemove);
 
             // move modsToRemove into pre-shift keyspace and add to myRemoved
-            RowSetShiftUtils.unapply(recorder.getShifted(), modsToRemove);
+            recorder.getShifted().unapply(modsToRemove);
             removed.insert(modsToRemove);
 
             ModifiedColumnSet modifiedColumnSet = sourceModColumns;

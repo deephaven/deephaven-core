@@ -23,7 +23,7 @@ dependencies {
             project(':Util'),
             project(':engine-function')
 
-    testCompile project(path: ':Base', configuration: 'tests')
+    testImplementation TestTools.projectDependency(project, 'Base')
 }
 
 spotless {

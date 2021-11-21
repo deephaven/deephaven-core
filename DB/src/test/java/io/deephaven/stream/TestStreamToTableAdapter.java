@@ -431,7 +431,7 @@ public class TestStreamToTableAdapter {
         final MutableBoolean listenerFailed = new MutableBoolean();
         final SimpleListener listener = new SimpleListener(result) {
             @Override
-            public void onFailureInternal(Throwable originalException, UpdatePerformanceTracker.Entry sourceEntry) {
+            public void onFailureInternal(Throwable originalException, Entry sourceEntry) {
                 listenerFailed.setTrue();
             }
         };

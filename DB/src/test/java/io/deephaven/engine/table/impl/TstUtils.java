@@ -2004,7 +2004,7 @@ public class TstUtils {
 
         final static ColAttributes[] ZERO_LENGTH_COLUMN_ATTRIBUTES_ARRAY = new ColAttributes[0];
 
-        enum ColAttributes {
+        public enum ColAttributes {
             None, Immutable, Grouped
         }
 

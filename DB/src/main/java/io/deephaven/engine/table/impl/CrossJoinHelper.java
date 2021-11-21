@@ -139,7 +139,7 @@ public class CrossJoinHelper {
                             prevLeftRowSet.remove(upstream.removed());
                             jsm.applyLeftShift(prevLeftRowSet, upstream.shifted());
                             downstream.shifted = expandLeftOnlyShift(prevLeftRowSet, upstream.shifted(), jsm);
-                            RowSetShiftUtils.apply(downstream.shifted(), resultRowSet);
+                            downstream.shifted().apply(resultRowSet);
                         }
 
                         if (upstream.modifiedColumnSet().containsAny(leftKeyColumns)) {
@@ -419,7 +419,7 @@ public class CrossJoinHelper {
                             try (final RowSequence.Iterator rsIt =
                                     allRowsShift ? null : resultRowSet.getRowSequenceIterator();
                                     final WritableRowSet unshiftedRowsToShift = rowsToShift.copy()) {
-                                RowSetShiftUtils.unapply(upstreamLeft.shifted(), unshiftedRowsToShift);
+                                upstreamLeft.shifted().unapply(unshiftedRowsToShift);
                                 final RowSet.SearchIterator prevIter = unshiftedRowsToShift.searchIterator();
 
                                 final LongConsumer processLeftShiftsUntil = (ii) -> {
@@ -1054,7 +1054,7 @@ public class CrossJoinHelper {
                     }
 
                     downstream.shifted = expandLeftOnlyShift(leftTable.getRowSet(), leftUpdate.shifted(), crossJoinState);
-                    RowSetShiftUtils.apply(downstream.shifted(), resultRowSet);
+                    downstream.shifted().apply(resultRowSet);
 
                     iter = leftUpdate.modified().searchIterator();
                     while (iter.hasNext()) {

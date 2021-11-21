@@ -4,6 +4,8 @@
 
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.api.Selectable;
+import io.deephaven.api.filter.Filter;
 import io.deephaven.base.reference.SimpleReference;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.CollectionUtil;
@@ -67,8 +69,8 @@ public class DeferredViewTable extends RedefinableTable {
     }
 
     @Override
-    public Table where(WhereFilter... filters) {
-        return getResultTableWithWhere(filters);
+    public Table where(Collection<? extends Filter> filters) {
+        return getResultTableWithWhere(WhereFilter.from(filters));
     }
 
     private Table getResultTableWithWhere(WhereFilter... whereFilters) {
@@ -218,7 +220,8 @@ public class DeferredViewTable extends RedefinableTable {
     }
 
     @Override
-    public Table selectDistinct(SelectColumn... columns) {
+    public Table selectDistinct(Collection<? extends Selectable> selectables) {
+        final SelectColumn[] columns = SelectColumn.from(selectables);
         /* If the cachedResult table has already been created, we can just use that. */
         if (getCoalesced() != null) {
             return coalesce().selectDistinct(columns);

@@ -6,7 +6,6 @@ import io.deephaven.util.compare.CharComparisons;
 import io.deephaven.util.compare.DoubleComparisons;
 import io.deephaven.util.compare.ObjectComparisons;
 import io.deephaven.libs.GroovyStaticImports;
-import io.deephaven.libs.primitives.*;
 import io.deephaven.util.QueryConstants;
 
 import java.math.BigDecimal;

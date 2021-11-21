@@ -1,5 +1,5 @@
 {
- "className": "io.deephaven.libs.primitives.DoublePrimitives",
+ "className": "io.deephaven.engine.function.DoublePrimitives",
  "methods": {
   "array": "Converts a primitive array to a Vector.\n\n:param values: (double[]) - primitive array\n:return: (io.deephaven.engine.vector.DoubleVector) Vector.",
   "concat": "Returns the concatenation of multiple arrays into a single array.\n\n*Overload 1*  \n  :param values: (double[]...) - values.\n  :return: (double[]) concatenation of multiple arrays into a single array.\n  \n*Overload 2*  \n  :param values: (io.deephaven.engine.vector.DoubleVector...) - values.\n  :return: (double[]) concatenation of multiple arrays into a single array.",
@@ -20,7 +20,7 @@
   "uniqueValue": "Get the single unique value in the array, or null if there are none, or there are more than 1 distinct values.\n\n:param arr: (io.deephaven.engine.vector.DoubleVector) - the array\n:param countNull: (boolean) - if nulls should count as values\n:return: (double) the single unique value in the array, or null.",
   "vec": "Converts a Vector to a primitive array.\n\n:param values: (io.deephaven.engine.vector.DoubleVector) - Vector\n:return: (double[]) primitive array."
  },
- "path": "io.deephaven.libs.primitives.DoublePrimitives",
+ "path": "io.deephaven.engine.function.DoublePrimitives",
  "text": "A set of commonly used functions that can be applied to Double types.",
  "typeName": "class"
 }

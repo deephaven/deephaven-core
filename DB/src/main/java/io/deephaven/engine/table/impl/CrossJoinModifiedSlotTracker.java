@@ -96,7 +96,7 @@ class CrossJoinModifiedSlotTracker {
             }
 
             isLeftShifted = true;
-            RowSetShiftUtils.apply(leftShifted, leftRowSet);
+            leftShifted.apply(leftRowSet);
             return this;
         }
 
@@ -174,7 +174,7 @@ class CrossJoinModifiedSlotTracker {
 
                 // then we shift
                 if (needsRightShift) {
-                    RowSetShiftUtils.apply(rightShifted, rightRowSet);
+                    rightShifted.apply(rightRowSet);
                 }
 
                 if (added.isNonempty()) {

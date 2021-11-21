@@ -60,15 +60,15 @@ public class UpdateCoalescer {
 
             // Aggregate update.remove in coalesced pre-shift removed.
             try (final WritableRowSet myRemoved = update.removed().minus(addedAndRemoved)) {
-                RowSetShiftUtils.unapply(shifted, myRemoved);
+                shifted.unapply(myRemoved);
                 removed.insert(myRemoved);
                 rowSet.remove(myRemoved);
             }
 
             // Apply new shifts to our post-shift added/modified.
             if (update.shifted().nonempty()) {
-                RowSetShiftUtils.apply(update.shifted(), added);
-                RowSetShiftUtils.apply(update.shifted(), modified);
+                update.shifted().apply(added);
+                update.shifted().apply(modified);
 
                 updateShifts(update.shifted());
             }

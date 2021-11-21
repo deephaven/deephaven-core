@@ -10,6 +10,7 @@ import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.table.impl.GroupingUtil;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.*;
+import io.deephaven.engine.table.impl.indexer.RowSetIndexer;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.engine.table.impl.sources.aggregate.AggregateColumnSource;
@@ -566,8 +567,9 @@ public class AggregationHelper {
         }
         // noinspection unchecked
         final ColumnSource<Object> keyColumnSource = (ColumnSource<Object>) keyColumnSources[0];
-        if (inputTable.getRowSet().hasGrouping(keyColumnSource)) {
-            return inputTable.getRowSet().getGrouping(keyColumnSource);
+        final RowSetIndexer indexer = RowSetIndexer.of(inputTable.getRowSet());
+        if (indexer.hasGrouping(keyColumnSource)) {
+            return indexer.getGrouping(keyColumnSource);
         }
         return null;
     }

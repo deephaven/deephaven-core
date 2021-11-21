@@ -7,6 +7,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.TrackingRowSet;
+import io.deephaven.engine.table.impl.indexer.RowSetIndexer;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.time.DateTimeUtils;
@@ -18,7 +19,6 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.tables.select.MatchPairFactory;
 import io.deephaven.engine.tables.utils.*;
-import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.QueryConstants;
@@ -359,7 +359,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         final Table leftFlat = leftTable.flatten();
         final ColumnSource flatGrouped = leftFlat.getColumnSource("I1");
         final TrackingRowSet flatRowSet = leftFlat.getRowSet();
-        final Map<Object, RowSet> grouping = flatRowSet.getGrouping(flatGrouped);
+        final Map<Object, RowSet> grouping = RowSetIndexer.of(flatRowSet).getGrouping(flatGrouped);
         // noinspection unchecked
         ((AbstractColumnSource) flatGrouped).setGroupToRange(grouping);
 
@@ -541,8 +541,8 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
             });
         }
 
-        assertNotNull(listener.originalException);
-        assertEquals("Duplicate right key for A", listener.originalException.getMessage());
+        assertNotNull(listener.originalException());
+        assertEquals("Duplicate right key for A", listener.originalException().getMessage());
     }
 
     public void testNaturalJoinDuplicateRightsRefreshingBoth() {
@@ -575,8 +575,8 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
             });
         }
 
-        assertNotNull(listener.originalException);
-        assertEquals("Duplicate right key for A", listener.originalException.getMessage());
+        assertNotNull(listener.originalException());
+        assertEquals("Duplicate right key for A", listener.originalException().getMessage());
     }
 
 

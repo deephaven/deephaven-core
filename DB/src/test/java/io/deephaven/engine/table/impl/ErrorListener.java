@@ -2,13 +2,13 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
-import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import junit.framework.TestCase;
 
 public class ErrorListener extends InstrumentedTableUpdateListenerAdapter {
-    Throwable originalException;
 
-    ErrorListener(Table table) {
+    private Throwable originalException;
+
+    public ErrorListener(Table table) {
         super("Error Checker", table, false);
     }
 
@@ -18,7 +18,11 @@ public class ErrorListener extends InstrumentedTableUpdateListenerAdapter {
     }
 
     @Override
-    public void onFailureInternal(Throwable originalException, UpdatePerformanceTracker.Entry sourceEntry) {
+    public void onFailureInternal(Throwable originalException, Entry sourceEntry) {
         this.originalException = originalException;
+    }
+
+    public Throwable originalException() {
+        return originalException;
     }
 }

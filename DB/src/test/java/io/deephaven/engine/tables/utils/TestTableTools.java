@@ -11,6 +11,7 @@ import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
+import io.deephaven.engine.rowset.impl.RowSetTstUtils;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
@@ -1180,7 +1181,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
             }
 
             @Override
-            protected void onFailureInternal(Throwable originalException, UpdatePerformanceTracker.Entry sourceEntry) {}
+            protected void onFailureInternal(Throwable originalException, Entry sourceEntry) {}
         });
 
         for (int ii = 1; ii < 100; ++ii) {

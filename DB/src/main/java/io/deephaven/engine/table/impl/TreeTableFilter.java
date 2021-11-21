@@ -4,7 +4,6 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
@@ -68,7 +67,7 @@ public class TreeTableFilter implements Function<Table, Table>, MemoizedOperatio
 
     private class State {
         private QueryTable filteredRaw;
-        private final BaseTable source;
+        private final QueryTable source;
 
         /**
          * The complete rowSet of our result table.
@@ -106,7 +105,7 @@ public class TreeTableFilter implements Function<Table, Table>, MemoizedOperatio
             }
             final HierarchicalTable hierarchicalTable = (HierarchicalTable) table;
 
-            source = (BaseTable) hierarchicalTable.getSourceTable();
+            source = (QueryTable) hierarchicalTable.getSourceTable();
             final HierarchicalTableInfo sourceInfo = hierarchicalTable.getInfo();
             if (!(sourceInfo instanceof TreeTableInfo)) {
                 throw new IllegalArgumentException("Table is not a treeTable");
@@ -414,9 +413,9 @@ public class TreeTableFilter implements Function<Table, Table>, MemoizedOperatio
                         parentSet.add(key + delta);
                     }
                 });
-                RowSetShiftUtils.apply(upstream.shifted(), valuesRowSet);
-                RowSetShiftUtils.apply(upstream.shifted(), parentRowSet);
-                RowSetShiftUtils.apply(upstream.shifted(), resultRowSet);
+                upstream.shifted().apply(valuesRowSet);
+                upstream.shifted().apply(parentRowSet);
+                upstream.shifted().apply(resultRowSet);
 
                 // Finally, handle added sets.
                 try (final WritableRowSet addedAndModified = upstream.added().union(upstream.modified());
@@ -442,7 +441,7 @@ public class TreeTableFilter implements Function<Table, Table>, MemoizedOperatio
                     downstream.modified().writableCast().remove(downstream.added());
 
                     // convert post filter removals into pre-shift space -- note these rows must have previously existed
-                    RowSetShiftUtils.unapply(upstream.shifted(), resultRemovals);
+                    upstream.shifted().unapply(resultRemovals);
                     downstream.removed().writableCast().insert(resultRemovals);
                 }
 

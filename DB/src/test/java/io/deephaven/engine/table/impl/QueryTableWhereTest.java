@@ -4,7 +4,10 @@
 
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.api.RawString;
 import io.deephaven.api.filter.Filter;
+import io.deephaven.api.filter.FilterAnd;
+import io.deephaven.api.filter.FilterOr;
 import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.table.ShiftObliviousListener;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
@@ -146,13 +149,13 @@ public class QueryTableWhereTest {
         final QueryTable table = testRefreshingTable(i(2, 4, 6).toTracking(),
                 c("x", 1, 2, 3), c("y", 'a', 'b', 'c'));
 
-        assertEquals("", diff(table.whereOneOf(Filter.from("k%2 == 0")), table, 10));
-        assertEquals("", diff(table.whereOneOf(Filter.from("i%2 == 0")),
+        assertEquals("", diff(table.where(FilterOr.of(Filter.from("k%2 == 0"))), table, 10));
+        assertEquals("", diff(table.where(FilterOr.of(Filter.from("i%2 == 0"))),
                 testRefreshingTable(i(2, 6).toTracking(), c("x", 1, 3), c("y", 'a', 'c')), 10));
-        assertEquals("", diff(table.whereOneOf(Filter.from("(y-'a') = 2")),
+        assertEquals("", diff(table.where(FilterOr.of(Filter.from("(y-'a') = 2"))),
                 testRefreshingTable(i(2).toTracking(), c("x", 3), c("y", 'c')), 10));
 
-        final QueryTable whereResult = (QueryTable) table.whereOneOf(Filter.from("x%2 == 1"));
+        final QueryTable whereResult = (QueryTable) table.where(FilterOr.of(Filter.from("x%2 == 1")));
         final ShiftObliviousListener whereResultListener = new ListenerWithGlobals(whereResult);
         whereResult.listenForUpdates(whereResultListener);
         assertEquals("", diff(whereResult,
@@ -213,13 +216,13 @@ public class QueryTableWhereTest {
         final QueryTable table = testRefreshingTable(i(2, 4, 6, 8).toTracking(),
                 c("x", 1, 2, 3, 4), c("y", 'a', 'b', 'c', 'f'));
 
-        assertEquals("", diff(table.whereOneOf(Filter.from("k%2 == 0")), table, 10));
-        assertEquals("", diff(table.whereOneOf(Filter.from("i%2 == 0")),
+        assertEquals("", diff(table.where(FilterOr.of(Filter.from("k%2 == 0"))), table, 10));
+        assertEquals("", diff(table.where(FilterOr.of(Filter.from("i%2 == 0"))),
                 testRefreshingTable(i(2, 6).toTracking(), c("x", 1, 3), c("y", 'a', 'c')), 10));
-        assertEquals("", diff(table.whereOneOf(Filter.from("(y-'a') = 2")),
+        assertEquals("", diff(table.where(FilterOr.of(Filter.from("(y-'a') = 2"))),
                 testRefreshingTable(i(2).toTracking(), c("x", 3), c("y", 'c')), 10));
 
-        final QueryTable whereResult = (QueryTable) table.whereOneOf(Filter.from("x%2 == 1"), Filter.from("y=='f'"));
+        final QueryTable whereResult = (QueryTable) table.where(FilterOr.of(Filter.from("x%2 == 1", "y=='f'")));
         final ShiftObliviousListener whereResultListener = new ListenerWithGlobals(whereResult);
         whereResult.listenForUpdates(whereResultListener);
         assertEquals("", diff(whereResult,
@@ -274,7 +277,7 @@ public class QueryTableWhereTest {
         assertEquals(base.modified, i());
 
         TableTools.showWithIndex(table);
-        final Table usingStringArray = table.whereOneOf("x%3 == 0", "y=='f'");
+        final Table usingStringArray = table.where(FilterOr.of(Filter.from("x%3 == 0", "y=='f'")));
         assertEquals("", diff(usingStringArray, testRefreshingTable(i(4, 6, 8).toTracking(),
                 c("x", 21, 3, 4), c("y", 'x', 'c', 'f')), 10));
     }
@@ -290,9 +293,9 @@ public class QueryTableWhereTest {
         final Table setTable2 = setTable.where("B > 6");
 
         final DynamicWhereFilter dynamicFilter1 =
-                new DynamicWhereFilter(setTable1, true, MatchPairFactory.getExpressions("A"));
+                new DynamicWhereFilter((QueryTable) setTable1, true, MatchPairFactory.getExpressions("A"));
         final DynamicWhereFilter dynamicFilter2 =
-                new DynamicWhereFilter(setTable2, true, MatchPairFactory.getExpressions("B"));
+                new DynamicWhereFilter((QueryTable) setTable2, true, MatchPairFactory.getExpressions("B"));
 
         final WhereFilter composedFilter = DisjunctiveFilter.makeDisjunctiveFilter(dynamicFilter1, dynamicFilter2);
         final Table composed = tableToFilter.where(composedFilter);
@@ -606,31 +609,34 @@ public class QueryTableWhereTest {
         final EvalNugget[] en = new EvalNugget[] {
                 new EvalNugget() {
                     public Table e() {
-                        return filteredTable.whereOneOf(Filter.from("Sym in `aa`, `ee`"));
+                        return filteredTable.where(FilterOr.of(Filter.from("Sym in `aa`, `ee`")));
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return filteredTable.whereOneOf(Filter.from("Sym in `aa`, `ee`"),
-                                Filter.from("intCol % 2 == 0"));
+                        return filteredTable.where(FilterOr.of(Filter.from("Sym in `aa`, `ee`", "intCol % 2 == 0")));
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return filteredTable.whereOneOf(Filter.from("intCol % 2 == 0", "intCol % 2 == 1"),
-                                Filter.from("Sym in `aa`, `ee`"));
+                        return filteredTable.where(FilterOr.of(
+                                FilterAnd.of(Filter.from("intCol % 2 == 0", "intCol % 2 == 1")),
+                                RawString.of("Sym in `aa`, `ee`")));
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return filteredTable.whereOneOf(Filter.from("intCol % 2 == 0", "Sym in `aa`, `ii`"),
-                                Filter.from("Sym in `aa`, `ee`"));
+                        return filteredTable.where(FilterOr.of(
+                                FilterAnd.of(Filter.from("intCol % 2 == 0", "Sym in `aa`, `ii`")),
+                                RawString.of("Sym in `aa`, `ee`")));
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return filteredTable.whereOneOf(Filter.from("intCol % 2 == 0"), Filter.from("intCol % 2 == 1"),
-                                Filter.from("Sym in `aa`, `ee`"));
+                        return filteredTable.where(FilterOr.of(
+                                RawString.of("intCol % 2 == 0"),
+                                RawString.of("intCol % 2 == 1"),
+                                RawString.of("Sym in `aa`, `ee`")));
                     }
                 },
         };

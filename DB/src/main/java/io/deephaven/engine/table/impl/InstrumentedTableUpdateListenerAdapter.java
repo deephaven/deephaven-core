@@ -12,7 +12,6 @@ import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.liveness.Liveness;
 import io.deephaven.engine.table.impl.utils.AsyncErrorLogger;
 import io.deephaven.engine.table.impl.utils.AsyncClientErrorNotifier;
-import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.util.Utils;
 import io.deephaven.util.annotations.ReferentialIntegrity;
 import org.jetbrains.annotations.NotNull;
@@ -78,7 +77,7 @@ public abstract class InstrumentedTableUpdateListenerAdapter extends Instrumente
      * @param sourceEntry the performance tracker entry that was active when the error occurred
      */
     @Override
-    public void onFailureInternal(Throwable originalException, UpdatePerformanceTracker.Entry sourceEntry) {
+    public void onFailureInternal(Throwable originalException, Entry sourceEntry) {
         try {
             AsyncErrorLogger.log(DateTimeUtils.currentTime(), sourceEntry, sourceEntry, originalException);
             AsyncClientErrorNotifier.reportError(originalException);

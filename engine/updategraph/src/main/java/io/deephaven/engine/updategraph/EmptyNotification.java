@@ -3,7 +3,7 @@ package io.deephaven.engine.updategraph;
 import io.deephaven.base.log.LogOutput;
 
 /**
- * This is a notification that does not actually notify anything.
+ * A {@link NotificationQueue.Notification} that does not actually notify anything.
  */
 public class EmptyNotification extends AbstractNotification {
 

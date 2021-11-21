@@ -51,24 +51,24 @@ public class WindowCheck {
      * @return a new table that contains an in-window Boolean column
      */
     @SuppressWarnings("unused")
-    public static Table addTimeWindow(Table table, String timestampColumn, long windowNanos, String inWindowColumn) {
+    public static Table addTimeWindow(QueryTable table, String timestampColumn, long windowNanos, String inWindowColumn) {
         return addTimeWindowInternal(null, table, timestampColumn, windowNanos, inWindowColumn, true).first;
     }
 
     private static class WindowListenerRecorder extends ListenerRecorder {
-        private WindowListenerRecorder(Table parent, Table dependent) {
+        private WindowListenerRecorder(Table parent, BaseTable dependent) {
             super("WindowCheck", parent, dependent);
         }
     }
 
     /**
-     * See {@link WindowCheck#addTimeWindow(Table, String, long, String)} for a description, the internal version gives
-     * you access to the TimeWindowListener for unit testing purposes.
+     * See {@link WindowCheck#addTimeWindow(QueryTable, String, long, String)} for a description, the internal version
+     * gives you access to the TimeWindowListener for unit testing purposes.
      *
      * @param addToMonitor should we add this to the UpdateGraphProcessor
      * @return a pair of the result table and the TimeWindowListener that drives it
      */
-    static Pair<Table, TimeWindowListener> addTimeWindowInternal(TimeProvider timeProvider, Table table,
+    static Pair<Table, TimeWindowListener> addTimeWindowInternal(TimeProvider timeProvider, QueryTable table,
             String timestampColumn, long windowNanos, String inWindowColumn, boolean addToMonitor) {
         final Map<String, ColumnSource<?>> resultColumns = new LinkedHashMap<>(table.getColumnSourceMap());
 
@@ -149,7 +149,7 @@ public class WindowCheck {
          * @param result our initialized result table
          */
         private TimeWindowListener(final String inWindowColumnName, final InWindowColumnSource inWindowColumnSource,
-                final ListenerRecorder recorder, final Table source, final QueryTable result) {
+                final ListenerRecorder recorder, final QueryTable source, final QueryTable result) {
             super(Collections.singleton(recorder), Collections.singleton(source), "WindowCheck", result);
             this.source = source;
             this.recorder = recorder;

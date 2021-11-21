@@ -18,7 +18,6 @@ import io.deephaven.engine.table.impl.select.FormulaColumn;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.ChunkSink.FillFromContext;
 import io.deephaven.engine.table.WritableColumnSource;
-import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 
@@ -351,12 +350,11 @@ class FormulaChunkedOperator implements IterativeChunkedAggregationOperator {
                 dataCopyContext.copyData(downstream.added());
             }
         }
-
     }
 
     @Override
     public void propagateFailure(@NotNull final Throwable originalException,
-            @NotNull final UpdatePerformanceTracker.Entry sourceEntry) {
+                                 @NotNull final TableListener.Entry sourceEntry) {
         if (delegateToBy) {
             groupBy.propagateFailure(originalException, sourceEntry);
         }

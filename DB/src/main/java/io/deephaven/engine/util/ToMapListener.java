@@ -212,7 +212,7 @@ public class ToMapListener<K, V> extends InstrumentedTableUpdateListenerAdapter 
 
     @NotNull
     @Override
-    public Set<Entry<K, V>> entrySet() {
+    public Set<Map.Entry<K, V>> entrySet() {
         throw new UnsupportedOperationException();
     }
 

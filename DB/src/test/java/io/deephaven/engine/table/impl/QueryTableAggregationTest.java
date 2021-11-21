@@ -6,8 +6,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.TableUpdateImpl;
-import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
+import io.deephaven.engine.table.impl.indexer.RowSetIndexer;
 import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.engine.vector.IntVector;
@@ -167,9 +166,9 @@ public class QueryTableAggregationTest {
     public void testStaticGroupedByWithChunks() {
         final Table input = emptyTable(10000).update("A=Integer.toString(i % 5)", "B=i / 5");
         // noinspection unused
-        final Map<?, RowSet> g1 = input.getRowSet().getGrouping(input.getColumnSource("A"));
+        final Map<?, RowSet> g1 = RowSetIndexer.of(input.getRowSet()).getGrouping(input.getColumnSource("A"));
         // noinspection unused
-        final Map<?, RowSet> g2 = input.getRowSet().getGrouping(input.getColumnSource("B"));
+        final Map<?, RowSet> g2 = RowSetIndexer.of(input.getRowSet()).getGrouping(input.getColumnSource("B"));
 
         individualStaticByTest(input, null, "A");
         individualStaticByTest(input, null, "B");
@@ -674,6 +673,10 @@ public class QueryTableAggregationTest {
         TstUtils.validate(en);
     }
 
+    private static Table by(Table table, AggregationSpec spec, String... groupByColumns) {
+        return ((QueryTable) table).by(spec, SelectColumn.from(Selectable.from(groupByColumns)));
+    }
+
     @Test
     public void testFirstByLastByIncremental() {
         final Random random = new Random(0);
@@ -699,13 +702,13 @@ public class QueryTableAggregationTest {
                 new UpdateValidatorNugget(table.sort("Sym", "intCol").firstBy("Sym")),
                 new UpdateValidatorNugget(table.sort("Sym", "intCol").lastBy("Sym")),
                 EvalNugget.from(
-                        () -> table.sort("Sym", "intCol").by(new TrackingLastBySpecImpl(), "Sym").sort("Sym")),
+                        () -> by(table.sort("Sym", "intCol"), new TrackingLastBySpecImpl(), "Sym").sort("Sym")),
                 EvalNugget.from(
-                        () -> table.sort("Sym", "intCol").by(new TrackingFirstBySpecImpl(), "Sym").sort("Sym")),
+                        () -> by(table.sort("Sym", "intCol"), new TrackingFirstBySpecImpl(), "Sym").sort("Sym")),
                 new io.deephaven.engine.table.impl.QueryTableTestBase.TableComparator(table.lastBy("Sym"),
-                        table.by(new TrackingLastBySpecImpl(), "Sym")),
+                        by(table, new TrackingLastBySpecImpl(), "Sym")),
                 new io.deephaven.engine.table.impl.QueryTableTestBase.TableComparator(table.firstBy("Sym"),
-                        table.by(new TrackingFirstBySpecImpl(), "Sym")),
+                        by(table, new TrackingFirstBySpecImpl(), "Sym")),
                 EvalNugget.from(() -> table.firstBy("boolCol").sort("boolCol")),
                 EvalNugget.from(() -> table.firstBy("boolCol", "Sym").sort("boolCol", "Sym")),
                 EvalNugget.from(() -> table.firstBy("Sym", "Sym2", "IntSet", "boolCol").sort("Sym", "Sym2", "IntSet",
@@ -2308,89 +2311,89 @@ public class QueryTableAggregationTest {
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
                 new EvalNugget() {
                     public Table e() {
-                        return queryTable.by(new AddOnlyMinMaxBySpecImpl(false), "Sym").sort("Sym");
+                        return by(queryTable, new AddOnlyMinMaxBySpecImpl(false), "Sym").sort("Sym");
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return queryTable.dropColumns("Sym").update("x = k")
-                                .by(new AddOnlyMinMaxBySpecImpl(false), "intCol").sort("intCol");
+                        return by(queryTable.dropColumns("Sym").update("x = k"),
+                                new AddOnlyMinMaxBySpecImpl(false), "intCol").sort("intCol");
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return queryTable.updateView("x = k")
-                                .by(new AddOnlyMinMaxBySpecImpl(false), "Sym", "intCol").sort("Sym", "intCol");
+                        return by(queryTable.updateView("x = k"),
+                                new AddOnlyMinMaxBySpecImpl(false), "Sym", "intCol").sort("Sym", "intCol");
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return queryTable.update("x=intCol+1").by(new AddOnlyMinMaxBySpecImpl(false), "Sym")
+                        return by(queryTable.update("x=intCol+1"), new AddOnlyMinMaxBySpecImpl(false), "Sym")
                                 .sort("Sym");
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return queryTable.update("x=intCol+1").dropColumns("Sym")
-                                .by(new AddOnlyMinMaxBySpecImpl(false), "intCol").sort("intCol");
+                        return by(queryTable.update("x=intCol+1").dropColumns("Sym"),
+                                new AddOnlyMinMaxBySpecImpl(false), "intCol").sort("intCol");
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return queryTable.update("x=intCol+1")
-                                .by(new AddOnlyMinMaxBySpecImpl(false), "Sym", "intCol").sort("Sym", "intCol");
+                        return by(queryTable.update("x=intCol+1"),
+                                new AddOnlyMinMaxBySpecImpl(false), "Sym", "intCol").sort("Sym", "intCol");
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return queryTable.update("x=intCol+1").by(new AddOnlyMinMaxBySpecImpl(false), "Sym")
+                        return by(queryTable.update("x=intCol+1"), new AddOnlyMinMaxBySpecImpl(false), "Sym")
                                 .sort("Sym");
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return queryTable.by(new AddOnlyMinMaxBySpecImpl(true), "Sym").sort("Sym");
+                        return by(queryTable, new AddOnlyMinMaxBySpecImpl(true), "Sym").sort("Sym");
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return queryTable.dropColumns("Sym").update("x = k")
-                                .by(new AddOnlyMinMaxBySpecImpl(true), "intCol").sort("intCol");
+                        return by(queryTable.dropColumns("Sym").update("x = k"),
+                                new AddOnlyMinMaxBySpecImpl(true), "intCol").sort("intCol");
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return queryTable.updateView("x = k")
-                                .by(new AddOnlyMinMaxBySpecImpl(true), "Sym", "intCol").sort("Sym", "intCol");
+                        return by(queryTable.updateView("x = k"),
+                                new AddOnlyMinMaxBySpecImpl(true), "Sym", "intCol").sort("Sym", "intCol");
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return queryTable.update("x=intCol+1").by(new AddOnlyMinMaxBySpecImpl(true), "Sym")
+                        return by(queryTable.update("x=intCol+1"), new AddOnlyMinMaxBySpecImpl(true), "Sym")
                                 .sort("Sym");
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return queryTable.update("x=intCol+1").dropColumns("Sym")
-                                .by(new AddOnlyMinMaxBySpecImpl(true), "intCol").sort("intCol");
+                        return by(queryTable.update("x=intCol+1").dropColumns("Sym"),
+                                new AddOnlyMinMaxBySpecImpl(true), "intCol").sort("intCol");
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return queryTable.update("x=intCol+1")
-                                .by(new AddOnlyMinMaxBySpecImpl(true), "Sym", "intCol").sort("Sym", "intCol");
+                        return by(queryTable.update("x=intCol+1"),
+                                new AddOnlyMinMaxBySpecImpl(true), "Sym", "intCol").sort("Sym", "intCol");
                     }
                 },
                 new EvalNugget() {
                     public Table e() {
-                        return queryTable.update("x=intCol+1").by(new AddOnlyMinMaxBySpecImpl(true), "Sym")
+                        return by(queryTable.update("x=intCol+1"), new AddOnlyMinMaxBySpecImpl(true), "Sym")
                                 .sort("Sym");
                     }
                 },
-                new TableComparator(queryTable.by(new AddOnlyMinMaxBySpecImpl(false), "Sym").sort("Sym"),
+                new TableComparator(by(queryTable, new AddOnlyMinMaxBySpecImpl(false), "Sym").sort("Sym"),
                         queryTable.applyToAllBy("max(each)", "Sym").sort("Sym")),
-                new TableComparator(queryTable.by(new AddOnlyMinMaxBySpecImpl(true), "Sym").sort("Sym"),
+                new TableComparator(by(queryTable, new AddOnlyMinMaxBySpecImpl(true), "Sym").sort("Sym"),
                         queryTable.applyToAllBy("min(each)", "Sym").sort("Sym")),
         };
         for (int step = 0; step < 50; step++) {
@@ -2435,11 +2438,11 @@ public class QueryTableAggregationTest {
                 EvalNugget.from(() -> queryTable.view("doubleCol").medianBy()),
                 EvalNugget.Sorted.from(() -> queryTable.medianBy("Sym"), "Sym"),
                 new UpdateValidatorNugget(queryTable.medianBy("Sym")),
-                EvalNugget.from(() -> withoutFloats.by(new PercentileBySpecImpl(0.25), "Sym").sort("Sym")),
-                EvalNugget.from(() -> withoutFloats.by(new PercentileBySpecImpl(0.75), "Sym").sort("Sym")),
-                EvalNugget.from(() -> withoutFloats.by(new PercentileBySpecImpl(0.1), "Sym").sort("Sym")),
-                EvalNugget.from(() -> withoutFloats.by(new PercentileBySpecImpl(0.99), "Sym").sort("Sym")),
-                EvalNugget.from(() -> withoutFloats.where("Sym=`a`").by(new PercentileBySpecImpl(0.99), "Sym")
+                EvalNugget.from(() -> by(withoutFloats, new PercentileBySpecImpl(0.25), "Sym").sort("Sym")),
+                EvalNugget.from(() -> by(withoutFloats, new PercentileBySpecImpl(0.75), "Sym").sort("Sym")),
+                EvalNugget.from(() -> by(withoutFloats, new PercentileBySpecImpl(0.1), "Sym").sort("Sym")),
+                EvalNugget.from(() -> by(withoutFloats, new PercentileBySpecImpl(0.99), "Sym").sort("Sym")),
+                EvalNugget.from(() -> by(withoutFloats.where("Sym=`a`"), new PercentileBySpecImpl(0.99), "Sym")
                         .sort("Sym"))
         };
         for (int step = 0; step < 50; step++) {
@@ -2748,8 +2751,8 @@ public class QueryTableAggregationTest {
         TableTools.showWithIndex(table);
 
         final Table median = table.medianBy();
-        final Table percentile10 = table.by(new PercentileBySpecImpl(0.1));
-        final Table percentile90 = table.by(new PercentileBySpecImpl(0.9));
+        final Table percentile10 = by(table, new PercentileBySpecImpl(0.1));
+        final Table percentile90 = by(table, new PercentileBySpecImpl(0.9));
         TableTools.showWithIndex(median);
         TableTools.showWithIndex(percentile10);
         TableTools.showWithIndex(percentile90);
@@ -2935,7 +2938,7 @@ public class QueryTableAggregationTest {
                 public void onUpdate(final TableUpdate update) {}
 
                 @Override
-                public void onFailureInternal(Throwable originalException, UpdatePerformanceTracker.Entry sourceEntry) {
+                public void onFailureInternal(Throwable originalException, Entry sourceEntry) {
                     exception = originalException;
                 }
             });
@@ -3504,7 +3507,7 @@ public class QueryTableAggregationTest {
                 col("Value", BigInteger.valueOf(0), new BigInteger("100"), BigInteger.valueOf(100),
                         new BigInteger("100"), new BigInteger("100"), new BigInteger("100"), new BigInteger("100"),
                         new BigInteger("100"), new BigInteger("100"), BigInteger.valueOf(200)));
-        final Table percentile = source.by(new PercentileBySpecImpl(0.25));
+        final Table percentile = by(source, new PercentileBySpecImpl(0.25));
         TableTools.show(percentile);
         TestCase.assertEquals(BigInteger.valueOf(100), percentile.getColumn("Value").get(0));
 
@@ -3525,7 +3528,7 @@ public class QueryTableAggregationTest {
         try {
             for (final boolean substituteForThisIteration : new boolean[] {false, true}) {
                 ChunkedOperatorAggregationHelper.KEY_ONLY_SUBSTITUTION_ENABLED = substituteForThisIteration;
-                final Table source = emptyTable(100).updateView("A=i%10");
+                final BaseTable source = (BaseTable) emptyTable(100).updateView("A=i%10");
                 source.getRowSet().writableCast().removeRange(50, 100);
                 source.setRefreshing(true);
 

@@ -24,7 +24,7 @@ import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
 import io.deephaven.engine.table.impl.sources.UnionColumnSource;
 import io.deephaven.engine.table.impl.sources.UnionSourceManager;
-import io.deephaven.engine.table.impl.utils.AbstractNotification;
+import io.deephaven.engine.updategraph.AbstractNotification;
 import io.deephaven.engine.table.impl.utils.AsyncClientErrorNotifier;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.util.annotations.ReferentialIntegrity;
@@ -581,8 +581,7 @@ public class LocalTableMap extends TableMapImpl implements NotificationQueue.Dep
             final LivenessListener listener = new LivenessListener() {
                 @Override
                 public void handleTableAdded(Object key, Table table) {
-                    final Table coalesced = table.coalesce();
-                    unionSourceManager.addTable(coalesced, true);
+                    unionSourceManager.addTable((QueryTable) table.coalesce(), true);
                 }
             };
             addListener(listener);

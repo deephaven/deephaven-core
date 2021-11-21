@@ -1,5 +1,5 @@
 {
- "className": "io.deephaven.libs.primitives.SpecialPrimitives",
+ "className": "io.deephaven.engine.function.SpecialPrimitives",
  "methods": {
   "random": "Returns a uniform random number between 0.0 and 1.0.\n\n:return: (double) uniform random number between 0.0 and 1.0.",
   "randomBool": "**Incompatible overloads text - text from the first overload:**\n\nReturns a random boolean.\n\n*Overload 1*  \n  :return: (boolean) random boolean.\n  \n*Overload 2*  \n  :param size: (int) - array size to generate.\n  :return: (boolean[]) array of random booleans.",
@@ -9,7 +9,7 @@
   "randomInt": "**Incompatible overloads text - text from the first overload:**\n\nReturns a uniform random number.\n\n*Overload 1*  \n  :param min: (int) - minimum result.\n  :param max: (int) - maximum result (exclusive).\n  :return: (int) uniform random number between min and max (exclusive).\n  \n*Overload 2*  \n  :param min: (int) - minimum result.\n  :param max: (int) - maximum result (exclusive).\n  :param size: (int) - array size to generate.\n  :return: (int[]) array of uniform random numbers between min and max (exclusive).",
   "randomLong": "**Incompatible overloads text - text from the first overload:**\n\nReturns a uniform random number.\n\n*Overload 1*  \n  :param min: (long) - minimum result.\n  :param max: (long) - maximum result (exclusive).\n  :return: (long) uniform random number between min and max (exclusive).\n  \n*Overload 2*  \n  :param min: (long) - minimum result.\n  :param max: (long) - maximum result (exclusive).\n  :param size: (int) - array size to generate.\n  :return: (long[]) array of uniform random numbers between min and max (exclusive)."
  },
- "path": "io.deephaven.libs.primitives.SpecialPrimitives",
+ "path": "io.deephaven.engine.function.SpecialPrimitives",
  "text": "A set of commonly used functions which are not associated with a specific type.",
  "typeName": "class"
 }

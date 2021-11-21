@@ -1,24 +1,21 @@
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.base.Function;
-import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.engine.rowset.WritableRowSet;
-import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetBuilderSequential;
-import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.TableUpdateImpl;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.table.impl.remote.WrappedDelegatingTable;
-import io.deephaven.engine.table.impl.AbstractColumnSource;
-import io.deephaven.util.QueryConstants;
 import gnu.trove.list.TLongList;
 import gnu.trove.list.array.TLongArrayList;
 import gnu.trove.set.TLongSet;
 import gnu.trove.set.hash.TLongHashSet;
+import io.deephaven.datastructures.util.CollectionUtil;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetBuilderSequential;
+import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.WritableRowSet;
+import io.deephaven.engine.table.*;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.util.QueryConstants;
 
 import java.lang.ref.WeakReference;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static io.deephaven.engine.table.Table.TREE_TABLE_FILTER_REVERSE_LOOKUP_ATTRIBUTE;
@@ -36,10 +33,10 @@ import static io.deephaven.engine.table.Table.TREE_TABLE_FILTER_REVERSE_LOOKUP_A
  * </p>
  *
  * <p>
- * This class should be used by calling {@link #promoteOrphans(Table, String, String)} method.
+ * This class should be used by calling {@link #promoteOrphans(QueryTable, String, String)} method.
  * </p>
  */
-public class TreeTableOrphanPromoter implements Function.Unary<Table, Table> {
+public class TreeTableOrphanPromoter implements Function<Table, QueryTable> {
     private final String idColumn;
     private final String parentColumn;
 
@@ -48,30 +45,29 @@ public class TreeTableOrphanPromoter implements Function.Unary<Table, Table> {
         this.parentColumn = parentColumn;
     }
 
-    @WrappedDelegatingTable.DoNotWrap
     @Override
-    public Table call(Table table) {
+    public QueryTable apply(Table table) {
         if (table.isRefreshing()) {
             UpdateGraphProcessor.DEFAULT.checkInitiateTableOperation();
         }
 
-        return new State(table).invoke();
+        return new State((QueryTable) table).invoke();
     }
 
     private class State {
         private final ColumnSource<?> parentSource;
         private final ColumnSource<?> idSource;
         private final ReverseLookup reverseLookupListener;
-        private final Table source;
+        private final QueryTable source;
 
-        public State(Table table) {
+        public State(QueryTable table) {
             source = table;
             reverseLookupListener = getReverseLookupListener(source, idColumn);
             parentSource = source.getColumnSource(parentColumn);
             idSource = source.getColumnSource(idColumn);
         }
 
-        public Table invoke() {
+        public QueryTable invoke() {
             final Map<String, ColumnSource<?>> nameToColumns = new LinkedHashMap<>(source.getColumnSourceMap());
 
             // noinspection unchecked
@@ -285,7 +281,8 @@ public class TreeTableOrphanPromoter implements Function.Unary<Table, Table> {
 
                                 final boolean modifiedInputColumns =
                                         upstream.modifiedColumnSet().containsAny(inputColumns);
-                                if (upstream.added().isEmpty() && upstream.removed().isEmpty() && upstream.shifted().empty()
+                                if (upstream.added().isEmpty() && upstream.removed().isEmpty()
+                                        && upstream.shifted().empty()
                                         && !modifiedInputColumns) {
                                     mcsTransformer.clearAndTransform(upstream.modifiedColumnSet(),
                                             downstream.modifiedColumnSet());
@@ -421,7 +418,7 @@ public class TreeTableOrphanPromoter implements Function.Unary<Table, Table> {
      *
      * @return a table where parentColumn is null if the original parent did not appear in the IDs
      */
-    public static Table promoteOrphans(Table table, String idColumn, String parentColumn) {
+    public static Table promoteOrphans(QueryTable table, String idColumn, String parentColumn) {
         return table.apply(new TreeTableOrphanPromoter(idColumn, parentColumn));
     }
 

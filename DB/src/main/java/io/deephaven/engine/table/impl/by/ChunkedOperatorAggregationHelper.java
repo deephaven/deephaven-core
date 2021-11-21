@@ -11,7 +11,7 @@ import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.table.impl.GroupingUtil;
 import io.deephaven.engine.table.impl.PrevColumnSource;
-import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
+import io.deephaven.engine.table.impl.indexer.RowSetIndexer;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.util.BooleanUtils;
@@ -112,7 +112,7 @@ public class ChunkedOperatorAggregationHelper {
         if (control.considerGrouping(withView, keySources)) {
             Assert.eq(keySources.length, "keySources.length", 1);
 
-            final boolean hasGrouping = withView.getRowSet().hasGrouping(keySources[0]);
+            final boolean hasGrouping = RowSetIndexer.of(withView.getRowSet()).hasGrouping(keySources[0]);
             if (!withView.isRefreshing() && hasGrouping) {
                 return staticGroupedAggregation(withView, keyNames[0], keySources[0], ac);
             }
@@ -223,8 +223,7 @@ public class ChunkedOperatorAggregationHelper {
                         }
 
                         @Override
-                        public void onFailureInternal(@NotNull final Throwable originalException,
-                                final UpdatePerformanceTracker.Entry sourceEntry) {
+                        public void onFailureInternal(@NotNull final Throwable originalException, Entry sourceEntry) {
                             ac.propagateFailureToOperators(originalException, sourceEntry);
                             super.onFailureInternal(originalException, sourceEntry);
                         }
@@ -506,7 +505,7 @@ public class ChunkedOperatorAggregationHelper {
                                                 .minus(removeIndex == null ? unshiftedSameSlotModifies : removeIndex);
                                         final WritableRowSet shiftedSameSlotModifiesPre =
                                                 shiftedSameSlotModifiesPost.copy()) {
-                                    RowSetShiftUtils.unapply(upstream.shifted(), shiftedSameSlotModifiesPre);
+                                    upstream.shifted().unapply(shiftedSameSlotModifiesPre);
                                     doSameSlotModifies(shiftedSameSlotModifiesPre, shiftedSameSlotModifiesPost, true,
                                             od.operatorsWithModifiedInputColumnsThatIgnoreIndices,
                                             od.operatorsThatRequireIndices);
@@ -1377,7 +1376,7 @@ public class ChunkedOperatorAggregationHelper {
     private static QueryTable staticGroupedAggregation(QueryTable withView, String keyName, ColumnSource<?> keySource,
             AggregationContext ac) {
         final Pair<ArrayBackedColumnSource, ObjectArraySource<RowSet>> groupKeyIndexTable;
-        final Map<Object, RowSet> grouping = withView.getRowSet().getGrouping(keySource);
+        final Map<Object, RowSet> grouping = RowSetIndexer.of(withView.getRowSet()).getGrouping(keySource);
         // noinspection unchecked
         groupKeyIndexTable = GroupingUtil.groupingToFlatSources((ColumnSource) keySource, grouping);
         final int responsiveGroups = grouping.size();
@@ -1539,8 +1538,9 @@ public class ChunkedOperatorAggregationHelper {
             MutableInt outputPosition,
             boolean usePrev) {
         final Pair<ArrayBackedColumnSource, ObjectArraySource<RowSet>> groupKeyIndexTable;
-        final Map<Object, RowSet> grouping = usePrev ? withView.getRowSet().getPrevGrouping(reinterpretedKeySources[0])
-                : withView.getRowSet().getGrouping(reinterpretedKeySources[0]);
+        final RowSetIndexer indexer = RowSetIndexer.of(withView.getRowSet());
+        final Map<Object, RowSet> grouping = usePrev ? indexer.getPrevGrouping(reinterpretedKeySources[0])
+                : indexer.getGrouping(reinterpretedKeySources[0]);
         // noinspection unchecked
         groupKeyIndexTable =
                 GroupingUtil.groupingToFlatSources((ColumnSource) reinterpretedKeySources[0], grouping);
@@ -1710,7 +1710,7 @@ public class ChunkedOperatorAggregationHelper {
                                                         upstream.modified().minus(unshiftedModifies);
                                                      final WritableRowSet shiftedModifiesPre =
                                                                 shiftedModifiesPost.copy()) {
-                                                    RowSetShiftUtils.unapply(upstream.shifted(), shiftedModifiesPre);
+                                                    upstream.shifted().unapply(shiftedModifiesPre);
                                                     doNoKeyModifications(shiftedModifiesPre, shiftedModifiesPost, ac,
                                                             opContexts, true,
                                                             od.operatorsWithModifiedInputColumnsThatIgnoreIndices,
@@ -1787,7 +1787,7 @@ public class ChunkedOperatorAggregationHelper {
 
                         @Override
                         public void onFailureInternal(@NotNull final Throwable originalException,
-                                final UpdatePerformanceTracker.Entry sourceEntry) {
+                                final Entry sourceEntry) {
                             ac.propagateFailureToOperators(originalException, sourceEntry);
                             super.onFailureInternal(originalException, sourceEntry);
                         }

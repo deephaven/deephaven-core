@@ -6,6 +6,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 
+import io.deephaven.engine.rowset.impl.PerfStats;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Comparator;

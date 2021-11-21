@@ -2,7 +2,6 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
-import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.engine.tables.utils.TableTools;
 
 import static io.deephaven.engine.table.impl.TstUtils.prevTable;
@@ -35,8 +34,7 @@ public class FuzzerPrintListener extends InstrumentedTableUpdateListener {
     }
 
     @Override
-    public void onFailureInternal(Throwable originalException,
-            UpdatePerformanceTracker.Entry sourceEntry) {
+    public void onFailureInternal(Throwable originalException, Entry sourceEntry) {
         System.out.println("Error for: " + description);
         originalException.printStackTrace();
     }

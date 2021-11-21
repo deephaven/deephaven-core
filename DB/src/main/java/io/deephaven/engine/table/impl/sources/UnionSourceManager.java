@@ -108,7 +108,7 @@ public class UnionSourceManager {
      * @param table the new table
      * @param onNewTableMapKey whether this table is being added after the initial setup
      */
-    public synchronized void addTable(@NotNull final Table table, final boolean onNewTableMapKey) {
+    public synchronized void addTable(@NotNull final QueryTable table, final boolean onNewTableMapKey) {
         final Map<String, ? extends ColumnSource<?>> sources = table.getColumnSourceMap();
         if (onNewTableMapKey) {
             Require.requirement(!isUsingComponentsSafe(), "!isUsingComponentsSafe()");
@@ -136,14 +136,13 @@ public class UnionSourceManager {
 
         if (table.isRefreshing()) {
             setRefreshing();
-            final Table dynTable = table;
             final UnionListenerRecorder listener = new UnionListenerRecorder("TableTools.merge",
-                    dynTable, tableId);
+                    table, tableId);
             listeners.add(listener);
 
-            modColumnTransformers.add(dynTable.newModifiedColumnSetTransformer(result, names));
+            modColumnTransformers.add(table.newModifiedColumnSetTransformer(result, names));
 
-            dynTable.listenForUpdates(listener);
+            table.listenForUpdates(listener);
             if (onNewTableMapKey) {
                 // synthetically invoke onUpdate lest our MergedUnionListener#process never fires.
                 final TableUpdate update = new TableUpdateImpl(

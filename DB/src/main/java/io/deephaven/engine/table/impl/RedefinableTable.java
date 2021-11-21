@@ -4,6 +4,7 @@
 
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.api.Selectable;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
@@ -24,10 +25,11 @@ public abstract class RedefinableTable extends UncoalescedTable {
     }
 
     @Override
-    public Table view(SelectColumn... columns) {
-        if (columns == null || columns.length == 0) {
+    public Table view(Collection<? extends Selectable> selectables) {
+        if (selectables == null || selectables.isEmpty()) {
             return this;
         }
+        final SelectColumn[] columns = SelectColumn.from(selectables);
         Set<ColumnDefinition<?>> resultColumnsInternal = new HashSet<>();
         Map<String, ColumnDefinition<?>> resultColumnsExternal = new LinkedHashMap<>();
         Map<String, ColumnDefinition<?>> allColumns = new HashMap<>(definition.getColumnNameMap());
@@ -63,10 +65,11 @@ public abstract class RedefinableTable extends UncoalescedTable {
     }
 
     @Override
-    public Table updateView(SelectColumn... columns) {
-        if (columns == null || columns.length == 0) {
+    public Table updateView(Collection<? extends Selectable> selectables) {
+        if (selectables == null || selectables.isEmpty()) {
             return this;
         }
+        final SelectColumn[] columns = SelectColumn.from(selectables);
         LinkedHashMap<String, SelectColumn> viewColumns = new LinkedHashMap<>();
         for (ColumnDefinition<?> cDef : definition.getColumns()) {
             viewColumns.put(cDef.getName(), new SourceColumn(cDef.getName()));

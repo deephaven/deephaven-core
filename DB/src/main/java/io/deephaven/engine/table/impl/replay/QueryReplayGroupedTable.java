@@ -9,6 +9,7 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.TrackingRowSet;
+import io.deephaven.engine.table.impl.indexer.RowSetIndexer;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.ColumnSource;
@@ -84,7 +85,7 @@ public abstract class QueryReplayGroupedTable extends QueryTable implements Runn
         final ColumnSource<?>[] columnSources =
                 Arrays.stream(groupingColumns).map(input::get).toArray(ColumnSource[]::new);
         final TupleSource<?> tupleSource = TupleSourceFactory.makeTupleSource(columnSources);
-        grouping = rowSet.getGrouping(tupleSource);
+        grouping = RowSetIndexer.of(rowSet).getGrouping(tupleSource);
 
         // noinspection unchecked
         ColumnSource<DateTime> timeSource = (ColumnSource<DateTime>) input.get(timeColumn);

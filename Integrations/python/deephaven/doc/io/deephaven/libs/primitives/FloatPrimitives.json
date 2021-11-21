@@ -1,5 +1,5 @@
 {
- "className": "io.deephaven.libs.primitives.FloatPrimitives",
+ "className": "io.deephaven.engine.function.FloatPrimitives",
  "methods": {
   "array": "Converts a primitive array to a Vector.\n\n:param values: (float[]) - primitive array\n:return: (io.deephaven.engine.vector.FloatVector) Vector.",
   "concat": "Returns the concatenation of multiple arrays into a single array.\n\n*Overload 1*  \n  :param values: (float[]...) - values.\n  :return: (float[]) concatenation of multiple arrays into a single array.\n  \n*Overload 2*  \n  :param values: (io.deephaven.engine.vector.FloatVector...) - values.\n  :return: (float[]) concatenation of multiple arrays into a single array.",
@@ -20,7 +20,7 @@
   "uniqueValue": "Get the single unique value in the array, or null if there are none, or there are more than 1 distinct values.\n\n:param arr: (io.deephaven.engine.vector.FloatVector) - the array\n:param countNull: (boolean) - if nulls should count as values\n:return: (float) the single unique value in the array, or null.",
   "vec": "Converts a Vector to a primitive array.\n\n:param values: (io.deephaven.engine.vector.FloatVector) - Vector\n:return: (float[]) primitive array."
  },
- "path": "io.deephaven.libs.primitives.FloatPrimitives",
+ "path": "io.deephaven.engine.function.FloatPrimitives",
  "text": "A set of commonly used functions that can be applied to Float types.",
  "typeName": "class"
 }

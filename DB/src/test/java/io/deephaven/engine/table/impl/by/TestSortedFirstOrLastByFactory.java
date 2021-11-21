@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl.by;
 
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
+import io.deephaven.engine.table.impl.select.SourceColumn;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.util.SortedBy;
@@ -75,7 +76,8 @@ public class TestSortedFirstOrLastByFactory extends RefreshingTableTestCase {
                         SortedBy.sortedFirstBy(queryTable, sortColumns, "Sym").sort("Sym")),
                 new QueryTableTest.TableComparator(
                         queryTable.sort(sortColumns).lastBy("Sym").sort("Sym"),
-                        queryTable.by(AggCombo(AggSortedLast(sortColumns, "intCol", "doubleCol", "Indices")), "Sym")
+                        queryTable.by(AggCombo(AggSortedLast(sortColumns, "intCol", "doubleCol", "Indices")),
+                                        new SourceColumn("Sym"))
                                 .sort("Sym"))
         };
         for (int step = 0; step < 100; step++) {
@@ -97,7 +99,7 @@ public class TestSortedFirstOrLastByFactory extends RefreshingTableTestCase {
         // source.listenForUpdates(pl);
 
         final QueryTable sfb = (QueryTable) source.by(new SortedFirstBy("SFB"));
-        final QueryTable bucketed = (QueryTable) source.by(new SortedFirstBy("SFB"), "DummyBucket");
+        final QueryTable bucketed = (QueryTable) source.by(new SortedFirstBy("SFB"), new SourceColumn("DummyBucket"));
         // final FuzzerPrintListener plsfb = new FuzzerPrintListener("sfb", sfb);
         // sfb.listenForUpdates(plsfb);
 

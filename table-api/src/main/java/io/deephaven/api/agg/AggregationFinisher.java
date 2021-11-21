@@ -40,9 +40,24 @@ public abstract class AggregationFinisher<AGG extends Aggregation> {
         return ImmutableAggregationFinisher.of(CountDistinct::of);
     }
 
+    public static AggregationFinisher<CountDistinct> countDistinct(boolean countNulls) {
+        if (countNulls) {
+            return ImmutableAggregationFinisher.of(pair -> CountDistinct.of(pair).withNulls());
+        }
+        return ImmutableAggregationFinisher.of(CountDistinct::of);
+    }
+
     public static AggregationFinisher<Distinct> distinct() {
         return ImmutableAggregationFinisher.of(Distinct::of);
     }
+
+    public static AggregationFinisher<Distinct> distinct(boolean includeNulls) {
+        if (includeNulls) {
+            return ImmutableAggregationFinisher.of(pair -> Distinct.of(pair).withNulls());
+        }
+        return ImmutableAggregationFinisher.of(Distinct::of);
+    }
+
 
     public static AggregationFinisher<First> first() {
         return ImmutableAggregationFinisher.of(First::of);
@@ -60,12 +75,26 @@ public abstract class AggregationFinisher<AGG extends Aggregation> {
         return ImmutableAggregationFinisher.of(Med::of);
     }
 
+    public static AggregationFinisher<Med> med(boolean average) {
+        if (average) {
+            return med();
+        }
+        return ImmutableAggregationFinisher.of(pair -> Med.of(pair).withoutAverage());
+    }
+
     public static AggregationFinisher<Min> min() {
         return ImmutableAggregationFinisher.of(Min::of);
     }
 
     public static AggregationFinisher<Pct> pct(double percentile) {
         return ImmutableAggregationFinisher.of(pair -> Pct.of(percentile, pair));
+    }
+
+    public static AggregationFinisher<Pct> pct(double percentile, boolean average) {
+        if (average) {
+            return ImmutableAggregationFinisher.of(pair -> Pct.of(percentile, pair).withAverage());
+        }
+        return pct(percentile);
     }
 
     static AggregationFinisher<SortedFirst> sortedFirst(SortColumn sortColumn) {
@@ -97,6 +126,14 @@ public abstract class AggregationFinisher<AGG extends Aggregation> {
     public static AggregationFinisher<Unique> unique() {
         return ImmutableAggregationFinisher.of(Unique::of);
     }
+
+    public static AggregationFinisher<Unique> unique(boolean includeNulls) {
+        if (includeNulls) {
+            return ImmutableAggregationFinisher.of(pair -> Unique.of(pair).withNulls());
+        }
+        return ImmutableAggregationFinisher.of(Unique::of);
+    }
+
 
     public static AggregationFinisher<Var> var() {
         return ImmutableAggregationFinisher.of(Var::of);

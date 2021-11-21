@@ -6,6 +6,9 @@ package io.deephaven.engine.table.impl;
 
 import com.google.common.primitives.Ints;
 import io.deephaven.UncheckedDeephavenException;
+import io.deephaven.api.Selectable;
+import io.deephaven.api.filter.Filter;
+import io.deephaven.api.filter.FilterOr;
 import io.deephaven.base.FileUtils;
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.AssertionFailure;
@@ -13,8 +16,7 @@ import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.TableUpdateImpl;
-import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
+import io.deephaven.engine.table.impl.indexer.RowSetIndexer;
 import io.deephaven.engine.vector.*;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.tables.select.MatchPairFactory;
@@ -30,7 +32,6 @@ import io.deephaven.engine.liveness.SingletonLivenessManager;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.remote.InitialSnapshotTable;
 import io.deephaven.engine.table.impl.select.*;
-import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.table.impl.utils.*;
 import io.deephaven.test.types.OutOfBandTest;
@@ -55,9 +56,9 @@ import java.util.function.IntSupplier;
 import java.util.function.Supplier;
 import java.util.stream.LongStream;
 
+import static io.deephaven.api.agg.Aggregation.*;
 import static io.deephaven.engine.tables.utils.TableTools.*;
 import static io.deephaven.engine.table.impl.TstUtils.*;
-import static io.deephaven.engine.table.impl.by.AggregationFactory.*;
 import static org.junit.Assert.assertArrayEquals;
 
 /**
@@ -94,12 +95,12 @@ public class QueryTableTest extends QueryTableTestBase {
         };
 
         for (String[] columns : positives) {
-            TableTools.emptyTable(10).validateSelect(columns);
+            ((QueryTable) TableTools.emptyTable(10)).validateSelect(SelectColumn.from(Selectable.from(columns)));
         }
 
         for (String[] columns : negatives) {
             try {
-                TableTools.emptyTable(10).validateSelect(columns);
+                ((QueryTable) TableTools.emptyTable(10)).validateSelect(SelectColumn.from(Selectable.from(columns)));
                 TestCase.fail("validation should have failed for: " + Arrays.toString(columns));
             } catch (FormulaCompilationException fce) {
                 // Expected.
@@ -139,7 +140,7 @@ public class QueryTableTest extends QueryTableTestBase {
     public void testIds6532_part2() {
         final Table empty = emptyTable(5);
         final SelectColumn sc = SelectColumnFactory.getExpression("Result = '2020-03-15T09:45:00.000000000 UTC'");
-        empty.validateSelect(sc);
+        ((QueryTable) empty).validateSelect(sc);
         empty.select(sc);
     }
 
@@ -164,7 +165,7 @@ public class QueryTableTest extends QueryTableTestBase {
     public void testIds6760() {
         final Table t = emptyTable(10).select("II = ii").where("II > 5");
         final SelectColumn sc = SelectColumnFactory.getExpression("XX = II + 1000");
-        t.validateSelect(sc);
+        ((QueryTable) t).validateSelect(sc);
         final Table result = t.select(sc);
     }
 
@@ -715,7 +716,7 @@ public class QueryTableTest extends QueryTableTestBase {
                         new TstUtils.SetGenerator<>(10.1, 20.1, 30.1)));
 
         final EvalNugget en[] = new EvalNugget[] {
-                EvalNugget.from(() -> queryTable.renameColumns()),
+                EvalNugget.from(() -> queryTable.renameColumns(List.of())),
                 EvalNugget.from(() -> queryTable.renameColumns("Symbol=Sym")),
                 EvalNugget.from(() -> queryTable.renameColumns("Symbol=Sym", "Symbols=Sym")),
                 EvalNugget.from(() -> queryTable.renameColumns("Sym2=Sym", "intCol2=intCol", "doubleCol2=doubleCol")),
@@ -1135,7 +1136,7 @@ public class QueryTableTest extends QueryTableTestBase {
             downstream.shifted = builder.build();
 
             try (final WritableRowSet rowSetCopy = table.getRowSet().copy()) {
-                RowSetShiftUtils.apply(downstream.shifted(), rowSetCopy);
+                downstream.shifted().apply(rowSetCopy);
                 TstUtils.removeRows(table, table.getRowSet());
                 TstUtils.addToTable(table, rowSetCopy, c("Sentinel", 1));
             }
@@ -1569,9 +1570,9 @@ public class QueryTableTest extends QueryTableTestBase {
         final Table setTable2 = setTable.where("B > 6");
 
         final DynamicWhereFilter dynamicFilter1 =
-                new DynamicWhereFilter(setTable1, true, MatchPairFactory.getExpressions("A"));
+                new DynamicWhereFilter((QueryTable) setTable1, true, MatchPairFactory.getExpressions("A"));
         final DynamicWhereFilter dynamicFilter2 =
-                new DynamicWhereFilter(setTable2, true, MatchPairFactory.getExpressions("B"));
+                new DynamicWhereFilter((QueryTable) setTable2, true, MatchPairFactory.getExpressions("B"));
 
         final WhereFilter composedFilter = DisjunctiveFilter.makeDisjunctiveFilter(dynamicFilter1, dynamicFilter2);
         final Table composed = tableToFilter.where(composedFilter);
@@ -1667,7 +1668,7 @@ public class QueryTableTest extends QueryTableTestBase {
 
         // The setScope will own the set table. rc == 1
         final SafeCloseable setScope = LivenessScopeStack.open();
-        final Table setTable = TstUtils.testRefreshingTable(TableTools.stringCol("Key"));
+        final QueryTable setTable = TstUtils.testRefreshingTable(TableTools.stringCol("Key"));
 
         // Owned by setScope, rc == 1
         // It will also manage setTable whose rc == 3 after (1 ShiftObliviousSwapListener, one
@@ -1816,8 +1817,7 @@ public class QueryTableTest extends QueryTableTestBase {
                     public void onUpdate(TableUpdate upstream) {}
 
                     @Override
-                    public void onFailureInternal(Throwable originalException,
-                            UpdatePerformanceTracker.Entry sourceEntry) {
+                    public void onFailureInternal(Throwable originalException, Entry sourceEntry) {
                         TestCase.fail(originalException.getMessage());
                     }
                 };
@@ -2060,7 +2060,7 @@ public class QueryTableTest extends QueryTableTestBase {
                 new io.deephaven.engine.table.impl.SimpleListener(selected);
         selected.listenForUpdates(simpleListener);
 
-        final Supplier<TableUpdate> newUpdate =
+        final Supplier<TableUpdateImpl> newUpdate =
                 () -> new TableUpdateImpl(i(), i(), i(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
@@ -2150,7 +2150,7 @@ public class QueryTableTest extends QueryTableTestBase {
                 new io.deephaven.engine.table.impl.SimpleListener(selected);
         selected.listenForUpdates(simpleListener);
 
-        final Supplier<TableUpdate> newUpdate =
+        final Supplier<TableUpdateImpl> newUpdate =
                 () -> new TableUpdateImpl(i(), i(), i(), RowSetShiftData.EMPTY, ModifiedColumnSet.EMPTY);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
@@ -2415,13 +2415,13 @@ public class QueryTableTest extends QueryTableTestBase {
             });
             showWithIndex(t1);
 
-            if (errorListener.originalException == null) {
+            if (errorListener.originalException() == null) {
                 fail("errorListener.originalException 1= null");
             }
-            if (!(errorListener.originalException instanceof IllegalStateException)) {
+            if (!(errorListener.originalException() instanceof IllegalStateException)) {
                 fail("!(errorListener.originalException instanceof IllegalStateException)");
             }
-            if (!(errorListener.originalException.getMessage().startsWith("Key overflow detected"))) {
+            if (!(errorListener.originalException().getMessage().startsWith("Key overflow detected"))) {
                 fail("!errorListener.originalException.getMessage().startsWith(\"Key overflow detected\")");
             }
         }
@@ -2448,8 +2448,7 @@ public class QueryTableTest extends QueryTableTestBase {
                         public void onUpdate(TableUpdate upstream) {}
 
                         @Override
-                        public void onFailureInternal(Throwable originalException,
-                                UpdatePerformanceTracker.Entry sourceEntry) {
+                        public void onFailureInternal(Throwable originalException, Entry sourceEntry) {
                             TestCase.fail(originalException.getMessage());
                         }
                     };
@@ -2794,8 +2793,7 @@ public class QueryTableTest extends QueryTableTestBase {
             testMemoize(source, t -> t.where("Sym=`aa`"));
             testMemoize(source, t -> t.where("Sym in `aa`, `bb`"));
             testMemoize(source,
-                    t -> t.whereOneOf(Collections.singletonList(SelectFilterFactory.getExpression("Sym in `aa`, `bb`")),
-                            Collections.singletonList(SelectFilterFactory.getExpression("intCol=7"))));
+                    t -> t.where(FilterOr.of(Filter.from("Sym in `aa`, `bb`", "intCol=7"))));
             testMemoize(source, t -> t.where(DisjunctiveFilter
                     .makeDisjunctiveFilter(SelectFilterFactory.getExpressions("Sym in `aa`, `bb`", "intCol=7"))));
             testMemoize(source, t -> t.where(ConjunctiveFilter
@@ -2820,18 +2818,18 @@ public class QueryTableTest extends QueryTableTestBase {
             testMemoize(source, t -> t.dropColumns("intCol", "Sym"));
             testNoMemoize(source, t -> t.dropColumns("Sym"), t -> t.dropColumns("intCol"));
             testMemoize(source, t -> t.maxBy("Sym"));
-            testMemoize(source, t -> t.by(AggCombo(AggSum("intCol"), AggAbsSum("absInt=intCol"), AggMax("doubleCol"),
+            testMemoize(source, t -> t.aggBy(List.of(AggSum("intCol"), AggAbsSum("absInt=intCol"), AggMax("doubleCol"),
                     AggFirst("Sym"), AggCountDistinct("UniqueCountSym=Sym"), AggDistinct("UniqueSym=Sym"))));
-            testMemoize(source, t -> t.by(AggCombo(AggCountDistinct("UniqueCountSym=Sym"))));
-            testMemoize(source, t -> t.by(AggCombo(AggCountDistinct(true, "UniqueCountSym=Sym"))));
-            testNoMemoize(source, t -> t.by(AggCombo(AggCountDistinct("UniqueCountSym=Sym"))),
-                    t -> t.by(AggCombo(AggCountDistinct(true, "UniqueCountSym=Sym"))));
-            testMemoize(source, t -> t.by(AggCombo(AggDistinct("UniqueSym=Sym"))));
-            testMemoize(source, t -> t.by(AggCombo(AggDistinct(true, "UniqueSym=Sym"))));
-            testNoMemoize(source, t -> t.by(AggCombo(AggCountDistinct("UniqueCountSym=Sym"))),
-                    t -> t.by(AggCombo(AggDistinct("UniqueCountSym=Sym"))));
-            testNoMemoize(source, t -> t.by(AggCombo(AggDistinct("UniqueSym=Sym"))),
-                    t -> t.by(AggCombo(AggDistinct(true, "UniqueSym=Sym"))));
+            testMemoize(source, t -> t.aggBy(List.of(AggCountDistinct("UniqueCountSym=Sym"))));
+            testMemoize(source, t -> t.aggBy(List.of(AggCountDistinct("UniqueCountSym=Sym").withNulls())));
+            testNoMemoize(source, t -> t.aggBy(List.of(AggCountDistinct("UniqueCountSym=Sym"))),
+                    t -> t.aggBy(List.of(AggCountDistinct("UniqueCountSym=Sym").withNulls())));
+            testMemoize(source, t -> t.aggBy(List.of(AggDistinct("UniqueSym=Sym"))));
+            testMemoize(source, t -> t.aggBy(List.of(AggDistinct("UniqueSym=Sym").withNulls())));
+            testNoMemoize(source, t -> t.aggBy(List.of(AggCountDistinct("UniqueCountSym=Sym"))),
+                    t -> t.aggBy(List.of(AggDistinct("UniqueCountSym=Sym"))));
+            testNoMemoize(source, t -> t.aggBy(List.of(AggDistinct("UniqueSym=Sym"))),
+                    t -> t.aggBy(List.of(AggDistinct("UniqueSym=Sym").withNulls())));
             testNoMemoize(source, t -> t.countBy("Sym"), t -> t.countBy("Count", "Sym"));
             testNoMemoize(source, t -> t.sumBy("Sym"), t -> t.countBy("Count", "Sym"));
             testNoMemoize(source, t -> t.sumBy("Sym"), t -> t.avgBy("Sym"));
@@ -2894,13 +2892,12 @@ public class QueryTableTest extends QueryTableTestBase {
 
     public void testWhereInGrouped() throws IOException {
         diskBackedTestHarness(t -> {
-            // noinspection unchecked
             final ColumnSource<String> symbol = t.getColumnSource("Symbol");
             // noinspection unchecked
-            final Map<String, RowSet> gtr = (Map) t.getRowSet().getGrouping(symbol);
+            final Map<String, RowSet> gtr = (Map) RowSetIndexer.of(t.getRowSet()).getGrouping(symbol);
             ((AbstractColumnSource<String>) symbol).setGroupToRange(gtr);
             final Table result =
-                    t.whereIn(Table.GroupStrategy.CREATE_GROUPS, t.where("Truthiness=true"), "Symbol", "Timestamp");
+                    t.whereIn(t.where("Truthiness=true"), "Symbol", "Timestamp");
             TableTools.showWithIndex(result);
         });
     }

@@ -253,7 +253,7 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                                     // if the left is empty, we should be an rowSet entry rather than an SSA, and we can
                                     // not be empty, because we are responsive
                                     final WritableRowSet leftRowSet = asOfJoinStateManager.getLeftIndex(slot);
-                                    RowSetShiftUtils.apply(shiftDataForSlot, leftRowSet);
+                                    shiftDataForSlot.apply(leftRowSet);
                                     shiftedRowSet.close();
                                     leftRowSet.compact();
                                     continue;
@@ -389,7 +389,7 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                                     // if the left is empty, we should be an rowSet entry rather than an SSA, and we can
                                     // not be empty, because we are responsive
                                     final WritableRowSet rightRowSet = asOfJoinStateManager.getRightIndex(slot);
-                                    RowSetShiftUtils.apply(shiftDataForSlot, rightRowSet);
+                                    shiftDataForSlot.apply(rightRowSet);
                                     shiftedRowSet.close();
                                     rightRowSet.compact();
                                     continue;

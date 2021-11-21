@@ -14,7 +14,6 @@ import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.liveness.SingletonLivenessManager;
-import io.deephaven.engine.table.impl.by.SortedFirstBy;
 import io.deephaven.engine.table.impl.select.MatchFilter;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.rowset.RowSet;
@@ -25,21 +24,17 @@ import org.apache.commons.lang3.mutable.MutableLong;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.junit.Assert;
 
-import java.util.Arrays;
-import java.util.EnumSet;
-import java.util.HashSet;
-import java.util.Random;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import org.junit.experimental.categories.Category;
 
+import static io.deephaven.api.agg.Aggregation.AggSortedFirst;
 import static io.deephaven.engine.tables.utils.TableTools.*;
 import static io.deephaven.engine.table.impl.TstUtils.getTable;
 import static io.deephaven.engine.table.impl.TstUtils.i;
-import static io.deephaven.engine.table.impl.by.AggregationFactory.Agg;
-import static io.deephaven.engine.table.impl.by.AggregationFactory.AggCombo;
 
 @Category(OutOfBandTest.class)
 public class TestPartitionBy extends QueryTableTestBase {
@@ -165,16 +160,16 @@ public class TestPartitionBy extends QueryTableTestBase {
             tableA.listenForUpdates(listenerA);
             tableB.listenForUpdates(listenerB);
 
-            assertNull(listenerA.originalException);
-            assertNull(listenerB.originalException);
+            assertNull(listenerA.originalException());
+            assertNull(listenerB.originalException());
 
             UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
                 TstUtils.removeRows(table, i(8));
                 table.notifyListeners(i(), i(8), i());
             });
 
-            assertNotNull(listenerA.originalException);
-            assertNotNull(listenerB.originalException);
+            assertNotNull(listenerA.originalException());
+            assertNotNull(listenerB.originalException());
         }
     }
 
@@ -409,7 +404,7 @@ public class TestPartitionBy extends QueryTableTestBase {
         final Table rollup;
 
         try (final SafeCloseable ignored1 = LivenessScopeStack.open()) {
-            rollup = table.rollup(AggCombo(Agg(new SortedFirstBy("Int"), "Int")), "Key", "K2");
+            rollup = table.rollup(List.of(AggSortedFirst("Int", "Int")), "Key", "K2");
             mapManager = new SingletonLivenessManager(rollup);
         }
 

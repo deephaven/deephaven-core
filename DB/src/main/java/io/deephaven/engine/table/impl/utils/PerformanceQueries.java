@@ -1,18 +1,20 @@
 package io.deephaven.engine.table.impl.utils;
 
+import io.deephaven.api.agg.Aggregation;
 import io.deephaven.engine.table.Table;
 
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.ScriptApi;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.OptionalLong;
 
-import static io.deephaven.engine.table.impl.by.AggregationFactory.*;
+import static io.deephaven.api.agg.Aggregation.*;
 
-public class PerformanceQueries {
+public class  PerformanceQueries {
     private static final boolean formatPctColumns = true;
 
     /**
@@ -161,7 +163,7 @@ public class PerformanceQueries {
         resultMap.put("QueryUpdatePerformance", qup);
 
         final Table worstInterval = qup
-                .by("IntervalStartTime", "IntervalDurationNanos")
+                .groupBy("IntervalStartTime", "IntervalDurationNanos")
                 .sort("IntervalDurationNanos")
                 .tail(1)
                 .ungroup()
@@ -191,26 +193,27 @@ public class PerformanceQueries {
 
 
         // Create a table that summarizes the update performance data within each interval
-        Table updateAggregate = qup.by(
-                AggCombo(
-                        AggSum("NRows", "EntryIntervalUsage"),
-                        AggFirst("QueryMemUsed", "WorkerHeapSize", "QueryMemUsedPct", "IntervalDurationNanos")),
-                "IntervalStartTime", "IntervalEndTime", "ProcessUniqueId")
+        Table updateAggregate = qup.aggBy(
+                        Arrays.asList(
+                                AggSum("NRows", "EntryIntervalUsage"),
+                                AggFirst("QueryMemUsed", "WorkerHeapSize", "QueryMemUsedPct", "IntervalDurationNanos")
+                        ),
+                        "IntervalStartTime", "IntervalEndTime", "ProcessUniqueId")
                 .updateView("Ratio = EntryIntervalUsage / IntervalDurationNanos")
-                .moveUpColumns("IntervalStartTime", "IntervalEndTime", "Ratio");
+                .moveColumnsUp("IntervalStartTime", "IntervalEndTime", "Ratio");
         if (formatPctColumns) {
             updateAggregate = formatColumnsAsPct(updateAggregate, "Ratio", "QueryMemUsedPct");
         }
         resultMap.put("UpdateAggregate", updateAggregate);
 
 
-        final Table updateSummaryStats = updateAggregate.by(
-                AggCombo(
-                        AggPct(0.99, "Ratio_99_Percentile = Ratio", "QueryMemUsedPct_99_Percentile = QueryMemUsedPct"),
-                        AggPct(0.90, "Ratio_90_Percentile = Ratio", "QueryMemUsedPct_90_Percentile = QueryMemUsedPct"),
-                        AggPct(0.75, "Ratio_75_Percentile = Ratio", "QueryMemUsedPct_75_Percentile = QueryMemUsedPct"),
-                        AggPct(0.50, "Ratio_50_Percentile = Ratio", "QueryMemUsedPct_50_Percentile = QueryMemUsedPct"),
-                        AggMax("Ratio_Max = Ratio", "QueryMemUsedPct_Max = QueryMemUsedPct")));
+        final Table updateSummaryStats = updateAggregate.aggBy(Arrays.asList(
+                AggPct(0.99, "Ratio_99_Percentile = Ratio", "QueryMemUsedPct_99_Percentile = QueryMemUsedPct"),
+                AggPct(0.90, "Ratio_90_Percentile = Ratio", "QueryMemUsedPct_90_Percentile = QueryMemUsedPct"),
+                AggPct(0.75, "Ratio_75_Percentile = Ratio", "QueryMemUsedPct_75_Percentile = QueryMemUsedPct"),
+                AggPct(0.50, "Ratio_50_Percentile = Ratio", "QueryMemUsedPct_50_Percentile = QueryMemUsedPct"),
+                AggMax("Ratio_Max = Ratio", "QueryMemUsedPct_Max = QueryMemUsedPct")
+        ));
 
         resultMap.put("UpdateSummaryStats", updateSummaryStats);
         return resultMap;

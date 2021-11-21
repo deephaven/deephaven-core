@@ -598,7 +598,7 @@ public class TestSyncTableFilter extends RefreshingTableTestCase {
         }
 
         @Override
-        public void onFailureInternal(Throwable originalException, UpdatePerformanceTracker.Entry sourceEntry) {
+        public void onFailureInternal(Throwable originalException, Entry sourceEntry) {
             this.originalException = originalException;
         }
     }

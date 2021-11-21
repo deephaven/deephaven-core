@@ -45,7 +45,7 @@ public class HistogramCalculator {
 
         return t
                 .view(view)
-                .where("io.deephaven.libs.primitives.DoubleFpPrimitives.isNormal(X)");
+                .where("io.deephaven.engine.function.DoubleFpPrimitives.isNormal(X)");
     }
 
     private static Table counts(final Table data, final Table range, final String... byColumns) {

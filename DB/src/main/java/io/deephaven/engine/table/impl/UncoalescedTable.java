@@ -4,21 +4,25 @@
 
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.api.JoinMatch;
+import io.deephaven.api.Selectable;
+import io.deephaven.api.SortColumn;
+import io.deephaven.api.agg.Aggregation;
+import io.deephaven.api.filter.Filter;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.table.*;
-import io.deephaven.engine.tables.*;
-import io.deephaven.engine.rowset.TrackingRowSet;
-import io.deephaven.engine.table.impl.by.AggregationFactory;
-import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.liveness.Liveness;
-import io.deephaven.engine.table.impl.by.AggregationSpec;
-import io.deephaven.engine.table.impl.select.SelectColumn;
-import io.deephaven.engine.table.impl.select.WhereFilter;
+import io.deephaven.engine.rowset.TrackingRowSet;
+import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.iterators.*;
+import io.deephaven.engine.updategraph.ConcurrentMethod;
+import io.deephaven.util.QueryConstants;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.Map;
+import java.util.function.Function;
 
 /**
  * Abstract class for uncoalesced tables. These tables have deferred work that must be done before data can be operated
@@ -33,6 +37,8 @@ public abstract class UncoalescedTable extends BaseTable implements TableWithDef
     public UncoalescedTable(@NotNull final TableDefinition definition, @NotNull final String description) {
         super(definition, description);
     }
+
+    // region coalesce support
 
     /**
      * Produce the actual coalesced result table, suitable for caching.
@@ -77,43 +83,35 @@ public abstract class UncoalescedTable extends BaseTable implements TableWithDef
         return coalesced;
     }
 
-    @Override
-    public void listenForUpdates(ShiftObliviousListener listener) {
-        coalesce().listenForUpdates(listener);
-    }
+    // endregion coalesce support
 
-    @Override
-    public void listenForUpdates(ShiftObliviousListener listener, boolean replayInitialImage) {
-        coalesce().listenForUpdates(listener, replayInitialImage);
-    }
-
-    @Override
-    public void listenForUpdates(TableUpdateListener listener) {
-        coalesce().listenForUpdates(listener);
-    }
+    // region uncoalesced listeners
 
     protected final void listenForUpdatesUncoalesced(@NotNull final TableUpdateListener listener) {
         super.listenForUpdates(listener);
-    }
-
-    @Override
-    public void removeUpdateListener(ShiftObliviousListener listener) {
-        coalesce().removeUpdateListener(listener);
-    }
-
-    @Override
-    public void removeUpdateListener(TableUpdateListener listener) {
-        coalesce().removeUpdateListener(listener);
     }
 
     protected final void removeUpdateListenerUncoalesced(@NotNull final TableUpdateListener listener) {
         super.removeUpdateListener(listener);
     }
 
+    // endregion uncoalesced listeners
+
+    // region non-delegated overrides
+
     @Override
-    public TrackingRowSet getRowSet() {
-        return coalesce().getRowSet();
+    public long sizeForInstrumentation() {
+        return QueryConstants.NULL_LONG;
     }
+
+    @Override
+    public boolean isFlat() {
+        return false;
+    }
+
+    // endregion non-delegated methods
+
+    // region delegated methods
 
     @Override
     public long size() {
@@ -121,8 +119,8 @@ public abstract class UncoalescedTable extends BaseTable implements TableWithDef
     }
 
     @Override
-    public long sizeForInstrumentation() {
-        return QueryConstants.NULL_LONG;
+    public TrackingRowSet getRowSet() {
+        return coalesce().getRowSet();
     }
 
     @Override
@@ -141,8 +139,53 @@ public abstract class UncoalescedTable extends BaseTable implements TableWithDef
     }
 
     @Override
+    public DataColumn[] getColumns() {
+        return coalesce().getColumns();
+    }
+
+    @Override
     public DataColumn getColumn(String columnName) {
         return coalesce().getColumn(columnName);
+    }
+
+    @Override
+    public <TYPE> Iterator<TYPE> columnIterator(@NotNull String columnName) {
+        return coalesce().columnIterator(columnName);
+    }
+
+    @Override
+    public ByteColumnIterator byteColumnIterator(@NotNull String columnName) {
+        return coalesce().byteColumnIterator(columnName);
+    }
+
+    @Override
+    public CharacterColumnIterator characterColumnIterator(@NotNull String columnName) {
+        return coalesce().characterColumnIterator(columnName);
+    }
+
+    @Override
+    public DoubleColumnIterator doubleColumnIterator(@NotNull String columnName) {
+        return coalesce().doubleColumnIterator(columnName);
+    }
+
+    @Override
+    public FloatColumnIterator floatColumnIterator(@NotNull String columnName) {
+        return coalesce().floatColumnIterator(columnName);
+    }
+
+    @Override
+    public IntegerColumnIterator integerColumnIterator(@NotNull String columnName) {
+        return coalesce().integerColumnIterator(columnName);
+    }
+
+    @Override
+    public LongColumnIterator longColumnIterator(@NotNull String columnName) {
+        return coalesce().longColumnIterator(columnName);
+    }
+
+    @Override
+    public ShortColumnIterator shortColumnIterator(@NotNull String columnName) {
+        return coalesce().shortColumnIterator(columnName);
     }
 
     @Override
@@ -151,57 +194,62 @@ public abstract class UncoalescedTable extends BaseTable implements TableWithDef
     }
 
     @Override
-    public Table where(WhereFilter... filters) {
+    @ConcurrentMethod
+    public Table where(Collection<? extends Filter> filters) {
         return coalesce().where(filters);
     }
 
     @Override
-    public Table whereIn(GroupStrategy groupStrategy, Table rightTable, boolean inclusion,
-            MatchPair... columnsToMatch) {
-        return coalesce().whereIn(groupStrategy, rightTable, inclusion, columnsToMatch);
+    @ConcurrentMethod
+    public Table wouldMatch(WouldMatchPair... matchers) {
+        return coalesce().wouldMatch(matchers);
     }
 
     @Override
-    public Table getSubTable(TrackingRowSet rowSet) {
-        return coalesce().getSubTable(rowSet);
+    public Table whereIn(Table rightTable, Collection<? extends JoinMatch> columnsToMatch) {
+        return coalesce().whereIn(rightTable, columnsToMatch);
     }
 
     @Override
-    public Table select(SelectColumn... columns) {
+    public Table whereNotIn(Table rightTable, Collection<? extends JoinMatch> columnsToMatch) {
+        return coalesce().whereNotIn(rightTable, columnsToMatch);
+    }
+
+    @Override
+    public Table select(Collection<? extends Selectable> columns) {
         return coalesce().select(columns);
     }
 
     @Override
-    public Table selectDistinct(SelectColumn... columns) {
+    @ConcurrentMethod
+    public Table selectDistinct(Collection<? extends Selectable> columns) {
         return coalesce().selectDistinct(columns);
     }
 
     @Override
-    public Table update(SelectColumn... newColumns) {
-        return coalesce().update(newColumns);
+    public Table update(Collection<? extends Selectable> columns) {
+        return coalesce().update(columns);
     }
 
     @Override
-    public Table view(SelectColumn... columns) {
-        return coalesce().view(columns);
-    }
-
-    @Override
-    public Table updateView(SelectColumn... newColumns) {
-        return coalesce().updateView(newColumns);
-    }
-
-    @Override
-    public SelectValidationResult validateSelect(SelectColumn... columns) {
-        return coalesce().validateSelect(columns);
-    }
-
-    @Override
-    public Table lazyUpdate(SelectColumn... newColumns) {
+    public Table lazyUpdate(Collection<? extends Selectable> newColumns) {
         return coalesce().lazyUpdate(newColumns);
     }
 
     @Override
+    @ConcurrentMethod
+    public Table view(Collection<? extends Selectable> columns) {
+        return coalesce().view(columns);
+    }
+
+    @Override
+    @ConcurrentMethod
+    public Table updateView(Collection<? extends Selectable> columns) {
+        return coalesce().updateView(columns);
+    }
+
+    @Override
+    @ConcurrentMethod
     public Table dropColumns(String... columnNames) {
         return coalesce().dropColumns(columnNames);
     }
@@ -212,38 +260,61 @@ public abstract class UncoalescedTable extends BaseTable implements TableWithDef
     }
 
     @Override
-    public Table slice(long firstRowInclusive, long lastRowExclusive) {
-        return coalesce().slice(firstRowInclusive, lastRowExclusive);
+    @ConcurrentMethod
+    public Table formatColumns(String... columnFormats) {
+        return coalesce().formatColumns(columnFormats);
     }
 
     @Override
+    @ConcurrentMethod
+    public Table moveColumns(int index, boolean moveToEnd, String... columnsToMove) {
+        return coalesce().moveColumns(index, moveToEnd, columnsToMove);
+    }
+
+    @Override
+    @ConcurrentMethod
+    public Table dateTimeColumnAsNanos(String dateTimeColumnName, String nanosColumnName) {
+        return coalesce().dateTimeColumnAsNanos(dateTimeColumnName, nanosColumnName);
+    }
+
+    @Override
+    @ConcurrentMethod
     public Table head(long size) {
         return coalesce().head(size);
     }
 
     @Override
+    @ConcurrentMethod
     public Table tail(long size) {
         return coalesce().tail(size);
     }
 
     @Override
+    @ConcurrentMethod
+    public Table slice(long firstPositionInclusive, long lastPositionExclusive) {
+        return coalesce().slice(firstPositionInclusive, lastPositionExclusive);
+    }
+
+    @Override
+    @ConcurrentMethod
     public Table headPct(double percent) {
         return coalesce().headPct(percent);
     }
 
     @Override
+    @ConcurrentMethod
     public Table tailPct(double percent) {
         return coalesce().tailPct(percent);
     }
 
     @Override
-    public Table leftJoin(Table table, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd) {
-        return coalesce().leftJoin(table, columnsToMatch, columnsToAdd);
+    public Table leftJoin(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd) {
+        return coalesce().leftJoin(rightTable, columnsToMatch, columnsToAdd);
     }
 
     @Override
-    public Table exactJoin(Table table, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd) {
-        return coalesce().exactJoin(table, columnsToMatch, columnsToAdd);
+    public Table exactJoin(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd) {
+        return coalesce().exactJoin(rightTable, columnsToMatch, columnsToAdd);
     }
 
     @Override
@@ -270,87 +341,110 @@ public abstract class UncoalescedTable extends BaseTable implements TableWithDef
     }
 
     @Override
-    public Table by(AggregationSpec aggregationSpec, SelectColumn... groupByColumns) {
-        return coalesce().by(aggregationSpec, groupByColumns);
+    @ConcurrentMethod
+    public Table groupBy(Collection<? extends Selectable> groupByColumns) {
+        return coalesce().groupBy(groupByColumns);
     }
 
     @Override
-    public Table headBy(long nRows, String... groupByColumns) {
-        return coalesce().headBy(nRows, groupByColumns);
+    @ConcurrentMethod
+    public Table aggBy(Collection<? extends Aggregation> aggregations,
+            Collection<? extends Selectable> groupByColumns) {
+        return coalesce().aggBy(aggregations, groupByColumns);
     }
 
     @Override
-    public Table tailBy(long nRows, String... groupByColumns) {
-        return coalesce().tailBy(nRows, groupByColumns);
+    public Table headBy(long nRows, String... groupByColumnNames) {
+        return coalesce().headBy(nRows, groupByColumnNames);
     }
 
     @Override
-    public Table applyToAllBy(String formulaColumn, String columnParamName, SelectColumn... groupByColumns) {
+    public Table tailBy(long nRows, String... groupByColumnNames) {
+        return coalesce().tailBy(nRows, groupByColumnNames);
+    }
+
+    @Override
+    @ConcurrentMethod
+    public Table applyToAllBy(String formulaColumn, String columnParamName,
+                              Collection<? extends Selectable> groupByColumns) {
         return coalesce().applyToAllBy(formulaColumn, columnParamName, groupByColumns);
     }
 
     @Override
-    public Table sumBy(SelectColumn... groupByColumns) {
+    @ConcurrentMethod
+    public Table sumBy(Selectable... groupByColumns) {
         return coalesce().sumBy(groupByColumns);
     }
 
     @Override
-    public Table absSumBy(SelectColumn... groupByColumns) {
+    @ConcurrentMethod
+    public Table absSumBy(Selectable... groupByColumns) {
         return coalesce().absSumBy(groupByColumns);
     }
 
     @Override
-    public Table avgBy(SelectColumn... groupByColumns) {
+    @ConcurrentMethod
+    public Table avgBy(Selectable... groupByColumns) {
         return coalesce().avgBy(groupByColumns);
     }
 
     @Override
-    public Table wavgBy(String weightColumn, SelectColumn... groupByColumns) {
+    @ConcurrentMethod
+    public Table wavgBy(String weightColumn, Selectable... groupByColumns) {
         return coalesce().wavgBy(weightColumn, groupByColumns);
     }
 
     @Override
-    public Table wsumBy(String weightColumn, SelectColumn... groupByColumns) {
+    @ConcurrentMethod
+    public Table wsumBy(String weightColumn, Selectable... groupByColumns) {
         return coalesce().wsumBy(weightColumn, groupByColumns);
     }
 
     @Override
-    public Table stdBy(SelectColumn... groupByColumns) {
+    @ConcurrentMethod
+    public Table stdBy(Selectable... groupByColumns) {
         return coalesce().stdBy(groupByColumns);
     }
 
     @Override
-    public Table varBy(SelectColumn... groupByColumns) {
+    @ConcurrentMethod
+    public Table varBy(Selectable... groupByColumns) {
         return coalesce().varBy(groupByColumns);
     }
 
     @Override
-    public Table lastBy(SelectColumn... groupByColumns) {
+    @ConcurrentMethod
+    public Table lastBy(Selectable... groupByColumns) {
         return coalesce().lastBy(groupByColumns);
     }
 
     @Override
-    public Table firstBy(SelectColumn... groupByColumns) {
+    @ConcurrentMethod
+    public Table firstBy(Selectable... groupByColumns) {
         return coalesce().firstBy(groupByColumns);
     }
 
     @Override
-    public Table minBy(SelectColumn... groupByColumns) {
+    @ConcurrentMethod
+    public Table minBy(Selectable... groupByColumns) {
         return coalesce().minBy(groupByColumns);
     }
 
     @Override
-    public Table maxBy(SelectColumn... groupByColumns) {
+    @ConcurrentMethod
+    public Table maxBy(Selectable... groupByColumns) {
         return coalesce().maxBy(groupByColumns);
     }
 
     @Override
-    public Table medianBy(SelectColumn... groupByColumns) {
+    @ConcurrentMethod
+    public Table medianBy(Selectable... groupByColumns) {
         return coalesce().medianBy(groupByColumns);
     }
 
     @Override
-    public Table countBy(String countColumnName, SelectColumn... groupByColumns) {
+    @ConcurrentMethod
+    public Table countBy(String countColumnName, Selectable... groupByColumns) {
         return coalesce().countBy(countColumnName, groupByColumns);
     }
 
@@ -360,27 +454,32 @@ public abstract class UncoalescedTable extends BaseTable implements TableWithDef
     }
 
     @Override
+    @ConcurrentMethod
     public TableMap partitionBy(boolean dropKeys, String... keyColumnNames) {
         return coalesce().partitionBy(dropKeys, keyColumnNames);
     }
 
     @Override
-    public Table rollup(AggregationFactory aggregationFactory, boolean includeConstituents,
-                        SelectColumn... columns) {
-        return coalesce().rollup(aggregationFactory, includeConstituents, columns);
+    @ConcurrentMethod
+    public Table rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents,
+            Selectable... columns) {
+        return coalesce().rollup(aggregations, includeConstituents, columns);
     }
 
     @Override
+    @ConcurrentMethod
     public Table treeTable(String idColumn, String parentColumn) {
         return coalesce().treeTable(idColumn, parentColumn);
     }
 
     @Override
-    public Table sort(SortPair... columnsToSortBy) {
+    @ConcurrentMethod
+    public Table sort(Collection<SortColumn> columnsToSortBy) {
         return coalesce().sort(columnsToSortBy);
     }
 
     @Override
+    @ConcurrentMethod
     public Table reverse() {
         return coalesce().reverse();
     }
@@ -401,17 +500,50 @@ public abstract class UncoalescedTable extends BaseTable implements TableWithDef
     }
 
     @Override
-    public boolean isFlat() {
-        return false;
+    public Table getSubTable(TrackingRowSet rowSet) {
+        return coalesce().getSubTable(rowSet);
     }
 
     @Override
+    public <R> R apply(Function<Table, R> function) {
+        return coalesce().apply(function);
+    }
+
+    @Override
+    @ConcurrentMethod
     public Table flatten() {
         return coalesce().flatten();
     }
 
     @Override
-    public Table wouldMatch(WouldMatchPair... matchers) {
-        return coalesce().wouldMatch(matchers);
+    public void awaitUpdate() throws InterruptedException {
+        coalesce().awaitUpdate();
     }
+
+    @Override
+    public boolean awaitUpdate(long timeout) throws InterruptedException {
+        return coalesce().awaitUpdate(timeout);
+    }
+
+    @Override
+    public void listenForUpdates(ShiftObliviousListener listener, boolean replayInitialImage) {
+        coalesce().listenForUpdates(listener, replayInitialImage);
+    }
+
+    @Override
+    public void listenForUpdates(TableUpdateListener listener) {
+        coalesce().listenForUpdates(listener);
+    }
+
+    @Override
+    public void removeUpdateListener(ShiftObliviousListener listener) {
+        coalesce().removeUpdateListener(listener);
+    }
+
+    @Override
+    public void removeUpdateListener(TableUpdateListener listener) {
+        coalesce().removeUpdateListener(listener);
+    }
+
+    // endregion delegated methods
 }

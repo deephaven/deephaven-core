@@ -7,7 +7,6 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.sources.IntegerSparseArraySource;
 import io.deephaven.engine.table.impl.sources.regioned.SymbolTableSource;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.test.types.OutOfBandTest;
 import junit.framework.TestCase;
 
@@ -74,8 +73,7 @@ public class TestSymbolTableCombiner extends RefreshingTableTestCase {
                     }
 
                     @Override
-                    public void onFailureInternal(Throwable originalException,
-                            UpdatePerformanceTracker.Entry sourceEntry) {
+                    public void onFailureInternal(Throwable originalException, Entry sourceEntry) {
                         originalException.printStackTrace();
                         TestCase.fail(originalException.getMessage());
                         super.onFailureInternal(originalException, sourceEntry);

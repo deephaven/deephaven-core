@@ -24,7 +24,7 @@ public class ListenerRecorder extends BaseTable.ListenerImpl {
     private long notificationStep = -1;
     private TableUpdate update;
 
-    public ListenerRecorder(String description, Table parent, Table dependent) {
+    public ListenerRecorder(String description, Table parent, BaseTable dependent) {
         super(description, parent, dependent);
         this.logPrefix = System.identityHashCode(this) + ": " + description + "ShiftObliviousListener Recorder: ";
         this.isRefreshing = parent.isRefreshing();

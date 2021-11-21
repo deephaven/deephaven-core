@@ -4,15 +4,11 @@ import io.deephaven.base.log.LogOutput;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.ShiftObliviousListener;
 import io.deephaven.engine.table.TableListener;
-import io.deephaven.engine.table.impl.utils.AbstractNotification;
+import io.deephaven.engine.updategraph.*;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.engine.updategraph.NotificationQueue;
-import io.deephaven.engine.updategraph.EmptyNotification;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
-import io.deephaven.engine.updategraph.LogicalClock;
-import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -140,18 +136,18 @@ public abstract class SwapListenerBase<T extends TableListener> extends Liveness
 
     @Override
     public synchronized void onFailure(
-            final Throwable originalException, final UpdatePerformanceTracker.Entry sourceEntry) {
+            final Throwable originalException, final Entry sourceEntry) {
         // not a direct listener
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public synchronized NotificationQueue.Notification getErrorNotification(
-            final Throwable originalException, final UpdatePerformanceTracker.Entry sourceEntry) {
+    public synchronized NotificationQueue.ErrorNotification getErrorNotification(
+            final Throwable originalException, final Entry sourceEntry) {
         if (success && !isInInitialNotificationWindow()) {
             return eventualListener.getErrorNotification(originalException, sourceEntry);
         } else {
-            return new EmptyNotification();
+            return new EmptyErrorNotification();
         }
     }
 

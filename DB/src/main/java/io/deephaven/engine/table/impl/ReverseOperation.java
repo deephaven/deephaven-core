@@ -165,7 +165,7 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
             }
 
             downstream.shifted = oShiftedBuilder.build();
-            RowSetShiftUtils.apply(downstream.shifted(), rowSet);
+            downstream.shifted().apply(rowSet);
 
             // Update pivot logic.
             lastPivotChange = LogicalClock.DEFAULT.currentStep();

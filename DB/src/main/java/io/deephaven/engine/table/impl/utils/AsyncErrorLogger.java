@@ -5,6 +5,7 @@
 package io.deephaven.engine.table.impl.utils;
 
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableListener;
 import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.qst.column.header.ColumnHeader;
@@ -45,18 +46,20 @@ public class AsyncErrorLogger {
         return tableWriter.getTable();
     }
 
-    public static void log(DateTime time, UpdatePerformanceTracker.Entry entry,
-            UpdatePerformanceTracker.Entry sourceEntry, Throwable originalException) throws IOException {
+    public static void log(DateTime time, TableListener.Entry entry,
+                           TableListener.Entry sourceEntry, Throwable originalException) throws IOException {
         timeSetter.set(time);
-        if (entry != null) {
-            evaluationNumberSetter.set(entry.getEvaluationNumber());
-            operationNumberSetter.setInt(entry.getOperationNumber());
-            descriptionSetter.set(entry.getDescription());
+        if (entry instanceof UpdatePerformanceTracker.Entry) {
+            final UpdatePerformanceTracker.Entry uptEntry = (UpdatePerformanceTracker.Entry) entry;
+            evaluationNumberSetter.set(uptEntry.getEvaluationNumber());
+            operationNumberSetter.setInt(uptEntry.getOperationNumber());
+            descriptionSetter.set(uptEntry.getDescription());
         }
-        if (sourceEntry != null) {
-            failingEvaluationNumberSetter.set(sourceEntry.getEvaluationNumber());
-            failingOperationNumberSetter.setInt(sourceEntry.getOperationNumber());
-            failingDescriptionSetter.set(sourceEntry.getDescription());
+        if (sourceEntry instanceof UpdatePerformanceTracker.Entry) {
+            final UpdatePerformanceTracker.Entry uptSourceEntry = (UpdatePerformanceTracker.Entry) sourceEntry;
+            failingEvaluationNumberSetter.set(uptSourceEntry.getEvaluationNumber());
+            failingOperationNumberSetter.setInt(uptSourceEntry.getOperationNumber());
+            failingDescriptionSetter.set(uptSourceEntry.getDescription());
         }
         // TODO (deephaven/deephaven-core/issues/159): Do we continue supporting this? If so, we should consider fixing
         // host name and worker name.

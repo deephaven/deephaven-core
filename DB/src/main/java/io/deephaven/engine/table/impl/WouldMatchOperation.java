@@ -51,7 +51,7 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
         }
 
         WhereFilter getFilter() {
-            return wouldMatchPair.getFilter();
+            return WhereFilter.of(wouldMatchPair.getFilter());
         }
     }
 
@@ -426,7 +426,7 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
             }
 
             // Shift the rowSet
-            RowSetShiftUtils.apply(shift, source);
+            shift.apply(source);
 
             if (doRecompute) {
                 downstreamModified.setAll(name);

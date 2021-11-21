@@ -2,17 +2,18 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.engine.exceptions.CancellationException;
-import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.TableUpdateImpl;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
-import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.chunk.Chunk;
 import io.deephaven.engine.chunk.WritableChunk;
+import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
+import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
+import io.deephaven.engine.table.impl.sources.ObjectSparseArraySource;
+import io.deephaven.engine.table.impl.sources.SparseArrayColumnSource;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.util.SafeCloseableArray;
 import io.deephaven.util.SafeCloseablePair;
 import io.deephaven.util.thread.NamingThreadFactory;
@@ -69,8 +70,7 @@ public class SparseSelect {
      * @return a copy of the source table with materialized column
      */
     public static Table sparseSelect(Table source) {
-        return sparseSelect(source,
-                source.getColumnSourceMap().keySet().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
+        return sparseSelect(source, source.getDefinition().getColumnNamesArray());
     }
 
     /**
@@ -82,7 +82,7 @@ public class SparseSelect {
      * @return a copy of the source table with materialized column
      */
     public static Table sparseSelect(Table source, String... columnNames) {
-        return sparseSelect(source, CollectionUtil.ZERO_LENGTH_STRING_ARRAY, columnNames);
+        return sparseSelect((QueryTable) source.coalesce(), CollectionUtil.ZERO_LENGTH_STRING_ARRAY, columnNames);
     }
 
     /**
@@ -94,7 +94,7 @@ public class SparseSelect {
      * @return a copy of the source table with materialized column
      */
     public static Table sparseSelect(Table source, Collection<String> columnNames) {
-        return sparseSelect(source, CollectionUtil.ZERO_LENGTH_STRING_ARRAY,
+        return sparseSelect((QueryTable) source.coalesce(), CollectionUtil.ZERO_LENGTH_STRING_ARRAY,
                 columnNames.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
     }
 
@@ -124,12 +124,12 @@ public class SparseSelect {
      */
     public static Table partialSparseSelect(Table source, String... columnNames) {
         final Set<String> columnsToCopy = new HashSet<>(Arrays.asList(columnNames));
-        final String[] preserveColumns = source.getColumnSourceMap().keySet().stream()
+        final String[] preserveColumns = source.getDefinition().getColumnStream().map(ColumnDefinition::getName)
                 .filter(x -> !columnsToCopy.contains(x)).toArray(String[]::new);
-        return sparseSelect(source, preserveColumns, columnNames);
+        return sparseSelect((QueryTable) source.coalesce(), preserveColumns, columnNames);
     }
 
-    private static Table sparseSelect(Table source, String[] preserveColumns, String[] columnNames) {
+    private static Table sparseSelect(QueryTable source, String[] preserveColumns, String[] columnNames) {
         return QueryPerformanceRecorder.withNugget("sparseSelect(" + Arrays.toString(columnNames) + ")",
                 source.sizeForInstrumentation(), () -> {
                     if (source.isRefreshing()) {
@@ -178,12 +178,11 @@ public class SparseSelect {
                                         .map(x -> (ObjectSparseArraySource<?>) x)
                                         .toArray(ObjectSparseArraySource[]::new);
                         source.listenForUpdates(new BaseTable.ListenerImpl(
-                                "sparseSelect(" + Arrays.toString(columnNames) + ")", source,
-                                resultTable) {
+                                "sparseSelect(" + Arrays.toString(columnNames) + ")", source, resultTable) {
                             private final ModifiedColumnSet modifiedColumnSetForUpdates =
                                     resultTable.getModifiedColumnSetForUpdates();
                             private final ModifiedColumnSet.Transformer transformer =
-                                    ((BaseTable) source).newModifiedColumnSetTransformer(resultTable,
+                                    source.newModifiedColumnSetTransformer(resultTable,
                                             resultTable.getDefinition().getColumnNamesArray());
 
                             @Override
@@ -216,9 +215,9 @@ public class SparseSelect {
                                         if (upstream.shifted().nonempty()) {
                                             try (final RowSet currentWithoutAddsOrModifies =
                                                     source.getRowSet().minus(addedAndModified);
-                                                    final SafeCloseablePair<RowSet, RowSet> shifts = RowSetShiftUtils
-                                                            .extractParallelShiftedRowsFromPostShiftIndex(
-                                                                    upstream.shifted(), currentWithoutAddsOrModifies)) {
+                                                    final SafeCloseablePair<RowSet, RowSet> shifts = upstream.shifted()
+                                                            .extractParallelShiftedRowsFromPostShiftRowSet(
+                                                                    currentWithoutAddsOrModifies)) {
                                                 doShift(shifts, outputSources, modifiedColumns);
                                             }
                                         }
@@ -231,10 +230,11 @@ public class SparseSelect {
                                     invert(modifiedColumns);
 
                                     if (upstream.shifted().nonempty()) {
-                                        try (final RowSet currentWithoutAdds = source.getRowSet().minus(upstream.added());
-                                             final SafeCloseablePair<RowSet, RowSet> shifts =
-                                                        RowSetShiftUtils.extractParallelShiftedRowsFromPostShiftIndex(
-                                                                upstream.shifted(), currentWithoutAdds)) {
+                                        try (final RowSet currentWithoutAdds =
+                                                source.getRowSet().minus(upstream.added());
+                                                final SafeCloseablePair<RowSet, RowSet> shifts = upstream.shifted()
+                                                        .extractParallelShiftedRowsFromPostShiftRowSet(
+                                                                currentWithoutAdds)) {
                                             doShift(shifts, outputSources, modifiedColumns);
                                         }
                                     }
@@ -279,13 +279,13 @@ public class SparseSelect {
     }
 
     private static void doCopySingle(RowSet addedAndModified, ColumnSource<?>[] inputSources,
-                                     WritableColumnSource<?>[] outputSources, boolean[] toCopy) {
+            WritableColumnSource<?>[] outputSources, boolean[] toCopy) {
         final ChunkSource.GetContext[] gcs = new ChunkSource.GetContext[inputSources.length];
         final ChunkSink.FillFromContext[] ffcs = new ChunkSink.FillFromContext[inputSources.length];
         try (final SafeCloseableArray<ChunkSource.GetContext> ignored = new SafeCloseableArray<>(gcs);
-             final SafeCloseableArray<ChunkSink.FillFromContext> ignored2 = new SafeCloseableArray<>(ffcs);
-             final RowSequence.Iterator rsIt = addedAndModified.getRowSequenceIterator();
-             final SharedContext sharedContext = SharedContext.makeSharedContext()) {
+                final SafeCloseableArray<ChunkSink.FillFromContext> ignored2 = new SafeCloseableArray<>(ffcs);
+                final RowSequence.Iterator rsIt = addedAndModified.getRowSequenceIterator();
+                final SharedContext sharedContext = SharedContext.makeSharedContext()) {
             for (int cc = 0; cc < inputSources.length; cc++) {
                 if (toCopy == null || toCopy[cc]) {
                     gcs[cc] = inputSources[cc].makeGetContext(SPARSE_SELECT_CHUNK_SIZE, sharedContext);
@@ -306,7 +306,7 @@ public class SparseSelect {
     }
 
     private static void doCopyThreads(RowSet addedAndModified, ColumnSource<?>[] inputSources,
-                                      WritableColumnSource<?>[] outputSources, boolean[] toCopy) {
+            WritableColumnSource<?>[] outputSources, boolean[] toCopy) {
         final Future<?>[] futures = new Future[inputSources.length];
         for (int columnIndex = 0; columnIndex < inputSources.length; columnIndex++) {
             if (toCopy == null || toCopy[columnIndex]) {
@@ -351,11 +351,11 @@ public class SparseSelect {
         final ChunkSink.FillFromContext[] ffcs = new ChunkSink.FillFromContext[outputSources.length];
 
         try (final SafeCloseableArray<WritableChunk<Values>> ignored = new SafeCloseableArray<>(values);
-             final SafeCloseableArray<ChunkSource.FillContext> ignored2 = new SafeCloseableArray<>(fcs);
-             final SafeCloseableArray<ChunkSink.FillFromContext> ignored3 = new SafeCloseableArray<>(ffcs);
-             final SharedContext sharedContext = SharedContext.makeSharedContext();
-             final RowSequence.Iterator preIt = shifts.first.getRowSequenceIterator();
-             final RowSequence.Iterator postIt = shifts.second.getRowSequenceIterator()) {
+                final SafeCloseableArray<ChunkSource.FillContext> ignored2 = new SafeCloseableArray<>(fcs);
+                final SafeCloseableArray<ChunkSink.FillFromContext> ignored3 = new SafeCloseableArray<>(ffcs);
+                final SharedContext sharedContext = SharedContext.makeSharedContext();
+                final RowSequence.Iterator preIt = shifts.first.getRowSequenceIterator();
+                final RowSequence.Iterator postIt = shifts.second.getRowSequenceIterator()) {
 
             for (int cc = 0; cc < outputSources.length; cc++) {
                 if (toShift == null || toShift[cc]) {

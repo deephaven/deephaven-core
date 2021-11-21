@@ -240,9 +240,9 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
             // shifts
             if (update.shifted.nonempty()) {
                 rowRedirection.applyShift(currentRowSet, update.shifted);
-                RowSetShiftUtils.apply(update.shifted, currentRowSet);
+                update.shifted.apply(currentRowSet);
                 if (populatedRows != null) {
-                    RowSetShiftUtils.apply(update.shifted, populatedRows);
+                    update.shifted.apply(populatedRows);
                 }
             }
             currentRowSet.insert(update.rowsAdded);

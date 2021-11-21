@@ -32,7 +32,7 @@ public class StatsIntradayLoggerDBImpl implements StatsIntradayLogger {
 
     @Override
     public void log(String intervalName, long now, long appNow, char typeTag, String compactName, long n, long sum, long last, long min, long max, long avg, long sum2, long stdev, long[] h) {
-        // ignore, todo
+        // Unsupported at this time. Ignore these records.
     }
 
     private static String getTagType(char typeTag) {

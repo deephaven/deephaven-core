@@ -438,11 +438,11 @@ public class QueryTableAjTest {
                 right.notifyListeners(i(4, 5, 6), i(), i());
             });
 
-            assertNotNull(listener.originalException);
+            assertNotNull(listener.originalException());
             assertEquals(
                     "Right stamp columns must be sorted, but are not for " + (key ? "Key " : "[] (zero key columns) ")
                             + firstUnsorted + " came before " + secondUnsorted,
-                    listener.originalException.getMessage());
+                    listener.originalException().getMessage());
         } finally {
             base.setExpectError(false);
         }

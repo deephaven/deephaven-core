@@ -120,7 +120,7 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
         }
 
         @Override
-        public void onFailureInternal(Throwable originalException, UpdatePerformanceTracker.Entry sourceEntry) {
+        public void onFailureInternal(Throwable originalException, Entry sourceEntry) {
             exceptions.add(originalException);
             final StringWriter errors = new StringWriter();
             originalException.printStackTrace(new PrintWriter(errors));

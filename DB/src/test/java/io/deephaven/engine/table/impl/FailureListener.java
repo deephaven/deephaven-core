@@ -1,7 +1,6 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.table.TableUpdate;
-import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import junit.framework.TestCase;
 
 public class FailureListener extends InstrumentedTableUpdateListener {
@@ -13,8 +12,7 @@ public class FailureListener extends InstrumentedTableUpdateListener {
     public void onUpdate(final TableUpdate upstream) {}
 
     @Override
-    public void onFailureInternal(Throwable originalException,
-            UpdatePerformanceTracker.Entry sourceEntry) {
+    public void onFailureInternal(Throwable originalException, Entry sourceEntry) {
         originalException.printStackTrace();
         TestCase.fail(originalException.getMessage());
     }

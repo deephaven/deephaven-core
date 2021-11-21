@@ -275,7 +275,7 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
         private final ModifiedColumnSet emptyModifiedColumns;
 
         private SymbolTableUpdateListener(@NotNull final String description, @NotNull final Table sourceTable,
-                @NotNull final BaseTable symbolTable) {
+                @NotNull final QueryTable symbolTable) {
             super(description, sourceTable, symbolTable);
             this.symbolTable = symbolTable;
             this.emptyModifiedColumns = symbolTable.newModifiedColumnSet();

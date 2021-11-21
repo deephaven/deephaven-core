@@ -19,6 +19,8 @@ sourceSets {
 dependencies {
     compile project(':engine-api'),
             project(':engine-tuplesource')
+
+    testImplementation TestTools.projectDependency(project, 'engine-rowset')
 }
 
 spotless {

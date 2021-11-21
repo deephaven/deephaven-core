@@ -1,6 +1,7 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.Selectable;
+import io.deephaven.api.agg.Aggregation;
 import io.deephaven.base.Function;
 import io.deephaven.base.verify.Require;
 import io.deephaven.datastructures.util.CollectionUtil;
@@ -11,7 +12,6 @@ import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.table.impl.by.AggregationFactory;
 import io.deephaven.io.log.LogLevel;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.io.logger.StreamLoggerImpl;
@@ -21,10 +21,7 @@ import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.tables.utils.TableToolsShowControl;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.liveness.SingletonLivenessManager;
-import io.deephaven.engine.table.impl.by.SortedFirstBy;
-import io.deephaven.engine.table.impl.by.SortedLastBy;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.impl.PrevColumnSource;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.annotations.ReflexiveUse;
@@ -46,9 +43,8 @@ import org.junit.experimental.categories.Category;
 
 import static io.deephaven.engine.tables.utils.TableTools.*;
 import static io.deephaven.engine.table.impl.TstUtils.*;
-import static io.deephaven.engine.table.impl.by.AggregationFactory.*;
 import static io.deephaven.util.QueryConstants.*;
-import static org.junit.Assert.assertArrayEquals;
+import static io.deephaven.api.agg.Aggregation.*;
 
 /**
  * Test of Tree Tables and rollups.
@@ -1095,24 +1091,23 @@ public class QueryTableTreeTest extends QueryTableTestBase {
                 new EvalNugget() {
                     @Override
                     protected Table e() {
-                        return UpdateGraphProcessor.DEFAULT.exclusiveLock()
-                                .computeLocked(() -> TreeTableOrphanPromoter.promoteOrphans(prepared, "ID", "Parent"));
+                        return UpdateGraphProcessor.DEFAULT.exclusiveLock().computeLocked(() ->
+                                TreeTableOrphanPromoter.promoteOrphans((QueryTable) prepared, "ID", "Parent"));
                     }
                 },
                 new EvalNugget() {
                     @Override
                     protected Table e() {
                         return UpdateGraphProcessor.DEFAULT.exclusiveLock().computeLocked(() -> TreeTableOrphanPromoter
-                                .promoteOrphans(prepared.where("Sentinel % 2 == 0"), "ID", "Parent"));
+                                .promoteOrphans((QueryTable) prepared.where("Sentinel % 2 == 0"), "ID", "Parent"));
                     }
                 },
                 new TreeTableEvalNugget(prepared) {
                     @Override
                     protected Table e() {
-                        return UpdateGraphProcessor.DEFAULT.exclusiveLock()
-                                .computeLocked(() -> TreeTableOrphanPromoter
-                                        .promoteOrphans(prepared.where("Sentinel % 2 == 0"), "ID", "Parent")
-                                        .treeTable("ID", "Parent"));
+                        return UpdateGraphProcessor.DEFAULT.exclusiveLock().computeLocked(() ->
+                                TreeTableOrphanPromoter.promoteOrphans((QueryTable) prepared
+                                                .where("Sentinel % 2 == 0"), "ID", "Parent").treeTable("ID", "Parent"));
                     }
                 },
         };
@@ -1180,21 +1175,21 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     }
 
     public void testRollupMinMax() {
-        testSimpleRollup(AggCombo(AggMin("IntCol", "DoubleCol")));
-        testSimpleRollup(AggCombo(AggMax("IntCol", "DoubleCol")));
+        testSimpleRollup(List.of(AggMin("IntCol", "DoubleCol")));
+        testSimpleRollup(List.of(AggMax("IntCol", "DoubleCol")));
     }
 
     public void testRollupSum() {
-        testSimpleRollup(AggCombo(AggSum("IntCol", "DoubleCol", "BigIntCol", "BigDecCol")));
+        testSimpleRollup(List.of(AggSum("IntCol", "DoubleCol", "BigIntCol", "BigDecCol")));
     }
 
     public void testRollupWSum() {
         // TODO: BigDecimal, BigInteger
-        testSimpleRollup(AggCombo(AggWSum("DoubleCol", "IntCol", "DoubleCol")));
+        testSimpleRollup(List.of(AggWSum("DoubleCol", "IntCol", "DoubleCol")));
     }
 
     public void testRollupReverseLookup() {
-        final AggregationFactory comboAgg = AggCombo(AggSum("IntCol", "DoubleCol"));
+        final Collection<? extends Aggregation> comboAgg = Aggregation.AggSum("IntCol", "DoubleCol").aggregations();
         final Random random = new Random(0);
 
         final int size = 100;
@@ -1257,55 +1252,55 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     }
 
     public void testRollupAbsSum() {
-        testSimpleRollup(AggCombo(AggAbsSum("IntCol", "DoubleCol", "BigIntCol", "BigDecCol")));
+        testSimpleRollup(List.of(AggAbsSum("IntCol", "DoubleCol", "BigIntCol", "BigDecCol")));
     }
 
     public void testRollupAverage() {
         testSimpleRollup(
-                AggCombo(AggAvg("IntCol", "DoubleCol", "BigIntCol", "BigDecCol", "DoubleNanCol", "FloatNullCol")));
+                List.of(AggAvg("IntCol", "DoubleCol", "BigIntCol", "BigDecCol", "DoubleNanCol", "FloatNullCol")));
     }
 
     public void testRollupStd() {
-        testSimpleRollup(AggCombo(AggStd("IntCol", "DoubleCol", "BigIntCol", "BigDecCol")));
+        testSimpleRollup(List.of(AggStd("IntCol", "DoubleCol", "BigIntCol", "BigDecCol")));
     }
 
     public void testRollupVar() {
-        testSimpleRollup(AggCombo(AggVar("IntCol", "DoubleCol", "BigIntCol", "BigDecCol")));
+        testSimpleRollup(List.of(AggVar("IntCol", "DoubleCol", "BigIntCol", "BigDecCol")));
     }
 
     public void testRollupFirst() {
-        testSimpleRollup(AggCombo(AggFirst("IntCol", "DoubleCol")));
+        testSimpleRollup(List.of(AggFirst("IntCol", "DoubleCol")));
     }
 
     public void testRollupLast() {
-        testSimpleRollup(AggCombo(AggLast("IntCol", "DoubleCol")));
+        testSimpleRollup(List.of(AggLast("IntCol", "DoubleCol")));
     }
 
     public void testRollupSortedLast() {
-        testSimpleRollup(AggCombo(Agg(new SortedLastBy("IntCol"), "IntCol", "DoubleCol")));
+        testSimpleRollup(List.of(AggSortedLast("IntCol", "IntCol", "DoubleCol")));
     }
 
     public void testRollupSortedFirst() {
-        testSimpleRollup(AggCombo(Agg(new SortedFirstBy("IntCol"), "IntCol", "DoubleCol")));
+        testSimpleRollup(List.of(AggSortedFirst("IntCol", "IntCol", "DoubleCol")));
     }
 
     public void testRollupCountDistinct() {
-        testSimpleRollup(AggCombo(AggCountDistinct("IntCol", "DoubleCol", "FloatNullCol", "StringCol", "BoolCol")));
+        testSimpleRollup(List.of(AggCountDistinct("IntCol", "DoubleCol", "FloatNullCol", "StringCol", "BoolCol")));
         testSimpleRollup(
-                AggCombo(AggCountDistinct(true, "IntCol", "DoubleCol", "FloatNullCol", "StringCol", "BoolCol")));
+                List.of(AggCountDistinct(true, "IntCol", "DoubleCol", "FloatNullCol", "StringCol", "BoolCol")));
     }
 
     public void testRollupDistinct() {
-        testSimpleRollup(AggCombo(AggDistinct("IntCol", "DoubleCol", "FloatNullCol", "StringCol", "BoolCol")));
-        testSimpleRollup(AggCombo(AggDistinct(true, "IntCol", "DoubleCol", "FloatNullCol", "StringCol", "BoolCol")));
+        testSimpleRollup(List.of(AggDistinct("IntCol", "DoubleCol", "FloatNullCol", "StringCol", "BoolCol")));
+        testSimpleRollup(List.of(AggDistinct(true, "IntCol", "DoubleCol", "FloatNullCol", "StringCol", "BoolCol")));
     }
 
     public void testRollupUnique() {
-        testSimpleRollup(AggCombo(AggUnique("IntCol", "DoubleCol", "FloatNullCol", "StringCol", "BoolCol")));
-        testSimpleRollup(AggCombo(AggUnique(true, "IntCol", "DoubleCol", "FloatNullCol", "StringCol", "BoolCol")));
+        testSimpleRollup(List.of(AggUnique("IntCol", "DoubleCol", "FloatNullCol", "StringCol", "BoolCol")));
+        testSimpleRollup(List.of(AggUnique(true, "IntCol", "DoubleCol", "FloatNullCol", "StringCol", "BoolCol")));
     }
 
-    private void testSimpleRollup(AggregationFactory comboAgg) {
+    private void testSimpleRollup(Collection<? extends Aggregation> comboAgg) {
         final Random random = new Random(0);
 
         final int size = 10;
@@ -1331,7 +1326,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
                 UpdateGraphProcessor.DEFAULT.exclusiveLock()
                         .computeLocked(() -> table.rollup(comboAgg, "USym", "Group"));
 
-        final Table fullBy = UpdateGraphProcessor.DEFAULT.exclusiveLock().computeLocked(() -> table.by(comboAgg));
+        final Table fullBy = UpdateGraphProcessor.DEFAULT.exclusiveLock().computeLocked(() -> table.aggBy(comboAgg));
         System.out.println("Full By:");
         TableTools.showWithIndex(fullBy);
 
@@ -1371,7 +1366,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
         final SafeCloseable scopeCloseable = LivenessScopeStack.open();
 
         final Table rollup = UpdateGraphProcessor.DEFAULT.exclusiveLock()
-                .computeLocked(() -> table.rollup(AggCombo(AggSum("IntCol", "DoubleCol")), "USym", "Group"));
+                .computeLocked(() -> table.rollup(List.of(AggSum("IntCol", "DoubleCol")), "USym", "Group"));
         final TableMap rootMap = (TableMap) rollup.getAttribute(Table.HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE);
         final Table nextLevel = rootMap.get(SmartKey.EMPTY);
         assertNotNull(nextLevel);
@@ -1460,7 +1455,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
         final SafeCloseable scopeCloseable = LivenessScopeStack.open();
 
         final Table rollup = UpdateGraphProcessor.DEFAULT.exclusiveLock()
-                .computeLocked(() -> table.rollup(AggCombo(AggSum("IntCol", "DoubleCol")), "USym", "Group"));
+                .computeLocked(() -> table.rollup(List.of(AggSum("IntCol", "DoubleCol")), "USym", "Group"));
         final TableMap rootMap = (TableMap) rollup.getAttribute(Table.HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE);
 
         final SingletonLivenessManager rollupManager = new SingletonLivenessManager(rollup);
@@ -1520,7 +1515,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
                         new TstUtils.SetGenerator<>("A", "B", "C", "D")));
 
         final Table rollup = UpdateGraphProcessor.DEFAULT.exclusiveLock().computeLocked(
-                () -> table.rollup(AggCombo(AggSum("DoubleCol"), AggFirst("StringCol")), "USym", "Group", "IntCol"));
+                () -> table.rollup(List.of(AggSum("DoubleCol"), AggFirst("StringCol")), "USym", "Group", "IntCol"));
         TestCase.assertEquals(String.class, rollup.getColumnSource("USym").getType());
         TestCase.assertEquals(String.class, rollup.getColumnSource("Group").getType());
         TestCase.assertEquals(int.class, rollup.getColumnSource("IntCol").getType());
@@ -1554,12 +1549,13 @@ public class QueryTableTreeTest extends QueryTableTestBase {
 
     public void testRollupUniqueIncremental() {
         testIncrementalSimple(AggUnique("IntCol"));
-        testIncrementalSimple(AggUnique(false, -1, -2, "IntCol"));
         testIncrementalSimple(AggUnique(true, "IntCol"));
-        testIncrementalSimple(AggUnique(true, -1, -2, "IntCol"));
+        // TODO (https://github.com/deephaven/deephaven-core/issues/991): Re-enable these sub-tests
+//        testIncrementalSimple(AggUnique(false, -1, -2, "IntCol"));
+//        testIncrementalSimple(AggUnique(true, -1, -2, "IntCol"));
     }
 
-    private void testIncrementalSimple(AggregationElement aggregationElement) {
+    private void testIncrementalSimple(Aggregation aggregation) {
         final QueryTable table =
                 TstUtils.testRefreshingTable(RowSetFactory.flat(6).toTracking(),
                         col("G1", "A", "A", "A", "B", "B", "B"),
@@ -1567,12 +1563,12 @@ public class QueryTableTreeTest extends QueryTableTestBase {
                         col("IntCol", 1, 2, 3, 4, 5, 6));
 
         final Table rollup = UpdateGraphProcessor.DEFAULT.exclusiveLock()
-                .computeLocked(() -> table.rollup(AggCombo(aggregationElement), "G1", "G2"));
+                .computeLocked(() -> table.rollup(List.of(aggregation), "G1", "G2"));
 
         dumpRollup(rollup, "G1", "G2");
 
         final Table fullBy =
-                UpdateGraphProcessor.DEFAULT.exclusiveLock().computeLocked(() -> table.by(AggCombo(aggregationElement)));
+                UpdateGraphProcessor.DEFAULT.exclusiveLock().computeLocked(() -> table.aggBy(List.of(aggregation)));
 
         final Table rollupClean = getDiffableTable(rollup).view("IntCol");
 
@@ -1618,7 +1614,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
 
 
         try {
-            simpleTable.rollup(AggCombo(AggCount("MyString"), AggMin("MyString")), "MyDouble");
+            simpleTable.rollup(List.of(AggCount("MyString"), AggMin("MyString")), "MyDouble");
             TestCase.fail("No exception generated with duplicate output column names.");
         } catch (IllegalArgumentException iae) {
             assertEquals("Duplicate output columns: MyString used 2 times", iae.getMessage());
@@ -1652,7 +1648,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
                         NULL_SHORT),
                 new TstUtils.SetGenerator<>((byte) 0, (byte) 1, (byte) 2, (byte) 3, (byte) 4, (byte) 5, NULL_BYTE)));
 
-        final AggregationFactory rollupDefinition = AggCombo(
+        final Collection<? extends Aggregation> rollupDefinition = List.of(
                 AggSum("IntCol", "DoubleCol"),
                 AggMin("MinInt=IntCol", "MinDT=DateTime"),
                 AggMax("MaxDouble=DoubleCol", "MaxDT=DateTime"),
@@ -1705,7 +1701,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
                 },
                 new TableComparator(
                         getDiffableTable(table.rollup(rollupDefinition)).dropColumns(RollupInfo.ROLLUP_COLUMN),
-                        table.by(rollupDefinition))
+                        table.aggBy(rollupDefinition))
         };
 
         for (int step = 0; step < 100; step++) {
@@ -1855,7 +1851,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
         final QueryTable table = TstUtils.testRefreshingTable(i(1).toTracking(),
                 col("Sym", "A"), col("BigI", new BigInteger[] {null}), col("BigD", new BigDecimal[] {null}));
 
-        final Table rollup = table.rollup(AggCombo(AggVar("BigI", "BigD")), "Sym");
+        final Table rollup = table.rollup(List.of(AggVar("BigI", "BigD")), "Sym");
 
         dumpRollup(rollup, getHierarchicalColumnName(rollup), "Sym");
 
@@ -1885,7 +1881,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
                 floatCol("FValue", NULL_FLOAT));
 
         final Table rolledUp =
-                dataTable.rollup(AggCombo(AggAvg("Value", "BValue", "SValue", "IValue", "LValue", "FValue")), "USym");
+                dataTable.rollup(List.of(AggAvg("Value", "BValue", "SValue", "IValue", "LValue", "FValue")), "USym");
         final TableMap rollupMap = (TableMap) rolledUp.getAttribute(Table.HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE);
         assertNotNull(rollupMap);
 

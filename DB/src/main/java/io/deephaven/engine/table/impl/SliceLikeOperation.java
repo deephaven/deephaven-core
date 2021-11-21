@@ -124,12 +124,12 @@ public class SliceLikeOperation implements QueryTable.Operation<QueryTable> {
         rowSet.remove(downstream.removed());
 
         downstream.shifted = upstream.shifted().intersect(rowSet);
-        RowSetShiftUtils.apply(downstream.shifted(), rowSet);
+        downstream.shifted().apply(rowSet);
 
         // Must calculate in post-shift space what indices were removed by the slice operation.
         final WritableRowSet opRemoved = rowSet.minus(sliceRowSet);
         rowSet.remove(opRemoved);
-        RowSetShiftUtils.unapply(downstream.shifted(), opRemoved);
+        downstream.shifted().unapply(opRemoved);
         downstream.removed().writableCast().insert(opRemoved);
 
         // Must intersect against modified set before adding the new rows to result rowSet.

@@ -7,8 +7,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.TableUpdateImpl;
-import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
+import io.deephaven.engine.table.impl.select.SourceColumn;
 import io.deephaven.engine.tables.libs.QueryLibrary;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.tables.select.MatchPairFactory;
@@ -24,6 +23,7 @@ import io.deephaven.engine.table.impl.select.DisjunctiveFilter;
 import io.deephaven.engine.table.impl.select.DynamicWhereFilter;
 import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.table.impl.utils.*;
+import io.deephaven.engine.util.SortedBy;
 import io.deephaven.gui.table.QuickFilterMode;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.SafeCloseable;
@@ -45,9 +45,9 @@ import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import org.junit.experimental.categories.Category;
 
+import static io.deephaven.api.agg.Aggregation.*;
 import static io.deephaven.engine.tables.utils.TableTools.*;
 import static io.deephaven.engine.table.impl.TstUtils.*;
-import static io.deephaven.engine.table.impl.by.AggregationFactory.*;
 import static io.deephaven.util.QueryConstants.NULL_INT;
 
 @Category(OutOfBandTest.class)
@@ -339,7 +339,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
                 c("x", 1, 3), c("y", "a", "c"), c("z", true, true));
         final Table testUpdate = TstUtils.testRefreshingTable(i(3, 6).toTracking(),
                 c("x", 4, 3), c("y", "d", "c"), c("z", true, true));
-        final Table whereTable = TstUtils.testRefreshingTable(i(0).toTracking(), c("z", true));
+        final QueryTable whereTable = TstUtils.testRefreshingTable(i(0).toTracking(), c("z", true));
 
         final DynamicWhereFilter filter = UpdateGraphProcessor.DEFAULT.exclusiveLock()
                 .computeLocked(() -> new DynamicWhereFilter(whereTable, true, MatchPairFactory.getExpressions("z")));
@@ -859,8 +859,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
                                 public void onUpdate(final TableUpdate upstream) {}
 
                                 @Override
-                                public void onFailureInternal(Throwable originalException,
-                                        UpdatePerformanceTracker.Entry sourceEntry) {
+                                public void onFailureInternal(Throwable originalException, Entry sourceEntry) {
                                     originalException.printStackTrace(System.err);
                                     TestCase.fail(originalException.getMessage());
                                 }
@@ -1138,20 +1137,22 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
     public void testMinMaxBy() throws Exception {
         testByConcurrent(t -> t.maxBy("KeyColumn"));
         testByConcurrent(t -> t.minBy("KeyColumn"));
-        testByConcurrent(t -> t.by(new AddOnlyMinMaxBySpecImpl(true), "KeyColumn"), true, false, false, true);
-        testByConcurrent(t -> t.by(new AddOnlyMinMaxBySpecImpl(false), "KeyColumn"), true, false, false, true);
+        testByConcurrent(t -> ((QueryTable) t).by(new AddOnlyMinMaxBySpecImpl(true), new SourceColumn("KeyColumn")),
+                true, false, false, true);
+        testByConcurrent(t -> ((QueryTable) t).by(new AddOnlyMinMaxBySpecImpl(false), new SourceColumn("KeyColumn")),
+                true, false, false, true);
     }
 
     public void testFirstLastBy() throws Exception {
         testByConcurrent(t -> t.firstBy("KeyColumn"));
         testByConcurrent(t -> t.lastBy("KeyColumn"));
-        testByConcurrent(t -> t.by(new TrackingFirstBySpecImpl(), "KeyColumn"));
-        testByConcurrent(t -> t.by(new TrackingLastBySpecImpl(), "KeyColumn"));
+        testByConcurrent(t -> ((QueryTable) t).by(new TrackingFirstBySpecImpl(), new SourceColumn("KeyColumn")));
+        testByConcurrent(t -> ((QueryTable) t).by(new TrackingLastBySpecImpl(), new SourceColumn("KeyColumn")));
     }
 
     public void testSortedFirstLastBy() throws Exception {
-        testByConcurrent(t -> t.by(new SortedFirstBy("IntCol"), "KeyColumn"));
-        testByConcurrent(t -> t.by(new SortedLastBy("IntCol"), "KeyColumn"));
+        testByConcurrent(t -> SortedBy.sortedFirstBy(t, "IntCol", "KeyColumn"));
+        testByConcurrent(t -> SortedBy.sortedLastBy(t, "IntCol", "KeyColumn"));
     }
 
     public void testKeyedBy() throws Exception {
@@ -1163,16 +1164,18 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
     }
 
     public void testPercentileBy() throws Exception {
-        testByConcurrent(t -> t.dropColumns("KeyColumn").by(new PercentileBySpecImpl(0.25)), false, false, true,
-                true);
-        testByConcurrent(t -> t.dropColumns("KeyColumn").by(new PercentileBySpecImpl(0.75)), false, false, true,
-                true);
+        final String[] nonKeyColumnNames = testTable().getDefinition().getColumnStream()
+                .map(ColumnDefinition::getName).filter(cn -> !cn.equals("KeyColumn")).toArray(String[]::new);
+        testByConcurrent(t -> t.dropColumns("KeyColumn").aggBy(AggPct(0.25, nonKeyColumnNames).aggregations()),
+                false, false, true, true);
+        testByConcurrent(t -> t.dropColumns("KeyColumn").aggBy(AggPct(0.75, nonKeyColumnNames).aggregations()),
+                false, false, true, true);
         testByConcurrent(t -> t.medianBy("KeyColumn"));
     }
 
     public void testAggCombo() throws Exception {
-        testByConcurrent(t -> t.by(AggCombo(AggAvg("AvgInt=IntCol"), AggCount("NumInts"), AggSum("SumDouble=DoubleCol"),
-                AggMax("MaxDouble=DoubleCol")), "KeyColumn"));
+        testByConcurrent(t -> t.aggBy(List.of(AggAvg("AvgInt=IntCol"), AggCount("NumInts"),
+                AggSum("SumDouble=DoubleCol"), AggMax("MaxDouble=DoubleCol")), "KeyColumn"));
     }
 
     public void testWavgBy() throws Exception {

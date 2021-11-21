@@ -1,7 +1,7 @@
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.engine.tables.SortPair;
-import io.deephaven.engine.tables.SortingOrder;
+import io.deephaven.api.ColumnName;
+import io.deephaven.api.SortColumn;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.test.types.SerialTest;
@@ -65,17 +65,17 @@ public class MultiColumnSortTest {
 
         final List<String> columnNames = new ArrayList<>(table.getColumnSourceMap().keySet());
 
-        doMultiColumnTest(table, SortPair.ascending("boolCol"), SortPair.descending("Sym"));
+        doMultiColumnTest(table, SortColumn.asc(ColumnName.of("boolCol")), SortColumn.desc(ColumnName.of("Sym")));
 
         for (String outerColumn : columnNames) {
-            final SortPair outerPair =
-                    random.nextBoolean() ? SortPair.ascending(outerColumn) : SortPair.descending(outerColumn);
+            final SortColumn outerPair = random.nextBoolean()
+                    ? SortColumn.asc(ColumnName.of(outerColumn)) : SortColumn.desc(ColumnName.of(outerColumn));
             for (String innerColumn : columnNames) {
                 if (innerColumn.equals(outerColumn)) {
                     continue;
                 }
-                final SortPair innerPair =
-                        random.nextBoolean() ? SortPair.ascending(innerColumn) : SortPair.descending(innerColumn);
+                final SortColumn innerPair = random.nextBoolean()
+                        ? SortColumn.asc(ColumnName.of(innerColumn)) : SortColumn.desc(ColumnName.of(innerColumn));
                 doMultiColumnTest(table, outerPair, innerPair);
             }
         }
@@ -84,13 +84,13 @@ public class MultiColumnSortTest {
         for (String middleColumn : columnNames) {
             final String outerColumn = oneOf(columnNames, middleColumn);
             final String innerColumn = oneOf(columnNames, middleColumn, outerColumn);
-            final SortPair outerPair =
-                    random.nextBoolean() ? SortPair.ascending(outerColumn) : SortPair.descending(outerColumn);
-            final SortPair innerPair =
-                    random.nextBoolean() ? SortPair.ascending(innerColumn) : SortPair.descending(innerColumn);
+            final SortColumn outerPair =
+                    random.nextBoolean() ? SortColumn.asc(ColumnName.of(outerColumn)) : SortColumn.desc(ColumnName.of(outerColumn));
+            final SortColumn innerPair =
+                    random.nextBoolean() ? SortColumn.asc(ColumnName.of(innerColumn)) : SortColumn.desc(ColumnName.of(innerColumn));
 
-            doMultiColumnTest(table, outerPair, SortPair.ascending(middleColumn), innerPair);
-            doMultiColumnTest(table, outerPair, SortPair.descending(middleColumn), innerPair);
+            doMultiColumnTest(table, outerPair, SortColumn.asc(ColumnName.of(middleColumn)), innerPair);
+            doMultiColumnTest(table, outerPair, SortColumn.desc(ColumnName.of(middleColumn)), innerPair);
         }
     }
 
@@ -101,18 +101,19 @@ public class MultiColumnSortTest {
         return copy.get(0);
     }
 
-    private void doMultiColumnTest(Table table, SortPair... sortPairs) {
-        final Table sorted = table.sort(sortPairs);
+    private void doMultiColumnTest(Table table, SortColumn... sortColumns) {
+        final Table sorted = table.sort(Arrays.asList(sortColumns));
 
-        System.out.println("SortPairs: " + Arrays.toString(sortPairs) + ", size=" + table.size());
+        System.out.println("SortColumns: " + Arrays.toString(sortColumns) + ", size=" + table.size());
         // TableTools.show(table);
         // TableTools.show(sorted);
 
-        checkSort(sorted, sortPairs);
+        checkSort(sorted, sortColumns);
     }
 
-    private void checkSort(Table sorted, SortPair[] sortPairs) {
-        final String[] columns = Arrays.stream(sortPairs).map(SortPair::getColumn).toArray(String[]::new);
+    private void checkSort(Table sorted, SortColumn... sortColumns) {
+        final String[] columns = Arrays.stream(sortColumns).map(SortColumn::column).map(ColumnName::name)
+                .toArray(String[]::new);
 
         Object[] lastRow = sorted.getRecord(0, columns);
 
@@ -123,7 +124,7 @@ public class MultiColumnSortTest {
                 // make sure lastRow <= rowData
                 final Comparable last = (Comparable) lastRow[jj];
                 final Comparable current = (Comparable) rowData[jj];
-                if (sortPairs[jj].getOrder() == SortingOrder.Ascending) {
+                if (sortColumns[jj].order() == SortColumn.Order.ASCENDING) {
                     if (!leq(last, current)) {
                         TestCase.fail("Out of order[" + (ii - 1) + "]: !" + Arrays.toString(lastRow) + " <= [" + ii
                                 + "] " + Arrays.toString(rowData));
@@ -212,7 +213,7 @@ public class MultiColumnSortTest {
             final long end = System.currentTimeMillis();
             System.out.println(new Date(end) + " Completed sort in " + (end - startSort) + "ms");
 
-            checkSort(sorted, SortPair.ascendingPairs("Enum1", "L1"));
+            checkSort(sorted, SortColumn.asc(ColumnName.of("Enum1")), SortColumn.asc(ColumnName.of("L1")));
         }
     }
 }

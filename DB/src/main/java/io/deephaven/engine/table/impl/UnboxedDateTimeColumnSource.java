@@ -20,7 +20,7 @@ public class UnboxedDateTimeColumnSource extends AbstractColumnSource<Long>
 
     private final ColumnSource<DateTime> alternateColumnSource;
 
-    UnboxedDateTimeColumnSource(ColumnSource<DateTime> alternateColumnSource) {
+    public UnboxedDateTimeColumnSource(ColumnSource<DateTime> alternateColumnSource) {
         super(long.class);
         this.alternateColumnSource = alternateColumnSource;
     }

@@ -43,7 +43,7 @@ public abstract class EvalNugget implements EvalNuggetInterface {
     }
 
     private final String description;
-    final Table originalValue = e();
+    public final Table originalValue = e();
     private Table recomputedTable = null;
     private Throwable exception = null;
 
@@ -62,7 +62,7 @@ public abstract class EvalNugget implements EvalNuggetInterface {
         }
 
         @Override
-        public void onFailureInternal(Throwable originalException, UpdatePerformanceTracker.Entry sourceEntry) {
+        public void onFailureInternal(Throwable originalException, Entry sourceEntry) {
             exception = originalException;
             final StringWriter errors = new StringWriter();
             if (description != null) {

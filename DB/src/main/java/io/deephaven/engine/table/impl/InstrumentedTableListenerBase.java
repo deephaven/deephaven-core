@@ -8,7 +8,6 @@ import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableListener;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.updategraph.AbstractNotification;
@@ -21,7 +20,6 @@ import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.updategraph.LogicalClock;
-import io.deephaven.engine.table.impl.utils.AbstractNotification;
 import io.deephaven.engine.table.impl.utils.AsyncClientErrorNotifier;
 import io.deephaven.engine.table.impl.utils.AsyncErrorLogger;
 import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
@@ -69,8 +67,7 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
     }
 
     @Override
-    public NotificationQueue.Notification getErrorNotification(Throwable originalException,
-            UpdatePerformanceTracker.Entry sourceEntry) {
+    public NotificationQueue.ErrorNotification getErrorNotification(Throwable originalException, Entry sourceEntry) {
         return new ErrorNotification(originalException, sourceEntry == null ? entry : sourceEntry);
     }
 
@@ -110,14 +107,14 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
     }
 
     @Override
-    public void onFailure(Throwable originalException, UpdatePerformanceTracker.Entry sourceEntry) {
+    public void onFailure(Throwable originalException, Entry sourceEntry) {
         onFailureInternal(originalException, sourceEntry == null ? entry : sourceEntry);
     }
 
-    protected abstract void onFailureInternal(Throwable originalException, UpdatePerformanceTracker.Entry sourceEntry);
+    protected abstract void onFailureInternal(Throwable originalException, Entry sourceEntry);
 
-    protected final void onFailureInternalWithDependent(final Table dependent, final Throwable originalException,
-            final UpdatePerformanceTracker.Entry sourceEntry) {
+    protected final void onFailureInternalWithDependent(final BaseTable dependent, final Throwable originalException,
+                                                        final Entry sourceEntry) {
         dependent.notifyListenersOnError(originalException, sourceEntry);
 
         // although we have notified the dependent tables, we should notify the client side as well. In pretty
@@ -136,9 +133,9 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
     public class ErrorNotification extends AbstractNotification implements NotificationQueue.ErrorNotification {
 
         private final Throwable originalException;
-        private final UpdatePerformanceTracker.Entry sourceEntry;
+        private final Entry sourceEntry;
 
-        ErrorNotification(Throwable originalException, UpdatePerformanceTracker.Entry sourceEntry) {
+        ErrorNotification(Throwable originalException, Entry sourceEntry) {
             super(terminalListener);
             this.originalException = originalException;
             this.sourceEntry = sourceEntry;

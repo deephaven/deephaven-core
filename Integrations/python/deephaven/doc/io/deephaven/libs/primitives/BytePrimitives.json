@@ -1,5 +1,5 @@
 {
- "className": "io.deephaven.libs.primitives.BytePrimitives",
+ "className": "io.deephaven.engine.function.BytePrimitives",
  "methods": {
   "array": "Converts a primitive array to a Vector.\n\n:param values: (byte[]) - primitive array\n:return: (io.deephaven.engine.vector.ByteVector) Vector.",
   "concat": "Returns the concatenation of multiple arrays into a single array.\n\n*Overload 1*  \n  :param values: (byte[]...) - values.\n  :return: (byte[]) concatenation of multiple arrays into a single array.\n  \n*Overload 2*  \n  :param values: (io.deephaven.engine.vector.ByteVector...) - values.\n  :return: (byte[]) concatenation of multiple arrays into a single array.",
@@ -20,7 +20,7 @@
   "uniqueValue": "Get the single unique value in the array, or null if there are none, or there are more than 1 distinct values.\n\n:param arr: (io.deephaven.engine.vector.ByteVector) - the array\n:param countNull: (boolean) - if nulls should count as values\n:return: (byte) the single unique value in the array, or null.",
   "vec": "Converts a Vector to a primitive array.\n\n:param values: (io.deephaven.engine.vector.ByteVector) - Vector\n:return: (byte[]) primitive array."
  },
- "path": "io.deephaven.libs.primitives.BytePrimitives",
+ "path": "io.deephaven.engine.function.BytePrimitives",
  "text": "A set of commonly used functions that can be applied to Byte types.",
  "typeName": "class"
 }

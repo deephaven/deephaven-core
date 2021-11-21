@@ -120,7 +120,7 @@ public class TestWindowCheck {
         timeProvider.now = startTime.getNanos();
 
         final DateTime[] emptyDateTimeArray = new DateTime[0];
-        final Table tableToCheck = testRefreshingTable(i().toTracking(),
+        final QueryTable tableToCheck = testRefreshingTable(i().toTracking(),
                 c("Timestamp", emptyDateTimeArray), intCol("Sentinel"));
 
         final Pair<Table, WindowCheck.TimeWindowListener> windowed = UpdateGraphProcessor.DEFAULT.sharedLock()
@@ -159,7 +159,7 @@ public class TestWindowCheck {
             public void onUpdate(TableUpdate upstream) {}
 
             @Override
-            public void onFailureInternal(Throwable originalException, UpdatePerformanceTracker.Entry sourceEntry) {
+            public void onFailureInternal(Throwable originalException, Entry sourceEntry) {
                 exception = originalException;
                 final StringWriter errors = new StringWriter();
                 originalException.printStackTrace(new PrintWriter(errors));

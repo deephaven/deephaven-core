@@ -285,7 +285,7 @@ public class GroovyStaticImportGenerator {
         code += "/**\n";
         code += " * Functions statically imported into Groovy.\n";
         code += " *\n";
-        code += " * @see io.deephaven.libs.primitives\n";
+        code += " * @see io.deephaven.engine.function\n";
         code += " */\n";
         code += "public class GroovyStaticImports {\n";
 
@@ -386,26 +386,26 @@ public class GroovyStaticImportGenerator {
         log.warning("Running GroovyStaticImportGenerator assertNoChange=" + assertNoChange);
 
         final String[] imports = {
-                "io.deephaven.libs.primitives.BooleanPrimitives",
-                "io.deephaven.libs.primitives.ByteNumericPrimitives",
-                "io.deephaven.libs.primitives.BytePrimitives",
-                "io.deephaven.libs.primitives.CharacterPrimitives",
-                "io.deephaven.libs.primitives.DoubleFpPrimitives",
-                "io.deephaven.libs.primitives.DoubleNumericPrimitives",
-                "io.deephaven.libs.primitives.DoublePrimitives",
-                "io.deephaven.libs.primitives.FloatFpPrimitives",
-                "io.deephaven.libs.primitives.FloatNumericPrimitives",
-                "io.deephaven.libs.primitives.FloatPrimitives",
-                "io.deephaven.libs.primitives.IntegerNumericPrimitives",
-                "io.deephaven.libs.primitives.IntegerPrimitives",
-                "io.deephaven.libs.primitives.LongNumericPrimitives",
-                "io.deephaven.libs.primitives.LongPrimitives",
-                "io.deephaven.libs.primitives.ObjectPrimitives",
-                "io.deephaven.libs.primitives.ShortNumericPrimitives",
-                "io.deephaven.libs.primitives.ShortPrimitives",
-                "io.deephaven.libs.primitives.SpecialPrimitives",
-                "io.deephaven.libs.primitives.ComparePrimitives",
-                "io.deephaven.libs.primitives.Casting",
+                "io.deephaven.engine.function.BooleanPrimitives",
+                "io.deephaven.engine.function.ByteNumericPrimitives",
+                "io.deephaven.engine.function.BytePrimitives",
+                "io.deephaven.engine.function.CharacterPrimitives",
+                "io.deephaven.engine.function.DoubleFpPrimitives",
+                "io.deephaven.engine.function.DoubleNumericPrimitives",
+                "io.deephaven.engine.function.DoublePrimitives",
+                "io.deephaven.engine.function.FloatFpPrimitives",
+                "io.deephaven.engine.function.FloatNumericPrimitives",
+                "io.deephaven.engine.function.FloatPrimitives",
+                "io.deephaven.engine.function.IntegerNumericPrimitives",
+                "io.deephaven.engine.function.IntegerPrimitives",
+                "io.deephaven.engine.function.LongNumericPrimitives",
+                "io.deephaven.engine.function.LongPrimitives",
+                "io.deephaven.engine.function.ObjectPrimitives",
+                "io.deephaven.engine.function.ShortNumericPrimitives",
+                "io.deephaven.engine.function.ShortPrimitives",
+                "io.deephaven.engine.function.SpecialPrimitives",
+                "io.deephaven.engine.function.ComparePrimitives",
+                "io.deephaven.engine.function.Casting",
         };
 
         @SuppressWarnings("unchecked")

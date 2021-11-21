@@ -7,6 +7,7 @@ import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.impl.indexer.RowSetIndexer;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.ObjectArraySource;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -41,7 +42,7 @@ public class GroupingUtil {
             return Collections.singletonMap(null, new long[] {0, size});
         }
         // noinspection unchecked
-        return ((Map<TYPE, RowSet>) rowSet.getGrouping(columnSource)).entrySet().stream()
+        return ((Map<TYPE, RowSet>) RowSetIndexer.of(rowSet).getGrouping(columnSource)).entrySet().stream()
                 .sorted(java.util.Comparator.comparingLong(e -> e.getValue().firstRowKey())).collect(Collectors.toMap(
                         Map.Entry::getKey,
                         new Function<>() {

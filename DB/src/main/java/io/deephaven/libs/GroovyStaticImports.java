@@ -34,7 +34,7 @@ import java.lang.Boolean;
 /**
  * Functions statically imported into Groovy.
  *
- * @see io.deephaven.libs.primitives
+ * @see io.deephaven.engine.function
  */
 public class GroovyStaticImports {
     /** @see ByteNumericPrimitives#abs(byte) */

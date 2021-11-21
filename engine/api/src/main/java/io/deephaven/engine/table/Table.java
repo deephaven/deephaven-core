@@ -348,34 +348,14 @@ public interface Table extends
 
     Table whereNotIn(Table rightTable, String... columnsToMatch);
 
-    /**
-     * Filters according to an expression in disjunctive normal form.
-     * <p>
-     * The input is an array of clauses, which in turn are a collection of filters.
-     *
-     * @param filtersToApply each inner collection is a set of filters, all of which must match for the clause to be
-     *        true. If any one of the collections in the array evaluates to true, the row is part of the output table.
-     * @return a new table, with the filters applied
-     */
-    @SuppressWarnings("unchecked")
-    @ConcurrentMethod
-    Table whereOneOf(Collection<? extends Filter>... filtersToApply);
-
-    /**
-     * Applies the provided filters to the table disjunctively.
-     *
-     * @param filtersToApply an Array of filters to apply
-     * @return a new table, with the filters applied
-     */
-    @ConcurrentMethod
-    Table whereOneOf(String... filtersToApply);
-
     // -----------------------------------------------------------------------------------------------------------------
     // Column Selection Operations
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
     Table select(Collection<? extends Selectable> columns);
+
+    Table select(Selectable... columns);
 
     @Override
     Table select(String... columns);
@@ -386,13 +366,18 @@ public interface Table extends
     Table selectDistinct(Collection<? extends Selectable> columns);
 
     @ConcurrentMethod
+    Table selectDistinct(Selectable... columns);
+
+    @ConcurrentMethod
     Table selectDistinct(String... columns);
 
     @ConcurrentMethod
     Table selectDistinct();
 
     @Override
-    Table update(Collection<? extends Selectable> columns);
+    Table update(Collection<? extends Selectable> newColumns);
+
+    Table update(Selectable... newColumns);
 
     @Override
     Table update(String... newColumns);
@@ -417,11 +402,16 @@ public interface Table extends
      */
     Table lazyUpdate(Collection<? extends Selectable> newColumns);
 
+    Table lazyUpdate(Selectable... newColumns);
+
     Table lazyUpdate(String... newColumns);
 
     @Override
     @ConcurrentMethod
     Table view(Collection<? extends Selectable> columns);
+
+    @ConcurrentMethod
+    Table view(Selectable... columns);
 
     @Override
     @ConcurrentMethod
@@ -429,7 +419,10 @@ public interface Table extends
 
     @Override
     @ConcurrentMethod
-    Table updateView(Collection<? extends Selectable> columns);
+    Table updateView(Collection<? extends Selectable> newColumns);
+
+    @ConcurrentMethod
+    Table updateView(Selectable... newColumns);
 
     @Override
     @ConcurrentMethod
@@ -1036,7 +1029,7 @@ public interface Table extends
      * @param groupByColumns The grouping columns as in {@link Table#groupBy(Collection)}
      */
     @ConcurrentMethod
-    Table applyToAllBy(String formulaColumn, String columnParamName, Selectable... groupByColumns);
+    Table applyToAllBy(String formulaColumn, String columnParamName, Collection<? extends Selectable> groupByColumns);
 
     /**
      * Groups data according to groupByColumns and applies formulaColumn to each of columns not altered by the grouping
@@ -1047,7 +1040,7 @@ public interface Table extends
      * @param groupByColumns The grouping columns as in {@link Table#groupBy(Collection)}
      */
     @ConcurrentMethod
-    Table applyToAllBy(String formulaColumn, Selectable... groupByColumns);
+    Table applyToAllBy(String formulaColumn, Collection<? extends Selectable> groupByColumns);
 
     /**
      * Groups data according to groupByColumns and applies formulaColumn to each of columns not altered by the grouping

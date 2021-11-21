@@ -7,10 +7,8 @@ import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.TableCreatorImpl;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.SortedBy;
-import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.sources.RedirectedColumnSource;
 import io.deephaven.engine.table.impl.utils.*;
@@ -22,15 +20,12 @@ import org.jetbrains.annotations.NotNull;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.PrimitiveIterator;
-import java.util.Random;
+import java.util.*;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 
-import static io.deephaven.engine.table.impl.by.AggregationFactory.*;
+import static io.deephaven.api.agg.Aggregation.*;
 
 /**
  * Unit tests that exercise special aggregation semantics for stream tables.
@@ -334,7 +329,7 @@ public class StreamTableAggregationTest {
 
     @Test
     public void testComboBy() {
-        doOperatorTest(table -> table.by(AggCombo(
+        doOperatorTest(table -> table.aggBy(List.of(
                 AggFirst("FirstPrice=Price", "FirstSize=Size"),
                 AggLast("LastPrice=Price", "LastSize=Size"),
                 AggMin("MinPrice=Price", "MinSize=Size"),
@@ -348,7 +343,7 @@ public class StreamTableAggregationTest {
 
     @Test
     public void testComboByNoKeys() {
-        doOperatorTest(table -> table.by(AggCombo(
+        doOperatorTest(table -> table.aggBy(List.of(
                 AggFirst("FirstSym=Sym", "FirstPrice=Price", "FirstSize=Size"),
                 AggLast("LastSym=Sym", "LastPrice=Price", "LastSize=Size"),
                 AggMin("MinSym=Sym", "MinPrice=Price", "MinSize=Size"),
@@ -362,7 +357,7 @@ public class StreamTableAggregationTest {
 
     @Test
     public void testComboByWindowed() {
-        doOperatorTest(table -> table.by(AggCombo(
+        doOperatorTest(table -> table.aggBy(List.of(
                 AggFirst("FirstPrice=Price", "FirstSize=Size"),
                 AggLast("LastPrice=Price", "LastSize=Size"),
                 AggMin("MinPrice=Price", "MinSize=Size"),
@@ -376,7 +371,7 @@ public class StreamTableAggregationTest {
 
     @Test
     public void testComboByNoKeysWindowed() {
-        doOperatorTest(table -> table.by(AggCombo(
+        doOperatorTest(table -> table.aggBy(List.of(
                 AggFirst("FirstSym=Sym", "FirstPrice=Price", "FirstSize=Size"),
                 AggLast("LastSym=Sym", "LastPrice=Price", "LastSize=Size"),
                 AggMin("MinSym=Sym", "MinPrice=Price", "MinSize=Size"),

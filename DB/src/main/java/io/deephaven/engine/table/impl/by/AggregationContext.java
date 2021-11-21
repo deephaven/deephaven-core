@@ -1,15 +1,11 @@
 package io.deephaven.engine.table.impl.by;
 
 import io.deephaven.engine.liveness.LivenessReferent;
-import io.deephaven.engine.table.TableUpdate;
+import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
-import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.sort.permute.PermuteKernel;
-import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.chunk.Attributes.Values;
-import io.deephaven.engine.table.ChunkSource;
-import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.chunk.WritableChunk;
 import io.deephaven.engine.table.impl.utils.UpdateSizeCalculator;
 import io.deephaven.engine.rowset.RowSet;
@@ -286,7 +282,7 @@ class AggregationContext {
      * @param sourceEntry The {@link UpdatePerformanceTracker.Entry} for the failed listener
      */
     void propagateFailureToOperators(@NotNull final Throwable originalException,
-            @NotNull final UpdatePerformanceTracker.Entry sourceEntry) {
+            @NotNull final TableListener.Entry sourceEntry) {
         for (final IterativeChunkedAggregationOperator operator : operators) {
             operator.propagateFailure(originalException, sourceEntry);
         }

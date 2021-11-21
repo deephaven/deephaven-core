@@ -117,6 +117,7 @@ public class ColumnsToRowsTransform {
      */
     public static Table columnsToRows(final Table source, final String labelColumn, final String[] valueColumns,
             final String[] labels, final String[][] transposeColumns) {
+        final QueryTable querySource = (QueryTable) source.coalesce();
         if (valueColumns.length == 0) {
             throw new IllegalArgumentException("No columns to transpose defined!");
         }
@@ -152,11 +153,11 @@ public class ColumnsToRowsTransform {
         final ColumnSource<?>[][] sourcesToTranspose = new ColumnSource[transposeColumns.length][labels.length];
         for (int cc = 0; cc < transposeColumns.length; ++cc) {
             for (int dd = 0; dd < transposeColumns[cc].length; ++dd) {
-                sourcesToTranspose[cc][dd] = source.getColumnSource(transposeColumns[cc][dd]);
+                sourcesToTranspose[cc][dd] = querySource.getColumnSource(transposeColumns[cc][dd]);
             }
         }
 
-        source.getColumnSourceMap().forEach((name, cs) -> {
+        querySource.getColumnSourceMap().forEach((name, cs) -> {
             if (allTransposeSet.contains(name)) {
                 for (int cc = 0; cc < transposeColumns.length; ++cc) {
                     if (transposeSet.get(cc).contains(name)) {
@@ -194,17 +195,16 @@ public class ColumnsToRowsTransform {
         }
 
         final TrackingWritableRowSet resultRowSet =
-                transformIndex(source.getRowSet(), fanout, fanoutPow2).toTracking();
+                transformIndex(querySource.getRowSet(), fanout, fanoutPow2).toTracking();
 
         final QueryTable result = new QueryTable(resultRowSet, resultMap);
 
-        if (source.isRefreshing()) {
-            final Table dynamicSource = source;
-            final int sourceColumnCount = source.getColumnSourceMap().size();
+        if (querySource.isRefreshing()) {
+            final int sourceColumnCount = querySource.getColumnSourceMap().size();
             final ModifiedColumnSet[] resultColumnSets = new ModifiedColumnSet[sourceColumnCount];
             final String[] sourceColumns = new String[sourceColumnCount];
             final MutableInt columnIndex = new MutableInt();
-            final ModifiedColumnSet modifyAll = source
+            final ModifiedColumnSet modifyAll = querySource
                     .newModifiedColumnSet(expandSet.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
             final ModifiedColumnSet[] modifyOneRow = new ModifiedColumnSet[labels.length];
             // noinspection unchecked
@@ -214,7 +214,7 @@ public class ColumnsToRowsTransform {
                 sourcesForRow[cc] = new ArrayList<>();
             }
 
-            source.getColumnSourceMap().forEach((name, cs) -> {
+            querySource.getColumnSourceMap().forEach((name, cs) -> {
                 sourceColumns[columnIndex.intValue()] = name;
                 if (allTransposeSet.contains(name)) {
                     for (int cc = 0; cc < transposeSet.size(); ++cc) {
@@ -230,14 +230,14 @@ public class ColumnsToRowsTransform {
             });
 
             for (int cc = 0; cc < labels.length; ++cc) {
-                modifyOneRow[cc] = source
+                modifyOneRow[cc] = querySource
                         .newModifiedColumnSet(sourcesForRow[cc].toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
             }
 
             final ModifiedColumnSet.Transformer transformer =
-                    dynamicSource.newModifiedColumnSetTransformer(sourceColumns, resultColumnSets);
-            dynamicSource.listenForUpdates(new BaseTable.ListenerImpl("columnsToRows(" + labelColumn + ", "
-                    + Arrays.toString(valueColumns) + ", " + Arrays.deepToString(transposeColumns) + ")", dynamicSource,
+                    querySource.newModifiedColumnSetTransformer(sourceColumns, resultColumnSets);
+            querySource.listenForUpdates(new BaseTable.ListenerImpl("columnsToRows(" + labelColumn + ", "
+                    + Arrays.toString(valueColumns) + ", " + Arrays.deepToString(transposeColumns) + ")", querySource,
                     result) {
                 @Override
                 public void onUpdate(final TableUpdate upstream) {
@@ -292,7 +292,7 @@ public class ColumnsToRowsTransform {
                         }
 
                         downstream.shifted = shiftBuilder.build();
-                        RowSetShiftUtils.apply(downstream.shifted(), resultRowSet);
+                        downstream.shifted().apply(resultRowSet);
                     }
 
 

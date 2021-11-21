@@ -9,10 +9,10 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.TupleSource;
+import io.deephaven.engine.table.impl.indexer.RowSetIndexer;
 import io.deephaven.engine.table.impl.tuplesource.TupleSourceFactory;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.TrackingRowSet;
-import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import junit.framework.TestCase;
 
 import java.util.*;
@@ -23,9 +23,9 @@ import java.util.*;
  * stale groupings are not left between table updates.
  */
 public class GroupingValidator extends InstrumentedTableUpdateListenerAdapter {
-    private Table source;
-    private Collection<String[]> groupingColumns;
-    private String context;
+    private final Table source;
+    private final Collection<String[]> groupingColumns;
+    private final String context;
     private int validationCount = 0;
 
     public GroupingValidator(String context, Table source, ArrayList<ArrayList<String>> groupingColumns) {
@@ -68,7 +68,9 @@ public class GroupingValidator extends InstrumentedTableUpdateListenerAdapter {
         final ColumnSource[] groupColumns = getColumnSources(groupingToCheck, source);
         final TupleSource tupleSource = TupleSourceFactory.makeTupleSource(groupColumns);
         validateGrouping(groupingToCheck, rowSet, source, context,
-                rowSet.isTracking() ? rowSet.trackingCast().getGrouping(tupleSource) : Collections.emptyMap());
+                rowSet.isTracking()
+                        ? RowSetIndexer.of(rowSet.trackingCast()).getGrouping(tupleSource)
+                        : Collections.emptyMap());
     }
 
     public static void validateGrouping(String[] groupingToCheck, RowSet rowSet, Table source, String context,
@@ -126,7 +128,7 @@ public class GroupingValidator extends InstrumentedTableUpdateListenerAdapter {
     private void validatePrevGrouping(String[] groupingToCheck, TrackingRowSet rowSet) {
         final ColumnSource[] groupColumns = getColumnSources(groupingToCheck, source);
         final TupleSource tupleSource = TupleSourceFactory.makeTupleSource(groupColumns);
-        final Map<Object, RowSet> grouping = rowSet.getPrevGrouping(tupleSource);
+        final Map<Object, RowSet> grouping = RowSetIndexer.of(rowSet).getPrevGrouping(tupleSource);
         for (Map.Entry<Object, RowSet> objectIndexEntry : grouping.entrySet()) {
             for (RowSet.Iterator it = objectIndexEntry.getValue().iterator(); it.hasNext();) {
                 long next = it.nextLong();
@@ -184,7 +186,7 @@ public class GroupingValidator extends InstrumentedTableUpdateListenerAdapter {
     }
 
     @Override
-    public void onFailureInternal(Throwable originalException, UpdatePerformanceTracker.Entry sourceEntry) {
+    public void onFailureInternal(Throwable originalException, Entry sourceEntry) {
         originalException.printStackTrace();
         TestCase.fail("Failure for context " + context + ": " + originalException.getMessage());
     }

@@ -893,7 +893,7 @@ class NaturalJoinHelper {
                     final RowSet leftModifiedPreShift;
                     if (leftKeyModifications) {
                         if (leftShifted.nonempty()) {
-                            leftModifiedPreShift = RowSetShiftUtils.unapply(leftShifted, leftModified.copy());
+                            leftModifiedPreShift = leftShifted.unapply(leftModified.copy());
                         } else {
                             leftModifiedPreShift = leftModified;
                         }

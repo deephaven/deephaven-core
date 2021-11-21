@@ -4,6 +4,8 @@
 
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.api.Selectable;
+import io.deephaven.api.filter.Filter;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
@@ -257,10 +259,11 @@ public class PartitionAwareSourceTable extends SourceTable {
     }
 
     @Override
-    public final Table where(WhereFilter... filters) {
-        if (filters.length == 0) {
+    public final Table where(final Collection<? extends Filter> filters) {
+        if (filters.isEmpty()) {
             return QueryPerformanceRecorder.withNugget(description + ".coalesce()", this::coalesce);
         }
+        final WhereFilter[] whereFilters = WhereFilter.from(filters);
 
         ArrayList<WhereFilter> partitionFilters = new ArrayList<>();
         ArrayList<WhereFilter> groupFilters = new ArrayList<>();
@@ -270,18 +273,18 @@ public class PartitionAwareSourceTable extends SourceTable {
         Set<String> groupingColumnNames =
                 groupingColumns.stream().map(ColumnDefinition::getName).collect(Collectors.toSet());
 
-        for (WhereFilter filter : filters) {
-            filter.init(definition);
-            List<String> columns = filter.getColumns();
-            if (filter instanceof ReindexingFilter) {
-                otherFilters.add(filter);
-            } else if (isValidAgainstColumnPartitionTable(columns, filter.getColumnArrays())) {
-                partitionFilters.add(filter);
-            } else if (filter.isSimpleFilter() && (columns.size() == 1)
+        for (WhereFilter whereFilter : whereFilters) {
+            whereFilter.init(definition);
+            List<String> columns = whereFilter.getColumns();
+            if (whereFilter instanceof ReindexingFilter) {
+                otherFilters.add(whereFilter);
+            } else if (isValidAgainstColumnPartitionTable(columns, whereFilter.getColumnArrays())) {
+                partitionFilters.add(whereFilter);
+            } else if (whereFilter.isSimpleFilter() && (columns.size() == 1)
                     && (groupingColumnNames.contains(columns.get(0)))) {
-                groupFilters.add(filter);
+                groupFilters.add(whereFilter);
             } else {
-                otherFilters.add(filter);
+                otherFilters.add(whereFilter);
             }
         }
 
@@ -290,7 +293,7 @@ public class PartitionAwareSourceTable extends SourceTable {
         if (partitionFilters.isEmpty()) {
             DeferredViewTable deferredViewTable =
                     new DeferredViewTable(definition, description + "-withDeferredFilters",
-                            new PartitionAwareQueryTableReference(this), null, null, filters);
+                            new PartitionAwareQueryTableReference(this), null, null, whereFilters);
             deferredViewTable.setRefreshing(isRefreshing());
             return deferredViewTable;
         }
@@ -316,11 +319,12 @@ public class PartitionAwareSourceTable extends SourceTable {
     }
 
     @Override
-    public final Table selectDistinct(@NotNull final SelectColumn... columns) {
-        for (SelectColumn selectColumn : columns) {
+    public final Table selectDistinct(Collection<? extends Selectable> groupByColumns) {
+        final SelectColumn[] selectColumns = SelectColumn.from(groupByColumns);
+        for (SelectColumn selectColumn : selectColumns) {
             selectColumn.initDef(definition.getColumnNameMap());
             if (!isValidAgainstColumnPartitionTable(selectColumn.getColumns(), selectColumn.getColumnArrays())) {
-                return super.selectDistinct(columns);
+                return super.selectDistinct(selectColumns);
             }
         }
         initializeAvailableLocations();
@@ -338,7 +342,7 @@ public class PartitionAwareSourceTable extends SourceTable {
         }
         return TableTools
                 .newTable(existingLocationKeys.size(), partitionTableColumnNames, partitionTableColumnSources)
-                .selectDistinct(columns);
+                .selectDistinct(selectColumns);
         // TODO (https://github.com/deephaven/deephaven-core/issues/867): Refactor around a ticking partition table
         // TODO: Maybe just get rid of this implementation and coalesce? Partitioning columns are automatically grouped.
         // Needs lazy region allocation.

@@ -79,10 +79,7 @@ public class TableToolsMergeHelper {
         final QueryTable queryTable = unionSourceManager.getResult();
 
         for (Table table : tables) {
-            if (table instanceof UncoalescedTable) {
-                table = table.coalesce();
-            }
-            unionSourceManager.addTable(table, false);
+            unionSourceManager.addTable((QueryTable) table.coalesce(), false);
         }
 
         queryTable.setAttribute(Table.MERGED_TABLE_ATTRIBUTE, Boolean.TRUE);

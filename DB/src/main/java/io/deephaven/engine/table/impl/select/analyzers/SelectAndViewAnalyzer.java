@@ -170,11 +170,11 @@ public abstract class SelectAndViewAnalyzer {
         private void ensure(boolean withModifies) {
             if (withModifies && shiftedWithModifies == null) {
                 shiftedWithModifies = SafeCloseablePair
-                        .downcast(RowSetShiftUtils.extractParallelShiftedRowsFromPostShiftIndex(upstream.shifted(), getExisting()));
+                        .downcast(upstream.shifted().extractParallelShiftedRowsFromPostShiftRowSet(getExisting()));
             } else if (!withModifies && shiftedWithoutModifies == null) {
                 try (final RowSet candidates = getExisting().minus(upstream.modified())) {
                     shiftedWithoutModifies = SafeCloseablePair
-                            .downcast(RowSetShiftUtils.extractParallelShiftedRowsFromPostShiftIndex(upstream.shifted(), candidates));
+                            .downcast(upstream.shifted().extractParallelShiftedRowsFromPostShiftRowSet(candidates));
                 }
             }
         }

@@ -8,9 +8,9 @@ import java.util.Collections;
 /**
  * "Empty" table map class.
  */
-class EmptyTableMap extends LocalTableMap {
+public class EmptyTableMap extends LocalTableMap {
 
-    static final TableMap INSTANCE = new EmptyTableMap();
+    public static final TableMap INSTANCE = new EmptyTableMap();
 
     private EmptyTableMap() {
         super(Collections.emptyMap(), null, null);

@@ -1,5 +1,7 @@
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.api.ColumnName;
+import io.deephaven.api.SortColumn;
 import io.deephaven.base.FileUtils;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.RowSet;
@@ -205,7 +207,9 @@ public class QueryTableSortTest extends QueryTableTestBase {
         assertTableEquals(newTable(col("A", "Canteloupe", "Canteloupe", "Canteloupe", "Banana", "Banana", "Banana",
                 "Apple", "Apple", "Apple"), col("Sentinel", 6, 7, 8, 3, 4, 5, 0, 1, 2)), sorted);
 
-        final QueryTable sorted2 = (QueryTable) table.sort(SortPair.descending("A"), SortPair.ascending("Secondary"));
+        final QueryTable sorted2 = (QueryTable) table.sort(List.of(
+                SortColumn.asc(ColumnName.of("A")),
+                SortColumn.asc(ColumnName.of("Secondary"))));
         show(sorted2);
         assertTableEquals(newTable(
                 col("A", "Canteloupe", "Canteloupe", "Canteloupe", "Banana", "Banana", "Banana", "Apple", "Apple",
@@ -248,7 +252,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
         final QueryTable sorted = (QueryTable) table.sort("boolCol");
         show(sorted);
         assertEquals("", diff(sorted, testRefreshingTable(c("boolCol", null, false, false, true, true)), 10));
-        final QueryTable descending = (QueryTable) table.sort(SortPair.descending("boolCol"));
+        final QueryTable descending = (QueryTable) table.sort(List.of(SortColumn.desc(ColumnName.of("boolCol"))));
         show(descending);
         assertEquals("", diff(descending, testRefreshingTable(c("boolCol", true, true, false, false, null)), 10));
     }
@@ -337,29 +341,31 @@ public class QueryTableSortTest extends QueryTableTestBase {
                 EvalNugget.from(() -> queryTable.sort("Sym", "intCol").update("x=intCol+1")),
                 EvalNugget.from(() -> queryTable.groupBy("Sym").sort("Sym").update("x=sum(intCol)")),
                 EvalNugget.from(() -> queryTable.groupBy("Sym", "intCol").sort("Sym", "intCol").update("x=intCol+1")),
-                EvalNugget.from(() -> queryTable.sort(SortPair.ascending("Sym"), SortPair.descending("intCol"))),
-                EvalNugget.from(() -> queryTable.sort(SortPair.ascending("Sym"), SortPair.descending("intCol"),
-                        SortPair.ascending("doubleCol"))),
-                EvalNugget.from(() -> queryTable.sort(SortPair.ascending("floatCol"))),
-                EvalNugget.from(() -> queryTable.sort(SortPair.ascending("doubleCol"))),
-                EvalNugget.from(() -> queryTable.sort(SortPair.ascending("byteCol"))),
-                EvalNugget.from(() -> queryTable.sort(SortPair.ascending("shortCol"))),
-                EvalNugget.from(() -> queryTable.sort(SortPair.ascending("intCol"))),
-                EvalNugget.from(() -> queryTable.sort(SortPair.ascending("boolCol"))),
-                EvalNugget.from(() -> queryTable.sort(SortPair.ascending("longCol"))),
-                EvalNugget.from(() -> queryTable.sort(SortPair.ascending("charCol"))),
-                EvalNugget.from(() -> queryTable.sort(SortPair.ascending("bigI"))),
-                EvalNugget.from(() -> queryTable.sort(SortPair.ascending("bigD"))),
-                EvalNugget.from(() -> queryTable.sort(SortPair.descending("floatCol"))),
-                EvalNugget.from(() -> queryTable.sort(SortPair.descending("doubleCol"))),
-                EvalNugget.from(() -> queryTable.sort(SortPair.descending("byteCol"))),
-                EvalNugget.from(() -> queryTable.sort(SortPair.descending("shortCol"))),
-                EvalNugget.from(() -> queryTable.sort(SortPair.descending("intCol"))),
-                EvalNugget.from(() -> queryTable.sort(SortPair.descending("boolCol"))),
-                EvalNugget.from(() -> queryTable.sort(SortPair.descending("longCol"))),
-                EvalNugget.from(() -> queryTable.sort(SortPair.descending("charCol"))),
-                EvalNugget.from(() -> queryTable.sort(SortPair.descending("bigI"))),
-                EvalNugget.from(() -> queryTable.sort(SortPair.descending("bigD"))),
+                EvalNugget.from(() -> queryTable.sort(List.of(
+                        SortColumn.asc(ColumnName.of("Sym")), SortColumn.desc(ColumnName.of("intCol"))))),
+                EvalNugget.from(() -> queryTable.sort(List.of(
+                        SortColumn.asc(ColumnName.of("Sym")), SortColumn.desc(ColumnName.of("intCol")),
+                        SortColumn.asc(ColumnName.of("doubleCol"))))),
+                EvalNugget.from(() -> queryTable.sort(List.of(SortColumn.asc(ColumnName.of("floatCol"))))),
+                EvalNugget.from(() -> queryTable.sort(List.of(SortColumn.asc(ColumnName.of("doubleCol"))))),
+                EvalNugget.from(() -> queryTable.sort(List.of(SortColumn.asc(ColumnName.of("byteCol"))))),
+                EvalNugget.from(() -> queryTable.sort(List.of(SortColumn.asc(ColumnName.of("shortCol"))))),
+                EvalNugget.from(() -> queryTable.sort(List.of(SortColumn.asc(ColumnName.of("intCol"))))),
+                EvalNugget.from(() -> queryTable.sort(List.of(SortColumn.asc(ColumnName.of("boolCol"))))),
+                EvalNugget.from(() -> queryTable.sort(List.of(SortColumn.asc(ColumnName.of("longCol"))))),
+                EvalNugget.from(() -> queryTable.sort(List.of(SortColumn.asc(ColumnName.of("charCol"))))),
+                EvalNugget.from(() -> queryTable.sort(List.of(SortColumn.asc(ColumnName.of("bigI"))))),
+                EvalNugget.from(() -> queryTable.sort(List.of(SortColumn.asc(ColumnName.of("bigD"))))),
+                EvalNugget.from(() -> queryTable.sort(List.of(SortColumn.desc(ColumnName.of("floatCol"))))),
+                EvalNugget.from(() -> queryTable.sort(List.of(SortColumn.desc(ColumnName.of("doubleCol"))))),
+                EvalNugget.from(() -> queryTable.sort(List.of(SortColumn.desc(ColumnName.of("byteCol"))))),
+                EvalNugget.from(() -> queryTable.sort(List.of(SortColumn.desc(ColumnName.of("shortCol"))))),
+                EvalNugget.from(() -> queryTable.sort(List.of(SortColumn.desc(ColumnName.of("intCol"))))),
+                EvalNugget.from(() -> queryTable.sort(List.of(SortColumn.desc(ColumnName.of("boolCol"))))),
+                EvalNugget.from(() -> queryTable.sort(List.of(SortColumn.desc(ColumnName.of("longCol"))))),
+                EvalNugget.from(() -> queryTable.sort(List.of(SortColumn.desc(ColumnName.of("charCol"))))),
+                EvalNugget.from(() -> queryTable.sort(List.of(SortColumn.desc(ColumnName.of("bigI"))))),
+                EvalNugget.from(() -> queryTable.sort(List.of(SortColumn.desc(ColumnName.of("bigD"))))),
         };
 
         for (numSteps.setValue(0); numSteps.intValue() < maxSteps; numSteps.increment()) {
@@ -502,7 +508,8 @@ public class QueryTableSortTest extends QueryTableTestBase {
                 EvalNugget.from(() -> queryTable.groupBy("Sym").sort("Sym").update("x=sum(intCol)")),
                 EvalNugget.from(() -> queryTable.groupBy("Sym", "intCol").sort("Sym", "intCol").update("x=intCol+1")),
                 new TableComparator(
-                        queryTable.updateView("ok=k").sort(SortPair.ascending("Sym"), SortPair.descending("intCol")),
+                        queryTable.updateView("ok=k").sort(List.of(
+                                SortColumn.asc(ColumnName.of("Sym")), SortColumn.desc(ColumnName.of("intCol")))),
                         "Single Sort", queryTable.updateView("ok=k").sortDescending("intCol").sort("Sym"),
                         "Double Sort")
         };

@@ -106,12 +106,12 @@ public class BucketState {
 
     public void shift(final RowSetShiftData shiftData) {
         // update the bucket's rowSet
-        RowSetShiftUtils.apply(shiftData, rowSet);
+        shiftData.apply(rowSet);
 
         if (trackNulls) {
             // if we're tracking nulls, update those arrays
             for (final WritableRowSet nullValues : nulls) {
-                RowSetShiftUtils.apply(shiftData, nullValues);
+                shiftData.apply(nullValues);
             }
         }
 

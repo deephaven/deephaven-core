@@ -37,5 +37,5 @@ def ticking_crypto_milliseconds(interval: int):
         'Price=(double)ct_pricer(Instrument, D)', 'Exchange = ct_exchanges[(int)C%ct_y]',
         'Date = formatDate(Timestamp, TZ_NY)') \
         .dropColumns('B', 'C', 'D') \
-        .moveUpColumns('Date', 'Timestamp', 'Id', 'Instrument', 'Exchange', 'Price', 'Size')
+        .moveColumnsUp('Date', 'Timestamp', 'Id', 'Instrument', 'Exchange', 'Price', 'Size')
     return t

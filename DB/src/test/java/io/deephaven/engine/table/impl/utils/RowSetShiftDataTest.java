@@ -208,9 +208,9 @@ public class RowSetShiftDataTest {
         final RowSetShiftData sisd = scb.build();
 
         final WritableRowSet didx = rowSet.copy();
-        RowSetShiftUtils.apply(disd, didx);
+        disd.apply(didx);
         final WritableRowSet sidx = rowSet.copy();
-        RowSetShiftUtils.apply(sisd, sidx);
+        sisd.apply(sidx);
 
         assertEquals(didx, sidx);
     }
@@ -239,9 +239,9 @@ public class RowSetShiftDataTest {
         final RowSetShiftData sisd = scb.build();
 
         final WritableRowSet didx = rowSet.copy();
-        RowSetShiftUtils.apply(disd, didx);
+        disd.apply(didx);
         final WritableRowSet sidx = rowSet.copy();
-        RowSetShiftUtils.apply(sisd, sidx);
+        sisd.apply(sidx);
 
         assertEquals(2, sisd.size());
 
@@ -263,9 +263,9 @@ public class RowSetShiftDataTest {
         final RowSetShiftData sisd = scb.build();
 
         final WritableRowSet didx = rowSet.copy();
-        RowSetShiftUtils.apply(disd, didx);
+        disd.apply(didx);
         final WritableRowSet sidx = rowSet.copy();
-        RowSetShiftUtils.apply(sisd, sidx);
+        sisd.apply(sidx);
 
         assertEquals(didx, sidx);
     }
@@ -296,9 +296,9 @@ public class RowSetShiftDataTest {
         final RowSetShiftData sisd = scb.build();
 
         final WritableRowSet didx = rowSet.copy();
-        RowSetShiftUtils.apply(disd, didx);
+        disd.apply(didx);
         final WritableRowSet sidx = rowSet.copy();
-        RowSetShiftUtils.apply(sisd, sidx);
+        sisd.apply(sidx);
 
         assertEquals(didx, sidx);
     }
@@ -329,9 +329,9 @@ public class RowSetShiftDataTest {
         final RowSetShiftData sisd = scb.build();
 
         final WritableRowSet didx = rowSet.copy();
-        RowSetShiftUtils.apply(disd, didx);
+        disd.apply(didx);
         final WritableRowSet sidx = rowSet.copy();
-        RowSetShiftUtils.apply(sisd, sidx);
+        sisd.apply(sidx);
 
         assertEquals(didx, sidx);
     }
@@ -353,9 +353,9 @@ public class RowSetShiftDataTest {
         final RowSetShiftData sisd = scb.build();
 
         final WritableRowSet didx = rowSet.copy();
-        RowSetShiftUtils.apply(disd, didx);
+        disd.apply(didx);
         final WritableRowSet sidx = rowSet.copy();
-        RowSetShiftUtils.apply(sisd, sidx);
+        sisd.apply(sidx);
 
         assertEquals(didx, sidx);
     }
@@ -387,9 +387,9 @@ public class RowSetShiftDataTest {
         final RowSetShiftData sisd = scb.build();
 
         final WritableRowSet didx = rowSet.copy();
-        RowSetShiftUtils.apply(disd, didx);
+        disd.apply(didx);
         final WritableRowSet sidx = rowSet.copy();
-        RowSetShiftUtils.apply(sisd, sidx);
+        sisd.apply(sidx);
 
         assertEquals(didx, sidx);
     }
@@ -411,9 +411,9 @@ public class RowSetShiftDataTest {
         final RowSetShiftData sisd = scb.build();
 
         final WritableRowSet didx = rowSet.copy();
-        RowSetShiftUtils.apply(disd, didx);
+        disd.apply(didx);
         final WritableRowSet sidx = rowSet.copy();
-        RowSetShiftUtils.apply(sisd, sidx);
+        sisd.apply(sidx);
 
         System.out.println(sisd);
 

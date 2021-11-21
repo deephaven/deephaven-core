@@ -54,15 +54,16 @@ public class TableAssertions {
             return table;
         }
 
+        final QueryTable coalesced = (QueryTable) table.coalesce();
         return QueryPerformanceRecorder.withNuggetThrowing(
                 "assertAppendOnly(" + (description == null ? "" : description) + ')',
                 () -> {
 
-                    final Table result = new QueryTable(table.getDefinition(), table.getRowSet(),
-                            table.getColumnSourceMap());
+                    final QueryTable result = new QueryTable(coalesced.getDefinition(), coalesced.getRowSet(),
+                            coalesced.getColumnSourceMap());
                     final TableUpdateListener listener =
-                            new AppendOnlyAssertionInstrumentedListenerAdapter(description, table, result);
-                    table.listenForUpdates(listener);
+                            new AppendOnlyAssertionInstrumentedListenerAdapter(description, coalesced, result);
+                    coalesced.listenForUpdates(listener);
 
                     return result;
                 });
@@ -112,14 +113,15 @@ public class TableAssertions {
             return table;
         }
 
+        final QueryTable coalesced = (QueryTable) table.coalesce();
         return QueryPerformanceRecorder.withNuggetThrowing(
                 "assertSorted(" + (description == null ? "" : description) + ", " + column + ", " + order + ')',
                 () -> {
-                    final Table result =
-                            new QueryTable(table.getRowSet(), table.getColumnSourceMap());
+                    final QueryTable result =
+                            new QueryTable(coalesced.getRowSet(), coalesced.getColumnSourceMap());
                     final TableUpdateListener listener = new SortedAssertionInstrumentedListenerAdapter(description,
-                            table, result, column, order);
-                    table.listenForUpdates(listener);
+                            coalesced, result, column, order);
+                    coalesced.listenForUpdates(listener);
                     ((BaseTable) table).copyAttributes(result, s -> true);
                     SortedColumnsAttribute.setOrderForColumn(result, column, order);
                     return result;

@@ -5,6 +5,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.TableUpdate;
+import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.tables.SortingOrder;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.BaseTable;
@@ -28,8 +29,8 @@ public class SortedAssertionInstrumentedListenerAdapter extends BaseTable.Listen
     private final SortCheck sortCheck;
 
     public SortedAssertionInstrumentedListenerAdapter(String description,
-            Table parent,
-            Table dependent,
+            QueryTable parent,
+            BaseTable dependent,
             String columnName,
             SortingOrder order) {
         super(

@@ -40,7 +40,7 @@ public class UpdateValidatorNugget implements EvalNuggetInterface {
         public void onUpdate(TableUpdate update) {}
 
         @Override
-        public void onFailureInternal(Throwable originalException, UpdatePerformanceTracker.Entry sourceEntry) {
+        public void onFailureInternal(Throwable originalException, Entry sourceEntry) {
             exception = originalException;
             final StringWriter errors = new StringWriter();
             originalException.printStackTrace(new PrintWriter(errors));

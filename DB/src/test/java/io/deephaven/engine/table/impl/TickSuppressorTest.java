@@ -121,7 +121,7 @@ public class TickSuppressorTest extends QueryTableTestBase {
                 intCol("SentinelA", 5, 10, 15),
                 intCol("SentinelB", 20, 30, 40));
 
-        final Table suppressed = TickSuppressor.removeSpuriousModifications(input);
+        final QueryTable suppressed = (QueryTable) TickSuppressor.removeSpuriousModifications(input);
 
         final io.deephaven.engine.table.impl.SimpleListener listener = new io.deephaven.engine.table.impl.SimpleListener(suppressed);
         suppressed.listenForUpdates(listener);

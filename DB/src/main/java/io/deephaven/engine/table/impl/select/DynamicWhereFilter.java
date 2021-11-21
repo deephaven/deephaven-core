@@ -9,7 +9,7 @@ import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
+import io.deephaven.engine.table.impl.indexer.RowSetIndexer;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.updategraph.DynamicNode;
@@ -45,7 +45,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
 
     // this reference must be maintained for reachability
     @SuppressWarnings({"FieldCanBeLocal", "unused"})
-    private final Table setTable;
+    private final QueryTable setTable;
     @SuppressWarnings("FieldCanBeLocal")
     // this reference must be maintained for reachability
     private final InstrumentedTableUpdateListener setUpdateListener;
@@ -53,7 +53,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
     private RecomputeListener listener;
     private QueryTable resultTable;
 
-    public DynamicWhereFilter(final Table setTable, final boolean inclusion, final MatchPair... setColumnsNames) {
+    public DynamicWhereFilter(final QueryTable setTable, final boolean inclusion, final MatchPair... setColumnsNames) {
         if (setTable.isRefreshing()) {
             UpdateGraphProcessor.DEFAULT.checkInitiateTableOperation();
         }
@@ -117,7 +117,7 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
                 }
 
                 @Override
-                public void onFailureInternal(Throwable originalException, UpdatePerformanceTracker.Entry sourceEntry) {
+                public void onFailureInternal(Throwable originalException, Entry sourceEntry) {
                     if (listener != null) {
                         resultTable.notifyListenersOnError(originalException, sourceEntry);
                     }
@@ -193,41 +193,43 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
 
         // pick something sensible
         if (trackingSelection != null) {
-            if (trackingSelection.hasGrouping(keyColumns)) {
-                if (selection.size() > (trackingSelection.getGrouping(tupleSource).size() * 2L)) {
-                    return filterGrouping(trackingSelection, tupleSource);
+            final RowSetIndexer selectionIndexer = RowSetIndexer.of(trackingSelection);
+            if (selectionIndexer.hasGrouping(keyColumns)) {
+                if (selection.size() > (selectionIndexer.getGrouping(tupleSource).size() * 2L)) {
+                    return filterGrouping(trackingSelection, selectionIndexer, tupleSource);
                 } else {
                     return filterLinear(selection, keyColumns, tupleSource);
                 }
             }
-            final boolean allGrouping = Arrays.stream(keyColumns).allMatch(trackingSelection::hasGrouping);
+            final boolean allGrouping = Arrays.stream(keyColumns).allMatch(selectionIndexer::hasGrouping);
             if (allGrouping) {
-                return filterGrouping(trackingSelection, tupleSource);
+                return filterGrouping(trackingSelection, selectionIndexer, tupleSource);
             }
 
             final ColumnSource[] sourcesWithGroupings =
-                    Arrays.stream(keyColumns).filter(trackingSelection::hasGrouping)
+                    Arrays.stream(keyColumns).filter(selectionIndexer::hasGrouping)
                             .toArray(ColumnSource[]::new);
             final OptionalInt minGroupCount =
-                    Arrays.stream(sourcesWithGroupings).mapToInt(x -> trackingSelection.getGrouping(x).size())
+                    Arrays.stream(sourcesWithGroupings).mapToInt(x -> selectionIndexer.getGrouping(x).size())
                             .min();
             if (minGroupCount.isPresent() && (minGroupCount.getAsInt() * 4L) < selection.size()) {
-                return filterGrouping(trackingSelection, tupleSource);
+                return filterGrouping(trackingSelection, selectionIndexer, tupleSource);
             }
         }
         return filterLinear(selection, keyColumns, tupleSource);
     }
 
-    private WritableRowSet filterGrouping(TrackingRowSet selection, TupleSource tupleSource) {
-        final RowSet matchingKeys = selection.getSubSetForKeySet(liveValues, tupleSource);
+    private WritableRowSet filterGrouping(TrackingRowSet selection, RowSetIndexer selectionIndexer,
+                                          TupleSource tupleSource) {
+        final RowSet matchingKeys = selectionIndexer.getSubSetForKeySet(liveValues, tupleSource);
         return (inclusion ? matchingKeys.copy() : selection.minus(matchingKeys));
     }
 
-    private WritableRowSet filterGrouping(TrackingRowSet selection, Table table) {
+    private WritableRowSet filterGrouping(TrackingRowSet selection, RowSetIndexer selectionIndexer, Table table) {
         final ColumnSource[] keyColumns =
                 Arrays.stream(matchPairs).map(mp -> table.getColumnSource(mp.leftColumn())).toArray(ColumnSource[]::new);
         final TupleSource tupleSource = TupleSourceFactory.makeTupleSource(keyColumns);
-        return filterGrouping(selection, tupleSource);
+        return filterGrouping(selection, selectionIndexer, tupleSource);
     }
 
     private WritableRowSet filterLinear(RowSet selection, ColumnSource[] keyColumns, TupleSource tupleSource) {
