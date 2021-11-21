@@ -12,7 +12,7 @@ import java.io.PrintStream;
 @Component(modules = {
         DeephavenApiServerModule.class,
         HealthCheckModule.class,
-        ServerBuilderModule.class
+        NettyServerBuilderModule.class
 })
 public interface DeephavenApiServerComponent {
 

@@ -46,7 +46,7 @@ import io.deephaven.server.session.SessionState;
 import io.deephaven.server.session.SessionState.ExportBuilder;
 import io.deephaven.server.session.TicketRouter;
 import io.deephaven.server.table.ops.GrpcTableOperation;
-import io.deephaven.server.util.ExportTicketHelper;
+import io.deephaven.grpc_api.util.ExportTicketHelper;
 import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 

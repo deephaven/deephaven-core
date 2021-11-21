@@ -1,0 +1,14 @@
+plugins {
+    id 'java-library'
+}
+
+dependencies {
+    api project(':server')
+    Classpaths.inheritDagger(project)
+
+    Classpaths.inheritGrpcPlatform(project)
+    implementation 'io.grpc:grpc-netty'
+
+
+    testImplementation project(':server-test')
+}
