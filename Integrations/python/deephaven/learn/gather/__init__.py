@@ -60,8 +60,8 @@ def table_to_numpy_2d(idx, cols, np_dtype = None):
     elif np_dtype == int:
         np_dtype = np.intc
 
-    if np_dtype == bool:
-        buffer = _gatherer.tensorBuffer2DBoolean(idx, cols,)
+    if np_dtype == np.bool_:
+        buffer = _gatherer.tensorBuffer2DBoolean(idx, cols)
     elif np_dtype == np.byte:
         buffer = _gatherer.tensorBuffer2DByte(idx, cols)
     elif np_dtype == np.short:

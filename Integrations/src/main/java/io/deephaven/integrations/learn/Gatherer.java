@@ -1,30 +1,12 @@
 package io.deephaven.integrations.learn;
 
 import io.deephaven.db.v2.sources.ColumnSource;
-// REMOVE THIS AFTER REMOVING makeIndexSet!
-import io.deephaven.db.tables.Table;
 
 /**
  * Gatherer takes Deephaven columnar data and places it into a buffer to be used by Python. The Python object will take
  * data from the buffer and use it to construct a 2d array of specified size.
  */
 public class Gatherer {
-
-    /**
-     * Generate an index set from a table. THIS IS JUST FOR EASY PYTHON TESTING. REMOVE BEFORE PROD.
-     *
-     * @param t table
-     * @return index set
-     */
-    public static IndexSet makeIndexSet(final Table t) {
-        final IndexSet is = new IndexSet(t.intSize());
-
-        for (long idx : t.getIndex()) {
-            is.add(idx);
-        }
-
-        return is;
-    }
 
     /**
      * Copy data from a table into a 2d tensor of Booleans.
@@ -34,8 +16,7 @@ public class Gatherer {
      * @return contiguous RAM allocated for the tensor. When a numpy tensor is passed in for this argument, jpy will
      *         handle passing the memory reference as a 1d java array here.
      */
-    public static boolean[] tensorBuffer2DBoolean(final IndexSet indexSet,
-            final ColumnSource<?>[] columnSources) {
+    public static boolean[] tensorBuffer2DBoolean(final IndexSet indexSet, final ColumnSource<?>[] columnSources) {
 
         final int nRows = indexSet.getSize();
         final int nCols = columnSources.length;
@@ -65,8 +46,7 @@ public class Gatherer {
      * @return contiguous RAM allocated for the tensor. When a numpy tensor is passed in for this argument, jpy will
      *         handle passing the memory reference as a 1d java array here.
      */
-    public static byte[] tensorBuffer2DByte(final IndexSet indexSet,
-            final ColumnSource<?>[] columnSources) {
+    public static byte[] tensorBuffer2DByte(final IndexSet indexSet, final ColumnSource<?>[] columnSources) {
 
         final int nRows = indexSet.getSize();
         final int nCols = columnSources.length;
@@ -97,8 +77,7 @@ public class Gatherer {
      *         handle passing the memory reference as a 1d java array here.
      */
 
-    public static short[] tensorBuffer2DShort(final IndexSet indexSet,
-            final ColumnSource<?>[] columnSources) {
+    public static short[] tensorBuffer2DShort(final IndexSet indexSet, final ColumnSource<?>[] columnSources) {
 
         final int nRows = indexSet.getSize();
         final int nCols = columnSources.length;
@@ -128,8 +107,7 @@ public class Gatherer {
      * @return contiguous RAM allocated for the tensor. When a numpy tensor is passed in for this argument, jpy will
      *         handle passing the memory reference as a 1d java array here.
      */
-    public static int[] tensorBuffer2DInt(final IndexSet indexSet,
-            final ColumnSource<?>[] columnSources) {
+    public static int[] tensorBuffer2DInt(final IndexSet indexSet, final ColumnSource<?>[] columnSources) {
 
         final int nRows = indexSet.getSize();
         final int nCols = columnSources.length;
@@ -160,8 +138,7 @@ public class Gatherer {
      *         handle passing the memory reference as a 1d java array here.
      */
 
-    public static long[] tensorBuffer2DLong(final IndexSet indexSet,
-            final ColumnSource<?>[] columnSources) {
+    public static long[] tensorBuffer2DLong(final IndexSet indexSet, final ColumnSource<?>[] columnSources) {
 
         final int nRows = indexSet.getSize();
         final int nCols = columnSources.length;
@@ -192,8 +169,7 @@ public class Gatherer {
      *         handle passing the memory reference as a 1d java array here.
      */
 
-    public static float[] tensorBuffer2DFloat(final IndexSet indexSet,
-            final ColumnSource<?>[] columnSources) {
+    public static float[] tensorBuffer2DFloat(final IndexSet indexSet, final ColumnSource<?>[] columnSources) {
 
         final int nRows = indexSet.getSize();
         final int nCols = columnSources.length;
@@ -223,8 +199,7 @@ public class Gatherer {
      * @return contiguous RAM allocated for the tensor. When a numpy tensor is passed in for this argument, jpy will
      *         handle passing the memory reference as a 1d java array here.
      */
-    public static double[] tensorBuffer2DDouble(final IndexSet indexSet,
-            final ColumnSource<?>[] columnSources) {
+    public static double[] tensorBuffer2DDouble(final IndexSet indexSet, final ColumnSource<?>[] columnSources) {
 
         final int nRows = indexSet.getSize();
         final int nCols = columnSources.length;
