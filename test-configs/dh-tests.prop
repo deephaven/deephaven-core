@@ -83,10 +83,6 @@ allocation.stats.enabled=false
 ###### RspSequentialBuilder
 RspSequentialBuilder.check=true
 
-# DbTypes default impls
-DbTypes.DbFile.impl=io.deephaven.dbtypes.DbFileImpl$Factory
-DbTypes.DbImage.impl=io.deephaven.dbtypes.DbImageImpl$Factory
-
 # MetricsManager
 MetricsManager.toStdout=true
 MetricsManager.logPeriodSeconds=30
