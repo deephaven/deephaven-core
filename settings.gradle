@@ -107,15 +107,6 @@ project(':grpc-api-server-native').projectDir = file('grpc-api/server/native')
 include(':grpc-api-client-console')
 project(':grpc-api-client-console').projectDir = file('grpc-api-client/console')
 
-include(':extensions-barrage')
-project(':extensions-barrage').projectDir = file('extensions/barrage')
-
-include(':extensions-classgraph')
-project(':extensions-classgraph').projectDir = file('extensions/classgraph')
-
-include(':extensions-suanshu')
-project(':extensions-suanshu').projectDir = file('extensions/suanshu')
-
 include(':Base')
 
 include(':SevenZip')
@@ -187,8 +178,20 @@ project(':extensions-csv').projectDir = file('extensions/csv')
 include(':extensions-kafka')
 project(':extensions-kafka').projectDir = file('extensions/kafka')
 
-include(':extensions-parquet')
-project(':extensions-parquet').projectDir = file('extensions/parquet')
+include(':extensions-parquet-base')
+project(':extensions-parquet-base').projectDir = file('extensions/parquet/base')
+
+include(':extensions-parquet-table')
+project(':extensions-parquet-table').projectDir = file('extensions/parquet/table')
+
+include(':extensions-barrage')
+project(':extensions-barrage').projectDir = file('extensions/barrage')
+
+include(':extensions-classgraph')
+project(':extensions-classgraph').projectDir = file('extensions/classgraph')
+
+include(':extensions-suanshu')
+project(':extensions-suanshu').projectDir = file('extensions/suanshu')
 
 include(':envoy')
 

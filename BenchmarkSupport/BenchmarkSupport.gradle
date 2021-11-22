@@ -24,10 +24,12 @@ sourceSets {
 
 dependencies {
     compile project(':DB'),
+            project(':engine-table'),
+            project(':extensions-parquet-table'),
             'org.openjdk.jmh:jmh-core:1.20'
 
     testCompile TestTools.projectDependency(project, 'Util'),
-                TestTools.projectDependency(project, 'DB')
+            TestTools.projectDependency(project, 'DB')
 
     testRuntime project(path: ':configs'), project(path: ':test-configs'), project(':Numerics')
 

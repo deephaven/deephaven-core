@@ -15,7 +15,7 @@ import io.deephaven.engine.vector.Vector;
 import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.engine.function.DoubleNumericPrimitives;
 import io.deephaven.engine.util.TableTools;
-import io.deephaven.engine.util.ParquetTools;
+import io.deephaven.parquet.table.ParquetTools;
 import junit.framework.TestCase;
 import org.junit.After;
 import org.junit.Before;

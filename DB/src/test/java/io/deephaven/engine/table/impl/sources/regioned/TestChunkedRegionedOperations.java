@@ -12,14 +12,14 @@ import io.deephaven.engine.table.lang.QueryScope;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.table.impl.TableWithDefaults;
-import io.deephaven.engine.util.ParquetTools;
+import io.deephaven.parquet.table.ParquetTools;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.engine.util.file.TrackedFileHandleFactory;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.TableMap;
-import io.deephaven.engine.table.impl.locations.local.DeephavenNestedPartitionLayout;
-import io.deephaven.engine.table.impl.parquet.ParquetInstructions;
+import io.deephaven.parquet.table.layout.DeephavenNestedPartitionLayout;
+import io.deephaven.parquet.table.ParquetInstructions;
 import io.deephaven.engine.table.impl.select.ReinterpretedColumn;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.ColumnSource;
@@ -44,7 +44,7 @@ import java.util.stream.IntStream;
 import org.junit.experimental.categories.Category;
 
 import static io.deephaven.engine.table.impl.TstUtils.assertTableEquals;
-import static io.deephaven.engine.table.impl.locations.local.DeephavenNestedPartitionLayout.PARQUET_FILE_NAME;
+import static io.deephaven.parquet.table.layout.DeephavenNestedPartitionLayout.PARQUET_FILE_NAME;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 

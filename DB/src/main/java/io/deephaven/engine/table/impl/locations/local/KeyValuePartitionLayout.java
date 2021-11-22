@@ -7,8 +7,6 @@ import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.TableLocationKey;
 import io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder;
-import io.deephaven.engine.table.impl.locations.parquet.local.ParquetTableLocationKey;
-import io.deephaven.engine.table.impl.parquet.ParquetTableWriter;
 import io.deephaven.engine.table.ColumnSource;
 import org.apache.commons.text.StringEscapeUtils;
 import org.jetbrains.annotations.NotNull;
@@ -39,16 +37,7 @@ import java.util.stream.Collectors;
  *           the same rules.
  * @implNote Column names will be legalized via {@link NameValidator#legalizeColumnName(String, Set)}.
  */
-public final class KeyValuePartitionLayout<TLK extends TableLocationKey> implements TableLocationKeyFinder<TLK> {
-
-    public static TableLocationKeyFinder<ParquetTableLocationKey> forParquet(@NotNull final File tableRootDirectory,
-            final int maxPartitioningLevels) {
-        return new KeyValuePartitionLayout<>(
-                tableRootDirectory,
-                path -> path.getFileName().toString().endsWith(ParquetTableWriter.PARQUET_FILE_EXTENSION),
-                (path, partitions) -> new ParquetTableLocationKey(path.toFile(), 0, partitions),
-                maxPartitioningLevels);
-    }
+public class KeyValuePartitionLayout<TLK extends TableLocationKey> implements TableLocationKeyFinder<TLK> {
 
     private final File tableRootDirectory;
     private final Predicate<Path> pathFilter;

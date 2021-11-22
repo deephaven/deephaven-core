@@ -111,7 +111,7 @@ public class PythonStaticGenerator {
         final String beginMethod = "@_passThrough\ndef " + methodName + "(" + paramString + "):" +
                 PythonGeneratorParser.getMethodDocstring(classDocContainer, methodName, 4) + "\n";
         final String endMethod;
-        if ((javaClass.equals("io.deephaven.engine.util.ParquetTools")
+        if ((javaClass.equals("io.deephaven.parquet.table.ParquetTools")
                 && customParquetTools.contains(methodName)) ||
                 (javaClass.equals("io.deephaven.engine.util.TableTools")
                         && customTableTools.contains(methodName))

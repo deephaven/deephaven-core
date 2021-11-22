@@ -6,13 +6,13 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.lang.QueryLibrary;
-import io.deephaven.engine.util.ParquetTools;
+import io.deephaven.parquet.table.ParquetTools;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.util.file.TrackedFileHandleFactory;
 import io.deephaven.engine.table.impl.TableWithDefaults;
 import io.deephaven.engine.table.impl.TstUtils;
-import io.deephaven.engine.table.impl.locations.local.DeephavenNestedPartitionLayout;
-import io.deephaven.engine.table.impl.parquet.ParquetInstructions;
+import io.deephaven.parquet.table.layout.DeephavenNestedPartitionLayout;
+import io.deephaven.parquet.table.ParquetInstructions;
 import junit.framework.TestCase;
 import org.junit.After;
 import org.junit.Before;
@@ -26,7 +26,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static io.deephaven.engine.table.impl.locations.local.DeephavenNestedPartitionLayout.PARQUET_FILE_NAME;
+import static io.deephaven.parquet.table.layout.DeephavenNestedPartitionLayout.PARQUET_FILE_NAME;
 
 /**
  * Unit tests for {@link ParallelDeferredGroupingProvider}.

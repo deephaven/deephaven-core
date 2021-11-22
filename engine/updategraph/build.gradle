@@ -1,6 +1,7 @@
 import io.deephaven.tools.Tools
 
 configurations {
+    testImplementation.extendsFrom junit
 }
 
 sourceSets {

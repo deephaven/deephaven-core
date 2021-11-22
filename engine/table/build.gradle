@@ -21,7 +21,8 @@ dependencies {
             project(':engine-stringset'),
             project(':engine-tuplesource')
 
-    testImplementation TestTools.projectDependency(project, 'engine-rowset')
+    testImplementation TestTools.projectDependency(project, 'engine-rowset'),
+            project(':extensions-parquet-table')
 }
 
 spotless {

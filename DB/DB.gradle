@@ -50,7 +50,7 @@ dependencies {
             project(':web-shared-beans'),
             project(':deephaven-jpy'),
             project(':deephaven-jpy-ext'),
-            project(':Parquet'),
+            project(':extensions-parquet-base'),
             project(':DHProcess'),
             project(':log-factory'),
             project(':Container'),
@@ -70,7 +70,8 @@ dependencies {
             "org.flywaydb:flyway-core:5.2.4",
             'com.github.f4b6a3:uuid-creator:3.6.0'
 
-    testImplementation TestTools.projectDependency(project, 'engine-rowset')
+    testImplementation TestTools.projectDependency(project, 'engine-rowset'),
+            project(':extensions-parquet-table')
 
     annotationProcessor 'org.immutables:value:2.8.1'
     compileOnly project(':util-immutables')

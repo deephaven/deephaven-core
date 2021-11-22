@@ -3,7 +3,7 @@ package io.deephaven.engine.table.impl.sources.regioned;
 import io.deephaven.base.FileUtils;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.vector.ObjectVector;
-import io.deephaven.engine.util.ParquetTools;
+import io.deephaven.parquet.table.ParquetTools;
 import io.deephaven.engine.util.TableTools;
 import org.junit.After;
 import org.junit.Before;
