@@ -15,7 +15,7 @@ import os
 from deephaven import learn, tableToDataFrame, TableTools
 from deephaven.learn import gather
 
-class TestLearn(unittest.TestCase):
+class TestGather(unittest.TestCase):
     """
     Test cases for deephaven.learn submodule
     """
@@ -151,17 +151,30 @@ class TestLearn(unittest.TestCase):
             self.assertTrue(gatherer.flags["C_CONTIGUOUS"] or gatherer.flags["F_CONTIGUOUS"])
             print("Array contiguity checked.")
 
+    # Test boolean data types
     def test_boolean(self):
         base_test(np_dtype = np.bool_)
+
+    # Test byte data types
     def test_byte(self):
         base_test(np_dtype = np.byte)
+
+    # Test short data types
     def test_short(self):
         base_test(np_dtype = np.short)
+
+    # Test int data types
     def test_int(self):
         base_test(np_dtype = np.intc)
+
+    # Test long data types
     def test_long(self):
         base_test(np_dtype = np.int_)
+
+    # Test float data types
     def test_float(self):
         base_test(np_dtype = np.single)
+
+    # Test double data types
     def test_double(self):
         base_test(np_dtype = np.double)
