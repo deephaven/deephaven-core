@@ -1,6 +1,6 @@
 package io.deephaven.engine.table.impl.ssa;
 
-import io.deephaven.engine.tables.SortingOrder;
+import io.deephaven.engine.table.impl.SortingOrder;
 import io.deephaven.engine.table.impl.sort.LongSortKernel;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.chunk.Attributes.RowKeys;

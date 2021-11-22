@@ -18,6 +18,7 @@ sourceSets {
 
 dependencies {
     compile project(':engine-api'),
+            project(':engine-stringset'),
             project(':engine-tuplesource')
 
     testImplementation TestTools.projectDependency(project, 'engine-rowset')

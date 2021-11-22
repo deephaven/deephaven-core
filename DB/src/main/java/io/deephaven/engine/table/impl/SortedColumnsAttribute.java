@@ -1,6 +1,5 @@
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.engine.tables.SortingOrder;
 import io.deephaven.engine.table.Table;
 
 import java.util.*;

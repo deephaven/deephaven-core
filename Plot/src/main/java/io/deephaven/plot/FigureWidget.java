@@ -5,9 +5,9 @@
 package io.deephaven.plot;
 
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.engine.tables.utils.FigureWidgetMarker;
-import io.deephaven.engine.tables.utils.LiveWidget;
-import io.deephaven.engine.tables.utils.LiveWidgetVisibilityProvider;
+import io.deephaven.engine.util.FigureWidgetMarker;
+import io.deephaven.engine.util.LiveWidget;
+import io.deephaven.engine.util.LiveWidgetVisibilityProvider;
 import io.deephaven.util.annotations.ScriptApi;
 
 import java.util.*;

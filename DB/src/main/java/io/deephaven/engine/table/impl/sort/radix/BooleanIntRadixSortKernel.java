@@ -3,7 +3,7 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.table.impl.sort.radix;
 
-import io.deephaven.engine.tables.SortingOrder;
+import io.deephaven.engine.table.impl.SortingOrder;
 import io.deephaven.engine.table.impl.sort.IntSortKernel;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.Attributes.*;

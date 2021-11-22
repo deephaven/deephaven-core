@@ -18,7 +18,7 @@ import io.deephaven.engine.chunk.Attributes.OrderedRowKeys;
 import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.table.impl.SmartKeySource;
-import io.deephaven.engine.table.impl.utils.*;
+import io.deephaven.engine.table.impl.util.*;
 import io.deephaven.util.annotations.VisibleForTesting;
 import org.apache.commons.lang3.mutable.Mutable;
 import org.apache.commons.lang3.mutable.MutableObject;

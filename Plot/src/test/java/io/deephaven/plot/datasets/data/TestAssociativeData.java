@@ -9,7 +9,7 @@ import io.deephaven.plot.errors.PlotIllegalArgumentException;
 import io.deephaven.plot.util.tables.TableHandle;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.tables.utils.TableTools;
+import io.deephaven.engine.util.TableTools;
 import junit.framework.TestCase;
 
 import java.util.HashMap;

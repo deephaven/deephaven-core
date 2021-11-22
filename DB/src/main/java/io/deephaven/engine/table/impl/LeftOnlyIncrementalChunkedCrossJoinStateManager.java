@@ -10,7 +10,6 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSequenceFactory;
-import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.chunk.util.hashing.*;
 // this is ugly to have twice, but we do need it twice for replication
@@ -21,15 +20,15 @@ import io.deephaven.engine.table.impl.sort.timsort.LongIntTimsortKernel;
 import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.Attributes.*;
-import io.deephaven.engine.table.impl.utils.*;
+import io.deephaven.engine.table.impl.util.*;
 
 // mixin rehash
 import java.util.Arrays;
 import io.deephaven.engine.table.impl.sort.permute.IntPermuteKernel;
 // @StateChunkTypeEnum@ from \QObject\E
 import io.deephaven.engine.table.impl.sort.permute.ObjectPermuteKernel;
-import io.deephaven.engine.table.impl.utils.compact.IntCompactKernel;
-import io.deephaven.engine.table.impl.utils.compact.LongCompactKernel;
+import io.deephaven.engine.table.impl.util.compact.IntCompactKernel;
+import io.deephaven.engine.table.impl.util.compact.LongCompactKernel;
 // endmixin rehash
 
 import io.deephaven.util.SafeCloseableArray;

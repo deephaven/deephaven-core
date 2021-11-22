@@ -3,16 +3,17 @@ package io.deephaven.engine.table.impl.sources.regioned;
 import io.deephaven.base.FileUtils;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.ColumnDefinition;
-import io.deephaven.engine.tables.StringSetArrayWrapper;
+import io.deephaven.engine.stringset.ArrayStringSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.lang.QueryLibrary;
-import io.deephaven.engine.tables.libs.StringSet;
+import io.deephaven.engine.stringset.StringSet;
 import io.deephaven.engine.table.lang.QueryScope;
-import io.deephaven.engine.tables.utils.*;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.table.impl.TableWithDefaults;
+import io.deephaven.engine.util.ParquetTools;
+import io.deephaven.engine.util.TableTools;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.engine.util.file.TrackedFileHandleFactory;
 import io.deephaven.engine.table.impl.QueryTable;
@@ -133,14 +134,14 @@ public class TestChunkedRegionedOperations {
         queryScope.putParam("nowNanos", DateTimeUtils.currentTime().getNanos());
         queryScope.putParam("letters",
                 IntStream.range('A', 'A' + 64).mapToObj(c -> new String(new char[] {(char) c})).toArray(String[]::new));
-        queryScope.putParam("emptySymbolSet", new StringSetArrayWrapper());
+        queryScope.putParam("emptySymbolSet", new ArrayStringSet());
         queryScope.putParam("stripeSize", STRIPE_SIZE);
         QueryScope.setScope(queryScope);
 
         QueryLibrary.resetLibrary();
         QueryLibrary.importClass(BigInteger.class);
         QueryLibrary.importClass(StringSet.class);
-        QueryLibrary.importClass(StringSetArrayWrapper.class);
+        QueryLibrary.importClass(ArrayStringSet.class);
         QueryLibrary.importClass(SimpleSerializable.class);
         QueryLibrary.importClass(SimpleExternalizable.class);
         QueryLibrary.importStatic(BooleanUtils.class);
@@ -187,7 +188,7 @@ public class TestChunkedRegionedOperations {
                         "Sym  = II % 64    == 0  ? null        :         Long.toString(II % 1000)",
                         "Str  = II % 128   == 0  ? null        :         Long.toString(II)",
                         "DT   = II % 256   == 0  ? null        :         new DateTime(nowNanos + II)",
-                        "SymS = (StringSet) new StringSetArrayWrapper(letters[((int) II) % 64], letters[(((int) II) + 7) % 64])",
+                        "SymS = (StringSet) new ArrayStringSet(letters[((int) II) % 64], letters[(((int) II) + 7) % 64])",
                         "Ser  = II % 1024  == 0  ? null        : new SimpleSerializable(II)",
                         "Ext  = II % 1024  == 0  ? null        : new SimpleExternalizable(II)",
                         "Fix  = Sym == null      ? null        : new BigInteger(Sym, 10)",

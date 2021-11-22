@@ -5,7 +5,7 @@ import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.TableMap;
-import io.deephaven.engine.tables.utils.TableTools;
+import io.deephaven.engine.util.TableTools;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.annotations.ScriptApi;
 import io.deephaven.util.process.ProcessEnvironment;

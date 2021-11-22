@@ -6,10 +6,10 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.indexer.RowSetIndexer;
 import io.deephaven.engine.table.lang.QueryScope;
-import io.deephaven.engine.tables.utils.ParquetTools;
-import io.deephaven.engine.tables.utils.TableTools;
+import io.deephaven.engine.util.ParquetTools;
+import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.impl.utils.ColumnHolder;
+import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import org.junit.After;
@@ -20,7 +20,7 @@ import java.nio.file.Files;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import static io.deephaven.engine.tables.utils.TableTools.intCol;
+import static io.deephaven.engine.util.TableTools.intCol;
 import static io.deephaven.engine.table.impl.TstUtils.assertTableEquals;
 
 public class TestSelectPreserveGrouping extends QueryTableTestBase {

@@ -8,7 +8,7 @@ import io.deephaven.engine.table.impl.sources.LongArraySource;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.table.impl.utils.WritableRowRedirection;
+import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import io.deephaven.engine.rowset.RowSet;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;

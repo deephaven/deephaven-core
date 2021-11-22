@@ -9,7 +9,7 @@ import io.deephaven.plot.Figure;
 import io.deephaven.plot.FigureFactory;
 import io.deephaven.plot.filters.SelectableDataSetOneClick;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.tables.utils.TableTools;
+import io.deephaven.engine.util.TableTools;
 
 
 import static io.deephaven.plot.filters.Selectables.oneClick;

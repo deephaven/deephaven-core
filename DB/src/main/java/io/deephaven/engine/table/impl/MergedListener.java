@@ -14,7 +14,7 @@ import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.updategraph.AbstractNotification;
-import io.deephaven.engine.table.impl.utils.AsyncClientErrorNotifier;
+import io.deephaven.engine.table.impl.util.AsyncClientErrorNotifier;
 import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import org.jetbrains.annotations.NotNull;
 

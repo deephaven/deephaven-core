@@ -5,7 +5,7 @@ import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
-import io.deephaven.engine.table.impl.utils.RowRedirection;
+import io.deephaven.engine.table.impl.util.RowRedirection;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.engine.table.impl.join.dupexpand.DupExpandKernel;
 import io.deephaven.engine.table.impl.sort.permute.PermuteKernel;

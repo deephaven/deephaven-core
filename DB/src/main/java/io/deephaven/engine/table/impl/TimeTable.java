@@ -11,6 +11,7 @@ import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.time.TimeProvider;
+import io.deephaven.engine.util.TableTools;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.function.LongNumericPrimitives;
@@ -24,7 +25,7 @@ import java.util.Map;
 /**
  * A TimeTable adds rows at a fixed interval with a single column named "Timestamp".
  *
- * To create a TimeTable, you should use the {@link io.deephaven.engine.tables.utils.TableTools#timeTable} family of
+ * To create a TimeTable, you should use the {@link TableTools#timeTable} family of
  * methods.
  */
 public class TimeTable extends QueryTable implements Runnable {

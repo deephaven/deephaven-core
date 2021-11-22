@@ -11,8 +11,8 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtil;
 import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.table.ChunkSource;
-import io.deephaven.engine.table.impl.utils.freezeby.FreezeByCountOperator;
-import io.deephaven.engine.table.impl.utils.freezeby.FreezeByOperator;
+import io.deephaven.engine.table.impl.util.freezeby.FreezeByCountOperator;
+import io.deephaven.engine.table.impl.util.freezeby.FreezeByOperator;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;

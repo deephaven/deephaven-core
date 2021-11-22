@@ -2,7 +2,6 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.table.Context;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.tables.SortingOrder;
 import io.deephaven.engine.table.impl.join.dupcompact.DupCompactKernel;
 import io.deephaven.engine.table.impl.join.stamp.StampKernel;
 import io.deephaven.engine.table.impl.sort.LongSortKernel;
@@ -11,7 +10,7 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.chunk.Attributes.RowKeys;
 import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.chunk.*;
-import io.deephaven.engine.table.impl.utils.WritableRowRedirection;
+import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import io.deephaven.engine.rowset.RowSet;
 
 class AsOfStampContext implements Context {

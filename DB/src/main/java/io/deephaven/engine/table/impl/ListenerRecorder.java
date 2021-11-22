@@ -7,7 +7,7 @@ import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.updategraph.LogicalClock;
-import io.deephaven.engine.table.impl.utils.*;
+import io.deephaven.engine.table.impl.util.*;
 
 /**
  * A listener recorder stores references to added, removed, modified, and shifted indices; and then notifies a

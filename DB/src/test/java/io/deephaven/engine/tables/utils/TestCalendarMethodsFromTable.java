@@ -15,7 +15,7 @@ import org.junit.experimental.categories.Category;
 
 import java.time.LocalDate;
 
-import static io.deephaven.engine.tables.utils.TableTools.emptyTable;
+import static io.deephaven.engine.util.TableTools.emptyTable;
 
 /**
  * Tests for {@link StaticCalendarMethods} from the {@link Table} API.

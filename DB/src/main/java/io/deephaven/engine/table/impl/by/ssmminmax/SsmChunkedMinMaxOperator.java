@@ -13,7 +13,7 @@ import io.deephaven.engine.table.impl.sources.ObjectArraySource;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.Attributes.*;
 import io.deephaven.engine.table.impl.ssms.SegmentedSortedMultiSet;
-import io.deephaven.engine.table.impl.utils.compact.CompactKernel;
+import io.deephaven.engine.table.impl.util.compact.CompactKernel;
 
 import java.util.Collections;
 import java.util.Map;

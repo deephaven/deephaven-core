@@ -1,6 +1,5 @@
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.engine.tables.SortPair;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.WouldMatchPair;

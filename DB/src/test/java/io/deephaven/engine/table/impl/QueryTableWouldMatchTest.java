@@ -12,7 +12,7 @@ import java.util.Arrays;
 import java.util.Random;
 import org.junit.experimental.categories.Category;
 
-import static io.deephaven.engine.tables.utils.TableTools.show;
+import static io.deephaven.engine.util.TableTools.show;
 import static io.deephaven.engine.table.impl.TstUtils.*;
 
 @Category(OutOfBandTest.class)

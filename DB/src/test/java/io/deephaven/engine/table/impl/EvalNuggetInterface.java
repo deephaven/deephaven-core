@@ -6,7 +6,7 @@ package io.deephaven.engine.table.impl;
 
 import java.io.IOException;
 
-import static io.deephaven.engine.tables.utils.TableTools.diff;
+import static io.deephaven.engine.util.TableTools.diff;
 
 public interface EvalNuggetInterface {
     void validate(final String msg);

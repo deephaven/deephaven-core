@@ -13,7 +13,6 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.lang.QueryLibrary;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.lang.QueryScope;
-import io.deephaven.engine.tables.utils.LiveWidget;
 import io.deephaven.engine.util.jpy.JpyInit;
 import io.deephaven.engine.util.scripts.ScriptPathLoader;
 import io.deephaven.engine.util.scripts.ScriptPathLoaderState;

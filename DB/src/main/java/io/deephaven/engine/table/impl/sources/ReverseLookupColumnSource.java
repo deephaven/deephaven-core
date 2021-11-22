@@ -4,6 +4,7 @@
 
 package io.deephaven.engine.table.impl.sources;
 
+import io.deephaven.engine.stringset.LongBitmapStringSet;
 import io.deephaven.engine.table.ColumnSource;
 
 import java.util.function.ToIntFunction;
@@ -14,7 +15,7 @@ import java.util.function.ToIntFunction;
  * than Integer.MAX_VALUE.
  */
 public interface ReverseLookupColumnSource<DATA_TYPE, EXTRA_VALUE_TYPE> extends ColumnSource<DATA_TYPE>,
-        StringSetImpl.ReversibleLookup<DATA_TYPE> {
+        LongBitmapStringSet.ReversibleLookup<DATA_TYPE> {
     /**
      * Get a reverse-lookup function for all non-null values stored in this column source at
      * {@code keys <= highestKeyNeeded}.

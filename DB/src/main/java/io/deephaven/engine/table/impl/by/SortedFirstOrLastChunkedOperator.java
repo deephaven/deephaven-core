@@ -1,6 +1,6 @@
 package io.deephaven.engine.table.impl.by;
 
-import io.deephaven.engine.tables.SortingOrder;
+import io.deephaven.engine.table.impl.SortingOrder;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.sort.IntSortKernel;
@@ -13,8 +13,8 @@ import io.deephaven.engine.table.impl.sources.RedirectedColumnSource;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.Attributes.*;
 import io.deephaven.engine.table.impl.ssa.SegmentedSortedArray;
-import io.deephaven.engine.table.impl.utils.ChunkUtils;
-import io.deephaven.engine.table.impl.utils.LongColumnSourceWritableRowRedirection;
+import io.deephaven.engine.table.impl.util.ChunkUtils;
+import io.deephaven.engine.table.impl.util.LongColumnSourceWritableRowRedirection;
 
 import java.util.LinkedHashMap;
 import java.util.Map;

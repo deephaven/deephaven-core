@@ -10,7 +10,6 @@ import io.deephaven.api.Selectable;
 import io.deephaven.api.expression.Expression;
 import io.deephaven.api.value.Value;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.tables.select.SelectColumnFactory;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import org.jetbrains.annotations.NotNull;

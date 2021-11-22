@@ -2,9 +2,9 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.StringUtils;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.tables.select.MatchPairFactory;
+import io.deephaven.engine.table.impl.select.MatchPairFactory;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
-import io.deephaven.engine.tables.utils.TableTools;
+import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.liveness.Liveness;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.liveness.LivenessScopeStack;

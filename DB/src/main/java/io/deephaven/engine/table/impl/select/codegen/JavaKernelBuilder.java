@@ -12,8 +12,8 @@ import io.deephaven.engine.table.impl.select.FormulaCompilationException;
 import io.deephaven.engine.table.impl.select.FormulaEvaluationException;
 import io.deephaven.engine.table.impl.select.formula.FormulaKernel;
 import io.deephaven.engine.table.impl.select.formula.FormulaKernelFactory;
-import io.deephaven.engine.table.impl.utils.codegen.CodeGenerator;
-import io.deephaven.engine.table.impl.utils.codegen.TypeAnalyzer;
+import io.deephaven.engine.table.impl.util.codegen.CodeGenerator;
+import io.deephaven.engine.table.impl.util.codegen.TypeAnalyzer;
 import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
 

@@ -7,7 +7,7 @@ package io.deephaven.plot.example_plots;
 import io.deephaven.plot.Figure;
 import io.deephaven.plot.FigureFactory;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.tables.utils.TableTools;
+import io.deephaven.engine.util.TableTools;
 
 
 public class CatPlotBy {

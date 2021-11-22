@@ -14,7 +14,7 @@ import io.deephaven.engine.table.impl.sources.ObjectArraySource;
 import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.chunk.Attributes.RowKeys;
 import io.deephaven.engine.chunk.WritableLongChunk;
-import io.deephaven.engine.table.impl.utils.*;
+import io.deephaven.engine.table.impl.util.*;
 import org.jetbrains.annotations.NotNull;
 
 /**

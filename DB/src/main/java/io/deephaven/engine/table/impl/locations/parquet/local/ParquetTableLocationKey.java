@@ -1,6 +1,6 @@
 package io.deephaven.engine.table.impl.locations.parquet.local;
 
-import io.deephaven.engine.tables.utils.ParquetTools;
+import io.deephaven.engine.util.ParquetTools;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.TableLocationKey;
 import io.deephaven.engine.table.impl.locations.local.FileTableLocationKey;

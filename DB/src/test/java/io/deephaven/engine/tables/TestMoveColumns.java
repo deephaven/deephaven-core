@@ -1,7 +1,7 @@
 package io.deephaven.engine.tables;
 
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.tables.utils.TableTools;
+import io.deephaven.engine.util.TableTools;
 import junit.framework.TestCase;
 
 import java.util.stream.Collectors;

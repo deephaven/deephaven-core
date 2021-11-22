@@ -2,8 +2,8 @@ package io.deephaven.engine.table.impl.by;
 
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.tables.select.MatchPairFactory;
-import io.deephaven.engine.tables.select.SelectColumnFactory;
+import io.deephaven.engine.table.impl.select.MatchPairFactory;
+import io.deephaven.engine.table.impl.select.SelectColumnFactory;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.ChunkSource;

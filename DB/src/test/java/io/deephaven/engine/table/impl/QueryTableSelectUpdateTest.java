@@ -13,7 +13,7 @@ import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.lang.QueryScope;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.time.DateTimeUtils;
-import io.deephaven.engine.tables.utils.TableTools;
+import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.table.impl.QueryTableTestBase.ListenerWithGlobals;
@@ -23,7 +23,7 @@ import io.deephaven.engine.table.impl.select.FormulaCompilationException;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.sources.LongSparseArraySource;
-import io.deephaven.engine.table.impl.utils.*;
+import io.deephaven.engine.table.impl.util.*;
 import io.deephaven.util.SafeCloseable;
 import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -33,7 +33,7 @@ import java.io.IOException;
 import java.util.*;
 import java.util.function.Supplier;
 
-import static io.deephaven.engine.tables.utils.TableTools.*;
+import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.engine.table.impl.TstUtils.*;
 
 /**
@@ -330,9 +330,9 @@ public class QueryTableSelectUpdateTest {
             if (RefreshingTableTestCase.printTableUpdates) {
                 try {
                     System.out.println("Recomputed Value:");
-                    io.deephaven.engine.tables.utils.TableTools.showWithIndex(recomputedValue, 100);
+                    TableTools.showWithIndex(recomputedValue, 100);
                     System.out.println("Iterative Value:");
-                    io.deephaven.engine.tables.utils.TableTools.showWithIndex(originalValue, 100);
+                    TableTools.showWithIndex(originalValue, 100);
                 } catch (Exception ex) {
                     ex.printStackTrace();
                 }

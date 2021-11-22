@@ -2,7 +2,7 @@ package io.deephaven.engine.util.systemicmarking;
 
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.tables.utils.TableTools;
+import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.ErrorListener;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.RefreshingTableTestCase;

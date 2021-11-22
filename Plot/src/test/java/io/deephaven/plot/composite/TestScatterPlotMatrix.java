@@ -11,8 +11,8 @@ import io.deephaven.plot.datasets.xy.XYDataSeriesInternal;
 import io.deephaven.plot.filters.SelectableDataSetOneClick;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.tables.utils.TableTools;
-import io.deephaven.engine.table.impl.utils.ColumnHolder;
+import io.deephaven.engine.util.TableTools;
+import io.deephaven.engine.table.impl.util.ColumnHolder;
 import junit.framework.TestCase;
 
 import java.util.concurrent.atomic.AtomicInteger;

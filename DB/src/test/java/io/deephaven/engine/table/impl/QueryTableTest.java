@@ -17,23 +17,23 @@ import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.indexer.RowSetIndexer;
+import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.vector.*;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.tables.select.MatchPairFactory;
+import io.deephaven.engine.table.impl.select.MatchPairFactory;
 import io.deephaven.engine.table.lang.QueryScope;
-import io.deephaven.engine.tables.select.SelectColumnFactory;
-import io.deephaven.engine.tables.select.SelectFilterFactory;
+import io.deephaven.engine.table.impl.select.SelectColumnFactory;
+import io.deephaven.engine.table.impl.select.SelectFilterFactory;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.time.DateTimeUtils;
-import io.deephaven.engine.tables.utils.ParquetTools;
-import io.deephaven.engine.tables.utils.TableTools;
+import io.deephaven.engine.util.ParquetTools;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.liveness.SingletonLivenessManager;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.remote.InitialSnapshotTable;
 import io.deephaven.engine.table.impl.select.*;
 import io.deephaven.engine.updategraph.LogicalClock;
-import io.deephaven.engine.table.impl.utils.*;
+import io.deephaven.engine.table.impl.util.*;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
@@ -57,7 +57,7 @@ import java.util.function.Supplier;
 import java.util.stream.LongStream;
 
 import static io.deephaven.api.agg.Aggregation.*;
-import static io.deephaven.engine.tables.utils.TableTools.*;
+import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.engine.table.impl.TstUtils.*;
 import static org.junit.Assert.assertArrayEquals;
 
@@ -176,8 +176,8 @@ public class QueryTableTest extends QueryTableTestBase {
         final Table t3 = t.update("X=isNull(X) ? 0 : X", "Y=X");
         final Table t4 = t.update("X=isNull(X) ? 0 : X").update("Y=X");
 
-        assertEquals("", io.deephaven.engine.tables.utils.TableTools.diff(t2, t4, 10));
-        assertEquals("", io.deephaven.engine.tables.utils.TableTools.diff(t3, t4, 10));
+        assertEquals("", TableTools.diff(t2, t4, 10));
+        assertEquals("", TableTools.diff(t3, t4, 10));
 
         // formula column changing types
         final Table u = emptyTable(5).select("I=i", "X=i=0?null:42");
@@ -185,15 +185,15 @@ public class QueryTableTest extends QueryTableTestBase {
         final Table u3 = u.update("X=isNull(X) ? 0.1 : (double)X", "Y=X");
         final Table u4 = u.update("X=isNull(X) ? 0.1 : (double)X").update("Y=X");
 
-        assertEquals("", io.deephaven.engine.tables.utils.TableTools.diff(u2, u4, 10));
-        assertEquals("", io.deephaven.engine.tables.utils.TableTools.diff(u3, u4, 10));
+        assertEquals("", TableTools.diff(u2, u4, 10));
+        assertEquals("", TableTools.diff(u3, u4, 10));
 
         // source column
         final Table v = emptyTable(5).select("I=i", "X=i=0?null:42");
         final Table v3 = v.update("Z=isNull(X) ? 0 : X", "Y=Z");
         final Table v4 = v.update("Z=isNull(X) ? 0 : X").update("Y=Z");
 
-        assertEquals("", io.deephaven.engine.tables.utils.TableTools.diff(v3, v4, 10));
+        assertEquals("", TableTools.diff(v3, v4, 10));
     }
 
     public void testViewIncremental() {
@@ -369,7 +369,7 @@ public class QueryTableTest extends QueryTableTestBase {
         });
         assertEquals(5, table1.size());
         assertEquals(5, table2.size());
-        assertEquals("", io.deephaven.engine.tables.utils.TableTools.diff(table2,
+        assertEquals("", TableTools.diff(table2,
                 table1.update("z = x", "x = z + 1", "t = x - 3"), 10));
         assertEquals(added, i(7, 9));
         assertEquals(modified, i());
@@ -381,7 +381,7 @@ public class QueryTableTest extends QueryTableTestBase {
         });
         assertEquals(5, table1.size());
         assertEquals(5, table2.size());
-        assertEquals("", io.deephaven.engine.tables.utils.TableTools.diff(table2,
+        assertEquals("", TableTools.diff(table2,
                 table1.update("z = x", "x = z + 1", "t = x - 3"), 10));
         assertEquals(added, i());
         assertEquals(modified, i(7, 9));
@@ -394,7 +394,7 @@ public class QueryTableTest extends QueryTableTestBase {
 
         assertEquals(2, table1.size());
         assertEquals(2, table2.size());
-        assertEquals("", io.deephaven.engine.tables.utils.TableTools.diff(table2,
+        assertEquals("", TableTools.diff(table2,
                 table1.update("z = x", "x = z + 1", "t = x - 3"), 10));
         assertEquals(added, i());
         assertEquals(removed, i(2, 6, 7));
@@ -408,7 +408,7 @@ public class QueryTableTest extends QueryTableTestBase {
 
         assertEquals(3, table1.size());
         assertEquals(3, table2.size());
-        assertEquals("", io.deephaven.engine.tables.utils.TableTools.diff(table2,
+        assertEquals("", TableTools.diff(table2,
                 table1.update("z = x", "x = z + 1", "t = x - 3"), 10));
         assertEquals(added, i(2, 6));
         assertEquals(removed, i(9));
@@ -427,7 +427,7 @@ public class QueryTableTest extends QueryTableTestBase {
 
         assertEquals(5, table3.size());
         assertEquals(5, table4.size());
-        assertEquals("", io.deephaven.engine.tables.utils.TableTools.diff(table4,
+        assertEquals("", TableTools.diff(table4,
                 table3.select("z = x", "x = z + 1", "t = x - 3"), 10));
         assertEquals(added, i(7, 9));
         assertEquals(modified, i());
@@ -441,7 +441,7 @@ public class QueryTableTest extends QueryTableTestBase {
 
         assertEquals(5, table3.size());
         assertEquals(5, table4.size());
-        assertEquals("", io.deephaven.engine.tables.utils.TableTools.diff(table4,
+        assertEquals("", TableTools.diff(table4,
                 table3.select("z = x", "x = z + 1", "t = x - 3"), 10));
         assertEquals(added, i());
         assertEquals(modified, i(7, 9));
@@ -454,7 +454,7 @@ public class QueryTableTest extends QueryTableTestBase {
 
         assertEquals(2, table4.size());
         assertEquals(2, table3.size());
-        assertEquals("", io.deephaven.engine.tables.utils.TableTools.diff(table4,
+        assertEquals("", TableTools.diff(table4,
                 table3.select("z = x", "x = z + 1", "t = x - 3"), 10));
         assertEquals(added, i());
         assertEquals(removed, i(2, 6, 7));
@@ -469,7 +469,7 @@ public class QueryTableTest extends QueryTableTestBase {
 
         assertEquals(3, table1.size());
         assertEquals(3, table3.size());
-        assertEquals("", io.deephaven.engine.tables.utils.TableTools.diff(table4,
+        assertEquals("", TableTools.diff(table4,
                 table3.select("z = x", "x = z + 1", "t = x - 3"), 10));
         assertEquals(added, i(2, 6));
         assertEquals(removed, i(9));
@@ -513,7 +513,7 @@ public class QueryTableTest extends QueryTableTestBase {
         assertEquals("Int1", table.view("Int1=Int", "String1=String").getColumns()[0].getName());
         assertEquals("String1", table.view("Int1=Int", "String1=String").getColumns()[1].getName());
 
-        table = io.deephaven.engine.tables.utils.TableTools.emptyTable(3);
+        table = TableTools.emptyTable(3);
         table = table.view("x = i*2", "y = \"\" + x");
         assertEquals(Arrays.asList(0, 2, 4), Arrays.asList(table.getColumn("x").get(0, 3)));
         assertEquals(Arrays.asList("0", "2", "4"), Arrays.asList(table.getColumn("y").get(0, 3)));

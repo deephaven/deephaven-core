@@ -2,7 +2,6 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.ModifiedColumnSet;
-import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
@@ -13,7 +12,7 @@ import org.apache.commons.lang3.mutable.MutableInt;
 import java.util.Arrays;
 import org.junit.experimental.categories.Category;
 
-import static io.deephaven.engine.tables.utils.TableTools.intCol;
+import static io.deephaven.engine.util.TableTools.intCol;
 import static io.deephaven.engine.table.impl.TstUtils.c;
 import static io.deephaven.engine.table.impl.TstUtils.i;
 import static io.deephaven.engine.table.impl.TstUtils.testRefreshingTable;

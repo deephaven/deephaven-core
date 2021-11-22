@@ -11,6 +11,8 @@ import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.time.TimeProvider;
+import io.deephaven.engine.util.TableTools;
+import io.deephaven.engine.util.WindowCheck;
 import io.deephaven.test.junit4.EngineCleanup;
 import io.deephaven.test.types.OutOfBandTest;
 import junit.framework.TestCase;
@@ -22,7 +24,7 @@ import java.util.Random;
 import org.junit.Rule;
 import org.junit.Test;
 
-import static io.deephaven.engine.tables.utils.TableTools.intCol;
+import static io.deephaven.engine.util.TableTools.intCol;
 import static io.deephaven.engine.table.impl.TstUtils.*;
 
 @Category(OutOfBandTest.class)

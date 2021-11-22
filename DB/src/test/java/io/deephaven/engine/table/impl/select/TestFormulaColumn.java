@@ -14,7 +14,7 @@ import io.deephaven.engine.table.impl.lang.QueryLanguageParser.QueryLanguagePars
 import io.deephaven.engine.table.lang.QueryLibrary;
 import io.deephaven.engine.table.lang.QueryScope;
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.table.impl.utils.codegen.TypeAnalyzer;
+import io.deephaven.engine.table.impl.util.codegen.TypeAnalyzer;
 import io.deephaven.test.junit4.EngineCleanup;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.QueryConstants;

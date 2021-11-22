@@ -28,7 +28,7 @@ import io.deephaven.engine.chunk.Attributes.RowKeys;
 import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.table.impl.ssms.ObjectSegmentedSortedMultiset;
 import io.deephaven.engine.table.impl.ssms.SegmentedSortedMultiSet;
-import io.deephaven.engine.table.impl.utils.compact.ObjectCompactKernel;
+import io.deephaven.engine.table.impl.util.compact.ObjectCompactKernel;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collections;

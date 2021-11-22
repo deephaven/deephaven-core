@@ -9,7 +9,7 @@ import io.deephaven.plot.*;
 import io.deephaven.plot.util.PlotUtils;
 import io.deephaven.plot.util.tables.TableHandle;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.tables.utils.TableTools;
+import io.deephaven.engine.util.TableTools;
 
 public class TestCategoryDataSeriesTableMap extends BaseArrayTestCase {
 

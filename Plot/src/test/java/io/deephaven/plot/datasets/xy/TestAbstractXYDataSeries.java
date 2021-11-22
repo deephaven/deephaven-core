@@ -11,7 +11,7 @@ import io.deephaven.plot.datasets.data.IndexableDataArray;
 import io.deephaven.plot.datasets.data.IndexableDataInteger;
 import io.deephaven.plot.util.PlotUtils;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.tables.utils.TableTools;
+import io.deephaven.engine.util.TableTools;
 import io.deephaven.gui.color.Color;
 import io.deephaven.gui.color.Paint;
 import io.deephaven.gui.shape.JShapes;

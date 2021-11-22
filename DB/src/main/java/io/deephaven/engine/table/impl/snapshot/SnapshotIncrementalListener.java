@@ -8,7 +8,7 @@ import io.deephaven.engine.table.impl.MergedListener;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.sources.SparseArrayColumnSource;
-import io.deephaven.engine.table.impl.utils.*;
+import io.deephaven.engine.table.impl.util.*;
 
 import java.util.Arrays;
 import java.util.Collections;

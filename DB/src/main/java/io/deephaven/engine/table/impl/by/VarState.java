@@ -1,6 +1,6 @@
 package io.deephaven.engine.table.impl.by;
 
-import io.deephaven.engine.tables.utils.TableToolsShowControl;
+import io.deephaven.engine.util.TableToolsShowControl;
 import io.deephaven.engine.updategraph.LogicalClock;
 import org.jetbrains.annotations.NotNull;
 

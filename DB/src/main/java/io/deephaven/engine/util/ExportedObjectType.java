@@ -1,9 +1,6 @@
 package io.deephaven.engine.util;
 
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.tables.utils.FigureWidgetMarker;
-import io.deephaven.engine.tables.utils.LiveWidget;
-import io.deephaven.engine.tables.utils.PandasWidgetMarker;
 import io.deephaven.engine.table.TableMap;
 import static io.deephaven.engine.table.Table.HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE;
 import static io.deephaven.engine.table.Table.NON_DISPLAY_TABLE;

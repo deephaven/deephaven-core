@@ -12,7 +12,7 @@ import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.chunk.IntChunk;
 import io.deephaven.engine.chunk.Chunk;
 import io.deephaven.engine.chunk.LongChunk;
-import io.deephaven.engine.table.impl.utils.ChunkUtils;
+import io.deephaven.engine.table.impl.util.ChunkUtils;
 
 public class IntSsaChecker implements SsaChecker {
     static IntSsaChecker INSTANCE = new IntSsaChecker();

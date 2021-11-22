@@ -18,7 +18,7 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.table.impl.*;
-import io.deephaven.engine.table.impl.utils.*;
+import io.deephaven.engine.table.impl.util.*;
 import io.deephaven.extensions.barrage.util.BarrageMessageConsumer;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.util.datastructures.LongSizedDataStructure;

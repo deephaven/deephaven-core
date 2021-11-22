@@ -7,7 +7,7 @@ package io.deephaven.modelfarm;
 import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.tables.utils.TableTools;
+import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.ColumnSource;
 import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableLong;

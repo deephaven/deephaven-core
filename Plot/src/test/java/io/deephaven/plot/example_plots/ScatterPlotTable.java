@@ -6,7 +6,7 @@ package io.deephaven.plot.example_plots;
 
 import io.deephaven.plot.composite.ScatterPlotMatrix;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.tables.utils.TableTools;
+import io.deephaven.engine.util.TableTools;
 
 
 public class ScatterPlotTable {

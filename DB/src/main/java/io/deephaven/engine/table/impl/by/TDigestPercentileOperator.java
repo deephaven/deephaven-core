@@ -16,7 +16,7 @@ import io.deephaven.engine.chunk.Attributes.RowKeys;
 import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.table.impl.utils.cast.ToDoubleCast;
+import io.deephaven.engine.table.impl.util.cast.ToDoubleCast;
 import com.tdunning.math.stats.TDigest;
 import org.jetbrains.annotations.NotNull;
 

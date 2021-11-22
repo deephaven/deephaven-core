@@ -28,7 +28,7 @@ import java.io.ObjectInputStream;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import static io.deephaven.engine.tables.utils.TableTools.emptyTable;
+import static io.deephaven.engine.util.TableTools.emptyTable;
 
 /**
  * Creates and holds a {@link DataSeriesInternal} for every key in a {@link TableMap}.

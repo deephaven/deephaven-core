@@ -17,11 +17,11 @@ import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.QueryConstants;
-import io.deephaven.engine.tables.utils.TableTools;
+import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.by.AggregationFormulaSpec;
 import io.deephaven.engine.table.impl.by.MinMaxBySpecImpl;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.impl.utils.ColumnHolder;
+import io.deephaven.engine.table.impl.util.ColumnHolder;
 
 import java.io.IOException;
 import java.lang.reflect.Array;
@@ -31,7 +31,7 @@ import java.util.Random;
 import org.junit.experimental.categories.Category;
 
 import static io.deephaven.engine.time.DateTimeUtils.convertDateTime;
-import static io.deephaven.engine.tables.utils.TableTools.*;
+import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.engine.table.impl.TstUtils.*;
 import static io.deephaven.engine.table.impl.by.AggregationFactory.*;
 import static io.deephaven.util.QueryConstants.*;

@@ -7,8 +7,8 @@ package io.deephaven.engine.table.impl.by;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
-import io.deephaven.engine.table.impl.utils.WritableRowRedirection;
-import io.deephaven.engine.table.impl.utils.RowRedirection;
+import io.deephaven.engine.table.impl.util.WritableRowRedirection;
+import io.deephaven.engine.table.impl.util.RowRedirection;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.LinkedHashMap;

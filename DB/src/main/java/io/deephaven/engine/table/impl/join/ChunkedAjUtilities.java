@@ -1,6 +1,6 @@
 package io.deephaven.engine.table.impl.join;
 
-import io.deephaven.engine.tables.SortingOrder;
+import io.deephaven.engine.table.impl.SortingOrder;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.sort.LongSortKernel;
 import io.deephaven.engine.table.ChunkSource;
@@ -13,7 +13,7 @@ import io.deephaven.engine.table.impl.ssa.SegmentedSortedArray;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.table.impl.utils.SizedSafeCloseable;
+import io.deephaven.engine.table.impl.util.SizedSafeCloseable;
 
 import static io.deephaven.engine.chunk.Attributes.*;
 

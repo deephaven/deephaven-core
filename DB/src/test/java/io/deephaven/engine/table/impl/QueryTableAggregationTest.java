@@ -8,13 +8,14 @@ import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.indexer.RowSetIndexer;
 import io.deephaven.engine.time.DateTimeUtils;
+import io.deephaven.engine.util.TableDiff;
+import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.engine.vector.IntVector;
 import io.deephaven.engine.vector.ObjectVector;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.lang.QueryScope;
-import io.deephaven.engine.tables.select.SelectColumnFactory;
-import io.deephaven.engine.tables.utils.*;
+import io.deephaven.engine.table.impl.select.SelectColumnFactory;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
@@ -26,7 +27,7 @@ import io.deephaven.engine.table.impl.select.SourceColumn;
 import io.deephaven.engine.table.impl.sources.TreeMapSource;
 import io.deephaven.engine.table.impl.sources.UnionRedirection;
 import io.deephaven.engine.chunk.util.pools.ChunkPoolReleaseTracking;
-import io.deephaven.engine.table.impl.utils.*;
+import io.deephaven.engine.table.impl.util.*;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
@@ -49,7 +50,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.junit.experimental.categories.Category;
 
-import static io.deephaven.engine.tables.utils.TableTools.*;
+import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.engine.table.impl.TstUtils.*;
 
 @Category(OutOfBandTest.class)
@@ -2016,18 +2017,18 @@ public class QueryTableAggregationTest {
                     @Override
                     public void show() {
                         System.out.println("Big vs Double (var):");
-                        io.deephaven.engine.tables.utils.TableTools.showWithIndex(bigVsDoubleVar);
+                        TableTools.showWithIndex(bigVsDoubleVar);
                         System.out.println("Double Comparison (var)");
-                        io.deephaven.engine.tables.utils.TableTools.showWithIndex(doubleComparisonVar);
+                        TableTools.showWithIndex(doubleComparisonVar);
                     }
                 },
                 new TableComparator(doubleComparisonStd, trueForSyms) {
                     @Override
                     public void show() {
                         System.out.println("Big vs Double (std):");
-                        io.deephaven.engine.tables.utils.TableTools.showWithIndex(bigVsDoubleStd);
+                        TableTools.showWithIndex(bigVsDoubleStd);
                         System.out.println("Double Comparison (std)");
-                        io.deephaven.engine.tables.utils.TableTools.showWithIndex(doubleComparisonStd);
+                        TableTools.showWithIndex(doubleComparisonStd);
                     }
                 }
         };
@@ -2963,11 +2964,11 @@ public class QueryTableAggregationTest {
 
         public void show() {
             System.out.println("Original value: " + originalValue.size());
-            io.deephaven.engine.tables.utils.TableTools.show(originalValue, 60);
+            TableTools.show(originalValue, 60);
 
             final Table reevaluated = e();
             System.out.println("Reevaluate: " + reevaluated.size());
-            io.deephaven.engine.tables.utils.TableTools.show(reevaluated, 60);
+            TableTools.show(reevaluated, 60);
         }
     }
 

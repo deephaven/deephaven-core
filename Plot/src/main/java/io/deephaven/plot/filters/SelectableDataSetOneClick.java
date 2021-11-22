@@ -14,7 +14,7 @@ import io.deephaven.plot.util.tables.TableMapBackedTableMapHandle;
 import io.deephaven.plot.util.tables.TableMapHandle;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.tables.utils.TableTools;
+import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.TableMap;
 import org.jetbrains.annotations.NotNull;
 

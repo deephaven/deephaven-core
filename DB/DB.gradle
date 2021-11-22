@@ -64,6 +64,7 @@ dependencies {
             project(':engine-rowset'),
             project(':engine-api'),
             project(':engine-base'),
+            project(':engine-stringset'),
             project(':engine-tuplesource'),
             project(':engine-table'),
             "org.flywaydb:flyway-core:5.2.4",

@@ -25,7 +25,7 @@ import io.deephaven.engine.table.impl.sort.timsort.IntIntTimsortKernel;
 import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.engine.chunk.Attributes.*;
 import io.deephaven.engine.chunk.*;
-import io.deephaven.engine.table.impl.utils.*;
+import io.deephaven.engine.table.impl.util.*;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableArray;
 import io.deephaven.util.SafeCloseableList;

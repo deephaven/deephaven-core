@@ -26,7 +26,7 @@ import io.deephaven.engine.table.impl.sources.immutable.ImmutableObjectArraySour
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableShortArraySource;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSequenceFactory;
-import io.deephaven.engine.table.impl.utils.ShiftData;
+import io.deephaven.engine.table.impl.util.ShiftData;
 import io.deephaven.qst.array.Array;
 import io.deephaven.qst.array.BooleanArray;
 import io.deephaven.qst.array.ByteArray;

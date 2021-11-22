@@ -7,7 +7,7 @@ import io.deephaven.engine.util.NullSafeAddition;
 import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.Attributes.*;
-import io.deephaven.engine.table.impl.utils.cast.ToDoubleCast;
+import io.deephaven.engine.table.impl.util.cast.ToDoubleCast;
 import org.apache.commons.lang3.mutable.MutableDouble;
 import org.apache.commons.lang3.mutable.MutableInt;
 

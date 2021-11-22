@@ -8,9 +8,9 @@ import io.deephaven.base.FileUtils;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.tables.utils.TableTools;
+import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.tables.utils.ParquetTools;
+import io.deephaven.engine.util.ParquetTools;
 import junit.framework.TestCase;
 
 import java.io.File;

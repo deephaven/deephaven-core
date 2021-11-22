@@ -8,7 +8,7 @@ import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.plot.AxesImpl;
 import io.deephaven.plot.BaseFigureImpl;
 import io.deephaven.plot.datasets.data.*;
-import io.deephaven.engine.tables.utils.TableTools;
+import io.deephaven.engine.util.TableTools;
 import junit.framework.TestCase;
 
 public class TestCategoryDataSeriesMap extends BaseArrayTestCase {

@@ -2,7 +2,7 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.lang.QueryScope;
-import io.deephaven.engine.tables.utils.TableTools;
+import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.test.types.OutOfBandTest;
@@ -15,7 +15,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import org.junit.experimental.categories.Category;
 
-import static io.deephaven.engine.tables.utils.TableTools.show;
+import static io.deephaven.engine.util.TableTools.show;
 import static io.deephaven.engine.table.impl.TstUtils.assertTableEquals;
 
 @Category(OutOfBandTest.class)

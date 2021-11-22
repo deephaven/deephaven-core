@@ -85,7 +85,7 @@ def _defineSymbols():
 
     if _table_tools_ is None:
         # This will raise an exception if the desired object is not the classpath
-        _table_tools_ = jpy.get_type("io.deephaven.engine.tables.utils.TableTools")
+        _table_tools_ = jpy.get_type("io.deephaven.engine.util.TableTools")
         _col_def_ = jpy.get_type("io.deephaven.engine.table.ColumnDefinition")
         _python_tools_ = jpy.get_type("io.deephaven.integrations.python.PythonTools")
         _qst_col_header_ = jpy.get_type("io.deephaven.qst.column.header.ColumnHeader")
@@ -112,7 +112,7 @@ def _defineSymbols():
         float64 = double  # make life simple for people who are used to pyarrow
         string = DataType(_qst_type_.stringType())
         bigdecimal = _typeFromJavaClassName('java.math.BigDecimal')
-        stringset =  _typeFromJavaClassName('io.deephaven.engine.tables.libs.StringSet')
+        stringset =  _typeFromJavaClassName('io.deephaven.engine.stringset.StringSet')
         datetime = _typeFromJavaClassName('io.deephaven.engine.time.DateTime')
         timeperiod = _typeFromJavaClassName('io.deephaven.engine.time.Period')
 
@@ -141,7 +141,7 @@ def _defineSymbols():
             double : jpy.get_type('double'),
             string : jpy.get_type('java.lang.String'),
             bigdecimal : jpy.get_type('java.math.BigDecimal'),
-            stringset : jpy.get_type('io.deephaven.engine.tables.libs.StringSet'),
+            stringset : jpy.get_type('io.deephaven.engine.stringset.StringSet'),
             datetime : jpy.get_type('io.deephaven.engine.time.DateTime'),
             timeperiod : jpy.get_type('io.deephaven.engine.time.Period'),
             byte_array : jpy.get_type('[B'),

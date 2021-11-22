@@ -13,7 +13,7 @@ import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.NotificationQueue;
-import io.deephaven.engine.tables.select.SelectColumnFactory;
+import io.deephaven.engine.table.impl.select.SelectColumnFactory;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.table.impl.select.SelectColumn;

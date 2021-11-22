@@ -10,7 +10,7 @@ import io.deephaven.engine.chunk.Attributes.RowKeys;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.WritableColumnSource;
-import io.deephaven.engine.table.impl.utils.WritableRowRedirection;
+import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import org.jetbrains.annotations.NotNull;
 
 /**

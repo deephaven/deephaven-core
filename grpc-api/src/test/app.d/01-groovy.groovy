@@ -1,7 +1,7 @@
 import io.deephaven.appmode.ApplicationContext
 import io.deephaven.appmode.ApplicationState
 
-import io.deephaven.engine.tables.utils.TableTools
+import io.deephaven.engine.util.TableTools
 
 def start = { ApplicationState app ->
     size = 42

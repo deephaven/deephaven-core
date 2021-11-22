@@ -11,7 +11,7 @@ import io.deephaven.engine.chunk.Attributes.ChunkPositions;
 import io.deephaven.engine.chunk.Attributes.RowKeys;
 import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.chunk.*;
-import io.deephaven.engine.table.impl.utils.cast.ToDoubleCast;
+import io.deephaven.engine.table.impl.util.cast.ToDoubleCast;
 import org.apache.commons.lang3.mutable.MutableDouble;
 import org.apache.commons.lang3.mutable.MutableInt;
 

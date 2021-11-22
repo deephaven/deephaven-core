@@ -3,7 +3,7 @@ package io.deephaven.engine.table.impl.snapshot;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.chunkfillers.ChunkFiller;
-import io.deephaven.engine.table.impl.utils.ChunkUtils;
+import io.deephaven.engine.table.impl.util.ChunkUtils;
 import io.deephaven.engine.rowset.RowSet;
 import org.jetbrains.annotations.NotNull;
 

@@ -43,7 +43,7 @@ def _defineSymbols():
     global _java_type_
     if _java_type_ is None:
         # This will raise an exception if the desired object is not the classpath
-        _java_type_ = jpy.get_type("io.deephaven.engine.tables.utils.TableTools")
+        _java_type_ = jpy.get_type("io.deephaven.engine.util.TableTools")
 
 
 # every module method should be decorated with @_passThrough
@@ -492,7 +492,7 @@ def diff(*args):
       :param actualResult: (io.deephaven.engine.table.Table) - first Deephaven table object to compare
       :param expectedResult: (io.deephaven.engine.table.Table) - second Deephaven table object to compare
       :param maxDiffLines: (long) - stop comparing after this many differences are found
-      :param itemsToSkip: (java.util.EnumSet<io.deephaven.engine.tables.utils.TableDiff.DiffItems>) - EnumSet of checks not to perform, such as checking column order, or exact match of double
+      :param itemsToSkip: (java.util.EnumSet<io.deephaven.engine.util.TableDiff.DiffItems>) - EnumSet of checks not to perform, such as checking column order, or exact match of double
               values
       :return: (java.lang.String) String report of the detected differences
     """
@@ -508,7 +508,7 @@ def diffPair(actualResult, expectedResult, maxDiffLines, itemsToSkip):
     :param actualResult: (io.deephaven.engine.table.Table) - first Deephaven table object to compare
     :param expectedResult: (io.deephaven.engine.table.Table) - second Deephaven table object to compare
     :param maxDiffLines: (long) - stop comparing after this many differences are found
-    :param itemsToSkip: (java.util.EnumSet<io.deephaven.engine.tables.utils.TableDiff.DiffItems>) - EnumSet of checks not to perform, such as checking column order, or exact match of double
+    :param itemsToSkip: (java.util.EnumSet<io.deephaven.engine.util.TableDiff.DiffItems>) - EnumSet of checks not to perform, such as checking column order, or exact match of double
             values
     :return: (io.deephaven.base.Pair<java.lang.String,java.lang.Long>) a pair of String report of the detected differences, and the first different row (0 if there are no
              different data values)

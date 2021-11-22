@@ -7,7 +7,7 @@ import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.sort.permute.PermuteKernel;
 import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.chunk.WritableChunk;
-import io.deephaven.engine.table.impl.utils.UpdateSizeCalculator;
+import io.deephaven.engine.table.impl.util.UpdateSizeCalculator;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import org.jetbrains.annotations.NotNull;

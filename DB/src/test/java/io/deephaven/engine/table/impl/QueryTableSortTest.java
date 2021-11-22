@@ -10,15 +10,14 @@ import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.tables.*;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.lang.QueryScope;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.time.DateTimeUtils;
-import io.deephaven.engine.tables.utils.ParquetTools;
-import io.deephaven.engine.tables.utils.TableTools;
+import io.deephaven.engine.util.ParquetTools;
+import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.select.IncrementalReleaseFilter;
-import io.deephaven.engine.table.impl.utils.*;
+import io.deephaven.engine.table.impl.util.*;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
 import io.deephaven.test.types.OutOfBandTest;
@@ -33,7 +32,7 @@ import java.util.function.Consumer;
 import java.util.function.LongUnaryOperator;
 import org.junit.experimental.categories.Category;
 
-import static io.deephaven.engine.tables.utils.TableTools.*;
+import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.engine.table.impl.TstUtils.*;
 
 @Category(OutOfBandTest.class)

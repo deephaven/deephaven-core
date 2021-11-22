@@ -24,7 +24,7 @@ public class PythonStaticGenerator {
     private static final List<String> customKafkaTools = Arrays.asList(); // "consumeToTable"
     // which methods should just be skipped
     private static final List<String> skipGeneration = Arrays.asList(
-            "io.deephaven.engine.tables.utils.TableTools,display",
+            "io.deephaven.engine.util.TableTools,display",
             "io.deephaven.engine.time.DateTimeUtils,convertJimDateTimeQuiet",
             "io.deephaven.engine.time.DateTimeUtils,convertJimMicrosDateTimeQuiet",
             "io.deephaven.engine.time.DateTimeUtils,convertJimMicrosDateTimeQuietFast",
@@ -111,9 +111,9 @@ public class PythonStaticGenerator {
         final String beginMethod = "@_passThrough\ndef " + methodName + "(" + paramString + "):" +
                 PythonGeneratorParser.getMethodDocstring(classDocContainer, methodName, 4) + "\n";
         final String endMethod;
-        if ((javaClass.equals("io.deephaven.engine.tables.utils.ParquetTools")
+        if ((javaClass.equals("io.deephaven.engine.util.ParquetTools")
                 && customParquetTools.contains(methodName)) ||
-                (javaClass.equals("io.deephaven.engine.tables.utils.TableTools")
+                (javaClass.equals("io.deephaven.engine.util.TableTools")
                         && customTableTools.contains(methodName))
                 ||
                 (javaClass.equals("io.deephaven.kafka.KafkaTools")

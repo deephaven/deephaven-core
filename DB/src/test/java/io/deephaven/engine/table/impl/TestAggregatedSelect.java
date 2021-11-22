@@ -14,8 +14,8 @@ import io.deephaven.engine.vector.ObjectVector;
 import io.deephaven.engine.vector.Vector;
 import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.engine.function.DoubleNumericPrimitives;
-import io.deephaven.engine.tables.utils.TableTools;
-import io.deephaven.engine.tables.utils.ParquetTools;
+import io.deephaven.engine.util.TableTools;
+import io.deephaven.engine.util.ParquetTools;
 import junit.framework.TestCase;
 import org.junit.After;
 import org.junit.Before;
@@ -23,7 +23,7 @@ import org.junit.Before;
 import java.io.*;
 import java.nio.file.Files;
 
-import static io.deephaven.engine.tables.utils.TableTools.*;
+import static io.deephaven.engine.util.TableTools.*;
 
 public class TestAggregatedSelect extends TestCase {
 

@@ -112,7 +112,7 @@ public class QueryLibraryImportsDefaults implements QueryLibraryImports {
                 io.deephaven.base.string.cache.CompressedString.class,
                 io.deephaven.gui.color.Color.class,
                 ColorUtilImpl.class,
-                io.deephaven.engine.tables.verify.TableAssertions.class,
+                io.deephaven.engine.table.impl.verify.TableAssertions.class,
                 io.deephaven.engine.time.calendar.StaticCalendarMethods.class,
                 io.deephaven.engine.chunk.Attributes.class));
     }

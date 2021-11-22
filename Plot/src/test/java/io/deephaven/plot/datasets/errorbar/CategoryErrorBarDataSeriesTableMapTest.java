@@ -11,7 +11,7 @@ import io.deephaven.plot.datasets.categoryerrorbar.CategoryErrorBarDataSeriesTab
 import io.deephaven.plot.util.PlotUtils;
 import io.deephaven.plot.util.tables.TableHandle;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.tables.utils.TableTools;
+import io.deephaven.engine.util.TableTools;
 
 public class CategoryErrorBarDataSeriesTableMapTest extends BaseArrayTestCase {
 

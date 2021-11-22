@@ -8,6 +8,7 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.impl.ShiftedRowSequence;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
+import io.deephaven.engine.util.TableTools;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.engine.chunk.Attributes.*;
@@ -24,7 +25,7 @@ import java.util.*;
 import static io.deephaven.util.QueryConstants.*;
 
 /**
- * ColumnSource implementation for {@link io.deephaven.engine.tables.utils.TableTools#merge} results.
+ * ColumnSource implementation for {@link TableTools#merge} results.
  */
 @AbstractColumnSource.IsSerializable(value = true)
 public class UnionColumnSource<T> extends AbstractColumnSource<T> {

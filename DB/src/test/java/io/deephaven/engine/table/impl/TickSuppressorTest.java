@@ -6,7 +6,7 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.tables.utils.TableTools;
+import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.util.TickSuppressor;
 import io.deephaven.engine.rowset.RowSetShiftData;
 
@@ -14,7 +14,7 @@ import io.deephaven.test.types.OutOfBandTest;
 import java.util.Random;
 import org.junit.experimental.categories.Category;
 
-import static io.deephaven.engine.tables.utils.TableTools.intCol;
+import static io.deephaven.engine.util.TableTools.intCol;
 import static io.deephaven.engine.table.impl.TstUtils.*;
 
 @Category(OutOfBandTest.class)

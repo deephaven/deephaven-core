@@ -8,7 +8,7 @@ import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.engine.updategraph.WaitNotification;
-import io.deephaven.engine.tables.select.SelectFilterFactory;
+import io.deephaven.engine.table.impl.select.SelectFilterFactory;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.util.SafeCloseable;

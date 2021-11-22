@@ -16,7 +16,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.vector.Vector;
 import io.deephaven.engine.table.MatchPair;
-import io.deephaven.engine.tables.select.MatchPairFactory;
+import io.deephaven.engine.table.impl.select.MatchPairFactory;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.tuple.generated.ByteDoubleTuple;
 import io.deephaven.engine.table.impl.by.ssmminmax.SsmChunkedMinMaxOperator;

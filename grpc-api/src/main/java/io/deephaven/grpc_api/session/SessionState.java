@@ -21,7 +21,7 @@ import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.updategraph.DynamicNode;
-import io.deephaven.engine.table.impl.utils.MemoryTableLoggers;
+import io.deephaven.engine.table.impl.util.MemoryTableLoggers;
 import io.deephaven.grpc_api.util.ExportTicketHelper;
 import io.deephaven.grpc_api.util.FlightExportTicketHelper;
 import io.deephaven.extensions.barrage.util.GrpcUtil;

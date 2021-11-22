@@ -1,7 +1,7 @@
 import io.deephaven.engine.table.impl.FailureListener
 import io.deephaven.engine.table.impl.FuzzerPrintListener
 import io.deephaven.engine.table.impl.TableUpdateValidator
-import io.deephaven.engine.tables.utils.TableTools
+import io.deephaven.engine.util.TableTools
 
 tableSeed = 1583360794826387000 as long;
 size = 100 as int;

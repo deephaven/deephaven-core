@@ -14,7 +14,7 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.lang.QueryLanguageParser;
-import io.deephaven.engine.table.impl.utils.codegen.CodeGenerator;
+import io.deephaven.engine.table.impl.util.codegen.CodeGenerator;
 import io.deephaven.engine.table.lang.QueryLibrary;
 import io.deephaven.engine.table.lang.QueryScopeParam;
 import io.deephaven.engine.time.DateTimeUtils;

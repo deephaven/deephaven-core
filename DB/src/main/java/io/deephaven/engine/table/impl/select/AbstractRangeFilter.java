@@ -2,7 +2,7 @@ package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
-import io.deephaven.engine.tables.SortingOrder;
+import io.deephaven.engine.table.impl.SortingOrder;
 import io.deephaven.engine.table.impl.SortedColumnsAttribute;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.ColumnSource;

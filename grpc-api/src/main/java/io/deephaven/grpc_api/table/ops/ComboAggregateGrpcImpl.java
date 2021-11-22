@@ -6,7 +6,7 @@ import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.DataColumn;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.tables.select.SelectColumnFactory;
+import io.deephaven.engine.table.impl.select.SelectColumnFactory;
 import io.deephaven.engine.table.impl.by.AggregationFactory;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.grpc_api.session.SessionState;

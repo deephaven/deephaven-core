@@ -2,7 +2,6 @@ package io.deephaven.engine.util;
 
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
-import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.table.impl.InstrumentedTableUpdateListener;
 import io.deephaven.util.annotations.ScriptApi;
 

@@ -3,8 +3,9 @@ package io.deephaven.engine.table.impl;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.tables.utils.TableDiff;
-import io.deephaven.engine.table.impl.utils.*;
+import io.deephaven.engine.util.TableDiff;
+import io.deephaven.engine.table.impl.util.*;
+import io.deephaven.engine.util.TableTools;
 import org.apache.commons.lang3.mutable.MutableInt;
 
 import java.text.SimpleDateFormat;
@@ -163,9 +164,9 @@ public abstract class QueryTableTestBase extends RefreshingTableTestCase {
         @Override
         public void show() {
             System.out.println(t1Name != null ? t1Name : t1);
-            io.deephaven.engine.tables.utils.TableTools.showWithIndex(t1);
+            TableTools.showWithIndex(t1);
             System.out.println(t2Name != null ? t2Name : t2);
-            io.deephaven.engine.tables.utils.TableTools.showWithIndex(t2);
+            TableTools.showWithIndex(t2);
         }
     }
 

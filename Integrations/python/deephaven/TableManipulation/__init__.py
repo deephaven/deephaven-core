@@ -19,8 +19,8 @@ DynamicTableWriter = None       #: Class to create a TableWriter object {@link i
 LayoutHintBuilder = None        #: Builder class for use in assembling layout hints suitable for use with {@link io.deephaven.engine.table.Table#setLayoutHints(LayoutHintBuilder)} or {@link io.deephaven.engine.table.Table#setLayoutHints(String)} (io.deephaven.engine.util.LayoutHintBuilder).
 Replayer = None                 #: Class to create a Replayer object {@link io.deephaven.engine.v2.replay.Replayer}
 SmartKey = None                 #: A datastructure key class, where more than one value can be used as the key (io.deephaven.datastructures.util.SmartKey).
-SortPair = None                 #: Class representing a column to sort by and its direction (io.deephaven.engine.tables.SortPair).
-TotalsTableBuilder = None       #: Class to define the default aggregations and display for a totals table (io.deephaven.engine.v2.TotalsTableBuilder).
+SortPair = None                 #: Class representing a column to sort by and its direction (io.deephaven.engine.table.impl.SortPair).
+TotalsTableBuilder = None       #: Class to define the default aggregations and display for a totals table (io.deephaven.engine.util.TotalsTableBuilder).
 
 def _defineSymbols():
     """
@@ -44,7 +44,7 @@ def _defineSymbols():
         LayoutHintBuilder = jpy.get_type('io.deephaven.engine.util.LayoutHintBuilder')
         Replayer = jpy.get_type('io.deephaven.engine.v2.replay.Replayer')
         SmartKey = jpy.get_type('io.deephaven.datastructures.util.SmartKey')
-        SortPair = jpy.get_type('io.deephaven.engine.tables.SortPair')
+        SortPair = jpy.get_type('io.deephaven.engine.table,impl.SortPair')
         TotalsTableBuilder = jpy.get_type('io.deephaven.engine.util.TotalsTableBuilder')
 
 

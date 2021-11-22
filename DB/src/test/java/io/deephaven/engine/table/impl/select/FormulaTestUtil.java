@@ -10,7 +10,7 @@ import io.deephaven.engine.table.lang.QueryLibrary;
 import io.deephaven.engine.table.lang.QueryScope;
 import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.util.QueryConstants;
-import io.deephaven.engine.tables.utils.TableTools;
+import io.deephaven.engine.util.TableTools;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;

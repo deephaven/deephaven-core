@@ -2,7 +2,7 @@ package io.deephaven.engine.table.impl.locations.parquet.topage;
 
 import gnu.trove.map.TObjectIntMap;
 import gnu.trove.map.hash.TObjectIntHashMap;
-import io.deephaven.engine.table.impl.sources.StringSetImpl;
+import io.deephaven.engine.stringset.LongBitmapStringSet;
 import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.chunk.ObjectChunk;
 import io.deephaven.util.datastructures.LazyCachingSupplier;
@@ -15,7 +15,7 @@ import java.util.function.Supplier;
  * Chunk-backed dictionary for use by {@link ToPage} implementations.
  */
 public class ChunkDictionary<T, ATTR extends Attributes.Any>
-        implements StringSetImpl.ReversibleLookup<T> {
+        implements LongBitmapStringSet.ReversibleLookup<T> {
 
     @FunctionalInterface
     public interface Lookup<T> {

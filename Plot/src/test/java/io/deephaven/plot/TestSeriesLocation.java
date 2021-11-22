@@ -8,7 +8,7 @@ import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.plot.datasets.multiseries.MultiXYSeries;
 import io.deephaven.plot.datasets.xy.XYDataSeriesArray;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.tables.utils.TableTools;
+import io.deephaven.engine.util.TableTools;
 
 /**
  * Test SeriesLocation.

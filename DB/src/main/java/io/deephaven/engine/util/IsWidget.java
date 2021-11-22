@@ -4,8 +4,6 @@ import io.deephaven.engine.exceptions.ArgumentException;
 import io.deephaven.engine.exceptions.OperationException;
 import io.deephaven.engine.exceptions.StateException;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.tables.utils.LiveWidget;
-import io.deephaven.engine.tables.utils.LiveWidgetVisibilityProvider;
 import org.jpy.PyObject;
 
 /**

@@ -506,7 +506,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession implements Scr
         // TODO (core#230): Remove large list of manual text-based imports
         // NOTE: Don't add to this list without a compelling reason!!! Use the user script import if possible.
         final String commandPrefix = "package " + PACKAGE + ";\n" +
-                "import static io.deephaven.engine.tables.utils.TableTools.*;\n" +
+                "import static io.deephaven.engine.util.TableTools.*;\n" +
                 "import static io.deephaven.engine.table.impl.utils.TableLoggers.*;\n" +
                 "import static io.deephaven.engine.table.impl.utils.PerformanceQueries.*;\n" +
                 "import io.deephaven.api.*;\n" +

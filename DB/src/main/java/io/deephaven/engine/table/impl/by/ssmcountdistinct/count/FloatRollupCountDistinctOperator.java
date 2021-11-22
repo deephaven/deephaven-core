@@ -27,7 +27,7 @@ import io.deephaven.engine.chunk.Attributes.RowKeys;
 import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.table.impl.ssms.FloatSegmentedSortedMultiset;
 import io.deephaven.engine.table.impl.ssms.SegmentedSortedMultiSet;
-import io.deephaven.engine.table.impl.utils.compact.FloatCompactKernel;
+import io.deephaven.engine.table.impl.util.compact.FloatCompactKernel;
 import io.deephaven.util.QueryConstants;
 import org.jetbrains.annotations.NotNull;
 

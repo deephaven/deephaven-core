@@ -5,11 +5,10 @@ import io.deephaven.datastructures.util.CollectionUtil;
 import com.google.common.collect.Maps;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.MatchPair;
-import io.deephaven.engine.tables.select.MatchPairFactory;
-import io.deephaven.engine.tables.utils.TableTools;
+import io.deephaven.engine.table.impl.select.MatchPairFactory;
+import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -22,7 +21,7 @@ import org.apache.commons.lang3.mutable.MutableObject;
 import java.util.*;
 import org.junit.experimental.categories.Category;
 
-import static io.deephaven.engine.tables.utils.TableTools.longCol;
+import static io.deephaven.engine.util.TableTools.longCol;
 import static io.deephaven.engine.table.impl.TstUtils.*;
 
 @Category(OutOfBandTest.class)

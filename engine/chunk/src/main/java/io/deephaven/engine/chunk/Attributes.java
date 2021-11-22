@@ -69,7 +69,7 @@ public class Attributes {
     }
 
     /**
-     * This chunk contains longs which are encoded StringSets as a bitnask.
+     * This chunk contains longs which are encoded StringSets as a bitmask.
      */
     public interface StringSetBitmasks extends Values {
     }

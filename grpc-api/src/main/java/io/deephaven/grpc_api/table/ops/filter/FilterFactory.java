@@ -1,7 +1,7 @@
 package io.deephaven.grpc_api.table.ops.filter;
 
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.tables.select.SelectFilterFactory;
+import io.deephaven.engine.table.impl.select.SelectFilterFactory;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.time.TimeZone;
 import io.deephaven.engine.table.impl.select.*;

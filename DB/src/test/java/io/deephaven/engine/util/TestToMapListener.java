@@ -13,7 +13,7 @@ public class TestToMapListener extends RefreshingTableTestCase {
                 i(2, 4, 6, 8).toTracking(),
                 TstUtils.c("Sentinel", "A", "B", "C", "D"),
                 TstUtils.c("Sentinel2", "H", "I", "J", "K"));
-        io.deephaven.engine.tables.utils.TableTools.show(source);
+        TableTools.show(source);
 
         final ColumnSource<String> sentinelSource = source.getColumnSource("Sentinel");
         final ColumnSource<String> sentinel2Source = source.getColumnSource("Sentinel2");

@@ -11,7 +11,7 @@ import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.updategraph.UpdateCommitter;
-import io.deephaven.engine.table.impl.utils.copy.CopyKernel;
+import io.deephaven.engine.table.impl.util.copy.CopyKernel;
 import io.deephaven.util.SoftRecycler;
 import gnu.trove.list.array.TIntArrayList;
 import org.apache.commons.lang3.mutable.MutableInt;

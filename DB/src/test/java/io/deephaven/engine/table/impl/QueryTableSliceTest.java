@@ -4,9 +4,8 @@ import io.deephaven.base.Procedure;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
-import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.tables.utils.TableTools;
+import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
@@ -16,9 +15,9 @@ import java.io.IOException;
 import java.util.Random;
 import org.junit.experimental.categories.Category;
 
-import static io.deephaven.engine.tables.utils.TableTools.diff;
-import static io.deephaven.engine.tables.utils.TableTools.emptyTable;
-import static io.deephaven.engine.tables.utils.TableTools.showWithIndex;
+import static io.deephaven.engine.util.TableTools.diff;
+import static io.deephaven.engine.util.TableTools.emptyTable;
+import static io.deephaven.engine.util.TableTools.showWithIndex;
 import static io.deephaven.engine.table.impl.TstUtils.*;
 import static io.deephaven.engine.table.impl.TstUtils.initColumnInfos;
 

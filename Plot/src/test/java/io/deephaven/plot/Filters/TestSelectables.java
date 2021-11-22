@@ -12,7 +12,7 @@ import io.deephaven.plot.filters.SelectableDataSetOneClick;
 import io.deephaven.plot.filters.Selectables;
 import io.deephaven.plot.util.tables.SwappableTable;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.tables.utils.TableTools;
+import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.TableMap;
 
 import java.util.*;

@@ -3,13 +3,13 @@ package io.deephaven.engine.table.impl.parquet;
 import io.deephaven.api.Selectable;
 import io.deephaven.base.FileUtils;
 import io.deephaven.engine.table.ColumnDefinition;
-import io.deephaven.engine.tables.StringSetArrayWrapper;
+import io.deephaven.engine.stringset.ArrayStringSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.lang.QueryLibrary;
-import io.deephaven.engine.tables.libs.StringSet;
-import io.deephaven.engine.tables.utils.ParquetTools;
-import io.deephaven.engine.tables.utils.TableTools;
+import io.deephaven.engine.stringset.StringSet;
+import io.deephaven.engine.util.ParquetTools;
+import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.TstUtils;
 import io.deephaven.test.types.OutOfBandTest;
@@ -82,7 +82,7 @@ public class ParquetTableReadWriteTest {
 
     private static Table getGroupedOneColumnTable(int size) {
         Table t = getOneColumnTableFlat(size);
-        QueryLibrary.importClass(StringSetArrayWrapper.class);
+        QueryLibrary.importClass(ArrayStringSet.class);
         QueryLibrary.importClass(StringSet.class);
         Table result = t.groupBy("groupKey = i % 100 + (int)(i/10)");
         result = result.select(result.getDefinition().getColumnNames().stream()
@@ -128,7 +128,7 @@ public class ParquetTableReadWriteTest {
 
     private static Table getGroupedTable(int size, boolean includeSerializable) {
         Table t = getTableFlat(size, includeSerializable);
-        QueryLibrary.importClass(StringSetArrayWrapper.class);
+        QueryLibrary.importClass(ArrayStringSet.class);
         QueryLibrary.importClass(StringSet.class);
         Table result = t.groupBy("groupKey = i % 100 + (int)(i/10)");
         result = result.select(result.getDefinition().getColumnNames().stream()
@@ -137,9 +137,9 @@ public class ParquetTableReadWriteTest {
                                 + ")"))
                 .toArray(String[]::new));
         result = result.update(
-                "someStringSet = (StringSet)new StringSetArrayWrapper( ((Object)nonNullString) == null?new String[0]:(String[])nonNullString.toArray())");
+                "someStringSet = (StringSet)new ArrayStringSet( ((Object)nonNullString) == null?new String[0]:(String[])nonNullString.toArray())");
         result = result.update(
-                "largeStringSet = (StringSet)new StringSetArrayWrapper(((Object)nonNullPolyString) == null?new String[0]:(String[])nonNullPolyString.toArray())");
+                "largeStringSet = (StringSet)new ArrayStringSet(((Object)nonNullPolyString) == null?new String[0]:(String[])nonNullPolyString.toArray())");
         result = result.update(
                 "someStringColumn = (String[])(((Object)someStringColumn) == null?null:someStringColumn.toArray())",
                 "nonNullString = (String[])(((Object)nonNullString) == null?null:nonNullString.toArray())",

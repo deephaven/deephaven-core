@@ -14,7 +14,7 @@ import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.chunk.DoubleChunk;
 import io.deephaven.engine.chunk.Chunk;
 import io.deephaven.engine.chunk.LongChunk;
-import io.deephaven.engine.table.impl.utils.ChunkUtils;
+import io.deephaven.engine.table.impl.util.ChunkUtils;
 
 public class DoubleReverseSsaChecker implements SsaChecker {
     static DoubleReverseSsaChecker INSTANCE = new DoubleReverseSsaChecker();

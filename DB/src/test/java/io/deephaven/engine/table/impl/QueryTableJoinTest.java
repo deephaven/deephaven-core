@@ -11,7 +11,7 @@ import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.test.junit4.EngineCleanup;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.QueryConstants;
-import io.deephaven.engine.tables.utils.TableTools;
+import io.deephaven.engine.util.TableTools;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -21,7 +21,7 @@ import java.util.Random;
 import org.junit.Rule;
 import org.junit.experimental.categories.Category;
 
-import static io.deephaven.engine.tables.utils.TableTools.*;
+import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.engine.table.impl.TstUtils.*;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.*;
@@ -990,10 +990,10 @@ public class QueryTableJoinTest {
         assertEquals(2, pairMatch.getColumn("v").getInt(1));
 
 
-        table1 = io.deephaven.engine.tables.utils.TableTools.newTable(
+        table1 = TableTools.newTable(
                 c("String1", "c", "e", "g"));
 
-        table2 = io.deephaven.engine.tables.utils.TableTools.newTable(
+        table2 = TableTools.newTable(
                 c("String2", "c", "e"), c("v", 1, 2));
 
         final Table noPairMatch = table1.leftJoin(table2);

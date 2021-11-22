@@ -3,8 +3,8 @@ package io.deephaven.engine.table.impl.ssa;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.Attributes.RowKeys;
 import io.deephaven.engine.chunk.Attributes.Values;
-import io.deephaven.engine.table.impl.utils.WritableRowRedirection;
-import io.deephaven.engine.table.impl.utils.RowRedirection;
+import io.deephaven.engine.table.impl.util.WritableRowRedirection;
+import io.deephaven.engine.table.impl.util.RowRedirection;
 import io.deephaven.engine.rowset.RowSetBuilderRandom;
 
 public interface ChunkSsaStamp {

@@ -1,8 +1,8 @@
 package io.deephaven.engine.table.impl.locations.parquet.topage;
 
-import io.deephaven.engine.tables.StringSetWrapper;
-import io.deephaven.engine.tables.libs.StringSet;
-import io.deephaven.engine.table.impl.sources.StringSetImpl;
+import io.deephaven.engine.stringset.HashStringSet;
+import io.deephaven.engine.stringset.StringSet;
+import io.deephaven.engine.stringset.LongBitmapStringSet;
 import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.chunk.Chunk;
 import io.deephaven.engine.chunk.ChunkType;
@@ -66,7 +66,7 @@ public class ToStringSetPage<ATTR extends Attributes.Any, STRING_ARRAY>
             if (nextOffset == DataWithOffsets.NULL_OFFSET) {
                 to[i++] = null;
             } else {
-                to[i++] = new StringSetWrapper(from, lastOffset, nextOffset - lastOffset);
+                to[i++] = new HashStringSet(from, lastOffset, nextOffset - lastOffset);
                 lastOffset = nextOffset;
             }
         }
@@ -124,7 +124,7 @@ public class ToStringSetPage<ATTR extends Attributes.Any, STRING_ARRAY>
                     }
 
                     // noinspection unchecked
-                    to[toIndex++] = new StringSetImpl(toPage.getReversibleLookup(), valueBitMask);
+                    to[toIndex++] = new LongBitmapStringSet(toPage.getReversibleLookup(), valueBitMask);
                 }
 
             }

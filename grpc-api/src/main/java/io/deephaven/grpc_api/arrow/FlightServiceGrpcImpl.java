@@ -11,7 +11,7 @@ import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
-import io.deephaven.engine.table.impl.utils.BarrageMessage;
+import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.grpc_api.barrage.BarrageStreamGenerator;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.grpc_api.session.TicketRouter;

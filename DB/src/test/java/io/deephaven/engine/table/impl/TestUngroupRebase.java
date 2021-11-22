@@ -6,15 +6,15 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.tables.utils.TableTools;
-import io.deephaven.engine.table.impl.utils.ColumnHolder;
+import io.deephaven.engine.util.TableTools;
+import io.deephaven.engine.table.impl.util.ColumnHolder;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 
 import java.io.IOException;
 import java.util.Random;
 
-import static io.deephaven.engine.tables.utils.TableTools.intCol;
+import static io.deephaven.engine.util.TableTools.intCol;
 
 public class TestUngroupRebase extends RefreshingTableTestCase {
     public void testUngroupAgnosticRebase() throws IOException {

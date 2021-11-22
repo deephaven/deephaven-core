@@ -2,7 +2,7 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.tables.utils.TableTools;
+import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -22,7 +22,7 @@ public class TestReverseLookupListener extends RefreshingTableTestCase {
                 i(2, 4, 6, 8).toTracking(),
                 TstUtils.c("Sentinel", "A", "B", "C", "D"),
                 TstUtils.c("Sentinel2", "H", "I", "J", "K"));
-        io.deephaven.engine.tables.utils.TableTools.show(source);
+        TableTools.show(source);
 
         final ReverseLookupListener reverseLookupListener =
                 ReverseLookupListener.makeReverseLookupListenerWithSnapshot(source, "Sentinel");

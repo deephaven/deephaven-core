@@ -5,7 +5,7 @@
 package io.deephaven.engine.tablelogger;
 
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.tables.utils.ColumnsSpecHelper;
+import io.deephaven.engine.util.ColumnsSpecHelper;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.tablelogger.Row;

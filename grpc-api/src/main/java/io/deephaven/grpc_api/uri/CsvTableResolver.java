@@ -1,7 +1,7 @@
 package io.deephaven.grpc_api.uri;
 
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.tables.utils.CsvHelpers;
+import io.deephaven.engine.util.CsvHelpers;
 
 import javax.inject.Inject;
 import java.io.IOException;

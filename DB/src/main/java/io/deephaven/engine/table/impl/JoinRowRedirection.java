@@ -1,9 +1,9 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.table.impl.sources.LongSparseArraySource;
-import io.deephaven.engine.table.impl.utils.*;
-import io.deephaven.engine.table.impl.utils.ContiguousWritableRowRedirection;
-import io.deephaven.engine.table.impl.utils.WritableRowRedirection;
+import io.deephaven.engine.table.impl.util.*;
+import io.deephaven.engine.table.impl.util.ContiguousWritableRowRedirection;
+import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 
 /**
  * Makes a redirection index based on the type provided by the join control.

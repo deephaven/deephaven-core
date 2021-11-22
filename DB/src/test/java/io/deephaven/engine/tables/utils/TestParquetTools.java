@@ -8,17 +8,19 @@ import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.FileUtils;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.ColumnDefinition;
-import io.deephaven.engine.tables.StringSetWrapper;
+import io.deephaven.engine.stringset.HashStringSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.lang.QueryLibrary;
-import io.deephaven.engine.tables.libs.StringSet;
+import io.deephaven.engine.stringset.StringSet;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.impl.InMemoryTable;
 import io.deephaven.engine.table.impl.TstUtils;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.local.KeyValuePartitionLayout;
 import io.deephaven.engine.table.impl.parquet.ParquetInstructions;
+import io.deephaven.engine.util.ParquetTools;
+import io.deephaven.engine.util.TableTools;
 import junit.framework.TestCase;
 import org.junit.After;
 import org.junit.Before;
@@ -35,7 +37,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 
-import static io.deephaven.engine.tables.utils.TableTools.*;
+import static io.deephaven.engine.util.TableTools.*;
 import static junit.framework.TestCase.assertNotNull;
 import static org.junit.Assert.assertEquals;
 
@@ -117,7 +119,7 @@ public class TestParquetTools {
     }
 
     public static StringSet newSet(String... values) {
-        return new StringSetWrapper(values);
+        return new HashStringSet(values);
     }
 
     public static String toS(Object o) {
@@ -139,7 +141,7 @@ public class TestParquetTools {
         result.close();
 
         QueryLibrary.importClass(TestEnum.class);
-        QueryLibrary.importClass(StringSetWrapper.class);
+        QueryLibrary.importClass(HashStringSet.class);
         QueryLibrary.importStatic(this.getClass());
         Table test = TableTools.emptyTable(10).select("enumC=TestEnum.values()[i]", "enumSet=newSet(" +
                 "toS(enumC_[(i + 9) % 10])," +

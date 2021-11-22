@@ -10,12 +10,11 @@ import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.TableUpdate;
-import io.deephaven.engine.table.impl.TableUpdateImpl;
-import io.deephaven.engine.tables.utils.TableTools;
+import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.sources.DateTimeTreeMapSource;
 import io.deephaven.engine.table.impl.sources.TreeMapSource;
-import io.deephaven.engine.table.impl.utils.*;
+import io.deephaven.engine.table.impl.util.*;
 import org.apache.commons.lang3.mutable.MutableLong;
 
 import java.util.ArrayList;

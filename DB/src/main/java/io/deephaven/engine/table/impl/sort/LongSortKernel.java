@@ -1,7 +1,7 @@
 package io.deephaven.engine.table.impl.sort;
 
 import io.deephaven.engine.table.Context;
-import io.deephaven.engine.tables.SortingOrder;
+import io.deephaven.engine.table.impl.SortingOrder;
 import io.deephaven.engine.table.impl.sort.radix.BooleanLongRadixSortKernel;
 import io.deephaven.engine.table.impl.sort.timsort.*;
 import io.deephaven.engine.chunk.*;

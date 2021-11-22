@@ -26,7 +26,7 @@ import io.deephaven.engine.table.impl.by.AggregationFactory;
 import io.deephaven.engine.table.impl.by.KeyOnlyFirstOrLastBySpec;
 import io.deephaven.gui.color.ColorPaletteArray;
 import io.deephaven.util.QueryConstants;
-import io.deephaven.engine.tables.utils.TableTools;
+import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.by.AggType;
 import io.deephaven.engine.table.ColumnSource;

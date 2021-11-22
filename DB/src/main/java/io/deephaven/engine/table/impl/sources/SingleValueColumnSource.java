@@ -8,7 +8,7 @@ import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.table.ChunkSink;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
-import io.deephaven.engine.table.impl.utils.ShiftData;
+import io.deephaven.engine.table.impl.util.ShiftData;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;

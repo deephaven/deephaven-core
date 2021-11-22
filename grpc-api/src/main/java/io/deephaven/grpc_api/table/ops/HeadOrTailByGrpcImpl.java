@@ -5,7 +5,7 @@ import io.deephaven.datastructures.util.CollectionUtil;
 import com.google.rpc.Code;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.tables.select.SelectColumnFactory;
+import io.deephaven.engine.table.impl.select.SelectColumnFactory;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.grpc_api.session.SessionState;
 import io.deephaven.grpc_api.table.validation.ColumnExpressionValidator;

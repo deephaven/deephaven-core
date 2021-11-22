@@ -2,7 +2,7 @@ package io.deephaven.engine.util;
 
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.tables.select.SelectColumnFactory;
+import io.deephaven.engine.table.impl.select.SelectColumnFactory;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.by.AggType;
 import io.deephaven.engine.table.impl.by.AggregationFactory;

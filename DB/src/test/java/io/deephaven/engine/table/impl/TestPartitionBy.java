@@ -9,8 +9,8 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableMap;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.lang.QueryScope;
-import io.deephaven.engine.tables.utils.TableDiff;
-import io.deephaven.engine.tables.utils.TableTools;
+import io.deephaven.engine.util.TableDiff;
+import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.liveness.SingletonLivenessManager;
@@ -32,7 +32,7 @@ import java.util.concurrent.Future;
 import org.junit.experimental.categories.Category;
 
 import static io.deephaven.api.agg.Aggregation.AggSortedFirst;
-import static io.deephaven.engine.tables.utils.TableTools.*;
+import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.engine.table.impl.TstUtils.getTable;
 import static io.deephaven.engine.table.impl.TstUtils.i;
 

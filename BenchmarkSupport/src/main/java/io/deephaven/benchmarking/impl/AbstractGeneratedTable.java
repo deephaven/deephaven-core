@@ -3,7 +3,7 @@ package io.deephaven.benchmarking.impl;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.tables.utils.TableTools;
+import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.SparseSelect;
 import io.deephaven.benchmarking.generator.ColumnGenerator;
 import org.jetbrains.annotations.NotNull;

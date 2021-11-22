@@ -5,7 +5,7 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.TableFactory;
 import io.deephaven.engine.table.impl.utils.AppendOnlyArrayBackedMutableTable;
 import io.deephaven.engine.table.impl.utils.KeyedArrayBackedMutableTable;
-import io.deephaven.engine.tables.utils.TableTools;
+import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.qst.TableCreator;

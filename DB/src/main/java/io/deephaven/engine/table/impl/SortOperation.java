@@ -9,9 +9,6 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.TableUpdateImpl;
-import io.deephaven.engine.tables.SortPair;
-import io.deephaven.engine.tables.SortingOrder;
 import io.deephaven.util.datastructures.hash.HashMapK4V4;
 import io.deephaven.util.datastructures.hash.HashMapLockFreeK4V4;
 import io.deephaven.engine.table.impl.sources.RedirectedColumnSource;
@@ -19,7 +16,7 @@ import io.deephaven.engine.table.impl.sources.SwitchColumnSource;
 import io.deephaven.engine.chunk.LongChunk;
 import io.deephaven.engine.chunk.WritableLongChunk;
 import io.deephaven.engine.chunkcolumnsource.LongChunkColumnSource;
-import io.deephaven.engine.table.impl.utils.*;
+import io.deephaven.engine.table.impl.util.*;
 import io.deephaven.util.SafeCloseableList;
 
 import org.apache.commons.lang3.mutable.MutableObject;

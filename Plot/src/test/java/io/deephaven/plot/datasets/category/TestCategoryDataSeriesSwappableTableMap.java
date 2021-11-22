@@ -8,7 +8,7 @@ import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.plot.BaseFigureImpl;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.tables.utils.TableTools;
+import io.deephaven.engine.util.TableTools;
 
 public class TestCategoryDataSeriesSwappableTableMap extends BaseArrayTestCase {
 

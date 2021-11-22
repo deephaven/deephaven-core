@@ -17,7 +17,7 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.impl.ShiftObliviousInstrumentedListener;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtil;
-import io.deephaven.engine.table.impl.utils.*;
+import io.deephaven.engine.table.impl.util.*;
 import io.deephaven.io.log.LogEntry;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.exceptions.CancellationException;

@@ -1,6 +1,6 @@
 package io.deephaven.engine.table.impl.locations.parquet.topage;
 
-import io.deephaven.engine.table.impl.sources.StringSetImpl;
+import io.deephaven.engine.stringset.LongBitmapStringSet;
 import io.deephaven.engine.chunk.Attributes.Any;
 import io.deephaven.engine.chunk.Attributes.DictionaryKeys;
 import io.deephaven.engine.chunk.ChunkType;
@@ -85,7 +85,7 @@ public class ToPageWithDictionary<DATA_TYPE, ATTR extends Any>
     }
 
     @NotNull
-    public final StringSetImpl.ReversibleLookup<DATA_TYPE> getReversibleLookup() {
+    public final LongBitmapStringSet.ReversibleLookup<DATA_TYPE> getReversibleLookup() {
         return chunkDictionary;
     }
 

@@ -4,10 +4,10 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.impl.RefreshingTableTestCase;
 
-import static io.deephaven.engine.tables.utils.TableTools.col;
-import static io.deephaven.engine.tables.utils.TableTools.intCol;
-import static io.deephaven.engine.tables.utils.TableTools.merge;
-import static io.deephaven.engine.tables.utils.TableTools.newTable;
+import static io.deephaven.engine.util.TableTools.col;
+import static io.deephaven.engine.util.TableTools.intCol;
+import static io.deephaven.engine.util.TableTools.merge;
+import static io.deephaven.engine.util.TableTools.newTable;
 import static io.deephaven.engine.time.DateTimeUtils.nanosToTime;
 import static io.deephaven.engine.table.impl.TstUtils.StepClock;
 

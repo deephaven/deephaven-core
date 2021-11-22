@@ -11,20 +11,18 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.stringset.HashStringSet;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.impl.AbstractColumnSource;
-import io.deephaven.engine.table.impl.PrevColumnSource;
-import io.deephaven.engine.tables.StringSetWrapper;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.tables.libs.StringSet;
+import io.deephaven.engine.stringset.StringSet;
 import io.deephaven.engine.updategraph.AbstractNotification;
 import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.tables.utils.TableDiff;
-import io.deephaven.engine.tables.utils.TableTools;
+import io.deephaven.engine.util.TableDiff;
+import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.table.impl.sources.*;
-import io.deephaven.engine.table.impl.utils.*;
+import io.deephaven.engine.table.impl.util.*;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
 import junit.framework.AssertionFailedError;
@@ -155,7 +153,7 @@ public class TstUtils {
             for (int j = 0; j < v.length; j++) {
                 v[j] = Long.toString(random.nextLong(), 'z' - 'a' + 10);
             }
-            data[i] = new StringSetWrapper(Arrays.asList(v));
+            data[i] = new HashStringSet(Arrays.asList(v));
         }
         return c(colName, data);
     }

@@ -7,7 +7,6 @@ import io.deephaven.io.log.LogLevel;
 import io.deephaven.io.logger.StreamLoggerImpl;
 import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.util.jpy.JpyInit;
 
 import java.io.File;
@@ -54,7 +53,7 @@ public class TestWorkerPythonEnvironment extends BaseArrayTestCase {
 
     public void testEmptyTable() throws IOException {
         WorkerPythonEnvironment.DEFAULT
-                .eval("TableTools = jpy.get_type(\"io.deephaven.engine.tables.utils.TableTools\")");
+                .eval("TableTools = jpy.get_type(\"io.deephaven.engine.util.TableTools\")");
         WorkerPythonEnvironment.DEFAULT.eval("et = TableTools.emptyTable(2).update(\"A=k\")");
         Object result = WorkerPythonEnvironment.DEFAULT.getValue("et");
         assertTrue(result instanceof Table);
@@ -64,7 +63,7 @@ public class TestWorkerPythonEnvironment extends BaseArrayTestCase {
 
     public void testUpdateList() throws IOException {
         WorkerPythonEnvironment.DEFAULT
-                .eval("TableTools = jpy.get_type(\"io.deephaven.engine.tables.utils.TableTools\")");
+                .eval("TableTools = jpy.get_type(\"io.deephaven.engine.util.TableTools\")");
         WorkerPythonEnvironment.DEFAULT.eval("et = TableTools.emptyTable(2).update([\"A=k\", \"B=i*2\"])");
         Object result = WorkerPythonEnvironment.DEFAULT.getValue("et");
         assertTrue(result instanceof Table);
@@ -74,7 +73,7 @@ public class TestWorkerPythonEnvironment extends BaseArrayTestCase {
 
     public void testUpdateVarArgs() throws IOException {
         WorkerPythonEnvironment.DEFAULT
-                .eval("TableTools = jpy.get_type(\"io.deephaven.engine.tables.utils.TableTools\")");
+                .eval("TableTools = jpy.get_type(\"io.deephaven.engine.util.TableTools\")");
         WorkerPythonEnvironment.DEFAULT.eval("et = TableTools.emptyTable(2).update(\"A=k\", \"B=i*2\")");
         Object result = WorkerPythonEnvironment.DEFAULT.getValue("et");
         assertTrue(result instanceof Table);

@@ -18,7 +18,7 @@ import io.deephaven.engine.chunk.Attributes.ChunkLengths;
 import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.table.impl.ssa.SsaTestHelpers;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.table.impl.utils.compact.ObjectCompactKernel;
+import io.deephaven.engine.table.impl.util.compact.ObjectCompactKernel;
 import io.deephaven.test.types.ParallelTest;
 import io.deephaven.util.SafeCloseable;
 import junit.framework.TestCase;

@@ -10,7 +10,7 @@ import io.deephaven.engine.chunk.Attributes.ChunkLengths;
 import io.deephaven.engine.chunk.Attributes.ChunkPositions;
 import io.deephaven.engine.chunk.Attributes.RowKeys;
 import io.deephaven.engine.chunk.Attributes.Values;
-import io.deephaven.engine.table.impl.utils.LongColumnSourceWritableRowRedirection;
+import io.deephaven.engine.table.impl.util.LongColumnSourceWritableRowRedirection;
 
 import java.util.LinkedHashMap;
 import java.util.Map;

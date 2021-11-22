@@ -39,7 +39,7 @@ def _defineSymbols():
     global _java_type_, _java_file_type_, _dh_config_, _compression_codec_
     if _java_type_ is None:
         # This will raise an exception if the desired object is not the classpath
-        _java_type_ = jpy.get_type("io.deephaven.engine.tables.utils.ParquetTools")
+        _java_type_ = jpy.get_type("io.deephaven.engine.util.ParquetTools")
         _java_file_type_ = jpy.get_type("java.io.File")
         _dh_config_ = jpy.get_type("io.deephaven.configuration.Configuration")
         _compression_codec_ = jpy.get_type("org.apache.parquet.hadoop.metadata.CompressionCodecName")

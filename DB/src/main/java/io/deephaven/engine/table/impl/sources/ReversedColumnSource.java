@@ -11,7 +11,7 @@ import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.chunk.WritableChunk;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.table.impl.utils.reverse.ReverseKernel;
+import io.deephaven.engine.table.impl.util.reverse.ReverseKernel;
 import org.jetbrains.annotations.NotNull;
 
 /**

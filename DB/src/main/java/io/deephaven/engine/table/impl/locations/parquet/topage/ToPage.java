@@ -4,7 +4,7 @@ import io.deephaven.engine.page.ChunkPageFactory;
 import io.deephaven.engine.vector.Vector;
 import io.deephaven.engine.page.ChunkPage;
 import io.deephaven.engine.vector.VectorFactory;
-import io.deephaven.engine.table.impl.sources.StringSetImpl;
+import io.deephaven.engine.stringset.LongBitmapStringSet;
 import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.chunk.Chunk;
 import io.deephaven.engine.chunk.ChunkType;
@@ -102,7 +102,7 @@ public interface ToPage<ATTR extends Attributes.Any, RESULT> {
      * @return an reverse lookup map of the dictionary.
      * @apiNote null iff {@link #getDictionaryChunk()} is null.
      */
-    default StringSetImpl.ReversibleLookup getReversibleLookup() {
+    default LongBitmapStringSet.ReversibleLookup getReversibleLookup() {
         return null;
     }
 
@@ -140,7 +140,7 @@ public interface ToPage<ATTR extends Attributes.Any, RESULT> {
         }
 
         @Override
-        public StringSetImpl.ReversibleLookup getReversibleLookup() {
+        public LongBitmapStringSet.ReversibleLookup getReversibleLookup() {
             return toPage.getReversibleLookup();
         }
     }

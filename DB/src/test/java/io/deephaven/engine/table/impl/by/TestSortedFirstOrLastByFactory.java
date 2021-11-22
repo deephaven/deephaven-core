@@ -8,7 +8,7 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.select.SourceColumn;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.tables.utils.TableTools;
+import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.util.SortedBy;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -20,7 +20,7 @@ import java.util.Arrays;
 import java.util.Random;
 import org.junit.experimental.categories.Category;
 
-import static io.deephaven.engine.tables.utils.TableTools.*;
+import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.engine.table.impl.TstUtils.*;
 import static io.deephaven.engine.table.impl.TstUtils.addToTable;
 import static io.deephaven.engine.table.impl.by.AggregationFactory.AggCombo;

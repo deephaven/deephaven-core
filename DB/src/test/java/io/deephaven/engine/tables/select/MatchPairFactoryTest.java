@@ -2,6 +2,7 @@ package io.deephaven.engine.tables.select;
 
 import io.deephaven.engine.exceptions.ExpressionException;
 import io.deephaven.engine.table.MatchPair;
+import io.deephaven.engine.table.impl.select.MatchPairFactory;
 import junit.framework.TestCase;
 
 public class MatchPairFactoryTest extends TestCase {

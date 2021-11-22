@@ -1,0 +1,28 @@
+import io.deephaven.tools.Tools
+
+configurations {
+}
+
+sourceSets {
+    main {
+        java {
+            srcDir 'java'
+        }
+    }
+    test {
+        java {
+            srcDir 'test'
+        }
+    }
+}
+
+dependencies {
+    implementation project(':DataStructures')
+}
+
+spotless {
+    java {
+        targetExclude(
+        )
+    }
+}

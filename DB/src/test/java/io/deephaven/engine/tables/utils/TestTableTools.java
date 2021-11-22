@@ -15,7 +15,6 @@ import io.deephaven.engine.rowset.impl.RowSetTstUtils;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
-import io.deephaven.engine.tables.*;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.time.TimeZone;
@@ -26,7 +25,10 @@ import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.table.impl.sources.UnionRedirection;
 import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.chunk.IntChunk;
-import io.deephaven.engine.table.impl.utils.*;
+import io.deephaven.engine.table.impl.util.*;
+import io.deephaven.engine.util.CsvHelpers;
+import io.deephaven.engine.util.TableDiff;
+import io.deephaven.engine.util.TableTools;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.ExceptionDetails;
 import io.deephaven.util.QueryConstants;
@@ -43,7 +45,7 @@ import java.util.*;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
-import static io.deephaven.engine.tables.utils.TableTools.*;
+import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.engine.table.impl.TstUtils.*;
 import static io.deephaven.util.QueryConstants.NULL_FLOAT;
 import static io.deephaven.util.QueryConstants.NULL_INT;
@@ -176,7 +178,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
                 "T, Dividend, 0.15, 300\n" +
                 " Z, Dividend, 0.18, 500";
         try {
-            Table tableDividends = io.deephaven.engine.tables.utils.CsvHelpers
+            Table tableDividends = CsvHelpers
                     .readCsv(new ByteArrayInputStream(fileDividends.getBytes()), "DEFAULT");
             assertEquals(3, tableDividends.size());
             assertEquals(4, tableDividends.getMeta().size());
@@ -618,7 +620,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
         final Table result = emptyTable(1).update("Sym=`BAC`");
         TableTools.showWithIndex(expected);
         TableTools.showWithIndex(result);
-        final String diffInfo = io.deephaven.engine.tables.utils.TableTools.diff(result, expected, 1);
+        final String diffInfo = TableTools.diff(result, expected, 1);
         Assert.assertNotEquals(0, diffInfo.length());
     }
 
@@ -1079,7 +1081,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
 
     static void tableRangesAreEqual(Table table1, Table table2, long from1, long from2, long size) {
         Assert.assertEquals("",
-                io.deephaven.engine.tables.utils.TableTools.diff(table1.tail(table1.size() - from1).head(size),
+                TableTools.diff(table1.tail(table1.size() - from1).head(size),
                         table2.tail(table2.size() - from2).head(size), 10));
     }
 
@@ -1101,12 +1103,12 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
         Table table2 = testTable(i(2, 4, 8, 9).toTracking(), c("Key", "b", "c", "g", "h"))
                 .updateView("Sentinel=k");
         Table merged = TableTools.mergeSorted("Key", table1, table2);
-        io.deephaven.engine.tables.utils.TableTools.showWithIndex(merged);
+        TableTools.showWithIndex(merged);
 
         // noinspection ConstantConditions
         Table standardWay = TableTools.merge(table1, table2).sort("Key");
 
-        String diff = io.deephaven.engine.tables.utils.TableTools.diff(merged, standardWay, 10);
+        String diff = TableTools.diff(merged, standardWay, 10);
         TestCase.assertEquals("", diff);
     }
 
@@ -1125,11 +1127,11 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
         }
 
         Table merged = TableTools.mergeSorted("Key", tables);
-        io.deephaven.engine.tables.utils.TableTools.showWithIndex(merged);
+        TableTools.showWithIndex(merged);
 
         Table standardWay = TableTools.merge(tables).sort("Key");
 
-        String diff = io.deephaven.engine.tables.utils.TableTools.diff(merged, standardWay, 10);
+        String diff = TableTools.diff(merged, standardWay, 10);
         TestCase.assertEquals("", diff);
     }
 
@@ -1237,7 +1239,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
         TestCase.assertEquals(1, dataColumn.get(0));
         TestCase.assertEquals(1, dataColumn.get(1));
 
-        io.deephaven.engine.tables.utils.TableTools.show(emptyTable2);
+        TableTools.show(emptyTable2);
 
         Table emptyTable3 = TableTools.emptyTable(2).updateView("col=1");
         TestCase.assertEquals(2, emptyTable3.size());
@@ -1246,7 +1248,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
         TestCase.assertEquals(1, dataColumn.get(0));
         TestCase.assertEquals(1, dataColumn.get(1));
 
-        io.deephaven.engine.tables.utils.TableTools.show(emptyTable3);
+        TableTools.show(emptyTable3);
     }
 
     @Test

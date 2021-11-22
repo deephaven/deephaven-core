@@ -6,7 +6,7 @@ package io.deephaven.engine.tablelogger;
 
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.tablelogger.*;
-import io.deephaven.engine.tables.utils.ColumnsSpecHelper;
+import io.deephaven.engine.util.ColumnsSpecHelper;
 
 import java.io.IOException;
 

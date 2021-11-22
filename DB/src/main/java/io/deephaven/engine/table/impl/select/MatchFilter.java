@@ -9,7 +9,7 @@ import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.tables.remote.preview.DisplayWrapper;
+import io.deephaven.engine.table.impl.preview.DisplayWrapper;
 import io.deephaven.engine.table.lang.QueryScope;
 import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.engine.time.DateTime;

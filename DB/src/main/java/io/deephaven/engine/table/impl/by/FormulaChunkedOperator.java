@@ -9,7 +9,7 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.ChunkSource.GetContext;
-import io.deephaven.engine.tables.select.Utils;
+import io.deephaven.engine.table.impl.select.FormulaUtil;
 import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.impl.QueryTable;
@@ -87,7 +87,7 @@ class FormulaChunkedOperator implements IterativeChunkedAggregationOperator {
             final String inputColumnName = inputColumnNames[ci];
             final String outputColumnName = resultColumnNames[ci];
             final FormulaColumn formulaColumn = formulaColumns[ci] = FormulaColumn.createFormulaColumn(outputColumnName,
-                    Utils.replaceFormulaTokens(formula, columnParamName, inputColumnName));
+                    FormulaUtil.replaceFormulaTokens(formula, columnParamName, inputColumnName));
             final ColumnSource<?> inputColumnSource = byResultColumns.get(inputColumnName);
             final ColumnDefinition<?> inputColumnDefinition = ColumnDefinition
                     .fromGenericType(inputColumnName, inputColumnSource.getType(),

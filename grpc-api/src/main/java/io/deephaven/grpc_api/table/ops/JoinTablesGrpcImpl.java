@@ -7,7 +7,7 @@ import io.deephaven.engine.exceptions.ExpressionException;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.MatchPair;
-import io.deephaven.engine.tables.select.MatchPairFactory;
+import io.deephaven.engine.table.impl.select.MatchPairFactory;
 import io.deephaven.grpc_api.session.SessionState;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.proto.backplane.grpc.AsOfJoinTablesRequest;

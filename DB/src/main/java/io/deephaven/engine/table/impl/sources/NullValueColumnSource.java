@@ -16,7 +16,7 @@ import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.chunk.WritableChunk;
-import io.deephaven.engine.table.impl.utils.ShiftData;
+import io.deephaven.engine.table.impl.util.ShiftData;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 

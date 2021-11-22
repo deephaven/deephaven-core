@@ -9,7 +9,7 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.tables.utils.TableTools;
+import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.TupleSource;
 import io.deephaven.engine.table.impl.tuplesource.TupleSourceFactory;

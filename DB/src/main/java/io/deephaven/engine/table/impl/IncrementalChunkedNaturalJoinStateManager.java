@@ -24,15 +24,15 @@ import io.deephaven.engine.table.impl.sort.timsort.LongIntTimsortKernel;
 import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.Attributes.*;
-import io.deephaven.engine.table.impl.utils.*;
+import io.deephaven.engine.table.impl.util.*;
 
 // mixin rehash
 import java.util.Arrays;
 import io.deephaven.engine.table.impl.sort.permute.IntPermuteKernel;
 // @StateChunkTypeEnum@ from Long
 import io.deephaven.engine.table.impl.sort.permute.LongPermuteKernel;
-import io.deephaven.engine.table.impl.utils.compact.IntCompactKernel;
-import io.deephaven.engine.table.impl.utils.compact.LongCompactKernel;
+import io.deephaven.engine.table.impl.util.compact.IntCompactKernel;
+import io.deephaven.engine.table.impl.util.compact.LongCompactKernel;
 // endmixin rehash
 
 import io.deephaven.util.SafeCloseableArray;
