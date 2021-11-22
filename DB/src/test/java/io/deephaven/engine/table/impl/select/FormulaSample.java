@@ -4,6 +4,7 @@ import java.lang.*;
 import java.util.*;
 
 import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.table.lang.QueryScopeParam;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.chunk.Attributes;
@@ -19,7 +20,7 @@ import io.deephaven.util.type.TypeUtils;
 
 import java.util.concurrent.ConcurrentHashMap;
 
-import static io.deephaven.engine.table.impl.lang.LanguageFunctionUtil.*;
+import static io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtil.*;
 
 public class FormulaSample extends io.deephaven.engine.table.impl.select.Formula {
     public static final io.deephaven.engine.table.impl.select.formula.FormulaFactory __FORMULA_FACTORY = FormulaSample::new;
@@ -34,7 +35,7 @@ public class FormulaSample extends io.deephaven.engine.table.impl.select.Formula
     public FormulaSample(final TrackingRowSet rowSet,
             final boolean __lazy,
             final java.util.Map<String, ? extends ColumnSource> __columnsToData,
-            final io.deephaven.engine.tables.select.Param... __params) {
+            final QueryScopeParam... __params) {
         super(rowSet);
         II = __columnsToData.get("II");
         I = __columnsToData.get("I");

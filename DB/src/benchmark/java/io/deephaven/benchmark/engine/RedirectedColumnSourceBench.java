@@ -21,7 +21,7 @@ import java.util.function.Consumer;
 @Timeout(time = 20)
 @Fork(1)
 public class RedirectedColumnSourceBench extends RedirectionBenchBase {
-    // @Param({"D", "F", "I", "S"})
+    // @QueryScopeParam({"D", "F", "I", "S"})
     @Param({"D"})
     private String fillColsType;
 

@@ -11,7 +11,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.by.*;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.vector.CharVector;
-import io.deephaven.engine.tables.libs.QueryLibrary;
+import io.deephaven.engine.table.lang.QueryLibrary;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.rowset.RowSet;

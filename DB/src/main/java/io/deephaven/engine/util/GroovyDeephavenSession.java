@@ -15,7 +15,7 @@ import io.deephaven.compilertools.CompilerTools;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.tables.select.QueryScope;
+import io.deephaven.engine.table.lang.QueryScope;
 import io.deephaven.api.util.NameValidator;
 import io.deephaven.engine.util.scripts.ScriptPathLoader;
 import io.deephaven.engine.util.scripts.ScriptPathLoaderState;
@@ -145,7 +145,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession implements Scr
 
     @Override
     public QueryScope newQueryScope() {
-        return new QueryScope.SynchronizedScriptSessionImpl(this);
+        return new SynchronizedScriptSessionQueryScope(this);
     }
 
     public static InputStream findScript(String relativePath) throws IOException {
@@ -522,15 +522,15 @@ public class GroovyDeephavenSession extends AbstractScriptSession implements Scr
                 "import static io.deephaven.base.string.cache.CompressedString.compress;\n" +
                 "import org.joda.time.LocalTime;\n" +
                 "import io.deephaven.engine.time.Period;\n" +
-                "import io.deephaven.engine.tables.select.Param;\n" +
-                "import io.deephaven.engine.tables.select.QueryScope;\n" +
+                "import io.deephaven.engine.table.lang.QueryScopeParam;\n" +
+                "import io.deephaven.engine.table.lang.QueryScope;\n" +
                 "import java.util.*;\n" +
                 "import java.lang.*;\n" +
                 "import static io.deephaven.util.QueryConstants.*;\n" +
                 "import static io.deephaven.libs.GroovyStaticImports.*;\n" +
                 "import static io.deephaven.engine.time.DateTimeUtils.*;\n" +
                 "import static io.deephaven.engine.time.TimeZone.*;\n" +
-                "import static io.deephaven.engine.table.impl.lang.LanguageFunctionUtil.*;\n" +
+                "import static io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtil.*;\n" +
                 "import static io.deephaven.api.agg.Aggregation.*;\n" +
                 StringUtils.joinStrings(scriptImports, "\n") + "\n";
         return new Pair<>(commandPrefix, commandPrefix + command

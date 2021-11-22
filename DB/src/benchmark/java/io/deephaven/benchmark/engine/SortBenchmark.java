@@ -41,15 +41,15 @@ public class SortBenchmark {
     private ModifiedColumnSet mcsWithSortColumn;
     private ModifiedColumnSet mcsWithoutSortColumn;
 
-    // @Param({"D1", "L1", "Thingy"})
+    // @QueryScopeParam({"D1", "L1", "Thingy"})
     @Param({"D1"})
     private String sortCol;
 
-    // @Param({"symtab", "nosymtab"})
+    // @QueryScopeParam({"symtab", "nosymtab"})
     @Param({"nosymtab"})
     private String symTab;
 
-    // @Param({"3", "10000", "10000", "0.01", "0.1", "0.25", "0.5", "0.75", "0.99"})
+    // @QueryScopeParam({"3", "10000", "10000", "0.01", "0.1", "0.25", "0.5", "0.75", "0.99"})
     @Param({"1000"})
     private double enumSize;
 
@@ -59,7 +59,7 @@ public class SortBenchmark {
     @Param({"100"}) // , "10", "5", "1"})
     private int sparsity;
 
-    // @Param({"250000", "2500000", "25000000"})
+    // @QueryScopeParam({"250000", "2500000", "25000000"})
     @Param({"25000000"})
     private int tableSize;
 

@@ -7,9 +7,9 @@ package io.deephaven.engine.table.impl.lang;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.table.lang.QueryScopeParam;
 import io.deephaven.engine.vector.*;
-import io.deephaven.engine.tables.select.Param;
-import io.deephaven.engine.tables.select.QueryScope;
+import io.deephaven.engine.table.lang.QueryScope;
 import io.deephaven.engine.vector.Vector;
 import io.deephaven.util.type.TypeUtils;
 import com.github.javaparser.ast.*;
@@ -38,7 +38,7 @@ import java.util.stream.Stream;
 
 import static io.deephaven.engine.util.PythonScopeJpyImpl.*;
 
-public final class LanguageParser extends GenericVisitorAdapter<Class<?>, LanguageParser.VisitArgs> {
+public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, QueryLanguageParser.VisitArgs> {
 
     private final Collection<Package> packageImports;
     private final Collection<Class<?>> classImports;
@@ -49,13 +49,13 @@ public final class LanguageParser extends GenericVisitorAdapter<Class<?>, Langua
     private final HashSet<String> variablesUsed = new HashSet<>();
 
     // We need some class to represent null. We know for certain that this one won't be used...
-    private static final Class<?> NULL_CLASS = LanguageParser.class;
+    private static final Class<?> NULL_CLASS = QueryLanguageParser.class;
 
     private static final Set<String> simpleNameWhiteList = Collections.unmodifiableSet(
             new HashSet<>(Arrays.asList("java.lang", Vector.class.getPackage().getName())));
 
     /**
-     * The result of the LanguageParser for the expression passed given to the constructor.
+     * The result of the QueryLanguageParser for the expression passed given to the constructor.
      */
     private final Result result;
 
@@ -63,8 +63,8 @@ public final class LanguageParser extends GenericVisitorAdapter<Class<?>, Langua
     private final boolean unboxArguments;
 
     /**
-     * Create a LanguageParser and parse the given {@code expression}. After construction, the
-     * {@link LanguageParser.Result result} of parsing the {@code expression} is available with the
+     * Create a QueryLanguageParser and parse the given {@code expression}. After construction, the
+     * {@link QueryLanguageParser.Result result} of parsing the {@code expression} is available with the
      * {@link #getResult()}} method.
      *
      * @param expression The query language expression to parse
@@ -76,19 +76,19 @@ public final class LanguageParser extends GenericVisitorAdapter<Class<?>, Langua
      * @param variableParameterizedTypes A map of the names of scope variables to their parameterized types
      * @throws QueryLanguageParseException If any exception or error is encountered
      */
-    public LanguageParser(String expression,
-            Collection<Package> packageImports,
-            Collection<Class<?>> classImports,
-            Collection<Class<?>> staticImports,
-            Map<String, Class<?>> variables,
-            Map<String, Class<?>[]> variableParameterizedTypes) throws QueryLanguageParseException {
+    public QueryLanguageParser(String expression,
+                               Collection<Package> packageImports,
+                               Collection<Class<?>> classImports,
+                               Collection<Class<?>> staticImports,
+                               Map<String, Class<?>> variables,
+                               Map<String, Class<?>[]> variableParameterizedTypes) throws QueryLanguageParseException {
         this(expression, packageImports, classImports, staticImports, variables,
                 variableParameterizedTypes, true);
     }
 
     /**
-     * Create a LanguageParser and parse the given {@code expression}. After construction, the
-     * {@link LanguageParser.Result result} of parsing the {@code expression} is available with the
+     * Create a QueryLanguageParser and parse the given {@code expression}. After construction, the
+     * {@link QueryLanguageParser.Result result} of parsing the {@code expression} is available with the
      * {@link #getResult()}} method.
      *
      * @param expression The query language expression to parse
@@ -101,12 +101,12 @@ public final class LanguageParser extends GenericVisitorAdapter<Class<?>, Langua
      * @param unboxArguments If true it will unbox the query scope arguments
      * @throws QueryLanguageParseException If any exception or error is encountered
      */
-    public LanguageParser(String expression,
-            Collection<Package> packageImports,
-            Collection<Class<?>> classImports,
-            Collection<Class<?>> staticImports,
-            Map<String, Class<?>> variables,
-            Map<String, Class<?>[]> variableParameterizedTypes, boolean unboxArguments)
+    public QueryLanguageParser(String expression,
+                               Collection<Package> packageImports,
+                               Collection<Class<?>> classImports,
+                               Collection<Class<?>> staticImports,
+                               Map<String, Class<?>> variables,
+                               Map<String, Class<?>[]> variableParameterizedTypes, boolean unboxArguments)
             throws QueryLanguageParseException {
         this.packageImports = packageImports == null ? Collections.emptySet()
                 : Require.notContainsNull(packageImports, "packageImports");
@@ -149,7 +149,7 @@ public final class LanguageParser extends GenericVisitorAdapter<Class<?>, Langua
 
             final boolean VERBOSE_EXCEPTION_MESSAGES = Configuration
                     .getInstance()
-                    .getBooleanWithDefault("LanguageParser.verboseExceptionMessages", false);
+                    .getBooleanWithDefault("QueryLanguageParser.verboseExceptionMessages", false);
 
             if (VERBOSE_EXCEPTION_MESSAGES) { // include stack trace
                 exceptionMessageBuilder
@@ -900,7 +900,7 @@ public final class LanguageParser extends GenericVisitorAdapter<Class<?>, Langua
          *
          * What matters here: 1) If it's a simple name (i.e. not a qualified name; doesn't contain a '.'), then 1. Check
          * whether it's in the scope 2. If it's not in the scope, see if it's a static import 3. If it's not a static
-         * import, then it's not a situation the LanguageParser has to worry about. 2) Qualified names -- we just throw
+         * import, then it's not a situation the QueryLanguageParser has to worry about. 2) Qualified names -- we just throw
          * them to 'findClass()'. Many details are not relevant here. For example, field access is handled by a
          * different method: visit(FieldAccessExpr, StringBuilder).
          */
@@ -1695,7 +1695,7 @@ public final class LanguageParser extends GenericVisitorAdapter<Class<?>, Langua
         });
 
         final QueryScope queryScope = QueryScope.getScope();
-        for (Param<?> param : queryScope.getParams(queryScope.getParamNames())) {
+        for (QueryScopeParam<?> param : queryScope.getParams(queryScope.getParamNames())) {
             if (param.getName().equals(n.getNameAsString())) {
                 NumbaCallableWrapper numbaCallableWrapper = (NumbaCallableWrapper) param.getValue();
                 List<Class<?>> params = numbaCallableWrapper.getParamTypes();

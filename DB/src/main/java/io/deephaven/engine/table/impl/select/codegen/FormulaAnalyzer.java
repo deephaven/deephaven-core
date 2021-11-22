@@ -2,11 +2,12 @@ package io.deephaven.engine.table.impl.select.codegen;
 
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.impl.lang.QueryLanguageParser;
+import io.deephaven.engine.table.impl.select.QueryScopeParamTypeUtil;
+import io.deephaven.engine.table.lang.QueryScopeParam;
 import io.deephaven.engine.vector.ObjectVector;
-import io.deephaven.engine.table.impl.lang.LanguageParser;
-import io.deephaven.engine.tables.libs.QueryLibrary;
-import io.deephaven.engine.tables.select.Param;
-import io.deephaven.engine.tables.select.QueryScope;
+import io.deephaven.engine.table.lang.QueryLibrary;
+import io.deephaven.engine.table.lang.QueryScope;
 import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.table.impl.select.DhFormulaColumn;
 import io.deephaven.engine.table.impl.select.FormulaCompilationException;
@@ -36,14 +37,14 @@ public class FormulaAnalyzer {
     private static Result analyzeHelper(final String rawFormulaString,
             final Map<String, ColumnDefinition<?>> columnDefinitionMap,
             Map<String, Class<?>> otherVariables) throws Exception {
-        final Map<String, Param<?>> possibleParams = new HashMap<>();
+        final Map<String, QueryScopeParam<?>> possibleParams = new HashMap<>();
         final QueryScope queryScope = QueryScope.getScope();
-        for (Param<?> param : queryScope.getParams(queryScope.getParamNames())) {
+        for (QueryScopeParam<?> param : queryScope.getParams(queryScope.getParamNames())) {
             possibleParams.put(param.getName(), param);
         }
 
         final DateTimeUtils.Result timeConversionResult = DateTimeUtils.convertExpression(rawFormulaString);
-        final LanguageParser.Result result = getCompiledFormula(columnDefinitionMap, timeConversionResult,
+        final QueryLanguageParser.Result result = getCompiledFormula(columnDefinitionMap, timeConversionResult,
                 otherVariables);
 
         log.debug().append("Expression (after language conversion) : ").append(result.getConvertedExpression()).endl();
@@ -79,9 +80,9 @@ public class FormulaAnalyzer {
                 rawFormulaString, cookedFormulaString, timeInstanceVariables);
     }
 
-    public static LanguageParser.Result getCompiledFormula(Map<String, ColumnDefinition<?>> availableColumns,
-            DateTimeUtils.Result timeConversionResult,
-            Map<String, Class<?>> otherVariables) throws Exception {
+    public static QueryLanguageParser.Result getCompiledFormula(Map<String, ColumnDefinition<?>> availableColumns,
+                                                                DateTimeUtils.Result timeConversionResult,
+                                                                Map<String, Class<?>> otherVariables) throws Exception {
         final Map<String, Class<?>> possibleVariables = new HashMap<>();
         possibleVariables.put("i", int.class);
         possibleVariables.put("ii", long.class);
@@ -102,14 +103,14 @@ public class FormulaAnalyzer {
         }
 
         final QueryScope queryScope = QueryScope.getScope();
-        for (Param<?> param : queryScope.getParams(queryScope.getParamNames())) {
-            possibleVariables.put(param.getName(), param.getDeclaredClass());
+        for (QueryScopeParam<?> param : queryScope.getParams(queryScope.getParamNames())) {
+            possibleVariables.put(param.getName(), QueryScopeParamTypeUtil.getDeclaredClass(param.getValue()));
 
-            Type declaredType = param.getDeclaredType();
+            Type declaredType = QueryScopeParamTypeUtil.getDeclaredType(param.getValue());
             if (declaredType instanceof ParameterizedType) {
                 ParameterizedType pt = (ParameterizedType) declaredType;
                 Class<?>[] paramTypes = Arrays.stream(pt.getActualTypeArguments())
-                        .map(Param::classFromType)
+                        .map(QueryScopeParamTypeUtil::classFromType)
                         .toArray(Class<?>[]::new);
                 possibleVariableParameterizedTypes.put(param.getName(), paramTypes);
             }
@@ -136,7 +137,7 @@ public class FormulaAnalyzer {
         final Set<Class<?>> classImports = new HashSet<>(QueryLibrary.getClassImports());
         classImports.add(TrackingWritableRowSet.class);
         classImports.add(WritableColumnSource.class);
-        return new LanguageParser(timeConversionResult.getConvertedFormula(), QueryLibrary.getPackageImports(),
+        return new QueryLanguageParser(timeConversionResult.getConvertedFormula(), QueryLibrary.getPackageImports(),
                 classImports, QueryLibrary.getStaticImports(), possibleVariables, possibleVariableParameterizedTypes)
                         .getResult();
     }

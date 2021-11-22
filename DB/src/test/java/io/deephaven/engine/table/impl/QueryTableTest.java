@@ -20,7 +20,7 @@ import io.deephaven.engine.table.impl.indexer.RowSetIndexer;
 import io.deephaven.engine.vector.*;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.tables.select.MatchPairFactory;
-import io.deephaven.engine.tables.select.QueryScope;
+import io.deephaven.engine.table.lang.QueryScope;
 import io.deephaven.engine.tables.select.SelectColumnFactory;
 import io.deephaven.engine.tables.select.SelectFilterFactory;
 import io.deephaven.engine.time.DateTime;

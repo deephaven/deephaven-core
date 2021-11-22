@@ -8,7 +8,7 @@ import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableMap;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.tables.select.QueryScope;
+import io.deephaven.engine.table.lang.QueryScope;
 import io.deephaven.engine.tables.utils.TableDiff;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.liveness.LivenessScope;

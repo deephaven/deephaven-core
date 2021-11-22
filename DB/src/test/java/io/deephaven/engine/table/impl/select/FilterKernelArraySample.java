@@ -3,7 +3,7 @@ package io.deephaven.engine.table.impl.select;
 import java.lang.*;
 
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.tables.select.Param;
+import io.deephaven.engine.table.lang.QueryScopeParam;
 
 import static io.deephaven.engine.table.impl.select.ConditionFilter.FilterKernel;
 
@@ -13,7 +13,7 @@ import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.vector.DoubleVector;
 import io.deephaven.engine.vector.ShortVector;
 
-import static io.deephaven.engine.table.impl.lang.LanguageFunctionUtil.*;
+import static io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtil.*;
 import static io.deephaven.engine.chunk.Attributes.*;
 
 public class FilterKernelArraySample implements io.deephaven.engine.table.impl.select.ConditionFilter.FilterKernel<FilterKernel.Context>{
@@ -24,7 +24,7 @@ public class FilterKernelArraySample implements io.deephaven.engine.table.impl.s
     private final ShortVector v1_;
 
 
-    public FilterKernelArraySample(Table table, TrackingRowSet fullSet, Param... params) {
+    public FilterKernelArraySample(Table table, TrackingRowSet fullSet, QueryScopeParam... params) {
 
         // Array Column Variables
         v2_ = new io.deephaven.engine.table.impl.dbarrays.DoubleVectorColumnWrapper(table.getColumnSource("v2"), fullSet);

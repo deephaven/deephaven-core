@@ -13,9 +13,10 @@ import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.table.impl.lang.LanguageParser;
-import io.deephaven.engine.tables.libs.QueryLibrary;
-import io.deephaven.engine.tables.select.Param;
+import io.deephaven.engine.table.impl.lang.QueryLanguageParser;
+import io.deephaven.engine.table.impl.utils.codegen.CodeGenerator;
+import io.deephaven.engine.table.lang.QueryLibrary;
+import io.deephaven.engine.table.lang.QueryScopeParam;
 import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
@@ -318,7 +319,7 @@ public class ConditionFilter extends AbstractConditionFilter {
         @Override
         public WritableRowSet filter(final RowSet selection, final RowSet fullSet, final Table table,
                                      final boolean usePrev,
-                                     String formula, final Param... params) {
+                                     String formula, final QueryScopeParam... params) {
             try (final FilterKernel.Context context = filterKernel.getContext(chunkSize);
                     final RowSequence.Iterator rsIterator = selection.getRowSequenceIterator()) {
                 final ChunkGetter[] chunkGetters = new ChunkGetter[columnNames.length];
@@ -362,7 +363,7 @@ public class ConditionFilter extends AbstractConditionFilter {
 
     @Override
     protected void generateFilterCode(TableDefinition tableDefinition, DateTimeUtils.Result timeConversionResult,
-            LanguageParser.Result result) throws MalformedURLException, ClassNotFoundException {
+            QueryLanguageParser.Result result) throws MalformedURLException, ClassNotFoundException {
         final StringBuilder classBody = getClassBody(tableDefinition, timeConversionResult, result);
         if (classBody == null)
             return;
@@ -384,12 +385,12 @@ public class ConditionFilter extends AbstractConditionFilter {
                 addParamClass.accept(column.getDataType());
                 addParamClass.accept(column.getComponentType());
             }
-            for (final Param<?> param : params) {
-                addParamClass.accept(param.getDeclaredClass());
+            for (final QueryScopeParam<?> param : params) {
+                addParamClass.accept(QueryScopeParamTypeUtil.getDeclaredClass(param.getValue()));
             }
 
             filterKernelClass = CompilerTools.compile("GeneratedFilterKernel", this.classBody = classBody.toString(),
-                    CompilerTools.FORMULA_PREFIX, Param.expandParameterClasses(paramClasses));
+                    CompilerTools.FORMULA_PREFIX, QueryScopeParamTypeUtil.expandParameterClasses(paramClasses));
         } finally {
             nugget.done();
         }
@@ -397,7 +398,7 @@ public class ConditionFilter extends AbstractConditionFilter {
 
     @Nullable
     private StringBuilder getClassBody(TableDefinition tableDefinition, DateTimeUtils.Result timeConversionResult,
-            LanguageParser.Result result) {
+            QueryLanguageParser.Result result) {
         if (filterKernelClass != null) {
             return null;
         }
@@ -418,18 +419,18 @@ public class ConditionFilter extends AbstractConditionFilter {
             usedInputs.add(new Pair<>("k", long.class));
         }
         final StringBuilder classBody = new StringBuilder();
-        classBody.append(QueryLibrary.getImportStatement().build()).append(
-                "\n\n" +
-                        "public class $CLASSNAME$ implements ")
+        classBody.append(CodeGenerator.create(QueryLibrary.getImportStrings().toArray()).build()).append(
+                        "\n\npublic class $CLASSNAME$ implements ")
                 .append(FilterKernel.class.getCanonicalName()).append("<FilterKernel.Context>{\n");
         classBody.append("\n").append(timeConversionResult.getInstanceVariablesString()).append("\n");
         final Indenter indenter = new Indenter();
-        for (Param param : params) {
+        for (QueryScopeParam param : params) {
             /*
              * adding context param fields like: "            final int p1;\n" + "            final float p2;\n" +
              * "            final String p3;\n" +
              */
-            classBody.append(indenter).append("private final ").append(param.getPrimitiveTypeNameIfAvailable())
+            classBody.append(indenter).append("private final ")
+                    .append(QueryScopeParamTypeUtil.getPrimitiveTypeNameIfAvailable(param.getValue()))
                     .append(" ").append(param.getName()).append(";\n");
         }
         if (!usedColumnArrays.isEmpty()) {
@@ -454,16 +455,17 @@ public class ConditionFilter extends AbstractConditionFilter {
         }
 
         classBody.append("\n").append(indenter)
-                .append("public $CLASSNAME$(Table table, TrackingRowSet fullSet, Param... params) {\n");
+                .append("public $CLASSNAME$(Table table, TrackingRowSet fullSet, QueryScopeParam... params) {\n");
         indenter.increaseLevel();
         for (int i = 0; i < params.length; i++) {
-            final Param param = params[i];
+            final QueryScopeParam param = params[i];
             /*
              * Initializing context parameters this.p1 = (Integer) params[0].getValue(); this.p2 = (Float)
              * params[1].getValue(); this.p3 = (String) params[2].getValue();
              */
             final String name = param.getName();
-            classBody.append(indenter).append("this.").append(name).append(" = (").append(param.getDeclaredTypeName())
+            classBody.append(indenter).append("this.").append(name).append(" = (")
+                    .append(QueryScopeParamTypeUtil.getDeclaredTypeName(param.getValue()))
                     .append(") params[").append(i).append("].getValue();\n");
         }
 
@@ -544,7 +546,7 @@ public class ConditionFilter extends AbstractConditionFilter {
             return filter;
         }
         final FilterKernel filterKernel = (FilterKernel) filterKernelClass
-                .getConstructor(Table.class, TrackingRowSet.class, Param[].class)
+                .getConstructor(Table.class, TrackingRowSet.class, QueryScopeParam[].class)
                 .newInstance(table, fullSet, (Object) params);
         final String[] columnNames = usedInputs.stream().map(p -> p.first).toArray(String[]::new);
         return new ChunkFilter(filterKernel, columnNames, CHUNK_SIZE);

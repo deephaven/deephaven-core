@@ -32,8 +32,8 @@ import java.util.Queue;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static io.deephaven.engine.table.impl.lang.LanguageFunctionUtil.minus;
-import static io.deephaven.engine.table.impl.lang.LanguageFunctionUtil.plus;
+import static io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtil.minus;
+import static io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtil.plus;
 
 /**
  * <p>

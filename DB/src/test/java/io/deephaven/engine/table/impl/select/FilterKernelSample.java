@@ -3,7 +3,7 @@ package io.deephaven.engine.table.impl.select;
 import java.lang.*;
 
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.tables.select.Param;
+import io.deephaven.engine.table.lang.QueryScopeParam;
 
 import static io.deephaven.engine.table.impl.select.ConditionFilter.FilterKernel;
 
@@ -13,7 +13,7 @@ import io.deephaven.engine.chunk.LongChunk;
 import io.deephaven.engine.chunk.ShortChunk;
 import io.deephaven.engine.rowset.TrackingRowSet;
 
-import static io.deephaven.engine.table.impl.lang.LanguageFunctionUtil.*;
+import static io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtil.*;
 import static io.deephaven.engine.chunk.Attributes.*;
 
 public class FilterKernelSample implements io.deephaven.engine.table.impl.select.ConditionFilter.FilterKernel<FilterKernel.Context>{
@@ -23,7 +23,7 @@ public class FilterKernelSample implements io.deephaven.engine.table.impl.select
     private final float p2;
     private final java.lang.String p3;
 
-    public FilterKernelSample(Table table, TrackingRowSet fullSet, Param... params) {
+    public FilterKernelSample(Table table, TrackingRowSet fullSet, QueryScopeParam... params) {
         this.p1 = (java.lang.Integer) params[0].getValue();
         this.p2 = (java.lang.Float) params[1].getValue();
         this.p3 = (java.lang.String) params[2].getValue();

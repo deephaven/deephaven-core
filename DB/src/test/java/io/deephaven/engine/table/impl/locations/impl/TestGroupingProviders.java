@@ -5,7 +5,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.tables.libs.QueryLibrary;
+import io.deephaven.engine.table.lang.QueryLibrary;
 import io.deephaven.engine.tables.utils.ParquetTools;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.util.file.TrackedFileHandleFactory;

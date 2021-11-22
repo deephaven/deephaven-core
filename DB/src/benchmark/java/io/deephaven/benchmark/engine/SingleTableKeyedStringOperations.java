@@ -25,11 +25,11 @@ public class SingleTableKeyedStringOperations {
     private TableBenchmarkState state;
     BenchmarkTable bmTable;
 
-    // @Param({"0", "1", "2", "4"})
+    // @QueryScopeParam({"0", "1", "2", "4"})
     @Param({"0", "1"})
     private int logColumnCount;
 
-    // @Param({"100", "10000", "1000000" /*, "100000000" */})
+    // @QueryScopeParam({"100", "10000", "1000000" /*, "100000000" */})
     @Param({"1000000"})
     private int tableSize;
 
@@ -37,7 +37,7 @@ public class SingleTableKeyedStringOperations {
     private int sparsity;
 
 
-    // @Param({"0", "4", "8","16","31"})
+    // @QueryScopeParam({"0", "4", "8","16","31"})
     @Param({"4", "16", "31"})
     private int logSpaceSize;
 

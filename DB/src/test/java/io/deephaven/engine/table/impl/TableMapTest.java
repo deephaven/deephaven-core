@@ -15,7 +15,7 @@ import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.tables.select.QueryScope;
+import io.deephaven.engine.table.lang.QueryScope;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.liveness.LivenessScopeStack;

@@ -7,11 +7,11 @@ package io.deephaven.engine.table.impl.select;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.compilertools.CompilerTools;
 import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.impl.lang.QueryLanguageParser;
 import io.deephaven.engine.vector.ObjectVector;
-import io.deephaven.engine.table.impl.lang.LanguageParser;
-import io.deephaven.engine.tables.libs.QueryLibrary;
-import io.deephaven.engine.tables.select.Param;
-import io.deephaven.engine.tables.select.QueryScope;
+import io.deephaven.engine.table.lang.QueryLibrary;
+import io.deephaven.engine.table.lang.QueryScopeParam;
+import io.deephaven.engine.table.lang.QueryScope;
 import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
@@ -50,7 +50,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
     private static final String C14NUTIL_CLASSNAME = C14nUtil.class.getCanonicalName();
     private static final String LAZY_RESULT_CACHE_NAME = "__lazyResultCache";
     private static final String FORMULA_FACTORY_NAME = "__FORMULA_FACTORY";
-    private static final String PARAM_CLASSNAME = Param.class.getCanonicalName();
+    private static final String PARAM_CLASSNAME = QueryScopeParam.class.getCanonicalName();
     private static final String EVALUATION_EXCEPTION_CLASSNAME = FormulaEvaluationException.class.getCanonicalName();
     public static boolean useKernelFormulasProperty =
             Configuration.getInstance().getBooleanWithDefault("FormulaColumn.useKernelFormulasProperty", false);
@@ -71,7 +71,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
      * The internal formula object is generated on-demand by calling out to the Java compiler.
      *
      * @param columnName the result column name
-     * @param formulaString the formula string to be parsed by the LanguageParser
+     * @param formulaString the formula string to be parsed by the QueryLanguageParser
      */
     DhFormulaColumn(String columnName, String formulaString) {
         super(columnName, formulaString, useKernelFormulasProperty);
@@ -177,7 +177,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
         try {
             analyzedFormula = FormulaAnalyzer.analyze(formulaString, columnDefinitionMap, timeNewVariables);
             final DateTimeUtils.Result timeConversionResult = DateTimeUtils.convertExpression(formulaString);
-            final LanguageParser.Result result = FormulaAnalyzer.getCompiledFormula(columnDefinitionMap,
+            final QueryLanguageParser.Result result = FormulaAnalyzer.getCompiledFormula(columnDefinitionMap,
                     timeConversionResult, timeNewVariables);
 
             log.debug().append("Expression (after language conversion) : ").append(result.getConvertedExpression())
@@ -202,7 +202,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
         }
 
         // check if this is a column to be created with a numba vectorized function
-        for (Param<?> param : params) {
+        for (QueryScopeParam<?> param : params) {
             final Object value = param.getValue();
             if (value != null && value.getClass() == NumbaCallableWrapper.class) {
                 NumbaCallableWrapper numbaCallableWrapper = (NumbaCallableWrapper) value;
@@ -227,7 +227,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
         final TypeAnalyzer ta = TypeAnalyzer.create(returnedType);
 
         final CodeGenerator g = CodeGenerator.create(
-                QueryLibrary.getImportStatement(), "",
+                CodeGenerator.create(QueryLibrary.getImportStrings().toArray()), "",
                 "public class $CLASSNAME$ extends [[FORMULA_CLASS_NAME]]", CodeGenerator.block(
                         generateFormulaFactoryLambda(), "",
                         CodeGenerator.repeated("instanceVar", "private final [[TYPE]] [[NAME]];"),
@@ -668,9 +668,10 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
 
         if (paramLambda != null) {
             for (int ii = 0; ii < params.length; ++ii) {
-                final Param<?> p = params[ii];
-                final ParamParameter pp = new ParamParameter(ii, p.getName(), p.getDeclaredClass(),
-                        p.getDeclaredTypeName());
+                final QueryScopeParam<?> p = params[ii];
+                final ParamParameter pp = new ParamParameter(ii, p.getName(),
+                        QueryScopeParamTypeUtil.getDeclaredClass(p.getValue()),
+                        QueryScopeParamTypeUtil.getDeclaredTypeName(p.getValue()));
                 addIfNotNull(results, paramLambda.apply(pp));
             }
         }
@@ -691,8 +692,8 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
         final Map<String, RichType> columnDict = makeNameToRichTypeDict(sd.sources, columnSources);
         final Map<String, Class<?>> arrayDict = makeNameToTypeDict(sd.arrays, columnSources);
         final Map<String, Class<?>> allParamDict = new HashMap<>();
-        for (final Param<?> param : params) {
-            allParamDict.put(param.getName(), param.getDeclaredClass());
+        for (final QueryScopeParam<?> param : params) {
+            allParamDict.put(param.getName(), QueryScopeParamTypeUtil.getDeclaredClass(param.getValue()));
         }
         final Map<String, Class<?>> paramDict = new HashMap<>();
         for (final String p : sd.params) {
@@ -758,7 +759,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
                     .doPrivileged(
                             (PrivilegedExceptionAction<Class<?>>) () -> CompilerTools.compile(className, classBody,
                                     CompilerTools.FORMULA_PREFIX,
-                                    Param.expandParameterClasses(paramClasses)));
+                                    QueryScopeParamTypeUtil.expandParameterClasses(paramClasses)));
         } catch (PrivilegedActionException pae) {
             throw new FormulaCompilationException("Formula compilation error for: " + what, pae.getException());
         }

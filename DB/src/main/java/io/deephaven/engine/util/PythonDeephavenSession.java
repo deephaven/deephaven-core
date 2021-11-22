@@ -10,9 +10,9 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.exceptions.OperationException;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.tables.libs.QueryLibrary;
+import io.deephaven.engine.table.lang.QueryLibrary;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.tables.select.QueryScope;
+import io.deephaven.engine.table.lang.QueryScope;
 import io.deephaven.engine.tables.utils.LiveWidget;
 import io.deephaven.engine.util.jpy.JpyInit;
 import io.deephaven.engine.util.scripts.ScriptPathLoader;
@@ -126,7 +126,7 @@ public class PythonDeephavenSession extends AbstractScriptSession implements Scr
     @VisibleForTesting
     public QueryScope newQueryScope() {
         // depend on the GIL instead of local synchronization
-        return new QueryScope.UnsynchronizedScriptSessionImpl(this);
+        return new UnsynchronizedScriptSessionQueryScope(this);
     }
 
     /**

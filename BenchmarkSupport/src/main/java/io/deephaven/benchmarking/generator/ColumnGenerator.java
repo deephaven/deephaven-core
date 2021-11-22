@@ -3,6 +3,7 @@ package io.deephaven.benchmarking.generator;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.benchmarking.generator.random.ExtendedRandom;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.lang.QueryScope;
 
 /**
  * An interface that defines a class which will create Columns for a {@link io.deephaven.benchmarking.BenchmarkTable}
@@ -29,7 +30,7 @@ public interface ColumnGenerator<T> {
      * generate data.
      *
      * @param varName The name of this instance's variable within the
-     *        {@link io.deephaven.engine.tables.select.QueryScope}
+     *        {@link QueryScope}
      * @return A string for use with update()
      */
     String getUpdateString(String varName);

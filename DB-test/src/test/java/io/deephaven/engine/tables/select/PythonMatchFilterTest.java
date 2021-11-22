@@ -7,6 +7,7 @@ package io.deephaven.engine.tables.select;
 import static org.junit.Assert.assertEquals;
 
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.table.lang.QueryScope;
 import io.deephaven.io.log.LogLevel;
 import io.deephaven.io.logger.StreamLoggerImpl;
 import io.deephaven.util.process.ProcessEnvironment;

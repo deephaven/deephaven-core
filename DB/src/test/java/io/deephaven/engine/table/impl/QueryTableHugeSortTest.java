@@ -1,7 +1,7 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.tables.select.QueryScope;
+import io.deephaven.engine.table.lang.QueryScope;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;

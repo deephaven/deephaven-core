@@ -3,7 +3,7 @@ package io.deephaven.lang.completion;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.tables.select.QueryScope.MissingVariableException;
+import io.deephaven.engine.table.lang.QueryScope.MissingVariableException;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.util.VariableProvider;
 import io.deephaven.io.logger.Logger;

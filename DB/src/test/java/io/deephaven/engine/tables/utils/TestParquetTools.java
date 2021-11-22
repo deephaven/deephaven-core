@@ -11,7 +11,7 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.tables.StringSetWrapper;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.tables.libs.QueryLibrary;
+import io.deephaven.engine.table.lang.QueryLibrary;
 import io.deephaven.engine.tables.libs.StringSet;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.impl.InMemoryTable;

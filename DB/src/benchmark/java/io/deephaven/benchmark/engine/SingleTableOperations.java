@@ -28,11 +28,11 @@ public class SingleTableOperations {
     private TableBenchmarkState state;
     BenchmarkTable bmTable;
 
-    // @Param({"1","2","4","16"})
+    // @QueryScopeParam({"1","2","4","16"})
     @Param({"1", "4", "16"})
     private int columnCount;
 
-    // @Param({"100", "10000", "100000", "1000000", "10000000"})
+    // @QueryScopeParam({"100", "10000", "100000", "1000000", "10000000"})
     @Param({"100", "100000", "1000000"})
     private int tableSize;
 

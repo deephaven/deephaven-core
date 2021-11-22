@@ -11,7 +11,7 @@ import java.io.*;
 import java.text.*;
 import java.time.LocalDate;
 
-public class LanguageFunctionGenerator {
+public class QueryLanguageFunctionGenerator {
 
     public static double[] plus(double a[], int b) {
         double[] ret = new double[a.length];
@@ -56,55 +56,55 @@ public class LanguageFunctionGenerator {
                 "        String description;\n" +
                 "\n" +
                 "        try '{'\n" +
-                "            dbResult = LanguageFunctionUtil.{0}(value1, value2);\n" +
+                "            dbResult = QueryLanguageFunctionUtil.{0}(value1, value2);\n" +
                 "            expectedResult = value1{7}{8}value2;\n" +
                 "            compareResult = {13}.compare(dbResult, expectedResult);\n" +
-                "            description = \"{13}.compare(LanguageFunctionUtil.{0}(value1, value2), value1{7}{8}value2)\";\n"
+                "            description = \"{13}.compare(QueryLanguageFunctionUtil.{0}(value1, value2), value1{7}{8}value2)\";\n"
                 +
                 "            TestCase.assertEquals(description, 0, compareResult);\n" +
                 /*
                  * ---------- This one runs into ArithmeticExceptions doing stuff like 0 % 0 ---------- "\n" +
-                 * "            dbResult = LanguageFunctionUtil.{0}(value1, zero2);\n" +
+                 * "            dbResult = QueryLanguageFunctionUtil.{0}(value1, zero2);\n" +
                  * "            expectedResult = value1{7}{8}zero2;\n" +
                  * "            compareResult = {13}.compare(dbResult, expectedResult);\n" +
-                 * "            description = \"{13}.compare(LanguageFunctionUtil.{0}(value1, zero2), value1{7}{8}zero2)\";\n"
+                 * "            description = \"{13}.compare(QueryLanguageFunctionUtil.{0}(value1, zero2), value1{7}{8}zero2)\";\n"
                  * + "            TestCase.assertEquals(description, 0, compareResult);\n" +
                  */
                 "\n" +
-                "            dbResult = LanguageFunctionUtil.{0}(value1, QueryConstants.NULL_{5});\n" +
+                "            dbResult = QueryLanguageFunctionUtil.{0}(value1, QueryConstants.NULL_{5});\n" +
                 "            expectedResult = QueryConstants.NULL_{6};\n" +
                 "            compareResult = {13}.compare(dbResult, expectedResult);\n" +
-                "            description = \"{13}.compare(LanguageFunctionUtil.{0}(value1, QueryConstants.NULL_{5}), QueryConstants.NULL_{6})\";\n"
+                "            description = \"{13}.compare(QueryLanguageFunctionUtil.{0}(value1, QueryConstants.NULL_{5}), QueryConstants.NULL_{6})\";\n"
                 +
                 "            TestCase.assertEquals(description, 0, compareResult);\n" +
                 "\n" +
-                "            dbResult = LanguageFunctionUtil.{0}(zero1, value2);\n" +
+                "            dbResult = QueryLanguageFunctionUtil.{0}(zero1, value2);\n" +
                 "            expectedResult = zero1{7}{8}value2;\n" +
                 "            compareResult = {13}.compare(dbResult, expectedResult);\n" +
-                "            description = \"{13}.compare(LanguageFunctionUtil.{0}(zero1, value2), zero1{7}{8}value2)\";\n"
+                "            description = \"{13}.compare(QueryLanguageFunctionUtil.{0}(zero1, value2), zero1{7}{8}value2)\";\n"
                 +
                 "            TestCase.assertEquals(description, 0, compareResult);\n" +
                 "\n" +
-                "            dbResult = LanguageFunctionUtil.{0}(QueryConstants.NULL_{4}, value2);\n" +
+                "            dbResult = QueryLanguageFunctionUtil.{0}(QueryConstants.NULL_{4}, value2);\n" +
                 "            expectedResult = QueryConstants.NULL_{6};\n" +
                 "            compareResult = {13}.compare(dbResult, expectedResult);\n" +
-                "            description = \"{13}.compare(LanguageFunctionUtil.{0}(QueryConstants.NULL_{4}, value2), QueryConstants.NULL_{6})\";\n"
+                "            description = \"{13}.compare(QueryLanguageFunctionUtil.{0}(QueryConstants.NULL_{4}, value2), QueryConstants.NULL_{6})\";\n"
                 +
                 "            TestCase.assertEquals(description, 0, compareResult);\n" +
                 "\n" +
-                "            dbResult = LanguageFunctionUtil.{0}(QueryConstants.NULL_{4}, QueryConstants.NULL_{5});\n"
+                "            dbResult = QueryLanguageFunctionUtil.{0}(QueryConstants.NULL_{4}, QueryConstants.NULL_{5});\n"
                 +
                 "            expectedResult = QueryConstants.NULL_{6};\n" +
                 "            compareResult = {13}.compare(dbResult, expectedResult);\n" +
-                "            description = \"{13}.compare(LanguageFunctionUtil.{0}(QueryConstants.NULL_{4}, QueryConstants.NULL_{5}), QueryConstants.NULL_{6})\";\n"
+                "            description = \"{13}.compare(QueryLanguageFunctionUtil.{0}(QueryConstants.NULL_{4}, QueryConstants.NULL_{5}), QueryConstants.NULL_{6})\";\n"
                 +
                 "            TestCase.assertEquals(description, 0, compareResult);\n" +
                 /*----------  Same issue as above  ----------
                 "\n" +
-                "            dbResult = LanguageFunctionUtil.{0}(zero1, zero2);\n" +
+                "            dbResult = QueryLanguageFunctionUtil.{0}(zero1, zero2);\n" +
                 "            expectedResult = zero1{7}{8}zero2;\n" +
                 "            compareResult = {13}.compare(dbResult, expectedResult);\n" +
-                "            description = \"{13}.compare(LanguageFunctionUtil.{0}(zero1, zero2), zero1{7}{8}zero2)\";\n" +
+                "            description = \"{13}.compare(QueryLanguageFunctionUtil.{0}(zero1, zero2), zero1{7}{8}zero2)\";\n" +
                 "            TestCase.assertEquals(description, 0, compareResult);\n" +*/
                 "        '}' catch (Exception ex) '{'\n" +
                 "            throw new RuntimeException(\"Comparison failure: dbResult=\" + dbResult + \", expectedResult=\" + expectedResult, ex);\n"
@@ -120,21 +120,21 @@ public class LanguageFunctionGenerator {
                 "        final {2} value2 = {12};\n" +
                 "        final {1} zero1 = 0;\n" +
                 "        final {2} zero2 = 0;\n\n" +
-                "        TestCase.assertEquals(-1, LanguageFunctionUtil.compareTo(value1, Float.NaN));\n" +
-                "        TestCase.assertEquals(1, LanguageFunctionUtil.compareTo(Float.NaN, value1));\n" +
-                "        TestCase.assertEquals(-1, LanguageFunctionUtil.compareTo(value1, Double.NaN));\n" +
-                "        TestCase.assertEquals(1, LanguageFunctionUtil.compareTo(Double.NaN, value1));\n" +
-                "        TestCase.assertEquals( 0, LanguageFunctionUtil.compareTo(zero1, zero2));\n" +
-                "        TestCase.assertEquals( 0, LanguageFunctionUtil.compareTo(zero2, zero1));\n" +
-                "        TestCase.assertEquals( 0, LanguageFunctionUtil.compareTo(QueryConstants.NULL_{4}, QueryConstants.NULL_{5}));\n"
+                "        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Float.NaN));\n" +
+                "        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Float.NaN, value1));\n" +
+                "        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Double.NaN));\n" +
+                "        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Double.NaN, value1));\n" +
+                "        TestCase.assertEquals( 0, QueryLanguageFunctionUtil.compareTo(zero1, zero2));\n" +
+                "        TestCase.assertEquals( 0, QueryLanguageFunctionUtil.compareTo(zero2, zero1));\n" +
+                "        TestCase.assertEquals( 0, QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_{4}, QueryConstants.NULL_{5}));\n"
                 +
-                "        TestCase.assertEquals( 0, LanguageFunctionUtil.compareTo(value1, value1));\n" +
-                "        TestCase.assertEquals( 0, LanguageFunctionUtil.compareTo(value2, value2));\n" +
-                "        TestCase.assertEquals(-1, LanguageFunctionUtil.compareTo(value1, value2));\n" +
-                "        TestCase.assertEquals( 1, LanguageFunctionUtil.compareTo(value2, value1));\n" +
-                "        TestCase.assertEquals(-1, LanguageFunctionUtil.compareTo(-value1, value2));\n" +
-                "        TestCase.assertEquals(-1, LanguageFunctionUtil.compareTo(-value2, value1));\n" +
-                "        TestCase.assertEquals( 1, LanguageFunctionUtil.compareTo(-value1, -value2));\n" +
+                "        TestCase.assertEquals( 0, QueryLanguageFunctionUtil.compareTo(value1, value1));\n" +
+                "        TestCase.assertEquals( 0, QueryLanguageFunctionUtil.compareTo(value2, value2));\n" +
+                "        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, value2));\n" +
+                "        TestCase.assertEquals( 1, QueryLanguageFunctionUtil.compareTo(value2, value1));\n" +
+                "        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value1, value2));\n" +
+                "        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value2, value1));\n" +
+                "        TestCase.assertEquals( 1, QueryLanguageFunctionUtil.compareTo(-value1, -value2));\n" +
                 "    '}'");
 
         /*
@@ -313,7 +313,7 @@ public class LanguageFunctionGenerator {
                 " * Copyright (c) 2016-").append(LocalDate.now().getYear())
                 .append(" Deephaven Data Labs and Patent Pending\n" +
                         " * GENERATED CODE - DO NOT MODIFY DIRECTLY\n" +
-                        " * This class generated by " + LanguageFunctionGenerator.class.getCanonicalName() + "\n" +
+                        " * This class generated by " + QueryLanguageFunctionGenerator.class.getCanonicalName() + "\n" +
                         " */\n" +
                         "\n");
 
@@ -323,7 +323,7 @@ public class LanguageFunctionGenerator {
         buf.append("import org.jpy.PyObject;\n\n");
 
         buf.append("@SuppressWarnings({\"unused\", \"WeakerAccess\", \"SimplifiableIfStatement\"})\n");
-        buf.append("public final class LanguageFunctionUtil {\n\n");
+        buf.append("public final class QueryLanguageFunctionUtil {\n\n");
 
         // ------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -357,7 +357,7 @@ public class LanguageFunctionGenerator {
                 .append(" * Copyright (c) 2016-").append(LocalDate.now().getYear())
                 .append(" * Deephaven Data Labs and Patent Pending\n")
                 .append(" * GENERATED CODE - DO NOT MODIFY DIRECTLY\n")
-                .append(" * This class generated by ").append(LanguageFunctionGenerator.class.getCanonicalName())
+                .append(" * This class generated by ").append(QueryLanguageFunctionGenerator.class.getCanonicalName())
                 .append("\n")
                 .append(" */\n")
                 .append("\n");
@@ -685,7 +685,7 @@ public class LanguageFunctionGenerator {
         buf.append("}\n");
         testBuf.append("}\n");
 
-        String fileName = "./DB/src/main/java/io/deephaven/engine/tables/lang/LanguageFunctionUtil.java";
+        String fileName = "./DB/src/main/java/io/deephaven/engine/tables/lang/QueryLanguageFunctionUtil.java";
         String testFileName = "./DB/src/test/java/io/deephaven/engine/tables/lang/TestLanguageFunctionUtil.java";
         try {
             try (BufferedWriter out = new BufferedWriter(new FileWriter(fileName))) {
@@ -699,9 +699,9 @@ public class LanguageFunctionGenerator {
             e.printStackTrace();
         }
 
-        System.out.println("Finished generating LanguageFunctionUtil in "
+        System.out.println("Finished generating QueryLanguageFunctionUtil in "
                 + new DecimalFormat().format(System.currentTimeMillis() - start) + " millis");
-        System.out.println("Wrote LanguageFunctionUtil to: " + fileName);
+        System.out.println("Wrote QueryLanguageFunctionUtil to: " + fileName);
         System.out.println("Wrote TestLanguageFunctionUtil to: " + testFileName);
     }
 
@@ -737,12 +737,12 @@ public class LanguageFunctionGenerator {
                 || io.deephaven.util.type.TypeUtils.getBoxedType(type2) == Boolean.class) {
             promotedType = Boolean.class;
         } else {
-            promotedType = LanguageParser.binaryNumericPromotionType(type1, type2);
+            promotedType = QueryLanguageParser.binaryNumericPromotionType(type1, type2);
         }
 
         String cast = "";
 
-        if (op == BinaryExpr.Operator.DIVIDE && LanguageParser.isNonFPNumber(type2)) {
+        if (op == BinaryExpr.Operator.DIVIDE && QueryLanguageParser.isNonFPNumber(type2)) {
             cast = "(double)";
             promotedType = double.class;
         }
@@ -763,8 +763,8 @@ public class LanguageFunctionGenerator {
         Class<?> type2Unboxed = io.deephaven.util.type.TypeUtils.getUnboxedType(type2);
         Class<?> promotedTypeUnboxed = io.deephaven.util.type.TypeUtils.getUnboxedType(promotedType);
 
-        final String operatorName = op == null ? null : LanguageParser.getOperatorName(op);
-        final String operatorSymbol = op == null ? null : LanguageParser.getOperatorSymbol(op);
+        final String operatorName = op == null ? null : QueryLanguageParser.getOperatorName(op);
+        final String operatorSymbol = op == null ? null : QueryLanguageParser.getOperatorSymbol(op);
         buf.append(messageFormat.format(new Object[] {
                 operatorName,
                 type1.getSimpleName(),

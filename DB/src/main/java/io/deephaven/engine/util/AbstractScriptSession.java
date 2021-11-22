@@ -6,16 +6,19 @@ package io.deephaven.engine.util;
 
 import com.github.f4b6a3.uuid.UuidCreator;
 import io.deephaven.UncheckedDeephavenException;
+import io.deephaven.api.util.NameValidator;
 import io.deephaven.base.FileUtils;
 import io.deephaven.compilertools.CompilerTools;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.tables.libs.QueryLibrary;
-import io.deephaven.engine.tables.select.QueryScope;
+import io.deephaven.engine.table.lang.QueryLibrary;
+import io.deephaven.engine.table.lang.QueryScopeParam;
+import io.deephaven.engine.table.lang.QueryScope;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.util.SafeCloseable;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
@@ -243,5 +246,98 @@ public abstract class AbstractScriptSession extends LivenessScope implements Scr
     @Override
     public VariableProvider getVariableProvider() {
         return this;
+    }
+
+    // -----------------------------------------------------------------------------------------------------------------
+    // ScriptSession-based QueryScope implementation, with no remote scope or object reflection support
+    // -----------------------------------------------------------------------------------------------------------------
+
+    private abstract static class ScriptSessionQueryScope extends QueryScope {
+        final ScriptSession scriptSession;
+
+        private ScriptSessionQueryScope(ScriptSession scriptSession) {
+            this.scriptSession = scriptSession;
+        }
+
+        @Override
+        public void putObjectFields(Object object) {
+            throw new UnsupportedOperationException();
+        }
+    }
+
+    public static class SynchronizedScriptSessionQueryScope extends ScriptSessionQueryScope{
+        public SynchronizedScriptSessionQueryScope(@NotNull final ScriptSession scriptSession) {
+            super(scriptSession);
+        }
+
+        @Override
+        public synchronized Set<String> getParamNames() {
+            return scriptSession.getVariableNames();
+        }
+
+        @Override
+        public boolean hasParamName(String name) {
+            return scriptSession.hasVariableName(name);
+        }
+
+        @Override
+        protected synchronized <T> QueryScopeParam<T> createParam(final String name) throws QueryScope.MissingVariableException {
+            // noinspection unchecked
+            return new QueryScopeParam<>(name, (T) scriptSession.getVariable(name));
+        }
+
+        @Override
+        public synchronized <T> T readParamValue(final String name) throws QueryScope.MissingVariableException {
+            // noinspection unchecked
+            return (T) scriptSession.getVariable(name);
+        }
+
+        @Override
+        public synchronized <T> T readParamValue(final String name, final T defaultValue) {
+            return scriptSession.getVariable(name, defaultValue);
+        }
+
+        @Override
+        public synchronized <T> void putParam(final String name, final T value) {
+            scriptSession.setVariable(NameValidator.validateQueryParameterName(name), value);
+        }
+    }
+
+    public static class UnsynchronizedScriptSessionQueryScope extends ScriptSessionQueryScope {
+        public UnsynchronizedScriptSessionQueryScope(@NotNull final ScriptSession scriptSession) {
+            super(scriptSession);
+        }
+
+        @Override
+        public Set<String> getParamNames() {
+            return scriptSession.getVariableNames();
+        }
+
+        @Override
+        public boolean hasParamName(String name) {
+            return scriptSession.hasVariableName(name);
+        }
+
+        @Override
+        protected <T> QueryScopeParam<T> createParam(final String name) throws QueryScope.MissingVariableException {
+            // noinspection unchecked
+            return new QueryScopeParam<>(name, (T) scriptSession.getVariable(name));
+        }
+
+        @Override
+        public <T> T readParamValue(final String name) throws QueryScope.MissingVariableException {
+            // noinspection unchecked
+            return (T) scriptSession.getVariable(name);
+        }
+
+        @Override
+        public <T> T readParamValue(final String name, final T defaultValue) {
+            return scriptSession.getVariable(name, defaultValue);
+        }
+
+        @Override
+        public <T> void putParam(final String name, final T value) {
+            scriptSession.setVariable(NameValidator.validateQueryParameterName(name), value);
+        }
     }
 }

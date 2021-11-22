@@ -32,4 +32,4 @@ def build_py_session():
         # set up a Deephaven Python session
         py_scope_jpy = jpy.get_type("io.deephaven.engine.util.PythonScopeJpyImpl").ofMainGlobals()
         py_dh_session = jpy.get_type("io.deephaven.engine.util.PythonDeephavenSession")(py_scope_jpy)
-        jpy.get_type("io.deephaven.engine.tables.select.QueryScope").setScope(py_dh_session.newQueryScope())
+        jpy.get_type("io.deephaven.engine.table.lang.QueryScope").setScope(py_dh_session.newQueryScope())

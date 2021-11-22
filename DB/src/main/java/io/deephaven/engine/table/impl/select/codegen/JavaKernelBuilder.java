@@ -2,8 +2,8 @@ package io.deephaven.engine.table.impl.select.codegen;
 
 import io.deephaven.compilertools.CompilerTools;
 import io.deephaven.engine.vector.Vector;
-import io.deephaven.engine.tables.libs.QueryLibrary;
-import io.deephaven.engine.tables.select.Param;
+import io.deephaven.engine.table.lang.QueryLibrary;
+import io.deephaven.engine.table.lang.QueryScopeParam;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.select.Formula;
@@ -79,7 +79,7 @@ public class JavaKernelBuilder {
         final TypeAnalyzer ta = TypeAnalyzer.create(returnedType);
 
         final CodeGenerator g = CodeGenerator.create(
-                QueryLibrary.getImportStatement(), "",
+                CodeGenerator.create(QueryLibrary.getImportStrings().toArray()), "",
                 "public class $CLASSNAME$ implements [[FORMULA_KERNEL_INTERFACE_CANONICAL]]", CodeGenerator.block(
                         generateFactoryLambda(), "",
                         CodeGenerator.repeated("instanceVar", "private final [[TYPE]] [[NAME]];"),
@@ -122,7 +122,7 @@ public class JavaKernelBuilder {
                         CodeGenerator.repeated("getVector", "[[NAME]] = ([[TYPE]])__vectors[[[INDEX]]];"),
                         CodeGenerator.repeated("getParam", "[[NAME]] = ([[TYPE]])__params[[[INDEX]]].getValue();")));
         g.replace("DBARRAYBASE_CANONICAL", Vector.class.getCanonicalName());
-        g.replace("PARAM_CANONICAL", Param.class.getCanonicalName());
+        g.replace("PARAM_CANONICAL", QueryScopeParam.class.getCanonicalName());
         final int[] nextArrayIndex = {0};
         final int[] nextParamIndex = {0};
         visitFormulaParameters(null,

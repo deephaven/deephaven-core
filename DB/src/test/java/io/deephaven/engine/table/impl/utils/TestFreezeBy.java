@@ -3,7 +3,7 @@ package io.deephaven.engine.table.impl.utils;
 import io.deephaven.api.Selectable;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.tables.select.QueryScope;
+import io.deephaven.engine.table.lang.QueryScope;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.tables.utils.TableTools;

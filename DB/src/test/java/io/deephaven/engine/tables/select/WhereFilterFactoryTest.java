@@ -6,6 +6,7 @@ package io.deephaven.engine.tables.select;
 
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.lang.QueryScope;
 import io.deephaven.engine.table.impl.RefreshingTableTestCase;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.time.DateTimeUtils;

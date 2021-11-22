@@ -6,7 +6,7 @@ package io.deephaven.engine.util;
 
 import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.tables.select.QueryScope;
+import io.deephaven.engine.table.lang.QueryScope;
 import io.deephaven.engine.util.scripts.ScriptPathLoader;
 import io.deephaven.engine.util.scripts.ScriptPathLoaderState;
 import io.deephaven.internal.log.LoggerFactory;
@@ -119,7 +119,7 @@ public class ScalaDeephavenSession extends AbstractScriptSession implements Scri
 
     @Override
     protected QueryScope newQueryScope() {
-        return new QueryScope.SynchronizedScriptSessionImpl(this);
+        return new SynchronizedScriptSessionQueryScope(this);
     }
 
     @NotNull

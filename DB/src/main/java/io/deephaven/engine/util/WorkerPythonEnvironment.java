@@ -5,7 +5,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.process.ProcessEnvironment;
-import io.deephaven.engine.tables.select.QueryScope;
+import io.deephaven.engine.table.lang.QueryScope;
 import io.deephaven.engine.util.jpy.JpyInit;
 import org.jpy.PyObject;
 

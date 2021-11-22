@@ -5,6 +5,7 @@
 package io.deephaven.engine.tables.select;
 
 import io.deephaven.base.Pair;
+import io.deephaven.engine.table.lang.QueryScope;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.io.logger.Logger;
@@ -59,7 +60,7 @@ public class SelectFilterFactory {
                 return new MatchFilter(MatchFilter.CaseSensitivity.MatchCase, columnName, matcher.group(2));
             }
         });
-        // <ColumnName>==<User Param>
+        // <ColumnName>==<User QueryScopeParam>
         parser.registerFactory(new AbstractExpressionFactory<WhereFilter>(
                 START_PTRN + "(" + ID_PTRN + ")\\s*={1,2}\\s*(" + ID_PTRN + ")" + END_PTRN) {
             @Override

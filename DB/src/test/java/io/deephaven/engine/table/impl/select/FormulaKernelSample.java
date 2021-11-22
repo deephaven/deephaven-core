@@ -8,10 +8,11 @@ import io.deephaven.engine.chunk.IntChunk;
 import io.deephaven.engine.chunk.LongChunk;
 import io.deephaven.engine.chunk.WritableChunk;
 import io.deephaven.engine.chunk.WritableLongChunk;
+import io.deephaven.engine.table.lang.QueryScopeParam;
 import io.deephaven.engine.vector.LongVector;
 import io.deephaven.engine.vector.Vector;
 
-import static io.deephaven.engine.table.impl.lang.LanguageFunctionUtil.*;
+import static io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtil.*;
 
 public class FormulaKernelSample implements io.deephaven.engine.table.impl.select.formula.FormulaKernel {
     public static final io.deephaven.engine.table.impl.select.formula.FormulaKernelFactory __FORMULA_KERNEL_FACTORY = FormulaKernelSample::new;
@@ -20,7 +21,7 @@ public class FormulaKernelSample implements io.deephaven.engine.table.impl.selec
     private final java.lang.Integer q;
 
     public FormulaKernelSample(Vector[] __vectors,
-                               io.deephaven.engine.tables.select.Param[] __params) {
+                               QueryScopeParam[] __params) {
         II_ = (LongVector)__vectors[0];
         q = (java.lang.Integer)__params[0].getValue();
     }

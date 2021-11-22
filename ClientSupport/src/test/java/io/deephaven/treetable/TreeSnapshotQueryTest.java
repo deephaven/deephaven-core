@@ -5,7 +5,7 @@ import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableMap;
-import io.deephaven.engine.tables.libs.QueryLibrary;
+import io.deephaven.engine.table.lang.QueryLibrary;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.tables.select.SelectFilterFactory;
 import io.deephaven.engine.tables.utils.TableTools;

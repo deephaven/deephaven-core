@@ -2,7 +2,7 @@ package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.table.impl.lang.LanguageFunctionUtil;
+import io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtil;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -11,9 +11,9 @@ import io.deephaven.io.logger.StreamLoggerImpl;
 import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.compilertools.CompilerTools;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.tables.select.Param;
+import io.deephaven.engine.table.lang.QueryScopeParam;
 import io.deephaven.engine.tables.select.PythonMatchFilterTest;
-import io.deephaven.engine.tables.select.QueryScope;
+import io.deephaven.engine.table.lang.QueryScope;
 import io.deephaven.engine.util.PythonDeephavenSession;
 import io.deephaven.engine.util.PythonScopeJpyImpl;
 import io.deephaven.engine.table.ColumnSource;
@@ -138,129 +138,129 @@ public class TestConditionFilter extends PythonTest {
 
         { // LESS THAN
             expression = "myShortObj < ShortCol";
-            test = (colValues) -> LanguageFunctionUtil.less(
-                    LanguageFunctionUtil.shortCast(QUERYSCOPE_OBJ_BASE_VALUE),
-                    LanguageFunctionUtil.shortCast(colValues.get("ShortCol")));
+            test = (colValues) -> QueryLanguageFunctionUtil.less(
+                    QueryLanguageFunctionUtil.shortCast(QUERYSCOPE_OBJ_BASE_VALUE),
+                    QueryLanguageFunctionUtil.shortCast(colValues.get("ShortCol")));
             check(expression, test, true, false);
 
             expression = "myIntObj < IntCol";
-            test = (colValues) -> LanguageFunctionUtil.less(
+            test = (colValues) -> QueryLanguageFunctionUtil.less(
                     QUERYSCOPE_OBJ_BASE_VALUE,
-                    LanguageFunctionUtil.intCast(colValues.get("IntCol")));
+                    QueryLanguageFunctionUtil.intCast(colValues.get("IntCol")));
             check(expression, test, true);
 
             expression = "myLongObj < LongCol";
-            test = (colValues) -> LanguageFunctionUtil.less(
-                    LanguageFunctionUtil.longCast(QUERYSCOPE_OBJ_BASE_VALUE),
-                    LanguageFunctionUtil.longCast(colValues.get("LongCol")));
+            test = (colValues) -> QueryLanguageFunctionUtil.less(
+                    QueryLanguageFunctionUtil.longCast(QUERYSCOPE_OBJ_BASE_VALUE),
+                    QueryLanguageFunctionUtil.longCast(colValues.get("LongCol")));
             check(expression, test, true);
 
             expression = "myFloatObj < FloatCol";
-            test = (colValues) -> LanguageFunctionUtil.less(
-                    LanguageFunctionUtil.floatCast(QUERYSCOPE_OBJ_BASE_VALUE),
-                    LanguageFunctionUtil.floatCast(colValues.get("FloatCol")));
+            test = (colValues) -> QueryLanguageFunctionUtil.less(
+                    QueryLanguageFunctionUtil.floatCast(QUERYSCOPE_OBJ_BASE_VALUE),
+                    QueryLanguageFunctionUtil.floatCast(colValues.get("FloatCol")));
             check(expression, test, true);
 
             expression = "myDoubleObj < DoubleCol";
-            test = (colValues) -> LanguageFunctionUtil.less(
-                    LanguageFunctionUtil.doubleCast(QUERYSCOPE_OBJ_BASE_VALUE),
-                    LanguageFunctionUtil.doubleCast(colValues.get("DoubleCol")));
+            test = (colValues) -> QueryLanguageFunctionUtil.less(
+                    QueryLanguageFunctionUtil.doubleCast(QUERYSCOPE_OBJ_BASE_VALUE),
+                    QueryLanguageFunctionUtil.doubleCast(colValues.get("DoubleCol")));
             check(expression, test, true);
         }
 
         { // GREATER THAN
             expression = "myShortObj > ShortCol";
-            test = (colValues) -> LanguageFunctionUtil.greater(
-                    LanguageFunctionUtil.shortCast(QUERYSCOPE_OBJ_BASE_VALUE),
-                    LanguageFunctionUtil.shortCast(colValues.get("ShortCol")));
+            test = (colValues) -> QueryLanguageFunctionUtil.greater(
+                    QueryLanguageFunctionUtil.shortCast(QUERYSCOPE_OBJ_BASE_VALUE),
+                    QueryLanguageFunctionUtil.shortCast(colValues.get("ShortCol")));
             check(expression, test, true);
 
             expression = "myIntObj > IntCol";
-            test = (colValues) -> LanguageFunctionUtil.greater(
+            test = (colValues) -> QueryLanguageFunctionUtil.greater(
                     QUERYSCOPE_OBJ_BASE_VALUE,
-                    LanguageFunctionUtil.intCast(colValues.get("IntCol")));
+                    QueryLanguageFunctionUtil.intCast(colValues.get("IntCol")));
             check(expression, test, true);
 
             expression = "myLongObj > LongCol";
-            test = (colValues) -> LanguageFunctionUtil.greater(
-                    LanguageFunctionUtil.longCast(QUERYSCOPE_OBJ_BASE_VALUE),
-                    LanguageFunctionUtil.longCast(colValues.get("LongCol")));
+            test = (colValues) -> QueryLanguageFunctionUtil.greater(
+                    QueryLanguageFunctionUtil.longCast(QUERYSCOPE_OBJ_BASE_VALUE),
+                    QueryLanguageFunctionUtil.longCast(colValues.get("LongCol")));
             check(expression, test, true);
 
             expression = "myFloatObj > FloatCol";
-            test = (colValues) -> LanguageFunctionUtil.greater(
-                    LanguageFunctionUtil.floatCast(QUERYSCOPE_OBJ_BASE_VALUE),
-                    LanguageFunctionUtil.floatCast(colValues.get("FloatCol")));
+            test = (colValues) -> QueryLanguageFunctionUtil.greater(
+                    QueryLanguageFunctionUtil.floatCast(QUERYSCOPE_OBJ_BASE_VALUE),
+                    QueryLanguageFunctionUtil.floatCast(colValues.get("FloatCol")));
             check(expression, test, true);
 
             expression = "myDoubleObj > DoubleCol";
-            test = (colValues) -> LanguageFunctionUtil.greater(
-                    LanguageFunctionUtil.doubleCast(QUERYSCOPE_OBJ_BASE_VALUE),
-                    LanguageFunctionUtil.doubleCast(colValues.get("DoubleCol")));
+            test = (colValues) -> QueryLanguageFunctionUtil.greater(
+                    QueryLanguageFunctionUtil.doubleCast(QUERYSCOPE_OBJ_BASE_VALUE),
+                    QueryLanguageFunctionUtil.doubleCast(colValues.get("DoubleCol")));
             check(expression, test, true);
         }
 
         { // EQUAL
             expression = "myShortObj == ShortCol";
-            test = (colValues) -> LanguageFunctionUtil.eq(
-                    LanguageFunctionUtil.shortCast(QUERYSCOPE_OBJ_BASE_VALUE),
-                    LanguageFunctionUtil.shortCast(colValues.get("ShortCol")));
+            test = (colValues) -> QueryLanguageFunctionUtil.eq(
+                    QueryLanguageFunctionUtil.shortCast(QUERYSCOPE_OBJ_BASE_VALUE),
+                    QueryLanguageFunctionUtil.shortCast(colValues.get("ShortCol")));
             check(expression, test, true);
 
             expression = "myIntObj == IntCol";
-            test = (colValues) -> LanguageFunctionUtil.eq(
+            test = (colValues) -> QueryLanguageFunctionUtil.eq(
                     QUERYSCOPE_OBJ_BASE_VALUE,
-                    LanguageFunctionUtil.intCast(colValues.get("IntCol")));
+                    QueryLanguageFunctionUtil.intCast(colValues.get("IntCol")));
             check(expression, test, true);
 
             expression = "myLongObj == LongCol";
-            test = (colValues) -> LanguageFunctionUtil.eq(
-                    LanguageFunctionUtil.longCast(QUERYSCOPE_OBJ_BASE_VALUE),
-                    LanguageFunctionUtil.longCast(colValues.get("LongCol")));
+            test = (colValues) -> QueryLanguageFunctionUtil.eq(
+                    QueryLanguageFunctionUtil.longCast(QUERYSCOPE_OBJ_BASE_VALUE),
+                    QueryLanguageFunctionUtil.longCast(colValues.get("LongCol")));
             check(expression, test, true);
 
             expression = "myFloatObj == FloatCol";
-            test = (colValues) -> LanguageFunctionUtil.eq(
-                    LanguageFunctionUtil.floatCast(QUERYSCOPE_OBJ_BASE_VALUE),
-                    LanguageFunctionUtil.floatCast(colValues.get("FloatCol")));
+            test = (colValues) -> QueryLanguageFunctionUtil.eq(
+                    QueryLanguageFunctionUtil.floatCast(QUERYSCOPE_OBJ_BASE_VALUE),
+                    QueryLanguageFunctionUtil.floatCast(colValues.get("FloatCol")));
             check(expression, test, true);
 
             expression = "myDoubleObj == DoubleCol";
-            test = (colValues) -> LanguageFunctionUtil.eq(
-                    LanguageFunctionUtil.doubleCast(QUERYSCOPE_OBJ_BASE_VALUE),
-                    LanguageFunctionUtil.doubleCast(colValues.get("DoubleCol")));
+            test = (colValues) -> QueryLanguageFunctionUtil.eq(
+                    QueryLanguageFunctionUtil.doubleCast(QUERYSCOPE_OBJ_BASE_VALUE),
+                    QueryLanguageFunctionUtil.doubleCast(colValues.get("DoubleCol")));
             check(expression, test, true);
         }
 
         { // NOT EQUAL
             expression = "myShortObj != ShortCol";
-            test = (colValues) -> !LanguageFunctionUtil.eq(
-                    LanguageFunctionUtil.shortCast(QUERYSCOPE_OBJ_BASE_VALUE),
-                    LanguageFunctionUtil.shortCast(colValues.get("ShortCol")));
+            test = (colValues) -> !QueryLanguageFunctionUtil.eq(
+                    QueryLanguageFunctionUtil.shortCast(QUERYSCOPE_OBJ_BASE_VALUE),
+                    QueryLanguageFunctionUtil.shortCast(colValues.get("ShortCol")));
             check(expression, test, true);
 
             expression = "myIntObj != IntCol";
-            test = (colValues) -> !LanguageFunctionUtil.eq(
+            test = (colValues) -> !QueryLanguageFunctionUtil.eq(
                     QUERYSCOPE_OBJ_BASE_VALUE,
-                    LanguageFunctionUtil.intCast(colValues.get("IntCol")));
+                    QueryLanguageFunctionUtil.intCast(colValues.get("IntCol")));
             check(expression, test, true);
 
             expression = "myLongObj != LongCol";
-            test = (colValues) -> !LanguageFunctionUtil.eq(
-                    LanguageFunctionUtil.longCast(QUERYSCOPE_OBJ_BASE_VALUE),
-                    LanguageFunctionUtil.longCast(colValues.get("LongCol")));
+            test = (colValues) -> !QueryLanguageFunctionUtil.eq(
+                    QueryLanguageFunctionUtil.longCast(QUERYSCOPE_OBJ_BASE_VALUE),
+                    QueryLanguageFunctionUtil.longCast(colValues.get("LongCol")));
             check(expression, test, true);
 
             expression = "myFloatObj != FloatCol";
-            test = (colValues) -> !LanguageFunctionUtil.eq(
-                    LanguageFunctionUtil.floatCast(QUERYSCOPE_OBJ_BASE_VALUE),
-                    LanguageFunctionUtil.floatCast(colValues.get("FloatCol")));
+            test = (colValues) -> !QueryLanguageFunctionUtil.eq(
+                    QueryLanguageFunctionUtil.floatCast(QUERYSCOPE_OBJ_BASE_VALUE),
+                    QueryLanguageFunctionUtil.floatCast(colValues.get("FloatCol")));
             check(expression, test, true);
 
             expression = "myDoubleObj != DoubleCol";
-            test = (colValues) -> !LanguageFunctionUtil.eq(
-                    LanguageFunctionUtil.doubleCast(QUERYSCOPE_OBJ_BASE_VALUE),
-                    LanguageFunctionUtil.doubleCast(colValues.get("DoubleCol")));
+            test = (colValues) -> !QueryLanguageFunctionUtil.eq(
+                    QueryLanguageFunctionUtil.doubleCast(QUERYSCOPE_OBJ_BASE_VALUE),
+                    QueryLanguageFunctionUtil.doubleCast(colValues.get("DoubleCol")));
             check(expression, test, true);
         }
     }
@@ -374,7 +374,7 @@ public class TestConditionFilter extends PythonTest {
                             getMainGlobals().asDict())).newQueryScope();
                     QueryScope.setScope(pythonScope);
                 }
-                for (Param param : currentScope.getParams(currentScope.getParamNames())) {
+                for (QueryScopeParam param : currentScope.getParams(currentScope.getParamNames())) {
                     pythonScope.putParam(param.getName(), param.getValue());
                 }
                 expression = expression.replaceAll("true", "True").replaceAll("false", "False");

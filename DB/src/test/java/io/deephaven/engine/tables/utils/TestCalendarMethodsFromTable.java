@@ -2,8 +2,8 @@ package io.deephaven.engine.tables.utils;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.tables.libs.QueryLibrary;
-import io.deephaven.engine.tables.select.QueryScope;
+import io.deephaven.engine.table.lang.QueryLibrary;
+import io.deephaven.engine.table.lang.QueryScope;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.time.calendar.BusinessCalendar;

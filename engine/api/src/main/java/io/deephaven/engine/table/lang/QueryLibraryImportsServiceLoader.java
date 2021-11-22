@@ -1,4 +1,4 @@
-package io.deephaven.engine.tables.libs;
+package io.deephaven.engine.table.lang;
 
 import java.util.LinkedHashSet;
 import java.util.ServiceLoader;

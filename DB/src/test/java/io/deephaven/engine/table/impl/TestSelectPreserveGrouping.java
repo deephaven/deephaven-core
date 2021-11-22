@@ -5,7 +5,7 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.indexer.RowSetIndexer;
-import io.deephaven.engine.tables.select.QueryScope;
+import io.deephaven.engine.table.lang.QueryScope;
 import io.deephaven.engine.tables.utils.ParquetTools;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.table.ColumnSource;

@@ -5,7 +5,7 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.tables.select.QueryScope;
+import io.deephaven.engine.table.lang.QueryScope;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.util.annotations.ScriptApi;
 import io.deephaven.benchmarking.generator.*;

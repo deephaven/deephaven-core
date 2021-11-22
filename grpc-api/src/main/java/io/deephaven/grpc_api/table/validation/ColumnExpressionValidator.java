@@ -5,11 +5,11 @@ import com.github.javaparser.ParseResult;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtil;
 import io.deephaven.engine.tables.SelectValidationResult;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.lang.LanguageFunctionUtil;
-import io.deephaven.engine.table.impl.lang.LanguageParser;
-import io.deephaven.engine.table.impl.lang.LanguageParser.Result;
+import io.deephaven.engine.table.impl.lang.QueryLanguageParser;
+import io.deephaven.engine.table.impl.lang.QueryLanguageParser.Result;
 import io.deephaven.engine.tables.select.SelectColumnFactory;
 import io.deephaven.engine.tables.select.SelectFilterFactory;
 import io.deephaven.engine.time.DateTime;
@@ -47,7 +47,7 @@ public class ColumnExpressionValidator extends GenericVisitorAdapter<Void, Void>
         // list all static methods in supported util classes:
         whitelistedStaticMethods = Stream
                 .of(
-                        LanguageFunctionUtil.class,
+                        QueryLanguageFunctionUtil.class,
                         GroovyStaticImports.class,
                         DateTimeUtils.class,
                         ColorUtilImpl.class)
@@ -160,10 +160,10 @@ public class ColumnExpressionValidator extends GenericVisitorAdapter<Void, Void>
     private static final JavaParser staticJavaParser = new JavaParser();
 
     private static void validateInvocations(String expression) {
-        // copied, modified from LanguageParser.java
+        // copied, modified from QueryLanguageParser.java
         // before parsing, finish Deephaven-specific language features:
-        expression = LanguageParser.convertBackticks(expression);
-        expression = LanguageParser.convertSingleEquals(expression);
+        expression = QueryLanguageParser.convertBackticks(expression);
+        expression = QueryLanguageParser.convertSingleEquals(expression);
 
         // then, parse into an AST
         final ParseResult<Expression> result;

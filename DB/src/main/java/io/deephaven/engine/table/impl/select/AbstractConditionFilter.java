@@ -5,11 +5,11 @@ import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.lang.QueryLanguageParser;
+import io.deephaven.engine.table.lang.QueryScopeParam;
 import io.deephaven.engine.vector.ObjectVector;
-import io.deephaven.engine.table.impl.lang.LanguageParser;
-import io.deephaven.engine.tables.libs.QueryLibrary;
-import io.deephaven.engine.tables.select.Param;
-import io.deephaven.engine.tables.select.QueryScope;
+import io.deephaven.engine.table.lang.QueryLibrary;
+import io.deephaven.engine.table.lang.QueryScope;
 import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.table.impl.select.python.DeephavenCompatibleFunction;
 import io.deephaven.engine.rowset.RowSet;
@@ -33,7 +33,7 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
     @NotNull
     protected final String formula;
     List<String> usedColumns;
-    protected Param<?>[] params;
+    protected QueryScopeParam<?>[] params;
     List<String> usedColumnArrays;
     protected boolean initialized = false;
     boolean usesI;
@@ -83,16 +83,16 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
         final Map<String, Class<?>[]> possibleVariableParameterizedTypes = new HashMap<>();
 
         try {
-            final Map<String, Param<?>> possibleParams = new HashMap<>();
+            final Map<String, QueryScopeParam<?>> possibleParams = new HashMap<>();
             final QueryScope queryScope = QueryScope.getScope();
-            for (Param<?> param : queryScope.getParams(queryScope.getParamNames())) {
+            for (QueryScopeParam<?> param : queryScope.getParams(queryScope.getParamNames())) {
                 possibleParams.put(param.getName(), param);
-                possibleVariables.put(param.getName(), param.getDeclaredClass());
-                Type declaredType = param.getDeclaredType();
+                possibleVariables.put(param.getName(), QueryScopeParamTypeUtil.getDeclaredClass(param.getValue()));
+                Type declaredType = QueryScopeParamTypeUtil.getDeclaredType(param.getValue());
                 if (declaredType instanceof ParameterizedType) {
                     ParameterizedType pt = (ParameterizedType) declaredType;
                     Class<?>[] paramTypes = Arrays.stream(pt.getActualTypeArguments())
-                            .map(Param::classFromType)
+                            .map(QueryScopeParamTypeUtil::classFromType)
                             .toArray(Class<?>[]::new);
                     possibleVariableParameterizedTypes.put(param.getName(), paramTypes);
                 }
@@ -124,7 +124,7 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
 
             possibleVariables.putAll(timeConversionResult.getNewVariables());
 
-            final LanguageParser.Result result = new LanguageParser(timeConversionResult.getConvertedFormula(),
+            final QueryLanguageParser.Result result = new QueryLanguageParser(timeConversionResult.getConvertedFormula(),
                     QueryLibrary.getPackageImports(), QueryLibrary.getClassImports(), QueryLibrary.getStaticImports(),
                     possibleVariables, possibleVariableParameterizedTypes, unboxArguments).getResult();
 
@@ -133,7 +133,7 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
             usedColumns = new ArrayList<>();
             usedColumnArrays = new ArrayList<>();
 
-            final List<Param<?>> paramsList = new ArrayList<>();
+            final List<QueryScopeParam<?>> paramsList = new ArrayList<>();
             for (String variable : result.getVariablesUsed()) {
                 final String columnToFind = outerToInnerNames.getOrDefault(variable, variable);
                 final String arrayColumnToFind;
@@ -158,15 +158,15 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
                     paramsList.add(possibleParams.get(variable));
                 }
             }
-            params = paramsList.toArray(Param.ZERO_LENGTH_PARAM_ARRAY);
+            params = paramsList.toArray(QueryScopeParam.ZERO_LENGTH_PARAM_ARRAY);
 
             // check if this is a filter that uses a numba vectorized function
-            Optional<Param<?>> paramOptional =
+            Optional<QueryScopeParam<?>> paramOptional =
                     Arrays.stream(params).filter(p -> p.getValue() instanceof NumbaCallableWrapper).findFirst();
             if (paramOptional.isPresent()) {
                 /*
                  * numba vectorized function must be used alone as an entire expression, and that should have been
-                 * checked in the LanguageParser already, this is a sanity check
+                 * checked in the QueryLanguageParser already, this is a sanity check
                  */
                 if (params.length != 1) {
                     throw new UncheckedDeephavenException(
@@ -196,7 +196,7 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
         }
     }
 
-    private void checkReturnType(LanguageParser.Result result, Class<?> resultType) {
+    private void checkReturnType(QueryLanguageParser.Result result, Class<?> resultType) {
         if (!Boolean.class.equals(resultType) && !boolean.class.equals(resultType)) {
             throw new RuntimeException("Invalid condition filter expression type: boolean required.\n" +
                     "Formula              : " + truncateLongFormula(formula) + '\n' +
@@ -207,7 +207,7 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
 
     protected abstract void generateFilterCode(TableDefinition tableDefinition,
             DateTimeUtils.Result timeConversionResult,
-            LanguageParser.Result result) throws MalformedURLException, ClassNotFoundException;
+            QueryLanguageParser.Result result) throws MalformedURLException, ClassNotFoundException;
 
     @Override
     public WritableRowSet filter(RowSet selection, RowSet fullSet, Table table, boolean usePrev) {
@@ -265,7 +265,7 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
                 Table table,
                 boolean usePrev,
                 String formula,
-                Param<?>... params);
+                QueryScopeParam<?>... params);
     }
 
     static String truncateLongFormula(String formula) {

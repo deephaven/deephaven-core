@@ -5,7 +5,7 @@
 package io.deephaven.engine.table.impl.utils;
 
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.tables.select.QueryScope;
+import io.deephaven.engine.table.lang.QueryScope;
 import io.deephaven.engine.tables.utils.TableTools;
 import gnu.trove.impl.Constants;
 import gnu.trove.map.hash.TObjectDoubleHashMap;

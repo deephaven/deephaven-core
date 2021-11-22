@@ -9,10 +9,10 @@ import io.deephaven.base.verify.AssertionFailure;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.lang.LanguageFunctionUtil;
-import io.deephaven.engine.table.impl.lang.LanguageParser.QueryLanguageParseException;
-import io.deephaven.engine.tables.libs.QueryLibrary;
-import io.deephaven.engine.tables.select.QueryScope;
+import io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtil;
+import io.deephaven.engine.table.impl.lang.QueryLanguageParser.QueryLanguageParseException;
+import io.deephaven.engine.table.lang.QueryLibrary;
+import io.deephaven.engine.table.lang.QueryScope;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.table.impl.utils.codegen.TypeAnalyzer;
 import io.deephaven.test.junit4.EngineCleanup;
@@ -143,13 +143,13 @@ public class TestFormulaColumn {
     @Test
     public void testReturnUnboxedType() {
         for (int row = 0; row < testDataTable.size(); row++) {
-            checkPrimitive(row, "new Byte(ByteCol)", LanguageFunctionUtil.byteCast(BASE_VALUES[row]));
-            checkPrimitive(row, "new Short(ShortCol)", LanguageFunctionUtil.shortCast(BASE_VALUES[row]));
-            checkPrimitive(row, "new Character(CharCol)", LanguageFunctionUtil.charCast(BASE_VALUES[row]));
-            checkPrimitive(row, "new Integer(IntCol)", LanguageFunctionUtil.intCast(BASE_VALUES[row]));
-            checkPrimitive(row, "new Long(LongCol)", LanguageFunctionUtil.longCast(BASE_VALUES[row]));
-            checkPrimitive(row, "new Float(FloatCol)", LanguageFunctionUtil.floatCast(BASE_VALUES[row]));
-            checkPrimitive(row, "new Double(DoubleCol)", LanguageFunctionUtil.doubleCast(BASE_VALUES[row]));
+            checkPrimitive(row, "new Byte(ByteCol)", QueryLanguageFunctionUtil.byteCast(BASE_VALUES[row]));
+            checkPrimitive(row, "new Short(ShortCol)", QueryLanguageFunctionUtil.shortCast(BASE_VALUES[row]));
+            checkPrimitive(row, "new Character(CharCol)", QueryLanguageFunctionUtil.charCast(BASE_VALUES[row]));
+            checkPrimitive(row, "new Integer(IntCol)", QueryLanguageFunctionUtil.intCast(BASE_VALUES[row]));
+            checkPrimitive(row, "new Long(LongCol)", QueryLanguageFunctionUtil.longCast(BASE_VALUES[row]));
+            checkPrimitive(row, "new Float(FloatCol)", QueryLanguageFunctionUtil.floatCast(BASE_VALUES[row]));
+            checkPrimitive(row, "new Double(DoubleCol)", QueryLanguageFunctionUtil.doubleCast(BASE_VALUES[row]));
         }
     }
 
@@ -216,7 +216,7 @@ public class TestFormulaColumn {
     }
 
     /**
-     * More or less copied from TestLanguageParser
+     * More or less copied from TestQueryLanguageParser
      */
     @Test
     public void testResolution() {
@@ -261,11 +261,11 @@ public class TestFormulaColumn {
             checkPrimitive(row, expression, result);
 
             expression = "Math.sqrt(DoubleCol)";
-            result = Math.sqrt(LanguageFunctionUtil.doubleCast(BASE_VALUES[row]));
+            result = Math.sqrt(QueryLanguageFunctionUtil.doubleCast(BASE_VALUES[row]));
             checkPrimitive(row, expression, result);
 
             expression = "Math.sqrt(IntCol)";
-            result = Math.sqrt(LanguageFunctionUtil.doubleCast(BASE_VALUES[row]));
+            result = Math.sqrt(QueryLanguageFunctionUtil.doubleCast(BASE_VALUES[row]));
             checkPrimitive(row, expression, result);
         }
     }
@@ -555,7 +555,7 @@ public class TestFormulaColumn {
     private void testWrapWithCastHelper(final Class<?> type, final String cast) {
         final String theFormula = "theFormula";
         final String expected = cast == null ? theFormula
-                : LanguageFunctionUtil.class.getCanonicalName() + '.' + cast + '(' + theFormula + ')';
+                : QueryLanguageFunctionUtil.class.getCanonicalName() + '.' + cast + '(' + theFormula + ')';
         final TypeAnalyzer ta = TypeAnalyzer.create(type);
         final String possiblyWrappedExpression = ta.wrapWithCastIfNecessary(theFormula);
         Assert.equals(possiblyWrappedExpression, "possiblyWrappedExpression", expected);

@@ -2,11 +2,9 @@
  * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
  */
 
-package io.deephaven.engine.tables.libs;
+package io.deephaven.engine.table.lang;
 
 import com.github.f4b6a3.uuid.UuidCreator;
-import io.deephaven.engine.table.impl.utils.codegen.CodeGenerator;
-import groovy.lang.GroovyClassLoader;
 import io.deephaven.util.annotations.VisibleForTesting;
 
 import java.util.*;
@@ -109,10 +107,8 @@ public class QueryLibrary {
         // we are compiling. So when this happens, we dynamically generate a new globally-unique version string.
         final QueryLibrary lql = currLibrary.get();
         final Class previous = lql.classImports.put(aClass.getCanonicalName(), aClass);
-        if (aClass.getClassLoader() instanceof GroovyClassLoader) {
-            if (aClass != previous) {
-                lql.updateVersionString();
-            }
+        if (aClass != previous) {
+            lql.updateVersionString();
         }
     }
 
@@ -121,14 +117,12 @@ public class QueryLibrary {
         // we are compiling. So when this happens, we dynamically generate a new globally-unique version string.
         final QueryLibrary lql = currLibrary.get();
         final Class previous = lql.staticImports.put(aClass.getCanonicalName(), aClass);
-        if (aClass.getClassLoader() instanceof GroovyClassLoader) {
-            if (aClass != previous) {
-                lql.updateVersionString();
-            }
+        if (aClass != previous) {
+            lql.updateVersionString();
         }
     }
 
-    public static CodeGenerator getImportStatement() {
+    public static Collection<String> getImportStrings() {
         final List<String> imports = new ArrayList<>();
         final QueryLibrary lql = currLibrary.get();
         imports.add("// QueryLibrary internal version number: " + lql.versionString);
@@ -145,7 +139,7 @@ public class QueryLibrary {
         for (final Class<?> staticImport : lql.staticImports.values()) {
             imports.add("import static " + staticImport.getCanonicalName() + ".*;");
         }
-        return CodeGenerator.create(imports.toArray());
+        return imports;
     }
 
     public static Collection<Package> getPackageImports() {

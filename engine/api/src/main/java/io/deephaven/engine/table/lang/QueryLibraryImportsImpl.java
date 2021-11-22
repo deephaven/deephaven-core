@@ -1,4 +1,4 @@
-package io.deephaven.engine.tables.libs;
+package io.deephaven.engine.table.lang;
 
 import java.util.Objects;
 import java.util.Set;

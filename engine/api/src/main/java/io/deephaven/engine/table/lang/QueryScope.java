@@ -2,7 +2,7 @@
  * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
  */
 
-package io.deephaven.engine.tables.select;
+package io.deephaven.engine.table.lang;
 
 import io.deephaven.base.CompareUtils;
 import io.deephaven.engine.time.DateTime;
@@ -12,7 +12,6 @@ import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.log.LogOutputAppendable;
-import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.api.util.NameValidator;
 import io.deephaven.util.QueryConstants;
 import org.jetbrains.annotations.NotNull;
@@ -188,11 +187,11 @@ public abstract class QueryScope implements LogOutputAppendable {
      *
      * @param names parameter names
      * @return A newly-constructed array of newly-constructed Params.
-     * @throws io.deephaven.engine.tables.select.QueryScope.MissingVariableException If any of the named scope variables
+     * @throws QueryScope.MissingVariableException If any of the named scope variables
      *         does not exist.
      */
-    public final Param[] getParams(final Collection<String> names) throws MissingVariableException {
-        final Param[] result = new Param[names.size()];
+    public final QueryScopeParam[] getParams(final Collection<String> names) throws MissingVariableException {
+        final QueryScopeParam[] result = new QueryScopeParam[names.size()];
         int pi = 0;
         for (final String name : names) {
             result[pi++] = createParam(name);
@@ -220,21 +219,21 @@ public abstract class QueryScope implements LogOutputAppendable {
     public abstract boolean hasParamName(String name);
 
     /**
-     * Get a Param by name.
+     * Get a QueryScopeParam by name.
      * 
      * @param name parameter name
-     * @return newly-constructed Param (name + value-snapshot pair).
-     * @throws io.deephaven.engine.tables.select.QueryScope.MissingVariableException If any of the named scope variables
+     * @return newly-constructed QueryScopeParam (name + value-snapshot pair).
+     * @throws QueryScope.MissingVariableException If any of the named scope variables
      *         does not exist.
      */
-    protected abstract <T> Param<T> createParam(final String name) throws MissingVariableException;
+    protected abstract <T> QueryScopeParam<T> createParam(final String name) throws MissingVariableException;
 
     /**
      * Get the value of a given scope parameter by name.
      *
      * @param name parameter name.
      * @return parameter value.
-     * @throws io.deephaven.engine.tables.select.QueryScope.MissingVariableException If no such scope parameter exists.
+     * @throws QueryScope.MissingVariableException If no such scope parameter exists.
      */
     public abstract <T> T readParamValue(final String name) throws MissingVariableException;
 
@@ -333,7 +332,7 @@ public abstract class QueryScope implements LogOutputAppendable {
         }
 
         @Override
-        protected <T> Param<T> createParam(final String name) throws MissingVariableException {
+        protected <T> QueryScopeParam<T> createParam(final String name) throws MissingVariableException {
             // noinspection unchecked
             final ValueRetriever<T> valueRetriever = valueRetrievers.get(name);
             if (valueRetriever == null) {
@@ -391,7 +390,7 @@ public abstract class QueryScope implements LogOutputAppendable {
 
             public abstract Class<T> getType();
 
-            public abstract Param<T> createParam();
+            public abstract QueryScopeParam<T> createParam();
         }
 
         private static class ValueRetrieverNameKey extends KeyedObjectKey.Basic<String, ValueRetriever> {
@@ -423,8 +422,8 @@ public abstract class QueryScope implements LogOutputAppendable {
             }
 
             @Override
-            public Param<T> createParam() {
-                return new Param<>(getName(), getValue());
+            public QueryScopeParam<T> createParam() {
+                return new QueryScopeParam<>(getName(), getValue());
             }
         }
 
@@ -457,102 +456,9 @@ public abstract class QueryScope implements LogOutputAppendable {
             }
 
             @Override
-            public Param<T> createParam() {
-                return new Param<>(getName(), getValue());
+            public QueryScopeParam<T> createParam() {
+                return new QueryScopeParam<>(getName(), getValue());
             }
-        }
-    }
-
-    // -----------------------------------------------------------------------------------------------------------------
-    // ScriptSession-based implementation, with no remote scope or object reflection support
-    // -----------------------------------------------------------------------------------------------------------------
-
-    public static class SynchronizedScriptSessionImpl extends BaseScriptSessionImpl {
-        public SynchronizedScriptSessionImpl(@NotNull final ScriptSession scriptSession) {
-            super(scriptSession);
-        }
-
-        @Override
-        public synchronized Set<String> getParamNames() {
-            return scriptSession.getVariableNames();
-        }
-
-        @Override
-        public boolean hasParamName(String name) {
-            return scriptSession.hasVariableName(name);
-        }
-
-        @Override
-        protected synchronized <T> Param<T> createParam(final String name) throws MissingVariableException {
-            // noinspection unchecked
-            return new Param<>(name, (T) scriptSession.getVariable(name));
-        }
-
-        @Override
-        public synchronized <T> T readParamValue(final String name) throws MissingVariableException {
-            // noinspection unchecked
-            return (T) scriptSession.getVariable(name);
-        }
-
-        @Override
-        public synchronized <T> T readParamValue(final String name, final T defaultValue) {
-            return scriptSession.getVariable(name, defaultValue);
-        }
-
-        @Override
-        public synchronized <T> void putParam(final String name, final T value) {
-            scriptSession.setVariable(NameValidator.validateQueryParameterName(name), value);
-        }
-    }
-
-    public static class UnsynchronizedScriptSessionImpl extends BaseScriptSessionImpl {
-        public UnsynchronizedScriptSessionImpl(@NotNull final ScriptSession scriptSession) {
-            super(scriptSession);
-        }
-
-        @Override
-        public Set<String> getParamNames() {
-            return scriptSession.getVariableNames();
-        }
-
-        @Override
-        public boolean hasParamName(String name) {
-            return scriptSession.hasVariableName(name);
-        }
-
-        @Override
-        protected <T> Param<T> createParam(final String name) throws MissingVariableException {
-            // noinspection unchecked
-            return new Param<>(name, (T) scriptSession.getVariable(name));
-        }
-
-        @Override
-        public <T> T readParamValue(final String name) throws MissingVariableException {
-            // noinspection unchecked
-            return (T) scriptSession.getVariable(name);
-        }
-
-        @Override
-        public <T> T readParamValue(final String name, final T defaultValue) {
-            return scriptSession.getVariable(name, defaultValue);
-        }
-
-        @Override
-        public <T> void putParam(final String name, final T value) {
-            scriptSession.setVariable(NameValidator.validateQueryParameterName(name), value);
-        }
-    }
-
-    private abstract static class BaseScriptSessionImpl extends QueryScope {
-        final ScriptSession scriptSession;
-
-        private BaseScriptSessionImpl(ScriptSession scriptSession) {
-            this.scriptSession = scriptSession;
-        }
-
-        @Override
-        public void putObjectFields(Object object) {
-            throw new UnsupportedOperationException();
         }
     }
 }

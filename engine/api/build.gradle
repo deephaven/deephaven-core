@@ -1,6 +1,7 @@
 import io.deephaven.tools.Tools
 
 configurations {
+    testCompile.extendsFrom junit
 }
 
 sourceSets {
@@ -22,7 +23,8 @@ dependencies {
             project(':engine-vector'),
             project(':engine-time'),
             project(':engine-updategraph'),
-            project(':engine-rowset')
+            project(':engine-rowset'),
+            'com.github.f4b6a3:uuid-creator:3.6.0'
 
     compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
 }

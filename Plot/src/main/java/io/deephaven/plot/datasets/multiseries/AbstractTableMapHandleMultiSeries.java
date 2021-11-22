@@ -4,8 +4,8 @@ import io.deephaven.plot.AxesImpl;
 import io.deephaven.plot.datasets.DataSeriesInternal;
 import io.deephaven.plot.util.ArgumentValidations;
 import io.deephaven.plot.util.tables.TableBackedTableMapHandle;
-import io.deephaven.engine.tables.libs.QueryLibrary;
-import io.deephaven.engine.tables.select.QueryScope;
+import io.deephaven.engine.table.lang.QueryLibrary;
+import io.deephaven.engine.table.lang.QueryScope;
 import io.deephaven.engine.table.TableMap;
 
 import java.util.Arrays;

@@ -1,8 +1,8 @@
 package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.tables.libs.QueryLibrary;
-import io.deephaven.engine.tables.select.QueryScope;
+import io.deephaven.engine.table.lang.QueryLibrary;
+import io.deephaven.engine.table.lang.QueryScope;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.table.impl.utils.ModelFileGenerator;
 import io.deephaven.test.junit4.EngineCleanup;

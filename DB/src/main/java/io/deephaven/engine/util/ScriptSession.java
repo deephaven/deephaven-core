@@ -4,7 +4,7 @@
 
 package io.deephaven.engine.util;
 
-import io.deephaven.engine.tables.select.QueryScope;
+import io.deephaven.engine.table.lang.QueryScope;
 import io.deephaven.engine.liveness.LivenessNode;
 import io.deephaven.engine.liveness.ReleasableLivenessManager;
 import io.deephaven.engine.util.scripts.ScriptPathLoader;

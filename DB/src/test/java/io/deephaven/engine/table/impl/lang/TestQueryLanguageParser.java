@@ -11,7 +11,7 @@ import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.vector.*;
-import io.deephaven.engine.table.impl.lang.LanguageParser.QueryLanguageParseException;
+import io.deephaven.engine.table.impl.lang.QueryLanguageParser.QueryLanguageParseException;
 import io.deephaven.engine.vector.Vector;
 import io.deephaven.utils.test.PropertySaver;
 import io.deephaven.util.QueryConstants;
@@ -27,10 +27,10 @@ import java.awt.*;
 import java.util.*;
 import java.util.List;
 
-import static io.deephaven.engine.table.impl.lang.LanguageParser.isWideningPrimitiveConversion;
+import static io.deephaven.engine.table.impl.lang.QueryLanguageParser.isWideningPrimitiveConversion;
 
 @SuppressWarnings("InstantiatingObjectToGetClassObject")
-public class TestLanguageParser extends BaseArrayTestCase {
+public class TestQueryLanguageParser extends BaseArrayTestCase {
 
     private HashSet<Package> packageImports;
     private HashSet<Class<?>> classImports;
@@ -60,10 +60,10 @@ public class TestLanguageParser extends BaseArrayTestCase {
         classImports.add(LanguageParserDummyInterface.class);
 
         staticImports = new HashSet<>();
-        staticImports.add(LanguageFunctionUtil.class);
+        staticImports.add(QueryLanguageFunctionUtil.class);
         staticImports.add(Math.class);
         staticImports.add(QueryConstants.class);
-        staticImports.add(TestLanguageParser.class);
+        staticImports.add(TestQueryLanguageParser.class);
 
         variables = new HashMap<>();
         variables.put("myByte", byte.class);
@@ -381,120 +381,120 @@ public class TestLanguageParser extends BaseArrayTestCase {
 
     public void testConvertBackticks() {
         Require.equals(
-                LanguageParser.convertBackticks("`hello`"),
+                QueryLanguageParser.convertBackticks("`hello`"),
                 "convertBackticks(\"`hello`\")",
                 "\"hello\"");
 
         Require.equals(
-                LanguageParser.convertBackticks("`'`"),
+                QueryLanguageParser.convertBackticks("`'`"),
                 "convertBackticks(\"`'`\")",
                 "\"'\"");
 
         Require.equals(
-                LanguageParser.convertBackticks("`\"`"),
+                QueryLanguageParser.convertBackticks("`\"`"),
                 "convertBackticks(\"`\\\"`\")",
                 "\"\\\"\"");
 
         Require.equals(
-                LanguageParser.convertBackticks("\"`\""),
+                QueryLanguageParser.convertBackticks("\"`\""),
                 "convertBackticks(\"\\\"`\\\"\")",
                 "\"`\"");
 
         Require.equals(
-                LanguageParser.convertBackticks("`'\\\"'`"),
+                QueryLanguageParser.convertBackticks("`'\\\"'`"),
                 "convertBackticks(\"`'\\\\\\\"'`\")",
                 "\"'\\\"'\"");
 
         Require.equals(
-                LanguageParser.convertBackticks("\"`abc`\""),
+                QueryLanguageParser.convertBackticks("\"`abc`\""),
                 "convertBackticks(\"\\\"`abc`\\\"\")",
                 "\"`abc`\"");
 
         Require.equals(
-                LanguageParser.convertBackticks("\"`'abc`'\""),
+                QueryLanguageParser.convertBackticks("\"`'abc`'\""),
                 "convertBackticks(\"\\\"`'abc`'\\\"\")",
                 "\"`'abc`'\"");
 
         Require.equals(
-                LanguageParser.convertBackticks("\"'`\""),
+                QueryLanguageParser.convertBackticks("\"'`\""),
                 "convertBackticks(\"\\\"'`\\\"\")",
                 "\"'`\"");
 
         Require.equals(
-                LanguageParser.convertBackticks("`abc ` + \"def\" + \"`hij`\" + '`' + `'`"),
+                QueryLanguageParser.convertBackticks("`abc ` + \"def\" + \"`hij`\" + '`' + `'`"),
                 "convertBackticks(\"`abc ` + \\\"def\\\" + \\\"`hij`\\\" + '`' + `'`\")",
                 "\"abc \" + \"def\" + \"`hij`\" + '`' + \"'\"");
 
         // test each type of quote, escaped and contained within itself
         Require.equals(
-                LanguageParser.convertBackticks("\"\\\"\""),
+                QueryLanguageParser.convertBackticks("\"\\\"\""),
                 "convertBackticks(\"\\\"\\\\\\\"\\\"\")",
                 "\"\\\"\"");
         Require.equals(
-                LanguageParser.convertBackticks("`\\``"),
+                QueryLanguageParser.convertBackticks("`\\``"),
                 "convertBackticks(\"`\\\\``\")",
                 "\"\\`\"");
         Require.equals(
-                LanguageParser.convertBackticks("'\\''"),
+                QueryLanguageParser.convertBackticks("'\\''"),
                 "convertBackticks(\"'\\\\''\")",
                 "'\\''");
 
         // test tick and double quote both escaped within a string
         Require.equals(
-                LanguageParser.convertBackticks("`\"\\``"),
+                QueryLanguageParser.convertBackticks("`\"\\``"),
                 "convertBackticks(\"`\\\"\\\\``\")",
                 "\"\\\"\\`\"");
         // here ` is unescaped, since it is within "s
         Require.equals(
-                LanguageParser.convertBackticks("\"\\\"`\""),
+                QueryLanguageParser.convertBackticks("\"\\\"`\""),
                 "convertBackticks(\"\\\"\\\\\\\"`\\\"\")",
                 "\"\\\"`\"");
 
         // confirm that standard java escaping tools are sufficient to correctly escape strings for the LangParser
         Require.equals(
-                LanguageParser.convertBackticks("\"" + StringEscapeUtils.escapeJava("`\"'\\") + "\""),
+                QueryLanguageParser.convertBackticks("\"" + StringEscapeUtils.escapeJava("`\"'\\") + "\""),
                 "convertBackticks(escapeJava(\"`\\\"'\\\\\"))",
                 "\"`\\\"'\\\\\"");
     }
 
     public void testConvertSingleEquals() {
         Require.equals(
-                LanguageParser.convertSingleEquals("a=b"),
+                QueryLanguageParser.convertSingleEquals("a=b"),
                 "convertSingleEquals(\"a=b\")",
                 "a==b");
 
         Require.equals(
-                LanguageParser.convertSingleEquals("a=b=c==d=e==f"),
+                QueryLanguageParser.convertSingleEquals("a=b=c==d=e==f"),
                 "convertSingleEquals(\"a=b=c==d=e==f\")",
                 "a==b==c==d==e==f");
 
         Require.equals(
-                LanguageParser.convertSingleEquals("'='"),
+                QueryLanguageParser.convertSingleEquals("'='"),
                 "convertSingleEquals(\"'='\")",
                 "'='");
 
         Require.equals(
-                LanguageParser.convertSingleEquals("'='='='"),
+                QueryLanguageParser.convertSingleEquals("'='='='"),
                 "convertSingleEquals(\"'='='='\")",
                 "'='=='='");
 
         Require.equals(
-                LanguageParser.convertSingleEquals("'='='='=='='"),
+                QueryLanguageParser.convertSingleEquals("'='='='=='='"),
                 "convertSingleEquals(\"'='='='=='='\")",
                 "'='=='='=='='");
 
         Require.equals(
-                LanguageParser.convertSingleEquals("a='='=b"),
+                QueryLanguageParser.convertSingleEquals("a='='=b"),
                 "convertSingleEquals(\"a='='=b\")",
                 "a=='='==b");
 
         Require.equals(
-                LanguageParser.convertSingleEquals("\"a=b\""),
+                QueryLanguageParser.convertSingleEquals("\"a=b\""),
                 "convertSingleEquals(\"a=b\")",
                 "\"a=b\"");
 
         Require.equals(
-                LanguageParser.convertSingleEquals("\"a=b'\"='='"),
+                QueryLanguageParser.convertSingleEquals("\"a=b'\"='='"),
                 "convertSingleEquals(\"\\\"a=b'\\\"='='\")",
                 "\"a=b'\"=='='");
     }
@@ -547,8 +547,8 @@ public class TestLanguageParser extends BaseArrayTestCase {
             expression = "(Double)myInt";
             resultExpression = "(Double)myInt";
             check(expression, resultExpression, Double.class, new String[] {"myInt"});
-            fail("Should have throw a LanguageParser.QueryLanguageParseException");
-        } catch (LanguageParser.QueryLanguageParseException ignored) {
+            fail("Should have throw a QueryLanguageParser.QueryLanguageParseException");
+        } catch (QueryLanguageParser.QueryLanguageParseException ignored) {
         }
     }
 
@@ -601,8 +601,8 @@ public class TestLanguageParser extends BaseArrayTestCase {
                     expression = '(' + targetType.first + ")true"; // e.g. "(int)true"
                     resultExpression = targetType.first + "Cast(true)"; // e.g. "intCast(true)"
                     check(expression, resultExpression, targetType.second, new String[] {});
-                    fail("Should have thrown a LanguageParser.QueryLanguageParseException");
-                } catch (LanguageParser.QueryLanguageParseException ignored) {
+                    fail("Should have thrown a QueryLanguageParser.QueryLanguageParseException");
+                } catch (QueryLanguageParser.QueryLanguageParseException ignored) {
                 }
             } catch (Throwable ex) {
                 throw new RuntimeException("Failed testing cast of boolean to " + targetType.second.getName(), ex);
@@ -615,8 +615,8 @@ public class TestLanguageParser extends BaseArrayTestCase {
                 try {
                     resultExpression = expression = "(boolean)" + literal.first; // e.g. "(boolean)42"
                     check(expression, resultExpression, boolean.class, new String[] {});
-                    fail("Should have thrown a LanguageParser.QueryLanguageParseException");
-                } catch (LanguageParser.QueryLanguageParseException ignored) {
+                    fail("Should have thrown a QueryLanguageParser.QueryLanguageParseException");
+                } catch (QueryLanguageParser.QueryLanguageParseException ignored) {
                 }
             } catch (Throwable ex) {
                 throw new RuntimeException("Failed testing cast of " + literal.second.getName() + " to boolean", ex);
@@ -684,8 +684,8 @@ public class TestLanguageParser extends BaseArrayTestCase {
                     expression = '(' + targetType.first + ")myBoolean"; // e.g. "(int)myBoolean"
                     resultExpression = targetType.first + "Cast(myBoolean)"; // e.g. "intCast(myBoolean)"
                     check(expression, resultExpression, targetType.second, new String[] {"myBoolean"});
-                    fail("Should have thrown a LanguageParser.QueryLanguageParseException");
-                } catch (LanguageParser.QueryLanguageParseException ignored) {
+                    fail("Should have thrown a QueryLanguageParser.QueryLanguageParseException");
+                } catch (QueryLanguageParser.QueryLanguageParseException ignored) {
                 }
             } catch (Throwable ex) {
                 throw new RuntimeException("Failed testing cast of boolean to " + targetType.second.getName(), ex);
@@ -698,8 +698,8 @@ public class TestLanguageParser extends BaseArrayTestCase {
                 try {
                     resultExpression = expression = "(boolean)" + var.first; // e.g. "(boolean)myInt"
                     check(expression, resultExpression, boolean.class, new String[] {});
-                    fail("Should have thrown a LanguageParser.QueryLanguageParseException");
-                } catch (LanguageParser.QueryLanguageParseException ignored) {
+                    fail("Should have thrown a QueryLanguageParser.QueryLanguageParseException");
+                } catch (QueryLanguageParser.QueryLanguageParseException ignored) {
                 }
             } catch (Throwable ex) {
                 throw new RuntimeException("Failed testing cast of " + var.second.getName() + " to boolean", ex);
@@ -780,8 +780,8 @@ public class TestLanguageParser extends BaseArrayTestCase {
                          */
                         try {
                             check(expression, resultExpression, primitiveType, new String[] {boxedTypeTestVarName});
-                            fail("Should have thrown a LanguageParser.QueryLanguageParseException");
-                        } catch (LanguageParser.QueryLanguageParseException ignored) {
+                            fail("Should have thrown a QueryLanguageParser.QueryLanguageParseException");
+                        } catch (QueryLanguageParser.QueryLanguageParseException ignored) {
                         }
                     } else {
                         check(expression, resultExpression, primitiveType, new String[] {boxedTypeTestVarName});
@@ -1240,8 +1240,8 @@ public class TestLanguageParser extends BaseArrayTestCase {
             expression = "(42).hashCode()";
             resultExpression = "(42).hashCode()";
             check(expression, resultExpression, int.class, new String[] {});
-            fail("Should have thrown a LanguageParser.QueryLanguageParseException");
-        } catch (LanguageParser.QueryLanguageParseException ignored) {
+            fail("Should have thrown a QueryLanguageParser.QueryLanguageParseException");
+        } catch (QueryLanguageParser.QueryLanguageParseException ignored) {
         }
     }
 
@@ -1328,15 +1328,15 @@ public class TestLanguageParser extends BaseArrayTestCase {
         String expression, resultExpression;
 
         PropertySaver p = new PropertySaver();
-        p.setProperty("LanguageParser.verboseExceptionMessages", "false"); // Better to test with non-verbose messages
+        p.setProperty("QueryLanguageParser.verboseExceptionMessages", "false"); // Better to test with non-verbose messages
         try {
             // First, test just bad field name
             try {
                 expression = "myDummyInnerClass.staticVarThatDoesNotExist";
                 resultExpression = "myDummyInnerClass.staticVarThatDoesNotExist";
                 check(expression, resultExpression, String.class, new String[] {"myDummyInnerClass"});
-                fail("Should have thrown a LanguageParser.QueryLanguageParseException");
-            } catch (LanguageParser.QueryLanguageParseException ex) {
+                fail("Should have thrown a QueryLanguageParser.QueryLanguageParseException");
+            } catch (QueryLanguageParser.QueryLanguageParseException ex) {
                 if (!ex.getMessage().contains("Scope      : myDummyInnerClass") ||
                         !ex.getMessage().contains("Field Name : staticVarThatDoesNotExist")) {
                     fail("Useless exception message!\nOriginal exception:\n" + ExceptionUtils.getStackTrace(ex));
@@ -1348,8 +1348,8 @@ public class TestLanguageParser extends BaseArrayTestCase {
                 expression = "LanguageParserDummyClass.StaticNestedClass.staticVarThatDoesNotExist";
                 resultExpression = "LanguageParserDummyClass.StaticNestedClass.staticVarThatDoesNotExist";
                 check(expression, resultExpression, String.class, new String[] {});
-                fail("Should have thrown a LanguageParser.QueryLanguageParseException");
-            } catch (LanguageParser.QueryLanguageParseException ex) {
+                fail("Should have thrown a QueryLanguageParser.QueryLanguageParseException");
+            } catch (QueryLanguageParser.QueryLanguageParseException ex) {
                 if (!ex.getMessage().contains("Scope      : LanguageParserDummyClass.StaticNestedClass") ||
                         !ex.getMessage().contains("Field Name : staticVarThatDoesNotExist")) {
                     fail("Useless exception message!\nOriginal exception:\n" + ExceptionUtils.getStackTrace(ex));
@@ -1361,8 +1361,8 @@ public class TestLanguageParser extends BaseArrayTestCase {
                 expression = "myDummyNonExistentInnerClass.staticVar";
                 resultExpression = "myDummyNonExistentInnerClass.staticVar";
                 check(expression, resultExpression, String.class, new String[] {"myDummyInnerClass"});
-                fail("Should have thrown a LanguageParser.QueryLanguageParseException");
-            } catch (LanguageParser.QueryLanguageParseException ex) {
+                fail("Should have thrown a QueryLanguageParser.QueryLanguageParseException");
+            } catch (QueryLanguageParser.QueryLanguageParseException ex) {
                 if (!ex.getMessage().contains("Scope      : myDummyNonExistentInnerClass") ||
                         !ex.getMessage().contains("Field Name : staticVar")) {
                     fail("Useless exception message!\nOriginal exception:\n" + ExceptionUtils.getStackTrace(ex));
@@ -1374,8 +1374,8 @@ public class TestLanguageParser extends BaseArrayTestCase {
                 expression = "LanguageParserNonExistentDummyClass.StaticNestedClass.staticVar";
                 resultExpression = "LanguageParserNonExistentDummyClass.StaticNestedClass.staticVar";
                 check(expression, resultExpression, String.class, new String[] {});
-                fail("Should have thrown a LanguageParser.QueryLanguageParseException");
-            } catch (LanguageParser.QueryLanguageParseException ex) {
+                fail("Should have thrown a QueryLanguageParser.QueryLanguageParseException");
+            } catch (QueryLanguageParser.QueryLanguageParseException ex) {
                 if (!ex.getMessage().contains("Scope      : LanguageParserNonExistentDummyClass.StaticNestedClass") ||
                         !ex.getMessage().contains("Field Name : staticVar")) {
                     fail("Useless exception message!\nOriginal exception:\n" + ExceptionUtils.getStackTrace(ex));
@@ -1397,8 +1397,8 @@ public class TestLanguageParser extends BaseArrayTestCase {
                 resultExpression =
                         "io.deephaven.engine.table.impl.lang.LanguageParserDummyClass.interpolate(myDoubleVector.toArray(),myDoubleVector.toArray(),new double[]{myDouble},io.deephaven.engine.table.impl.lang.NestedEnum.ONE,false)[0]";
                 check(expression, resultExpression, String.class, new String[] {});
-                fail("Should have thrown a LanguageParser.QueryLanguageParseException");
-            } catch (LanguageParser.QueryLanguageParseException ex) {
+                fail("Should have thrown a QueryLanguageParser.QueryLanguageParseException");
+            } catch (QueryLanguageParser.QueryLanguageParseException ex) {
                 if (!ex.getMessage().contains("Scope      : io.deephaven.engine.table.impl.lang.NestedEnum") ||
                         !ex.getMessage().contains("Field Name : ONE")) {
                     fail("Useless exception message!\n\nOriginal exception:\n" + ExceptionUtils.getStackTrace(ex));
@@ -1411,8 +1411,8 @@ public class TestLanguageParser extends BaseArrayTestCase {
                 expression = "myTable[myTable.length-1]";
                 resultExpression = "myTable[minus(myTable.length, 1)]";
                 check(expression, resultExpression, String.class, new String[] {});
-                fail("Should have thrown a LanguageParser.QueryLanguageParseException");
-            } catch (LanguageParser.QueryLanguageParseException ex) {
+                fail("Should have thrown a QueryLanguageParser.QueryLanguageParseException");
+            } catch (QueryLanguageParser.QueryLanguageParseException ex) {
                 if (!ex.getMessage().contains("Scope      : myTable") ||
                         !ex.getMessage().contains("Scope Type : " + Table.class.getCanonicalName()) ||
                         !ex.getMessage().contains("Field Name : length")) {
@@ -1554,8 +1554,8 @@ public class TestLanguageParser extends BaseArrayTestCase {
         try {
             expression = resultExpression = "testImplicitConversion1(new float[]{ myFloat })";
             check(expression, resultExpression, double[].class, new String[] {"myFloat"});
-            fail("Should have thrown a LanguageParser.QueryLanguageParseException");
-        } catch (LanguageParser.QueryLanguageParseException err) {
+            fail("Should have thrown a QueryLanguageParser.QueryLanguageParseException");
+        } catch (QueryLanguageParser.QueryLanguageParseException err) {
             Assert.eqTrue(err.getMessage().contains("Cannot find method"),
                     "err.getMessage().contains(\"Cannot find method\")");
         }
@@ -1564,8 +1564,8 @@ public class TestLanguageParser extends BaseArrayTestCase {
         try {
             expression = resultExpression = "testImplicitConversion1(new Double[]{ myDoubleObj })";
             check(expression, resultExpression, double[].class, new String[] {"myDoubleObj"});
-            fail("Should have thrown a LanguageParser.QueryLanguageParseException");
-        } catch (LanguageParser.QueryLanguageParseException err) {
+            fail("Should have thrown a QueryLanguageParser.QueryLanguageParseException");
+        } catch (QueryLanguageParser.QueryLanguageParseException err) {
             Assert.eqTrue(err.getMessage().contains("Cannot find method"),
                     "err.getMessage().contains(\"Cannot find method\")");
         }
@@ -1574,34 +1574,34 @@ public class TestLanguageParser extends BaseArrayTestCase {
         try {
             expression = resultExpression = "testImplicitConversion1(new Float[]{ myFloatObj })";
             check(expression, resultExpression, double[].class, new String[] {"myFloatObj"});
-            fail("Should have thrown a LanguageParser.QueryLanguageParseException");
-        } catch (LanguageParser.QueryLanguageParseException err) {
+            fail("Should have thrown a QueryLanguageParser.QueryLanguageParseException");
+        } catch (QueryLanguageParser.QueryLanguageParseException err) {
             Assert.eqTrue(err.getMessage().contains("Cannot find method"),
                     "err.getMessage().contains(\"Cannot find method\")");
         }
     }
 
     public void testEqualsConversion() throws Exception {
-        LanguageParser.Result result =
-                new LanguageParser("1==1", null, null, staticImports, null, null).getResult();
+        QueryLanguageParser.Result result =
+                new QueryLanguageParser("1==1", null, null, staticImports, null, null).getResult();
         assertEquals("eq(1, 1)", result.getConvertedExpression());
 
-        result = new LanguageParser("1=1", null, null, staticImports, null, null).getResult();
+        result = new QueryLanguageParser("1=1", null, null, staticImports, null, null).getResult();
         assertEquals("eq(1, 1)", result.getConvertedExpression());
 
-        result = new LanguageParser("`me`=`you`", null, null, staticImports, null, null).getResult();
+        result = new QueryLanguageParser("`me`=`you`", null, null, staticImports, null, null).getResult();
         assertEquals("eq(\"me\", \"you\")", result.getConvertedExpression());
 
-        result = new LanguageParser("1=1 || 2=2 && (3=3 && 4==4)", null, null, staticImports, null, null).getResult();
+        result = new QueryLanguageParser("1=1 || 2=2 && (3=3 && 4==4)", null, null, staticImports, null, null).getResult();
         assertEquals("eq(1, 1)||eq(2, 2)&&(eq(3, 3)&&eq(4, 4))", result.getConvertedExpression());
 
-        result = new LanguageParser("1<=1", null, null, staticImports, null, null).getResult();
+        result = new QueryLanguageParser("1<=1", null, null, staticImports, null, null).getResult();
         assertEquals("lessEquals(1, 1)", result.getConvertedExpression());
 
-        result = new LanguageParser("1>=1", null, null, staticImports, null, null).getResult();
+        result = new QueryLanguageParser("1>=1", null, null, staticImports, null, null).getResult();
         assertEquals("greaterEquals(1, 1)", result.getConvertedExpression());
 
-        result = new LanguageParser("1!=1", null, null, staticImports, null, null).getResult();
+        result = new QueryLanguageParser("1!=1", null, null, staticImports, null, null).getResult();
         assertEquals("!eq(1, 1)", result.getConvertedExpression());
     }
 
@@ -1710,8 +1710,8 @@ public class TestLanguageParser extends BaseArrayTestCase {
         try {
             // We don't (currently?) support converting primitive arrays to Vectors.
             check(expression, resultExpression, int.class, new String[] {"myIntArray"});
-            fail("Should have thrown a LanguageParser.QueryLanguageParseException");
-        } catch (LanguageParser.QueryLanguageParseException ex) {
+            fail("Should have thrown a QueryLanguageParser.QueryLanguageParseException");
+        } catch (QueryLanguageParser.QueryLanguageParseException ex) {
             // exception expected
         }
     }
@@ -1846,10 +1846,10 @@ public class TestLanguageParser extends BaseArrayTestCase {
     }
 
     public void testInnerClasses() throws Exception {
-        LanguageParser.Result result =
-                new LanguageParser("io.deephaven.engine.table.impl.lang.TestLanguageParser.InnerEnum.YEAH!=null", null,
+        QueryLanguageParser.Result result =
+                new QueryLanguageParser("io.deephaven.engine.table.impl.lang.TestQueryLanguageParser.InnerEnum.YEAH!=null", null,
                         null, staticImports, null, null).getResult();
-        assertEquals("!eq(io.deephaven.engine.table.impl.lang.TestLanguageParser.InnerEnum.YEAH, null)",
+        assertEquals("!eq(io.deephaven.engine.table.impl.lang.TestQueryLanguageParser.InnerEnum.YEAH, null)",
                 result.getConvertedExpression());
     }
 
@@ -1899,85 +1899,85 @@ public class TestLanguageParser extends BaseArrayTestCase {
         try {
             expression = resultExpression = "myInt++";
             check(expression, resultExpression, int.class, new String[] {"myInt"});
-            fail("Should have thrown a LanguageParser.QueryLanguageParseException");
-        } catch (LanguageParser.QueryLanguageParseException ignored) {
+            fail("Should have thrown a QueryLanguageParser.QueryLanguageParseException");
+        } catch (QueryLanguageParser.QueryLanguageParseException ignored) {
         }
 
         try {
             expression = resultExpression = "myInt--";
             check(expression, resultExpression, int.class, new String[] {"myInt"});
-            fail("Should have thrown a LanguageParser.QueryLanguageParseException");
-        } catch (LanguageParser.QueryLanguageParseException ignored) {
+            fail("Should have thrown a QueryLanguageParser.QueryLanguageParseException");
+        } catch (QueryLanguageParser.QueryLanguageParseException ignored) {
         }
 
         try {
             expression = resultExpression = "++myInt";
             check(expression, resultExpression, int.class, new String[] {"myInt"});
-            fail("Should have thrown a LanguageParser.QueryLanguageParseException");
-        } catch (LanguageParser.QueryLanguageParseException ignored) {
+            fail("Should have thrown a QueryLanguageParser.QueryLanguageParseException");
+        } catch (QueryLanguageParser.QueryLanguageParseException ignored) {
         }
 
         try {
             expression = resultExpression = "--myInt";
             check(expression, resultExpression, int.class, new String[] {"myInt"});
-            fail("Should have thrown a LanguageParser.QueryLanguageParseException");
-        } catch (LanguageParser.QueryLanguageParseException ignored) {
+            fail("Should have thrown a QueryLanguageParser.QueryLanguageParseException");
+        } catch (QueryLanguageParser.QueryLanguageParseException ignored) {
         }
 
         try {
             expression = resultExpression = "myInt += myInt";
             check(expression, resultExpression, int.class, new String[] {"myInt"});
-            fail("Should have thrown a LanguageParser.QueryLanguageParseException");
-        } catch (LanguageParser.QueryLanguageParseException ignored) {
+            fail("Should have thrown a QueryLanguageParser.QueryLanguageParseException");
+        } catch (QueryLanguageParser.QueryLanguageParseException ignored) {
         }
 
         try {
             expression = resultExpression = "myInt -= myInt";
             check(expression, resultExpression, int.class, new String[] {"myInt"});
-            fail("Should have thrown a LanguageParser.QueryLanguageParseException");
-        } catch (LanguageParser.QueryLanguageParseException ignored) {
+            fail("Should have thrown a QueryLanguageParser.QueryLanguageParseException");
+        } catch (QueryLanguageParser.QueryLanguageParseException ignored) {
         }
 
         try {
             expression = resultExpression = "myInt *= myInt";
             check(expression, resultExpression, int.class, new String[] {"myInt"});
-            fail("Should have thrown a LanguageParser.QueryLanguageParseException");
-        } catch (LanguageParser.QueryLanguageParseException ignored) {
+            fail("Should have thrown a QueryLanguageParser.QueryLanguageParseException");
+        } catch (QueryLanguageParser.QueryLanguageParseException ignored) {
         }
 
         try {
             expression = resultExpression = "myInt /= myInt";
             check(expression, resultExpression, int.class, new String[] {"myInt"});
-            fail("Should have thrown a LanguageParser.QueryLanguageParseException");
-        } catch (LanguageParser.QueryLanguageParseException ignored) {
+            fail("Should have thrown a QueryLanguageParser.QueryLanguageParseException");
+        } catch (QueryLanguageParser.QueryLanguageParseException ignored) {
         }
 
         try {
             expression = resultExpression = "myInt /= myInt";
             check(expression, resultExpression, int.class, new String[] {"myInt"});
-            fail("Should have thrown a LanguageParser.QueryLanguageParseException");
-        } catch (LanguageParser.QueryLanguageParseException ignored) {
+            fail("Should have thrown a QueryLanguageParser.QueryLanguageParseException");
+        } catch (QueryLanguageParser.QueryLanguageParseException ignored) {
         }
 
         try {
             expression = resultExpression = "myInt &= myInt";
             check(expression, resultExpression, int.class, new String[] {"myInt"});
-            fail("Should have thrown a LanguageParser.QueryLanguageParseException");
-        } catch (LanguageParser.QueryLanguageParseException ignored) {
+            fail("Should have thrown a QueryLanguageParser.QueryLanguageParseException");
+        } catch (QueryLanguageParser.QueryLanguageParseException ignored) {
         }
 
         try {
             expression = resultExpression = "myInt |= myInt";
             check(expression, resultExpression, int.class, new String[] {"myInt"});
-            fail("Should have thrown a LanguageParser.QueryLanguageParseException");
-        } catch (LanguageParser.QueryLanguageParseException ignored) {
+            fail("Should have thrown a QueryLanguageParser.QueryLanguageParseException");
+        } catch (QueryLanguageParser.QueryLanguageParseException ignored) {
         }
 
         try {
             expression = resultExpression = "myInt ^= myInt";
             check(expression, resultExpression, int.class, new String[] {"myInt"});
-            fail("Should have thrown a LanguageParser.QueryLanguageParseException");
-        } catch (LanguageParser.QueryLanguageParseException ignored) {
+            fail("Should have thrown a QueryLanguageParser.QueryLanguageParseException");
+        } catch (QueryLanguageParser.QueryLanguageParseException ignored) {
         }
     }
 
@@ -2185,14 +2185,14 @@ public class TestLanguageParser extends BaseArrayTestCase {
     private void expectFailure(String expression, Class<?> resultType) throws Exception {
         try {
             check(expression, expression, resultType, new String[0]);
-            fail("Should have thrown a LanguageParser.QueryLanguageParseException");
+            fail("Should have thrown a QueryLanguageParser.QueryLanguageParseException");
         } catch (QueryLanguageParseException expected) {
         }
     }
 
     private void check(String expression, String resultExpression, Class<?> resultType, String[] resultVarsUsed)
             throws Exception {
-        LanguageParser.Result result = new LanguageParser(expression, packageImports, classImports, staticImports,
+        QueryLanguageParser.Result result = new QueryLanguageParser(expression, packageImports, classImports, staticImports,
                 variables, variableParameterizedTypes).getResult();
 
         assertEquals(resultType, result.getType());

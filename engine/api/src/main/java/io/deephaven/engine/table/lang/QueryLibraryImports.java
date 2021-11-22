@@ -1,10 +1,11 @@
-package io.deephaven.engine.tables.libs;
+package io.deephaven.engine.table.lang;
 
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
 public interface QueryLibraryImports {
+
     static QueryLibraryImports copyFromServiceLoader() {
         return copyFrom(new QueryLibraryImportsServiceLoader());
     }

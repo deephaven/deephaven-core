@@ -6,7 +6,7 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.tables.StringSetArrayWrapper;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.tables.libs.QueryLibrary;
+import io.deephaven.engine.table.lang.QueryLibrary;
 import io.deephaven.engine.tables.libs.StringSet;
 import io.deephaven.engine.tables.utils.ParquetTools;
 import io.deephaven.engine.tables.utils.TableTools;

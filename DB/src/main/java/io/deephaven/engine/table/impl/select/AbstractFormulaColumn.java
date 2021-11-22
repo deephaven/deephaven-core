@@ -8,9 +8,9 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.lang.QueryScopeParam;
 import io.deephaven.engine.vector.Vector;
-import io.deephaven.engine.tables.select.Param;
-import io.deephaven.engine.tables.select.QueryScope;
+import io.deephaven.engine.table.lang.QueryScope;
 import io.deephaven.engine.table.impl.dbarrays.*;
 import io.deephaven.engine.table.impl.select.formula.*;
 import io.deephaven.engine.table.impl.sources.*;
@@ -47,7 +47,7 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
     private FormulaFactory formulaFactory;
     private Formula formula;
     protected List<String> userParams;
-    protected Param<?>[] params;
+    protected QueryScopeParam<?>[] params;
     protected Map<String, ? extends ColumnSource<?>> columnSources;
     private TrackingRowSet rowSet;
     protected Class<?> returnedType;
@@ -63,7 +63,7 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
      * The internal formula object is generated on-demand by calling out to the Java compiler.
      *
      * @param columnName the result column name
-     * @param formulaString the formula string to be parsed by the LanguageParser
+     * @param formulaString the formula string to be parsed by the QueryLanguageParser
      * @param useKernelFormulas
      */
     protected AbstractFormulaColumn(String columnName, String formulaString, boolean useKernelFormulas) {
@@ -97,13 +97,13 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
     }
 
     protected void applyUsedVariables(Map<String, ColumnDefinition<?>> columnDefinitionMap, Set<String> variablesUsed) {
-        final Map<String, Param<?>> possibleParams = new HashMap<>();
+        final Map<String, QueryScopeParam<?>> possibleParams = new HashMap<>();
         final QueryScope queryScope = QueryScope.getScope();
-        for (Param<?> param : queryScope.getParams(queryScope.getParamNames())) {
+        for (QueryScopeParam<?> param : queryScope.getParams(queryScope.getParamNames())) {
             possibleParams.put(param.getName(), param);
         }
 
-        final List<Param<?>> paramsList = new ArrayList<>();
+        final List<QueryScopeParam<?>> paramsList = new ArrayList<>();
         usedColumns = new ArrayList<>();
         userParams = new ArrayList<>();
         usedColumnArrays = new ArrayList<>();
@@ -128,8 +128,8 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
             }
         }
 
-        params = paramsList.toArray(Param.ZERO_LENGTH_PARAM_ARRAY);
-        for (Param<?> param : paramsList) {
+        params = paramsList.toArray(QueryScopeParam.ZERO_LENGTH_PARAM_ARRAY);
+        for (QueryScopeParam<?> param : paramsList) {
             try {
                 // noinspection ResultOfMethodCallIgnored, we only care that we can get the value here not what it is
                 param.getValue();
@@ -225,7 +225,7 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
 
     private Formula getFormula(boolean initLazyMap,
             Map<String, ? extends ColumnSource<?>> columnsToData,
-            Param<?>... params) {
+            QueryScopeParam<?>... params) {
         if (formulaFactory == null) {
             formulaFactory = useKernelFormulas ? createKernelFormulaFactory() : createFormulaFactory();
         }

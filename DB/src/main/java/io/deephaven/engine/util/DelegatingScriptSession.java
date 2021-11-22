@@ -1,6 +1,6 @@
 package io.deephaven.engine.util;
 
-import io.deephaven.engine.tables.select.QueryScope;
+import io.deephaven.engine.table.lang.QueryScope;
 import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.util.scripts.ScriptPathLoader;
 import io.deephaven.engine.util.scripts.ScriptPathLoaderState;

@@ -20,7 +20,7 @@ import io.deephaven.engine.table.DataColumn;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.MatchPair;
-import io.deephaven.engine.tables.select.QueryScope;
+import io.deephaven.engine.table.lang.QueryScope;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.table.impl.by.AggregationFactory;
 import io.deephaven.engine.table.impl.by.KeyOnlyFirstOrLastBySpec;

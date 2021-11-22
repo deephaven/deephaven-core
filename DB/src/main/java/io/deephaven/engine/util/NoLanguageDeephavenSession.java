@@ -4,7 +4,7 @@
 
 package io.deephaven.engine.util;
 
-import io.deephaven.engine.tables.select.QueryScope;
+import io.deephaven.engine.table.lang.QueryScope;
 import io.deephaven.engine.util.scripts.ScriptPathLoader;
 import io.deephaven.engine.util.scripts.ScriptPathLoaderState;
 import org.jetbrains.annotations.NotNull;
@@ -39,7 +39,7 @@ public class NoLanguageDeephavenSession extends AbstractScriptSession implements
 
     @Override
     public QueryScope newQueryScope() {
-        return new QueryScope.SynchronizedScriptSessionImpl(this);
+        return new SynchronizedScriptSessionQueryScope(this);
     }
 
     @NotNull

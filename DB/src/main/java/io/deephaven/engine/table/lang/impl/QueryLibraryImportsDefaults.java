@@ -1,4 +1,4 @@
-package io.deephaven.engine.tables.libs;
+package io.deephaven.engine.table.lang.impl;
 
 import io.deephaven.engine.function.*;
 import io.deephaven.engine.rowset.*;
@@ -6,9 +6,11 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.DataColumn;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtil;
+import io.deephaven.engine.table.lang.QueryLibraryImports;
+import io.deephaven.engine.table.lang.QueryScopeParam;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.engine.table.Context;
-import io.deephaven.engine.table.impl.lang.LanguageFunctionUtil;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.time.Period;
@@ -44,7 +46,7 @@ public class QueryLibraryImportsDefaults implements QueryLibraryImports {
                 java.util.Arrays.class,
                 org.joda.time.LocalTime.class,
                 Period.class,
-                io.deephaven.engine.tables.select.Param.class,
+                QueryScopeParam.class,
                 ColumnSource.class,
                 RowSet.class,
                 WritableRowSet.class,
@@ -104,7 +106,7 @@ public class QueryLibraryImportsDefaults implements QueryLibraryImports {
                 BinSearch.class,
                 Casting.class,
                 PrimitiveParseUtil.class,
-                LanguageFunctionUtil.class,
+                QueryLanguageFunctionUtil.class,
                 DateTimeUtils.class,
                 TimeZone.class,
                 io.deephaven.base.string.cache.CompressedString.class,

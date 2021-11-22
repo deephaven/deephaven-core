@@ -1,6 +1,7 @@
-package io.deephaven.engine.tables.libs;
+package io.deephaven.engine.table.lang.impl;
 
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.table.lang.QueryLibraryImports;
 import io.deephaven.engine.util.ClassList;
 import java.io.IOException;
 import java.util.HashSet;

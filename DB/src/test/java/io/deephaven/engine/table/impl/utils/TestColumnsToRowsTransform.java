@@ -4,7 +4,7 @@ import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.tables.select.QueryScope;
+import io.deephaven.engine.table.lang.QueryScope;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.iterators.IntegerColumnIterator;

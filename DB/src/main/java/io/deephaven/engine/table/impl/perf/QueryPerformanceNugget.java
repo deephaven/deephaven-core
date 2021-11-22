@@ -12,7 +12,7 @@ import io.deephaven.util.profiling.ThreadProfiler;
 
 import java.io.Serializable;
 
-import static io.deephaven.engine.table.impl.lang.LanguageFunctionUtil.minus;
+import static io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtil.minus;
 import static io.deephaven.util.QueryConstants.*;
 
 /**

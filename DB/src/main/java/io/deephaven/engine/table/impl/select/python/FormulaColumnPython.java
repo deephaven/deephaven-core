@@ -1,8 +1,8 @@
 package io.deephaven.engine.table.impl.select.python;
 
 import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.lang.QueryScopeParam;
 import io.deephaven.engine.vector.Vector;
-import io.deephaven.engine.tables.select.Param;
 import io.deephaven.engine.table.impl.select.AbstractFormulaColumn;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.formula.FormulaKernel;
@@ -77,7 +77,7 @@ public class FormulaColumnPython extends AbstractFormulaColumn implements Formul
     }
 
     @Override
-    public final FormulaKernel createInstance(Vector<?>[] arrays, Param<?>[] params) {
+    public final FormulaKernel createInstance(Vector<?>[] arrays, QueryScopeParam<?>[] params) {
         if (!initialized) {
             throw new IllegalStateException("Must be initialized first");
         }
