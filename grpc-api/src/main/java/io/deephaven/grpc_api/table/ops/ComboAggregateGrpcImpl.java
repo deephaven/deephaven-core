@@ -5,6 +5,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.DataColumn;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.tables.select.SelectColumnFactory;
 import io.deephaven.engine.table.impl.by.AggregationFactory;
 import io.deephaven.engine.table.impl.select.SelectColumn;
@@ -124,8 +125,8 @@ public class ComboAggregateGrpcImpl extends GrpcTableOperation<ComboAggregateReq
                 return parent.sumBy(groupByColumns);
             case ABS_SUM:
                 return parent.absSumBy(groupByColumns);
-            case ARRAY:
-                return parent.groupBy(groupByColumns);
+            case GROUP:
+                return parent.groupBy(Arrays.asList(groupByColumns));
             case AVG:
                 return parent.avgBy(groupByColumns);
             case COUNT:
@@ -183,7 +184,7 @@ public class ComboAggregateGrpcImpl extends GrpcTableOperation<ComboAggregateReq
                         return AggregationFactory.AggSum(matchPairs);
                     case ABS_SUM:
                         return AggregationFactory.AggAbsSum(matchPairs);
-                    case ARRAY:
+                    case GROUP:
                         return AggregationFactory.AggGroup(matchPairs);
                     case AVG:
                         return AggregationFactory.AggAvg(matchPairs);
@@ -215,6 +216,6 @@ public class ComboAggregateGrpcImpl extends GrpcTableOperation<ComboAggregateReq
             aggregationElement[i] = comboMapper.get();
         }
 
-        return parent.by(AggregationFactory.AggCombo(aggregationElement), groupByColumns);
+        return ((QueryTable) parent).by(AggregationFactory.AggCombo(aggregationElement), groupByColumns);
     }
 }

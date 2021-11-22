@@ -16,6 +16,7 @@ import io.deephaven.grpc_api.util.Scheduler;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.proto.backplane.grpc.*;
 import io.deephaven.proto.backplane.script.grpc.*;
+import io.grpc.*;
 import io.grpc.stub.StreamObserver;
 import org.apache.arrow.flatbuf.Field;
 import org.apache.arrow.flatbuf.KeyValue;

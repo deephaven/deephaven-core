@@ -1,10 +1,11 @@
 package io.deephaven.grpc_api.table.ops;
 
 
+import io.deephaven.api.ColumnName;
 import io.deephaven.api.Selectable;
+import io.deephaven.api.SortColumn;
 import io.deephaven.base.verify.Assert;
 import com.google.rpc.Code;
-import io.deephaven.engine.tables.SortPair;
 import io.deephaven.engine.table.Table;
 import io.deephaven.grpc_api.session.SessionState;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
@@ -53,7 +54,7 @@ public class SortTableGrpcImpl extends GrpcTableOperation<SortTableRequest> {
         // - For an odd number of reverses only call one reverse
         // - For an even number of reverses do not call reverse (they cancel out)
         // As a reverse moves past a sort, the direction of the sort is reversed (e.g. asc -> desc)
-        final List<SortPair> sortPairs = new ArrayList<>();
+        final List<SortColumn> sortColumns = new ArrayList<>();
         boolean shouldReverse = false;
         for (int i = 0; i < request.getSortsCount(); i++) {
             final SortDescriptor sort = request.getSorts(i);
@@ -86,15 +87,15 @@ public class SortTableGrpcImpl extends GrpcTableOperation<SortTableRequest> {
             }
 
             if (direction == -1) {
-                sortPairs.add(SortPair.descending(columnName.toString()));
+                sortColumns.add(SortColumn.desc(ColumnName.of(columnName.toString())));
             } else {
-                sortPairs.add(SortPair.ascending(columnName.toString()));
+                sortColumns.add(SortColumn.asc(ColumnName.of(columnName.toString())));
             }
         }
 
         // Next sort if there are any sorts
-        if (sortPairs.size() > 0) {
-            result = result.sort(sortPairs.toArray(SortPair.ZERO_LENGTH_SORT_PAIR_ARRAY));
+        if (sortColumns.size() > 0) {
+            result = result.sort(sortColumns);
         }
 
         // All reverses were pushed to the back, so reverse if needed

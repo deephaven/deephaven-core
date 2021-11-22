@@ -4,7 +4,10 @@
 
 package io.deephaven.plot;
 
+import io.deephaven.api.Selectable;
 import io.deephaven.datastructures.util.CollectionUtil;
+import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.plot.axisformatters.AxisFormat;
 import io.deephaven.plot.axisformatters.NanosAxisFormat;
 import io.deephaven.plot.axistransformations.AxisTransform;
@@ -260,9 +263,7 @@ public class AxesImpl implements Axes, PlotExceptionCause {
         }
 
         final AggregationFactory caf = aggSupplier.get();
-        return sds.transform(caf.getMemoKey(), t -> {
-            return ((Table)t).by(caf, cols.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
-        });
+        return sds.transform(caf.getMemoKey(), t -> ((QueryTable)t).by(caf, SelectColumn.from(Selectable.from(cols))));
     }
 
     private static SelectableDataSet getLastBySelectableDataSet(final SelectableDataSet sds, final String... columns) {

@@ -1,6 +1,5 @@
 package io.deephaven.clientsupport.plotdownsampling;
 
-import io.deephaven.base.Function;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ModifiedColumnSet;
@@ -31,6 +30,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -48,7 +48,7 @@ import java.util.stream.Stream;
  * to decide whether or not to even check for changes o handle non-QueryTable instances o make shifting more efficient o
  * make nulls result in fewer items in the result table
  */
-public class RunChartDownsample implements Function.Unary<Table, Table> {
+public class RunChartDownsample implements Function<Table, Table> {
     private static final Logger log = ProcessEnvironment.getDefaultLog(RunChartDownsample.class);
 
     public static final int CHUNK_SIZE = Configuration.getInstance().getIntegerWithDefault("chunkSize", 1 << 14);
@@ -87,7 +87,7 @@ public class RunChartDownsample implements Function.Unary<Table, Table> {
     }
 
     @Override
-    public Table call(final Table wholeTable) {
+    public Table apply(final Table wholeTable) {
         final int minBins = findMatchingBinSize(pxCount);
 
         if (wholeTable instanceof QueryTable) {

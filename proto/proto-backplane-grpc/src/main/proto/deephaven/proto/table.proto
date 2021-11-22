@@ -409,7 +409,7 @@ message ComboAggregateRequest {
   enum AggType {
     SUM = 0;
     ABS_SUM = 1;
-    ARRAY = 2;
+    GROUP = 2;
     AVG = 3;
     COUNT = 4;
     FIRST = 5;

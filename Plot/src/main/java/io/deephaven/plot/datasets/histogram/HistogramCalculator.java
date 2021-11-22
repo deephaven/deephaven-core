@@ -14,7 +14,7 @@ import io.deephaven.engine.tables.utils.TableTools;
 
 import java.util.List;
 
-import static io.deephaven.engine.table.impl.by.AggregationFactory.*;
+import static io.deephaven.api.agg.Aggregation.*;
 
 /**
  * Utility for calculating histogram plot information: bin locations and data frequencies within these bins.
@@ -60,13 +60,13 @@ public class HistogramCalculator {
         return data.join(range)
                 .updateView("RangeIndex = Range.index(X)")
                 .where("!isNull(RangeIndex)")
-                .by(AggCombo(AggCount("Count"), AggLast("Range")), groupByColumns)
+                .aggBy(List.of(AggCount("Count"), AggLast("Range")), groupByColumns)
                 .updateView("BinMin = Range.binMin(RangeIndex)", "BinMax = Range.binMax(RangeIndex)",
                         "BinMid=0.5*(BinMin+BinMax)");
     }
 
     private static Table range(final Table t, final int nbins) {
-        return t.by(AggCombo(AggMin("RangeMin=X"), AggMax("RangeMax=X"), AggCount("NSamples")))
+        return t.aggBy(List.of(AggMin("RangeMin=X"), AggMax("RangeMax=X"), AggCount("NSamples")))
                 .update("Range = new io.deephaven.plot.datasets.histogram.DiscretizedRangeEqual(RangeMin, RangeMax, "
                         + nbins + ")")
                 .view("Range");

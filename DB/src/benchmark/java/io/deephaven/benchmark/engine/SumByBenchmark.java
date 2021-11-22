@@ -1,11 +1,11 @@
 package io.deephaven.benchmark.engine;
 
+import io.deephaven.api.agg.Aggregation;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.tables.utils.TableTools;
 import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.table.impl.by.AggregationFactory;
 import io.deephaven.benchmarking.*;
 import io.deephaven.benchmarking.generator.ColumnGenerator;
 import io.deephaven.benchmarking.generator.EnumStringColumnGenerator;
@@ -18,12 +18,12 @@ import org.openjdk.jmh.infra.BenchmarkParams;
 import org.openjdk.jmh.infra.Blackhole;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 
-import static io.deephaven.engine.table.impl.by.AggregationFactory.AggCombo;
-import static io.deephaven.engine.table.impl.by.AggregationFactory.AggMin;
-import static io.deephaven.engine.table.impl.by.AggregationFactory.AggMax;
+import static io.deephaven.api.agg.Aggregation.AggMax;
+import static io.deephaven.api.agg.Aggregation.AggMin;
 
 @SuppressWarnings("unused")
 @State(Scope.Thread)
@@ -230,27 +230,27 @@ public class SumByBenchmark {
 
     @Benchmark
     public Table minMaxByStatic(@NotNull final Blackhole bh) {
-        final AggregationFactory.AggregationElement minCols = AggMin(IntStream.range(1, valueCount + 1)
+        final Aggregation minCols = AggMin(IntStream.range(1, valueCount + 1)
                 .mapToObj(ii -> "Min" + ii + "=ValueToSum" + ii).toArray(String[]::new));
-        final AggregationFactory.AggregationElement maxCols = AggMax(IntStream.range(1, valueCount + 1)
+        final Aggregation maxCols = AggMax(IntStream.range(1, valueCount + 1)
                 .mapToObj(ii -> "Max" + ii + "=ValueToSum" + ii).toArray(String[]::new));
 
-        final Table result = IncrementalBenchmark.rollingBenchmark(
-                (t) -> UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> t.by(AggCombo(minCols, maxCols))),
-                table);
+        final Table result = UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() ->
+                table.aggBy(List.of(minCols, maxCols), keyColumnNames));
         bh.consume(result);
         return state.setResult(TableTools.emptyTable(0));
     }
 
     @Benchmark
     public Table minMaxByIncremental(@NotNull final Blackhole bh) {
-        final AggregationFactory.AggregationElement minCols = AggMin(IntStream.range(1, valueCount + 1)
+        final Aggregation minCols = AggMin(IntStream.range(1, valueCount + 1)
                 .mapToObj(ii -> "Min" + ii + "=ValueToSum" + ii).toArray(String[]::new));
-        final AggregationFactory.AggregationElement maxCols = AggMax(IntStream.range(1, valueCount + 1)
+        final Aggregation maxCols = AggMax(IntStream.range(1, valueCount + 1)
                 .mapToObj(ii -> "Max" + ii + "=ValueToSum" + ii).toArray(String[]::new));
 
-        final Table result = IncrementalBenchmark.rollingBenchmark(
-                (t) -> UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> t.by(AggCombo(minCols, maxCols))),
+        final Table result = IncrementalBenchmark.incrementalBenchmark(
+                (t) -> UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() ->
+                        t.aggBy(List.of(minCols, maxCols), keyColumnNames)),
                 table);
         bh.consume(result);
         return state.setResult(TableTools.emptyTable(0));
@@ -258,13 +258,14 @@ public class SumByBenchmark {
 
     @Benchmark
     public Table minMaxByRolling(@NotNull final Blackhole bh) {
-        final AggregationFactory.AggregationElement minCols = AggMin(IntStream.range(1, valueCount + 1)
+        final Aggregation minCols = AggMin(IntStream.range(1, valueCount + 1)
                 .mapToObj(ii -> "Min" + ii + "=ValueToSum" + ii).toArray(String[]::new));
-        final AggregationFactory.AggregationElement maxCols = AggMax(IntStream.range(1, valueCount + 1)
+        final Aggregation maxCols = AggMax(IntStream.range(1, valueCount + 1)
                 .mapToObj(ii -> "Max" + ii + "=ValueToSum" + ii).toArray(String[]::new));
 
         final Table result = IncrementalBenchmark.rollingBenchmark(
-                (t) -> UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> t.by(AggCombo(minCols, maxCols))),
+                (t) -> UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() ->
+                        t.aggBy(List.of(minCols, maxCols), keyColumnNames)),
                 table);
         bh.consume(result);
         return state.setResult(TableTools.emptyTable(0));

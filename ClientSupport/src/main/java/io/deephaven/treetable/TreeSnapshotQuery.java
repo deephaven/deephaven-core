@@ -1,6 +1,5 @@
 package io.deephaven.treetable;
 
-import io.deephaven.base.Function;
 import io.deephaven.base.formatters.FormatBitSet;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.Table;
@@ -14,13 +13,14 @@ import io.deephaven.table.sort.SortDirective;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
+import java.util.function.Function;
 
 /**
  * A query that fetches a flat viewport-ready snapshot of a tree table, taking into account the set of expanded rows at
  * each level.
  */
 public class TreeSnapshotQuery<CLIENT_TYPE extends TreeTableClientTableManager.Client<CLIENT_TYPE>>
-        implements Function.Unary<TreeSnapshotResult, Table> {
+        implements Function<Table, TreeSnapshotResult> {
 
     private final CLIENT_TYPE client;
 
@@ -73,7 +73,7 @@ public class TreeSnapshotQuery<CLIENT_TYPE extends TreeTableClientTableManager.C
 
     @Override
     @ConcurrentMethod
-    public TreeSnapshotResult call(Table arg) {
+    public TreeSnapshotResult apply(Table arg) {
         if (!(arg instanceof HierarchicalTable)) {
             throw new IllegalArgumentException("Input table was not a hierarchical table");
         }

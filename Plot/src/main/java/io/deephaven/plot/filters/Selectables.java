@@ -8,7 +8,7 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.TableMap;
-import io.deephaven.engine.table.impl.TableSupplier;
+import io.deephaven.engine.util.parametrized.TableSupplier;
 
 /**
  * Method for creating {@link SelectableDataSet}s.

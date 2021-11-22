@@ -115,7 +115,7 @@ public class PublishToKafka<K, V> extends LivenessArtifact {
     private static ModifiedColumnSet getModifiedColumnSet(@NotNull final Table table, final String[] columns) {
         return (columns == null)
                 ? ModifiedColumnSet.EMPTY
-                : ((BaseTable) table).newModifiedColumnSet(columns);
+                : ((QueryTable) table).newModifiedColumnSet(columns);
     }
 
     private void publishMessages(@NotNull final RowSet rowsToPublish, final boolean usePrevious,

@@ -605,7 +605,7 @@ class BatchTableRequestBuilder {
 
         @Override
         public void visit(Group group) {
-            out = of(AggType.ARRAY, group.pair()).build();
+            out = of(AggType.GROUP, group.pair()).build();
         }
 
         @Override

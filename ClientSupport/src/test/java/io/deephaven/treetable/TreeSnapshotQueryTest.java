@@ -30,9 +30,10 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static io.deephaven.engine.table.impl.TstUtils.*;
-import static io.deephaven.engine.table.impl.by.AggregationFactory.*;
 import static io.deephaven.treetable.TreeTableConstants.*;
 import static org.junit.Assert.assertArrayEquals;
+import static io.deephaven.api.agg.Aggregation.AggLast;
+import static io.deephaven.api.agg.Aggregation.AggSum;
 
 public class TreeSnapshotQueryTest extends QueryTableTestBase {
     private TreeTableClientTableManager.Client mockClient;
@@ -442,7 +443,7 @@ public class TreeSnapshotQueryTest extends QueryTableTestBase {
         assertFalse(state.expansionMap.containsKey(bacontownKey));
 
         // We'll delete a child key so that a child table becomes empty. TSQ should eliminate it from the set.
-        final Table source = (Table) t.getAttribute(Table.HIERARCHICAL_SOURCE_TABLE_ATTRIBUTE);
+        final QueryTable source = (QueryTable) t.getAttribute(Table.HIERARCHICAL_SOURCE_TABLE_ATTRIBUTE);
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.removeRows(source, i(467));
             source.notifyListeners(i(), i(467), i());
@@ -507,7 +508,7 @@ public class TreeSnapshotQueryTest extends QueryTableTestBase {
         final Table t = TableTools.emptyTable(100)
                 .update("I=i", "Test=i%12", "Dtest=44.6*i/2", "Bagel= i%2==0");
 
-        final Table rollup = t.rollup(AggCombo(AggLast("Dtest"), AggSum("I")), "Bagel", "Test");
+        final Table rollup = t.rollup(List.of(AggLast("Dtest"), AggSum("I")), "Bagel", "Test");
 
         final TTState state = new TTState(rollup);
         final BitSet allColumns = new BitSet(rollup.getColumns().length);
@@ -519,7 +520,7 @@ public class TreeSnapshotQueryTest extends QueryTableTestBase {
         state.addExpanded(nullSmartKey, true);
         testViewport(state, 0, 14, allColumns, true);
 
-        final Table filtered = t.where("Bagel").rollup(AggCombo(AggLast("Dtest"), AggSum("I")), "Bagel", "Test");
+        final Table filtered = t.where("Bagel").rollup(List.of(AggLast("Dtest"), AggSum("I")), "Bagel", "Test");
         testViewportAgainst(filtered, state, 0, 7, allColumns, Collections.emptyList(),
                 SelectFilterFactory.getExpressions("Bagel"), true);
 
@@ -535,7 +536,7 @@ public class TreeSnapshotQueryTest extends QueryTableTestBase {
                     return sortTarget.sort("Bagel").sortDescending("Test");
                 }, true);
 
-        final Table filtered2 = t.where("Bagel").rollup(AggCombo(AggLast("Dtest"), AggSum("I")), "Bagel", "Test");
+        final Table filtered2 = t.where("Bagel").rollup(List.of(AggLast("Dtest"), AggSum("I")), "Bagel", "Test");
 
         testViewportAgainst(filtered2, state, 0, 7, allColumns, directives, SelectFilterFactory.getExpressions("Bagel"),
                 ct -> {
@@ -549,7 +550,7 @@ public class TreeSnapshotQueryTest extends QueryTableTestBase {
         final Table t = TableTools.emptyTable(100)
                 .update("I=i", "Test=i%12", "Dtest=44.6*i/2", "Bagel= i%2==0");
 
-        final Table rollup = t.rollup(AggCombo(AggLast("Dtest"), AggSum("I")), true, "Bagel", "Test");
+        final Table rollup = t.rollup(List.of(AggLast("Dtest"), AggSum("I")), true, "Bagel", "Test");
 
         final TTState state = new TTState(rollup);
         final BitSet allColumns = new BitSet(rollup.getColumns().length);
@@ -561,7 +562,7 @@ public class TreeSnapshotQueryTest extends QueryTableTestBase {
         state.addExpanded(nullSmartKey, true);
         testViewport(state, 0, 14, allColumns, true);
 
-        final Table filtered = t.where("Bagel").rollup(AggCombo(AggLast("Dtest"), AggSum("I")), true, "Bagel", "Test");
+        final Table filtered = t.where("Bagel").rollup(List.of(AggLast("Dtest"), AggSum("I")), true, "Bagel", "Test");
         testViewportAgainst(filtered, state, 0, 7, allColumns, Collections.emptyList(),
                 SelectFilterFactory.getExpressions("Bagel"), true);
 
@@ -602,7 +603,7 @@ public class TreeSnapshotQueryTest extends QueryTableTestBase {
     }
 
     public void testGetPrev() throws Exception {
-        final Table raw = getRawNyMunis();
+        final QueryTable raw = (QueryTable) getRawNyMunis();
         final Table t = makeNyMunisTreeTableFrom(raw);
         final TTState state = new TTState(t);
         final BitSet allColumns = new BitSet(t.getColumns().length);

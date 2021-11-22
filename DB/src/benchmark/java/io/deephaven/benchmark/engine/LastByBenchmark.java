@@ -1,5 +1,6 @@
 package io.deephaven.benchmark.engine;
 
+import io.deephaven.api.agg.Aggregation;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
@@ -17,10 +18,12 @@ import org.openjdk.jmh.infra.BenchmarkParams;
 import org.openjdk.jmh.infra.Blackhole;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 
-import static io.deephaven.engine.table.impl.by.AggregationFactory.*;
+import static io.deephaven.api.agg.Aggregation.AggFirst;
+import static io.deephaven.api.agg.Aggregation.AggLast;
 
 @SuppressWarnings("unused")
 @State(Scope.Thread)
@@ -210,14 +213,14 @@ public class LastByBenchmark {
 
     @Benchmark
     public Table lastFirstByStatic(@NotNull final Blackhole bh) {
-        final AggregationElement lastCols = AggLast(IntStream.range(1, valueCount + 1)
+        final Aggregation lastCols = AggLast(IntStream.range(1, valueCount + 1)
                 .mapToObj(ii -> "Last" + ii + "=ValueToSum" + ii).toArray(String[]::new));
-        final AggregationElement firstCols = AggFirst(IntStream.range(1, valueCount + 1)
+        final Aggregation firstCols = AggFirst(IntStream.range(1, valueCount + 1)
                 .mapToObj(ii -> "First" + ii + "=ValueToSum" + ii).toArray(String[]::new));
 
         final Table result = IncrementalBenchmark.rollingBenchmark(
                 (t) -> UpdateGraphProcessor.DEFAULT.sharedLock()
-                        .computeLocked(() -> t.by(AggCombo(lastCols, firstCols))),
+                        .computeLocked(() -> t.aggBy(List.of(lastCols, firstCols), keyColumnNames)),
                 table);
         bh.consume(result);
         return state.setResult(TableTools.emptyTable(0));
@@ -225,14 +228,14 @@ public class LastByBenchmark {
 
     @Benchmark
     public Table lastFirstByIncremental(@NotNull final Blackhole bh) {
-        final AggregationElement lastCols = AggLast(IntStream.range(1, valueCount + 1)
+        final Aggregation lastCols = AggLast(IntStream.range(1, valueCount + 1)
                 .mapToObj(ii -> "Last" + ii + "=ValueToSum" + ii).toArray(String[]::new));
-        final AggregationElement firstCols = AggFirst(IntStream.range(1, valueCount + 1)
+        final Aggregation firstCols = AggFirst(IntStream.range(1, valueCount + 1)
                 .mapToObj(ii -> "First" + ii + "=ValueToSum" + ii).toArray(String[]::new));
 
         final Table result = IncrementalBenchmark.rollingBenchmark(
                 (t) -> UpdateGraphProcessor.DEFAULT.sharedLock()
-                        .computeLocked(() -> t.by(AggCombo(lastCols, firstCols))),
+                        .computeLocked(() -> t.aggBy(List.of(lastCols, firstCols), keyColumnNames)),
                 table);
         bh.consume(result);
         return state.setResult(TableTools.emptyTable(0));
@@ -240,14 +243,14 @@ public class LastByBenchmark {
 
     @Benchmark
     public Table lastFirstByRolling(@NotNull final Blackhole bh) {
-        final AggregationElement lastCols = AggLast(IntStream.range(1, valueCount + 1)
+        final Aggregation lastCols = AggLast(IntStream.range(1, valueCount + 1)
                 .mapToObj(ii -> "Last" + ii + "=ValueToSum" + ii).toArray(String[]::new));
-        final AggregationElement firstCols = AggFirst(IntStream.range(1, valueCount + 1)
+        final Aggregation firstCols = AggFirst(IntStream.range(1, valueCount + 1)
                 .mapToObj(ii -> "First" + ii + "=ValueToSum" + ii).toArray(String[]::new));
 
         final Table result = IncrementalBenchmark.rollingBenchmark(
                 (t) -> UpdateGraphProcessor.DEFAULT.sharedLock()
-                        .computeLocked(() -> t.by(AggCombo(lastCols, firstCols))),
+                        .computeLocked(() -> t.aggBy(List.of(lastCols, firstCols), keyColumnNames)),
                 table);
         bh.consume(result);
         return state.setResult(TableTools.emptyTable(0));

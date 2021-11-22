@@ -2,6 +2,7 @@ package io.deephaven.treetable;
 
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.util.string.StringUtils;
@@ -161,7 +162,7 @@ class RollupSnapshotImpl<CLIENT_TYPE extends TreeTableClientTableManager.Client<
 
         final Table source = Require.neqNull(table.getSourceTable(), "Hierarchical source table");
         final RollupInfo info = getInfo();
-        return (HierarchicalTable) source.where(filters).rollup(info.factory,
+    return (HierarchicalTable) ((QueryTable) source.where(filters)).rollup(info.factory,
                 info.getLeafType() == RollupInfo.LeafType.Constituent, info.getSelectColumns());
     }
 

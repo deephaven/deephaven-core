@@ -1,7 +1,10 @@
 package io.deephaven.treetable;
 
+import io.deephaven.api.Selectable;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.MatchPair;
+import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.util.string.StringUtils;
 import io.deephaven.engine.table.impl.by.AggType;
 import io.deephaven.engine.table.impl.by.AggregationFactory;
@@ -198,8 +201,8 @@ public class RollupDefinition implements Serializable {
      */
     public Table applyTo(Table table) {
         final Map<String, String> maybeDescriptions = includeDescriptions ? new HashMap<>() : null;
-        Table result =
-                table.rollup(createComboAggregateFactory(maybeDescriptions), includeConstituents, groupingColumns);
+        Table result = ((QueryTable) table).rollup(createComboAggregateFactory(maybeDescriptions), includeConstituents,
+                SelectColumn.from(Selectable.from(groupingColumns)));
         if (maybeDescriptions != null) {
             result = result.withColumnDescription(maybeDescriptions);
         }
