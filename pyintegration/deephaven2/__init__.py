@@ -18,6 +18,5 @@ from .dherror import DHError
 from .constants import SortDirection
 from .csv import read as read_csv
 from .table import empty_table, time_table
-from .agg import Aggregation
 
-__all__ = ["read_csv", "DHError", "time_table", "empty_table", "SortDirection", "Aggregation"]
+__all__ = ["read_csv", "DHError", "time_table", "empty_table", "SortDirection"]

@@ -22,235 +22,235 @@ class Aggregation:
     def j_agg(self):
         return self._j_aggregation
 
-    @staticmethod
-    def sum(cols: List[str]) -> Aggregation:
-        """ Create a Sum aggregation.
 
-        Args:
-            cols (List[str]): the columns to aggregate on, can be renaming expressions, i.e. "new_col = col"
+def sum_(cols: List[str]) -> Aggregation:
+    """ Create a Sum aggregation.
 
-        Returns:
-            an aggregation
-        """
-        return Aggregation(j_aggregation=_JAggregation.AggSum(*cols))
+    Args:
+        cols (List[str]): the columns to aggregate on, can be renaming expressions, i.e. "new_col = col"
 
-    @staticmethod
-    def abs_sum(cols: List[str]):
-        """ Create an Absolute-sum aggregation.
+    Returns:
+        an aggregation
+    """
+    return Aggregation(j_aggregation=_JAggregation.AggSum(*cols))
 
-        Args:
-            cols (List[str]): the columns to aggregate on, can be renaming expressions, i.e. "new_col = col"
 
-        Returns:
-            an aggregation
-        """
-        return Aggregation(j_aggregation=_JAggregation.AggAbsSum(*cols))
+def abs_sum(cols: List[str]):
+    """ Create an Absolute-sum aggregation.
 
-    @staticmethod
-    def array(cols: List[str]):
-        """ Create an Array aggregation.
+    Args:
+        cols (List[str]): the columns to aggregate on, can be renaming expressions, i.e. "new_col = col"
 
-        Args:
-            cols (List[str]): the columns to aggregate on, can be renaming expressions, i.e. "new_col = col"
+    Returns:
+        an aggregation
+    """
+    return Aggregation(j_aggregation=_JAggregation.AggAbsSum(*cols))
 
-        Returns:
-            an aggregation
-        """
-        return Aggregation(j_aggregation=_JAggregation.AggArray(*cols))
 
-    @staticmethod
-    def avg(cols: List[str]):
-        """ Create an Average aggregation.
+def array(cols: List[str]):
+    """ Create an Array aggregation.
 
-        Args:
-            cols (List[str]): the columns to aggregate on, can be renaming expressions, i.e. "new_col = col"
+    Args:
+        cols (List[str]): the columns to aggregate on, can be renaming expressions, i.e. "new_col = col"
 
-        Returns:
-            an aggregation
-        """
-        return Aggregation(j_aggregation=_JAggregation.AggAvg(*cols))
+    Returns:
+        an aggregation
+    """
+    return Aggregation(j_aggregation=_JAggregation.AggArray(*cols))
 
-    @staticmethod
-    def count(col: str):
-        """ Create a Count aggregation.
 
-        Args:
-            col (str): the column to hold the counts of each distinct group
+def avg(cols: List[str]):
+    """ Create an Average aggregation.
 
-        Returns:
-            an aggregation
-        """
-        return Aggregation(j_aggregation=_JAggregation.AggCount(col))
+    Args:
+        cols (List[str]): the columns to aggregate on, can be renaming expressions, i.e. "new_col = col"
 
-    @staticmethod
-    def count_distinct(cols: List[str]):
-        """ Create a Count Distinct aggregation.
+    Returns:
+        an aggregation
+    """
+    return Aggregation(j_aggregation=_JAggregation.AggAvg(*cols))
 
-        Args:
-            cols (List[str]): the columns to aggregate on, can be renaming expressions, i.e. "new_col = col"
 
-        Returns:
-            an aggregation
-        """
-        return Aggregation(j_aggregation=_JAggregation.AggCountDistinct(*cols))
+def count_(col: str):
+    """ Create a Count aggregation.
 
-    @staticmethod
-    def first(cols: List[str]):
-        """ Create a First aggregation.
+    Args:
+        col (str): the column to hold the counts of each distinct group
 
-        Args:
-            cols (List[str]): the columns to aggregate on, can be renaming expressions, i.e. "new_col = col"
+    Returns:
+        an aggregation
+    """
+    return Aggregation(j_aggregation=_JAggregation.AggCount(col))
 
-        Returns:
-            an aggregation
-        """
-        return Aggregation(j_aggregation=_JAggregation.AggFirst(*cols))
 
-    @staticmethod
-    def last(cols: List[str]):
-        """ Create Last aggregation.
+def count_distinct(cols: List[str]):
+    """ Create a Count Distinct aggregation.
 
-        Args:
-            cols (List[str]): the columns to aggregate on, can be renaming expressions, i.e. "new_col = col"
+    Args:
+        cols (List[str]): the columns to aggregate on, can be renaming expressions, i.e. "new_col = col"
 
-        Returns:
-            an aggregation
-        """
-        return Aggregation(j_aggregation=_JAggregation.AggLast(*cols))
+    Returns:
+        an aggregation
+    """
+    return Aggregation(j_aggregation=_JAggregation.AggCountDistinct(*cols))
 
-    @staticmethod
-    def min(cols: List[str]):
-        """ Create a Min aggregation.
 
-        Args:
-            cols (List[str]): the columns to aggregate on, can be renaming expressions, i.e. "new_col = col"
+def first(cols: List[str]):
+    """ Create a First aggregation.
 
-        Returns:
-            an aggregation
-        """
-        return Aggregation(j_aggregation=_JAggregation.AggMin(*cols))
+    Args:
+        cols (List[str]): the columns to aggregate on, can be renaming expressions, i.e. "new_col = col"
 
-    @staticmethod
-    def max(cols: List[str]):
-        """ Create a Max aggregation to the ComboAggregation object.
+    Returns:
+        an aggregation
+    """
+    return Aggregation(j_aggregation=_JAggregation.AggFirst(*cols))
 
-        Args:
-            cols (List[str]): the columns to aggregate on, can be renaming expressions, i.e. "new_col = col"
 
-        Returns:
-            an aggregation
-        """
-        return Aggregation(j_aggregation=_JAggregation.AggMax(*cols))
+def last(cols: List[str]):
+    """ Create Last aggregation.
 
-    @staticmethod
-    def median(cols: List[str]):
-        """ Create a Median aggregation.
+    Args:
+        cols (List[str]): the columns to aggregate on, can be renaming expressions, i.e. "new_col = col"
 
-        Args:
-            cols (List[str]): the columns to aggregate on, can be renaming expressions, i.e. "new_col = col"
+    Returns:
+        an aggregation
+    """
+    return Aggregation(j_aggregation=_JAggregation.AggLast(*cols))
 
-        Returns:
-            an aggregation
-        """
-        return Aggregation(j_aggregation=_JAggregation.AggMed(*cols))
 
-    @staticmethod
-    def pct(percentile: float, cols: List[str]):
-        """ Create a Percentile aggregation.
+def min_(cols: List[str]):
+    """ Create a Min aggregation.
 
-        Args:
-            percentile (float): the percentile used for calculation
-            cols (List[str]): the columns to aggregate on, can be renaming expressions, i.e. "new_col = col"
+    Args:
+        cols (List[str]): the columns to aggregate on, can be renaming expressions, i.e. "new_col = col"
 
-        Returns:
-            an aggregation
-        """
-        return Aggregation(j_aggregation=_JAggregation.AggPct(percentile, *cols))
+    Returns:
+        an aggregation
+    """
+    return Aggregation(j_aggregation=_JAggregation.AggMin(*cols))
 
-    @staticmethod
-    def sorted_first(order_by: str, cols: List[str]):
-        """ Create a SortedFirst aggregation.
 
-        Args:
-            order_by (str): the column to sort by
-            cols (List[str]): the columns for the calculation, can be renaming expressions, i.e. "new_col = col"
+def max_(cols: List[str]):
+    """ Create a Max aggregation to the ComboAggregation object.
 
-        Returns:
-            an aggregation
-        """
-        return Aggregation(j_aggregation=_JAggregation.AggSortedFirst(order_by, *cols))
+    Args:
+        cols (List[str]): the columns to aggregate on, can be renaming expressions, i.e. "new_col = col"
 
-    @staticmethod
-    def sorted_last(order_by: str, cols: List[str]):
-        """ Create a SortedLast aggregation.
+    Returns:
+        an aggregation
+    """
+    return Aggregation(j_aggregation=_JAggregation.AggMax(*cols))
 
-        Args:
-            order_by (str): the column to sort by
-            cols (List[str]): the columns for the calculation, can be renaming expressions, i.e. "new_col = col"
 
-        Returns:
-            an aggregation
-        """
-        return Aggregation(j_aggregation=_JAggregation.AggSortedLast(order_by, *cols))
+def median(cols: List[str]):
+    """ Create a Median aggregation.
 
-    @staticmethod
-    def std(cols: List[str]):
-        """ Create a Std aggregation.
+    Args:
+        cols (List[str]): the columns to aggregate on, can be renaming expressions, i.e. "new_col = col"
 
-        Args:
-            cols (List[str]): the columns to aggregate on, can be renaming expressions, i.e. "new_col = col"
+    Returns:
+        an aggregation
+    """
+    return Aggregation(j_aggregation=_JAggregation.AggMed(*cols))
 
-        Returns:
-            an aggregation
-        """
-        return Aggregation(j_aggregation=_JAggregation.AggStd(*cols))
 
-    @staticmethod
-    def unique(cols: List[str]):
-        """ Create a Unique aggregation.
+def pct(percentile: float, cols: List[str]):
+    """ Create a Percentile aggregation.
 
-         Args:
-             cols (List[str]): the columns for the calculation, can be renaming expressions, i.e. "new_col = col"
+    Args:
+        percentile (float): the percentile used for calculation
+        cols (List[str]): the columns to aggregate on, can be renaming expressions, i.e. "new_col = col"
 
-         Returns:
-             an aggregation
-        """
-        return Aggregation(j_aggregation=_JAggregation.AggUnique(*cols))
+    Returns:
+        an aggregation
+    """
+    return Aggregation(j_aggregation=_JAggregation.AggPct(percentile, *cols))
 
-    @staticmethod
-    def var(cols: List[str]):
-        """ Create a Var aggregation.
 
-        Args:
-            cols (List[str]): the columns to aggregate on, can be renaming expressions, i.e. "new_col = col"
+def sorted_first(order_by: str, cols: List[str]):
+    """ Create a SortedFirst aggregation.
 
-        Returns:
-            an aggregation
-        """
-        return Aggregation(j_aggregation=_JAggregation.AggVar(*cols))
+    Args:
+        order_by (str): the column to sort by
+        cols (List[str]): the columns for the calculation, can be renaming expressions, i.e. "new_col = col"
 
-    @staticmethod
-    def weighted_avg(wcol: str, cols: List[str]):
-        """ Create a Weighted-avg aggregation.
+    Returns:
+        an aggregation
+    """
+    return Aggregation(j_aggregation=_JAggregation.AggSortedFirst(order_by, *cols))
 
-        Args:
-            wcol (str): the name of the weight column
-            cols (List[str]): the columns to aggregate on, can be renaming expressions, i.e. "new_col = col"
 
-        Returns:
-            an aggregation
-        """
-        return Aggregation(j_aggregation=_JAggregation.AggWAvg(wcol, *cols))
+def sorted_last(order_by: str, cols: List[str]):
+    """ Create a SortedLast aggregation.
 
-    @staticmethod
-    def weighted_sum(wcol: str, cols: List[str]):
-        """ Create a Weighted-sum aggregation.
+    Args:
+        order_by (str): the column to sort by
+        cols (List[str]): the columns for the calculation, can be renaming expressions, i.e. "new_col = col"
 
-        Args:
-            wcol (str): the name of the weight column
-            cols (List[str]): the columns to aggregate on, can be renaming expressions, i.e. "new_col = col"
+    Returns:
+        an aggregation
+    """
+    return Aggregation(j_aggregation=_JAggregation.AggSortedLast(order_by, *cols))
 
-        Returns:
-            an aggregation
-        """
-        return Aggregation(j_aggregation=_JAggregation.AggWSum(wcol, *cols))
+
+def std(cols: List[str]):
+    """ Create a Std aggregation.
+
+    Args:
+        cols (List[str]): the columns to aggregate on, can be renaming expressions, i.e. "new_col = col"
+
+    Returns:
+        an aggregation
+    """
+    return Aggregation(j_aggregation=_JAggregation.AggStd(*cols))
+
+
+def unique(cols: List[str]):
+    """ Create a Unique aggregation.
+
+     Args:
+         cols (List[str]): the columns for the calculation, can be renaming expressions, i.e. "new_col = col"
+
+     Returns:
+         an aggregation
+    """
+    return Aggregation(j_aggregation=_JAggregation.AggUnique(*cols))
+
+
+def var(cols: List[str]):
+    """ Create a Var aggregation.
+
+    Args:
+        cols (List[str]): the columns to aggregate on, can be renaming expressions, i.e. "new_col = col"
+
+    Returns:
+        an aggregation
+    """
+    return Aggregation(j_aggregation=_JAggregation.AggVar(*cols))
+
+
+def weighted_avg(wcol: str, cols: List[str]):
+    """ Create a Weighted-avg aggregation.
+
+    Args:
+        wcol (str): the name of the weight column
+        cols (List[str]): the columns to aggregate on, can be renaming expressions, i.e. "new_col = col"
+
+    Returns:
+        an aggregation
+    """
+    return Aggregation(j_aggregation=_JAggregation.AggWAvg(wcol, *cols))
+
+
+def weighted_sum(wcol: str, cols: List[str]):
+    """ Create a Weighted-sum aggregation.
+
+    Args:
+        wcol (str): the name of the weight column
+        cols (List[str]): the columns to aggregate on, can be renaming expressions, i.e. "new_col = col"
+
+    Returns:
+        an aggregation
+    """
+    return Aggregation(j_aggregation=_JAggregation.AggWSum(wcol, *cols))

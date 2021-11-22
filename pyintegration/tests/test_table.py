@@ -4,7 +4,8 @@
 import unittest
 from time import sleep
 
-from deephaven2 import DHError, read_csv, time_table, empty_table, SortDirection, Aggregation
+from deephaven2 import DHError, read_csv, time_table, empty_table, SortDirection
+from deephaven2.agg import sum_, weighted_avg, avg, pct
 from deephaven2.table import Table
 from tests.testbase import BaseTestCase
 
@@ -269,10 +270,10 @@ class TableTestCase(BaseTestCase):
     def test_combo_agg(self):
         num_distinct_a = self.test_table.select_distinct(cols=["a"]).size
 
-        combo_agg = [Aggregation.sum(cols=["SumC=c"]),
-                     Aggregation.avg(cols=["AvgB = b", "AvgD = d"]),
-                     Aggregation.pct(percentile=0.5, cols=["PctC = c"]),
-                     Aggregation.weighted_avg(wcol="d", cols=["WavGD = d"])]
+        combo_agg = [sum_(cols=["SumC=c"]),
+                     avg(cols=["AvgB = b", "AvgD = d"]),
+                     pct(percentile=0.5, cols=["PctC = c"]),
+                     weighted_avg(wcol="d", cols=["WavGD = d"])]
 
         result_table = self.test_table.combo_by(aggs=combo_agg, by=["a"])
         self.assertEqual(result_table.size, num_distinct_a)
