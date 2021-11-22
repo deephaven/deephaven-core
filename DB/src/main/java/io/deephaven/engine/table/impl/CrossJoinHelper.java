@@ -138,7 +138,7 @@ public class CrossJoinHelper {
                         try (final WritableRowSet prevLeftRowSet = leftTable.getRowSet().getPrevRowSet()) {
                             prevLeftRowSet.remove(upstream.removed());
                             jsm.applyLeftShift(prevLeftRowSet, upstream.shifted());
-                            downstream.shifted = expandLeftOnlyShift(prevLeftRowSet, upstream.shifted(), jsm);
+                            downstream.shifted = expandLeftOnlyShift(upstream.shifted(), jsm);
                             downstream.shifted().apply(resultRowSet);
                         }
 
@@ -1053,7 +1053,7 @@ public class CrossJoinHelper {
                         resultRowSet.removeRange(currResultIdx, ((currIdx + 1) << currRightBits) - 1);
                     }
 
-                    downstream.shifted = expandLeftOnlyShift(leftTable.getRowSet(), leftUpdate.shifted(), crossJoinState);
+                    downstream.shifted = expandLeftOnlyShift(leftUpdate.shifted(), crossJoinState);
                     downstream.shifted().apply(resultRowSet);
 
                     iter = leftUpdate.modified().searchIterator();
@@ -1140,52 +1140,23 @@ public class CrossJoinHelper {
         return destShift;
     }
 
-    private static RowSetShiftData expandLeftOnlyShift(final RowSet leftRowSet, final RowSetShiftData leftShifts,
+    private static RowSetShiftData expandLeftOnlyShift(final RowSetShiftData leftShifts,
             final CrossJoinShiftState shiftState) {
         final int currRightBits = shiftState.getNumShiftBits();
         final int prevRightBits = shiftState.getPrevNumShiftBits();
-        final boolean needPerRowShift = currRightBits != prevRightBits;
+        Assert.eq(currRightBits, "currRightBits", prevRightBits, "prevRightBits");
 
-        if (leftShifts.empty() && !needPerRowShift) {
+        if (leftShifts.empty()) {
             return RowSetShiftData.EMPTY;
         }
 
         final RowSetShiftData.Builder shiftBuilder = new RowSetShiftData.Builder();
-        if (needPerRowShift) {
-            // Sadly, must shift everything.
-            final LongRangeConsumer shiftUntil = new LongRangeConsumer() {
-                final RowSet.Iterator iter = leftRowSet.iterator();
-                boolean hasNext = iter.hasNext();
-                long next = hasNext ? iter.next() : Long.MAX_VALUE;
 
-                @Override
-                public void accept(long exclusiveEnd, long extraDelta) {
-                    while (hasNext && next < exclusiveEnd) {
-                        final long prevOffset = next << prevRightBits;
-                        final long currOffset = (next + extraDelta) << currRightBits;
-                        final long prevEndOffset = (next + 1) << prevRightBits - 1;
-                        shiftBuilder.shiftRange(prevOffset, prevEndOffset, currOffset - prevOffset);
-                        hasNext = iter.hasNext();
-                        next = hasNext ? iter.next() : Long.MAX_VALUE;
-                    }
-                }
-            };
-            for (int ii = 0; ii < leftShifts.size(); ++ii) {
-                final long begin = leftShifts.getBeginRange(ii);
-                final long end = leftShifts.getEndRange(ii);
-                final long delta = leftShifts.getShiftDelta(ii);
-                shiftUntil.accept(begin, 0L);
-                shiftUntil.accept(end + 1, delta);
-            }
-            // finishing shifting all left rows beyond the last upstream left shift
-            shiftUntil.accept(Long.MAX_VALUE, 0L);
-        } else {
-            for (int si = 0; si < leftShifts.size(); ++si) {
-                final long ss = leftShifts.getBeginRange(si);
-                final long se = leftShifts.getEndRange(si);
-                final long sd = leftShifts.getShiftDelta(si);
-                shiftBuilder.shiftRange(ss << currRightBits, ((se + 1) << currRightBits) - 1, sd << currRightBits);
-            }
+        for (int si = 0; si < leftShifts.size(); ++si) {
+            final long ss = leftShifts.getBeginRange(si);
+            final long se = leftShifts.getEndRange(si);
+            final long sd = leftShifts.getShiftDelta(si);
+            shiftBuilder.shiftRange(ss << currRightBits, ((se + 1) << currRightBits) - 1, sd << currRightBits);
         }
 
         return shiftBuilder.build();
