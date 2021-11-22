@@ -4,14 +4,14 @@
 
 package io.deephaven.engine.table;
 
-import io.deephaven.base.Function;
 import io.deephaven.engine.liveness.LivenessNode;
-import io.deephaven.engine.table.impl.TableMapFunctionAdapter;
 
-import java.util.Map.Entry;
-import java.util.function.BiFunction;
-
+import java.io.Serializable;
 import java.util.Collection;
+import java.util.Map.Entry;
+import java.util.Objects;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 
 /**
  * A map of tables.
@@ -49,7 +49,7 @@ public interface TableMap extends TransformableTableMap, LivenessNode {
      * @param key key
      * @return table associated with the key, or null if the key is not present.
      */
-    Table getWithTransform(Object key, java.util.function.Function<Table, Table> transform);
+    Table getWithTransform(Object key, Function<Table, Table> transform);
 
     /**
      * Gets the keys.
@@ -132,7 +132,7 @@ public interface TableMap extends TransformableTableMap, LivenessNode {
      * @param <R> the return type of function
      * @return the return value of function
      */
-    <R> R apply(Function.Unary<R, TableMap> function);
+    <R> R apply(Function<TableMap, R> function);
 
     /**
      * Applies a transformation function on all tables in the TableMap, producing a new TableMap which will update as
@@ -141,8 +141,8 @@ public interface TableMap extends TransformableTableMap, LivenessNode {
      * @param function the function to apply to each table in this TableMap
      * @return a new TableMap where each table has had function applied
      */
-    default TableMap transformTables(java.util.function.Function<Table, Table> function) {
-        return transformTablesWithKey(TableMapFunctionAdapter.of(function));
+    default TableMap transformTables(Function<Table, Table> function) {
+        return transformTablesWithKey(FunctionAdapter.of(function));
     }
 
     /**
@@ -153,9 +153,8 @@ public interface TableMap extends TransformableTableMap, LivenessNode {
      * @param function the function to apply to each table in this TableMap
      * @return a new TableMap where each table has had function applied
      */
-    default TableMap transformTables(TableDefinition returnDefinition,
-            java.util.function.Function<Table, Table> function) {
-        return transformTablesWithKey(returnDefinition, TableMapFunctionAdapter.of(function));
+    default TableMap transformTables(TableDefinition returnDefinition, Function<Table, Table> function) {
+        return transformTablesWithKey(returnDefinition, FunctionAdapter.of(function));
     }
 
     /**
@@ -170,7 +169,7 @@ public interface TableMap extends TransformableTableMap, LivenessNode {
      * @param function the bifunction to apply to each table in this TableMap
      * @return a new TableMap where each table has had function applied
      */
-    TableMap transformTablesWithKey(java.util.function.BiFunction<Object, Table, Table> function);
+    TableMap transformTablesWithKey(BiFunction<Object, Table, Table> function);
 
     /**
      * Applies a transformation function on all tables in the TableMap, producing a new TableMap which will update as
@@ -180,8 +179,7 @@ public interface TableMap extends TransformableTableMap, LivenessNode {
      * @param function the bifunction to apply to each table in this TableMap
      * @return a new TableMap where each table has had function applied
      */
-    TableMap transformTablesWithKey(TableDefinition returnDefinition,
-            java.util.function.BiFunction<Object, Table, Table> function);
+    TableMap transformTablesWithKey(TableDefinition returnDefinition, BiFunction<Object, Table, Table> function);
 
     /**
      * Applies a BiFunction function on all tables in this TableMap and otherMap that have matching keys, producing a
@@ -193,7 +191,7 @@ public interface TableMap extends TransformableTableMap, LivenessNode {
      *        argument the tables in the other map are the second argument.
      * @return a new TableMap where each table has had function applied
      */
-    TableMap transformTablesWithMap(TableMap otherMap, java.util.function.BiFunction<Table, Table, Table> function);
+    TableMap transformTablesWithMap(TableMap otherMap, BiFunction<Table, Table, Table> function);
 
     /**
      * Table map change listener.
@@ -225,4 +223,47 @@ public interface TableMap extends TransformableTableMap, LivenessNode {
         return this;
     }
 
+    /**
+     * Helper class for adapting a {@link Function} to a {@link BiFunction}.
+     */
+    class FunctionAdapter {
+
+        public static BiFunction<Object, Table, Table> of(Function<Table, Table> f) {
+            return new Simple(f);
+        }
+
+        private static class Simple implements BiFunction<Object, Table, Table>, Serializable {
+
+            private static final long serialVersionUID = 1L;
+
+            private final Function<Table, Table> function;
+
+            private Simple(Function<Table, Table> function) {
+                this.function = Objects.requireNonNull(function);
+            }
+
+            @Override
+            public final Table apply(Object key, Table table) {
+                return function.apply(table);
+            }
+
+            @Override
+            public final int hashCode() {
+                // flip every other bit, 5 = 0101
+                return function.hashCode() ^ 0x55555555;
+            }
+
+            @Override
+            public final boolean equals(Object o) {
+                if (this == o) {
+                    return true;
+                }
+                if (o == null || getClass() != o.getClass()) {
+                    return false;
+                }
+                Simple other = (Simple) o;
+                return function.equals(other.function);
+            }
+        }
+    }
 }

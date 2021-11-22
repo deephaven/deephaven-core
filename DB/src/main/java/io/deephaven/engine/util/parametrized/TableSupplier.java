@@ -1,6 +1,5 @@
 package io.deephaven.engine.util.parametrized;
 
-import io.deephaven.base.Function;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.table.Table;
@@ -20,6 +19,7 @@ import java.lang.reflect.Proxy;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 
 /**
  * TableSupplier creates a Proxy to a Table with a list of Table operations to be applied when a filter method is
@@ -44,9 +44,9 @@ public class TableSupplier extends LivenessArtifact implements InvocationHandler
             HIJACKED_DELEGATIONS.put(Table.class.getMethod("partitionBy", boolean.class, String[].class),
                     (proxy, method, args) -> ((TableSupplier) Proxy.getInvocationHandler(proxy))
                             .partitionBy((Boolean) args[0], (String[]) args[1]));
-            HIJACKED_DELEGATIONS.put(Table.class.getMethod("apply", Function.Unary.class),
+            HIJACKED_DELEGATIONS.put(Table.class.getMethod("apply", Function.class),
                     (proxy, method, args) -> ((TableSupplier) Proxy.getInvocationHandler(proxy))
-                            .apply((Function.Unary) args[0], (Table) proxy));
+                            .apply((Function) args[0], (Table) proxy));
             HIJACKED_DELEGATIONS.put(Table.class.getMethod("setAttribute", String.class, Object.class),
                     (proxy, method, args) -> ((TableSupplier) Proxy.getInvocationHandler(proxy))
                             .setAttribute((String) args[0], args[1]));
@@ -289,8 +289,8 @@ public class TableSupplier extends LivenessArtifact implements InvocationHandler
         return partitionBy(false, columnNames);
     }
 
-    private Object apply(Function.Unary<Object, Table> function, Table table) {
-        return function.call(table);
+    private Object apply(Function<Table, Object> function, Table table) {
+        return function.apply(table);
     }
 
     private Void setAttribute(String key, Object object) {
@@ -376,7 +376,7 @@ public class TableSupplier extends LivenessArtifact implements InvocationHandler
         }
 
         @Override
-        public Table getWithTransform(Object key, java.util.function.Function<Table, Table> transform) {
+        public Table getWithTransform(Object key, Function<Table, Table> transform) {
             return transform.apply(get(key));
         }
 
@@ -431,8 +431,8 @@ public class TableSupplier extends LivenessArtifact implements InvocationHandler
         }
 
         @Override
-        public <R> R apply(Function.Unary<R, TableMap> function) {
-            return function.call(this);
+        public <R> R apply(Function<TableMap, R> function) {
+            return function.apply(this);
         }
 
         @Override

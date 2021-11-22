@@ -4,31 +4,32 @@
 
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.base.Function;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.engine.exceptions.UncheckedTableException;
-import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.table.TableMap;
-import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.updategraph.NotificationQueue;
-import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
-import io.deephaven.engine.util.systemicmarking.SystemicObject;
-import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
-import io.deephaven.engine.tables.utils.TableToolsMergeHelper;
 import io.deephaven.engine.liveness.Liveness;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.liveness.LivenessScopeStack;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.updategraph.DynamicNode;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.TableMap;
+import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
 import io.deephaven.engine.table.impl.sources.UnionColumnSource;
 import io.deephaven.engine.table.impl.sources.UnionSourceManager;
-import io.deephaven.engine.updategraph.AbstractNotification;
 import io.deephaven.engine.table.impl.utils.AsyncClientErrorNotifier;
-import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.tables.utils.TableToolsMergeHelper;
+import io.deephaven.engine.updategraph.AbstractNotification;
+import io.deephaven.engine.updategraph.DynamicNode;
+import io.deephaven.engine.updategraph.NotificationQueue;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.util.systemicmarking.SystemicObject;
+import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.util.annotations.ReferentialIntegrity;
 import io.deephaven.util.thread.NamingThreadFactory;
+import org.jetbrains.annotations.Nullable;
+
 import java.io.IOException;
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -41,7 +42,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 import java.util.function.BinaryOperator;
-import org.jetbrains.annotations.Nullable;
+import java.util.function.Function;
 
 /**
  * A TableMap implementation backed by a Map.
@@ -204,7 +205,7 @@ public class LocalTableMap extends TableMapImpl implements NotificationQueue.Dep
         return result;
     }
 
-    public Table computeIfAbsent(Object key, java.util.function.Function<Object, Table> tableFactory) {
+    public Table computeIfAbsent(Object key, Function<Object, Table> tableFactory) {
         final Table result;
         synchronized (this) {
             final Table existing = get(key);
@@ -229,7 +230,7 @@ public class LocalTableMap extends TableMapImpl implements NotificationQueue.Dep
     }
 
     @Override
-    public Table getWithTransform(Object key, java.util.function.Function<Table, Table> transform) {
+    public Table getWithTransform(Object key, Function<Table, Table> transform) {
         Table result = get(key);
         if (result == null) {
             return null;
@@ -304,8 +305,8 @@ public class LocalTableMap extends TableMapImpl implements NotificationQueue.Dep
     }
 
     @Override
-    public <R> R apply(Function.Unary<R, TableMap> function) {
-        return function.call(this);
+    public <R> R apply(Function<TableMap, R> function) {
+        return function.apply(this);
     }
 
     @Override
@@ -415,8 +416,7 @@ public class LocalTableMap extends TableMapImpl implements NotificationQueue.Dep
     }
 
     @Override
-    public TableMap transformTablesWithMap(TableMap other,
-            java.util.function.BiFunction<Table, Table, Table> function) {
+    public TableMap transformTablesWithMap(TableMap other, BiFunction<Table, Table, Table> function) {
         final boolean shouldClear = QueryPerformanceRecorder.setCallsite();
 
         try {

@@ -1,9 +1,9 @@
 package io.deephaven.engine.tuple.serialization;
 
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.util.tuples.ArrayTuple;
-import io.deephaven.engine.util.tuples.generated.ObjectObjectObjectTuple;
-import io.deephaven.engine.util.tuples.generated.ObjectObjectTuple;
+import io.deephaven.engine.tuple.ArrayTuple;
+import io.deephaven.engine.tuple.generated.ObjectObjectObjectTuple;
+import io.deephaven.engine.tuple.generated.ObjectObjectTuple;
 import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
 import junit.framework.TestCase;

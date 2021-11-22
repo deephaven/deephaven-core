@@ -1,12 +1,10 @@
 package io.deephaven.engine.util.parametrized;
 
-import io.deephaven.base.Function;
 import io.deephaven.base.WeakReferenceManager;
 import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.TableMap;
-import io.deephaven.engine.table.impl.TableMapFunctionAdapter;
 import io.deephaven.util.annotations.ReferentialIntegrity;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.NotNull;
@@ -18,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -44,10 +43,10 @@ public class TableMapSupplier implements TableMap {
         });
     };
 
-    public TableMapSupplier(TableMap sourceMap, List<java.util.function.Function<Table, Table>> functions) {
+    public TableMapSupplier(TableMap sourceMap, List<Function<Table, Table>> functions) {
         this.sourceMap = sourceMap;
         this.functions = functions.stream()
-                .map(TableMapFunctionAdapter::of)
+                .map(FunctionAdapter::of)
                 .map(f -> new TransformTablesFunction(null, f))
                 .collect(Collectors.toCollection(ArrayList::new));
         sourceMap.addListener(internalListener);
@@ -85,7 +84,7 @@ public class TableMapSupplier implements TableMap {
     }
 
     @Override
-    public Table getWithTransform(Object key, java.util.function.Function<Table, Table> transform) {
+    public Table getWithTransform(Object key, Function<Table, Table> transform) {
         Table result = get(key);
         if (result == null) {
             return null;
@@ -145,8 +144,8 @@ public class TableMapSupplier implements TableMap {
     }
 
     @Override
-    public <R> R apply(Function.Unary<R, TableMap> function) {
-        return function.call(this);
+    public <R> R apply(Function<TableMap, R> function) {
+        return function.apply(this);
     }
 
     @Override
