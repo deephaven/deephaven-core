@@ -14,12 +14,13 @@ dependencies {
 
 task all { // TODO-RWC: Find stragglers and add them. Relocate mains to here.
     dependsOn Tasks.registerMainExecTask(project, 'replicateVectors', 'io.deephaven.replicators.ReplicateVectors')
-    dependsOn Tasks.registerMainExecTask(project, 'replicateVectorsTest', 'io.deephaven.replicators.ReplicateVectorsTst')
+    dependsOn Tasks.registerMainExecTask(project, 'replicateVectorTests', 'io.deephaven.replicators.ReplicateVectorTests')
 
-    dependsOn Tasks.registerMainExecTask(project, 'replicatePrimitiveLibs', 'io.deephaven.replicators.ReplicatePrimitveLibs')
+    dependsOn Tasks.registerMainExecTask(project, 'replicatePrimitiveLibs', 'io.deephaven.replicators.ReplicatePrimitiveLibs')
+    dependsOn Tasks.registerMainExecTask(project, 'replicatePrimitiveLibTests', 'io.deephaven.replicators.ReplicatePrimitiveLibTests')
 
     dependsOn Tasks.registerMainExecTask(project, 'replicateSources', 'io.deephaven.replicators.ReplicateSourcesAndChunks')
-    dependsOn Tasks.registerMainExecTask(project, 'replicateSourcesTest', 'io.deephaven.replicators.ReplicateSourcesAndChunkTest')
+    dependsOn Tasks.registerMainExecTask(project, 'replicateSourceTests', 'io.deephaven.replicators.ReplicateSourceAndChunkTests')
 
     dependsOn Tasks.registerMainExecTask(project, 'replicateHashing', 'io.deephaven.replicators.ReplicateHashing')
 

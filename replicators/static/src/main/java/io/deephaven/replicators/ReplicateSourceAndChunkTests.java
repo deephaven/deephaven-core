@@ -15,7 +15,7 @@ import java.util.List;
 import static io.deephaven.compilertools.ReplicatePrimitiveCode.*;
 import static io.deephaven.compilertools.ReplicateUtilities.*;
 
-public class ReplicateSourcesAndChunkTest {
+public class ReplicateSourceAndChunkTests {
     public static void main(String[] args) throws IOException {
         ReplicateSourcesAndChunks.main(args);
 

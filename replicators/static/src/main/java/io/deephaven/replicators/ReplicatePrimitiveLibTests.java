@@ -2,7 +2,7 @@
  * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
  */
 
-package io.deephaven.engine.function;
+package io.deephaven.replicators;
 
 import io.deephaven.compilertools.ReplicatePrimitiveCode;
 
@@ -12,7 +12,7 @@ import java.util.List;
 import static io.deephaven.compilertools.ReplicatePrimitiveCode.*;
 import static io.deephaven.compilertools.ReplicatePrimitiveCode.floatToAllFloatingPoints;
 
-public class ReplicateTst {
+public class ReplicatePrimitiveLibTests {
     public static void main(String[] args) throws IOException {
         charToAllButBoolean("DB/src/test/java/io/deephaven/libs/primitives/TestCharPrimitives.java");
         shortToAllIntegralTypes("DB/src/main/test/io/deephaven/libs/primitives/TestShortNumericPrimitives.java");
