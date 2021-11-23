@@ -179,49 +179,48 @@ public class VarListChunkInputStreamGenerator<T> extends BaseChunkInputStreamGen
 
             read = true;
             long bytesWritten = 0;
-            try (final LittleEndianDataOutputStream dos = new LittleEndianDataOutputStream(outputStream)) {
-                // write the validity array with LSB indexing
-                if (sendValidityBuffer()) {
-                    final SerContext context = new SerContext();
-                    final Runnable flush = () -> {
-                        try {
-                            dos.writeLong(context.accumulator);
-                        } catch (final IOException e) {
-                            throw new UncheckedDeephavenException("couldn't drain data to OutputStream", e);
-                        }
-                        context.accumulator = 0;
-                        context.count = 0;
-                    };
-                    subset.forAllLongs(rawRow -> {
-                        final int row = LongSizedDataStructure.intSize(DEBUG_NAME, rawRow);
-                        if (chunk.get(row) != null) {
-                            context.accumulator |= 1L << context.count;
-                        }
-                        if (++context.count == 64) {
-                            flush.run();
-                        }
-                    });
-                    if (context.count > 0) {
+            final LittleEndianDataOutputStream dos = new LittleEndianDataOutputStream(outputStream);
+            // write the validity array with LSB indexing
+            if (sendValidityBuffer()) {
+                final SerContext context = new SerContext();
+                final Runnable flush = () -> {
+                    try {
+                        dos.writeLong(context.accumulator);
+                    } catch (final IOException e) {
+                        throw new UncheckedDeephavenException("couldn't drain data to OutputStream", e);
+                    }
+                    context.accumulator = 0;
+                    context.count = 0;
+                };
+                subset.forAllLongs(rawRow -> {
+                    final int row = LongSizedDataStructure.intSize(DEBUG_NAME, rawRow);
+                    if (chunk.get(row) != null) {
+                        context.accumulator |= 1L << context.count;
+                    }
+                    if (++context.count == 64) {
                         flush.run();
                     }
-                    bytesWritten += getValidityMapSerializationSizeFor(subset.intSize(DEBUG_NAME));
+                });
+                if (context.count > 0) {
+                    flush.run();
                 }
-
-                // write offsets array
-                final WritableIntChunk<Attributes.ChunkPositions> offsetsToUse = myOffsets == null ? offsets : myOffsets;
-                for (int i = 0; i < offsetsToUse.size(); ++i) {
-                    dos.writeInt(offsetsToUse.get(i));
-                }
-                bytesWritten += ((long)offsetsToUse.size()) * Integer.BYTES;
-
-                final long bytesExtended = bytesWritten & REMAINDER_MOD_8_MASK;
-                if (bytesExtended > 0) {
-                    bytesWritten += 8 - bytesExtended;
-                    dos.write(PADDING_BUFFER, 0, (int)(8 - bytesExtended));
-                }
-
-                bytesWritten += innerStream.drainTo(outputStream);
+                bytesWritten += getValidityMapSerializationSizeFor(subset.intSize(DEBUG_NAME));
             }
+
+            // write offsets array
+            final WritableIntChunk<Attributes.ChunkPositions> offsetsToUse = myOffsets == null ? offsets : myOffsets;
+            for (int i = 0; i < offsetsToUse.size(); ++i) {
+                dos.writeInt(offsetsToUse.get(i));
+            }
+            bytesWritten += ((long) offsetsToUse.size()) * Integer.BYTES;
+
+            final long bytesExtended = bytesWritten & REMAINDER_MOD_8_MASK;
+            if (bytesExtended > 0) {
+                bytesWritten += 8 - bytesExtended;
+                dos.write(PADDING_BUFFER, 0, (int) (8 - bytesExtended));
+            }
+
+            bytesWritten += innerStream.drainTo(outputStream);
             return LongSizedDataStructure.intSize(DEBUG_NAME, bytesWritten);
         }
     }
