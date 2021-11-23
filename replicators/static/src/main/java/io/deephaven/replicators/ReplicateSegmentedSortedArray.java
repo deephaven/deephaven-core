@@ -16,7 +16,7 @@ import static io.deephaven.compilertools.ReplicateUtilities.simpleFixup;
 
 public class ReplicateSegmentedSortedArray {
     public static void main(String[] args) throws IOException {
-        final String charSsaPath = "DB/src/main/java/io/deephaven/engine/table/impl/ssa/CharSegmentedSortedArray.java";
+        final String charSsaPath = "engine/table/src/main/java/io/deephaven/engine/table/impl/ssa/CharSegmentedSortedArray.java";
         final List<String> ssas = charToAllButBoolean(charSsaPath);
         ssas.add(charSsaPath);
 
@@ -42,7 +42,7 @@ public class ReplicateSegmentedSortedArray {
             }
         }
 
-        final String charChunkSsaStampPath = "DB/src/main/java/io/deephaven/engine/table/impl/ssa/CharChunkSsaStamp.java";
+        final String charChunkSsaStampPath = "engine/table/src/main/java/io/deephaven/engine/table/impl/ssa/CharChunkSsaStamp.java";
         final List<String> chunkSsaStamps = charToAllButBoolean(charChunkSsaStampPath);
         chunkSsaStamps.add(charChunkSsaStampPath);
 
@@ -74,7 +74,7 @@ public class ReplicateSegmentedSortedArray {
             }
         }
 
-        final String charSsaSsaStampPath = "DB/src/main/java/io/deephaven/engine/table/impl/ssa/CharSsaSsaStamp.java";
+        final String charSsaSsaStampPath = "engine/table/src/main/java/io/deephaven/engine/table/impl/ssa/CharSsaSsaStamp.java";
         final List<String> ssaSsaStamps = charToAllButBoolean(charSsaSsaStampPath);
         ssaSsaStamps.add(charSsaSsaStampPath);
 
@@ -105,7 +105,7 @@ public class ReplicateSegmentedSortedArray {
             }
         }
 
-        final String charSsaCheckerPath = "DB/src/main/java/io/deephaven/engine/table/impl/ssa/CharSsaChecker.java";
+        final String charSsaCheckerPath = "engine/table/src/main/java/io/deephaven/engine/table/impl/ssa/CharSsaChecker.java";
         final List<String> ssaCheckers = charToAllButBoolean(charSsaCheckerPath);
         ssaCheckers.add(charSsaCheckerPath);
 

@@ -3,7 +3,7 @@ configurations {
 }
 
 dependencies {
-    compile project(':DB')
+    compile project(':engine-table')
 
     testCompile project(path: ':DB', configuration: 'testOutput')
 

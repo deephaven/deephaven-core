@@ -10,7 +10,7 @@ dependencies {
     compile project(':open-api-shared-ide'),
             project(':open-api-lang-parser')
 
-    compile(project(':DB'))
+    compile(project(':engine-table'))
     compile project(':IO')
 
     testImplementation 'org.spockframework:spock-core:2.0-groovy-3.0'

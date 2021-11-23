@@ -23,7 +23,7 @@ sourceSets {
 }
 
 dependencies {
-    compile project(':DB'),
+    compile project(':engine-table'),
             project(':Util'),
             project(':java-client-barrage-dagger'),
             project(':proto:proto-backplane-grpc-flight'),

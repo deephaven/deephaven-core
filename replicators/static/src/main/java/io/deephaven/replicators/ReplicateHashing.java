@@ -48,9 +48,9 @@ public class ReplicateHashing {
         fixupObjectChunkEquals(objectEquals);
 
         final List<String> compactKernels =
-                charToAll("DB/src/main/java/io/deephaven/engine/table/impl/utils/compact/CharCompactKernel.java");
+                charToAll("engine/table/src/main/java/io/deephaven/engine/table/impl/utils/compact/CharCompactKernel.java");
         final String objectCompact =
-                charToObject("DB/src/main/java/io/deephaven/engine/table/impl/utils/compact/CharCompactKernel.java");
+                charToObject("engine/table/src/main/java/io/deephaven/engine/table/impl/utils/compact/CharCompactKernel.java");
         fixupObjectCompact(objectCompact);
         // noinspection OptionalGetWithoutIsPresent
         fixupBooleanCompact(compactKernels.stream().filter(x -> x.contains("Boolean")).findFirst().get());

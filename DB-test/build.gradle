@@ -15,7 +15,7 @@ test {
 }
 
 dependencies {
-  testCompile project(':DB'), TestTools.projectDependency(project, 'DB')
+  testCompile project(':engine-table'), TestTools.projectDependency(project, 'engine-table')
 
   // This allows us to access jpy-integration javaToPython code around setting up python
   // for testing purposes
@@ -28,7 +28,7 @@ dependencies {
   testRuntime project(path: ':test-configs'),
           project(path: ':configs'),
           project(':Integrations'),
-          project(':DB')
+          project(':engine-table')
 
   // todo: IDO-322 (io.deephaven.numerics.suanshu.SuanShuIntegration)
   testRuntime project(':Numerics')

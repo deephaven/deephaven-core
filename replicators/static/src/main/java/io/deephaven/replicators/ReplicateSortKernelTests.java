@@ -19,23 +19,23 @@ public class ReplicateSortKernelTests {
     public static void main(String[] args) throws IOException {
         ReplicateSortKernel.main(args);
 
-        charToAllButBoolean("DB/src/test/java/io/deephaven/engine/table/impl/sort/timsort/TestCharTimSortKernel.java");
-        charToAllButBoolean("DB/src/test/java/io/deephaven/engine/table/impl/sort/timsort/BaseTestCharTimSortKernel.java");
-        charToAllButBoolean("DB/src/benchmark/java/io/deephaven/engine/table/impl/sort/timsort/CharSortKernelBenchmark.java");
+        charToAllButBoolean("engine/table/src/test/java/io/deephaven/engine/table/impl/sort/timsort/TestCharTimSortKernel.java");
+        charToAllButBoolean("engine/table/src/test/java/io/deephaven/engine/table/impl/sort/timsort/BaseTestCharTimSortKernel.java");
+        charToAllButBoolean("engine/table/src/benchmark/java/io/deephaven/engine/table/impl/sort/timsort/CharSortKernelBenchmark.java");
         charToAllButBoolean(
-                "DB/src/benchmark/java/io/deephaven/engine/table/impl/sort/partition/CharPartitionKernelBenchmark.java");
-        charToAllButBoolean("DB/src/test/java/io/deephaven/engine/table/impl/sort/permute/TestCharPermuteKernel.java");
+                "engine/table/src/benchmark/java/io/deephaven/engine/table/impl/sort/partition/CharPartitionKernelBenchmark.java");
+        charToAllButBoolean("engine/table/src/test/java/io/deephaven/engine/table/impl/sort/permute/TestCharPermuteKernel.java");
 
-        charToAllButBoolean("DB/src/test/java/io/deephaven/engine/table/impl/sort/megamerge/TestCharLongMegaMerge.java");
+        charToAllButBoolean("engine/table/src/test/java/io/deephaven/engine/table/impl/sort/megamerge/TestCharLongMegaMerge.java");
 
         final String baseTestPath =
-                charToObject("DB/src/test/java/io/deephaven/engine/table/impl/sort/timsort/BaseTestCharTimSortKernel.java");
+                charToObject("engine/table/src/test/java/io/deephaven/engine/table/impl/sort/timsort/BaseTestCharTimSortKernel.java");
         fixupObject(baseTestPath);
-        charToObject("DB/src/test/java/io/deephaven/engine/table/impl/sort/timsort/TestCharTimSortKernel.java");
-        charToObject("DB/src/benchmark/java/io/deephaven/engine/table/impl/sort/timsort/CharSortKernelBenchmark.java");
+        charToObject("engine/table/src/test/java/io/deephaven/engine/table/impl/sort/timsort/TestCharTimSortKernel.java");
+        charToObject("engine/table/src/benchmark/java/io/deephaven/engine/table/impl/sort/timsort/CharSortKernelBenchmark.java");
 
         final String objectMegaMergePath =
-                charToObject("DB/src/test/java/io/deephaven/engine/table/impl/sort/megamerge/TestCharLongMegaMerge.java");
+                charToObject("engine/table/src/test/java/io/deephaven/engine/table/impl/sort/megamerge/TestCharLongMegaMerge.java");
         fixupObjectMegaMerge(objectMegaMergePath);
     }
 

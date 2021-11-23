@@ -21,12 +21,12 @@ import static io.deephaven.compilertools.ReplicatePrimitiveCode.*;
 public class ReplicatePrimtiiveLibs {
     public static void main(String[] args) throws IOException {
         List<String> files =
-                charToAllButBoolean("DB/src/main/java/io/deephaven/libs/primitives/CharacterPrimitives.java");
+                charToAllButBoolean("engine/table/src/main/java/io/deephaven/libs/primitives/CharacterPrimitives.java");
         fixup(files);
 
-        shortToAllIntegralTypes("DB/src/main/java/io/deephaven/libs/primitives/ShortNumericPrimitives.java");
-        floatToAllFloatingPoints("DB/src/main/java/io/deephaven/libs/primitives/FloatNumericPrimitives.java");
-        floatToAllFloatingPoints("DB/src/main/java/io/deephaven/libs/primitives/FloatFpPrimitives.java");
+        shortToAllIntegralTypes("engine/table/src/main/java/io/deephaven/libs/primitives/ShortNumericPrimitives.java");
+        floatToAllFloatingPoints("engine/table/src/main/java/io/deephaven/libs/primitives/FloatNumericPrimitives.java");
+        floatToAllFloatingPoints("engine/table/src/main/java/io/deephaven/libs/primitives/FloatFpPrimitives.java");
     }
 
     private static void fixup(List<String> files) throws IOException {

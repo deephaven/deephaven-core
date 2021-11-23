@@ -15,17 +15,17 @@ import static io.deephaven.compilertools.ReplicatePrimitiveCode.*;
 public class ReplicateFreezeBy {
     public static void main(String[] args) throws IOException {
         final List<String> results =
-                charToAllButBoolean("DB/src/main/java/io/deephaven/engine/table/impl/utils/freezeby/CharFreezeByHelper.java");
+                charToAllButBoolean("engine/table/src/main/java/io/deephaven/engine/table/impl/utils/freezeby/CharFreezeByHelper.java");
 
         final Optional<String> longResult = results.stream().filter(s -> s.contains("Long")).findFirst();
         // noinspection OptionalGetWithoutIsPresent
         fixupLong(longResult.get());
         final String objectResult =
-                charToObject("DB/src/main/java/io/deephaven/engine/table/impl/utils/freezeby/CharFreezeByHelper.java");
+                charToObject("engine/table/src/main/java/io/deephaven/engine/table/impl/utils/freezeby/CharFreezeByHelper.java");
         fixupObject(objectResult);
 
         final String booleanResult =
-                charToBoolean("DB/src/main/java/io/deephaven/engine/table/impl/utils/freezeby/CharFreezeByHelper.java");
+                charToBoolean("engine/table/src/main/java/io/deephaven/engine/table/impl/utils/freezeby/CharFreezeByHelper.java");
         fixupBoolean(booleanResult);
     }
 

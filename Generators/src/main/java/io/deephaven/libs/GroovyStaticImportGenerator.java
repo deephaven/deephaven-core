@@ -419,7 +419,7 @@ public class GroovyStaticImportGenerator {
         log.info("\n\n**************************************\n\n");
         log.info(code);
 
-        String file = devroot + "/DB/src/main/java/io/deephaven/libs/GroovyStaticImports.java";
+        String file = devroot + "/engine/table/src/main/java/io/deephaven/libs/GroovyStaticImports.java";
 
         if (assertNoChange) {
             String oldCode = new String(Files.readAllBytes(Paths.get(file)));

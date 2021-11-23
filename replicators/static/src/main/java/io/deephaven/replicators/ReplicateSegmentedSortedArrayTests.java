@@ -15,9 +15,9 @@ public class ReplicateSegmentedSortedArrayTests {
     public static void main(String[] args) throws IOException {
         ReplicateSegmentedSortedArray.main(args);
 
-        charToAllButBoolean("DB/src/test/java/io/deephaven/engine/table/impl/ssa/TestCharSegmentedSortedArray.java");
+        charToAllButBoolean("engine/table/src/test/java/io/deephaven/engine/table/impl/ssa/TestCharSegmentedSortedArray.java");
         final String objectSsaTest =
-                charToObject("DB/src/test/java/io/deephaven/engine/table/impl/ssa/TestCharSegmentedSortedArray.java");
+                charToObject("engine/table/src/test/java/io/deephaven/engine/table/impl/ssa/TestCharSegmentedSortedArray.java");
         fixupObjectSsaTest(objectSsaTest);
     }
 

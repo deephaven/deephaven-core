@@ -34,7 +34,7 @@ dependencies {
     // to add their maven repository.
     api('io.confluent:kafka-avro-serializer:6.2.0')
 
-    compile project(':DB')
+    compile project(':engine-table')
     testCompile 'junit:junit:4.13.2'
     testCompile project(path: ':DB', configuration: 'testOutput')
     testRuntime project(path: ':configs'), project(path: ':test-configs')

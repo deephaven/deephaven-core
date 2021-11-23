@@ -26,7 +26,6 @@ import io.deephaven.util.SafeCloseableList;
 import gnu.trove.list.array.TLongArrayList;
 import io.deephaven.internal.log.LoggerFactory;
 import org.apache.commons.lang3.mutable.MutableInt;
-import shaded.parquet.it.unimi.dsi.fastutil.longs.LongIterators;
 
 import java.util.*;
 import java.util.function.LongUnaryOperator;
@@ -355,7 +354,7 @@ public class SortListener extends BaseTable.ListenerImpl {
 
     private RowSet sortedArrayToIndex(long[] arr, int offset, int length) {
         final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
-        builder.appendKeys(LongIterators.wrap(arr, offset, length));
+        builder.appendOrderedRowKeysChunk(LongChunk.chunkWrap(arr, offset, length));
         return builder.build();
     }
 

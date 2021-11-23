@@ -50,7 +50,6 @@ dependencies {
             project(':web-shared-beans'),
             project(':deephaven-jpy'),
             project(':deephaven-jpy-ext'),
-            project(':extensions-parquet-base'),
             project(':DHProcess'),
             project(':log-factory'),
             project(':Container'),

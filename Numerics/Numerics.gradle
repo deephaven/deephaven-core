@@ -4,7 +4,7 @@ configurations {
 }
 
 dependencies {
-    compile project(':DB')
+    compile project(':engine-table')
 
     testRuntime project(path: ':configs'), project(path: ':test-configs')
 }

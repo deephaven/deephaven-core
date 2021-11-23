@@ -19,7 +19,7 @@ public class ModelFileGenerator {
 
     private String getPath() {
         return Configuration.getInstance().getProperty("devroot") +
-                "/DB/src/test/java/" + classType.getCanonicalName().replace('.', '/') + ".java";
+                "/engine/table/src/test/java/" + classType.getCanonicalName().replace('.', '/') + ".java";
     }
 
     public void generateFile(final String rawClassDef) throws FileNotFoundException {

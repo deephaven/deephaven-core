@@ -14,9 +14,9 @@ import static io.deephaven.compilertools.ReplicateUtilities.globalReplacements;
 
 public class ReplicateStampKernel {
     public static void main(String[] args) throws IOException {
-        final String charStampPath = "DB/src/main/java/io/deephaven/engine/table/impl/join/stamp/CharStampKernel.java";
+        final String charStampPath = "engine/table/src/main/java/io/deephaven/engine/table/impl/join/stamp/CharStampKernel.java";
         final String charNoExactStampPath =
-                "DB/src/main/java/io/deephaven/engine/table/impl/join/stamp/CharNoExactStampKernel.java";
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/join/stamp/CharNoExactStampKernel.java";
         final List<String> stampKernels = charToAllButBoolean(charStampPath);
         final List<String> noExactStampKernels = charToAllButBoolean(charNoExactStampPath);
 

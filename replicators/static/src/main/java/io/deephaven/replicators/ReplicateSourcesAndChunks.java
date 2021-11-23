@@ -24,14 +24,14 @@ public class ReplicateSourcesAndChunks {
         replicateSparseArraySources();
 
         replicateSingleValues();
-        charToAllButBooleanAndLong("DB/src/main/java/io/deephaven/engine/table/impl/sources/CharacterArraySource.java");
-        charToAllButBoolean("DB/src/main/java/io/deephaven/engine/table/impl/sources/aggregate/CharAggregateColumnSource.java");
-        charToAllButBoolean("DB/src/main/java/io/deephaven/engine/table/impl/sources/UngroupedCharArrayColumnSource.java");
-        charToAllButBoolean("DB/src/main/java/io/deephaven/engine/table/impl/sources/UngroupedCharVectorColumnSource.java");
+        charToAllButBooleanAndLong("engine/table/src/main/java/io/deephaven/engine/table/impl/sources/CharacterArraySource.java");
+        charToAllButBoolean("engine/table/src/main/java/io/deephaven/engine/table/impl/sources/aggregate/CharAggregateColumnSource.java");
+        charToAllButBoolean("engine/table/src/main/java/io/deephaven/engine/table/impl/sources/UngroupedCharArrayColumnSource.java");
+        charToAllButBoolean("engine/table/src/main/java/io/deephaven/engine/table/impl/sources/UngroupedCharVectorColumnSource.java");
         charToAllButBoolean(
-                "DB/src/main/java/io/deephaven/engine/table/impl/sources/UngroupedBoxedCharObjectVectorColumnSource.java");
-        charToAllButBoolean("DB/src/main/java/io/deephaven/engine/table/impl/sources/UngroupedBoxedCharArrayColumnSource.java");
-        charToAllButBoolean("DB/src/main/java/io/deephaven/engine/table/impl/sources/immutable/ImmutableCharArraySource.java");
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/UngroupedBoxedCharObjectVectorColumnSource.java");
+        charToAllButBoolean("engine/table/src/main/java/io/deephaven/engine/table/impl/sources/UngroupedBoxedCharArrayColumnSource.java");
+        charToAllButBoolean("engine/table/src/main/java/io/deephaven/engine/table/impl/sources/immutable/ImmutableCharArraySource.java");
         charToAll("engine/chunk/src/main/java/io/deephaven/engine/chunk/sized/SizedCharChunk.java");
 
         replicateChunks();
@@ -51,19 +51,19 @@ public class ReplicateSourcesAndChunks {
 
         replicateChunkFillers();
 
-        charToAll("DB/src/main/java/io/deephaven/engine/table/impl/sources/chunk/page/CharChunkPage.java");
+        charToAll("engine/table/src/main/java/io/deephaven/engine/table/impl/sources/chunk/page/CharChunkPage.java");
 
         replicateChunkColumnSource();
     }
 
     private static void replicateSingleValues() throws IOException {
-        charToAllButBoolean("DB/src/main/java/io/deephaven/engine/table/impl/sources/CharacterSingleValueSource.java");
+        charToAllButBoolean("engine/table/src/main/java/io/deephaven/engine/table/impl/sources/CharacterSingleValueSource.java");
         replicateObjectSingleValue();
     }
 
     private static void replicateObjectSingleValue() throws IOException {
         final String resultClassJavaPath = charToObject(
-                "DB/src/main/java/io/deephaven/engine/table/impl/sources/CharacterSingleValueSource.java");
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/CharacterSingleValueSource.java");
         final File resultClassJavaFile = new File(resultClassJavaPath);
         List<String> lines = FileUtils.readLines(resultClassJavaFile, Charset.defaultCharset());
         lines = globalReplacements(lines,
@@ -91,13 +91,13 @@ public class ReplicateSourcesAndChunks {
 
     private static void replicateChunkColumnSource() throws IOException {
         charToAllButBoolean(
-                "DB/src/main/java/io/deephaven/engine/table/impl/sources/chunkcolumnsource/CharChunkColumnSource.java");
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/chunkcolumnsource/CharChunkColumnSource.java");
         replicateObjectChunkColumnSource();
     }
 
     private static void replicateObjectChunkColumnSource() throws IOException {
         final String resultClassJavaPath = charToObject(
-                "DB/src/main/java/io/deephaven/engine/table/impl/sources/chunkcolumnsource/CharChunkColumnSource.java");
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/chunkcolumnsource/CharChunkColumnSource.java");
         final File resultClassJavaFile = new File(resultClassJavaPath);
         List<String> lines = FileUtils.readLines(resultClassJavaFile, Charset.defaultCharset());
         lines = globalReplacements(lines,
@@ -127,7 +127,7 @@ public class ReplicateSourcesAndChunks {
     private static void replicateSparseArraySources() throws IOException {
         replicateOneOrN();
 
-        charToAllButBooleanAndLong("DB/src/main/java/io/deephaven/engine/table/impl/sources/CharacterSparseArraySource.java");
+        charToAllButBooleanAndLong("engine/table/src/main/java/io/deephaven/engine/table/impl/sources/CharacterSparseArraySource.java");
         replicateSparseLongSource();
 
         replicateSparseBooleanSource();
@@ -438,13 +438,13 @@ public class ReplicateSourcesAndChunks {
     }
 
     private static void replicateChunkFillers() throws IOException {
-        charToAll("DB/src/main/java/io/deephaven/engine/table/impl/sources/chunk/util/chunkfillers/CharChunkFiller.java");
+        charToAll("engine/table/src/main/java/io/deephaven/engine/table/impl/sources/chunk/util/chunkfillers/CharChunkFiller.java");
         replicateObjectChunkFiller();
     }
 
     private static void replicateObjectChunkFiller() throws IOException {
         final String className = charToObject(
-                "DB/src/main/java/io/deephaven/engine/table/impl/sources/chunk/util/chunkfillers/CharChunkFiller.java");
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/chunk/util/chunkfillers/CharChunkFiller.java");
         final File classFile = new File(className);
         List<String> lines = FileUtils.readLines(classFile, Charset.defaultCharset());
         lines = globalReplacements(lines,
@@ -456,13 +456,13 @@ public class ReplicateSourcesAndChunks {
 
     private static void replicateSparseLongSource() throws IOException {
         final File longSparseArraySourceFile = new File(
-                "DB/src/main/java/io/deephaven/engine/table/impl/sources/LongSparseArraySource.java");
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/LongSparseArraySource.java");
         final File abstractLongSparseArraySourceFile = new File(
-                "DB/src/main/java/io/deephaven/engine/table/impl/sources/AbstractSparseLongArraySource.java");
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/AbstractSparseLongArraySource.java");
 
 
         final String longSparseCode = FileUtils.readFileToString(longSparseArraySourceFile, Charset.defaultCharset());
-        charToLong("DB/src/main/java/io/deephaven/engine/table/impl/sources/CharacterSparseArraySource.java",
+        charToLong("engine/table/src/main/java/io/deephaven/engine/table/impl/sources/CharacterSparseArraySource.java",
                 Collections.emptyMap());
 
         Files.delete(abstractLongSparseArraySourceFile.toPath());
@@ -491,7 +491,7 @@ public class ReplicateSourcesAndChunks {
 
     private static void replicateSparseBooleanSource() throws IOException {
         final String booleanPath = charToBooleanAsByte(
-                "DB/src/main/java/io/deephaven/engine/table/impl/sources/CharacterSparseArraySource.java",
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/CharacterSparseArraySource.java",
                 Collections.emptyMap());
         final File booleanFile = new File(booleanPath);
         List<String> lines = FileUtils.readLines(booleanFile, Charset.defaultCharset());
@@ -828,7 +828,7 @@ public class ReplicateSourcesAndChunks {
 
     private static void replicateSparseObjectSource() throws IOException {
         final String objectPath = charToObject(
-                "DB/src/main/java/io/deephaven/engine/table/impl/sources/CharacterSparseArraySource.java");
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/CharacterSparseArraySource.java");
         final File objectFile = new File(objectPath);
         List<String> lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
 
@@ -916,9 +916,9 @@ public class ReplicateSourcesAndChunks {
     }
 
     private static void replicateOneOrN() throws IOException {
-        charToAll("DB/src/main/java/io/deephaven/engine/table/impl/sources/sparse/CharOneOrN.java");
+        charToAll("engine/table/src/main/java/io/deephaven/engine/table/impl/sources/sparse/CharOneOrN.java");
         final String objectOneOrNPath = charToObject(
-                "DB/src/main/java/io/deephaven/engine/table/impl/sources/sparse/CharOneOrN.java");
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/sparse/CharOneOrN.java");
         final File oneOrNFile = new File(objectOneOrNPath);
         List<String> lines = FileUtils.readLines(oneOrNFile, Charset.defaultCharset());
 

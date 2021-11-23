@@ -11,7 +11,7 @@ configurations {
 
 dependencies {
 
-    compile project(':DB'),
+    compile project(':engine-table'),
             project(':Plot')
             project(':Kafka')
 

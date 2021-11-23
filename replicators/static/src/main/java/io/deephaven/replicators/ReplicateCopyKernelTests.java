@@ -14,9 +14,9 @@ import static io.deephaven.compilertools.ReplicateUtilities.globalReplacements;
 public class ReplicateCopyKernelTests {
     public static void main(String[] args) throws IOException {
         ReplicateCopyKernel.main(args);
-        charToAll("DB/src/test/java/io/deephaven/engine/table/impl/utils/copy/TestCharCopyKernel.java");
+        charToAll("engine/table/src/test/java/io/deephaven/engine/table/impl/utils/copy/TestCharCopyKernel.java");
         fixupObjectCopyKernelTest(
-                charToObject("DB/src/test/java/io/deephaven/engine/table/impl/utils/copy/TestCharCopyKernel.java"));
+                charToObject("engine/table/src/test/java/io/deephaven/engine/table/impl/utils/copy/TestCharCopyKernel.java"));
     }
 
     private static void fixupObjectCopyKernelTest(String path) throws IOException {

@@ -21,24 +21,24 @@ import static io.deephaven.compilertools.ReplicateUtilities.*;
 public class ReplicateSortKernel {
     public static void main(String[] args) throws IOException {
         replicateLongToInt();
-        doCharReplication("DB/src/main/java/io/deephaven/engine/table/impl/sort/timsort/CharLongTimsortKernel.java");
-        doCharReplication("DB/src/main/java/io/deephaven/engine/table/impl/sort/timsort/CharIntTimsortKernel.java");
+        doCharReplication("engine/table/src/main/java/io/deephaven/engine/table/impl/sort/timsort/CharLongTimsortKernel.java");
+        doCharReplication("engine/table/src/main/java/io/deephaven/engine/table/impl/sort/timsort/CharIntTimsortKernel.java");
 
 
         doCharMegaMergeReplication(
-                "DB/src/main/java/io/deephaven/engine/table/impl/sort/megamerge/CharLongMegaMergeKernel.java");
-        charToAllButBoolean("DB/src/main/java/io/deephaven/engine/table/impl/sort/findruns/CharFindRunsKernel.java");
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/megamerge/CharLongMegaMergeKernel.java");
+        charToAllButBoolean("engine/table/src/main/java/io/deephaven/engine/table/impl/sort/findruns/CharFindRunsKernel.java");
         final String objectRunPath =
-                charToObject("DB/src/main/java/io/deephaven/engine/table/impl/sort/findruns/CharFindRunsKernel.java");
+                charToObject("engine/table/src/main/java/io/deephaven/engine/table/impl/sort/findruns/CharFindRunsKernel.java");
         fixupObjectRuns(objectRunPath);
 
-        charToAllButBoolean("DB/src/main/java/io/deephaven/engine/table/impl/sort/partition/CharPartitionKernel.java");
+        charToAllButBoolean("engine/table/src/main/java/io/deephaven/engine/table/impl/sort/partition/CharPartitionKernel.java");
         final String objectPartitionPath =
-                charToObject("DB/src/main/java/io/deephaven/engine/table/impl/sort/partition/CharPartitionKernel.java");
+                charToObject("engine/table/src/main/java/io/deephaven/engine/table/impl/sort/partition/CharPartitionKernel.java");
         fixupObjectPartition(objectPartitionPath);
 
-        charToAllButBoolean("DB/src/main/java/io/deephaven/engine/table/impl/sort/permute/CharPermuteKernel.java");
-        fixupObjectPermute(charToObject("DB/src/main/java/io/deephaven/engine/table/impl/sort/permute/CharPermuteKernel.java"));
+        charToAllButBoolean("engine/table/src/main/java/io/deephaven/engine/table/impl/sort/permute/CharPermuteKernel.java");
+        fixupObjectPermute(charToObject("engine/table/src/main/java/io/deephaven/engine/table/impl/sort/permute/CharPermuteKernel.java"));
     }
 
     private static void doCharReplication(@NotNull final String sourceClassJavaPath) throws IOException {
@@ -112,12 +112,12 @@ public class ReplicateSortKernel {
 
     private static void replicateLongToInt() throws IOException {
         final String intSortKernelPath = longToInt(
-                "DB/src/main/java/io/deephaven/engine/table/impl/sort/LongSortKernel.java");
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/LongSortKernel.java");
         fixupIntSortKernel(intSortKernelPath);
         longToInt(
-                "DB/src/main/java/io/deephaven/engine/table/impl/sort/timsort/CharLongTimsortKernel.java");
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/timsort/CharLongTimsortKernel.java");
         longToInt(
-                "DB/src/main/java/io/deephaven/engine/table/impl/sort/radix/BooleanLongRadixSortKernel.java");
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/radix/BooleanLongRadixSortKernel.java");
     }
 
     private static void fixupIntSortKernel(String intSortKernelPath) throws IOException {
@@ -137,7 +137,7 @@ public class ReplicateSortKernel {
     private static void replicateLongInt() throws IOException {
         // our special fancy LongInt sort kernel for use in a multicolumn sort
         final String targetName = charLongToLongInt(
-                "DB/src/main/java/io/deephaven/engine/table/impl/sort/timsort/CharLongTimsortKernel.java");
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/timsort/CharLongTimsortKernel.java");
         fixupLongInt(targetName);
         final File longIntDest = new File(targetName.replace("LongTimsortKernel", "LongIntTimsortKernel"));
         // noinspection ResultOfMethodCallIgnored
@@ -147,7 +147,7 @@ public class ReplicateSortKernel {
 
     private static void replicateIntInt() throws IOException {
         final String targetName = charLongToIntInt(
-                "DB/src/main/java/io/deephaven/engine/table/impl/sort/timsort/CharLongTimsortKernel.java");
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/timsort/CharLongTimsortKernel.java");
         fixupIntInt(targetName);
         final File intIntDest = new File(targetName.replace("IntTimsortKernel", "IntIntTimsortKernel"));
         // noinspection ResultOfMethodCallIgnored

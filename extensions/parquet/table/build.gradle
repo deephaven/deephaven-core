@@ -19,11 +19,14 @@ sourceSets {
 
 dependencies {
     implementation project(':extensions-parquet-base'),
+            project(':engine-stringset'),
+            project(':engine-base'),
             project(':engine-table'),
-            project(':DB'),
-            project(':extensions-csv')
+            project(':extensions-csv'),
+            'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.13.0',
+            'com.fasterxml.jackson.datatype:jackson-datatype-jdk8:2.13.0'
 
-    testImplementation TestTools.projectDependency(project, 'engine-table'),
+            testImplementation TestTools.projectDependency(project, 'engine-table'),
             TestTools.projectDependency(project, 'DB')
 
     annotationProcessor 'org.immutables:value:2.8.1'

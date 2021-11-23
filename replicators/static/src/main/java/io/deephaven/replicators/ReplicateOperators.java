@@ -21,29 +21,29 @@ import static io.deephaven.compilertools.ReplicatePrimitiveCode.*;
 
 public class ReplicateOperators {
     public static void main(String[] args) throws IOException {
-        charToAllButBooleanAndFloats("DB/src/main/java/io/deephaven/engine/table/impl/by/SumCharChunk.java");
-        charToAllButBooleanAndFloats("DB/src/main/java/io/deephaven/engine/table/impl/by/CharChunkedSumOperator.java");
-        charToAllButBooleanAndFloats("DB/src/main/java/io/deephaven/engine/table/impl/by/CharChunkedAvgOperator.java");
-        charToAllButBooleanAndFloats("DB/src/main/java/io/deephaven/engine/table/impl/by/CharChunkedVarOperator.java");
-        floatToAllFloatingPoints("DB/src/main/java/io/deephaven/engine/table/impl/by/SumFloatChunk.java");
-        floatToAllFloatingPoints("DB/src/main/java/io/deephaven/engine/table/impl/by/FloatChunkedSumOperator.java");
-        floatToAllFloatingPoints("DB/src/main/java/io/deephaven/engine/table/impl/by/FloatChunkedAvgOperator.java");
-        floatToAllFloatingPoints("DB/src/main/java/io/deephaven/engine/table/impl/by/FloatChunkedReAvgOperator.java");
-        floatToAllFloatingPoints("DB/src/main/java/io/deephaven/engine/table/impl/by/FloatChunkedVarOperator.java");
-        charToAllButBoolean("DB/src/main/java/io/deephaven/engine/table/impl/by/CharChunkedAddOnlyMinMaxOperator.java");
-        charToAllButBoolean("DB/src/main/java/io/deephaven/engine/table/impl/utils/cast/CharToDoubleCast.java");
+        charToAllButBooleanAndFloats("engine/table/src/main/java/io/deephaven/engine/table/impl/by/SumCharChunk.java");
+        charToAllButBooleanAndFloats("engine/table/src/main/java/io/deephaven/engine/table/impl/by/CharChunkedSumOperator.java");
+        charToAllButBooleanAndFloats("engine/table/src/main/java/io/deephaven/engine/table/impl/by/CharChunkedAvgOperator.java");
+        charToAllButBooleanAndFloats("engine/table/src/main/java/io/deephaven/engine/table/impl/by/CharChunkedVarOperator.java");
+        floatToAllFloatingPoints("engine/table/src/main/java/io/deephaven/engine/table/impl/by/SumFloatChunk.java");
+        floatToAllFloatingPoints("engine/table/src/main/java/io/deephaven/engine/table/impl/by/FloatChunkedSumOperator.java");
+        floatToAllFloatingPoints("engine/table/src/main/java/io/deephaven/engine/table/impl/by/FloatChunkedAvgOperator.java");
+        floatToAllFloatingPoints("engine/table/src/main/java/io/deephaven/engine/table/impl/by/FloatChunkedReAvgOperator.java");
+        floatToAllFloatingPoints("engine/table/src/main/java/io/deephaven/engine/table/impl/by/FloatChunkedVarOperator.java");
+        charToAllButBoolean("engine/table/src/main/java/io/deephaven/engine/table/impl/by/CharChunkedAddOnlyMinMaxOperator.java");
+        charToAllButBoolean("engine/table/src/main/java/io/deephaven/engine/table/impl/utils/cast/CharToDoubleCast.java");
         replicateObjectAddOnlyMinMax();
         fixupLongAddOnlyMinMax();
         charToAllButBoolean(
-                "DB/src/main/java/io/deephaven/engine/table/impl/by/CharAddOnlySortedFirstOrLastChunkedOperator.java");
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/by/CharAddOnlySortedFirstOrLastChunkedOperator.java");
         charToAllButBoolean(
-                "DB/src/main/java/io/deephaven/engine/table/impl/by/CharStreamSortedFirstOrLastChunkedOperator.java");
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/by/CharStreamSortedFirstOrLastChunkedOperator.java");
         replicateObjectAddOnlyAndStreamSortedFirstLast();
     }
 
     private static void replicateObjectAddOnlyMinMax() throws IOException {
         final String objectAddOnlyMinMax = charToObject(
-                "DB/src/main/java/io/deephaven/engine/table/impl/by/CharChunkedAddOnlyMinMaxOperator.java");
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/by/CharChunkedAddOnlyMinMaxOperator.java");
         final File objectAddOnlyMinMaxFile = new File(objectAddOnlyMinMax);
         List<String> lines = ReplicateUtilities
                 .fixupChunkAttributes(FileUtils.readLines(objectAddOnlyMinMaxFile, Charset.defaultCharset()));
@@ -58,7 +58,7 @@ public class ReplicateOperators {
 
     private static void fixupLongAddOnlyMinMax() throws IOException {
         final File longAddOnlyMinMaxFile =
-                new File("DB/src/main/java/io/deephaven/engine/table/impl/by/LongChunkedAddOnlyMinMaxOperator.java");
+                new File("engine/table/src/main/java/io/deephaven/engine/table/impl/by/LongChunkedAddOnlyMinMaxOperator.java");
         List<String> lines = ReplicateUtilities
                 .fixupChunkAttributes(FileUtils.readLines(longAddOnlyMinMaxFile, Charset.defaultCharset()));
         lines = ReplicateUtilities.globalReplacements(lines, "LongArraySource", "AbstractLongArraySource");
@@ -72,8 +72,8 @@ public class ReplicateOperators {
 
     private static void replicateObjectAddOnlyAndStreamSortedFirstLast() throws IOException {
         for (final String charClassJavaPath : new String[] {
-                "DB/src/main/java/io/deephaven/engine/table/impl/by/CharAddOnlySortedFirstOrLastChunkedOperator.java",
-                "DB/src/main/java/io/deephaven/engine/table/impl/by/CharStreamSortedFirstOrLastChunkedOperator.java"}) {
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/by/CharAddOnlySortedFirstOrLastChunkedOperator.java",
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/by/CharStreamSortedFirstOrLastChunkedOperator.java"}) {
             final String objectClassName =
                     charToObject(charClassJavaPath);
             final File objectClassFile = new File(objectClassName);

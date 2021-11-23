@@ -22,93 +22,93 @@ import static io.deephaven.compilertools.ReplicateUtilities.*;
 //
 public class ReplicateSegmentedSortedMultiset {
     public static void main(String[] args) throws IOException {
-        charToAllButBooleanAndLong("DB/src/main/java/io/deephaven/engine/table/impl/ssms/CharSegmentedSortedMultiset.java");
+        charToAllButBooleanAndLong("engine/table/src/main/java/io/deephaven/engine/table/impl/ssms/CharSegmentedSortedMultiset.java");
         insertDateTimeExtensions(charToLong(
-                "DB/src/main/java/io/deephaven/engine/table/impl/ssms/CharSegmentedSortedMultiset.java"));
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/ssms/CharSegmentedSortedMultiset.java"));
 
         String objectSsm = charToObject(
-                "DB/src/main/java/io/deephaven/engine/table/impl/ssms/CharSegmentedSortedMultiset.java");
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/ssms/CharSegmentedSortedMultiset.java");
         fixupObjectSsm(objectSsm, ReplicateSegmentedSortedMultiset::fixupNulls,
                 ReplicateSegmentedSortedMultiset::fixupTHashes,
                 ReplicateSegmentedSortedMultiset::fixupSsmConstructor,
                 ReplicateSegmentedSortedMultiset::fixupObjectCompare);
 
-        charToAllButBoolean("DB/src/main/java/io/deephaven/engine/table/impl/by/ssmminmax/CharSetResult.java");
-        fixupObjectSsm(charToObject("DB/src/main/java/io/deephaven/engine/table/impl/by/ssmminmax/CharSetResult.java"),
+        charToAllButBoolean("engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmminmax/CharSetResult.java");
+        fixupObjectSsm(charToObject("engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmminmax/CharSetResult.java"),
                 ReplicateSegmentedSortedMultiset::fixupNulls);
 
-        charToAllButBoolean("DB/src/main/java/io/deephaven/engine/table/impl/by/ssmpercentile/CharPercentileTypeHelper.java");
+        charToAllButBoolean("engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmpercentile/CharPercentileTypeHelper.java");
         fixupObjectSsm(
-                charToObject("DB/src/main/java/io/deephaven/engine/table/impl/by/ssmpercentile/CharPercentileTypeHelper.java"),
+                charToObject("engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmpercentile/CharPercentileTypeHelper.java"),
                 ReplicateSegmentedSortedMultiset::fixupNulls);
 
-        charToIntegers("DB/src/main/java/io/deephaven/engine/table/impl/by/ssmpercentile/CharPercentileTypeMedianHelper.java");
+        charToIntegers("engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmpercentile/CharPercentileTypeMedianHelper.java");
         floatToAllFloatingPoints(
-                "DB/src/main/java/io/deephaven/engine/table/impl/by/ssmpercentile/FloatPercentileTypeMedianHelper.java");
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmpercentile/FloatPercentileTypeMedianHelper.java");
 
-        charToAllButBoolean("DB/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/CharSsmBackedSource.java");
+        charToAllButBoolean("engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/CharSsmBackedSource.java");
         objectSsm = charToObject(
-                "DB/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/CharSsmBackedSource.java");
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/CharSsmBackedSource.java");
         fixupObjectSsm(objectSsm,
                 ReplicateSegmentedSortedMultiset::fixupSourceConstructor,
                 (l) -> replaceRegion(l, "CreateNew", Collections.singletonList(
                         "            underlying.set(key, ssm = new ObjectSegmentedSortedMultiset(DistinctOperatorFactory.NODE_SIZE, Object.class));")));
 
         charToAllButBoolean(
-                "DB/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/count/CharChunkedCountDistinctOperator.java");
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/count/CharChunkedCountDistinctOperator.java");
         fixupObjectKernelOperator(
                 charToObject(
-                        "DB/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/count/CharChunkedCountDistinctOperator.java"),
+                        "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/count/CharChunkedCountDistinctOperator.java"),
                 "ssms");
 
         charToAllButBooleanAndLong(
-                "DB/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/distinct/CharChunkedDistinctOperator.java");
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/distinct/CharChunkedDistinctOperator.java");
         fixupLongKernelOperator(
                 charToLong(
-                        "DB/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/distinct/CharChunkedDistinctOperator.java"),
+                        "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/distinct/CharChunkedDistinctOperator.java"),
                 "    externalResult = new DateTimeSsmSourceWrapper(internalResult);");
         fixupObjectKernelOperator(
                 charToObject(
-                        "DB/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/distinct/CharChunkedDistinctOperator.java"),
+                        "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/distinct/CharChunkedDistinctOperator.java"),
                 "internalResult");
 
         charToAllButBooleanAndLong(
-                "DB/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/unique/CharChunkedUniqueOperator.java");
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/unique/CharChunkedUniqueOperator.java");
         fixupLongKernelOperator(
                 charToLong(
-                        "DB/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/unique/CharChunkedUniqueOperator.java"),
+                        "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/unique/CharChunkedUniqueOperator.java"),
                 "    externalResult = new BoxedColumnSource.OfDateTime(internalResult);");
         fixupObjectKernelOperator(
                 charToObject(
-                        "DB/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/unique/CharChunkedUniqueOperator.java"),
+                        "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/unique/CharChunkedUniqueOperator.java"),
                 "ssms");
 
         charToAllButBoolean(
-                "DB/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/count/CharRollupCountDistinctOperator.java");
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/count/CharRollupCountDistinctOperator.java");
         fixupObjectKernelOperator(charToObject(
-                "DB/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/count/CharRollupCountDistinctOperator.java"),
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/count/CharRollupCountDistinctOperator.java"),
                 "ssms");
 
         charToAllButBooleanAndLong(
-                "DB/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/distinct/CharRollupDistinctOperator.java");
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/distinct/CharRollupDistinctOperator.java");
         fixupLongKernelOperator(
                 charToLong(
-                        "DB/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/distinct/CharRollupDistinctOperator.java"),
+                        "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/distinct/CharRollupDistinctOperator.java"),
                 "    externalResult = new DateTimeSsmSourceWrapper(internalResult);");
         fixupObjectKernelOperator(
                 charToObject(
-                        "DB/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/distinct/CharRollupDistinctOperator.java"),
+                        "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/distinct/CharRollupDistinctOperator.java"),
                 "internalResult");
 
         charToAllButBooleanAndLong(
-                "DB/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/unique/CharRollupUniqueOperator.java");
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/unique/CharRollupUniqueOperator.java");
         fixupLongKernelOperator(
                 charToLong(
-                        "DB/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/unique/CharRollupUniqueOperator.java"),
+                        "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/unique/CharRollupUniqueOperator.java"),
                 "    externalResult = new BoxedColumnSource.OfDateTime(internalResult);");
         fixupObjectKernelOperator(
                 charToObject(
-                        "DB/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/unique/CharRollupUniqueOperator.java"),
+                        "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/unique/CharRollupUniqueOperator.java"),
                 "ssms");
     }
 

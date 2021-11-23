@@ -17,8 +17,7 @@ sourceSets {
 }
 
 dependencies {
-    implementation project(':engine-table'),
-            project(':DB')
+    implementation project(':engine-table')
 
     annotationProcessor 'org.immutables:value:2.8.1'
     compileOnly project(':util-immutables')

@@ -6,7 +6,7 @@ configurations {
 
 dependencies {
 
-    compile project(':DB')
+    compile project(':engine-table')
 
     compileOnly 'javax.inject:javax.inject:1'
 

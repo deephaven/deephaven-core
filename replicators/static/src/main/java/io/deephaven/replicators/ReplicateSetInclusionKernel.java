@@ -6,6 +6,6 @@ import static io.deephaven.compilertools.ReplicatePrimitiveCode.charToAllButBool
 
 public class ReplicateSetInclusionKernel {
     public static void main(String[] args) throws IOException {
-        charToAllButBoolean("DB/src/main/java/io/deephaven/engine/table/impl/select/setinclusion/CharSetInclusionKernel.java");
+        charToAllButBoolean("engine/table/src/main/java/io/deephaven/engine/table/impl/select/setinclusion/CharSetInclusionKernel.java");
     }
 }

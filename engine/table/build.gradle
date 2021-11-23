@@ -1,7 +1,8 @@
-import io.deephaven.tools.Tools
-
-configurations {
+plugins {
+    id 'java-library'
 }
+
+description 'Deephaven Engine Table Implementation'
 
 sourceSets {
     main {
@@ -17,9 +18,28 @@ sourceSets {
 }
 
 dependencies {
-    compile project(':engine-api'),
+    api project(':engine-api')
+
+    implementation project(':Util'),
+            project(':CompilerTools'),
+            project(':TableLogger'),
+            project(':DHProcess'),
+            project(':web-shared-beans'),
+            project(':deephaven-jpy'),
+            project(':deephaven-jpy-ext'),
             project(':engine-stringset'),
-            project(':engine-tuplesource')
+            project(':engine-base'),
+            project(':engine-tuplesource'),
+            'org.scala-lang:scala-library-all:2.12.2',
+            'org.scala-lang:scala-compiler:2.12.2',
+            "org.eclipse.jgit:org.eclipse.jgit:$Classpaths.JGIT_VERSION",
+            'com.tdunning:t-digest:3.2'
+
+    compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
+
+    Classpaths.inheritGroovy(project, 'groovy', 'implementation')
+    Classpaths.inheritGroovy(project, 'groovy-json', 'implementation')
+    Classpaths.inheritJavaParser project
 
     testImplementation TestTools.projectDependency(project, 'engine-rowset'),
             project(':extensions-csv'),
@@ -29,6 +49,20 @@ dependencies {
 spotless {
     java {
         targetExclude(
+                '**/generated/**',
+                '**/*Boolean*.java',
+                '**/*Byte*.java',
+                '**/*Char*.java',
+                '**/*Short*.java',
+                '**/*Int*.java',
+                '**/*Long*.java',
+                '**/*Float*.java',
+                '**/*Double*.java',
+                '**/*Object*.java',
+                '**/*StateManager.java',
+                'src/main/java/io/deephaven/engine/table/impl/SymbolTableCombiner.java',
+                'src/main/java/io/deephaven/libs/GroovyStaticImports.java',
+                'src/test/java/**/*Sample.java'
         )
     }
 }

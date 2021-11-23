@@ -17,7 +17,7 @@ public class ReplicateRegionAndRegionedSourceTests {
 
     public static void main(String... args) throws IOException {
         charToAllButBoolean(
-                "DB/src/test/java/io/deephaven/engine/table/impl/sources/regioned/TestRegionedColumnSourceChar.java");
-        charToAllButBooleanAndByte("DB/src/test/java/io/deephaven/engine/table/impl/sources/regioned/TstColumnRegionChar.java");
+                "engine/table/src/test/java/io/deephaven/engine/table/impl/sources/regioned/TestRegionedColumnSourceChar.java");
+        charToAllButBooleanAndByte("engine/table/src/test/java/io/deephaven/engine/table/impl/sources/regioned/TstColumnRegionChar.java");
     }
 }

@@ -10,8 +10,7 @@ sourceSets {
 
 dependencies {
     implementation project(':CompilerTools'),
-            project(':engine-table'),
-            project(':DB')
+            project(':engine-table')
 }
 
 task all {

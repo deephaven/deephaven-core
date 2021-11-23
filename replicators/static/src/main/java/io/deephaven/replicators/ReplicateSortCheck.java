@@ -19,7 +19,7 @@ public class ReplicateSortCheck {
     public static void main(String[] args) throws IOException {
         final List<String> invertList = new ArrayList<>();
 
-        final String charSortCheckPath = "DB/src/main/java/io/deephaven/engine/table/impl/sortcheck/CharSortCheck.java";
+        final String charSortCheckPath = "engine/table/src/main/java/io/deephaven/engine/table/impl/sortcheck/CharSortCheck.java";
         invertList.add(charSortCheckPath);
         invertList.addAll(charToAllButBoolean(charSortCheckPath));
         final String objectPath = charToObject(charSortCheckPath);
