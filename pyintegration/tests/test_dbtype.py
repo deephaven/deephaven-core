@@ -4,13 +4,12 @@
 
 import unittest
 
+import jpy
 import numpy
 
-from tests.testbase import BaseTestCase
-
-import jpy
-from deephaven2.dtypes import DType
 from deephaven2 import dtypes
+from deephaven2.dtypes import DType
+from tests.testbase import BaseTestCase
 
 
 class DBTypeTestCase(BaseTestCase):

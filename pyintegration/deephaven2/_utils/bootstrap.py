@@ -1,18 +1,20 @@
 #
 #   Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
 #
-
 import os
-from tests.utils.start_jvm import start_jvm
+
 import jpy
+
+from .start_jvm import start_jvm
+
+DEFAULT_DEVROOT = os.environ.get('DEEPHAVEN_DEVROOT', "/tmp/pyintegration")
+DEFAULT_WORKSPACE = os.environ.get('DEEPHAVEN_WORKSPACE', "/tmp")
+DEFAULT_PROPFILE = os.environ.get('DEEPHAVEN_PROPFILE', '/app/resources/grpc-api-docker.prop')
+DEFAULT_CLASSPATH = os.environ.get('DEEPHAVEN_CLASSPATH', "/app/classes/*:/app/libs/*")
 
 
 def build_py_session():
     if not jpy.has_jvm():
-        DEFAULT_DEVROOT = os.environ.get('DEEPHAVEN_DEVROOT', "/tmp/pyintegration")
-        DEFAULT_WORKSPACE = os.environ.get('DEEPHAVEN_WORKSPACE', "/tmp")
-        DEFAULT_PROPFILE = os.environ.get('DEEPHAVEN_PROPFILE', '/tmp/pyintegration/configs/dh-defaults.prop')
-        DEFAULT_CLASSPATH = os.environ.get('DEEPHAVEN_CLASSPATH', "/app/classese/*:/app/libs/*")
         os.environ['JAVA_VERSION'] = '1.8'
         os.environ['JDK_HOME'] = '/usr/lib/jvm/zulu8/jre/'
 

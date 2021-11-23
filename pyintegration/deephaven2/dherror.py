@@ -8,6 +8,7 @@ Python/Java integration layer and provides 3 convenient properties: root_cause, 
 traceback for easy debugging.
 
 """
+import re
 import traceback
 
 
@@ -36,7 +37,7 @@ class DHError(Exception):
                     self._compact_tb.append(tb_ln[:-1].strip())
                 else:
                     self._compact_tb.append(tb_ln)
-            elif tb_ln.startswith("RuntimeError"):
+            elif re.match("^.*Error:", tb_ln):
                 self._root_cause = tb_ln
                 self._compact_tb.append(tb_ln)
                 for_compact_tb = False

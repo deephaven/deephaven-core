@@ -133,7 +133,7 @@ Webapi.persistentquery.heap.default=4
 OneClick.allowedPattern.USym=^[A-Za-z0-9/.]+$
 OneClick.enforceUpperCaseColumns=USym
 
-LiveTableMonitor.checkTableOperations=true
+LiveTableMonitor.checkTableOperations=True
 
 logroot=/var/log/deephaven
 
