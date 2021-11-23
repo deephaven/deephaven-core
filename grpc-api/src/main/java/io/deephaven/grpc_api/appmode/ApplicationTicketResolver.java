@@ -10,6 +10,7 @@ import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.grpc_api.session.SessionState;
 import io.deephaven.grpc_api.session.TicketResolverBase;
 import io.deephaven.grpc_api.session.TicketRouter;
+import io.deephaven.grpc_api.util.ApplicationTicketHelper;
 import io.deephaven.grpc_api.util.Exceptions;
 import io.deephaven.grpc_api.util.TicketRouterHelper;
 import io.deephaven.proto.backplane.grpc.Ticket;
@@ -21,7 +22,6 @@ import javax.inject.Singleton;
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.CharsetDecoder;
-import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -29,15 +29,12 @@ import java.util.function.Consumer;
 
 @Singleton
 public class ApplicationTicketResolver extends TicketResolverBase implements ApplicationStates {
-    private static final char TICKET_PREFIX = 'a';
-    private static final String FLIGHT_DESCRIPTOR_ROUTE = "app";
-    private static final String FIELD_PATH_SEGMENT = "field";
 
     private final Map<String, ApplicationState> applicationMap = new ConcurrentHashMap<>();
 
     @Inject
     public ApplicationTicketResolver() {
-        super((byte) TICKET_PREFIX, FLIGHT_DESCRIPTOR_ROUTE);
+        super((byte) ApplicationTicketHelper.TICKET_PREFIX, ApplicationTicketHelper.FLIGHT_DESCRIPTOR_ROUTE);
     }
 
     @Override
@@ -152,11 +149,11 @@ public class ApplicationTicketResolver extends TicketResolverBase implements App
      * Convenience method to convert from an application variable name to Ticket
      *
      * @param app the application state that this field is defined in
-     * @param id the application variable id to convert
+     * @param name the application variable name to convert
      * @return the ticket this descriptor represents
      */
-    public static Ticket ticketForName(final ApplicationState app, final String id) {
-        final byte[] ticket = (TICKET_PREFIX + "/" + app.id() + "/f/" + id).getBytes(StandardCharsets.UTF_8);
+    public static Ticket ticketForName(final ApplicationState app, final String name) {
+        final byte[] ticket = ApplicationTicketHelper.applicationFieldToBytes(app.id(), name);
         return Ticket.newBuilder()
                 .setTicket(ByteStringAccess.wrap(ticket))
                 .build();
@@ -170,7 +167,7 @@ public class ApplicationTicketResolver extends TicketResolverBase implements App
      * @return the ticket this descriptor represents
      */
     public static Flight.Ticket flightTicketForName(final ApplicationState app, final String name) {
-        final byte[] ticket = (TICKET_PREFIX + "/" + app.id() + "/f/" + name).getBytes(StandardCharsets.UTF_8);
+        final byte[] ticket = ApplicationTicketHelper.applicationFieldToBytes(app.id(), name);
         return Flight.Ticket.newBuilder()
                 .setTicket(ByteStringAccess.wrap(ticket))
                 .build();
@@ -186,10 +183,7 @@ public class ApplicationTicketResolver extends TicketResolverBase implements App
     public static Flight.FlightDescriptor descriptorForName(final ApplicationState app, final String name) {
         return Flight.FlightDescriptor.newBuilder()
                 .setType(Flight.FlightDescriptor.DescriptorType.PATH)
-                .addPath(FLIGHT_DESCRIPTOR_ROUTE)
-                .addPath(app.id())
-                .addPath(FIELD_PATH_SEGMENT)
-                .addPath(name)
+                .addAllPath(ApplicationTicketHelper.applicationFieldToPath(app.id(), name))
                 .build();
     }
 
@@ -257,7 +251,7 @@ public class ApplicationTicketResolver extends TicketResolverBase implements App
                     "Could not resolve '" + logId + "': no application exists with the identifier: " + appId);
         }
 
-        if (!descriptor.getPath(2).equals(FIELD_PATH_SEGMENT)) {
+        if (!descriptor.getPath(2).equals(ApplicationTicketHelper.FIELD_PATH_SEGMENT)) {
             throw GrpcUtil.statusRuntimeException(Code.NOT_FOUND,
                     "Could not resolve '" + logId + "': path is not an application field");
         }

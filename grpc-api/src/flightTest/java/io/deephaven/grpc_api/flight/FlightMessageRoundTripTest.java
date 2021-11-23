@@ -26,6 +26,7 @@ import io.deephaven.grpc_api.session.SessionState;
 import io.deephaven.grpc_api.session.TicketResolver;
 import io.deephaven.grpc_api.util.FlightExportTicketHelper;
 import io.deephaven.grpc_api.util.Scheduler;
+import io.deephaven.grpc_api.util.ScopeTicketHelper;
 import io.deephaven.proto.backplane.grpc.HandshakeRequest;
 import io.deephaven.proto.backplane.grpc.HandshakeResponse;
 import io.deephaven.proto.backplane.grpc.SessionServiceGrpc;
@@ -378,7 +379,7 @@ public class FlightMessageRoundTripTest {
     }
 
     private static FlightDescriptor arrowFlightDescriptorForName(String name) {
-        return FlightDescriptor.path(ScopeTicketResolver.descriptorForName(name).getPathList());
+        return FlightDescriptor.path(ScopeTicketHelper.nameToPath(name));
     }
 
     @Test

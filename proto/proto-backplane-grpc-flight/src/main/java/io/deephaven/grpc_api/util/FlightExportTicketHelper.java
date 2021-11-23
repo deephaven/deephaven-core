@@ -28,8 +28,8 @@ public class FlightExportTicketHelper {
     public static Flight.FlightDescriptor exportIdToDescriptor(int exportId) {
         return Flight.FlightDescriptor.newBuilder()
                 .setType(Flight.FlightDescriptor.DescriptorType.PATH)
-                .addPath(ExportTicketHelper.FLIGHT_DESCRIPTOR_ROUTE)
-                .addPath(Integer.toString(exportId)).build();
+                .addAllPath(ExportTicketHelper.exportIdToPath(exportId))
+                .build();
     }
 
     /**

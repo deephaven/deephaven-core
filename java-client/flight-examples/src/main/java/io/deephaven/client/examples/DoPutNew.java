@@ -1,9 +1,10 @@
 package io.deephaven.client.examples;
 
+import io.deephaven.client.impl.ExportId;
 import io.deephaven.client.impl.FlightSession;
-import io.deephaven.client.impl.HasTicket;
+import io.deephaven.client.impl.HasTicketId;
+import io.deephaven.client.impl.ScopeId;
 import io.deephaven.client.impl.TableHandle;
-import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.qst.table.TableSpec;
 import org.apache.arrow.flight.FlightStream;
 import picocli.CommandLine;
@@ -17,9 +18,13 @@ import java.util.concurrent.ExecutionException;
         description = "Do Put New", version = "0.1.0")
 class DoPutNew extends FlightExampleBase {
 
-    @Option(names = {"-e", "--efficient"}, description = "Use the more efficient version",
-            defaultValue = "false")
-    boolean efficient;
+    enum Method {
+        HANDLE, TICKET, DIRECT
+    }
+
+    @Option(names = {"-m", "--method"}, description = "The method to use. [ ${COMPLETION-CANDIDATES} ]",
+            defaultValue = "HANDLE")
+    Method method;
 
     @Option(names = {"-n", "--num-rows"}, description = "The number of rows to doPut",
             defaultValue = "1000")
@@ -30,10 +35,18 @@ class DoPutNew extends FlightExampleBase {
 
     @Override
     protected void execute(FlightSession flight) throws Exception {
-        if (efficient) {
-            moreEfficient(flight);
-        } else {
-            easy(flight);
+        switch (method) {
+            case HANDLE:
+                handle(flight);
+                break;
+            case TICKET:
+                ticket(flight);
+                break;
+            case DIRECT:
+                direct(flight);
+                break;
+            default:
+                throw new IllegalStateException("Unexpected method " + method);
         }
     }
 
@@ -41,29 +54,36 @@ class DoPutNew extends FlightExampleBase {
         return TableSpec.empty(numRows).view("X=i");
     }
 
-    private void publish(FlightSession flight, HasTicket ticket) throws InterruptedException, ExecutionException {
-        flight.session().publish(variableName, ticket).get();
+    private void publish(FlightSession flight, HasTicketId ticketId) throws InterruptedException, ExecutionException {
+        flight.session().publish(variableName, ticketId).get();
     }
 
-    private void easy(FlightSession flight) throws Exception {
+    private void handle(FlightSession flight) throws Exception {
         // This version is "prettier", but uses one extra ticket and round trip
         try (final TableHandle sourceHandle = flight.session().execute(table());
                 final FlightStream doGet = flight.stream(sourceHandle);
-                final TableHandle destHandle = flight.put(doGet)) {
+                final TableHandle destHandle = flight.putExport(doGet)) {
             publish(flight, destHandle);
         }
     }
 
-    private void moreEfficient(FlightSession flight) throws Exception {
+    private void ticket(FlightSession flight) throws Exception {
         // This version is more efficient, but requires manual management of a ticket
         try (final TableHandle sourceHandle = flight.session().execute(table());
                 final FlightStream doGet = flight.stream(sourceHandle)) {
-            final Ticket ticket = flight.putTicket(doGet);
+            final ExportId exportId = flight.putExportManual(doGet);
             try {
-                publish(flight, () -> ticket);
+                publish(flight, exportId);
             } finally {
-                flight.release(ticket);
+                flight.release(exportId);
             }
+        }
+    }
+
+    private void direct(FlightSession flight) throws Exception {
+        try (final TableHandle sourceHandle = flight.session().execute(table());
+                final FlightStream doGet = flight.stream(sourceHandle)) {
+            flight.put(new ScopeId(variableName), doGet);
         }
     }
 

@@ -64,7 +64,7 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
             final BarrageSession session, final TableHandle tableHandle, final BarrageSubscriptionOptions options) {
         super(false);
 
-        this.logName = ExportTicketHelper.toReadableString(tableHandle.ticket(), "tableHandle.ticket()");
+        this.logName = tableHandle.exportId().toString();
         this.options = options;
         this.tableHandle = tableHandle;
 
@@ -199,8 +199,7 @@ public class BarrageSubscriptionImpl extends ReferenceCountedLivenessNode implem
             optOffset = options.appendTo(metadata);
         }
 
-        final int ticOffset = BarrageSubscriptionRequest.createTicketVector(metadata,
-                tableHandle.ticket().getTicket().asReadOnlyByteBuffer());
+        final int ticOffset = BarrageSubscriptionRequest.createTicketVector(metadata, tableHandle.ticketId().bytes());
         BarrageSubscriptionRequest.startBarrageSubscriptionRequest(metadata);
         BarrageSubscriptionRequest.addColumns(metadata, colOffset);
         BarrageSubscriptionRequest.addViewport(metadata, vpOffset);

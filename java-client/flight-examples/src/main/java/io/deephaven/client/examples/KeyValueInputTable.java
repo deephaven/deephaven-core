@@ -1,16 +1,14 @@
 package io.deephaven.client.examples;
 
-import com.google.protobuf.ByteStringAccess;
 import io.deephaven.client.impl.FlightSession;
+import io.deephaven.client.impl.ScopeId;
 import io.deephaven.client.impl.TableHandle;
 import io.deephaven.client.impl.TableHandle.TableHandleException;
-import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.qst.column.header.ColumnHeader;
 import io.deephaven.qst.table.InMemoryKeyBackedInputTable;
 import io.deephaven.qst.table.NewTable;
 import io.deephaven.qst.table.TableHeader;
 import io.deephaven.qst.table.TableSpec;
-import io.deephaven.qst.table.TicketTable;
 import org.apache.arrow.flight.FlightInfo;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
@@ -47,7 +45,6 @@ class KeyValueInputTable extends FlightExampleBase {
         if (!checkExists(flight)) {
             createKeyBackedInputTable(flight);
         }
-
         if (value.isEmpty()) {
             deleteFromInputTable(flight);
         } else {
@@ -80,20 +77,15 @@ class KeyValueInputTable extends FlightExampleBase {
     private void addToInputTable(FlightSession flight)
             throws InterruptedException, ExecutionException, TimeoutException {
         final NewTable newRow = KEY_HEADER.header(VALUE_HEADER).row(key, value).newTable();
-        flight.addToInputTable(this::scopedTicket, newRow, bufferAllocator).get(5, TimeUnit.SECONDS);
+        flight.addToInputTable(new ScopeId(scopedTableName), newRow, bufferAllocator)
+                .get(5, TimeUnit.SECONDS);
     }
 
     private void deleteFromInputTable(FlightSession flight)
             throws InterruptedException, ExecutionException, TimeoutException {
         final NewTable deleteRow = KEY_HEADER.row(key).newTable();
-        flight.deleteFromInputTable(this::scopedTicket, deleteRow, bufferAllocator).get(5, TimeUnit.SECONDS);
-    }
-
-    private Ticket scopedTicket() {
-        // Don't need to export it ourself - can reference expected ticket directly
-        return Ticket.newBuilder()
-                .setTicket(ByteStringAccess.wrap(TicketTable.fromQueryScopeField(scopedTableName).ticket()))
-                .build();
+        flight.deleteFromInputTable(new ScopeId(scopedTableName), deleteRow, bufferAllocator)
+                .get(5, TimeUnit.SECONDS);
     }
 
     public static void main(String[] args) {

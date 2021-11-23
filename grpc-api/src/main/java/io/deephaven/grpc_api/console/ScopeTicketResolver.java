@@ -14,6 +14,7 @@ import io.deephaven.grpc_api.session.SessionState;
 import io.deephaven.grpc_api.session.TicketResolverBase;
 import io.deephaven.grpc_api.session.TicketRouter;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
+import io.deephaven.grpc_api.util.ScopeTicketHelper;
 import io.deephaven.grpc_api.util.TicketRouterHelper;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import org.apache.arrow.flight.impl.Flight;
@@ -24,13 +25,13 @@ import javax.inject.Singleton;
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.CharsetDecoder;
-import java.nio.charset.StandardCharsets;
 import java.util.function.Consumer;
+
+import static io.deephaven.grpc_api.util.ScopeTicketHelper.FLIGHT_DESCRIPTOR_ROUTE;
+import static io.deephaven.grpc_api.util.ScopeTicketHelper.TICKET_PREFIX;
 
 @Singleton
 public class ScopeTicketResolver extends TicketResolverBase {
-    private static final char TICKET_PREFIX = 's';
-    private static final String FLIGHT_DESCRIPTOR_ROUTE = "scope";
 
     private final GlobalSessionProvider globalSessionProvider;
 
@@ -150,9 +151,8 @@ public class ScopeTicketResolver extends TicketResolverBase {
      * @return the flight ticket this descriptor represents
      */
     public static Flight.Ticket flightTicketForName(final String name) {
-        final byte[] ticket = (TICKET_PREFIX + "/" + name).getBytes(StandardCharsets.UTF_8);
         return Flight.Ticket.newBuilder()
-                .setTicket(ByteStringAccess.wrap(ticket))
+                .setTicket(ByteStringAccess.wrap(ScopeTicketHelper.nameToBytes(name)))
                 .build();
     }
 
@@ -163,9 +163,8 @@ public class ScopeTicketResolver extends TicketResolverBase {
      * @return the flight ticket this descriptor represents
      */
     public static Ticket ticketForName(final String name) {
-        final byte[] ticket = (TICKET_PREFIX + "/" + name).getBytes(StandardCharsets.UTF_8);
         return Ticket.newBuilder()
-                .setTicket(ByteStringAccess.wrap(ticket))
+                .setTicket(ByteStringAccess.wrap(ScopeTicketHelper.nameToBytes(name)))
                 .build();
     }
 
@@ -178,8 +177,7 @@ public class ScopeTicketResolver extends TicketResolverBase {
     public static Flight.FlightDescriptor descriptorForName(final String name) {
         return Flight.FlightDescriptor.newBuilder()
                 .setType(Flight.FlightDescriptor.DescriptorType.PATH)
-                .addPath(FLIGHT_DESCRIPTOR_ROUTE)
-                .addPath(name)
+                .addAllPath(ScopeTicketHelper.nameToPath(name))
                 .build();
     }
 
