@@ -11,21 +11,14 @@ import java.util.Map;
 
 @JsType(name = "TimeZone", namespace = "dh.i18n")
 public class JsTimeZone {
-    // Cache the time zones that are parsed so we don't need to recalculate them
-    private static final Map<String, JsTimeZone> timeZoneCache = new HashMap<>();
-
-    // Map of all time IDs to their json code string
-    private static final Map<String, TimeZone> timeZones = new HashMap<>();
+    // Map of all time IDs to their JsTimeZone
+    private static final Map<String, JsTimeZone> timeZones = new HashMap<>();
 
     public static JsTimeZone getTimeZone(String tzCode) {
-        return timeZoneCache.computeIfAbsent(tzCode, ignored -> createTimeZone(tzCode));
+        return getTimeZoneForCode(tzCode);
     }
 
-    private static JsTimeZone createTimeZone(String tzCode) {
-        return new JsTimeZone(getTimeZoneForCode(tzCode));
-    }
-
-    private static TimeZone getTimeZoneForCode(String tzCode) {
+    private static JsTimeZone getTimeZoneForCode(String tzCode) {
         initTimeZones();
 
         if (!timeZones.containsKey(tzCode)) {
@@ -532,11 +525,21 @@ public class JsTimeZone {
 
     /**
      * Add a time zone to the map. Throws if there already exists an entry for that key
-     * 
+     *
      * @param key The key to map from
      * @param tz The TimeZone to map to
      */
     private static void addMapping(String key, TimeZone tz) {
+        addMapping(key, new JsTimeZone(tz));
+    }
+
+    /**
+     * Add a time zone to the map. Throws if there already exists an entry for that key
+     * 
+     * @param key The key to map from
+     * @param tz The JsTimeZone to map to
+     */
+    private static void addMapping(String key, JsTimeZone tz) {
         if (timeZones.containsKey(key)) {
             throw new IllegalArgumentException("Attempting to add the same key twice: " + key);
         }
@@ -551,7 +554,7 @@ public class JsTimeZone {
      * @param existingKey The existing key to map from
      */
     private static void addMapping(String key, String existingKey) {
-        final TimeZone existing = timeZones.get(existingKey);
+        final JsTimeZone existing = timeZones.get(existingKey);
         if (existing == null) {
             throw new IllegalArgumentException("Existing key didn't exist " + existingKey);
         }
