@@ -24,7 +24,7 @@ public abstract class AbstractNotification implements NotificationQueue.Notifica
     }
 
     @Override
-    public boolean mustExecuteWithLtmLock() {
+    public boolean mustExecuteWithUgpLock() {
         return false;
     }
 

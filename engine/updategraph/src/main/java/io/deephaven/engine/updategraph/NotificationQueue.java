@@ -34,7 +34,7 @@ public interface NotificationQueue {
          *
          * @return true if this notification must be executed directly under the protection of the UGP lock
          */
-        boolean mustExecuteWithLtmLock();
+        boolean mustExecuteWithUgpLock();
 
         /**
          * Can this notification be executed? That is, are all of it's dependencies satisfied.

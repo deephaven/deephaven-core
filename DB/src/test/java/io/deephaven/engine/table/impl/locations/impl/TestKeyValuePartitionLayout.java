@@ -3,7 +3,7 @@ package io.deephaven.engine.table.impl.locations.impl;
 import io.deephaven.base.FileUtils;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.local.FileTableLocationKey;
-import io.deephaven.engine.table.impl.locations.local.KeyValuePartitionLayout;
+import io.deephaven.parquet.table.layout.KeyValuePartitionLayout;
 import junit.framework.TestCase;
 import org.junit.After;
 import org.junit.Before;

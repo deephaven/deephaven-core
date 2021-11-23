@@ -359,16 +359,6 @@ class TestTableTools(unittest.TestCase):
         # TODO: getKey(), getPrevKey()
         pass
 
-    @unittest.skip("what to do?")
-    def testReadFiles(self):
-        """
-        Test for file reading capability?
-        """
-
-        # TODO: readBin(), readCsv(), readHeaderlessCsv(), writeCsv()
-        # need data files for these tests
-        pass
-
     def testPrimitiveColCases(self):
         """
         Testing column construction from primitive cases

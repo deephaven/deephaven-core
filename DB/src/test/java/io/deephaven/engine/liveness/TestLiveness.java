@@ -14,7 +14,7 @@ import org.junit.Test;
  */
 public class TestLiveness extends TestCase {
 
-    private boolean oldCheckLtm;
+    private boolean oldCheckUgp;
     private LivenessScope scope;
 
     @Before
@@ -23,7 +23,7 @@ public class TestLiveness extends TestCase {
         super.setUp();
         UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
         UpdateGraphProcessor.DEFAULT.resetForUnitTests(false);
-        oldCheckLtm = UpdateGraphProcessor.DEFAULT.setCheckTableOperations(false);
+        oldCheckUgp = UpdateGraphProcessor.DEFAULT.setCheckTableOperations(false);
         scope = new LivenessScope();
         LivenessScopeStack.push(scope);
     }
@@ -34,7 +34,7 @@ public class TestLiveness extends TestCase {
         super.tearDown();
         LivenessScopeStack.pop(scope);
         scope.release();
-        UpdateGraphProcessor.DEFAULT.setCheckTableOperations(oldCheckLtm);
+        UpdateGraphProcessor.DEFAULT.setCheckTableOperations(oldCheckUgp);
         UpdateGraphProcessor.DEFAULT.resetForUnitTests(true);
     }
 

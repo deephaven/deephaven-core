@@ -1,8 +1,9 @@
-package io.deephaven.engine.table.impl.locations.local;
+package io.deephaven.parquet.table.layout;
 
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.table.Table;
 import io.deephaven.api.util.NameValidator;
+import io.deephaven.csv.CsvTools;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.TableLocationKey;
@@ -33,7 +34,7 @@ import java.util.stream.Collectors;
  * 
  * Traversal is depth-first, and assumes that target files will only be found at a single depth.
  *
- * @implNote Type inference uses {@link TableTools#readCsv(java.io.InputStream)} as a conversion tool, and hence follows
+ * @implNote Type inference uses {@link CsvTools#readCsv(java.io.InputStream)} as a conversion tool, and hence follows
  *           the same rules.
  * @implNote Column names will be legalized via {@link NameValidator#legalizeColumnName(String, Set)}.
  */
@@ -140,7 +141,7 @@ public class KeyValuePartitionLayout<TLK extends TableLocationKey> implements Ta
         final Table partitioningColumnTable;
         try {
             partitioningColumnTable = csvBuilder.length() == 0 ? TableTools.emptyTable(targetFiles.size())
-                    : TableTools.readCsv(new ByteArrayInputStream(csvBuilder.toString().getBytes()));
+                    : CsvTools.readCsv(new ByteArrayInputStream(csvBuilder.toString().getBytes()));
         } catch (IOException e) {
             throw new TableDataException("Failed converting partition CSV to table for " + tableRootDirectory, e);
         }

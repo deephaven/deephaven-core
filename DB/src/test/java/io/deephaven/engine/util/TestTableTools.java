@@ -4,7 +4,6 @@
 
 package io.deephaven.engine.util;
 
-import io.deephaven.base.FileUtils;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.compilertools.CompilerTools;
 import io.deephaven.datastructures.util.CollectionUtil;
@@ -17,7 +16,6 @@ import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.time.TimeZone;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.table.impl.*;
@@ -30,25 +28,17 @@ import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.ExceptionDetails;
 import io.deephaven.util.QueryConstants;
 import junit.framework.TestCase;
-import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
-import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
-import org.apache.commons.compress.archivers.tar.TarConstants;
 import org.junit.*;
 
 import java.io.*;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.util.*;
 import java.util.function.Consumer;
-import java.util.regex.Pattern;
 
 import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.engine.table.impl.TstUtils.*;
 import static io.deephaven.util.QueryConstants.NULL_FLOAT;
 import static io.deephaven.util.QueryConstants.NULL_INT;
-import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 
-import java.nio.charset.Charset;
 import org.junit.experimental.categories.Category;
 
 /**
@@ -60,26 +50,22 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
     private static final boolean ENABLE_COMPILER_TOOLS_LOGGING = Configuration.getInstance()
             .getBooleanForClassWithDefault(TestTableTools.class, "CompilerTools.logEnabled", false);
 
-    private final static String TEST_ROOT = Configuration.getInstance().getWorkspacePath() + "TestTableTools";
-    private final static File TEST_ROOT_FILE = new File(TEST_ROOT);
-
     private UpdateErrorReporter oldReporter;
 
-    private boolean oldCheckLtm;
+    private boolean oldCheckUgp;
     private boolean oldLogEnabled;
 
     private LivenessScope scope;
 
     private Table table1;
     private Table table2;
-    private Table table3;
     private Table emptyTable;
 
     @Before
     public void setUp() throws Exception {
         super.setUp();
 
-        oldCheckLtm = UpdateGraphProcessor.DEFAULT.setCheckTableOperations(false);
+        oldCheckUgp = UpdateGraphProcessor.DEFAULT.setCheckTableOperations(false);
         oldLogEnabled = CompilerTools.setLogEnabled(ENABLE_COMPILER_TOOLS_LOGGING);
         UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
         UpdateGraphProcessor.DEFAULT.resetForUnitTests(false);
@@ -90,24 +76,12 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
 
         oldReporter = AsyncClientErrorNotifier.setReporter(this);
 
-        // noinspection ResultOfMethodCallIgnored
-        TEST_ROOT_FILE.mkdirs();
-
         table1 = testRefreshingTable(TstUtils.i(2, 3, 6, 7, 8, 10, 12, 15, 16).toTracking(),
                 TstUtils.c("StringKeys", "key1", "key1", "key1", "key1", "key2", "key2", "key2", "key2", "key2"),
                 TstUtils.c("GroupedInts", 1, 1, 2, 2, 2, 3, 3, 3, 3));
         table2 = testRefreshingTable(TstUtils.i(1, 3, 5, 10, 20, 30, 31, 32, 33).toTracking(),
                 TstUtils.c("StringKeys1", "key1", "key1", "key1", "key1", "key2", "key2", "key2", "key2", "key2"),
                 TstUtils.c("GroupedInts1", 1, 1, 2, 2, 2, 3, 3, 3, 3));
-        table3 = new InMemoryTable(
-                new String[] {"StringKeys", "GroupedInts", "Doubles", "DateTime"},
-                new Object[] {
-                        new String[] {"key11", "key11", "key21", "key21", "key22"},
-                        new int[] {1, 2, 2, NULL_INT, 3},
-                        new double[] {2.342, 0.0932, Double.NaN, NULL_DOUBLE, 3},
-                        new DateTime[] {new DateTime(100), new DateTime(10000), null,
-                                new DateTime(100000), new DateTime(1000000)}
-                });
         emptyTable = testRefreshingTable(TstUtils.c("StringKeys", (Object) CollectionUtil.ZERO_LENGTH_STRING_ARRAY),
                 TstUtils.c("GroupedInts", (Object) CollectionUtil.ZERO_LENGTH_BYTE_ARRAY));
 
@@ -120,119 +94,15 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
         LivenessScopeStack.pop(scope);
         scope.release();
         CompilerTools.setLogEnabled(oldLogEnabled);
-        UpdateGraphProcessor.DEFAULT.setCheckTableOperations(oldCheckLtm);
+        UpdateGraphProcessor.DEFAULT.setCheckTableOperations(oldCheckUgp);
         AsyncClientErrorNotifier.setReporter(oldReporter);
-
-        try {
-            UpdateGraphProcessor.DEFAULT.resetForUnitTests(true);
-        } finally {
-            if (TEST_ROOT_FILE.exists()) {
-                int tries = 0;
-                boolean success = false;
-                do {
-                    try {
-                        FileUtils.deleteRecursively(TEST_ROOT_FILE);
-                        success = true;
-                    } catch (Exception e) {
-                        System.gc();
-                        tries++;
-                    }
-                } while (!success && tries < 10);
-                TestCase.assertTrue(success);
-            }
-        }
+        UpdateGraphProcessor.DEFAULT.resetForUnitTests(true);
     }
 
     @Override
     public void reportUpdateError(Throwable t) throws IOException {
         System.err.println("Received error notification: " + new ExceptionDetails(t).getFullStackTrace());
         TestCase.fail(t.getMessage());
-    }
-
-    @Test
-    public void testTableDividendsCSV() {
-
-        final String fileDividends = "Sym,Type,Price,SecurityId\n" +
-                "GOOG, Dividend, 0.25, 200\n" +
-                "T, Dividend, 0.15, 300\n" +
-                " Z, Dividend, 0.18, 500";
-        try {
-            Table tableDividends = readCsv(new ByteArrayInputStream(fileDividends.getBytes()));
-            assertEquals(3, tableDividends.size());
-            assertEquals(4, tableDividends.getMeta().size());
-            assertEquals(0.15, tableDividends.getColumn(2).getDouble(1));
-            assertEquals(300, tableDividends.getColumn(3).getShort(1));
-            assertEquals("Z", tableDividends.getColumn(0).get(2));
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to execute readCSV test. ", e);
-        }
-    }
-
-    @Test
-    public void testTableDividendsCSVNoTrim() {
-        final String fileDividends = "Sym,Type,Price,SecurityId\n" +
-                "GOOG, Dividend, 0.25, 200\n" +
-                "T, Dividend, 0.15, 300\n" +
-                " Z, Dividend, 0.18, 500";
-        try {
-            Table tableDividends = CsvHelpers
-                    .readCsv(new ByteArrayInputStream(fileDividends.getBytes()), "DEFAULT");
-            assertEquals(3, tableDividends.size());
-            assertEquals(4, tableDividends.getMeta().size());
-            assertEquals(" 0.15", tableDividends.getColumn(2).get(1));
-            assertEquals(" 300", tableDividends.getColumn(3).get(1));
-            assertEquals(" Z", tableDividends.getColumn(0).get(2));
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to execute readCSV test. ", e);
-        }
-    }
-
-    @Test
-    public void testCompressedCSV() throws IOException {
-        final String contents = "A,B,C,D\n"
-                + "\"Hello World\",3.0,5,700\n"
-                + "\"Goodbye Cruel World\",3.1,1000000,800\n"
-                + "\"Hello World Again!\",4.0,20000000000,900\n";
-        final byte[] contentBytes = contents.getBytes(StandardCharsets.UTF_8);
-        final byte[] contentTarBytes;
-        try (final ByteArrayOutputStream bytesOut = new ByteArrayOutputStream();
-                final TarArchiveOutputStream tarOut = new TarArchiveOutputStream(bytesOut)) {
-            final TarArchiveEntry tarEntry = new TarArchiveEntry("test.csv");
-            tarEntry.setSize(contentBytes.length);
-            tarOut.putArchiveEntry(tarEntry);
-            tarOut.write(contentBytes);
-            tarOut.closeArchiveEntry();
-            tarOut.flush();
-            contentTarBytes = bytesOut.toByteArray();
-        }
-        final File csvFile = new File(TEST_ROOT_FILE, "test.csv");
-        final File csvTarFile = new File(TEST_ROOT_FILE, "test.csv.tar");
-        Files.write(csvFile.toPath(), contentBytes);
-        Files.write(csvTarFile.toPath(), contentTarBytes);
-        final Table expected = TableTools.readCsv(csvFile);
-        final Table actual = TableTools.readCsv(csvTarFile);
-        assertTableEquals(expected, actual);
-    }
-
-    @Test
-    public void testUncompressedCSVFromPath() throws IOException {
-        String contents = "A,B,C,D\n"
-                + "\"Hello World\",3.0,5,700\n"
-                + "\"Goodbye Cruel World\",3.1,1000000,800\n"
-                + "\"Hello World Again!\",4.0,20000000000,900\n";
-
-        // Although this seems arbitrary, we want to make sure our file is large enough to possibly be a tar
-        while (contents.length() < TarConstants.DEFAULT_RCDSIZE) {
-            contents += contents;
-        }
-        final byte[] contentBytes = contents.getBytes(StandardCharsets.UTF_8);
-
-        final File csvFile = new File(TEST_ROOT_FILE, "test.csv");
-        Files.write(csvFile.toPath(), contentBytes);
-
-        final Table expected = TableTools.readCsv(csvFile);
-        final Table actual = TableTools.readCsv(csvFile.getPath());
-        assertTableEquals(expected, actual);
     }
 
     @Test
@@ -333,125 +203,6 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
 
         assertEquals(t_all.size(), 3);
         assertTrue(Arrays.equals((Object[]) t_all.getColumn("Col").getDirect(), new String[] {"A", "B", "D"}));
-    }
-
-    @Test
-    public void testLoadCsv() throws Exception {
-        String allSeparators = ",|\tzZ- €9@";
-        System.out.println("Char Set: " + Charset.defaultCharset().displayName());
-
-        for (char separator : allSeparators.toCharArray()) {
-            ByteArrayOutputStream ba = new ByteArrayOutputStream();
-
-            PrintWriter out = new PrintWriter(ba);
-
-            out.printf("colA%scolB%scolC%scolD%scolE%scolF%scolG%n", separator, separator, separator, separator,
-                    separator, separator);
-            out.printf("\"mark1%smark2\"%s1%s1%s1%s%s%strue%n", separator, separator, separator, separator,
-                    separator, separator, separator);
-            out.printf("etti%s3%s6%s2%s%s%sFALSE%n", separator, separator, separator, separator, separator,
-                    separator);
-            out.printf("%s%s%s%s%s%s%n", separator, separator, separator, separator,
-                    separator, separator);
-            out.printf("%s%s%s%s%s%s%n", separator, separator, separator, separator, separator, separator);
-            out.printf("test%s3%s7.0%stest%s%s%sTRUE%n", separator, separator, separator, separator, separator,
-                    separator);
-
-            out.flush();
-            out.close();
-
-            System.out.println("=============================");
-            System.out.println(ba);
-            System.out.println("Separator: '" + separator + "'");
-            Table table = TableTools.readCsv(new ByteArrayInputStream(ba.toByteArray()), separator);
-
-            TableDefinition definition = table.getDefinition();
-
-            assertEquals("colA", definition.getColumnList().get(0).getName());
-            assertEquals(String.class, definition.getColumnList().get(0).getDataType());
-
-            assertEquals("colB", definition.getColumnList().get(1).getName());
-            assertEquals(short.class, definition.getColumnList().get(1).getDataType());
-
-            assertEquals("colC", definition.getColumnList().get(2).getName());
-            assertEquals(double.class, definition.getColumnList().get(2).getDataType());
-
-            assertEquals("colD", definition.getColumnList().get(3).getName());
-            assertEquals(String.class, definition.getColumnList().get(3).getDataType());
-
-            assertEquals("colE", definition.getColumnList().get(4).getName());
-            assertEquals(String.class, definition.getColumnList().get(4).getDataType());
-
-            assertEquals("colF", definition.getColumnList().get(5).getName());
-            assertEquals(String.class, definition.getColumnList().get(5).getDataType());
-
-            assertEquals("colG", definition.getColumnList().get(6).getName());
-            assertEquals(Boolean.class, definition.getColumnList().get(6).getDataType());
-
-            assertEquals(String.format("mark1%smark2", separator), table.getColumn("colA").get(0));
-            assertEquals(1, table.getColumn("colB").getShort(0));
-            assertEquals(1.0, table.getColumn("colC").getDouble(0), 0.000001);
-            assertEquals("1", table.getColumn("colD").get(0));
-            assertEquals(null, table.getColumn("colE").get(0));
-            assertEquals(null, table.getColumn("colF").get(0));
-            assertEquals(Boolean.TRUE, table.getColumn("colG").getBoolean(0));
-
-            assertEquals(null, table.getColumn("colA").get(2));
-            assertEquals(QueryConstants.NULL_SHORT, table.getColumn("colB").getShort(2));
-            assertEquals(QueryConstants.NULL_DOUBLE, table.getColumn("colC").getDouble(2), 0.0000001);
-            assertEquals(null, table.getColumn("colD").get(2));
-            assertEquals(null, table.getColumn("colE").get(2));
-            assertEquals(null, table.getColumn("colF").get(2));
-            assertEquals(QueryConstants.NULL_BOOLEAN, table.getColumn("colG").getBoolean(2));
-        }
-    }
-
-    @Test
-    public void testWriteCsv() throws Exception {
-        String filePath = TEST_ROOT + File.separator + "tmp.csv";
-        Table tableToTest = table3;
-        String[] colNames = {"StringKeys", "GroupedInts", "Doubles", "DateTime"};
-        long numCols = colNames.length;
-        long numRows = tableToTest.size();
-
-        String allSeparators = ",|\tzZ- €9@";
-        for (char separator : allSeparators.toCharArray()) {
-            String separatorStr = String.valueOf(separator);
-
-            // Ignore separators in double quotes using this regex
-            String splitterPattern = Pattern.quote(separatorStr) + "(?=([^\"]*\"[^\"]*\")*[^\"]*$)";
-
-            TableTools.writeCsv(tableToTest, filePath, false, TimeZone.TZ_DEFAULT, false, separator, colNames);
-            File csvFile = new File(filePath);
-            Scanner csvReader = new Scanner(csvFile);
-
-            // Check header
-            String header = csvReader.nextLine();
-            String[] headerLine = header.split(splitterPattern);
-            Assert.assertArrayEquals(colNames, headerLine);
-
-            // Check rest of values
-            for (int i = 0; i < numRows; i++) {
-                assertTrue(csvReader.hasNextLine());
-                String rawLine = csvReader.nextLine();
-                String[] csvLine = rawLine.split(splitterPattern);
-                assertEquals(numCols, csvLine.length);
-
-                // Use separatorCsvEscape and compare the values
-                for (int j = 0; j < numCols; j++) {
-                    String valFromTable = tableToTest.getColumn(colNames[j]).get(i) == null
-                            ? TableTools.nullToNullString(tableToTest.getColumn(colNames[j]).get(i))
-                            : CsvHelpers.separatorCsvEscape(tableToTest.getColumn(colNames[j]).get(i).toString(),
-                                    separatorStr);
-
-                    assertEquals(valFromTable, csvLine[j]);
-                }
-
-            }
-
-            // Check we exhausted the file
-            assertFalse(csvReader.hasNextLine());
-        }
     }
 
     @Test

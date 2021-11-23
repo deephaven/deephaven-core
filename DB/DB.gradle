@@ -71,6 +71,7 @@ dependencies {
             'com.github.f4b6a3:uuid-creator:3.6.0'
 
     testImplementation TestTools.projectDependency(project, 'engine-rowset'),
+            project(':extensions-csv'),
             project(':extensions-parquet-table')
 
     annotationProcessor 'org.immutables:value:2.8.1'

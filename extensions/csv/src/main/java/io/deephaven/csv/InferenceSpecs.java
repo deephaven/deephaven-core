@@ -1,12 +1,12 @@
-package io.deephaven.engine.util.csv;
+package io.deephaven.csv;
 
 import io.deephaven.annotations.BuildableStyle;
 import io.deephaven.qst.type.Type;
 import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
+import org.jetbrains.annotations.Nullable;
 
-import javax.annotation.Nullable;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Iterator;

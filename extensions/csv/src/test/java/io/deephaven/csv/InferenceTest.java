@@ -1,4 +1,4 @@
-package io.deephaven.engine.util.csv;
+package io.deephaven.csv;
 
 import org.junit.Test;
 

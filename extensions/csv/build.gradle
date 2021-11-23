@@ -17,6 +17,17 @@ sourceSets {
 }
 
 dependencies {
+    implementation project(':engine-table'),
+            project(':DB')
+
+    annotationProcessor 'org.immutables:value:2.8.1'
+    compileOnly project(':util-immutables')
+
+    Classpaths.inheritJUnitPlatform(project)
+    Classpaths.inheritAssertJ(project)
+
+    testImplementation TestTools.projectDependency(project, 'engine-table'),
+            TestTools.projectDependency(project, 'DB')
 }
 
 spotless {

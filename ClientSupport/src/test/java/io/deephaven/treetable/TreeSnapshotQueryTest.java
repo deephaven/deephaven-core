@@ -8,6 +8,7 @@ import io.deephaven.engine.table.TableMap;
 import io.deephaven.engine.table.lang.QueryLibrary;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.impl.select.SelectFilterFactory;
+import io.deephaven.engine.util.CsvTools;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.select.WhereFilter;
@@ -186,7 +187,7 @@ public class TreeSnapshotQueryTest extends QueryTableTestBase {
         QueryLibrary.importStatic(StaticHolder.class);
 
         final BaseTable base =
-                (BaseTable) TableTools.readCsv(TreeSnapshotQueryTest.class.getResourceAsStream("nymunis.csv"));
+                (BaseTable) CsvTools.readCsv(TreeSnapshotQueryTest.class.getResourceAsStream("nymunis.csv"));
         base.setRefreshing(true);
         return base.update("Path=(List<String>)removeEmpty(County_Name, City_Name, Town_Name, Village_Name)")
                 .update("Direct = Path.size() == 1 ? null : new ArrayList(Path.subList(0, Path.size() - 1))")

@@ -1,6 +1,5 @@
 package io.deephaven.parquet.table.layout;
 
-import io.deephaven.engine.table.impl.locations.local.KeyValuePartitionLayout;
 import io.deephaven.parquet.table.location.ParquetTableLocationKey;
 import io.deephaven.parquet.table.ParquetTableWriter;
 import org.jetbrains.annotations.NotNull;

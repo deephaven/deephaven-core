@@ -1,6 +1,5 @@
-package io.deephaven.engine.util.csv;
+package io.deephaven.csv;
 
-import io.deephaven.engine.util.csv.Parser.ParserException;
 import io.deephaven.qst.column.header.ColumnHeader;
 import io.deephaven.qst.column.header.ColumnHeaders3;
 import io.deephaven.qst.table.NewTable;
@@ -526,6 +525,6 @@ public class CsvTest {
             }
             throw e;
         }
-        assertThat(actual).isEqualTo(expected);
+        Assertions.assertThat(actual).isEqualTo(expected);
     }
 }

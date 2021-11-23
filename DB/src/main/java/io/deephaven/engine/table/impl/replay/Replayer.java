@@ -47,7 +47,7 @@ public class Replayer implements ReplayerInterface, Runnable {
     };
 
     // Condition variable for use with UpdateGraphProcessor lock - the object monitor is no longer used
-    private final Condition ltmCondition = UpdateGraphProcessor.DEFAULT.exclusiveLock().newCondition();
+    private final Condition ugpCondition = UpdateGraphProcessor.DEFAULT.exclusiveLock().newCondition();
 
     /**
      * Creates a new replayer.
@@ -100,7 +100,7 @@ public class Replayer implements ReplayerInterface, Runnable {
         } else if (UpdateGraphProcessor.DEFAULT.isRefreshThread()) {
             UpdateGraphProcessor.DEFAULT.addNotification(new TerminalNotification() {
                 @Override
-                public boolean mustExecuteWithLtmLock() {
+                public boolean mustExecuteWithUgpLock() {
                     return true;
                 }
 
@@ -118,7 +118,7 @@ public class Replayer implements ReplayerInterface, Runnable {
         Assert.assertion(UpdateGraphProcessor.DEFAULT.exclusiveLock().isHeldByCurrentThread(),
                 "UpdateGraphProcessor.DEFAULT.exclusiveLock().isHeldByCurrentThread()");
         done = true;
-        ltmCondition.signalAll();
+        ugpCondition.signalAll();
     }
 
     /**
@@ -137,7 +137,7 @@ public class Replayer implements ReplayerInterface, Runnable {
         UpdateGraphProcessor.DEFAULT.exclusiveLock().doLocked(() -> {
             while (!done && expiryTime > System.currentTimeMillis()) {
                 try {
-                    ltmCondition.await(expiryTime - System.currentTimeMillis(), TimeUnit.MILLISECONDS);
+                    ugpCondition.await(expiryTime - System.currentTimeMillis(), TimeUnit.MILLISECONDS);
                 } catch (InterruptedException interruptIsCancel) {
                     throw new CancellationException("Interrupt detected", interruptIsCancel);
                 }

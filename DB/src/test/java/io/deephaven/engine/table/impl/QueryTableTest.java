@@ -2960,7 +2960,7 @@ public class QueryTableTest extends QueryTableTestBase {
             nj.setValue((QueryTable) lTable.naturalJoin(rTable, "X"));
 
             try {
-                // The real test happens here. Off of the ltm thread we do an operation, one that supports concurrent
+                // The real test happens here. Off of the UGP thread we do an operation, one that supports concurrent
                 // instantiation, such that we use prev values when applicable. Assume the parent table has not ticked
                 // this cycle: 1) if the parent table pre-existed then we want to use prev values (to handle when parent
                 // is mid-tick but unpublished) 2) if the parent table was created this cycle, then A) prev values are
@@ -2970,9 +2970,9 @@ public class QueryTableTest extends QueryTableTestBase {
                 // The specific scenario we are trying to catch is when the parent re-uses data structures (i.e. rowSet)
                 // from its parent, which have valid prev values, but the prev values must not be used during the first
                 // cycle.
-                final Thread offltm = new Thread(() -> ft.setValue((QueryTable) nj.getValue().flatten()));
-                offltm.start();
-                offltm.join();
+                final Thread offugp = new Thread(() -> ft.setValue((QueryTable) nj.getValue().flatten()));
+                offugp.start();
+                offugp.join();
             } catch (final Exception e) {
                 throw new UncheckedDeephavenException("test failed", e);
             }

@@ -1,7 +1,7 @@
 package io.deephaven.grpc_api.uri;
 
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.util.CsvHelpers;
+import io.deephaven.engine.util.CsvTools;
 
 import javax.inject.Inject;
 import java.io.IOException;
@@ -21,7 +21,7 @@ import java.util.Set;
  * For example, {@code csv+https://media.githubusercontent.com/media/deephaven/examples/main/Iris/csv/iris.csv}.
  *
  * <p>
- * For more advanced use cases, see {@link CsvHelpers}.
+ * For more advanced use cases, see {@link CsvTools}.
  */
 public final class CsvTableResolver implements UriResolver {
 
@@ -55,7 +55,7 @@ public final class CsvTableResolver implements UriResolver {
     }
 
     public Table read(URI uri) throws IOException {
-        return CsvHelpers.readCsv(csvString(uri));
+        return CsvTools.readCsv(csvString(uri));
     }
 
     private static String csvString(URI uri) {

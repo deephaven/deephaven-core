@@ -22,6 +22,7 @@ dependencies {
             project(':engine-tuplesource')
 
     testImplementation TestTools.projectDependency(project, 'engine-rowset'),
+            project(':extensions-csv'),
             project(':extensions-parquet-table')
 }
 

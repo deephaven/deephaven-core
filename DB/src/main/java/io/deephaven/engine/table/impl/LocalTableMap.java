@@ -333,12 +333,12 @@ public class LocalTableMap extends TableMapImpl implements NotificationQueue.Dep
 
             if (executorService != null) {
                 final boolean doCheck = UpdateGraphProcessor.DEFAULT.getCheckTableOperations();
-                final boolean hasLtm = UpdateGraphProcessor.DEFAULT.sharedLock().isHeldByCurrentThread()
+                final boolean hasUgp = UpdateGraphProcessor.DEFAULT.sharedLock().isHeldByCurrentThread()
                         || UpdateGraphProcessor.DEFAULT.exclusiveLock().isHeldByCurrentThread();
                 final Map<Object, Future<Table>> futures = new LinkedHashMap<>();
                 for (final Map.Entry<Object, Table> entry : entrySet()) {
                     futures.put(entry.getKey(), executorService.submit(() -> {
-                        if (hasLtm || !doCheck) {
+                        if (hasUgp || !doCheck) {
                             final boolean oldCheck = UpdateGraphProcessor.DEFAULT.setCheckTableOperations(false);
                             try {
                                 return function.apply(entry.getKey(), entry.getValue());
@@ -429,7 +429,7 @@ public class LocalTableMap extends TableMapImpl implements NotificationQueue.Dep
             if (executorService != null) {
                 final boolean doCheck = UpdateGraphProcessor.DEFAULT.setCheckTableOperations(true);
                 UpdateGraphProcessor.DEFAULT.setCheckTableOperations(doCheck);
-                final boolean hasLtm = UpdateGraphProcessor.DEFAULT.sharedLock().isHeldByCurrentThread()
+                final boolean hasUgp = UpdateGraphProcessor.DEFAULT.sharedLock().isHeldByCurrentThread()
                         || UpdateGraphProcessor.DEFAULT.exclusiveLock().isHeldByCurrentThread();
                 final Map<Object, Future<Table>> futures = new LinkedHashMap<>();
 
@@ -438,7 +438,7 @@ public class LocalTableMap extends TableMapImpl implements NotificationQueue.Dep
                     final Table otherTable = other.get(entry.getKey());
                     if (otherTable != null) {
                         futures.put(entry.getKey(), executorService.submit(() -> {
-                            if (hasLtm || !doCheck) {
+                            if (hasUgp || !doCheck) {
                                 final boolean oldCheck = UpdateGraphProcessor.DEFAULT.setCheckTableOperations(false);
                                 try {
                                     return function.apply(entry.getValue(), otherTable);

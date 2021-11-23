@@ -27,7 +27,7 @@ public class SimulationClock implements Clock {
     }
 
     private final AtomicReference<State> state = new AtomicReference<>(State.NOT_STARTED);
-    private final Condition ltmCondition = UpdateGraphProcessor.DEFAULT.exclusiveLock().newCondition();
+    private final Condition ugpCondition = UpdateGraphProcessor.DEFAULT.exclusiveLock().newCondition();
 
     private DateTime now;
 
@@ -103,7 +103,7 @@ public class SimulationClock implements Clock {
             Assert.assertion(state.compareAndSet(State.STARTED, State.DONE),
                     "state.compareAndSet(State.STARTED, State.DONE)");
             UpdateGraphProcessor.DEFAULT.removeSource(refreshTask);
-            UpdateGraphProcessor.DEFAULT.requestSignal(ltmCondition);
+            UpdateGraphProcessor.DEFAULT.requestSignal(ugpCondition);
             return; // This return is not strictly necessary, but it seems clearer this way.
         }
         final DateTime incremented = DateTimeUtils.plus(now, stepNanos);
@@ -124,7 +124,7 @@ public class SimulationClock implements Clock {
      */
     public void awaitDoneUninterruptibly() {
         while (!done()) {
-            UpdateGraphProcessor.DEFAULT.exclusiveLock().doLocked(ltmCondition::awaitUninterruptibly);
+            UpdateGraphProcessor.DEFAULT.exclusiveLock().doLocked(ugpCondition::awaitUninterruptibly);
         }
     }
 
@@ -133,7 +133,7 @@ public class SimulationClock implements Clock {
      */
     public void awaitDone() throws InterruptedException {
         while (!done()) {
-            UpdateGraphProcessor.DEFAULT.exclusiveLock().doLocked(ltmCondition::await);
+            UpdateGraphProcessor.DEFAULT.exclusiveLock().doLocked(ugpCondition::await);
         }
     }
 }

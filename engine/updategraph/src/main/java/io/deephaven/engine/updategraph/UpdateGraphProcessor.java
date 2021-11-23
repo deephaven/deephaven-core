@@ -546,7 +546,7 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
                 }
 
                 @Override
-                public boolean mustExecuteWithLtmLock() {
+                public boolean mustExecuteWithUgpLock() {
                     return true;
                 }
 
@@ -930,7 +930,7 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
             final Notification notification = it.next();
 
             Assert.eqFalse(notification.isTerminal(), "notification.isTerminal()");
-            Assert.eqFalse(notification.mustExecuteWithLtmLock(), "notification.mustExecuteWithLtmLock()");
+            Assert.eqFalse(notification.mustExecuteWithUgpLock(), "notification.mustExecuteWithUgpLock()");
 
             if (notification.canExecute(LogicalClock.DEFAULT.currentStep())) {
                 satisfied = notification;
@@ -1062,7 +1062,7 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
                 final Notification notification = it.next();
 
                 Assert.eqFalse(notification.isTerminal(), "notification.isTerminal()");
-                Assert.eqFalse(notification.mustExecuteWithLtmLock(), "notification.mustExecuteWithLtmLock()");
+                Assert.eqFalse(notification.mustExecuteWithUgpLock(), "notification.mustExecuteWithUgpLock()");
 
                 final boolean satisfied = notification.canExecute(sourcesLastSatisfiedStep);
                 if (satisfied) {
@@ -1102,7 +1102,7 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
                 final Notification notification = it.next();
                 Assert.assertion(notification.isTerminal(), "notification.isTerminal()");
 
-                if (!notification.mustExecuteWithLtmLock()) {
+                if (!notification.mustExecuteWithUgpLock()) {
                     it.remove();
                     // for the single threaded queue case; this enqueues the notification;
                     // for the executor service case, this causes the notification to be kicked off

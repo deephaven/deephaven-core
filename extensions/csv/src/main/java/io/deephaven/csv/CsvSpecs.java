@@ -1,4 +1,4 @@
-package io.deephaven.engine.util.csv;
+package io.deephaven.csv;
 
 import io.deephaven.annotations.BuildableStyle;
 import io.deephaven.api.util.NameValidator;
