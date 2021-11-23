@@ -5,7 +5,7 @@ import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.live.LiveTableMonitor;
 import io.deephaven.db.tables.utils.TableTools;
 import io.deephaven.db.v2.*;
-import io.deephaven.test.junit4.DbCleanup;
+import io.deephaven.test.junit4.EngineCleanup;
 import io.deephaven.util.QueryConstants;
 import junit.framework.TestCase;
 import org.junit.Rule;
@@ -19,7 +19,7 @@ import static io.deephaven.db.v2.TstUtils.*;
 
 public class TestTableAssertions {
     @Rule
-    public final DbCleanup base = new DbCleanup();
+    public final EngineCleanup base = new EngineCleanup();
 
     @Test
     public void testStatic() {

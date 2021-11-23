@@ -8,7 +8,7 @@ import io.deephaven.db.v2.sources.ColumnSource;
 import io.deephaven.db.v2.utils.Index;
 import io.deephaven.db.v2.utils.TimeProvider;
 import io.deephaven.db.v2.utils.UpdatePerformanceTracker;
-import io.deephaven.test.junit4.DbCleanup;
+import io.deephaven.test.junit4.EngineCleanup;
 import io.deephaven.test.types.OutOfBandTest;
 import junit.framework.TestCase;
 
@@ -26,7 +26,7 @@ import static io.deephaven.db.v2.TstUtils.*;
 @Category(OutOfBandTest.class)
 public class TestWindowCheck {
     @Rule
-    public final DbCleanup base = new DbCleanup();
+    public final EngineCleanup base = new EngineCleanup();
 
     /**
      * Run a window check over the course of a simulated day.

@@ -11,7 +11,7 @@ import io.deephaven.db.v2.utils.IndexShiftData;
 import io.deephaven.db.v2.utils.RedirectionIndex;
 import io.deephaven.db.v2.utils.WrappedIndexRedirectionIndexImpl;
 import io.deephaven.qst.table.EmptyTable;
-import io.deephaven.test.junit4.DbCleanup;
+import io.deephaven.test.junit4.EngineCleanup;
 import junit.framework.ComparisonFailure;
 import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
@@ -32,7 +32,7 @@ import java.util.stream.LongStream;
 public class StreamTableOperationsTest {
 
     @Rule
-    public DbCleanup base = new DbCleanup();
+    public EngineCleanup base = new EngineCleanup();
 
     private static final long INPUT_SIZE = 100_000L;
     private static final long MAX_RANDOM_ITERATION_SIZE = 10_000;

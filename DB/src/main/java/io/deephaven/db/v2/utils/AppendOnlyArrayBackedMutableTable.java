@@ -1,16 +1,17 @@
 package io.deephaven.db.v2.utils;
 
-import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.TableDefinition;
-import io.deephaven.db.tables.utils.TableTools;
 import io.deephaven.db.util.config.InputTableStatusListener;
 import io.deephaven.db.v2.QueryTable;
 import io.deephaven.db.v2.sources.ArrayBackedColumnSource;
 import io.deephaven.db.v2.sources.ColumnSource;
 import io.deephaven.db.v2.sources.NullValueColumnSource;
 import io.deephaven.db.v2.sources.WritableChunkSink;
-import io.deephaven.db.v2.sources.chunk.*;
+import io.deephaven.db.v2.sources.chunk.Attributes;
+import io.deephaven.db.v2.sources.chunk.Chunk;
+import io.deephaven.db.v2.sources.chunk.ChunkSource;
+import io.deephaven.db.v2.sources.chunk.SharedContext;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collections;
@@ -88,7 +89,7 @@ public class AppendOnlyArrayBackedMutableTable extends BaseArrayBackedMutableTab
     @Override
     protected void processPendingTable(Table table, boolean allowEdits, IndexChangeRecorder indexChangeRecorder,
             Consumer<String> errorNotifier) {
-        try (Index addIndex = table.getIndex().clone()) {
+        try (final Index addIndex = table.getIndex().clone()) {
             final long firstRow = nextRow;
             final long lastRow = firstRow + addIndex.intSize() - 1;
             try (OrderedKeys destinations = OrderedKeys.forRange(firstRow, lastRow)) {

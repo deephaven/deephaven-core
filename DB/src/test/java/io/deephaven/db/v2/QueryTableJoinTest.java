@@ -8,7 +8,7 @@ import io.deephaven.db.tables.dbarrays.DbIntArray;
 import io.deephaven.db.tables.live.LiveTableMonitor;
 import io.deephaven.db.tables.select.QueryScope;
 import io.deephaven.db.tables.utils.ArrayUtils;
-import io.deephaven.test.junit4.DbCleanup;
+import io.deephaven.test.junit4.EngineCleanup;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.db.tables.utils.TableTools;
@@ -30,7 +30,7 @@ import static org.junit.Assert.*;
 @Category(OutOfBandTest.class)
 public class QueryTableJoinTest {
     @Rule
-    public final DbCleanup base = new DbCleanup();
+    public final EngineCleanup base = new EngineCleanup();
 
     public void testAjIncremental() throws ParseException {
         final int maxSteps = 10;

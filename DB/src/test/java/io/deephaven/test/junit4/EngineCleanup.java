@@ -9,9 +9,9 @@ import org.junit.runners.model.Statement;
 /**
  * When you want to extend LiveTableTestCase/QueryTableTestBase but you need to use JUnit 4 annotations, like @Category
  * or @RunWith(Suite.class), then instead of extending LiveTableTestCase, you should instead create a `@Rule public
- * final DbCleanup field = new DbCleanup();`.
+ * final EngineCleanup field = new EngineCleanup();`.
  */
-public class DbCleanup extends QueryTableTestBase implements TestRule {
+public class EngineCleanup extends QueryTableTestBase implements TestRule {
     @Override
     public void setUp() throws Exception {
         super.setUp();

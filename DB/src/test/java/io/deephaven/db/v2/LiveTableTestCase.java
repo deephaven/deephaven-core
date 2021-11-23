@@ -38,8 +38,8 @@ abstract public class LiveTableTestCase extends BaseArrayTestCase implements Upd
     private boolean oldMemoize;
     private UpdateErrorReporter oldReporter;
     private boolean expectError = false;
-    private SafeCloseable scopeCloseable;
-    private QueryScope originalScope;
+    private SafeCloseable livenessScopeCloseable;
+    private QueryScope originalQueryScope;
     private boolean oldLogEnabled;
     private boolean oldCheckLtm;
 
@@ -55,8 +55,8 @@ abstract public class LiveTableTestCase extends BaseArrayTestCase implements Upd
         oldMemoize = QueryTable.setMemoizeResults(false);
         oldReporter = AsyncClientErrorNotifier.setReporter(this);
         errors = null;
-        scopeCloseable = LivenessScopeStack.open(new LivenessScope(true), true);
-        originalScope = QueryScope.getScope();
+        livenessScopeCloseable = LivenessScopeStack.open(new LivenessScope(true), true);
+        originalQueryScope = QueryScope.getScope();
 
         oldLogEnabled = CompilerTools.setLogEnabled(ENABLE_COMPILER_TOOLS_LOGGING);
         oldCheckLtm = LiveTableMonitor.DEFAULT.setCheckTableOperations(false);
@@ -70,8 +70,8 @@ abstract public class LiveTableTestCase extends BaseArrayTestCase implements Upd
         LiveTableMonitor.DEFAULT.setCheckTableOperations(oldCheckLtm);
         CompilerTools.setLogEnabled(oldLogEnabled);
 
-        QueryScope.setScope(originalScope);
-        scopeCloseable.close();
+        QueryScope.setScope(originalQueryScope);
+        livenessScopeCloseable.close();
         AsyncClientErrorNotifier.setReporter(oldReporter);
         QueryTable.setMemoizeResults(oldMemoize);
         LiveTableMonitor.DEFAULT.resetForUnitTests(true);

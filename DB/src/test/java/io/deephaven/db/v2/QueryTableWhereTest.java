@@ -22,7 +22,7 @@ import io.deephaven.db.v2.sources.UnionRedirection;
 import io.deephaven.db.v2.sources.chunk.*;
 import io.deephaven.db.v2.utils.Index;
 import io.deephaven.db.v2.utils.IndexShiftData;
-import io.deephaven.test.junit4.DbCleanup;
+import io.deephaven.test.junit4.EngineCleanup;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.ReflexiveUse;
@@ -54,7 +54,7 @@ import static org.junit.Assert.assertTrue;
 @Category(OutOfBandTest.class)
 public class QueryTableWhereTest {
     @Rule
-    public final DbCleanup base = new DbCleanup();
+    public final EngineCleanup base = new EngineCleanup();
 
     @Test
     public void testWhere() {

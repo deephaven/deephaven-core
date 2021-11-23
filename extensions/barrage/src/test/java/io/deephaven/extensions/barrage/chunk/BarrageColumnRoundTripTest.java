@@ -424,8 +424,7 @@ public class BarrageColumnRoundTripTest extends LiveTableTestCase {
             final Consumer<WritableChunk<Attributes.Values>> initData, final Validator validator) throws IOException {
         final ChunkType chunkType = ChunkType.fromElementType(type);
 
-        WritableChunk<Attributes.Values> rtData = null;
-        WritableChunk<Attributes.Values> data = chunkType.makeWritableChunk(4096);
+        final WritableChunk<Attributes.Values> data = chunkType.makeWritableChunk(4096);
 
         initData.accept(data);
 
@@ -445,16 +444,12 @@ public class BarrageColumnRoundTripTest extends LiveTableTestCase {
                 column.drainTo(baos);
                 final DataInput dis =
                         new LittleEndianDataInputStream(new ByteArrayInputStream(baos.peekBuffer(), 0, baos.size()));
-
-                rtData = (WritableChunk<Attributes.Values>) ChunkInputStreamGenerator.extractChunkFromInputStream(
-                        options, chunkType, type, fieldNodes.iterator(), bufferNodes.iterator(), dis);
-                Assert.eq(data.size(), "data.size()", rtData.size(), "rtData.size()");
-                validator.assertExpected(data, rtData, null);
-            } finally {
-                if (rtData != null) {
-                    rtData.close();
+                try (final WritableChunk<Attributes.Values> rtData =
+                        (WritableChunk<Attributes.Values>) ChunkInputStreamGenerator.extractChunkFromInputStream(
+                                options, chunkType, type, fieldNodes.iterator(), bufferNodes.iterator(), dis)) {
+                    Assert.eq(data.size(), "data.size()", rtData.size(), "rtData.size()");
+                    validator.assertExpected(data, rtData, null);
                 }
-                rtData = null;
             }
 
             // empty subset
@@ -471,14 +466,12 @@ public class BarrageColumnRoundTripTest extends LiveTableTestCase {
                 column.drainTo(baos);
                 final DataInput dis =
                         new LittleEndianDataInputStream(new ByteArrayInputStream(baos.peekBuffer(), 0, baos.size()));
-                rtData = (WritableChunk<Attributes.Values>) ChunkInputStreamGenerator.extractChunkFromInputStream(
-                        options, chunkType, type, fieldNodes.iterator(), bufferNodes.iterator(), dis);
-                Assert.eq(rtData.size(), "rtData.size()", 0);
-            } finally {
-                if (rtData != null) {
-                    rtData.close();
+                try (final WritableChunk<Attributes.Values> rtData =
+                        (WritableChunk<Attributes.Values>) ChunkInputStreamGenerator.extractChunkFromInputStream(
+                                options, chunkType, type, fieldNodes.iterator(), bufferNodes.iterator(), dis)) {
+                    Assert.eq(rtData.size(), "rtData.size()", 0);
                 }
-                rtData = null;
+
             }
 
             // swiss cheese subset
@@ -503,15 +496,12 @@ public class BarrageColumnRoundTripTest extends LiveTableTestCase {
                 column.drainTo(baos);
                 final DataInput dis =
                         new LittleEndianDataInputStream(new ByteArrayInputStream(baos.peekBuffer(), 0, baos.size()));
-                rtData = (WritableChunk<Attributes.Values>) ChunkInputStreamGenerator.extractChunkFromInputStream(
-                        options, chunkType, type, fieldNodes.iterator(), bufferNodes.iterator(), dis);
-                Assert.eq(subset.intSize(), "subset.intSize()", rtData.size(), "rtData.size()");
-                validator.assertExpected(data, rtData, subset);
-            } finally {
-                if (rtData != null) {
-                    rtData.close();
+                try (final WritableChunk<Attributes.Values> rtData =
+                        (WritableChunk<Attributes.Values>) ChunkInputStreamGenerator.extractChunkFromInputStream(
+                                options, chunkType, type, fieldNodes.iterator(), bufferNodes.iterator(), dis)) {
+                    Assert.eq(subset.intSize(), "subset.intSize()", rtData.size(), "rtData.size()");
+                    validator.assertExpected(data, rtData, subset);
                 }
-                rtData = null;
             }
         }
     }

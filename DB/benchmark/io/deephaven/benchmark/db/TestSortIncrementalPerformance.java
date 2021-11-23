@@ -6,7 +6,7 @@ import io.deephaven.db.tables.live.LiveTableMonitor;
 import io.deephaven.db.tables.select.QueryScope;
 import io.deephaven.db.tables.utils.TableTools;
 import io.deephaven.db.v2.select.IncrementalReleaseFilter;
-import io.deephaven.test.junit4.DbCleanup;
+import io.deephaven.test.junit4.EngineCleanup;
 import io.deephaven.test.types.ParallelTest;
 import org.junit.Rule;
 import org.junit.Test;
@@ -80,5 +80,5 @@ public class TestSortIncrementalPerformance {
     }
 
     @Rule
-    public final DbCleanup rule = new DbCleanup();
+    public final EngineCleanup rule = new EngineCleanup();
 }

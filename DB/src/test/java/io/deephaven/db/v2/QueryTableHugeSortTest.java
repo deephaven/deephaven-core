@@ -5,7 +5,7 @@ import io.deephaven.db.tables.select.QueryScope;
 import io.deephaven.db.tables.utils.TableTools;
 import io.deephaven.db.v2.sources.AbstractColumnSource;
 import io.deephaven.db.v2.utils.Index;
-import io.deephaven.test.junit4.DbCleanup;
+import io.deephaven.test.junit4.EngineCleanup;
 import io.deephaven.test.types.OutOfBandTest;
 import org.junit.Rule;
 import org.junit.Test;
@@ -107,5 +107,5 @@ public class QueryTableHugeSortTest {
     }
 
     @Rule
-    public final DbCleanup rule = new DbCleanup();
+    public final EngineCleanup rule = new EngineCleanup();
 }

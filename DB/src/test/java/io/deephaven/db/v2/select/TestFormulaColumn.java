@@ -15,7 +15,7 @@ import io.deephaven.db.tables.lang.DBLanguageParser.QueryLanguageParseException;
 import io.deephaven.db.tables.libs.QueryLibrary;
 import io.deephaven.db.tables.select.QueryScope;
 import io.deephaven.db.tables.utils.*;
-import io.deephaven.test.junit4.DbCleanup;
+import io.deephaven.test.junit4.EngineCleanup;
 import io.deephaven.db.v2.utils.codegen.TypeAnalyzer;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.QueryConstants;
@@ -68,21 +68,18 @@ public class TestFormulaColumn {
     }
 
     @Rule
-    public final DbCleanup base = new DbCleanup();
+    public final EngineCleanup base = new EngineCleanup();
 
     @Before
     public void setUp() throws Exception {
         kernelFormulasSavedValue = DhFormulaColumn.useKernelFormulasProperty;
         DhFormulaColumn.useKernelFormulasProperty = useKernelFormulas;
-        compilerToolsLogEnabledInitial = CompilerTools.setLogEnabled(ENABLE_COMPILER_TOOLS_LOGGING);
 
         setUpQueryLibrary();
     }
 
     @After
     public void tearDown() throws Exception {
-        CompilerTools.setLogEnabled(compilerToolsLogEnabledInitial);
-
         QueryLibrary.resetLibrary();
         DhFormulaColumn.useKernelFormulasProperty = kernelFormulasSavedValue;
     }

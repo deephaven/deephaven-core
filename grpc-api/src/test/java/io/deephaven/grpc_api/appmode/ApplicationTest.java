@@ -6,7 +6,7 @@ import io.deephaven.db.tables.Table;
 import io.deephaven.db.util.AbstractScriptSession;
 import io.deephaven.db.util.GroovyDeephavenSession;
 import io.deephaven.db.util.PythonDeephavenSession;
-import io.deephaven.test.junit4.DbCleanup;
+import io.deephaven.test.junit4.EngineCleanup;
 import org.junit.After;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -19,7 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class ApplicationTest {
 
     @Rule
-    public final DbCleanup base = new DbCleanup();
+    public final EngineCleanup base = new EngineCleanup();
 
     private AbstractScriptSession session = null;
 

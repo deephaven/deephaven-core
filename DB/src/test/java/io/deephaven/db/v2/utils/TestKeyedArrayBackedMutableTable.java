@@ -11,7 +11,7 @@ import io.deephaven.db.util.config.MutableInputTable;
 import io.deephaven.db.v2.DynamicTable;
 import io.deephaven.db.v2.FailureListener;
 import io.deephaven.db.v2.TableUpdateValidator;
-import io.deephaven.test.junit4.DbCleanup;
+import io.deephaven.test.junit4.EngineCleanup;
 import io.deephaven.util.FunctionalInterfaces;
 import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
@@ -29,7 +29,7 @@ import static io.deephaven.db.v2.TstUtils.assertTableEquals;
 public class TestKeyedArrayBackedMutableTable {
 
     @Rule
-    public final DbCleanup liveTableTestCase = new DbCleanup();
+    public final EngineCleanup liveTableTestCase = new EngineCleanup();
 
     @Test
     public void testSimple() throws Exception {
