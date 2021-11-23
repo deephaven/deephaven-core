@@ -44,7 +44,6 @@ public abstract class DeephavenApiServerTestBase {
                 .withSessionTokenExpireTmMs(sessionTokenExpireTmMs())
                 .withOut(System.out)
                 .withErr(System.err)
-                .withAppMode(AppMode.API_ONLY)
                 .build();
 
         server = serverComponent.getServer();

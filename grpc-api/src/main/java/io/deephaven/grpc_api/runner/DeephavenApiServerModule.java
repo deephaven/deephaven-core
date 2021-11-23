@@ -5,6 +5,7 @@ import dagger.Provides;
 import dagger.multibindings.ElementsIntoSet;
 import io.deephaven.db.tables.live.LiveTableMonitor;
 import io.deephaven.db.v2.sources.chunk.util.pools.MultiChunkPool;
+import io.deephaven.grpc_api.appmode.AppMode;
 import io.deephaven.grpc_api.appmode.AppModeModule;
 import io.deephaven.grpc_api.arrow.ArrowModule;
 import io.deephaven.grpc_api.auth.AuthContextModule;
@@ -81,6 +82,12 @@ public class DeephavenApiServerModule {
     @ElementsIntoSet
     static Set<ServerInterceptor> primeInterceptors() {
         return Collections.emptySet();
+    }
+
+    @Provides
+    @Singleton
+    public static AppMode provideAppMode() {
+        return AppMode.currentMode();
     }
 
     @Provides
