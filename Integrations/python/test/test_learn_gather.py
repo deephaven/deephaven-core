@@ -9,6 +9,7 @@
 import pandas as pd
 import numpy as np
 import unittest
+import jpy
 import sys
 import os
 
@@ -19,6 +20,8 @@ class TestGather(unittest.TestCase):
     """
     Test cases for deephaven.learn submodule
     """
+
+    IndexSet = jpy.get_type("io.deephaven.integrations.learn.IndexSet")
 
     @classmethod
     def setUpClass(cls):
@@ -96,6 +99,14 @@ class TestGather(unittest.TestCase):
             np.sqrt(np.sqrt(np.arange(0, 100, dtype = np.double)))
         )).T
 
+    # Function to create an index set from a table
+    def make_index_set(table):
+        n_rows = table.size()
+        idx_set = IndexSet(n_rows)
+        for i in range(n_rows):
+            idx_set.add(i)
+        return idx_set
+
     # Model for learn to use when dtype = [np.bool_]
     def boolean_model(self, features):
         return np.count_nonzero(features, axis = 1) < 2
@@ -132,23 +143,28 @@ class TestGather(unittest.TestCase):
             source = self.double_table
             model = self.double_model
 
-        gatherer = lambda idx, cold : gather.table_to_numpy_2d(idx, cols, np_dtype)
+        idx = make_index_set(source)
+        cols = [source.getColumnSource(col) for col in ["X", "Y", "Z"]]
+
+        gatherer = lambda idx, cols : gather.table_to_numpy_2d(idx, cols, np_dtype)
 
         array_from_table = tableToDataFrame(source).values
 
+        gathered = gathered(idx, cols)
+
         with self.subTest(msg = "Array shape"):
-            self.assertTrue(gatherer.shape == array_from_table.shape)
-            print("Gathered shape: {}".format(gatherer.shape))
+            self.assertTrue(gathered.shape == array_from_table.shape)
+            print("Gathered shape: {}".format(gathered.shape))
         with self.subTest(msg = "Values in array"):
-            for idx1 in range(gatherer.shape[0]):
-                for idx2 in range(gatherer.shape[1]):
-                    self.assertTrue(gatherer[idx1][idx2] == array_from_table[idx1][idx2])
+            for idx1 in range(gathered.shape[0]):
+                for idx2 in range(gathered.shape[1]):
+                    self.assertTrue(gathered[idx1][idx2] == array_from_table[idx1][idx2])
             print("All array values are equal")
         with self.subTest(msg = "Array data type"):
-            self.assertTrue(gatherer.dtype == np_dtype)
+            self.assertTrue(gathered.dtype == np_dtype)
             print("Array dtype: {}".format(np_dtype))
         with self.subTest(msg = "Contiguity"):
-            self.assertTrue(gatherer.flags["C_CONTIGUOUS"] or gatherer.flags["F_CONTIGUOUS"])
+            self.assertTrue(gathered.flags["C_CONTIGUOUS"] or gathered.flags["F_CONTIGUOUS"])
             print("Array contiguity checked.")
 
     # Test boolean data types

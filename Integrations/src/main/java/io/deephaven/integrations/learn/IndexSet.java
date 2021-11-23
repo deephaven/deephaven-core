@@ -6,7 +6,7 @@ import java.util.PrimitiveIterator;
 /**
  * IndexSet stores indices from a table and provides an iterator over those indices.
  */
-class IndexSet implements Iterable<Long> {
+public class IndexSet implements Iterable<Long> {
 
     private int current;
     private final long[] idx;
@@ -16,7 +16,7 @@ class IndexSet implements Iterable<Long> {
      *
      * @param maxSize maximum allowed size of this index set.
      */
-    IndexSet(int maxSize) {
+    public IndexSet(int maxSize) {
 
         if (maxSize <= 0) {
             throw new IllegalArgumentException("Max size must be a strictly positive integer.");
@@ -31,7 +31,7 @@ class IndexSet implements Iterable<Long> {
      *
      * @return whether this index set has been filled.
      */
-    boolean isFull() {
+    public boolean isFull() {
         return getSize() >= idx.length;
     }
 
@@ -40,7 +40,7 @@ class IndexSet implements Iterable<Long> {
      *
      * @param k index to be added to this index set.
      */
-    void add(long k) {
+    public void add(long k) {
 
         if (isFull()) {
             throw new IndexOutOfBoundsException("Adding more indices than can fit.");

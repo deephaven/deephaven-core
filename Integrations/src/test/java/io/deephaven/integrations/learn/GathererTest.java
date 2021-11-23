@@ -5,35 +5,64 @@ import io.deephaven.db.v2.sources.ColumnSource;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import java.util.Arrays;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 
 public class GathererTest {
 
     private static InMemoryTable table;
-    private static String[] columnNames = new String[] {
-            "bool1", "bool2",
-            "byte1", "byte2",
-            "short1", "short2",
-            "int1", "int2",
-            "long1", "long2",
-            "float1", "float2",
-            "double1", "double2"
-    };
-    private static Object[] columnData = new Object[] {
+    private static final String[] boolColNames = {"bool1", "bool2"};
+    private static final boolean[][] boolData = {
             new boolean[] {true, true, false, false},
-            new boolean[] {true, false, true, false},
+            new boolean[] {true, false, true, false}
+    };
+    private static final String[] byteColNames = {"byte1", "byte2"};
+    private static final byte[][] byteData = {
             new byte[] {(byte) 1, (byte) 2, (byte) 3, (byte) 4},
-            new byte[] {(byte) 5, (byte) 6, (byte) 7, (byte) 8},
+            new byte[] {(byte) 5, (byte) 6, (byte) 7, (byte) 8}
+    };
+    private static final String[] shortColNames = {"short1", "short2"};
+    private static final short[][] shortData = {
             new short[] {(short) -1, (short) -2, (short) -3, (short) -4},
-            new short[] {(short) -5, (short) -6, (short) -7, (short) -8},
+            new short[] {(short) -5, (short) -6, (short) -7, (short) -8}
+    };
+    private static final String[] intColNames = {"int1", "int2"};
+    private static final int[][] intData = {
             new int[] {100, 200, -100, -200},
             new int[] {-300, -400, 300, 400},
+    };
+    private static final String[] longColNames = {"long1", "long2"};
+    private static final long[][] longData = {
             new long[] {1L, 100L, 10000L, 1000000L},
             new long[] {9L, 999L, 99999L, 9999999L},
+    };
+    private static final String[] floatColNames = {"float1", "float2"};
+    private static final float[][] floatData = {
             new float[] {3.14F, 2.73F, 1.5F, 0.63F},
             new float[] {0.1F, 0.2F, 0.3F, 0.4F},
+    };
+    private static final String[] doubleColNames = {"double1", "double2"};
+    private static final double[][] doubleData = {
             new double[] {3.14, 2.73, 1.5, 0.63},
             new double[] {0.1, 0.2, 0.3, 0.4}
+    };
+    private static final String[] columnNames = new String[] {
+            boolColNames[0], boolColNames[1],
+            byteColNames[0], byteColNames[1],
+            shortColNames[0], shortColNames[1],
+            intColNames[0], intColNames[1],
+            longColNames[0], longColNames[1],
+            floatColNames[0], floatColNames[1],
+            doubleColNames[0], doubleColNames[1]
+    };
+    private static final Object[] columnData = new Object[] {
+            boolData[0], boolData[1],
+            byteData[0], byteData[1],
+            shortData[0], shortData[1],
+            intData[0], intData[1],
+            longData[0], longData[1],
+            floatData[0], floatData[1],
+            doubleData[0], doubleData[1]
     };
 
     @BeforeClass
@@ -51,158 +80,81 @@ public class GathererTest {
         return is;
     }
 
+    public static ColumnSource<?>[] getColSet(final String[] colNames) {
+        ColumnSource<?>[] rst = new ColumnSource[2];
+
+        for (int i = 0; i < 2; i++) {
+            rst[i] = table.getColumnSource(colNames[i]);
+        }
+
+        return rst;
+    }
+
+    private static <T> void assertRowMajor(BiFunction<Integer,Integer,T> expected, Function<Integer,T> actual) {
+        // Data should be stored in row-major order
+        int idx = 0;
+        for(int j=0; j<4; j++) {
+            for(int i=0; i<2; i++){
+                Assert.assertEquals("i=" + i + " j=" + j, expected.apply(i,j), actual.apply(idx));
+                idx++;
+            }
+        }
+    }
+
     @Test
     public void booleanTestMethod() {
         IndexSet idxSet = makeIndexSet(table);
-
-        String[] boolColNames = Arrays.copyOfRange(columnNames, 0, 2);
-        ColumnSource<?>[] boolColSet = new ColumnSource[2];
-        for (int i = 0; i < 2; i++) {
-            boolColSet[i] = table.getColumnSource(boolColNames[i]);
-        }
-
-        boolean[] result = Gatherer.tensorBuffer2DBoolean(idxSet, boolColSet);
-
-        boolean[] firstBoolCol = (boolean[]) columnData[0];
-        boolean[] secondBoolCol = (boolean[]) columnData[1];
-
-        boolean[] firstBoolResult = Arrays.copyOfRange(result, 0, 4);
-        boolean[] secondBoolResult = Arrays.copyOfRange(result, 4, 8);
-
-        Assert.assertTrue(Arrays.equals(firstBoolResult, firstBoolCol));
-        Assert.assertTrue(Arrays.equals(secondBoolResult, secondBoolCol));
-
+        ColumnSource<?>[] colSet = getColSet(boolColNames);
+        boolean[] result = Gatherer.tensorBuffer2DBoolean(idxSet, colSet);
+        assertRowMajor((i,j)->boolData[i][j], i->result[i]);
     }
 
     @Test
     public void byteTestMethod() {
         IndexSet idxSet = makeIndexSet(table);
-
-        String[] byteColNames = Arrays.copyOfRange(columnNames, 2, 4);
-        ColumnSource<?>[] byteColSet = new ColumnSource[2];
-        for (int i = 0; i < 2; i++) {
-            byteColSet[i] = table.getColumnSource(byteColNames[i]);
-        }
-
-        byte[] result = Gatherer.tensorBuffer2DByte(idxSet, byteColSet);
-
-        byte[] firstByteCol = (byte[]) columnData[2];
-        byte[] secondByteCol = (byte[]) columnData[3];
-
-        byte[] firstByteResult = Arrays.copyOfRange(result, 0, 4);
-        byte[] secondByteResult = Arrays.copyOfRange(result, 4, 8);
-
-        Assert.assertArrayEquals(firstByteResult, firstByteCol);
-        Assert.assertArrayEquals(secondByteResult, secondByteCol);
+        ColumnSource<?>[] colSet = getColSet(byteColNames);
+        byte[] result = Gatherer.tensorBuffer2DByte(idxSet, colSet);
+        assertRowMajor((i,j)->byteData[i][j], i->result[i]);
     }
 
     @Test
     public void shortTestMethod() {
         IndexSet idxSet = makeIndexSet(table);
-
-        String[] shortColNames = Arrays.copyOfRange(columnNames, 4, 6);
-        ColumnSource<?>[] shortColSet = new ColumnSource[2];
-        for (int i = 0; i < 2; i++) {
-            shortColSet[i] = table.getColumnSource(shortColNames[i]);
-        }
-
-        short[] result = Gatherer.tensorBuffer2DShort(idxSet, shortColSet);
-
-        short[] firstShortCol = (short[]) columnData[4];
-        short[] secondShortCol = (short[]) columnData[5];
-
-        short[] firstShortResult = Arrays.copyOfRange(result, 0, 4);
-        short[] secondShortResult = Arrays.copyOfRange(result, 4, 8);
-
-        Assert.assertArrayEquals(firstShortResult, firstShortCol);
-        Assert.assertArrayEquals(secondShortResult, secondShortCol);
+        ColumnSource<?>[] colSet = getColSet(shortColNames);
+        short[] result = Gatherer.tensorBuffer2DShort(idxSet, colSet);
+        assertRowMajor((i,j)->shortData[i][j], i->result[i]);
     }
 
     @Test
     public void intTestMethod() {
         IndexSet idxSet = makeIndexSet(table);
-
-        String[] intColNames = Arrays.copyOfRange(columnNames, 6, 8);
-        ColumnSource<?>[] intColSet = new ColumnSource[2];
-        for (int i = 0; i < 2; i++) {
-            intColSet[i] = table.getColumnSource(intColNames[i]);
-        }
-
-        int[] result = Gatherer.tensorBuffer2DInt(idxSet, intColSet);
-
-        int[] firstIntCol = (int[]) columnData[6];
-        int[] secondIntCol = (int[]) columnData[7];
-
-        int[] firstIntResult = Arrays.copyOfRange(result, 0, 4);
-        int[] secondIntResult = Arrays.copyOfRange(result, 4, 8);
-
-        Assert.assertArrayEquals(firstIntResult, firstIntCol);
-        Assert.assertArrayEquals(secondIntResult, secondIntCol);
+        ColumnSource<?>[] colSet = getColSet(intColNames);
+        int[] result = Gatherer.tensorBuffer2DInt(idxSet, colSet);
+        assertRowMajor((i,j)->intData[i][j], i->result[i]);
     }
 
     @Test
     public void longTestMethod() {
         IndexSet idxSet = makeIndexSet(table);
-
-        String[] longColNames = Arrays.copyOfRange(columnNames, 8, 10);
-        ColumnSource<?>[] longColSet = new ColumnSource[2];
-        for (int i = 0; i < 2; i++) {
-            longColSet[i] = table.getColumnSource(longColNames[i]);
-        }
-
-        long[] result = Gatherer.tensorBuffer2DLong(idxSet, longColSet);
-
-        long[] firstLongCol = (long[]) columnData[8];
-        long[] secondLongCol = (long[]) columnData[9];
-
-        long[] firstLongResult = Arrays.copyOfRange(result, 0, 4);
-        long[] secondLongResult = Arrays.copyOfRange(result, 4, 8);
-
-        Assert.assertArrayEquals(firstLongResult, firstLongCol);
-        Assert.assertArrayEquals(secondLongResult, secondLongCol);
+        ColumnSource<?>[] colSet = getColSet(longColNames);
+        long[] result = Gatherer.tensorBuffer2DLong(idxSet, colSet);
+        assertRowMajor((i,j)->longData[i][j], i->result[i]);
     }
 
     @Test
     public void floatTestMethod() {
         IndexSet idxSet = makeIndexSet(table);
-
-        String[] floatColNames = Arrays.copyOfRange(columnNames, 10, 12);
-        ColumnSource<?>[] floatColSet = new ColumnSource[2];
-        for (int i = 0; i < 2; i++) {
-            floatColSet[i] = table.getColumnSource(floatColNames[i]);
-        }
-
-        float[] result = Gatherer.tensorBuffer2DFloat(idxSet, floatColSet);
-
-        float[] firstFloatCol = (float[]) columnData[10];
-        float[] secondFloatCol = (float[]) columnData[11];
-        float[] firstFloatResult = Arrays.copyOfRange(result, 0, 4);
-        float[] secondFloatResult = Arrays.copyOfRange(result, 4, 8);
-
-        Assert.assertTrue(Arrays.equals(firstFloatResult, firstFloatCol));
-        Assert.assertTrue(Arrays.equals(secondFloatResult, secondFloatCol));
+        ColumnSource<?>[] colSet = getColSet(floatColNames);
+        float[] result = Gatherer.tensorBuffer2DFloat(idxSet, colSet);
+        assertRowMajor((i,j)->floatData[i][j], i->result[i]);
     }
 
     @Test
     public void doubleTestMethod() {
         IndexSet idxSet = makeIndexSet(table);
-
-        String[] doubleColNames = Arrays.copyOfRange(columnNames, 12, 14);
-        ColumnSource<?>[] doubleColSet = new ColumnSource[2];
-        for (int i = 0; i < 2; i++) {
-            doubleColSet[i] = table.getColumnSource(doubleColNames[i]);
-        }
-
-        double[] result = Gatherer.tensorBuffer2DDouble(idxSet, doubleColSet);
-
-        double[] firstDoubleCol = (double[]) columnData[12];
-        double[] secondDoubleCol = (double[]) columnData[13];
-
-        double[] firstDoubleResult = Arrays.copyOfRange(result, 0, 4);
-        double[] secondDoubleResult = Arrays.copyOfRange(result, 4, 8);
-
-        Assert.assertTrue(Arrays.equals(firstDoubleResult, firstDoubleCol));
-        Assert.assertTrue(Arrays.equals(secondDoubleResult, secondDoubleCol));
+        ColumnSource<?>[] colSet = getColSet(doubleColNames);
+        double[] result = Gatherer.tensorBuffer2DDouble(idxSet, colSet);
+        assertRowMajor((i,j)->doubleData[i][j], i->result[i]);
     }
 
 }
