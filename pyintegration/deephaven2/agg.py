@@ -2,7 +2,8 @@
 #  Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
 #
 from __future__ import annotations
-from typing import List, Any
+
+from typing import List
 
 import jpy
 
@@ -35,7 +36,7 @@ def sum_(cols: List[str]) -> Aggregation:
     return Aggregation(j_aggregation=_JAggregation.AggSum(*cols))
 
 
-def abs_sum(cols: List[str]):
+def abs_sum(cols: List[str]) -> Aggregation:
     """ Create an Absolute-sum aggregation.
 
     Args:
@@ -47,7 +48,7 @@ def abs_sum(cols: List[str]):
     return Aggregation(j_aggregation=_JAggregation.AggAbsSum(*cols))
 
 
-def array(cols: List[str]):
+def array(cols: List[str]) -> Aggregation:
     """ Create an Array aggregation.
 
     Args:
@@ -59,7 +60,7 @@ def array(cols: List[str]):
     return Aggregation(j_aggregation=_JAggregation.AggArray(*cols))
 
 
-def avg(cols: List[str]):
+def avg(cols: List[str]) -> Aggregation:
     """ Create an Average aggregation.
 
     Args:
@@ -71,7 +72,7 @@ def avg(cols: List[str]):
     return Aggregation(j_aggregation=_JAggregation.AggAvg(*cols))
 
 
-def count_(col: str):
+def count_(col: str) -> Aggregation:
     """ Create a Count aggregation.
 
     Args:
@@ -83,7 +84,7 @@ def count_(col: str):
     return Aggregation(j_aggregation=_JAggregation.AggCount(col))
 
 
-def count_distinct(cols: List[str]):
+def count_distinct(cols: List[str]) -> Aggregation:
     """ Create a Count Distinct aggregation.
 
     Args:
@@ -95,7 +96,7 @@ def count_distinct(cols: List[str]):
     return Aggregation(j_aggregation=_JAggregation.AggCountDistinct(*cols))
 
 
-def first(cols: List[str]):
+def first(cols: List[str]) -> Aggregation:
     """ Create a First aggregation.
 
     Args:
@@ -107,7 +108,7 @@ def first(cols: List[str]):
     return Aggregation(j_aggregation=_JAggregation.AggFirst(*cols))
 
 
-def last(cols: List[str]):
+def last(cols: List[str]) -> Aggregation:
     """ Create Last aggregation.
 
     Args:
@@ -119,7 +120,7 @@ def last(cols: List[str]):
     return Aggregation(j_aggregation=_JAggregation.AggLast(*cols))
 
 
-def min_(cols: List[str]):
+def min_(cols: List[str]) -> Aggregation:
     """ Create a Min aggregation.
 
     Args:
@@ -131,7 +132,7 @@ def min_(cols: List[str]):
     return Aggregation(j_aggregation=_JAggregation.AggMin(*cols))
 
 
-def max_(cols: List[str]):
+def max_(cols: List[str]) -> Aggregation:
     """ Create a Max aggregation to the ComboAggregation object.
 
     Args:
@@ -143,7 +144,7 @@ def max_(cols: List[str]):
     return Aggregation(j_aggregation=_JAggregation.AggMax(*cols))
 
 
-def median(cols: List[str]):
+def median(cols: List[str]) -> Aggregation:
     """ Create a Median aggregation.
 
     Args:
@@ -155,7 +156,7 @@ def median(cols: List[str]):
     return Aggregation(j_aggregation=_JAggregation.AggMed(*cols))
 
 
-def pct(percentile: float, cols: List[str]):
+def pct(percentile: float, cols: List[str]) -> Aggregation:
     """ Create a Percentile aggregation.
 
     Args:
@@ -168,7 +169,7 @@ def pct(percentile: float, cols: List[str]):
     return Aggregation(j_aggregation=_JAggregation.AggPct(percentile, *cols))
 
 
-def sorted_first(order_by: str, cols: List[str]):
+def sorted_first(order_by: str, cols: List[str]) -> Aggregation:
     """ Create a SortedFirst aggregation.
 
     Args:
@@ -181,7 +182,7 @@ def sorted_first(order_by: str, cols: List[str]):
     return Aggregation(j_aggregation=_JAggregation.AggSortedFirst(order_by, *cols))
 
 
-def sorted_last(order_by: str, cols: List[str]):
+def sorted_last(order_by: str, cols: List[str]) -> Aggregation:
     """ Create a SortedLast aggregation.
 
     Args:
@@ -194,7 +195,7 @@ def sorted_last(order_by: str, cols: List[str]):
     return Aggregation(j_aggregation=_JAggregation.AggSortedLast(order_by, *cols))
 
 
-def std(cols: List[str]):
+def std(cols: List[str]) -> Aggregation:
     """ Create a Std aggregation.
 
     Args:
@@ -206,7 +207,7 @@ def std(cols: List[str]):
     return Aggregation(j_aggregation=_JAggregation.AggStd(*cols))
 
 
-def unique(cols: List[str]):
+def unique(cols: List[str]) -> Aggregation:
     """ Create a Unique aggregation.
 
      Args:
@@ -218,7 +219,7 @@ def unique(cols: List[str]):
     return Aggregation(j_aggregation=_JAggregation.AggUnique(*cols))
 
 
-def var(cols: List[str]):
+def var(cols: List[str]) -> Aggregation:
     """ Create a Var aggregation.
 
     Args:
@@ -230,7 +231,7 @@ def var(cols: List[str]):
     return Aggregation(j_aggregation=_JAggregation.AggVar(*cols))
 
 
-def weighted_avg(wcol: str, cols: List[str]):
+def weighted_avg(wcol: str, cols: List[str]) -> Aggregation:
     """ Create a Weighted-avg aggregation.
 
     Args:
@@ -243,7 +244,7 @@ def weighted_avg(wcol: str, cols: List[str]):
     return Aggregation(j_aggregation=_JAggregation.AggWAvg(wcol, *cols))
 
 
-def weighted_sum(wcol: str, cols: List[str]):
+def weighted_sum(wcol: str, cols: List[str]) -> Aggregation:
     """ Create a Weighted-sum aggregation.
 
     Args:

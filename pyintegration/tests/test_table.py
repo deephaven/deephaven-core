@@ -217,14 +217,12 @@ class TableTestCase(BaseTestCase):
         self.assertTrue(result_table.size > left_table.size)
 
     def test_as_of_join(self):
-        left_table = time_table(period="00:00:01").update(formulas=["Col1=i"])
-        print("time table update works!")
-        right_table = time_table(period="00:00:01").update(formulas=["Col1=i"])
-        sleep(2)
-        result_table = left_table.aj(right_table, on=["Col1", "Timestamp"])
+        left_table = self.test_table.drop_columns(["d", "e"])
+        right_table = self.test_table.where(["a % 2 > 0"]).drop_columns(cols=["b", "c", "d"])
+        result_table = left_table.aj(right_table, on=["a"])
         self.assertGreater(result_table.size, 0)
         self.assertLessEqual(result_table.size, left_table.size)
-        result_table = left_table.raj(right_table, on=["Col1", "Timestamp"])
+        result_table = left_table.raj(right_table, on=["a"])
         self.assertGreater(result_table.size, 0)
         self.assertLessEqual(result_table.size, left_table.size)
 
