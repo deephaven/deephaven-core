@@ -58,6 +58,6 @@ public class Main {
                 .withErr(PrintStreamGlobals.getErr())
                 .build()
                 .getServer()
-                .start();
+                .run();
     }
 }

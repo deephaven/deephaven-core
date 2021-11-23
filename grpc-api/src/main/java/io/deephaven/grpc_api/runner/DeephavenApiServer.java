@@ -23,6 +23,10 @@ import javax.inject.Inject;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Entrypoint for the Deephaven gRPC server, starting the various engine and script components, running any specified
+ * application, and enabling the gRPC endpoints to be accessed by consumers.
+ */
 public class DeephavenApiServer {
     private static final Logger log = LoggerFactory.getLogger(DeephavenApiServer.class);
 
@@ -57,7 +61,17 @@ public class DeephavenApiServer {
         return server;
     }
 
-    public void start() throws IOException, ClassNotFoundException, InterruptedException {
+    /**
+     * Starts the various server components, and blocks until the gRPC server has shut down. That shutdown is mediated
+     * by the ShutdownManager, and will call the gRPC server to shut it down when the process is itself shutting down.
+     * Only once that is complete will this method return.
+     *
+     * @throws IOException thrown in event of an error with logging, finding and running an application, and starting
+     *         the gRPC service.
+     * @throws ClassNotFoundException thrown if a class can't be found while finding and running an application.
+     * @throws InterruptedException thrown if this thread is interrupted while blocking for the server to halt.
+     */
+    public void run() throws IOException, ClassNotFoundException, InterruptedException {
         // Stop accepting new gRPC requests.
         ProcessEnvironment.getGlobalShutdownManager().registerTask(ShutdownManager.OrderingCategory.FIRST,
                 server::shutdown);
