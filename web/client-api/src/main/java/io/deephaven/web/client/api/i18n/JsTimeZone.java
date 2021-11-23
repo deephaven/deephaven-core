@@ -459,58 +459,58 @@ public class JsTimeZone {
         addJsonTimeZone(constants.pST8PDT());
 
         // Now some mapping from other short strings to their codes
-        addJsonMapping("JP", constants.asiaTokyo());
-        addJsonMapping("JST", constants.asiaTokyo());
-        addJsonMapping("KR", constants.asiaSeoul());
-        addJsonMapping("KST", constants.asiaSeoul());
-        addJsonMapping("HK", constants.asiaHongKong());
-        addJsonMapping("HKT", constants.asiaHongKong());
-        addJsonMapping("SG", constants.asiaSingapore());
-        addJsonMapping("SGT", constants.asiaSingapore());
-        addJsonMapping("Asia/Kolkata", constants.asiaCalcutta());
-        addJsonMapping("IN", constants.asiaCalcutta());
-        addJsonMapping("IST", constants.asiaCalcutta());
-        addJsonMapping("TW", constants.asiaTaipei());
-        addJsonMapping("NL", constants.europeAmsterdam());
-        addJsonMapping("CE", constants.europeBerlin());
-        addJsonMapping("CES", constants.europeBerlin());
-        addJsonMapping("CEST", constants.europeBerlin());
-        addJsonMapping("LON", constants.europeLondon());
-        addJsonMapping("BST", constants.europeLondon());
-        addJsonMapping("CH", constants.europeZurich());
-        addJsonMapping("BT", constants.americaSaoPaulo());
-        addJsonMapping("BRST", constants.americaSaoPaulo());
-        addJsonMapping("BRT", constants.americaSaoPaulo());
-        addJsonMapping("NF", constants.americaStJohns());
-        addJsonMapping("NST", constants.americaStJohns());
-        addJsonMapping("NDT", constants.americaStJohns());
-        addJsonMapping("AT", constants.americaHalifax());
-        addJsonMapping("AST", constants.americaHalifax());
-        addJsonMapping("ADT", constants.americaHalifax());
-        addJsonMapping("ET", constants.americaNewYork());
-        addJsonMapping("EST", constants.americaNewYork());
-        addJsonMapping("EDT", constants.americaNewYork());
-        addJsonMapping("MN", constants.americaChicago());
-        addJsonMapping("CT", constants.americaChicago());
-        addJsonMapping("CST", constants.americaChicago());
-        addJsonMapping("CDT", constants.americaChicago());
-        addJsonMapping("MT", constants.americaDenver());
-        addJsonMapping("MST", constants.americaDenver());
-        addJsonMapping("MDT", constants.americaDenver());
-        addJsonMapping("PT", constants.americaLosAngeles());
-        addJsonMapping("PST", constants.americaLosAngeles());
-        addJsonMapping("PDT", constants.americaLosAngeles());
-        addJsonMapping("AL", constants.americaAnchorage());
-        addJsonMapping("AKST", constants.americaAnchorage());
-        addJsonMapping("AKDT", constants.americaAnchorage());
-        addJsonMapping("HI", constants.pacificHonolulu());
-        addJsonMapping("HST", constants.pacificHonolulu());
-        addJsonMapping("HDT", constants.pacificHonolulu());
-        addJsonMapping("SYD", constants.australiaSydney());
-        addJsonMapping("AEST", constants.australiaSydney());
-        addJsonMapping("AEDT", constants.australiaSydney());
-        addJsonMapping("MOS", constants.europeMoscow());
-        addJsonMapping("SHG", constants.asiaShanghai());
+        addMapping("JP", "Asia/Tokyo");
+        addMapping("JST", "Asia/Tokyo");
+        addMapping("KR", "Asia/Seoul");
+        addMapping("KST", "Asia/Seoul");
+        addMapping("HK", "Asia/Hong_Kong");
+        addMapping("HKT", "Asia/Hong_Kong");
+        addMapping("SG", "Asia/Singapore");
+        addMapping("SGT", "Asia/Singapore");
+        addMapping("Asia/Kolkata", "Asia/Calcutta");
+        addMapping("IN", "Asia/Calcutta");
+        addMapping("IST", "Asia/Calcutta");
+        addMapping("TW", "Asia/Taipei");
+        addMapping("NL", "Europe/Amsterdam");
+        addMapping("CE", "Europe/Berlin");
+        addMapping("CES", "Europe/Berlin");
+        addMapping("CEST", "Europe/Berlin");
+        addMapping("LON", "Europe/London");
+        addMapping("BST", "Europe/London");
+        addMapping("CH", "Europe/Zurich");
+        addMapping("BT", "America/Sao_Paulo");
+        addMapping("BRST", "America/Sao_Paulo");
+        addMapping("BRT", "America/Sao_Paulo");
+        addMapping("NF", "America/St_Johns");
+        addMapping("NST", "America/St_Johns");
+        addMapping("NDT", "America/St_Johns");
+        addMapping("AT", "America/Halifax");
+        addMapping("AST", "America/Halifax");
+        addMapping("ADT", "America/Halifax");
+        addMapping("ET", "America/New_York");
+        addMapping("EST", "America/New_York");
+        addMapping("EDT", "America/New_York");
+        addMapping("MN", "America/Chicago");
+        addMapping("CT", "America/Chicago");
+        addMapping("CST", "America/Chicago");
+        addMapping("CDT", "America/Chicago");
+        addMapping("MT", "America/Denver");
+        addMapping("MST", "America/Denver");
+        addMapping("MDT", "America/Denver");
+        addMapping("PT", "America/Los_Angeles");
+        addMapping("PST", "America/Los_Angeles");
+        addMapping("PDT", "America/Los_Angeles");
+        addMapping("AL", "America/Anchorage");
+        addMapping("AKST", "America/Anchorage");
+        addMapping("AKDT", "America/Anchorage");
+        addMapping("HI", "Pacific/Honolulu");
+        addMapping("HST", "Pacific/Honolulu");
+        addMapping("HDT", "Pacific/Honolulu");
+        addMapping("SYD", "Australia/Sydney");
+        addMapping("AEST", "Australia/Sydney");
+        addMapping("AEDT", "Australia/Sydney");
+        addMapping("MOS", "Europe/Moscow");
+        addMapping("SHG", "Asia/Shanghai");
 
         // Add GMT mappings
         TimeZone gmtTimeZone = TimeZone.createTimeZone(0);
@@ -530,10 +530,6 @@ public class JsTimeZone {
         addMapping(tz.getID(), tz);
     }
 
-    private static void addJsonMapping(String key, String json) {
-        addMapping(key, TimeZone.createTimeZone(json));
-    }
-
     /**
      * Add a time zone to the map. Throws if there already exists an entry for that key
      * 
@@ -546,6 +542,21 @@ public class JsTimeZone {
         }
 
         timeZones.put(key, tz);
+    }
+
+    /**
+     * Map an existing time zone from the map to another key. Keeps both mappings.
+     *
+     * @param key The key to map it to
+     * @param existingKey The existing key to map from
+     */
+    private static void addMapping(String key, String existingKey) {
+        final TimeZone existing = timeZones.get(existingKey);
+        if (existing == null) {
+            throw new IllegalArgumentException("Existing key didn't exist " + existingKey);
+        }
+
+        addMapping(key, existing);
     }
 
     @JsIgnore
