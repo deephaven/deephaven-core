@@ -75,7 +75,7 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
     }
     // endregion preamble variables
 
-    @ReplicateHashTable.EmptyStateValue
+    @HashTableAnnotations.EmptyStateValue
     // @NullStateValue@ from \Qnull\E, @StateValueType@ from \QTrackingMutableRowSet\E
     private static final TrackingWritableRowSet EMPTY_RIGHT_VALUE = null;
 
@@ -126,7 +126,7 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
     private final IntegerArraySource overflowLocationSource = new IntegerArraySource();
 
     // we are going to also reuse this for our state entry, so that we do not need additional storage
-    @ReplicateHashTable.StateColumnSource
+    @HashTableAnnotations.StateColumnSource
     // @StateColumnSourceType@ from \QObjectArraySource<TrackingWritableRowSet>\E
     private final ObjectArraySource<TrackingWritableRowSet> rightRowSetSource
             // @StateColumnSourceConstructor@ from \QObjectArraySource<>(TrackingWritableRowSet.class)\E
@@ -138,7 +138,7 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
     // the location of the next key in an overflow bucket
     private final IntegerArraySource overflowOverflowLocationSource = new IntegerArraySource();
     // the overflow buckets for the right TrackingWritableRowSet
-    @ReplicateHashTable.OverflowStateColumnSource
+    @HashTableAnnotations.OverflowStateColumnSource
     // @StateColumnSourceType@ from \QObjectArraySource<TrackingWritableRowSet>\E
     private final ObjectArraySource<TrackingWritableRowSet> overflowRightRowSetSource
             // @StateColumnSourceConstructor@ from \QObjectArraySource<>(TrackingWritableRowSet.class)\E

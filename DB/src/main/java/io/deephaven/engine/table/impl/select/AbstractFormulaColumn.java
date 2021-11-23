@@ -11,7 +11,7 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.lang.QueryScopeParam;
 import io.deephaven.engine.vector.Vector;
 import io.deephaven.engine.table.lang.QueryScope;
-import io.deephaven.engine.table.impl.dbarrays.*;
+import io.deephaven.engine.table.impl.vector.*;
 import io.deephaven.engine.table.impl.select.formula.*;
 import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.engine.rowset.RowSet;

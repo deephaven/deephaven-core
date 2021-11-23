@@ -27,8 +27,8 @@ public class FilterKernelArraySample implements io.deephaven.engine.table.impl.s
     public FilterKernelArraySample(Table table, TrackingRowSet fullSet, QueryScopeParam... params) {
 
         // Array Column Variables
-        v2_ = new io.deephaven.engine.table.impl.dbarrays.DoubleVectorColumnWrapper(table.getColumnSource("v2"), fullSet);
-        v1_ = new io.deephaven.engine.table.impl.dbarrays.ShortVectorColumnWrapper(table.getColumnSource("v1"), fullSet);
+        v2_ = new io.deephaven.engine.table.impl.vector.DoubleVectorColumnWrapper(table.getColumnSource("v2"), fullSet);
+        v1_ = new io.deephaven.engine.table.impl.vector.ShortVectorColumnWrapper(table.getColumnSource("v1"), fullSet);
     }
     @Override
     public Context getContext(int maxChunkSize) {

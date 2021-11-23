@@ -64,7 +64,7 @@ class SymbolTableCombiner
     // region preamble variables
     // endregion preamble variables
 
-    @ReplicateHashTable.EmptyStateValue
+    @HashTableAnnotations.EmptyStateValue
     // @NullStateValue@ from \QQueryConstants.NULL_INT\E, @StateValueType@ from \Qint\E
     private static final int EMPTY_SYMBOL_VALUE = QueryConstants.NULL_INT;
 
@@ -110,7 +110,7 @@ class SymbolTableCombiner
     private final IntegerArraySource overflowLocationSource = new IntegerArraySource();
 
     // we are going to also reuse this for our state entry, so that we do not need additional storage
-    @ReplicateHashTable.StateColumnSource
+    @HashTableAnnotations.StateColumnSource
     // @StateColumnSourceType@ from \QIntegerArraySource\E
     private final IntegerArraySource uniqueIdentifierSource
             // @StateColumnSourceConstructor@ from \QIntegerArraySource()\E
@@ -122,7 +122,7 @@ class SymbolTableCombiner
     // the location of the next key in an overflow bucket
     private final IntegerArraySource overflowOverflowLocationSource = new IntegerArraySource();
     // the overflow buckets for the right TrackingWritableRowSet
-    @ReplicateHashTable.OverflowStateColumnSource
+    @HashTableAnnotations.OverflowStateColumnSource
     // @StateColumnSourceType@ from \QIntegerArraySource\E
     private final IntegerArraySource overflowUniqueIdentifierSource
             // @StateColumnSourceConstructor@ from \QIntegerArraySource()\E

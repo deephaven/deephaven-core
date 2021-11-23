@@ -5,8 +5,8 @@ package io.deephaven.engine.table.impl.sources.aggregate;
 
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.vector.DoubleVector;
-import io.deephaven.engine.table.impl.dbarrays.DoubleVectorColumnWrapper;
-import io.deephaven.engine.table.impl.dbarrays.PrevDoubleVectorColumnWrapper;
+import io.deephaven.engine.table.impl.vector.DoubleVectorColumnWrapper;
+import io.deephaven.engine.table.impl.vector.PrevDoubleVectorColumnWrapper;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.chunk.ObjectChunk;

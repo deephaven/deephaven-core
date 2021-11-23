@@ -12,6 +12,7 @@ import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.impl.HashTableAnnotations;
 import io.deephaven.engine.table.impl.PrevColumnSource;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.chunk.util.hashing.*;
@@ -38,7 +39,7 @@ import org.jetbrains.annotations.NotNull;
 
 // region extra imports
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.ReplicateHashTable;
+
 import java.util.function.UnaryOperator;
 
 import static io.deephaven.engine.table.impl.by.IncrementalByAggregationUpdateTracker.NULL_COOKIE;
@@ -106,7 +107,7 @@ class IncrementalChunkedByAggregationStateManager
     }
     // endregion preamble variables
 
-    @ReplicateHashTable.EmptyStateValue
+    @HashTableAnnotations.EmptyStateValue
     // @NullStateValue@ from \Qnull\E, @StateValueType@ from \QTrackingMutableRowSet\E
     private static final TrackingWritableRowSet EMPTY_VALUE = null;
 
@@ -157,7 +158,7 @@ class IncrementalChunkedByAggregationStateManager
     private final IntegerArraySource overflowLocationSource = new IntegerArraySource();
 
     // we are going to also reuse this for our state entry, so that we do not need additional storage
-    @ReplicateHashTable.StateColumnSource
+    @HashTableAnnotations.StateColumnSource
     // @StateColumnSourceType@ from \QObjectArraySource<TrackingWritableRowSet>\E
     private final ObjectArraySource<TrackingWritableRowSet> rowSetSource
             // @StateColumnSourceConstructor@ from \QObjectArraySource<>(TrackingWritableRowSet.class)\E
@@ -169,7 +170,7 @@ class IncrementalChunkedByAggregationStateManager
     // the location of the next key in an overflow bucket
     private final IntegerArraySource overflowOverflowLocationSource = new IntegerArraySource();
     // the overflow buckets for the right TrackingWritableRowSet
-    @ReplicateHashTable.OverflowStateColumnSource
+    @HashTableAnnotations.OverflowStateColumnSource
     // @StateColumnSourceType@ from \QObjectArraySource<TrackingWritableRowSet>\E
     private final ObjectArraySource<TrackingWritableRowSet> overflowRowSetSource
             // @StateColumnSourceConstructor@ from \QObjectArraySource<>(TrackingWritableRowSet.class)\E

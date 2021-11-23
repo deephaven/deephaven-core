@@ -1,8 +1,8 @@
 package io.deephaven.engine.table.impl.sources.aggregate;
 
 import io.deephaven.engine.vector.ObjectVector;
-import io.deephaven.engine.table.impl.dbarrays.ObjectVectorColumnWrapper;
-import io.deephaven.engine.table.impl.dbarrays.PrevObjectVectorColumnWrapper;
+import io.deephaven.engine.table.impl.vector.ObjectVectorColumnWrapper;
+import io.deephaven.engine.table.impl.vector.PrevObjectVectorColumnWrapper;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.chunk.ObjectChunk;

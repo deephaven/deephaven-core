@@ -8,7 +8,7 @@ import io.deephaven.engine.chunk.ObjectChunk;
 
 import io.deephaven.engine.chunk.WritableObjectChunk;
 
-import io.deephaven.engine.rftable.TestSourceSink;
+import io.deephaven.engine.table.impl.TestSourceSink;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.ChunkSink;
 import io.deephaven.util.BooleanUtils;

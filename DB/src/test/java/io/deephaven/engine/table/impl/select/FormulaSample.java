@@ -39,7 +39,7 @@ public class FormulaSample extends io.deephaven.engine.table.impl.select.Formula
         super(rowSet);
         II = __columnsToData.get("II");
         I = __columnsToData.get("I");
-        II_ = new io.deephaven.engine.table.impl.dbarrays.LongVectorColumnWrapper(__columnsToData.get("II"), __rowSet);
+        II_ = new io.deephaven.engine.table.impl.vector.LongVectorColumnWrapper(__columnsToData.get("II"), __rowSet);
         q = (java.lang.Integer) __params[0].getValue();
         __lazyResultCache = __lazy ? new ConcurrentHashMap<>() : null;
     }

@@ -36,21 +36,6 @@ dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter'
 }
 
-def createMainExecTask = {
-    taskName, mainClass -> tasks.create(taskName, JavaExec, { JavaExec task ->
-        task.workingDir "$rootDir"
-        task.classpath = sourceSets.main.runtimeClasspath
-        task.main = mainClass
-        return
-    })
-}
-
-createMainExecTask('replicateBarrageUtils', 'io.deephaven.extensions.barrage.chunk.ReplicateBarrageUtils')
-
-task replicate {
-    dependsOn 'replicateBarrageUtils'
-}
-
 spotless {
     java {
         targetExclude(

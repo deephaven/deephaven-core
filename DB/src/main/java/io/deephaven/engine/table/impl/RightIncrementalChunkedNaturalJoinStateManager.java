@@ -53,7 +53,7 @@ class RightIncrementalChunkedNaturalJoinStateManager
     // region preamble variables
     // endregion preamble variables
 
-    @ReplicateHashTable.EmptyStateValue
+    @HashTableAnnotations.EmptyStateValue
     // @NullStateValue@ from \QQueryConstants.NULL_LONG\E, @StateValueType@ from \Qlong\E
     private static final long EMPTY_RIGHT_VALUE = QueryConstants.NULL_LONG;
 
@@ -76,7 +76,7 @@ class RightIncrementalChunkedNaturalJoinStateManager
     private final IntegerArraySource overflowLocationSource = new IntegerArraySource();
 
     // we are going to also reuse this for our state entry, so that we do not need additional storage
-    @ReplicateHashTable.StateColumnSource
+    @HashTableAnnotations.StateColumnSource
     // @StateColumnSourceType@ from \QLongArraySource\E
     private final LongArraySource rightRowSetSource
             // @StateColumnSourceConstructor@ from \QLongArraySource()\E
@@ -88,7 +88,7 @@ class RightIncrementalChunkedNaturalJoinStateManager
     // the location of the next key in an overflow bucket
     private final IntegerArraySource overflowOverflowLocationSource = new IntegerArraySource();
     // the overflow buckets for the right TrackingWritableRowSet
-    @ReplicateHashTable.OverflowStateColumnSource
+    @HashTableAnnotations.OverflowStateColumnSource
     // @StateColumnSourceType@ from \QLongArraySource\E
     private final LongArraySource overflowRightRowSetSource
             // @StateColumnSourceConstructor@ from \QLongArraySource()\E

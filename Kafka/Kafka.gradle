@@ -43,17 +43,6 @@ dependencies {
     Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
 }
 
-def createMainExecTask = {
-    taskName, mainClass -> tasks.create(taskName, JavaExec, { JavaExec task ->
-        task.workingDir "$rootDir"
-        task.classpath = sourceSets.main.runtimeClasspath
-        task.main = mainClass
-        return
-    })
-}
-
-createMainExecTask('replicateKafka', 'io.deephaven.kafka.ingest.ReplicateKafka')
-
 spotless {
     java {
         targetExclude(

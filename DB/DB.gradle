@@ -157,24 +157,6 @@ createJmhTask('jmhRunSparseSelect', 'SparseSelectBenchmark')
 createJmhTask('jmhRunRCS', 'RegionedColumnSourceBenchmark')
 createJmhTask('jmhRunBy', 'ByBenchmark', '8g')
 
-def createTestExecTask = {
-    taskName, mainClass -> tasks.create(taskName, JavaExec, { JavaExec task ->
-        task.workingDir "$rootDir"
-        task.classpath = sourceSets.test.runtimeClasspath
-        task.main = mainClass
-        return
-    })
-}
-
-def createMainExecTask = {
-    taskName, mainClass -> tasks.create(taskName, JavaExec, { JavaExec task ->
-        task.workingDir "$rootDir"
-        task.classpath = sourceSets.main.runtimeClasspath
-        task.main = mainClass
-        return
-    })
-}
-
 def createDeephavenTestExecTask = {
     taskName, mainClass -> tasks.create(taskName, JavaExec, { JavaExec task ->
         new File("$rootDir/tmp/workspace").mkdirs()
@@ -208,62 +190,6 @@ createDeephavenTestExecTask('byBenchmark', 'io.deephaven.benchmark.engine.ByBenc
 createDeephavenTestExecTask('sumByBenchmark', 'io.deephaven.benchmark.engine.SumByBenchmark')
 createDeephavenTestExecTask('percentileByBenchmark', 'io.deephaven.benchmark.engine.PercentileByBenchmark')
 createDeephavenTestExecTask('lastByBenchmark', 'io.deephaven.benchmark.engine.LastByBenchmark')
-
-createTestExecTask('replicateTuples', 'io.deephaven.engine.table.impl.tuples.TupleSourceCodeGenerator')
-createTestExecTask('replicateSortKernelTests', 'io.deephaven.engine.table.impl.sort.timsort.ReplicateSortKernelTests')
-createMainExecTask('replicateSortKernel', 'io.deephaven.engine.table.impl.sort.ReplicateSortKernel')
-createTestExecTask('replicateSourcesTest', 'io.deephaven.engine.table.impl.sources.ReplicateSourcesAndChunkTest')
-createMainExecTask('replicateSources', 'io.deephaven.engine.table.impl.sources.ReplicateSourcesAndChunks')
-createMainExecTask('replicateChunkFilters', 'io.deephaven.engine.table.impl.select.chunkfilters.ReplicateChunkFilters')
-createMainExecTask('replicateHashing', 'io.deephaven.engine.chunk.util.hashing.ReplicateHashing')
-createMainExecTask('replicateStampKernel', 'io.deephaven.engine.table.impl.join.stamp.ReplicateStampKernel')
-createMainExecTask('replicateDupCompactKernel', 'io.deephaven.engine.table.impl.join.dupcompact.ReplicateDupCompactKernel')
-createMainExecTask('replicateDupExpandKernel', 'io.deephaven.engine.table.impl.join.dupexpand.ReplicateDupExpandKernel');
-createDeephavenTestExecTask('replicateHashTable', 'io.deephaven.engine.table.impl.ReplicateHashTable')
-createMainExecTask('replicateColumnChunkPageStores', 'io.deephaven.engine.table.impl.locations.parquet.ReplicateColumnChunkPageStores')
-createMainExecTask('replicateReverseKernel', 'io.deephaven.engine.table.impl.utils.reverse.ReplicateReverseKernel')
-createMainExecTask('replicateSegmentedSortedArray', 'io.deephaven.engine.table.impl.ssa.ReplicateSegmentedSortedArray')
-createTestExecTask('replicateSegmentedSortedArrayTests', 'io.deephaven.engine.table.impl.ssa.ReplicateSegmentedSortedArrayTests')
-createMainExecTask('replicateSegmentedSortedMultiset', 'io.deephaven.engine.table.impl.ssms.ReplicateSegmentedSortedMultiset')
-createTestExecTask('replicateSegmentedSortedMultisetTests', 'io.deephaven.engine.table.impl.ssms.ReplicateSegmentedSortedMultisetTests')
-createTestExecTask('replicateColumnSourceFillBenchmark', 'io.deephaven.engine.table.impl.sources.ReplicateColumnSourceFillBenchmark')
-createMainExecTask('replicateSetInclusionKernel', 'io.deephaven.engine.table.impl.select.setinclusion.ReplicateSetInclusionKernel')
-createMainExecTask('replicateRegions', 'io.deephaven.engine.table.impl.sources.regioned.ReplicateRegionsAndRegionedSources')
-createMainExecTask('replicateToPage', 'io.deephaven.engine.table.impl.locations.parquet.topage.ReplicateToPage')
-createMainExecTask('replicateVectors', 'io.deephaven.engine.vector.ReplicateVectors')
-createMainExecTask('replicateVectorColumnWrappers', 'io.deephaven.engine.table.impl.dbarrays.ReplicateVectorColumnWrappers')
-createMainExecTask('replicateCopyKernel', 'io.deephaven.engine.table.impl.utils.copy.ReplicateCopyKernel')
-createMainExecTask('replicateUnboxerKernel', 'io.deephaven.engine.table.impl.utils.unboxer.ReplicateUnboxerKernel')
-createMainExecTask('replicateOperators', 'io.deephaven.engine.table.impl.by.ReplicateOperators')
-createMainExecTask('replicateFreezeBy', 'io.deephaven.engine.table.impl.utils.freezeby.ReplicateFreezeBy')
-
-task replicate {
-    dependsOn 'replicateTuples'
-    dependsOn 'replicateSortKernelTests'
-    dependsOn 'replicateSortKernel'
-    dependsOn 'replicateSourcesTest'
-    dependsOn 'replicateSources'
-    dependsOn 'replicateChunkFilters'
-    dependsOn 'replicateHashing'
-    dependsOn 'replicateStampKernel'
-    dependsOn 'replicateDupCompactKernel'
-    dependsOn 'replicateDupExpandKernel'
-    dependsOn 'replicateHashTable'
-    dependsOn 'replicateReverseKernel'
-    dependsOn 'replicateSegmentedSortedArray'
-    dependsOn 'replicateSegmentedSortedMultiset'
-    dependsOn 'replicateSegmentedSortedArrayTests'
-    dependsOn 'replicateSegmentedSortedMultisetTests'
-    dependsOn 'replicateColumnSourceFillBenchmark'
-    dependsOn 'replicateRegions'
-    dependsOn 'replicateToPage'
-    dependsOn 'replicateVectors'
-    dependsOn 'replicateVectorColumnWrappers'
-    dependsOn 'replicateCopyKernel'
-    dependsOn 'replicateUnboxerKernel'
-    dependsOn 'replicateOperators'
-    dependsOn 'replicateFreezeBy'
-}
 
 spotless {
     java {

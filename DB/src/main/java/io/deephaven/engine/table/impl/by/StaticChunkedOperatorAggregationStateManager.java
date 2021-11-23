@@ -12,6 +12,7 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.impl.HashTableAnnotations;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.chunk.util.hashing.*;
 // this is ugly to have twice, but we do need it twice for replication
@@ -38,7 +39,6 @@ import org.jetbrains.annotations.NotNull;
 // region extra imports
 import java.util.Objects;
 
-import io.deephaven.engine.table.impl.ReplicateHashTable;
 import io.deephaven.util.SafeCloseable;
 import org.apache.commons.lang3.mutable.MutableInt;
 // endregion extra imports
@@ -67,7 +67,7 @@ class StaticChunkedOperatorAggregationStateManager
     // region preamble variables
     // endregion preamble variables
 
-    @ReplicateHashTable.EmptyStateValue
+    @HashTableAnnotations.EmptyStateValue
     // @NullStateValue@ from \QQueryConstants.NULL_INT\E, @StateValueType@ from \Qint\E
     private static final int EMPTY_RIGHT_VALUE = QueryConstants.NULL_INT;
 
@@ -117,7 +117,7 @@ class StaticChunkedOperatorAggregationStateManager
     private final IntegerArraySource overflowLocationSource = new IntegerArraySource();
 
     // we are going to also reuse this for our state entry, so that we do not need additional storage
-    @ReplicateHashTable.StateColumnSource
+    @HashTableAnnotations.StateColumnSource
     // @StateColumnSourceType@ from \QIntegerArraySource\E
     private final IntegerArraySource stateSource
             // @StateColumnSourceConstructor@ from \QIntegerArraySource()\E
@@ -129,7 +129,7 @@ class StaticChunkedOperatorAggregationStateManager
     // the location of the next key in an overflow bucket
     private final IntegerArraySource overflowOverflowLocationSource = new IntegerArraySource();
     // the overflow buckets for the right TrackingWritableRowSet
-    @ReplicateHashTable.OverflowStateColumnSource
+    @HashTableAnnotations.OverflowStateColumnSource
     // @StateColumnSourceType@ from \QIntegerArraySource\E
     private final IntegerArraySource overflowStateSource
             // @StateColumnSourceConstructor@ from \QIntegerArraySource()\E

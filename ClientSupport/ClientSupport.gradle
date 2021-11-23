@@ -13,12 +13,6 @@ dependencies {
     Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
 }
 
-task replicateDownsampleValueTrackers(type: JavaExec) {
-    workingDir "$rootDir"
-    classpath = sourceSets.main.runtimeClasspath
-    main = 'io.deephaven.clientsupport.plotdownsampling.ReplicateDownsamplingValueTrackers'
-}
-
 spotless {
     java {
         targetExclude(

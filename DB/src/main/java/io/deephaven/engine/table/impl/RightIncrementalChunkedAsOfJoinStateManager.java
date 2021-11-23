@@ -68,7 +68,7 @@ class RightIncrementalChunkedAsOfJoinStateManager
     // region preamble variables
     // endregion preamble variables
 
-    @ReplicateHashTable.EmptyStateValue
+    @HashTableAnnotations.EmptyStateValue
     // @NullStateValue@ from \QQueryConstants.NULL_BYTE\E, @StateValueType@ from \Qbyte\E
     private static final byte EMPTY_VALUE = QueryConstants.NULL_BYTE;
 
@@ -119,7 +119,7 @@ class RightIncrementalChunkedAsOfJoinStateManager
     private final IntegerArraySource overflowLocationSource = new IntegerArraySource();
 
     // we are going to also reuse this for our state entry, so that we do not need additional storage
-    @ReplicateHashTable.StateColumnSource
+    @HashTableAnnotations.StateColumnSource
     // @StateColumnSourceType@ from \QByteArraySource\E
     private final ByteArraySource stateSource
             // @StateColumnSourceConstructor@ from \QByteArraySource()\E
@@ -131,7 +131,7 @@ class RightIncrementalChunkedAsOfJoinStateManager
     // the location of the next key in an overflow bucket
     private final IntegerArraySource overflowOverflowLocationSource = new IntegerArraySource();
     // the overflow buckets for the right TrackingWritableRowSet
-    @ReplicateHashTable.OverflowStateColumnSource
+    @HashTableAnnotations.OverflowStateColumnSource
     // @StateColumnSourceType@ from \QByteArraySource\E
     private final ByteArraySource overflowStateSource
             // @StateColumnSourceConstructor@ from \QByteArraySource()\E
