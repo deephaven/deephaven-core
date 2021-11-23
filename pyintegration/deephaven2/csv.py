@@ -116,7 +116,7 @@ def read(path: str,
 
 
 def write(table: Table, path: str, cols: List[str] = []) -> None:
-    """ WriteC a table to a standard CSV file.
+    """ Write a table to a standard CSV file.
 
     Args:
         table (Table): the source table
