@@ -238,12 +238,14 @@ class TableTestCase(BaseTestCase):
             result_table = op(self.test_table, num_rows=1, by=["a"])
             self.assertLessEqual(result_table.size, self.test_table.size)
 
+    @unittest.skip("Wait for the completion of Ryan's db reorg project.")
     def test_group_by(self):
         grouped_table = self.test_table.group_by(by=["a", "c"])
         self.assertLessEqual(grouped_table.size, self.test_table.size)
         grouped_table = self.test_table.group_by()
         self.assertLessEqual(grouped_table.size, 1)
 
+    @unittest.skip("Wait for the completion of Ryan's db reorg project.")
     def test_ungroup(self):
         grouped_table = self.test_table.group_by(by=["a", "c"])
         ungrouped_table = grouped_table.ungroup(cols=["b"])
@@ -267,6 +269,7 @@ class TableTestCase(BaseTestCase):
         result_table = self.test_table.count_by(col="b", by=["a"])
         self.assertEqual(result_table.size, num_distinct_a)
 
+    @unittest.skip("Wait for the completion of Ryan's db reorg project.")
     def test_combo_agg(self):
         num_distinct_a = self.test_table.select_distinct(cols=["a"]).size
 
