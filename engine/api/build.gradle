@@ -1,37 +1,20 @@
-import io.deephaven.tools.Tools
-
-configurations {
-    testCompile.extendsFrom junit
+plugins {
+    id 'java-library'
 }
 
-sourceSets {
-    main {
-        java {
-            srcDir 'java'
-        }
-    }
-    test {
-        java {
-            srcDir 'test'
-        }
-    }
-}
+description 'Engine API: Engine API module, suitable as a compile-time dependency for most queries'
 
 dependencies {
-    compile project(':qst'),
+    api project(':qst'),
             project(':engine-chunk'),
             project(':engine-vector'),
             project(':engine-time'),
             project(':engine-updategraph'),
-            project(':engine-rowset'),
-            'com.github.f4b6a3:uuid-creator:3.6.0'
+            project(':engine-rowset')
+
+    implementation 'com.github.f4b6a3:uuid-creator:3.6.0'
 
     compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
-}
 
-spotless {
-    java {
-        targetExclude(
-        )
-    }
+    testImplementation 'junit:junit:4.13.2'
 }

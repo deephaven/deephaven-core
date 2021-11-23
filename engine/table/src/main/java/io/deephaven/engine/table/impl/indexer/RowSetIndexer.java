@@ -5,7 +5,7 @@ import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.TupleSource;
-import io.deephaven.engine.table.impl.tuplesource.TupleSourceFactory;
+import io.deephaven.engine.table.impl.TupleSourceFactory;
 import io.deephaven.engine.tuple.EmptyTuple;
 import io.deephaven.engine.updategraph.LogicalClock;
 import org.jetbrains.annotations.NotNull;

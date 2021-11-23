@@ -12,7 +12,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Objects;
 
-import static io.deephaven.engine.time.DateTimeUtils.nanosToTime;
+import static io.deephaven.engine.time.DateTimeUtil.nanosToTime;
 
 /**
  * A {@link SsmBackedColumnSource} for Longs.

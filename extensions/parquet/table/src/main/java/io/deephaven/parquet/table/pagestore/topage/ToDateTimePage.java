@@ -1,9 +1,9 @@
 package io.deephaven.parquet.table.pagestore.topage;
 
+import io.deephaven.engine.time.DateTimeUtil;
 import io.deephaven.engine.vector.ObjectVector;
 import io.deephaven.engine.vector.ObjectVectorDirect;
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.chunk.Attributes;
 import org.apache.parquet.schema.LogicalTypeAnnotation;
 import org.jetbrains.annotations.NotNull;
@@ -71,7 +71,7 @@ public abstract class ToDateTimePage<ATTR extends Attributes.Any> extends ToLong
         @Override
         @NotNull
         public ObjectVector<DateTime> makeVector(long[] result) {
-            return makeVectorHelper(result, DateTimeUtils::nanosToTime);
+            return makeVectorHelper(result, DateTimeUtil::nanosToTime);
         }
     }
 
@@ -79,12 +79,12 @@ public abstract class ToDateTimePage<ATTR extends Attributes.Any> extends ToLong
         @Override
         @NotNull
         public ObjectVector<DateTime> makeVector(long[] result) {
-            return makeVectorHelper(result, DateTimeUtils::microsToTime);
+            return makeVectorHelper(result, DateTimeUtil::microsToTime);
         }
 
         @Override
         public final long[] convertResult(@NotNull final Object result) {
-            return convertResultHelper(result, DateTimeUtils::microsToNanos);
+            return convertResultHelper(result, DateTimeUtil::microsToNanos);
         }
     }
 
@@ -92,12 +92,12 @@ public abstract class ToDateTimePage<ATTR extends Attributes.Any> extends ToLong
         @Override
         @NotNull
         public ObjectVector<DateTime> makeVector(long[] result) {
-            return makeVectorHelper(result, DateTimeUtils::millisToTime);
+            return makeVectorHelper(result, DateTimeUtil::millisToTime);
         }
 
         @Override
         public final long[] convertResult(@NotNull final Object result) {
-            return convertResultHelper(result, DateTimeUtils::millisToNanos);
+            return convertResultHelper(result, DateTimeUtil::millisToNanos);
         }
     }
 }

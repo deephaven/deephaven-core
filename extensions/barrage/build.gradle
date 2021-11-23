@@ -24,7 +24,7 @@ dependencies {
 
     Classpaths.inheritImmutables(project)
 
-    testImplementation TestTools.projectDependency(project, 'DB'),
+    testImplementation TestTools.projectDependency(project, 'engine-table'),
             TestTools.projectDependency(project, 'Util')
 
     Classpaths.inheritSlf4j(project, 'slf4j-api', 'implementation')

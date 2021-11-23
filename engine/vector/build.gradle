@@ -1,25 +1,14 @@
-import io.deephaven.tools.Tools
-
-configurations {
-    testCompile.extendsFrom junit
+plugins {
+    id 'java-library'
 }
 
-sourceSets {
-    main {
-        java {
-            srcDir 'java'
-        }
-    }
-    test {
-        java {
-            srcDir 'test'
-        }
-    }
-}
+description 'Engine Vectors: Array-like data structures for in-place data access'
 
 dependencies {
-    compile project(':Util'),
+    api project(':Util'),
             project(':qst')
+
+    testImplementation 'junit:junit:4.13.2'
 }
 
 spotless {

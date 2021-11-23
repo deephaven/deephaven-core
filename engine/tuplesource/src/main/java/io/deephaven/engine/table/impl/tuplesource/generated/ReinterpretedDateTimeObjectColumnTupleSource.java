@@ -13,7 +13,7 @@ import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.tuplesource.AbstractTupleSource;
 import io.deephaven.engine.table.impl.tuplesource.TwoColumnTupleSourceFactory;
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.time.DateTimeUtils;
+import io.deephaven.engine.time.DateTimeUtil;
 import io.deephaven.engine.tuple.generated.LongObjectTuple;
 import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
@@ -60,7 +60,7 @@ public class ReinterpretedDateTimeObjectColumnTupleSource extends AbstractTupleS
     @Override
     public final LongObjectTuple createTupleFromValues(@NotNull final Object... values) {
         return new LongObjectTuple(
-                DateTimeUtils.nanos((DateTime)values[0]),
+                DateTimeUtil.nanos((DateTime)values[0]),
                 values[1]
         );
     }
@@ -77,7 +77,7 @@ public class ReinterpretedDateTimeObjectColumnTupleSource extends AbstractTupleS
     @Override
     public final <ELEMENT_TYPE> void exportElement(@NotNull final LongObjectTuple tuple, final int elementIndex, @NotNull final WritableColumnSource<ELEMENT_TYPE> writableSource, final long destinationIndexKey) {
         if (elementIndex == 0) {
-            writableSource.set(destinationIndexKey, (ELEMENT_TYPE) DateTimeUtils.nanosToTime(tuple.getFirstElement()));
+            writableSource.set(destinationIndexKey, (ELEMENT_TYPE) DateTimeUtil.nanosToTime(tuple.getFirstElement()));
             return;
         }
         if (elementIndex == 1) {
@@ -90,7 +90,7 @@ public class ReinterpretedDateTimeObjectColumnTupleSource extends AbstractTupleS
     @Override
     public final Object exportToExternalKey(@NotNull final LongObjectTuple tuple) {
         return new SmartKey(
-                DateTimeUtils.nanosToTime(tuple.getFirstElement()),
+                DateTimeUtil.nanosToTime(tuple.getFirstElement()),
                 tuple.getSecondElement()
         );
     }
@@ -98,7 +98,7 @@ public class ReinterpretedDateTimeObjectColumnTupleSource extends AbstractTupleS
     @Override
     public final Object exportElement(@NotNull final LongObjectTuple tuple, int elementIndex) {
         if (elementIndex == 0) {
-            return DateTimeUtils.nanosToTime(tuple.getFirstElement());
+            return DateTimeUtil.nanosToTime(tuple.getFirstElement());
         }
         if (elementIndex == 1) {
             return tuple.getSecondElement();

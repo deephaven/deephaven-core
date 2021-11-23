@@ -3,7 +3,7 @@ package io.deephaven.engine.table.impl;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.time.DateTime;
 
-import static io.deephaven.engine.time.DateTimeUtils.nanosToTime;
+import static io.deephaven.engine.time.DateTimeUtil.nanosToTime;
 import static io.deephaven.util.type.TypeUtils.box;
 
 /**

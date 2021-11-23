@@ -51,7 +51,7 @@ def _defineSymbols():
     if _java_type_ is not None:
         return
     # This will raise an exception if the desired object is not the classpath
-    _java_type_ = jpy.get_type("io.deephaven.engine.time.DateTimeUtils")
+    _java_type_ = jpy.get_type("io.deephaven.engine.time.DateTimeUtil")
     DBTimeZone = jpy.get_type("io.deephaven.engine.time.TimeZone")
     DateTime = jpy.get_type("io.deephaven.engine.time.DateTime")
     Period = jpy.get_type("io.deephaven.engine.time.Period")
@@ -157,7 +157,7 @@ def convertDateQuiet(*args):
       
     *Overload 2*  
       :param s: (java.lang.String) - the date string
-      :param dateStyle: (io.deephaven.engine.time.DateTimeUtils.DateStyle) - indicates how to interpret slash-delimited dates
+      :param dateStyle: (io.deephaven.engine.time.DateTimeUtil.DateStyle) - indicates how to interpret slash-delimited dates
       :return: (java.time.LocalDate) the LocalDate
     """
     
@@ -197,7 +197,7 @@ def convertExpression(formula):
      instances.
     
     :param formula: (java.lang.String) - The formula to convert.
-    :return: (io.deephaven.engine.time.DateTimeUtils.Result) A DateTimeUtils.Result object, which includes the converted formula string, a string of instance variable
+    :return: (io.deephaven.engine.time.DateTimeUtil.Result) A DateTimeUtil.Result object, which includes the converted formula string, a string of instance variable
              declarations, and a map describing the names and types of these instance variables.
     """
     
@@ -468,7 +468,7 @@ def diffYear(start, end):
     :return: (double) QueryConstants.NULL_LONG if either input is null; a double value of the number of 365 day periods
              obtained from the first DateTime value minus d2, if the intermediate value of nanoseconds
              difference between the two dates is not out of range for a long value; or throws a
-             DateTimeUtils.DateTimeOverflowException if the intermediate value would be more than min long or max long
+             DateTimeUtil.DateTimeOverflowException if the intermediate value would be more than min long or max long
              nanoseconds from Epoch.
              
              Note that the subtraction is done based the nanosecond offsets of the two dates from Epoch, so, if either
@@ -498,7 +498,7 @@ def expressionToNanos(formula):
     :param formula: (java.lang.String) - The String to be evaluated and converted. Optionally, but preferred, enclosed in straight single
             ticks.
     :return: (long) A long value representing an Epoch offset in nanoseconds for a time or date/time, or a duration in
-             nanoseconds for a period. Throws DateTimeUtils.DateTimeOverflowException if the resultant value would be longer
+             nanoseconds for a period. Throws DateTimeUtil.DateTimeOverflowException if the resultant value would be longer
              than max long, or IllegalArgumentException if expression cannot be evaluated.
     """
     
@@ -820,7 +820,7 @@ def microsToNanos(micros):
     Converts microseconds to nanoseconds.
     
     :param micros: (long) - The long value of microseconds to convert.
-    :return: (long) A QueryConstants.NULL_LONG if the input is null. Throws a DateTimeUtils.DateTimeOverflowException if
+    :return: (long) A QueryConstants.NULL_LONG if the input is null. Throws a DateTimeUtil.DateTimeOverflowException if
              the resultant value would exceed the range that can be stored in a long. Otherwise, returns a long
              containing the equivalent number of nanoseconds for the input in microseconds.
     """
@@ -952,7 +952,7 @@ def millisToNanos(millis):
     
     :param millis: (long) - The long milliseconds value to convert.
     :return: (long) QueryConstants.NULL_LONG if the input is equal to QueryConstants.NULL_LONG. Throws
-             DateTimeUtils.DateTimeOverflowException if the input is too large for conversion. Otherwise returns a long of
+             DateTimeUtil.DateTimeOverflowException if the input is too large for conversion. Otherwise returns a long of
              the equivalent number of nanoseconds to the input.
     """
     
@@ -1306,7 +1306,7 @@ def secondsToNanos(seconds):
     Converts seconds to nanoseconds.
     
     :param seconds: (long) - The long value of seconds to convert.
-    :return: (long) A QueryConstants.NULL_LONG if the input is null. Throws a DateTimeUtils.DateTimeOverflowException if
+    :return: (long) A QueryConstants.NULL_LONG if the input is null. Throws a DateTimeUtil.DateTimeOverflowException if
              the resultant value would exceed the range that can be stored in a long. Otherwise, returns a long
              containing the equivalent number of nanoseconds for the input in seconds.
     """

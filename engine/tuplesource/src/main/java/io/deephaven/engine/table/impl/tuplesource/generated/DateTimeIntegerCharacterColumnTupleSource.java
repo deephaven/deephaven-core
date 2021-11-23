@@ -14,7 +14,7 @@ import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.tuplesource.AbstractTupleSource;
 import io.deephaven.engine.table.impl.tuplesource.ThreeColumnTupleSourceFactory;
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.time.DateTimeUtils;
+import io.deephaven.engine.time.DateTimeUtil;
 import io.deephaven.engine.tuple.generated.LongIntCharTuple;
 import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
@@ -48,7 +48,7 @@ public class DateTimeIntegerCharacterColumnTupleSource extends AbstractTupleSour
     @Override
     public final LongIntCharTuple createTuple(final long indexKey) {
         return new LongIntCharTuple(
-                DateTimeUtils.nanos(columnSource1.get(indexKey)),
+                DateTimeUtil.nanos(columnSource1.get(indexKey)),
                 columnSource2.getInt(indexKey),
                 columnSource3.getChar(indexKey)
         );
@@ -57,7 +57,7 @@ public class DateTimeIntegerCharacterColumnTupleSource extends AbstractTupleSour
     @Override
     public final LongIntCharTuple createPreviousTuple(final long indexKey) {
         return new LongIntCharTuple(
-                DateTimeUtils.nanos(columnSource1.getPrev(indexKey)),
+                DateTimeUtil.nanos(columnSource1.getPrev(indexKey)),
                 columnSource2.getPrevInt(indexKey),
                 columnSource3.getPrevChar(indexKey)
         );
@@ -66,7 +66,7 @@ public class DateTimeIntegerCharacterColumnTupleSource extends AbstractTupleSour
     @Override
     public final LongIntCharTuple createTupleFromValues(@NotNull final Object... values) {
         return new LongIntCharTuple(
-                DateTimeUtils.nanos((DateTime)values[0]),
+                DateTimeUtil.nanos((DateTime)values[0]),
                 TypeUtils.unbox((Integer)values[1]),
                 TypeUtils.unbox((Character)values[2])
         );
@@ -75,7 +75,7 @@ public class DateTimeIntegerCharacterColumnTupleSource extends AbstractTupleSour
     @Override
     public final LongIntCharTuple createTupleFromReinterpretedValues(@NotNull final Object... values) {
         return new LongIntCharTuple(
-                DateTimeUtils.nanos((DateTime)values[0]),
+                DateTimeUtil.nanos((DateTime)values[0]),
                 TypeUtils.unbox((Integer)values[1]),
                 TypeUtils.unbox((Character)values[2])
         );
@@ -85,7 +85,7 @@ public class DateTimeIntegerCharacterColumnTupleSource extends AbstractTupleSour
     @Override
     public final <ELEMENT_TYPE> void exportElement(@NotNull final LongIntCharTuple tuple, final int elementIndex, @NotNull final WritableColumnSource<ELEMENT_TYPE> writableSource, final long destinationIndexKey) {
         if (elementIndex == 0) {
-            writableSource.set(destinationIndexKey, (ELEMENT_TYPE) DateTimeUtils.nanosToTime(tuple.getFirstElement()));
+            writableSource.set(destinationIndexKey, (ELEMENT_TYPE) DateTimeUtil.nanosToTime(tuple.getFirstElement()));
             return;
         }
         if (elementIndex == 1) {
@@ -102,7 +102,7 @@ public class DateTimeIntegerCharacterColumnTupleSource extends AbstractTupleSour
     @Override
     public final Object exportToExternalKey(@NotNull final LongIntCharTuple tuple) {
         return new SmartKey(
-                DateTimeUtils.nanosToTime(tuple.getFirstElement()),
+                DateTimeUtil.nanosToTime(tuple.getFirstElement()),
                 TypeUtils.box(tuple.getSecondElement()),
                 TypeUtils.box(tuple.getThirdElement())
         );
@@ -111,7 +111,7 @@ public class DateTimeIntegerCharacterColumnTupleSource extends AbstractTupleSour
     @Override
     public final Object exportElement(@NotNull final LongIntCharTuple tuple, int elementIndex) {
         if (elementIndex == 0) {
-            return DateTimeUtils.nanosToTime(tuple.getFirstElement());
+            return DateTimeUtil.nanosToTime(tuple.getFirstElement());
         }
         if (elementIndex == 1) {
             return TypeUtils.box(tuple.getSecondElement());
@@ -125,7 +125,7 @@ public class DateTimeIntegerCharacterColumnTupleSource extends AbstractTupleSour
     @Override
     public final Object exportElementReinterpreted(@NotNull final LongIntCharTuple tuple, int elementIndex) {
         if (elementIndex == 0) {
-            return DateTimeUtils.nanosToTime(tuple.getFirstElement());
+            return DateTimeUtil.nanosToTime(tuple.getFirstElement());
         }
         if (elementIndex == 1) {
             return TypeUtils.box(tuple.getSecondElement());
@@ -143,7 +143,7 @@ public class DateTimeIntegerCharacterColumnTupleSource extends AbstractTupleSour
         IntChunk<Values> chunk2 = chunks[1].asIntChunk();
         CharChunk<Values> chunk3 = chunks[2].asCharChunk();
         for (int ii = 0; ii < chunkSize; ++ii) {
-            destinationObjectChunk.set(ii, new LongIntCharTuple(DateTimeUtils.nanos(chunk1.get(ii)), chunk2.get(ii), chunk3.get(ii)));
+            destinationObjectChunk.set(ii, new LongIntCharTuple(DateTimeUtil.nanos(chunk1.get(ii)), chunk2.get(ii), chunk3.get(ii)));
         }
         destinationObjectChunk.setSize(chunkSize);
     }

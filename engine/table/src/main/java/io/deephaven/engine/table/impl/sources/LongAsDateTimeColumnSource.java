@@ -9,7 +9,7 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.time.DateTimeUtils;
+import io.deephaven.engine.time.DateTimeUtil;
 import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.rowset.RowSequence;
@@ -31,13 +31,13 @@ public class LongAsDateTimeColumnSource extends AbstractColumnSource<DateTime> i
     @Override
     public DateTime get(final long index) {
         final long longValue = alternateColumnSource.getLong(index);
-        return DateTimeUtils.nanosToTime(longValue);
+        return DateTimeUtil.nanosToTime(longValue);
     }
 
     @Override
     public DateTime getPrev(final long index) {
         final long longValue = alternateColumnSource.getPrevLong(index);
-        return DateTimeUtils.nanosToTime(longValue);
+        return DateTimeUtil.nanosToTime(longValue);
     }
 
     @Override
@@ -92,7 +92,7 @@ public class LongAsDateTimeColumnSource extends AbstractColumnSource<DateTime> i
         final WritableObjectChunk<DateTime, ? super Values> dateTimeObjectDestination = destination.asWritableObjectChunk();
         for (int ii = 0; ii < longChunk.size(); ++ii) {
             final long longValue = longChunk.get(ii);
-            dateTimeObjectDestination.set(ii, DateTimeUtils.nanosToTime(longValue));
+            dateTimeObjectDestination.set(ii, DateTimeUtil.nanosToTime(longValue));
         }
         dateTimeObjectDestination.setSize(longChunk.size());
     }

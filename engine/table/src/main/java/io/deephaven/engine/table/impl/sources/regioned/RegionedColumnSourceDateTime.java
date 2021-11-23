@@ -1,7 +1,7 @@
 package io.deephaven.engine.table.impl.sources.regioned;
 
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.time.DateTimeUtils;
+import io.deephaven.engine.time.DateTimeUtil;
 import io.deephaven.engine.table.impl.ColumnSourceGetDefaults;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.rowset.RowSequence;
@@ -29,7 +29,7 @@ final class RegionedColumnSourceDateTime
         final int length = longChunk.size();
 
         for (int i = 0; i < length; ++i) {
-            objectChunk.set(size + i, DateTimeUtils.nanosToTime(longChunk.get(i)));
+            objectChunk.set(size + i, DateTimeUtil.nanosToTime(longChunk.get(i)));
         }
         objectChunk.setSize(size + length);
     }
@@ -37,6 +37,6 @@ final class RegionedColumnSourceDateTime
     @Override
     public DateTime get(long elementIndex) {
         return elementIndex == RowSequence.NULL_ROW_KEY ? null
-                : DateTimeUtils.nanosToTime(lookupRegion(elementIndex).getReferencedRegion().getLong(elementIndex));
+                : DateTimeUtil.nanosToTime(lookupRegion(elementIndex).getReferencedRegion().getLong(elementIndex));
     }
 }

@@ -1,7 +1,7 @@
 package io.deephaven.engine.time.calendar;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
-import io.deephaven.engine.time.DateTimeUtils;
+import io.deephaven.engine.time.DateTimeUtil;
 import io.deephaven.engine.time.TimeZone;
 
 import java.io.File;
@@ -156,8 +156,8 @@ public class TestDefaultNoHolidayBusinessCalendar extends BaseArrayTestCase {
         assertEquals(noNonBusinessDays.nonBusinessDaysInRange("2010-01-01", "2019-01-01"), new String[0]);
         assertEquals(
                 noNonBusinessDays.diffNonBusinessNanos(
-                        DateTimeUtils.convertDateTime("2010-01-01T01:00:00.000000000 NY"),
-                        DateTimeUtils.convertDateTime("2019-01-01T01:00:00.000000000 NY")),
+                        DateTimeUtil.convertDateTime("2010-01-01T01:00:00.000000000 NY"),
+                        DateTimeUtil.convertDateTime("2019-01-01T01:00:00.000000000 NY")),
                 0);
         assertEquals(noNonBusinessDays.numberOfNonBusinessDays("2010-01-01", "2019-01-01"), 0);
 
@@ -165,7 +165,7 @@ public class TestDefaultNoHolidayBusinessCalendar extends BaseArrayTestCase {
         assertEquals(noNonBusinessDays.name(), "noNonBusinessDays");
         assertEquals(noNonBusinessDays.timeZone(), TimeZone.TZ_NY);
         assertEquals(noNonBusinessDays.standardBusinessDayLengthNanos(),
-                6 * DateTimeUtils.HOUR + (30 * DateTimeUtils.MINUTE));
+                6 * DateTimeUtil.HOUR + (30 * DateTimeUtil.MINUTE));
         assertEquals(noNonBusinessDays.getBusinessSchedule("2019-06-26").getSOBD(),
                 onlyWeekends.getBusinessSchedule("2019-06-26").getSOBD());
         assertEquals(noNonBusinessDays.getBusinessSchedule("2019-06-26").getEOBD(),

@@ -8,7 +8,7 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.chunk.ChunkType;
-import io.deephaven.engine.table.impl.tuplesource.TupleSourceFactory;
+import io.deephaven.engine.table.impl.TupleSourceFactory;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;

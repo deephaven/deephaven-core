@@ -24,7 +24,7 @@ else:
 
 class TestDateTimeUtils(unittest.TestCase):
     """
-    Test cases for the deephaven.DateTimeUtils module (performed locally) -
+    Test cases for the deephaven.DateTimeUtil module (performed locally) -
     """
 
     def testCurrent(self):

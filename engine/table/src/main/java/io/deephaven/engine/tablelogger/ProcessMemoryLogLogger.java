@@ -7,7 +7,7 @@ package io.deephaven.engine.tablelogger;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.util.ColumnsSpecHelper;
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.time.DateTimeUtils;
+import io.deephaven.engine.time.DateTimeUtil;
 import io.deephaven.tablelogger.Row;
 import io.deephaven.tablelogger.RowSetter;
 import io.deephaven.tablelogger.TableLoggerImpl2;
@@ -59,7 +59,7 @@ public class ProcessMemoryLogLogger extends TableLoggerImpl2<ProcessMemoryLogLog
                 final long totalMemory, final long freeMemory,
                 final long intervalCollections, final long intervalCollectionTimeNanos) throws IOException {
             setRowFlags(flags);
-            this.IntervalStartTime.set(DateTimeUtils.millisToTime(intervalStartTime));
+            this.IntervalStartTime.set(DateTimeUtil.millisToTime(intervalStartTime));
             this.IntervalDurationNanos.set(intervalDurationNanos);
             this.TotalMemory.set(totalMemory);
             this.FreeMemory.set(freeMemory);

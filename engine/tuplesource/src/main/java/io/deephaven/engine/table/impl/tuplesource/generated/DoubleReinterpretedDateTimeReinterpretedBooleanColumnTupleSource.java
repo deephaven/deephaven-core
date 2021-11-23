@@ -14,7 +14,7 @@ import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.tuplesource.AbstractTupleSource;
 import io.deephaven.engine.table.impl.tuplesource.ThreeColumnTupleSourceFactory;
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.time.DateTimeUtils;
+import io.deephaven.engine.time.DateTimeUtil;
 import io.deephaven.engine.tuple.generated.DoubleLongByteTuple;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.util.type.TypeUtils;
@@ -68,7 +68,7 @@ public class DoubleReinterpretedDateTimeReinterpretedBooleanColumnTupleSource ex
     public final DoubleLongByteTuple createTupleFromValues(@NotNull final Object... values) {
         return new DoubleLongByteTuple(
                 TypeUtils.unbox((Double)values[0]),
-                DateTimeUtils.nanos((DateTime)values[1]),
+                DateTimeUtil.nanos((DateTime)values[1]),
                 BooleanUtils.booleanAsByte((Boolean)values[2])
         );
     }
@@ -90,7 +90,7 @@ public class DoubleReinterpretedDateTimeReinterpretedBooleanColumnTupleSource ex
             return;
         }
         if (elementIndex == 1) {
-            writableSource.set(destinationIndexKey, (ELEMENT_TYPE) DateTimeUtils.nanosToTime(tuple.getSecondElement()));
+            writableSource.set(destinationIndexKey, (ELEMENT_TYPE) DateTimeUtil.nanosToTime(tuple.getSecondElement()));
             return;
         }
         if (elementIndex == 2) {
@@ -104,7 +104,7 @@ public class DoubleReinterpretedDateTimeReinterpretedBooleanColumnTupleSource ex
     public final Object exportToExternalKey(@NotNull final DoubleLongByteTuple tuple) {
         return new SmartKey(
                 TypeUtils.box(tuple.getFirstElement()),
-                DateTimeUtils.nanosToTime(tuple.getSecondElement()),
+                DateTimeUtil.nanosToTime(tuple.getSecondElement()),
                 BooleanUtils.byteAsBoolean(tuple.getThirdElement())
         );
     }
@@ -115,7 +115,7 @@ public class DoubleReinterpretedDateTimeReinterpretedBooleanColumnTupleSource ex
             return TypeUtils.box(tuple.getFirstElement());
         }
         if (elementIndex == 1) {
-            return DateTimeUtils.nanosToTime(tuple.getSecondElement());
+            return DateTimeUtil.nanosToTime(tuple.getSecondElement());
         }
         if (elementIndex == 2) {
             return BooleanUtils.byteAsBoolean(tuple.getThirdElement());

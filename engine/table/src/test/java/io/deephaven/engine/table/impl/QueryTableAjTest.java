@@ -3,6 +3,7 @@ package io.deephaven.engine.table.impl;
 import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.TableMap;
+import io.deephaven.engine.time.DateTimeUtil;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.io.logger.StreamLoggerImpl;
@@ -11,7 +12,6 @@ import io.deephaven.engine.table.impl.select.AjMatchPairFactory;
 import io.deephaven.engine.table.impl.select.MatchPairFactory;
 import io.deephaven.engine.table.lang.QueryScope;
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.table.impl.QueryTableTestBase.JoinIncrement;
@@ -199,8 +199,8 @@ public class QueryTableAjTest {
 
     @Test
     public void testAjDateTime() {
-        final DateTime first = DateTimeUtils.convertDateTime("2019-06-14T08:30:00 NY");
-        final DateTime second = DateTimeUtils.convertDateTime("2019-06-14T19:30:00 NY");
+        final DateTime first = DateTimeUtil.convertDateTime("2019-06-14T08:30:00 NY");
+        final DateTime second = DateTimeUtil.convertDateTime("2019-06-14T19:30:00 NY");
 
         final Table left = TableTools.newTable(
                 c("Bucket", "A", "A", "B", "A", "B", "C", "C", "A"),

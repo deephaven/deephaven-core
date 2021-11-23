@@ -7,10 +7,10 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.lang.QueryLanguageParser;
 import io.deephaven.engine.table.lang.QueryScopeParam;
+import io.deephaven.engine.time.DateTimeUtil;
 import io.deephaven.engine.vector.ObjectVector;
 import io.deephaven.engine.table.lang.QueryLibrary;
 import io.deephaven.engine.table.lang.QueryScope;
-import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.table.impl.select.python.DeephavenCompatibleFunction;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.io.logger.Logger;
@@ -118,7 +118,7 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
 
             log.debug("Expression (before) : " + formula);
 
-            final DateTimeUtils.Result timeConversionResult = DateTimeUtils.convertExpression(formula);
+            final DateTimeUtil.Result timeConversionResult = DateTimeUtil.convertExpression(formula);
 
             log.debug("Expression (after time conversion) : " + timeConversionResult.getConvertedFormula());
 
@@ -206,7 +206,7 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
     }
 
     protected abstract void generateFilterCode(TableDefinition tableDefinition,
-            DateTimeUtils.Result timeConversionResult,
+            DateTimeUtil.Result timeConversionResult,
             QueryLanguageParser.Result result) throws MalformedURLException, ClassNotFoundException;
 
     @Override

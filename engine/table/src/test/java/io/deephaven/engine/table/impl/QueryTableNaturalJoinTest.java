@@ -10,7 +10,7 @@ import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.impl.indexer.RowSetIndexer;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.time.DateTimeUtils;
+import io.deephaven.engine.time.DateTimeUtil;
 import io.deephaven.engine.table.impl.util.*;
 import io.deephaven.parquet.table.ParquetTools;
 import io.deephaven.engine.util.TableTools;
@@ -588,8 +588,8 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
         TableTools.showWithIndex(cj);
         assertEquals(new int[] {10, 11, 12, 10}, intColumn(cj, "RightSentinel"));
 
-        final DateTime time1 = DateTimeUtils.convertDateTime("2019-05-10T09:45:00 NY");
-        final DateTime time2 = DateTimeUtils.convertDateTime("2019-05-10T21:45:00 NY");
+        final DateTime time1 = DateTimeUtil.convertDateTime("2019-05-10T09:45:00 NY");
+        final DateTime time2 = DateTimeUtil.convertDateTime("2019-05-10T21:45:00 NY");
 
         final Table left2 = testTable(c("JDate", time1, time2, null, time2), c("LeftSentinel", 1, 2, 3, 4));
         final Table right2 = newTable(c("JDate", time2, time1, null), c("RightSentinel", 10, 11, 12));

@@ -2,14 +2,14 @@ package io.deephaven.engine.time.calendar;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.time.DateTimeUtils;
+import io.deephaven.engine.time.DateTimeUtil;
 import junit.framework.TestCase;
 
 public class TestBusinessPeriod extends BaseArrayTestCase {
 
     public void testBusinessPeriod() {
-        final DateTime open1 = DateTimeUtils.convertDateTime("2017-03-11T10:00:00.000000000 NY");
-        final DateTime close1 = DateTimeUtils.convertDateTime("2017-03-11T11:00:00.000000000 NY");
+        final DateTime open1 = DateTimeUtil.convertDateTime("2017-03-11T10:00:00.000000000 NY");
+        final DateTime close1 = DateTimeUtil.convertDateTime("2017-03-11T11:00:00.000000000 NY");
 
         try {
             new BusinessPeriod(null, close1);
@@ -35,13 +35,13 @@ public class TestBusinessPeriod extends BaseArrayTestCase {
         BusinessPeriod period = new BusinessPeriod(open1, close1);
         assertEquals(open1, period.getStartTime());
         assertEquals(close1, period.getEndTime());
-        assertEquals(DateTimeUtils.HOUR, period.getLength());
+        assertEquals(DateTimeUtil.HOUR, period.getLength());
 
         assertTrue(period.contains(open1));
-        assertTrue(period.contains(new DateTime(open1.getNanos() + DateTimeUtils.MINUTE)));
-        assertFalse(period.contains(new DateTime(open1.getNanos() - DateTimeUtils.MINUTE)));
+        assertTrue(period.contains(new DateTime(open1.getNanos() + DateTimeUtil.MINUTE)));
+        assertFalse(period.contains(new DateTime(open1.getNanos() - DateTimeUtil.MINUTE)));
         assertTrue(period.contains(close1));
-        assertTrue(period.contains(new DateTime(close1.getNanos() - DateTimeUtils.MINUTE)));
-        assertFalse(period.contains(new DateTime(close1.getNanos() + DateTimeUtils.MINUTE)));
+        assertTrue(period.contains(new DateTime(close1.getNanos() - DateTimeUtil.MINUTE)));
+        assertFalse(period.contains(new DateTime(close1.getNanos() + DateTimeUtil.MINUTE)));
     }
 }

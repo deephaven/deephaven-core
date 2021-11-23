@@ -4,9 +4,9 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.time.DateTimeUtil;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.RefreshingTableTestCase;
 import io.deephaven.engine.table.impl.QueryTable;
@@ -19,14 +19,14 @@ public class TestTailInitializationFilter extends RefreshingTableTestCase {
         builder.appendRange(0, 99);
         builder.appendRange(1000, 1099);
         final long[] data = new long[200];
-        final DateTime baseTime = DateTimeUtils.convertDateTime("2020-08-20T07:00:00 NY");
-        final DateTime baseTime2 = DateTimeUtils.convertDateTime("2020-08-20T06:00:00 NY");
+        final DateTime baseTime = DateTimeUtil.convertDateTime("2020-08-20T07:00:00 NY");
+        final DateTime baseTime2 = DateTimeUtil.convertDateTime("2020-08-20T06:00:00 NY");
         for (int ii = 0; ii < 100; ii++) {
-            data[ii] = baseTime.getNanos() + (DateTimeUtils.secondsToNanos(60) * (ii / 2));
-            data[100 + ii] = baseTime2.getNanos() + (DateTimeUtils.secondsToNanos(60) * (ii / 2));
+            data[ii] = baseTime.getNanos() + (DateTimeUtil.secondsToNanos(60) * (ii / 2));
+            data[100 + ii] = baseTime2.getNanos() + (DateTimeUtil.secondsToNanos(60) * (ii / 2));
         }
-        final DateTime threshold1 = new DateTime(data[99] - DateTimeUtils.secondsToNanos(600));
-        final DateTime threshold2 = new DateTime(data[199] - DateTimeUtils.secondsToNanos(600));
+        final DateTime threshold1 = new DateTime(data[99] - DateTimeUtil.secondsToNanos(600));
+        final DateTime threshold2 = new DateTime(data[199] - DateTimeUtil.secondsToNanos(600));
 
         final QueryTable input = TstUtils.testRefreshingTable(builder.build().toTracking(),
                 ColumnHolder.getDateTimeColumnHolder("Timestamp", false, data));
@@ -42,10 +42,10 @@ public class TestTailInitializationFilter extends RefreshingTableTestCase {
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             final DateTime[] data2 = new DateTime[4];
-            data2[0] = DateTimeUtils.convertDateTime("2020-08-20T06:00:00 NY");
-            data2[1] = DateTimeUtils.convertDateTime("2020-08-20T06:30:00 NY");
-            data2[0] = DateTimeUtils.convertDateTime("2020-08-20T07:00:00 NY");
-            data2[1] = DateTimeUtils.convertDateTime("2020-08-20T08:30:00 NY");
+            data2[0] = DateTimeUtil.convertDateTime("2020-08-20T06:00:00 NY");
+            data2[1] = DateTimeUtil.convertDateTime("2020-08-20T06:30:00 NY");
+            data2[0] = DateTimeUtil.convertDateTime("2020-08-20T07:00:00 NY");
+            data2[1] = DateTimeUtil.convertDateTime("2020-08-20T08:30:00 NY");
             final RowSet newRowSet = RowSetFactory.fromKeys(100, 101, 1100, 1101);
             input.getRowSet().writableCast().insert(newRowSet);
             ((DateTimeTreeMapSource) input.<DateTime>getColumnSource("Timestamp")).add(newRowSet, data2);

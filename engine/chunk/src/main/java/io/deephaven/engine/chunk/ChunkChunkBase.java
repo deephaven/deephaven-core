@@ -2,7 +2,6 @@ package io.deephaven.engine.chunk;
 
 import io.deephaven.engine.chunk.Attributes.Any;
 
-
 /**
  * A generic object intended to serve as a thin wrapper around a multidimensional array region.
  */

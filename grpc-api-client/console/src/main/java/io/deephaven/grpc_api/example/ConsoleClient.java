@@ -4,13 +4,13 @@
 
 package io.deephaven.grpc_api.example;
 
+import io.deephaven.engine.time.DateTimeUtil;
 import io.deephaven.grpc_api.console.ScopeTicketResolver;
 import io.deephaven.grpc_api.util.ExportTicketHelper;
 import io.deephaven.io.log.LogEntry;
 import io.deephaven.io.logger.Logger;
 import com.google.protobuf.ByteString;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.grpc_api.runner.DeephavenApiServerModule;
 import io.deephaven.grpc_api.util.Scheduler;
 import io.deephaven.internal.log.LoggerFactory;
@@ -238,7 +238,7 @@ public class ConsoleClient {
                 scheduler.currentTime().getMillis() + result.getTokenExpirationDelayMillis() / 3,
                 result.getTokenDeadlineTimeMillis() - result.getTokenExpirationDelayMillis() / 10);
 
-        scheduler.runAtTime(DateTimeUtils.millisToTime(refreshDelayMs), this::refreshToken);
+        scheduler.runAtTime(DateTimeUtil.millisToTime(refreshDelayMs), this::refreshToken);
     }
 
     private void refreshToken() {

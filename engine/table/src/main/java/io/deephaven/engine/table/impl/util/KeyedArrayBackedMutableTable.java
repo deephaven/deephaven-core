@@ -8,7 +8,7 @@ import io.deephaven.engine.table.impl.chunkboxer.ChunkBoxer;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.engine.chunk.*;
-import io.deephaven.engine.table.impl.tuplesource.TupleSourceFactory;
+import io.deephaven.engine.table.impl.TupleSourceFactory;
 import gnu.trove.impl.Constants;
 import gnu.trove.map.TObjectLongMap;
 import gnu.trove.map.hash.TObjectLongHashMap;

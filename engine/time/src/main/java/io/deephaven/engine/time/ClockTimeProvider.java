@@ -18,6 +18,6 @@ public class ClockTimeProvider implements TimeProvider {
     @Override
     public DateTime currentTime() {
         // TODO: Consider adding last-value caching.
-        return DateTimeUtils.microsToTime(clock.currentTimeMicros());
+        return DateTimeUtil.microsToTime(clock.currentTimeMicros());
     }
 }

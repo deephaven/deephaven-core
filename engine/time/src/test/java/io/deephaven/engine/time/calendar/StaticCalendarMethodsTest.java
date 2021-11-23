@@ -2,22 +2,20 @@ package io.deephaven.engine.time.calendar;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.time.DateTimeUtils;
+import io.deephaven.engine.time.DateTimeUtil;
 
 import io.deephaven.test.types.OutOfBandTest;
 import java.time.LocalDate;
 import org.junit.experimental.categories.Category;
 
-
 /**
  * Tests for {@link StaticCalendarMethods}
  */
-@Category(OutOfBandTest.class)
 public class StaticCalendarMethodsTest extends BaseArrayTestCase {
 
     private final BusinessCalendar calendar = Calendars.calendar();
-    private final DateTime time1 = DateTimeUtils.convertDateTime("2002-01-01T01:00:00.000000000 NY");
-    private final DateTime time2 = DateTimeUtils.convertDateTime("2002-01-21T01:00:00.000000000 NY");
+    private final DateTime time1 = DateTimeUtil.convertDateTime("2002-01-01T01:00:00.000000000 NY");
+    private final DateTime time2 = DateTimeUtil.convertDateTime("2002-01-21T01:00:00.000000000 NY");
     private final String date1 = "2017-08-01";
     private final String date2 = "2017-08-05";
 
@@ -55,8 +53,6 @@ public class StaticCalendarMethodsTest extends BaseArrayTestCase {
 
         assertEquals(calendar.timeZone(), StaticCalendarMethods.timeZone());
     }
-
-
 
     public void testBusinessCalendarMethods() {
         assertEquals(calendar.isBusinessDay(), StaticCalendarMethods.isBusinessDay());
@@ -195,5 +191,4 @@ public class StaticCalendarMethodsTest extends BaseArrayTestCase {
         assertEquals(calendar.getBusinessSchedule(LocalDate.now()),
                 StaticCalendarMethods.getBusinessSchedule(LocalDate.now()));
     }
-
 }

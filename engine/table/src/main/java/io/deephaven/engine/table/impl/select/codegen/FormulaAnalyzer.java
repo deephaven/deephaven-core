@@ -8,7 +8,7 @@ import io.deephaven.engine.table.lang.QueryScopeParam;
 import io.deephaven.engine.vector.ObjectVector;
 import io.deephaven.engine.table.lang.QueryLibrary;
 import io.deephaven.engine.table.lang.QueryScope;
-import io.deephaven.engine.time.DateTimeUtils;
+import io.deephaven.engine.time.DateTimeUtil;
 import io.deephaven.engine.table.impl.select.DhFormulaColumn;
 import io.deephaven.engine.table.impl.select.FormulaCompilationException;
 import io.deephaven.engine.table.impl.select.formula.FormulaSourceDescriptor;
@@ -43,7 +43,7 @@ public class FormulaAnalyzer {
             possibleParams.put(param.getName(), param);
         }
 
-        final DateTimeUtils.Result timeConversionResult = DateTimeUtils.convertExpression(rawFormulaString);
+        final DateTimeUtil.Result timeConversionResult = DateTimeUtil.convertExpression(rawFormulaString);
         final QueryLanguageParser.Result result = getCompiledFormula(columnDefinitionMap, timeConversionResult,
                 otherVariables);
 
@@ -81,7 +81,7 @@ public class FormulaAnalyzer {
     }
 
     public static QueryLanguageParser.Result getCompiledFormula(Map<String, ColumnDefinition<?>> availableColumns,
-                                                                DateTimeUtils.Result timeConversionResult,
+                                                                DateTimeUtil.Result timeConversionResult,
                                                                 Map<String, Class<?>> otherVariables) throws Exception {
         final Map<String, Class<?>> possibleVariables = new HashMap<>();
         possibleVariables.put("i", int.class);

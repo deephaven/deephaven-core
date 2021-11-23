@@ -15,7 +15,7 @@ import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.time.DateTimeUtils;
+import io.deephaven.engine.time.DateTimeUtil;
 import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.util.*;
@@ -878,7 +878,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
         }
 
         public void scheduleAt(final long nextRunTime) {
-            scheduler.runAtTime(DateTimeUtils.millisToTime(nextRunTime), this);
+            scheduler.runAtTime(DateTimeUtil.millisToTime(nextRunTime), this);
         }
     }
 

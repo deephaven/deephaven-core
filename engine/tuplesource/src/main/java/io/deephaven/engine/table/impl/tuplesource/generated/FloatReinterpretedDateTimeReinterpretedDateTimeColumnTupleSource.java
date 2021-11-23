@@ -13,7 +13,7 @@ import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.tuplesource.AbstractTupleSource;
 import io.deephaven.engine.table.impl.tuplesource.ThreeColumnTupleSourceFactory;
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.time.DateTimeUtils;
+import io.deephaven.engine.time.DateTimeUtil;
 import io.deephaven.engine.tuple.generated.FloatLongLongTuple;
 import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
@@ -66,8 +66,8 @@ public class FloatReinterpretedDateTimeReinterpretedDateTimeColumnTupleSource ex
     public final FloatLongLongTuple createTupleFromValues(@NotNull final Object... values) {
         return new FloatLongLongTuple(
                 TypeUtils.unbox((Float)values[0]),
-                DateTimeUtils.nanos((DateTime)values[1]),
-                DateTimeUtils.nanos((DateTime)values[2])
+                DateTimeUtil.nanos((DateTime)values[1]),
+                DateTimeUtil.nanos((DateTime)values[2])
         );
     }
 
@@ -88,11 +88,11 @@ public class FloatReinterpretedDateTimeReinterpretedDateTimeColumnTupleSource ex
             return;
         }
         if (elementIndex == 1) {
-            writableSource.set(destinationIndexKey, (ELEMENT_TYPE) DateTimeUtils.nanosToTime(tuple.getSecondElement()));
+            writableSource.set(destinationIndexKey, (ELEMENT_TYPE) DateTimeUtil.nanosToTime(tuple.getSecondElement()));
             return;
         }
         if (elementIndex == 2) {
-            writableSource.set(destinationIndexKey, (ELEMENT_TYPE) DateTimeUtils.nanosToTime(tuple.getThirdElement()));
+            writableSource.set(destinationIndexKey, (ELEMENT_TYPE) DateTimeUtil.nanosToTime(tuple.getThirdElement()));
             return;
         }
         throw new IndexOutOfBoundsException("Invalid element index " + elementIndex + " for export");
@@ -102,8 +102,8 @@ public class FloatReinterpretedDateTimeReinterpretedDateTimeColumnTupleSource ex
     public final Object exportToExternalKey(@NotNull final FloatLongLongTuple tuple) {
         return new SmartKey(
                 TypeUtils.box(tuple.getFirstElement()),
-                DateTimeUtils.nanosToTime(tuple.getSecondElement()),
-                DateTimeUtils.nanosToTime(tuple.getThirdElement())
+                DateTimeUtil.nanosToTime(tuple.getSecondElement()),
+                DateTimeUtil.nanosToTime(tuple.getThirdElement())
         );
     }
 
@@ -113,10 +113,10 @@ public class FloatReinterpretedDateTimeReinterpretedDateTimeColumnTupleSource ex
             return TypeUtils.box(tuple.getFirstElement());
         }
         if (elementIndex == 1) {
-            return DateTimeUtils.nanosToTime(tuple.getSecondElement());
+            return DateTimeUtil.nanosToTime(tuple.getSecondElement());
         }
         if (elementIndex == 2) {
-            return DateTimeUtils.nanosToTime(tuple.getThirdElement());
+            return DateTimeUtil.nanosToTime(tuple.getThirdElement());
         }
         throw new IllegalArgumentException("Bad elementIndex for 3 element tuple: " + elementIndex);
     }

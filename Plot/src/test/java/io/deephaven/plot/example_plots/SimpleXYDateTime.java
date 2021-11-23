@@ -3,7 +3,7 @@ package io.deephaven.plot.example_plots;
 import io.deephaven.plot.Figure;
 import io.deephaven.plot.PlotStyle;
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.time.DateTimeUtils;
+import io.deephaven.engine.time.DateTimeUtil;
 
 import static io.deephaven.plot.PlottingConvenience.plot;
 
@@ -13,15 +13,15 @@ import static io.deephaven.plot.PlottingConvenience.plot;
 public class SimpleXYDateTime {
     public static void main(String[] args) {
 
-        final long dateTime = DateTimeUtils.convertDateTime("2018-02-01T09:30:00 NY").getNanos();
-        final DateTime[] dates = new DateTime[] {DateTimeUtils.nanosToTime(dateTime),
-                DateTimeUtils.nanosToTime(dateTime + DateTimeUtils.HOUR),
-                DateTimeUtils.nanosToTime(dateTime + 2 * DateTimeUtils.HOUR),
-                DateTimeUtils.nanosToTime(dateTime + 3 * DateTimeUtils.HOUR),
-                DateTimeUtils.nanosToTime(dateTime + 4 * DateTimeUtils.HOUR),
-                DateTimeUtils.nanosToTime(dateTime + 5 * DateTimeUtils.HOUR),
-                DateTimeUtils.nanosToTime(dateTime + 6 * DateTimeUtils.HOUR),
-                DateTimeUtils.nanosToTime(dateTime + 6 * DateTimeUtils.HOUR + 30 * DateTimeUtils.MINUTE),
+        final long dateTime = DateTimeUtil.convertDateTime("2018-02-01T09:30:00 NY").getNanos();
+        final DateTime[] dates = new DateTime[] {DateTimeUtil.nanosToTime(dateTime),
+                DateTimeUtil.nanosToTime(dateTime + DateTimeUtil.HOUR),
+                DateTimeUtil.nanosToTime(dateTime + 2 * DateTimeUtil.HOUR),
+                DateTimeUtil.nanosToTime(dateTime + 3 * DateTimeUtil.HOUR),
+                DateTimeUtil.nanosToTime(dateTime + 4 * DateTimeUtil.HOUR),
+                DateTimeUtil.nanosToTime(dateTime + 5 * DateTimeUtil.HOUR),
+                DateTimeUtil.nanosToTime(dateTime + 6 * DateTimeUtil.HOUR),
+                DateTimeUtil.nanosToTime(dateTime + 6 * DateTimeUtil.HOUR + 30 * DateTimeUtil.MINUTE),
         };
 
         final double[] data = new double[] {1, 2, 3, 4, 5, 6, 7, 8};

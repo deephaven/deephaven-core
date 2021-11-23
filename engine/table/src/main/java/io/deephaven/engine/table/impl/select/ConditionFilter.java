@@ -17,7 +17,7 @@ import io.deephaven.engine.table.impl.lang.QueryLanguageParser;
 import io.deephaven.engine.table.impl.util.codegen.CodeGenerator;
 import io.deephaven.engine.table.lang.QueryLibrary;
 import io.deephaven.engine.table.lang.QueryScopeParam;
-import io.deephaven.engine.time.DateTimeUtils;
+import io.deephaven.engine.time.DateTimeUtil;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.ColumnSource;
@@ -362,7 +362,7 @@ public class ConditionFilter extends AbstractConditionFilter {
     }
 
     @Override
-    protected void generateFilterCode(TableDefinition tableDefinition, DateTimeUtils.Result timeConversionResult,
+    protected void generateFilterCode(TableDefinition tableDefinition, DateTimeUtil.Result timeConversionResult,
             QueryLanguageParser.Result result) throws MalformedURLException, ClassNotFoundException {
         final StringBuilder classBody = getClassBody(tableDefinition, timeConversionResult, result);
         if (classBody == null)
@@ -397,7 +397,7 @@ public class ConditionFilter extends AbstractConditionFilter {
     }
 
     @Nullable
-    private StringBuilder getClassBody(TableDefinition tableDefinition, DateTimeUtils.Result timeConversionResult,
+    private StringBuilder getClassBody(TableDefinition tableDefinition, DateTimeUtil.Result timeConversionResult,
             QueryLanguageParser.Result result) {
         if (filterKernelClass != null) {
             return null;

@@ -5,7 +5,7 @@
 package io.deephaven.engine.time.calendar;
 
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.time.DateTimeUtils;
+import io.deephaven.engine.time.DateTimeUtil;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.Serializable;
@@ -58,7 +58,7 @@ public class BusinessSchedule implements Serializable {
                 throw new IllegalArgumentException("Null period.");
             }
 
-            lod += DateTimeUtils.minus(businessPeriod.getEndTime(), businessPeriod.getStartTime());
+            lod += DateTimeUtil.minus(businessPeriod.getEndTime(), businessPeriod.getStartTime());
         }
 
 
@@ -175,12 +175,12 @@ public class BusinessSchedule implements Serializable {
         long elapsed = 0;
 
         for (BusinessPeriod businessPeriod : openPeriods) {
-            if (DateTimeUtils.isBefore(time, businessPeriod.getStartTime())) {
+            if (DateTimeUtil.isBefore(time, businessPeriod.getStartTime())) {
                 return elapsed;
-            } else if (DateTimeUtils.isAfter(time, businessPeriod.getEndTime())) {
+            } else if (DateTimeUtil.isAfter(time, businessPeriod.getEndTime())) {
                 elapsed += businessPeriod.getLength();
             } else {
-                elapsed += DateTimeUtils.minus(time, businessPeriod.getStartTime());
+                elapsed += DateTimeUtil.minus(time, businessPeriod.getStartTime());
                 return elapsed;
             }
         }

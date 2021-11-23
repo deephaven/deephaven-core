@@ -7,7 +7,7 @@ import io.deephaven.engine.table.impl.utils.AppendOnlyArrayBackedMutableTable;
 import io.deephaven.engine.table.impl.utils.KeyedArrayBackedMutableTable;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.time.DateTimeUtils;
+import io.deephaven.engine.time.DateTimeUtil;
 import io.deephaven.qst.TableCreator;
 import io.deephaven.qst.table.EmptyTable;
 import io.deephaven.qst.table.InMemoryAppendOnlyInputTable;
@@ -134,7 +134,7 @@ public enum TableCreatorImpl implements TableCreator<Table> {
             return provider.walk(new TimeProviderAdapter()).getOut();
         }
 
-        private static final io.deephaven.engine.time.TimeProvider SYSTEM_PROVIDER = DateTimeUtils::currentTime;
+        private static final io.deephaven.engine.time.TimeProvider SYSTEM_PROVIDER = DateTimeUtil::currentTime;
 
         private io.deephaven.engine.time.TimeProvider out;
 

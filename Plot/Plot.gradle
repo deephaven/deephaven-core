@@ -6,12 +6,14 @@ configurations {
 
 dependencies {
 
-    compile project(':engine-table')
+    compile project(':engine-table'),
+            project(':engine-function'),
+            project(':engine-tuple')
 
     compileOnly 'javax.inject:javax.inject:1'
 
     testCompile TestTools.projectDependency(project, 'Util'),
-                TestTools.projectDependency(project, 'DB')
+                TestTools.projectDependency(project, 'engine-table')
 
     testRuntime project(path: ':configs'), project(path: ':test-configs'), project(':Numerics')
 

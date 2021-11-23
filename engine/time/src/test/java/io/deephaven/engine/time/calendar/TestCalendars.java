@@ -7,7 +7,7 @@ package io.deephaven.engine.time.calendar;
 import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.time.DateTimeUtils;
+import io.deephaven.engine.time.DateTimeUtil;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -19,10 +19,10 @@ public class TestCalendars extends BaseArrayTestCase {
         BusinessCalendar usny = Calendars.calendar("USNY");
 
         // USNYSE
-        DateTime businessDay = DateTimeUtils.convertDateTime("2016-08-31T01:00:00.000000000 NY");
-        DateTime halfDay = DateTimeUtils.convertDateTime("2014-07-03T01:00:00.000000000 NY");
-        DateTime holiday = DateTimeUtils.convertDateTime("2002-01-01T01:00:00.000000000 NY");
-        DateTime holiday2 = DateTimeUtils.convertDateTime("2002-01-21T01:00:00.000000000 NY");
+        DateTime businessDay = DateTimeUtil.convertDateTime("2016-08-31T01:00:00.000000000 NY");
+        DateTime halfDay = DateTimeUtil.convertDateTime("2014-07-03T01:00:00.000000000 NY");
+        DateTime holiday = DateTimeUtil.convertDateTime("2002-01-01T01:00:00.000000000 NY");
+        DateTime holiday2 = DateTimeUtil.convertDateTime("2002-01-21T01:00:00.000000000 NY");
 
         assertTrue(usnyse.isBusinessDay(businessDay));
         assertTrue(usnyse.isBusinessDay(halfDay));
@@ -30,9 +30,9 @@ public class TestCalendars extends BaseArrayTestCase {
         assertFalse(usnyse.isBusinessDay(holiday2));
 
         // USNY
-        businessDay = DateTimeUtils.convertDateTime("2016-08-31T01:00:00.000000000 NY");
-        holiday = DateTimeUtils.convertDateTime("2005-11-24T01:00:00.000000000 NY");
-        holiday2 = DateTimeUtils.convertDateTime("2002-01-21T01:00:00.000000000 NY");
+        businessDay = DateTimeUtil.convertDateTime("2016-08-31T01:00:00.000000000 NY");
+        holiday = DateTimeUtil.convertDateTime("2005-11-24T01:00:00.000000000 NY");
+        holiday2 = DateTimeUtil.convertDateTime("2002-01-21T01:00:00.000000000 NY");
 
         assertTrue(usny.isBusinessDay(businessDay));
         assertFalse(usny.isBusinessDay(holiday));
@@ -43,10 +43,10 @@ public class TestCalendars extends BaseArrayTestCase {
         Configuration.getInstance().setProperty("businessCalendar.default", "USNYSE");
         BusinessCalendar calendars = Calendars.calendar();
         // USNYSE
-        DateTime businessDay = DateTimeUtils.convertDateTime("2016-08-31T01:00:00.000000000 NY");
-        DateTime halfDay = DateTimeUtils.convertDateTime("2014-07-03T01:00:00.000000000 NY");
-        DateTime holiday = DateTimeUtils.convertDateTime("2002-01-01T01:00:00.000000000 NY");
-        DateTime holiday2 = DateTimeUtils.convertDateTime("2002-01-21T01:00:00.000000000 NY");
+        DateTime businessDay = DateTimeUtil.convertDateTime("2016-08-31T01:00:00.000000000 NY");
+        DateTime halfDay = DateTimeUtil.convertDateTime("2014-07-03T01:00:00.000000000 NY");
+        DateTime holiday = DateTimeUtil.convertDateTime("2002-01-01T01:00:00.000000000 NY");
+        DateTime holiday2 = DateTimeUtil.convertDateTime("2002-01-21T01:00:00.000000000 NY");
 
         assertTrue(calendars.isBusinessDay(businessDay));
         assertTrue(calendars.isBusinessDay(halfDay));
@@ -56,10 +56,10 @@ public class TestCalendars extends BaseArrayTestCase {
 
     public void testGetInstance() {
         BusinessCalendar usnyse = Calendars.calendar("USNYSE");
-        DateTime businessDay = DateTimeUtils.convertDateTime("2016-08-31T01:00:00.000000000 NY");
-        DateTime halfDay = DateTimeUtils.convertDateTime("2014-07-03T01:00:00.000000000 NY");
-        DateTime holiday = DateTimeUtils.convertDateTime("2002-01-01T01:00:00.000000000 NY");
-        DateTime holiday2 = DateTimeUtils.convertDateTime("2002-01-21T01:00:00.000000000 NY");
+        DateTime businessDay = DateTimeUtil.convertDateTime("2016-08-31T01:00:00.000000000 NY");
+        DateTime halfDay = DateTimeUtil.convertDateTime("2014-07-03T01:00:00.000000000 NY");
+        DateTime holiday = DateTimeUtil.convertDateTime("2002-01-01T01:00:00.000000000 NY");
+        DateTime holiday2 = DateTimeUtil.convertDateTime("2002-01-21T01:00:00.000000000 NY");
 
         assertTrue(usnyse.isBusinessDay(businessDay));
         assertTrue(usnyse.isBusinessDay(halfDay));

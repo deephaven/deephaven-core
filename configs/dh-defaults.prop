@@ -104,10 +104,6 @@ scriptSessionExtension.py=Python
 scriptSessionProvider.Groovy=io.deephaven.engine.util.GroovyDeephavenSession
 scriptSessionProvider.Python=io.deephaven.engine.util.PythonDeephavenSession
 
-# Scala has not been extensively tested, and is experimental.  If you have obfuscated Jars in your classpath, the
-# session may not start.
-scriptSessionProvider.Scala=io.deephaven.engine.util.ScalaDeephavenSession
-
 #
 # Web API Server configuration
 #

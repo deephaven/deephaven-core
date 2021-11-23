@@ -6,7 +6,7 @@ package io.deephaven.plot.axistransformations;
 
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.time.DateTimeUtils;
+import io.deephaven.engine.time.DateTimeUtil;
 import io.deephaven.engine.time.calendar.BusinessCalendar;
 import io.deephaven.engine.time.calendar.BusinessSchedule;
 import io.deephaven.engine.time.calendar.BusinessPeriod;
@@ -156,7 +156,7 @@ public class AxisTransformBusinessCalendar implements AxisTransform, Serializabl
     @Override
     public boolean isVisible(final double timeNanos) {
         return !(Double.isInfinite(timeNanos) || Double.isNaN(timeNanos))
-                && busCal.isBusinessTime(DateTimeUtils.nanosToTime((long) timeNanos));
+                && busCal.isBusinessTime(DateTimeUtil.nanosToTime((long) timeNanos));
 
     }
 

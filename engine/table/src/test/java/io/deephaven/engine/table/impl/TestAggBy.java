@@ -30,7 +30,7 @@ import java.util.Arrays;
 import java.util.Random;
 import org.junit.experimental.categories.Category;
 
-import static io.deephaven.engine.time.DateTimeUtils.convertDateTime;
+import static io.deephaven.engine.time.DateTimeUtil.convertDateTime;
 import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.engine.table.impl.TstUtils.*;
 import static io.deephaven.engine.table.impl.by.AggregationFactory.*;

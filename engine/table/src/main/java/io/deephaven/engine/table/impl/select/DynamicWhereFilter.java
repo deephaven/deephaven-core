@@ -19,7 +19,7 @@ import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.chunk.Chunk;
 import io.deephaven.engine.chunk.WritableBooleanChunk;
 import io.deephaven.engine.chunk.WritableLongChunk;
-import io.deephaven.engine.table.impl.tuplesource.TupleSourceFactory;
+import io.deephaven.engine.table.impl.TupleSourceFactory;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 

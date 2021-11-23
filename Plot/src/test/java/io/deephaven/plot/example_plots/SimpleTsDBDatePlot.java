@@ -4,10 +4,10 @@
 
 package io.deephaven.plot.example_plots;
 
+import io.deephaven.engine.time.DateTimeUtil;
 import io.deephaven.plot.Figure;
 import io.deephaven.plot.FigureFactory;
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.time.DateTimeUtils;
 
 
 public class SimpleTsDBDatePlot {
@@ -16,15 +16,15 @@ public class SimpleTsDBDatePlot {
         final long time = 1491946585000000000L;
         final DateTime[] x1 = {
                 new DateTime(time),
-                new DateTime(time + DateTimeUtils.MINUTE),
-                new DateTime(time + 2 * DateTimeUtils.MINUTE),
-                new DateTime(time + 3 * DateTimeUtils.MINUTE)
+                new DateTime(time + DateTimeUtil.MINUTE),
+                new DateTime(time + 2 * DateTimeUtil.MINUTE),
+                new DateTime(time + 3 * DateTimeUtil.MINUTE)
         };
         final Number[] y1 = {2, 3, 1, 9};
         final DateTime[] x2 = {
-                new DateTime(time + DateTimeUtils.MINUTE),
-                new DateTime(time + 3 * DateTimeUtils.MINUTE),
-                new DateTime(time + 4 * DateTimeUtils.MINUTE)
+                new DateTime(time + DateTimeUtil.MINUTE),
+                new DateTime(time + 3 * DateTimeUtil.MINUTE),
+                new DateTime(time + 4 * DateTimeUtil.MINUTE)
         };
         final Number[] y2 = {1.3, 3.2, 3.4};
 

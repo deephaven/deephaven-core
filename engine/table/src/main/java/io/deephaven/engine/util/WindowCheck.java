@@ -10,9 +10,9 @@ import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
+import io.deephaven.engine.time.DateTimeUtil;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.time.TimeProvider;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
@@ -413,7 +413,7 @@ public class WindowCheck {
         }
 
         long getTimeNanos() {
-            return DateTimeUtils.currentTime().getNanos();
+            return DateTimeUtil.currentTime().getNanos();
         }
 
         @Override

@@ -11,7 +11,7 @@ For convenient usage in the python console, the main sub-packages of deephaven h
 
 * AggregationFactory imported as caf
 
-* DateTimeUtils imported as dtu
+* DateTimeUtil imported as dtu
 
 * MovingAverages imported as mavg
 

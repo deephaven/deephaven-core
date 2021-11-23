@@ -13,7 +13,7 @@ import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.tuplesource.AbstractTupleSource;
 import io.deephaven.engine.table.impl.tuplesource.ThreeColumnTupleSourceFactory;
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.time.DateTimeUtils;
+import io.deephaven.engine.time.DateTimeUtil;
 import io.deephaven.engine.tuple.generated.ByteLongObjectTuple;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.util.type.TypeUtils;
@@ -49,7 +49,7 @@ public class ReinterpretedBooleanDateTimeObjectColumnTupleSource extends Abstrac
     public final ByteLongObjectTuple createTuple(final long indexKey) {
         return new ByteLongObjectTuple(
                 columnSource1.getByte(indexKey),
-                DateTimeUtils.nanos(columnSource2.get(indexKey)),
+                DateTimeUtil.nanos(columnSource2.get(indexKey)),
                 columnSource3.get(indexKey)
         );
     }
@@ -58,7 +58,7 @@ public class ReinterpretedBooleanDateTimeObjectColumnTupleSource extends Abstrac
     public final ByteLongObjectTuple createPreviousTuple(final long indexKey) {
         return new ByteLongObjectTuple(
                 columnSource1.getPrevByte(indexKey),
-                DateTimeUtils.nanos(columnSource2.getPrev(indexKey)),
+                DateTimeUtil.nanos(columnSource2.getPrev(indexKey)),
                 columnSource3.getPrev(indexKey)
         );
     }
@@ -67,7 +67,7 @@ public class ReinterpretedBooleanDateTimeObjectColumnTupleSource extends Abstrac
     public final ByteLongObjectTuple createTupleFromValues(@NotNull final Object... values) {
         return new ByteLongObjectTuple(
                 BooleanUtils.booleanAsByte((Boolean)values[0]),
-                DateTimeUtils.nanos((DateTime)values[1]),
+                DateTimeUtil.nanos((DateTime)values[1]),
                 values[2]
         );
     }
@@ -76,7 +76,7 @@ public class ReinterpretedBooleanDateTimeObjectColumnTupleSource extends Abstrac
     public final ByteLongObjectTuple createTupleFromReinterpretedValues(@NotNull final Object... values) {
         return new ByteLongObjectTuple(
                 TypeUtils.unbox((Byte)values[0]),
-                DateTimeUtils.nanos((DateTime)values[1]),
+                DateTimeUtil.nanos((DateTime)values[1]),
                 values[2]
         );
     }
@@ -89,7 +89,7 @@ public class ReinterpretedBooleanDateTimeObjectColumnTupleSource extends Abstrac
             return;
         }
         if (elementIndex == 1) {
-            writableSource.set(destinationIndexKey, (ELEMENT_TYPE) DateTimeUtils.nanosToTime(tuple.getSecondElement()));
+            writableSource.set(destinationIndexKey, (ELEMENT_TYPE) DateTimeUtil.nanosToTime(tuple.getSecondElement()));
             return;
         }
         if (elementIndex == 2) {
@@ -103,7 +103,7 @@ public class ReinterpretedBooleanDateTimeObjectColumnTupleSource extends Abstrac
     public final Object exportToExternalKey(@NotNull final ByteLongObjectTuple tuple) {
         return new SmartKey(
                 BooleanUtils.byteAsBoolean(tuple.getFirstElement()),
-                DateTimeUtils.nanosToTime(tuple.getSecondElement()),
+                DateTimeUtil.nanosToTime(tuple.getSecondElement()),
                 tuple.getThirdElement()
         );
     }
@@ -114,7 +114,7 @@ public class ReinterpretedBooleanDateTimeObjectColumnTupleSource extends Abstrac
             return BooleanUtils.byteAsBoolean(tuple.getFirstElement());
         }
         if (elementIndex == 1) {
-            return DateTimeUtils.nanosToTime(tuple.getSecondElement());
+            return DateTimeUtil.nanosToTime(tuple.getSecondElement());
         }
         if (elementIndex == 2) {
             return tuple.getThirdElement();
@@ -128,7 +128,7 @@ public class ReinterpretedBooleanDateTimeObjectColumnTupleSource extends Abstrac
             return TypeUtils.box(tuple.getFirstElement());
         }
         if (elementIndex == 1) {
-            return DateTimeUtils.nanosToTime(tuple.getSecondElement());
+            return DateTimeUtil.nanosToTime(tuple.getSecondElement());
         }
         if (elementIndex == 2) {
             return tuple.getThirdElement();
@@ -143,7 +143,7 @@ public class ReinterpretedBooleanDateTimeObjectColumnTupleSource extends Abstrac
         ObjectChunk<DateTime, Values> chunk2 = chunks[1].asObjectChunk();
         ObjectChunk<Object, Values> chunk3 = chunks[2].asObjectChunk();
         for (int ii = 0; ii < chunkSize; ++ii) {
-            destinationObjectChunk.set(ii, new ByteLongObjectTuple(chunk1.get(ii), DateTimeUtils.nanos(chunk2.get(ii)), chunk3.get(ii)));
+            destinationObjectChunk.set(ii, new ByteLongObjectTuple(chunk1.get(ii), DateTimeUtil.nanos(chunk2.get(ii)), chunk3.get(ii)));
         }
         destinationObjectChunk.setSize(chunkSize);
     }

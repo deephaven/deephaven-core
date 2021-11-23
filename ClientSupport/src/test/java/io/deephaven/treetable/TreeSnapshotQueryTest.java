@@ -1,6 +1,7 @@
 package io.deephaven.treetable;
 
 import io.deephaven.base.Pair;
+import io.deephaven.csv.CsvTools;
 import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
@@ -8,7 +9,6 @@ import io.deephaven.engine.table.TableMap;
 import io.deephaven.engine.table.lang.QueryLibrary;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.impl.select.SelectFilterFactory;
-import io.deephaven.engine.util.CsvTools;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.select.WhereFilter;

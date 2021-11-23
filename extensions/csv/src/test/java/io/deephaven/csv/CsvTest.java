@@ -4,6 +4,7 @@ import io.deephaven.qst.column.header.ColumnHeader;
 import io.deephaven.qst.column.header.ColumnHeaders3;
 import io.deephaven.qst.table.NewTable;
 import io.deephaven.qst.table.TableHeader;
+import org.assertj.core.api.Assertions;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -20,8 +21,6 @@ import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 @RunWith(Parameterized.class)
 public class CsvTest {
@@ -518,7 +517,7 @@ public class CsvTest {
         final NewTable actual;
         try (final Reader reader = new InputStreamReader(in, StandardCharsets.UTF_8)) {
             actual = specs.parse(reader);
-        } catch (ParserException e) {
+        } catch (Parser.ParserException e) {
             if (expected == null) {
                 // expected!
                 return;

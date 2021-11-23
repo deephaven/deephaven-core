@@ -5,7 +5,7 @@
 package io.deephaven.engine.time.calendar;
 
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.time.DateTimeUtils;
+import io.deephaven.engine.time.DateTimeUtil;
 import io.deephaven.util.QueryConstants;
 
 import java.time.LocalDate;
@@ -35,7 +35,7 @@ public abstract class AbstractBusinessCalendar extends AbstractCalendar implemen
             return null;
         }
 
-        LocalDate t = DateTimeUtils.getZonedDateTime(time, timeZone()).toLocalDate().minusDays(1);
+        LocalDate t = DateTimeUtil.getZonedDateTime(time, timeZone()).toLocalDate().minusDays(1);
         while (!isBusinessDay(t)) {
             t = t.minusDays(1);
         }
@@ -125,7 +125,7 @@ public abstract class AbstractBusinessCalendar extends AbstractCalendar implemen
             return null;
         }
 
-        LocalDate t = DateTimeUtils.getZonedDateTime(time, timeZone()).toLocalDate().minusDays(1);
+        LocalDate t = DateTimeUtil.getZonedDateTime(time, timeZone()).toLocalDate().minusDays(1);
         while (isBusinessDay(t)) {
             t = t.minusDays(1);
         }
@@ -199,7 +199,7 @@ public abstract class AbstractBusinessCalendar extends AbstractCalendar implemen
             return null;
         }
 
-        LocalDate t = DateTimeUtils.getZonedDateTime(time, timeZone()).toLocalDate().plusDays(1);
+        LocalDate t = DateTimeUtil.getZonedDateTime(time, timeZone()).toLocalDate().plusDays(1);
         while (!isBusinessDay(t)) {
             t = t.plusDays(1);
         }
@@ -290,7 +290,7 @@ public abstract class AbstractBusinessCalendar extends AbstractCalendar implemen
             return null;
         }
 
-        LocalDate t = DateTimeUtils.getZonedDateTime(time, timeZone()).toLocalDate().plusDays(1);
+        LocalDate t = DateTimeUtil.getZonedDateTime(time, timeZone()).toLocalDate().plusDays(1);
         while (isBusinessDay(t)) {
             t = t.plusDays(1);
         }
@@ -363,8 +363,8 @@ public abstract class AbstractBusinessCalendar extends AbstractCalendar implemen
         if (start == null || end == null) {
             return new String[0];
         }
-        LocalDate day = DateTimeUtils.getZonedDateTime(start, timeZone()).toLocalDate();
-        LocalDate day2 = DateTimeUtils.getZonedDateTime(end, timeZone()).toLocalDate();
+        LocalDate day = DateTimeUtil.getZonedDateTime(start, timeZone()).toLocalDate();
+        LocalDate day2 = DateTimeUtil.getZonedDateTime(end, timeZone()).toLocalDate();
 
         List<String> dateList = new ArrayList<>();
         while (!day.isAfter(day2)) {
@@ -407,8 +407,8 @@ public abstract class AbstractBusinessCalendar extends AbstractCalendar implemen
         if (start == null || end == null) {
             return new String[0];
         }
-        LocalDate day = DateTimeUtils.getZonedDateTime(start, timeZone()).toLocalDate();
-        LocalDate day2 = DateTimeUtils.getZonedDateTime(end, timeZone()).toLocalDate();
+        LocalDate day = DateTimeUtil.getZonedDateTime(start, timeZone()).toLocalDate();
+        LocalDate day2 = DateTimeUtil.getZonedDateTime(end, timeZone()).toLocalDate();
 
         List<String> dateList = new ArrayList<>();
         while (!day.isAfter(day2)) {
@@ -450,11 +450,11 @@ public abstract class AbstractBusinessCalendar extends AbstractCalendar implemen
             return QueryConstants.NULL_LONG;
         }
 
-        if (DateTimeUtils.isAfter(start, end)) {
+        if (DateTimeUtil.isAfter(start, end)) {
             return -diffNonBusinessNanos(end, start);
         }
 
-        return DateTimeUtils.minus(end, start) - diffBusinessNanos(start, end);
+        return DateTimeUtil.minus(end, start) - diffBusinessNanos(start, end);
     }
 
     public double diffBusinessDay(final DateTime start, final DateTime end) {

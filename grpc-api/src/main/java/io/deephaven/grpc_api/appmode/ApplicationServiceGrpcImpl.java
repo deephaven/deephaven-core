@@ -4,9 +4,9 @@ import com.google.rpc.Code;
 import io.deephaven.appmode.ApplicationState;
 import io.deephaven.appmode.CustomField;
 import io.deephaven.appmode.Field;
+import io.deephaven.engine.time.DateTimeUtil;
 import io.deephaven.plot.FigureWidget;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.liveness.LivenessReferent;
@@ -369,7 +369,7 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
                 scheduler.runImmediately(this);
             } else {
                 lastScheduledMillis = nextMin;
-                scheduler.runAtTime(DateTimeUtils.millisToTime(nextMin), this);
+                scheduler.runAtTime(DateTimeUtil.millisToTime(nextMin), this);
             }
             return true;
         }

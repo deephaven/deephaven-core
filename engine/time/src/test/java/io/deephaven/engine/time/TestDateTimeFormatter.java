@@ -14,7 +14,7 @@ public class TestDateTimeFormatter extends BaseArrayTestCase {
     @Override
     public void setUp() throws Exception {
         super.setUp();
-        t = DateTimeUtils.convertDateTime("2015-06-13T13:12:11.123456789 MT");
+        t = DateTimeUtil.convertDateTime("2015-06-13T13:12:11.123456789 MT");
     }
 
     public void test1() {

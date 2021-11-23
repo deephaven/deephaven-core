@@ -3,7 +3,7 @@ package io.deephaven.grpc_api.table;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.time.DateTimeUtils;
+import io.deephaven.engine.time.DateTimeUtil;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.table.ModifiedColumnSet;
@@ -338,7 +338,7 @@ public class ExportTableUpdateListenerTest {
         public TestSessionState() {
             super(scheduler, AUTH_CONTEXT);
             initializeExpiration(new SessionService.TokenExpiration(UUID.randomUUID(),
-                    DateTimeUtils.nanosToTime(Long.MAX_VALUE), this));
+                    DateTimeUtil.nanosToTime(Long.MAX_VALUE), this));
         }
     }
 

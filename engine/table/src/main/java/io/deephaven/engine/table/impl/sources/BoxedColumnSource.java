@@ -6,7 +6,7 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.time.DateTimeUtils;
+import io.deephaven.engine.time.DateTimeUtil;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.Attributes.Values;
@@ -129,12 +129,12 @@ public abstract class BoxedColumnSource<DATA_TYPE> extends AbstractColumnSource<
 
         @Override
         public final DateTime get(final long index) {
-            return DateTimeUtils.nanosToTime(originalSource.getLong(index));
+            return DateTimeUtil.nanosToTime(originalSource.getLong(index));
         }
 
         @Override
         public final DateTime getPrev(final long index) {
-            return DateTimeUtils.nanosToTime(originalSource.getPrevLong(index));
+            return DateTimeUtil.nanosToTime(originalSource.getPrevLong(index));
         }
 
         @Override
@@ -146,7 +146,7 @@ public abstract class BoxedColumnSource<DATA_TYPE> extends AbstractColumnSource<
 
             final int sourceSize = typedSource.size();
             for (int pi = 0; pi < sourceSize; ++pi) {
-                typedDestination.set(pi, DateTimeUtils.nanosToTime(typedSource.get(pi)));
+                typedDestination.set(pi, DateTimeUtil.nanosToTime(typedSource.get(pi)));
             }
             typedDestination.setSize(sourceSize);
         }

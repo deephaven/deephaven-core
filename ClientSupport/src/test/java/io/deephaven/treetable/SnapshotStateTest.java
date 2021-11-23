@@ -1,8 +1,8 @@
 package io.deephaven.treetable;
 
+import io.deephaven.csv.CsvTools;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.lang.QueryLibrary;
-import io.deephaven.engine.util.CsvTools;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.HierarchicalTable;
@@ -16,8 +16,6 @@ import java.util.HashSet;
 import java.util.Map;
 
 import static io.deephaven.treetable.TreeTableConstants.ROOT_TABLE_KEY;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 
 public class SnapshotStateTest extends QueryTableTestBase {
     private static Table getRawNyMunis() throws IOException {

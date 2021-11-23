@@ -1,7 +1,7 @@
 package io.deephaven.engine.table.impl.sources.immutable;
 
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.time.DateTimeUtils;
+import io.deephaven.engine.time.DateTimeUtil;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.ImmutableColumnSourceGetDefaults;
 
@@ -20,7 +20,7 @@ public class ImmutableDateTimeArraySource extends AbstractColumnSource<DateTime>
             return null;
         }
 
-        return DateTimeUtils.nanosToTime(data[(int) index]);
+        return DateTimeUtil.nanosToTime(data[(int) index]);
     }
 
     @Override

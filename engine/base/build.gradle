@@ -1,29 +1,10 @@
-import io.deephaven.tools.Tools
-
-configurations {
+plugins {
+    id 'java-library'
 }
 
-sourceSets {
-    main {
-        java {
-            srcDir 'java'
-        }
-    }
-    test {
-        java {
-            srcDir 'test'
-        }
-    }
-}
+description 'Engine Base: Exposes a few classes needed by both engine-tuplesource and engine-table'
 
 dependencies {
-    compile project(':engine-rowset'),
+    api project(':engine-rowset'),
             project(':engine-api')
-}
-
-spotless {
-    java {
-        targetExclude(
-        )
-    }
 }

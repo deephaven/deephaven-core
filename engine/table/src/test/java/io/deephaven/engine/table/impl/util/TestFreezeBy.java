@@ -2,10 +2,10 @@ package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.api.Selectable;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.time.DateTimeUtil;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.lang.QueryScope;
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.*;
 import junit.framework.TestCase;
@@ -19,7 +19,7 @@ import static io.deephaven.engine.table.impl.TstUtils.*;
 
 public class TestFreezeBy extends RefreshingTableTestCase {
     public void testSimpleTypes() {
-        final DateTime timeBase = DateTimeUtils.convertDateTime("2020-09-10T09:00:00 NY");
+        final DateTime timeBase = DateTimeUtil.convertDateTime("2020-09-10T09:00:00 NY");
         QueryScope.addParam("freezeByTimeBase", timeBase);
         final QueryTable input =
                 TstUtils.testRefreshingTable(stringCol("Key", "A", "B", "C"), intCol("Sentinel", 1, 2, 3));

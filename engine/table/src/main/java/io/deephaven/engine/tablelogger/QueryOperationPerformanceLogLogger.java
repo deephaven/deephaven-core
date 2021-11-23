@@ -6,7 +6,7 @@ package io.deephaven.engine.tablelogger;
 
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.time.DateTimeUtils;
+import io.deephaven.engine.time.DateTimeUtil;
 import io.deephaven.engine.util.ColumnsSpecHelper;
 import io.deephaven.tablelogger.*;
 
@@ -93,11 +93,11 @@ public class QueryOperationPerformanceLogLogger
             this.CallerLine.set(nugget.getCallerLine());
             this.IsTopLevel.setBoolean(nugget.isTopLevel());
             this.IsCompilation.setBoolean(nugget.getName().startsWith("Compile:"));
-            this.StartTime.set(DateTimeUtils.millisToTime(nugget.getStartClockTime()));
+            this.StartTime.set(DateTimeUtil.millisToTime(nugget.getStartClockTime()));
             this.EndTime.set(nugget.getTotalTimeNanos() == null
                     ? null
-                    : DateTimeUtils.millisToTime(
-                            nugget.getStartClockTime() + DateTimeUtils.nanosToMillis(nugget.getTotalTimeNanos())));
+                    : DateTimeUtil.millisToTime(
+                            nugget.getStartClockTime() + DateTimeUtil.nanosToMillis(nugget.getTotalTimeNanos())));
             this.DurationNanos.setLong(
                     nugget.getTotalTimeNanos() == null ? QueryConstants.NULL_LONG : nugget.getTotalTimeNanos());
             this.CpuNanos.setLong(nugget.getCpuNanos());

@@ -8,10 +8,10 @@ rootProject.name='Deephaven Community Core'
 
 String[] bins = ['configs', 'test-configs' ]
 
-String[] mods = [ 'Util', 'Numerics', 'TableLogger', 'DB', 'Plot',
+String[] mods = [ 'Util', 'Numerics', 'TableLogger', 'Plot',
         'CompilerTools', 'Generators',
         'Integrations', 'ModelFarm', 'ClientSupport',
-        'BenchmarkSupport', 'DB-test', 'Parquet',
+        'BenchmarkSupport', 'python-engine-test', 'Parquet',
         'Kafka', 'grpc-api', 'table-api', 'qst']
 
         // new web projects; these modules are intended to form a complete, modular web application,
@@ -127,8 +127,11 @@ include(':Container')
 
 include(':ParquetHadoop')
 
-include(':replicators-static')
-project(':replicators-static').projectDir = file('replicators/static')
+include(':replication-util')
+project(':replication-util').projectDir = file('replication/util')
+
+include(':replication-static')
+project(':replication-static').projectDir = file('replication/static')
 
 include(':replicators-reflective')
 project(':replicators-reflective').projectDir = file('replicators/reflective')
@@ -169,8 +172,8 @@ project(':engine-tuplesource').projectDir = file('engine/tuplesource')
 include(':engine-table')
 project(':engine-table').projectDir = file('engine/table')
 
-include(':engine-util')
-project(':engine-util').projectDir = file('engine/util')
+include(':engine-benchmark')
+project(':engine-benchmark').projectDir = file('engine/benchmark')
 
 include(':extensions-csv')
 project(':extensions-csv').projectDir = file('extensions/csv')

@@ -24,12 +24,15 @@ sourceSets {
 
 dependencies {
     compile project(':engine-table'),
+            project(':extensions-csv'),
+            project(':extensions-parquet-table'),
             project(':Util'),
             project(':java-client-barrage-dagger'),
             project(':proto:proto-backplane-grpc-flight'),
             project(':open-api-lang-tools'),
             project(':log-factory'),
-            project(':application-mode')
+            project(':application-mode'),
+            'com.github.f4b6a3:uuid-creator:3.6.0'
 
     Classpaths.inheritFlatbuffer(project, 'compile')
 
@@ -47,7 +50,7 @@ dependencies {
         runtimeOnly project(':extensions-suanshu')
     }
 
-    testCompile TestTools.projectDependency(project, 'DB'),
+    testCompile TestTools.projectDependency(project, 'engine-table'),
                 TestTools.projectDependency(project, 'Util')
 
     runtimeOnly project(':Numerics'), project(':Integrations'), project(':Kafka')
@@ -61,7 +64,7 @@ dependencies {
 }
 
 // testOutOfBand: non-parallel, not a engine test, not isolated
-TestTools.addDbTest(project, 'OutOfBand', false, false, false)
+TestTools.addEngineTest(project, 'OutOfBand', false, false, false)
 
 check.dependsOn(tasks.register('flightTest', Test) {
     classpath = sourceSets.flightTest.runtimeClasspath

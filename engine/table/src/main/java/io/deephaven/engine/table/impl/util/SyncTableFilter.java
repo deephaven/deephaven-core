@@ -28,7 +28,7 @@ import io.deephaven.engine.chunk.LongChunk;
 import io.deephaven.engine.chunk.WritableLongChunk;
 import io.deephaven.engine.chunk.WritableObjectChunk;
 import io.deephaven.engine.table.TupleSource;
-import io.deephaven.engine.table.impl.tuplesource.TupleSourceFactory;
+import io.deephaven.engine.table.impl.TupleSourceFactory;
 import io.deephaven.util.QueryConstants;
 import org.jetbrains.annotations.NotNull;
 

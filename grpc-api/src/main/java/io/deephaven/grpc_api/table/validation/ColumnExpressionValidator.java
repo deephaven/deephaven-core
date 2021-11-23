@@ -13,7 +13,7 @@ import io.deephaven.engine.table.impl.lang.QueryLanguageParser.Result;
 import io.deephaven.engine.table.impl.select.SelectColumnFactory;
 import io.deephaven.engine.table.impl.select.SelectFilterFactory;
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.time.DateTimeUtils;
+import io.deephaven.engine.time.DateTimeUtil;
 import io.deephaven.engine.util.ColorUtilImpl;
 import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.QueryTable;
@@ -49,7 +49,7 @@ public class ColumnExpressionValidator extends GenericVisitorAdapter<Void, Void>
                 .of(
                         QueryLanguageFunctionUtil.class,
                         GroovyStaticImports.class,
-                        DateTimeUtils.class,
+                        DateTimeUtil.class,
                         ColorUtilImpl.class)
                 .map(Class::getDeclaredMethods)
                 .flatMap(Arrays::stream)
@@ -133,9 +133,9 @@ public class ColumnExpressionValidator extends GenericVisitorAdapter<Void, Void>
         final String formulaString = originalExpression.substring(indexOfEquals + 1);
 
         final Result compiledFormula;
-        final DateTimeUtils.Result timeConversionResult;
+        final DateTimeUtil.Result timeConversionResult;
         try {
-            timeConversionResult = DateTimeUtils.convertExpression(formulaString);
+            timeConversionResult = DateTimeUtil.convertExpression(formulaString);
             compiledFormula = FormulaAnalyzer.getCompiledFormula(availableColumns, timeConversionResult, null);
         } catch (final Exception e) {
             // in theory not possible, since we already parsed it once

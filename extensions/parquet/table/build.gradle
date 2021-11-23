@@ -1,43 +1,42 @@
-import io.deephaven.tools.Tools
-
-configurations {
-    testImplementation.extendsFrom junit
+plugins {
+    id 'java-library'
 }
 
-sourceSets {
-    main {
-        java {
-            srcDir 'java'
-        }
-    }
-    test {
-        java {
-            srcDir 'test'
-        }
-    }
-}
+description 'Parquet Table: Integrating Engine tables with Parquet'
 
 dependencies {
+    api project(':engine-api'),
+            project(':engine-stringset')
+
     implementation project(':extensions-parquet-base'),
-            project(':engine-stringset'),
             project(':engine-base'),
             project(':engine-table'),
             project(':extensions-csv'),
             'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.13.0',
             'com.fasterxml.jackson.datatype:jackson-datatype-jdk8:2.13.0'
 
-            testImplementation TestTools.projectDependency(project, 'engine-table'),
-            TestTools.projectDependency(project, 'DB')
-
-    annotationProcessor 'org.immutables:value:2.8.1'
-    compileOnly project(':util-immutables')
+    Classpaths.inheritImmutables(project)
 
     compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
+
+    testImplementation TestTools.projectDependency(project, 'engine-table')
 }
 
 spotless {
     java {
         targetExclude(
+                '**/*Boolean*.java',
+                '**/*Byte*.java',
+                '**/*Char*.java',
+                '**/*Short*.java',
+                '**/*Int*.java',
+                '**/*Long*.java',
+                '**/*Float*.java',
+                '**/*Double*.java',
+                '**/*Object*.java',
         )
     }
 }
+
+// testOutOfBand: non-parallel, not a engine test, not isolated
+TestTools.addEngineTest(project, 'OutOfBand', false, false, false)

@@ -13,7 +13,7 @@ import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.tuplesource.AbstractTupleSource;
 import io.deephaven.engine.table.impl.tuplesource.ThreeColumnTupleSourceFactory;
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.time.DateTimeUtils;
+import io.deephaven.engine.time.DateTimeUtil;
 import io.deephaven.engine.tuple.generated.LongObjectLongTuple;
 import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
@@ -47,7 +47,7 @@ public class DateTimeObjectLongColumnTupleSource extends AbstractTupleSource<Lon
     @Override
     public final LongObjectLongTuple createTuple(final long indexKey) {
         return new LongObjectLongTuple(
-                DateTimeUtils.nanos(columnSource1.get(indexKey)),
+                DateTimeUtil.nanos(columnSource1.get(indexKey)),
                 columnSource2.get(indexKey),
                 columnSource3.getLong(indexKey)
         );
@@ -56,7 +56,7 @@ public class DateTimeObjectLongColumnTupleSource extends AbstractTupleSource<Lon
     @Override
     public final LongObjectLongTuple createPreviousTuple(final long indexKey) {
         return new LongObjectLongTuple(
-                DateTimeUtils.nanos(columnSource1.getPrev(indexKey)),
+                DateTimeUtil.nanos(columnSource1.getPrev(indexKey)),
                 columnSource2.getPrev(indexKey),
                 columnSource3.getPrevLong(indexKey)
         );
@@ -65,7 +65,7 @@ public class DateTimeObjectLongColumnTupleSource extends AbstractTupleSource<Lon
     @Override
     public final LongObjectLongTuple createTupleFromValues(@NotNull final Object... values) {
         return new LongObjectLongTuple(
-                DateTimeUtils.nanos((DateTime)values[0]),
+                DateTimeUtil.nanos((DateTime)values[0]),
                 values[1],
                 TypeUtils.unbox((Long)values[2])
         );
@@ -74,7 +74,7 @@ public class DateTimeObjectLongColumnTupleSource extends AbstractTupleSource<Lon
     @Override
     public final LongObjectLongTuple createTupleFromReinterpretedValues(@NotNull final Object... values) {
         return new LongObjectLongTuple(
-                DateTimeUtils.nanos((DateTime)values[0]),
+                DateTimeUtil.nanos((DateTime)values[0]),
                 values[1],
                 TypeUtils.unbox((Long)values[2])
         );
@@ -84,7 +84,7 @@ public class DateTimeObjectLongColumnTupleSource extends AbstractTupleSource<Lon
     @Override
     public final <ELEMENT_TYPE> void exportElement(@NotNull final LongObjectLongTuple tuple, final int elementIndex, @NotNull final WritableColumnSource<ELEMENT_TYPE> writableSource, final long destinationIndexKey) {
         if (elementIndex == 0) {
-            writableSource.set(destinationIndexKey, (ELEMENT_TYPE) DateTimeUtils.nanosToTime(tuple.getFirstElement()));
+            writableSource.set(destinationIndexKey, (ELEMENT_TYPE) DateTimeUtil.nanosToTime(tuple.getFirstElement()));
             return;
         }
         if (elementIndex == 1) {
@@ -101,7 +101,7 @@ public class DateTimeObjectLongColumnTupleSource extends AbstractTupleSource<Lon
     @Override
     public final Object exportToExternalKey(@NotNull final LongObjectLongTuple tuple) {
         return new SmartKey(
-                DateTimeUtils.nanosToTime(tuple.getFirstElement()),
+                DateTimeUtil.nanosToTime(tuple.getFirstElement()),
                 tuple.getSecondElement(),
                 TypeUtils.box(tuple.getThirdElement())
         );
@@ -110,7 +110,7 @@ public class DateTimeObjectLongColumnTupleSource extends AbstractTupleSource<Lon
     @Override
     public final Object exportElement(@NotNull final LongObjectLongTuple tuple, int elementIndex) {
         if (elementIndex == 0) {
-            return DateTimeUtils.nanosToTime(tuple.getFirstElement());
+            return DateTimeUtil.nanosToTime(tuple.getFirstElement());
         }
         if (elementIndex == 1) {
             return tuple.getSecondElement();
@@ -124,7 +124,7 @@ public class DateTimeObjectLongColumnTupleSource extends AbstractTupleSource<Lon
     @Override
     public final Object exportElementReinterpreted(@NotNull final LongObjectLongTuple tuple, int elementIndex) {
         if (elementIndex == 0) {
-            return DateTimeUtils.nanosToTime(tuple.getFirstElement());
+            return DateTimeUtil.nanosToTime(tuple.getFirstElement());
         }
         if (elementIndex == 1) {
             return tuple.getSecondElement();
@@ -142,7 +142,7 @@ public class DateTimeObjectLongColumnTupleSource extends AbstractTupleSource<Lon
         ObjectChunk<Object, Values> chunk2 = chunks[1].asObjectChunk();
         LongChunk<Values> chunk3 = chunks[2].asLongChunk();
         for (int ii = 0; ii < chunkSize; ++ii) {
-            destinationObjectChunk.set(ii, new LongObjectLongTuple(DateTimeUtils.nanos(chunk1.get(ii)), chunk2.get(ii), chunk3.get(ii)));
+            destinationObjectChunk.set(ii, new LongObjectLongTuple(DateTimeUtil.nanos(chunk1.get(ii)), chunk2.get(ii), chunk3.get(ii)));
         }
         destinationObjectChunk.setSize(chunkSize);
     }

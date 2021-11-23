@@ -5,7 +5,7 @@
 package io.deephaven.engine.table.impl.replay;
 
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.time.DateTimeUtils;
+import io.deephaven.engine.time.DateTimeUtil;
 
 public class FixedStepReplayer extends Replayer {
     private long incrementNanos;
@@ -24,7 +24,7 @@ public class FixedStepReplayer extends Replayer {
 
     @Override
     public void run() {
-        currentTime = DateTimeUtils.plus(currentTime, incrementNanos);
+        currentTime = DateTimeUtil.plus(currentTime, incrementNanos);
         if (currentTime.getNanos() > endTime.getNanos()) {
             currentTime = endTime;
         }
@@ -33,6 +33,6 @@ public class FixedStepReplayer extends Replayer {
 
     @Override
     public void setTime(long updatedTime) {
-        currentTime = DateTimeUtils.millisToTime(Math.max(updatedTime, currentTime.getMillis()));
+        currentTime = DateTimeUtil.millisToTime(Math.max(updatedTime, currentTime.getMillis()));
     }
 }

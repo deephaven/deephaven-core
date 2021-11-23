@@ -1512,23 +1512,23 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
 
     public void testUnboxAndWiden() throws Exception {
         // ensure we can find the original method
-        String expression = "io.deephaven.engine.time.DateTimeUtils.plus(myDateTime, myLong)";
-        String resultExpression = "io.deephaven.engine.time.DateTimeUtils.plus(myDateTime, myLong)";
+        String expression = "io.deephaven.engine.time.DateTimeUtil.plus(myDateTime, myLong)";
+        String resultExpression = "io.deephaven.engine.time.DateTimeUtil.plus(myDateTime, myLong)";
         check(expression, resultExpression, DateTime.class, new String[] {"myDateTime", "myLong"});
 
         // check long unbox
-        expression = "io.deephaven.engine.time.DateTimeUtils.plus(myDateTime, myLongObj)";
-        resultExpression = "io.deephaven.engine.time.DateTimeUtils.plus(myDateTime, myLongObj.longValue())";
+        expression = "io.deephaven.engine.time.DateTimeUtil.plus(myDateTime, myLongObj)";
+        resultExpression = "io.deephaven.engine.time.DateTimeUtil.plus(myDateTime, myLongObj.longValue())";
         check(expression, resultExpression, DateTime.class, new String[] {"myDateTime", "myLongObj"});
 
         // check int widen
-        expression = "io.deephaven.engine.time.DateTimeUtils.plus(myDateTime, myInt)";
-        resultExpression = "io.deephaven.engine.time.DateTimeUtils.plus(myDateTime, longCast(myInt))";
+        expression = "io.deephaven.engine.time.DateTimeUtil.plus(myDateTime, myInt)";
+        resultExpression = "io.deephaven.engine.time.DateTimeUtil.plus(myDateTime, longCast(myInt))";
         check(expression, resultExpression, DateTime.class, new String[] {"myDateTime", "myInt"});
 
         // check int unbox and widen
-        expression = "io.deephaven.engine.time.DateTimeUtils.plus(myDateTime, myIntObj)";
-        resultExpression = "io.deephaven.engine.time.DateTimeUtils.plus(myDateTime, myIntObj.longValue())";
+        expression = "io.deephaven.engine.time.DateTimeUtil.plus(myDateTime, myIntObj)";
+        resultExpression = "io.deephaven.engine.time.DateTimeUtil.plus(myDateTime, myIntObj.longValue())";
         check(expression, resultExpression, DateTime.class, new String[] {"myDateTime", "myIntObj"});
 
         // check vararg widen

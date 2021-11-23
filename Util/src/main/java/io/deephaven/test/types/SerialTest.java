@@ -12,12 +12,12 @@ package io.deephaven.test.types;
  * The 'testSerial' task created for these tests additionally have .mustRunAfter semantics, whereby, in order of script
  * evaluation, each testSerial.mustRunAfter allOther"testSerial"Tests, as well as .mustRunAfter
  * allOtherTestTasksNotNamed"testSerial"; that is, all testSerial tasks run after all other Test tasks are complete, and
- * then they take turns running one after another (see TestTools.groovy, #addDbTest)
+ * then they take turns running one after another (see TestTools.groovy, #addEngineTest)
  *
  * ALL BENCHMARKS OR HEAVY-HITTER TESTS SHOULD USE @Category(SerialTest.class);
  *
  * Until better automation is delivered, you may need to edit your ModName.gradle file and add
- * TestTools.addDbTest('Serial', false) to have this task created for you.
+ * TestTools.addEngineTest('Serial', false) to have this task created for you.
  *
  * Include: `dependencies { testCompile TestTools.projectDependency(project, 'Util') }` to add SerialTest to your
  * classpath if it is not available.

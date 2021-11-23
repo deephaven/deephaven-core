@@ -4,9 +4,9 @@ import io.deephaven.base.Pair;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.TableUpdateListener;
+import io.deephaven.engine.time.DateTimeUtil;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.rowset.RowSet;
@@ -49,8 +49,8 @@ public class TestWindowCheck {
 
         final TstUtils.ColumnInfo[] columnInfo;
         final int size = 100;
-        final DateTime startTime = DateTimeUtils.convertDateTime("2018-02-23T09:30:00 NY");
-        final DateTime endTime = DateTimeUtils.convertDateTime("2018-02-23T16:00:00 NY");
+        final DateTime startTime = DateTimeUtil.convertDateTime("2018-02-23T09:30:00 NY");
+        final DateTime endTime = DateTimeUtil.convertDateTime("2018-02-23T16:00:00 NY");
         final QueryTable table = getTable(size, random, columnInfo = initColumnInfos(new String[] {"Timestamp", "C1"},
                 new TstUtils.UnsortedDateTimeGenerator(startTime, endTime, 0.01),
                 new TstUtils.IntGenerator(1, 100)));
@@ -75,7 +75,7 @@ public class TestWindowCheck {
 
         int step = 0;
 
-        while (timeProvider.now < endTime.getNanos() + 600 * DateTimeUtils.SECOND) {
+        while (timeProvider.now < endTime.getNanos() + 600 * DateTimeUtil.SECOND) {
             step++;
             final boolean combined = combinedRandom.nextBoolean();
 
@@ -104,7 +104,7 @@ public class TestWindowCheck {
     }
 
     private void advanceTime(TestTimeProvider timeProvider, WindowEvalNugget[] en) {
-        timeProvider.now += 5 * DateTimeUtils.SECOND;
+        timeProvider.now += 5 * DateTimeUtil.SECOND;
         if (RefreshingTableTestCase.printTableUpdates) {
             System.out.println("Ticking time to " + new DateTime(timeProvider.now));
         }
@@ -118,7 +118,7 @@ public class TestWindowCheck {
         base.setExpectError(false);
 
         final TestTimeProvider timeProvider = new TestTimeProvider();
-        final DateTime startTime = DateTimeUtils.convertDateTime("2018-02-23T09:30:00 NY");
+        final DateTime startTime = DateTimeUtil.convertDateTime("2018-02-23T09:30:00 NY");
         timeProvider.now = startTime.getNanos();
 
         final DateTime[] emptyDateTimeArray = new DateTime[0];
@@ -127,7 +127,7 @@ public class TestWindowCheck {
 
         final Pair<Table, WindowCheck.TimeWindowListener> windowed = UpdateGraphProcessor.DEFAULT.sharedLock()
                 .computeLocked(() -> WindowCheck.addTimeWindowInternal(timeProvider, tableToCheck, "Timestamp",
-                        DateTimeUtils.SECOND * 60, "InWindow", false));
+                        DateTimeUtil.SECOND * 60, "InWindow", false));
 
         TableTools.showWithIndex(windowed.first);
 
@@ -175,7 +175,7 @@ public class TestWindowCheck {
         WindowEvalNugget(TestTimeProvider timeProvider, QueryTable table) {
             this.table = table;
             this.timeProvider = timeProvider;
-            windowNanos = 300 * DateTimeUtils.SECOND;
+            windowNanos = 300 * DateTimeUtil.SECOND;
             windowed =
                     WindowCheck.addTimeWindowInternal(timeProvider, table, "Timestamp", windowNanos, "InWindow", false);
             validator = TableUpdateValidator.make((QueryTable) windowed.first);

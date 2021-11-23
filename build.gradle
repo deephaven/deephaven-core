@@ -265,8 +265,6 @@ configure modsRegular,
         systemProperty 'Configuration.rootFile', 'dh-tests.prop'
         systemProperty 'devroot', "$rootDir"
         systemProperty 'workspace', "$rootDir/tmp/workspace"
-        systemProperty 'log4j.configuration', 'log4j.teamcity.xml'
-        systemProperty 'disable.pdsport.rotate', 'true'
         systemProperty 'configuration.quiet', 'true'
         systemProperty 'java.awt.headless', 'true'
 

@@ -13,7 +13,7 @@ import io.deephaven.engine.table.impl.preview.DisplayWrapper;
 import io.deephaven.engine.table.lang.QueryScope;
 import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.time.DateTimeUtils;
+import io.deephaven.engine.time.DateTimeUtil;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.rowset.RowSet;
 import org.jetbrains.annotations.NotNull;
@@ -322,7 +322,7 @@ public class MatchFilter extends WhereFilterImpl {
                             throw new IllegalArgumentException(
                                     "DateTime literal not enclosed in single-quotes (\"" + str + "\")");
                         }
-                        return DateTimeUtils.convertDateTime(str.substring(1, str.length() - 1));
+                        return DateTimeUtil.convertDateTime(str.substring(1, str.length() - 1));
                     }
                 };
             } else if (cls == Object.class) {

@@ -3,9 +3,9 @@ package io.deephaven.grpc_api.session;
 import com.github.f4b6a3.uuid.UuidCreator;
 import com.google.protobuf.ByteString;
 import io.deephaven.engine.time.DateTime;
+import io.deephaven.engine.time.DateTimeUtil;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.grpc_api.util.Scheduler;
 import io.deephaven.proto.backplane.grpc.TerminationNotificationResponse;
 import io.deephaven.util.auth.AuthContext;
@@ -174,7 +174,7 @@ public class SessionService {
             do {
                 newUUID = UuidCreator.getRandomBased();
                 final long tokenExpireNanos = TimeUnit.MILLISECONDS.toNanos(tokenExpireMs);
-                expiration = new TokenExpiration(newUUID, DateTimeUtils.plus(now, tokenExpireNanos), session);
+                expiration = new TokenExpiration(newUUID, DateTimeUtil.plus(now, tokenExpireNanos), session);
             } while (tokenToSession.putIfAbsent(newUUID, expiration) != null);
 
             if (initialToken) {

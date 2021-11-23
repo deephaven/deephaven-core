@@ -9,7 +9,7 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.time.DateTimeUtils;
+import io.deephaven.engine.time.DateTimeUtil;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
@@ -30,12 +30,12 @@ public class DatetimeAsLongColumnSource extends AbstractColumnSource<Long> imple
 
     @Override
     public long getLong(final long index) {
-        return DateTimeUtils.nanos(alternateColumnSource.get(index));
+        return DateTimeUtil.nanos(alternateColumnSource.get(index));
     }
 
     @Override
     public long getPrevLong(final long index) {
-        return DateTimeUtils.nanos(alternateColumnSource.getPrev(index));
+        return DateTimeUtil.nanos(alternateColumnSource.getPrev(index));
     }
 
     @Override
@@ -90,7 +90,7 @@ public class DatetimeAsLongColumnSource extends AbstractColumnSource<Long> imple
         final WritableLongChunk<? super Values> longDestination = destination.asWritableLongChunk();
         for (int ii = 0; ii < dateTimeChunk.size(); ++ii) {
             final DateTime dateTime = dateTimeChunk.get(ii);
-            longDestination.set(ii, DateTimeUtils.nanos(dateTime));
+            longDestination.set(ii, DateTimeUtil.nanos(dateTime));
         }
         longDestination.setSize(dateTimeChunk.size());
     }

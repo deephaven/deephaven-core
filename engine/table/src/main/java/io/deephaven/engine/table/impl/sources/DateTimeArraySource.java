@@ -10,7 +10,7 @@ import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.time.DateTimeUtils;
+import io.deephaven.engine.time.DateTimeUtil;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.table.impl.chunkfillers.ChunkFiller;
@@ -36,13 +36,13 @@ public class DateTimeArraySource extends AbstractLongArraySource<DateTime> {
     @Override
     public DateTime get(long index) {
         final long nanos = getLong(index);
-        return DateTimeUtils.nanosToTime(nanos);
+        return DateTimeUtil.nanosToTime(nanos);
     }
 
     @Override
     public DateTime getPrev(long index) {
         final long nanos = getPrevLong(index);
-        return DateTimeUtils.nanosToTime(nanos);
+        return DateTimeUtil.nanosToTime(nanos);
     }
 
 
@@ -93,41 +93,41 @@ public class DateTimeArraySource extends AbstractLongArraySource<DateTime> {
     @Override
     protected void fillSparseChunk(@NotNull final WritableChunk<? super Values> destGeneric,
             @NotNull final RowSequence indices) {
-        super.fillSparseChunk(destGeneric, indices, DateTimeUtils::nanosToTime);
+        super.fillSparseChunk(destGeneric, indices, DateTimeUtil::nanosToTime);
     }
 
     @Override
     protected void fillSparsePrevChunk(@NotNull final WritableChunk<? super Values> destGeneric,
             @NotNull final RowSequence indices) {
-        super.fillSparsePrevChunk(destGeneric, indices, DateTimeUtils::nanosToTime);
+        super.fillSparsePrevChunk(destGeneric, indices, DateTimeUtil::nanosToTime);
     }
 
     @Override
     protected void fillSparseChunkUnordered(@NotNull final WritableChunk<? super Values> destGeneric,
             @NotNull final LongChunk<? extends Attributes.RowKeys> indices) {
-        super.fillSparseChunkUnordered(destGeneric, indices, DateTimeUtils::nanosToTime);
+        super.fillSparseChunkUnordered(destGeneric, indices, DateTimeUtil::nanosToTime);
     }
 
     @Override
     protected void fillSparsePrevChunkUnordered(@NotNull final WritableChunk<? super Values> destGeneric,
             @NotNull final LongChunk<? extends Attributes.RowKeys> indices) {
-        super.fillSparsePrevChunkUnordered(destGeneric, indices, DateTimeUtils::nanosToTime);
+        super.fillSparsePrevChunkUnordered(destGeneric, indices, DateTimeUtil::nanosToTime);
     }
 
     @Override
     public void fillFromChunkByRanges(@NotNull RowSequence rowSequence, Chunk<? extends Values> src) {
-        super.<DateTime>fillFromChunkByRanges(rowSequence, src, DateTimeUtils::nanos);
+        super.<DateTime>fillFromChunkByRanges(rowSequence, src, DateTimeUtil::nanos);
     }
 
     @Override
     void fillFromChunkByKeys(@NotNull RowSequence rowSequence, Chunk<? extends Values> src) {
-        super.<DateTime>fillFromChunkByKeys(rowSequence, src, DateTimeUtils::nanos);
+        super.<DateTime>fillFromChunkByKeys(rowSequence, src, DateTimeUtil::nanos);
     }
 
     @Override
     public void fillFromChunkUnordered(@NotNull FillFromContext context, @NotNull Chunk<? extends Values> src,
             @NotNull LongChunk<Attributes.RowKeys> keys) {
-        super.<DateTime>fillFromChunkUnordered(src, keys, DateTimeUtils::nanos);
+        super.<DateTime>fillFromChunkUnordered(src, keys, DateTimeUtil::nanos);
     }
 
     @Override

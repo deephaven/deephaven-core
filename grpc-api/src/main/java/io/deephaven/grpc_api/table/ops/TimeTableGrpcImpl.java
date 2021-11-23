@@ -3,8 +3,8 @@ package io.deephaven.grpc_api.table.ops;
 import io.deephaven.base.verify.Assert;
 import com.google.rpc.Code;
 import io.deephaven.engine.table.Table;
+import io.deephaven.engine.time.DateTimeUtil;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.table.impl.TimeTable;
 import io.deephaven.grpc_api.session.SessionState;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
@@ -45,7 +45,7 @@ public class TimeTableGrpcImpl extends GrpcTableOperation<TimeTableRequest> {
         final long startTime = request.getStartTimeNanos();
         final long periodValue = request.getPeriodNanos();
         final TimeTable timeTable =
-                new TimeTable(scheduler, startTime <= 0 ? null : DateTimeUtils.nanosToTime(startTime), periodValue);
+                new TimeTable(scheduler, startTime <= 0 ? null : DateTimeUtil.nanosToTime(startTime), periodValue);
         updateGraphProcessor.addSource(timeTable);
         return timeTable;
     }

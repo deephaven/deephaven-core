@@ -6,7 +6,6 @@ import io.deephaven.engine.table.ResettableContext;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import joptsimple.internal.Strings;
 import org.junit.Test;
 
 import java.util.Random;
@@ -87,7 +86,7 @@ public class TestSharedContext {
             gs[i] = new TstUtils.IntGenerator(imin, imax);
             conditions[i] = cols[i] + " <= " + (nCols - 1) * (imax + imin) / nCols;
         }
-        final String condition = Strings.join(conditions, " && ");
+        final String condition = String.join(" && ", conditions);
         final QueryTable t0 = getTable(size, random, initColumnInfos(cols, gs));
         final String sortCol = "TS";
         UpdateGraphProcessor.DEFAULT.exclusiveLock().doLocked(() -> {
@@ -131,15 +130,15 @@ public class TestSharedContext {
             joinColumnsToAdd[i] = joinRename + "=" + cols[i];
             joinedConditions[i] = joinRename + " <= " + threshold;
         }
-        final String condition = Strings.join(conditions, " && ");
-        final String joinedCondition = Strings.join(joinedConditions, " && ");
+        final String condition = String.join(" && ", conditions);
+        final String joinedCondition = String.join(" && ", joinedConditions);
         final QueryTable t0 = getTable(size, random, initColumnInfos(cols, gs));
         final String sortCol = "TS";
         final String formulaCol = "F";
         UpdateGraphProcessor.DEFAULT.exclusiveLock().doLocked(() -> {
             final Table t1 = t0.update(sortCol + "=i", formulaCol + "=" + cols[0] + "+" + cols[1]).reverse();
             final Table t1Filtered = t1.where(condition);
-            final Table t2 = t1.sort(sortCol).naturalJoin(t1, sortCol, Strings.join(joinColumnsToAdd, ","));
+            final Table t2 = t1.sort(sortCol).naturalJoin(t1, sortCol, String.join(",", joinColumnsToAdd));
             final Table t2Filtered = t2.where(joinedCondition).reverse();
             assertEquals(t2.size(), t1.size());
             final Consumer<String> columnChecker = (final String col) -> {

@@ -3,13 +3,16 @@ configurations {
 }
 
 dependencies {
-    compile project(':engine-table')
+    compile project(':engine-table'),
+            project(':engine-function')
 
-    testCompile project(path: ':DB', configuration: 'testOutput')
+    testCompile TestTools.projectDependency(project, 'Base'),
+            TestTools.projectDependency(project, 'engine-table'),
+            project(':extensions-csv')
 
-    testRuntime project(path: ':configs'), project(path: ':test-configs')
-
-    testRuntimeOnly project(':log-to-slf4j')
+    testRuntimeOnly project(':log-to-slf4j'),
+            project(path: ':configs'),
+            project(path: ':test-configs')
     Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
 }
 

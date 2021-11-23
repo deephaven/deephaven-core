@@ -1,34 +1,24 @@
-import io.deephaven.tools.Tools
+plugins {
+    id 'java-library'
+}
+
+description 'Engine Time: Types and libraries for working with instants, periods, and calendars'
 
 configurations {
     testCompile.extendsFrom junit
 }
 
-sourceSets {
-    main {
-        java {
-            srcDir 'java'
-        }
-    }
-    test {
-        java {
-            srcDir 'test'
-        }
-    }
-}
-
 dependencies {
-    compile 'joda-time:joda-time:2.10',
-            project(':Base'),
+    api project(':Base'),
             project(':Util'),
-            project(':engine-function')
+            'joda-time:joda-time:2.10'
+
+    implementation project(':engine-function')
 
     testImplementation TestTools.projectDependency(project, 'Base')
-}
 
-spotless {
-    java {
-        targetExclude(
-        )
-    }
+    testRuntimeOnly project(':log-to-slf4j'),
+            project(path: ':configs'),
+            project(path: ':test-configs')
+    Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
 }

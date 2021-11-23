@@ -2,6 +2,7 @@ package io.deephaven.engine.updategraph;
 
 import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableBoolean;
+import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
@@ -10,8 +11,9 @@ import java.util.function.Consumer;
 /**
  * Unit tests for {@link UpdateGraphLock}.
  */
-public class TestUpdateGraphLock extends TestCase {
+public class TestUpdateGraphLock {
 
+    @Test
     public void testUpgradeFailures() throws InterruptedException {
         final UpdateGraphLock lock = new UpdateGraphLock(LogicalClock.DEFAULT);
 
@@ -48,6 +50,7 @@ public class TestUpdateGraphLock extends TestCase {
         }
     }
 
+    @Test
     public void testDowngradeSuccess() throws InterruptedException {
         final UpdateGraphLock lock = new UpdateGraphLock(LogicalClock.DEFAULT);
 
@@ -101,6 +104,7 @@ public class TestUpdateGraphLock extends TestCase {
         TestCase.assertFalse(lock.sharedLock().isHeldByCurrentThread());
     }
 
+    @Test
     public void testSharedLockHeld() {
         final UpdateGraphLock lock = new UpdateGraphLock(LogicalClock.DEFAULT);
         final Consumer<Runnable> checkHeld = (r) -> {
@@ -116,6 +120,7 @@ public class TestUpdateGraphLock extends TestCase {
         TestCase.assertTrue(success.getValue());
     }
 
+    @Test
     public void testExclusiveLockHeld() {
         final UpdateGraphLock lock = new UpdateGraphLock(LogicalClock.DEFAULT);
         final Consumer<Runnable> checkHeld = (r) -> {
@@ -130,6 +135,7 @@ public class TestUpdateGraphLock extends TestCase {
         TestCase.assertFalse(lock.exclusiveLock().isHeldByCurrentThread());
     }
 
+    @Test
     public void testConditions() throws InterruptedException {
         final UpdateGraphLock lock = new UpdateGraphLock(LogicalClock.DEFAULT);
         try {

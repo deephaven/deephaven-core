@@ -13,7 +13,7 @@ import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.tuplesource.AbstractTupleSource;
 import io.deephaven.engine.table.impl.tuplesource.TwoColumnTupleSourceFactory;
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.time.DateTimeUtils;
+import io.deephaven.engine.time.DateTimeUtil;
 import io.deephaven.engine.tuple.generated.ShortLongTuple;
 import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
@@ -61,7 +61,7 @@ public class ShortReinterpretedDateTimeColumnTupleSource extends AbstractTupleSo
     public final ShortLongTuple createTupleFromValues(@NotNull final Object... values) {
         return new ShortLongTuple(
                 TypeUtils.unbox((Short)values[0]),
-                DateTimeUtils.nanos((DateTime)values[1])
+                DateTimeUtil.nanos((DateTime)values[1])
         );
     }
 
@@ -81,7 +81,7 @@ public class ShortReinterpretedDateTimeColumnTupleSource extends AbstractTupleSo
             return;
         }
         if (elementIndex == 1) {
-            writableSource.set(destinationIndexKey, (ELEMENT_TYPE) DateTimeUtils.nanosToTime(tuple.getSecondElement()));
+            writableSource.set(destinationIndexKey, (ELEMENT_TYPE) DateTimeUtil.nanosToTime(tuple.getSecondElement()));
             return;
         }
         throw new IndexOutOfBoundsException("Invalid element index " + elementIndex + " for export");
@@ -91,7 +91,7 @@ public class ShortReinterpretedDateTimeColumnTupleSource extends AbstractTupleSo
     public final Object exportToExternalKey(@NotNull final ShortLongTuple tuple) {
         return new SmartKey(
                 TypeUtils.box(tuple.getFirstElement()),
-                DateTimeUtils.nanosToTime(tuple.getSecondElement())
+                DateTimeUtil.nanosToTime(tuple.getSecondElement())
         );
     }
 
@@ -101,7 +101,7 @@ public class ShortReinterpretedDateTimeColumnTupleSource extends AbstractTupleSo
             return TypeUtils.box(tuple.getFirstElement());
         }
         if (elementIndex == 1) {
-            return DateTimeUtils.nanosToTime(tuple.getSecondElement());
+            return DateTimeUtil.nanosToTime(tuple.getSecondElement());
         }
         throw new IllegalArgumentException("Bad elementIndex for 2 element tuple: " + elementIndex);
     }

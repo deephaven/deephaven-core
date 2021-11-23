@@ -17,9 +17,9 @@ import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
+import io.deephaven.engine.time.DateTimeUtil;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.updategraph.UpdateSourceCombiner;
-import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.util.TableDiff;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.*;
@@ -388,8 +388,8 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
                                     new TstUtils.SortedLongGenerator(0, Long.MAX_VALUE - 1),
                                     new TstUtils.BooleanGenerator(0.2),
                                     new TstUtils.UnsortedDateTimeGenerator(
-                                            DateTimeUtils.convertDateTime("2020-02-14T00:00:00 NY"),
-                                            DateTimeUtils.convertDateTime("2020-02-25T00:00:00 NY"))));
+                                            DateTimeUtil.convertDateTime("2020-02-14T00:00:00 NY"),
+                                            DateTimeUtil.convertDateTime("2020-02-25T00:00:00 NY"))));
         }
 
         public void createNuggets() {
@@ -1103,8 +1103,8 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
                                     new TstUtils.SetGenerator<>(new String[] {"a", "b"}, new String[] {"0", "1"},
                                             new String[] {}, null),
                                     new TstUtils.UnsortedDateTimeGenerator(
-                                            DateTimeUtils.convertDateTime("2020-02-14T00:00:00 NY"),
-                                            DateTimeUtils.convertDateTime("2020-02-25T00:00:00 NY")));
+                                            DateTimeUtil.convertDateTime("2020-02-14T00:00:00 NY"),
+                                            DateTimeUtil.convertDateTime("2020-02-25T00:00:00 NY")));
                             sourceTable = getTable(size / 4, random, columnInfo);
                         }
                     };
@@ -1167,8 +1167,8 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
                                     new TstUtils.SetGenerator<>(new String[] {"a", "b"}, new String[] {"0", "1"},
                                             new String[] {}, null),
                                     new TstUtils.UnsortedDateTimeGenerator(
-                                            DateTimeUtils.convertDateTime("2020-02-14T00:00:00 NY"),
-                                            DateTimeUtils.convertDateTime("2020-02-25T00:00:00 NY")));
+                                            DateTimeUtil.convertDateTime("2020-02-14T00:00:00 NY"),
+                                            DateTimeUtil.convertDateTime("2020-02-25T00:00:00 NY")));
                             sourceTable = getTable(size / 4, random, columnInfo);
                         }
                     };

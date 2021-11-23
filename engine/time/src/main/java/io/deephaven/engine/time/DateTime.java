@@ -46,7 +46,7 @@ public final class DateTime implements Comparable<DateTime>, Externalizable {
     private static final DateTimeFormatter dateFormat = DateTimeFormat.forPattern("yyyy-MM-dd");
 
     public static DateTime of(Instant instant) {
-        return new DateTime(DateTimeUtils.nanos(instant));
+        return new DateTime(DateTimeUtil.nanos(instant));
     }
 
     /**
