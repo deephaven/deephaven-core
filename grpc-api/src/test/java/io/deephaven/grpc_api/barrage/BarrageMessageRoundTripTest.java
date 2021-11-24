@@ -32,7 +32,6 @@ import io.deephaven.db.v2.ShiftAwareListener;
 import io.deephaven.db.v2.TableUpdateValidator;
 import io.deephaven.db.v2.TstUtils;
 import io.deephaven.db.v2.sources.chunk.ChunkType;
-import io.deephaven.db.v2.sources.chunk.util.pools.ChunkPoolReleaseTracking;
 import io.deephaven.db.v2.utils.BarrageMessage;
 import io.deephaven.db.v2.utils.Index;
 import io.deephaven.db.v2.utils.IndexShiftData;
@@ -103,7 +102,6 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
         liveTableRegistrar = new LiveTableRefreshCombiner();
         scheduler = new TestControlledScheduler();
         exceptions = new ArrayDeque<>();
-        ChunkPoolReleaseTracking.enableStrict();
         useDeephavenNulls = true;
 
         daggerRoot = DaggerBarrageMessageRoundTripTest_TestComponent
@@ -114,7 +112,6 @@ public class BarrageMessageRoundTripTest extends LiveTableTestCase {
 
     @Override
     protected void tearDown() throws Exception {
-        ChunkPoolReleaseTracking.checkAndDisable();
         liveTableRegistrar = null;
         scheduler = null;
         exceptions = null;

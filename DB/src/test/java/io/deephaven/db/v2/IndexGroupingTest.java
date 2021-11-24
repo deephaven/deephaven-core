@@ -6,8 +6,6 @@ package io.deephaven.db.v2;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
-import io.deephaven.compilertools.CompilerTools;
-import io.deephaven.configuration.Configuration;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.live.LiveTableMonitor;
 import io.deephaven.db.tables.utils.TableTools;
@@ -15,43 +13,19 @@ import io.deephaven.db.v2.sources.ColumnSource;
 import io.deephaven.db.v2.tuples.TupleSource;
 import io.deephaven.db.v2.tuples.TupleSourceFactory;
 import io.deephaven.db.v2.utils.Index;
-import io.deephaven.db.v2.utils.UpdatePerformanceTracker;
 import io.deephaven.test.types.OutOfBandTest;
 import org.apache.commons.lang3.mutable.MutableInt;
-import org.junit.After;
-import org.junit.Before;
 
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 import org.junit.experimental.categories.Category;
 
-import static io.deephaven.db.tables.utils.TableTools.show;
 import static io.deephaven.db.v2.TstUtils.getTable;
 
 @SuppressWarnings("ClassInitializerMayBeStatic")
 @Category(OutOfBandTest.class)
 public class IndexGroupingTest extends LiveTableTestCase {
-
-    private static final boolean ENABLE_COMPILER_TOOLS_LOGGING = Configuration.getInstance()
-            .getBooleanForClassWithDefault(IndexGroupingTest.class, "CompilerTools.logEnabled", false);
-
-    private boolean oldCompilerToolsLogEnabled;
-
-    @Before
-    @Override
-    public void setUp() throws Exception {
-        super.setUp();
-        UpdatePerformanceTracker.getInstance().enableUnitTestMode();
-        oldCompilerToolsLogEnabled = CompilerTools.setLogEnabled(ENABLE_COMPILER_TOOLS_LOGGING);
-    }
-
-    @After
-    @Override
-    public void tearDown() throws Exception {
-        CompilerTools.setLogEnabled(oldCompilerToolsLogEnabled);
-        super.tearDown();
-    }
 
     private static ArrayList<ArrayList<String>> powerSet(Set<String> originalSet) {
         return powerSet(originalSet.stream().collect(Collectors.toList()));

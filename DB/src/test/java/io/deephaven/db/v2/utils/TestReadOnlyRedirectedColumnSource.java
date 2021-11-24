@@ -4,11 +4,8 @@ import io.deephaven.db.tables.live.LiveTableMonitor;
 import io.deephaven.db.tables.select.QueryScope;
 import io.deephaven.db.tables.utils.TableTools;
 import io.deephaven.db.util.BooleanUtils;
-import io.deephaven.db.v2.DynamicNode;
-import io.deephaven.db.v2.InMemoryTable;
+import io.deephaven.db.v2.*;
 import io.deephaven.db.tables.Table;
-import io.deephaven.db.v2.QueryTable;
-import io.deephaven.db.v2.TstUtils;
 import io.deephaven.db.v2.sources.ColumnSource;
 
 import static io.deephaven.db.tables.utils.TableTools.intCol;
@@ -23,10 +20,10 @@ import io.deephaven.db.v2.select.IncrementalReleaseFilter;
 
 import gnu.trove.list.TByteList;
 import gnu.trove.list.array.TByteArrayList;
+import io.deephaven.test.junit4.EngineCleanup;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableLong;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -39,16 +36,9 @@ import static org.junit.Assert.*;
  */
 public class TestReadOnlyRedirectedColumnSource {
 
-    @Before
-    public void setUp() throws Exception {
-        LiveTableMonitor.DEFAULT.enableUnitTestMode();
-        LiveTableMonitor.DEFAULT.resetForUnitTests(false);
-    }
+    @Rule
+    public final EngineCleanup base = new EngineCleanup();
 
-    @After
-    public void tearDown() throws Exception {
-        LiveTableMonitor.DEFAULT.resetForUnitTests(true);
-    }
 
     private Table makeTable() {
         final int sz = 100 * 1000;
@@ -107,10 +97,11 @@ public class TestReadOnlyRedirectedColumnSource {
         final IncrementalReleaseFilter incFilter = new IncrementalReleaseFilter(stepSz, stepSz);
         final Table live = t.where(incFilter).sort("IntsCol");
         final int chunkSz = stepSz - 7;
-        final WritableObjectChunk<String, Values> chunk = WritableObjectChunk.makeWritableChunk(chunkSz);
-        while (live.size() < t.size()) {
-            LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(incFilter::refresh);
-            doFillAndCheck(live, "StringsCol", chunk, chunkSz);
+        try (final WritableObjectChunk<String, Values> chunk = WritableObjectChunk.makeWritableChunk(chunkSz)) {
+            while (live.size() < t.size()) {
+                LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(incFilter::refresh);
+                doFillAndCheck(live, "StringsCol", chunk, chunkSz);
+            }
         }
     }
 

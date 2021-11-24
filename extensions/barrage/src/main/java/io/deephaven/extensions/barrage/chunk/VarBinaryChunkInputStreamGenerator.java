@@ -221,75 +221,74 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
 
             read = true;
             long bytesWritten = 0;
-            try (final LittleEndianDataOutputStream dos = new LittleEndianDataOutputStream(outputStream)) {
-                // write the validity array with LSB indexing
-                if (sendValidityBuffer()) {
-                    final SerContext context = new SerContext();
-                    final Runnable flush = () -> {
-                        try {
-                            dos.writeLong(context.accumulator);
-                        } catch (final IOException e) {
-                            throw new UncheckedDeephavenException("couldn't drain data to OutputStream", e);
-                        }
-                        context.accumulator = 0;
-                        context.count = 0;
-                    };
-                    subset.forAllLongs(rawRow -> {
-                        final int row = LongSizedDataStructure.intSize(DEBUG_NAME, rawRow);
-                        if (chunk.get(row) != null) {
-                            context.accumulator |= 1L << context.count;
-                        }
-                        if (++context.count == 64) {
-                            flush.run();
-                        }
-                    });
-                    if (context.count > 0) {
-                        flush.run();
-                    }
-                    bytesWritten += getValidityMapSerializationSizeFor(subset.intSize(DEBUG_NAME));
-                }
-
-                // write offsets array
-                dos.writeInt(0);
-
-                final MutableInt logicalSize = new MutableInt();
-                subset.forAllLongs((rawRow) -> {
+            final LittleEndianDataOutputStream dos = new LittleEndianDataOutputStream(outputStream);
+            // write the validity array with LSB indexing
+            if (sendValidityBuffer()) {
+                final SerContext context = new SerContext();
+                final Runnable flush = () -> {
                     try {
-                        final int rowEnd = LongSizedDataStructure.intSize(DEBUG_NAME, rawRow + 1);
-                        final int size = myOffsets.get(rowEnd) - myOffsets.get(rowEnd - 1);
-                        logicalSize.add(size);
-                        dos.writeInt(logicalSize.intValue());
+                        dos.writeLong(context.accumulator);
                     } catch (final IOException e) {
                         throw new UncheckedDeephavenException("couldn't drain data to OutputStream", e);
                     }
-                });
-                bytesWritten += Integer.BYTES * (subset.size() + 1);
-
-                if ((subset.size() & 0x1) == 0) {
-                    // then we must pad to align next buffer
-                    dos.writeInt(0);
-                    bytesWritten += Integer.BYTES;
-                }
-
-                final MutableLong payloadLen = new MutableLong();
-                subset.forAllLongRanges((s, e) -> {
-                    try {
-                        // we have already int-size verified all rows in the index
-                        final int startOffset = myOffsets.get((int) s);
-                        final int endOffset = myOffsets.get((int) e + 1);
-                        dos.write(myBytes, startOffset, endOffset - startOffset);
-                        payloadLen.add(endOffset - startOffset);
-                    } catch (final IOException err) {
-                        throw new UncheckedDeephavenException("couldn't drain data to OutputStream", err);
+                    context.accumulator = 0;
+                    context.count = 0;
+                };
+                subset.forAllLongs(rawRow -> {
+                    final int row = LongSizedDataStructure.intSize(DEBUG_NAME, rawRow);
+                    if (chunk.get(row) != null) {
+                        context.accumulator |= 1L << context.count;
+                    }
+                    if (++context.count == 64) {
+                        flush.run();
                     }
                 });
-                bytesWritten += payloadLen.longValue();
-
-                final long bytesExtended = bytesWritten & REMAINDER_MOD_8_MASK;
-                if (bytesExtended > 0) {
-                    bytesWritten += 8 - bytesExtended;
-                    dos.write(PADDING_BUFFER, 0, (int)(8 - bytesExtended));
+                if (context.count > 0) {
+                    flush.run();
                 }
+                bytesWritten += getValidityMapSerializationSizeFor(subset.intSize(DEBUG_NAME));
+            }
+
+            // write offsets array
+            dos.writeInt(0);
+
+            final MutableInt logicalSize = new MutableInt();
+            subset.forAllLongs((rawRow) -> {
+                try {
+                    final int rowEnd = LongSizedDataStructure.intSize(DEBUG_NAME, rawRow + 1);
+                    final int size = myOffsets.get(rowEnd) - myOffsets.get(rowEnd - 1);
+                    logicalSize.add(size);
+                    dos.writeInt(logicalSize.intValue());
+                } catch (final IOException e) {
+                    throw new UncheckedDeephavenException("couldn't drain data to OutputStream", e);
+                }
+            });
+            bytesWritten += Integer.BYTES * (subset.size() + 1);
+
+            if ((subset.size() & 0x1) == 0) {
+                // then we must pad to align next buffer
+                dos.writeInt(0);
+                bytesWritten += Integer.BYTES;
+            }
+
+            final MutableLong payloadLen = new MutableLong();
+            subset.forAllLongRanges((s, e) -> {
+                try {
+                    // we have already int-size verified all rows in the index
+                    final int startOffset = myOffsets.get((int) s);
+                    final int endOffset = myOffsets.get((int) e + 1);
+                    dos.write(myBytes, startOffset, endOffset - startOffset);
+                    payloadLen.add(endOffset - startOffset);
+                } catch (final IOException err) {
+                    throw new UncheckedDeephavenException("couldn't drain data to OutputStream", err);
+                }
+            });
+            bytesWritten += payloadLen.longValue();
+
+            final long bytesExtended = bytesWritten & REMAINDER_MOD_8_MASK;
+            if (bytesExtended > 0) {
+                bytesWritten += 8 - bytesExtended;
+                dos.write(PADDING_BUFFER, 0, (int) (8 - bytesExtended));
             }
 
             return LongSizedDataStructure.intSize(DEBUG_NAME, bytesWritten);

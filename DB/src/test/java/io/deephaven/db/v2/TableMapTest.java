@@ -32,8 +32,6 @@ import static io.deephaven.db.v2.TstUtils.i;
 @Category(OutOfBandTest.class)
 public class TableMapTest extends LiveTableTestCase {
 
-    private boolean oldCheckLtm;
-
     @Override
     protected void setUp() throws Exception {
         if (null == ProcessEnvironment.tryGet()) {
@@ -42,16 +40,6 @@ public class TableMapTest extends LiveTableTestCase {
         }
         super.setUp();
         setExpectError(false);
-        oldCheckLtm = LiveTableMonitor.DEFAULT.setCheckTableOperations(false);
-    }
-
-    @Override
-    protected void tearDown() throws Exception {
-        try {
-            super.tearDown();
-        } finally {
-            LiveTableMonitor.DEFAULT.setCheckTableOperations(oldCheckLtm);
-        }
     }
 
     public void testMergeSimple() {

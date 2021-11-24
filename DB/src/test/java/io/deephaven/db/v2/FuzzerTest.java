@@ -13,7 +13,7 @@ import io.deephaven.db.util.GroovyDeephavenSession.RunScripts;
 import io.deephaven.db.util.liveness.LivenessScopeStack;
 import io.deephaven.db.v2.utils.RuntimeMemory;
 import io.deephaven.db.v2.utils.TimeProvider;
-import io.deephaven.test.junit4.JUnit4LiveTableTestCase;
+import io.deephaven.test.junit4.EngineCleanup;
 import io.deephaven.test.types.SerialTest;
 import io.deephaven.util.SafeCloseable;
 import org.apache.commons.lang3.mutable.MutableLong;
@@ -21,6 +21,7 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.After;
 import org.junit.Assume;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
@@ -38,7 +39,8 @@ public class FuzzerTest {
     private static final boolean REALTIME_FUZZER_ENABLED =
             Configuration.getInstance().getBooleanWithDefault("FuzzerTest.realTime", false);
 
-    JUnit4LiveTableTestCase framework = new JUnit4LiveTableTestCase();
+    @Rule
+    public final EngineCleanup framework = new EngineCleanup();
 
     private static class FuzzDescriptor {
         final long querySeed;
@@ -89,15 +91,12 @@ public class FuzzerTest {
 
     @Before
     public void setUp() throws Exception {
-        framework.setUp();
         setupPersistence();
     }
 
     @After
     public void tearDown() throws Exception {
-        QueryScope.setScope(new QueryScope.StandaloneImpl());
         cleanupPersistence();
-        framework.tearDown();
     }
 
     private GroovyDeephavenSession getGroovySession() throws IOException {

@@ -23,26 +23,6 @@ import static io.deephaven.db.v2.TstUtils.initColumnInfos;
 
 public class TestTotalsTable extends LiveTableTestCase {
 
-    private static final boolean ENABLE_COMPILER_TOOLS_LOGGING = Configuration.getInstance()
-            .getBooleanForClassWithDefault(TestTotalsTable.class, "CompilerTools.logEnabled", false);
-
-    private boolean oldCompilerToolsLogEnabled;
-
-    @Before
-    @Override
-    public void setUp() throws Exception {
-        super.setUp();
-        UpdatePerformanceTracker.getInstance().enableUnitTestMode();
-        oldCompilerToolsLogEnabled = CompilerTools.setLogEnabled(ENABLE_COMPILER_TOOLS_LOGGING);
-    }
-
-    @After
-    @Override
-    public void tearDown() throws Exception {
-        CompilerTools.setLogEnabled(oldCompilerToolsLogEnabled);
-        super.tearDown();
-    }
-
     private long shortSum(short[] values) {
         long sum = 0;
         for (short value : values) {

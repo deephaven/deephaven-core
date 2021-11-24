@@ -14,6 +14,7 @@ import io.deephaven.db.tables.utils.DBDateTime;
 import io.deephaven.db.tables.utils.DBTimeUtils;
 import io.deephaven.db.tables.utils.TableTools;
 import io.deephaven.db.tables.verify.TableAssertions;
+import io.deephaven.db.v2.QueryTableTestBase.TableComparator;
 import io.deephaven.db.v2.select.*;
 import io.deephaven.db.v2.select.chunkfilters.IntRangeComparator;
 import io.deephaven.db.v2.sources.LogicalClock;
@@ -21,13 +22,14 @@ import io.deephaven.db.v2.sources.UnionRedirection;
 import io.deephaven.db.v2.sources.chunk.*;
 import io.deephaven.db.v2.utils.Index;
 import io.deephaven.db.v2.utils.IndexShiftData;
+import io.deephaven.test.junit4.EngineCleanup;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.ReflexiveUse;
 
 import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableObject;
-import org.junit.Assert;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.math.BigDecimal;
@@ -40,11 +42,19 @@ import org.junit.experimental.categories.Category;
 
 import static io.deephaven.db.tables.utils.TableTools.*;
 import static io.deephaven.db.tables.utils.WhereClause.whereClause;
+import static io.deephaven.db.v2.LiveTableTestCase.printTableUpdates;
+import static io.deephaven.db.v2.LiveTableTestCase.simulateShiftAwareStep;
 import static io.deephaven.db.v2.TstUtils.*;
 import static java.util.Arrays.asList;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 @Category(OutOfBandTest.class)
-public class QueryTableWhereTest extends QueryTableTestBase {
+public class QueryTableWhereTest {
+    @Rule
+    public final EngineCleanup base = new EngineCleanup();
 
     @Test
     public void testWhere() {
@@ -58,7 +68,7 @@ public class QueryTableWhereTest extends QueryTableTestBase {
         assertEquals("", diff(table.where(filter.apply("(y-'a') = 2")),
                 testRefreshingTable(i(2), c("x", 3), c("y", 'c')), 10));
         final QueryTable whereResult = (QueryTable) table.where(filter.apply("x%2 == 1"));
-        final Listener whereResultListener = new ListenerWithGlobals(whereResult);
+        final Listener whereResultListener = base.newListenerWithGlobals(whereResult);
         whereResult.listenForUpdates(whereResultListener);
         assertEquals("", diff(whereResult,
                 testRefreshingTable(i(2, 6), c("x", 1, 3), c("y", 'a', 'c')), 10));
@@ -70,9 +80,9 @@ public class QueryTableWhereTest extends QueryTableTestBase {
 
         assertEquals("", diff(whereResult,
                 testRefreshingTable(i(2, 6, 9), c("x", 1, 3, 5), c("y", 'a', 'c', 'e')), 10));
-        assertEquals(added, i(9));
-        assertEquals(removed, i());
-        assertEquals(modified, i());
+        assertEquals(base.added, i(9));
+        assertEquals(base.removed, i());
+        assertEquals(base.modified, i());
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(table, i(7, 9), c("x", 3, 10), c("y", 'e', 'd'));
@@ -82,9 +92,9 @@ public class QueryTableWhereTest extends QueryTableTestBase {
         assertEquals("", diff(whereResult,
                 testRefreshingTable(i(2, 6, 7), c("x", 1, 3, 3), c("y", 'a', 'c', 'e')), 10));
 
-        assertEquals(added, i(7));
-        assertEquals(removed, i(9));
-        assertEquals(modified, i());
+        assertEquals(base.added, i(7));
+        assertEquals(base.removed, i(9));
+        assertEquals(base.modified, i());
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             removeRows(table, i(2, 6, 7));
@@ -93,9 +103,9 @@ public class QueryTableWhereTest extends QueryTableTestBase {
 
         assertTableEquals(testRefreshingTable(i(), intCol("x"), charCol("y")), whereResult);
 
-        assertEquals(added, i());
-        assertEquals(removed, i(2, 6, 7));
-        assertEquals(modified, i());
+        assertEquals(base.added, i());
+        assertEquals(base.removed, i(2, 6, 7));
+        assertEquals(base.modified, i());
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             removeRows(table, i(9));
@@ -106,12 +116,13 @@ public class QueryTableWhereTest extends QueryTableTestBase {
         assertEquals("", diff(whereResult,
                 testRefreshingTable(i(2, 4, 6), c("x", 1, 21, 3), c("y", 'a', 'x', 'c')), 10));
 
-        assertEquals(added, i(2, 4, 6));
-        assertEquals(removed, i());
-        assertEquals(modified, i());
+        assertEquals(base.added, i(2, 4, 6));
+        assertEquals(base.removed, i());
+        assertEquals(base.modified, i());
 
     }
 
+    @Test
     public void testWhereBiggerTable() {
         final Table table = TableTools.emptyTable(100000).update("Sym=ii%2==0 ? `AAPL` : `BANANA`", "II=ii").select();
         final Table filtered = table.where("Sym = (`AAPL`)");
@@ -119,12 +130,13 @@ public class QueryTableWhereTest extends QueryTableTestBase {
         TableTools.showWithIndex(filtered);
     }
 
+    @Test
     public void testIandK() {
         final Table table = testRefreshingTable(i(2, 4, 6), intCol("x", 1, 2, 3));
 
-        assertEquals(newTable(intCol("x", 2)), table.where("k=4"));
-        assertEquals(newTable(intCol("x", 2, 3)), table.where("ii > 0"));
-        assertEquals(newTable(intCol("x", 1)), table.where("i < 1"));
+        assertTableEquals(newTable(intCol("x", 2)), table.where("k=4"));
+        assertTableEquals(newTable(intCol("x", 2, 3)), table.where("ii > 0"));
+        assertTableEquals(newTable(intCol("x", 1)), table.where("i < 1"));
     }
 
 
@@ -140,7 +152,7 @@ public class QueryTableWhereTest extends QueryTableTestBase {
                 testRefreshingTable(i(2), c("x", 3), c("y", 'c')), 10));
 
         final QueryTable whereResult = (QueryTable) table.whereOneOf(whereClause("x%2 == 1"));
-        final Listener whereResultListener = new ListenerWithGlobals(whereResult);
+        final Listener whereResultListener = base.newListenerWithGlobals(whereResult);
         whereResult.listenForUpdates(whereResultListener);
         assertEquals("", diff(whereResult,
                 testRefreshingTable(i(2, 6), c("x", 1, 3), c("y", 'a', 'c')), 10));
@@ -152,9 +164,9 @@ public class QueryTableWhereTest extends QueryTableTestBase {
 
         assertEquals("", diff(whereResult,
                 testRefreshingTable(i(2, 6, 9), c("x", 1, 3, 5), c("y", 'a', 'c', 'e')), 10));
-        assertEquals(added, i(9));
-        assertEquals(removed, i());
-        assertEquals(modified, i());
+        assertEquals(base.added, i(9));
+        assertEquals(base.removed, i());
+        assertEquals(base.modified, i());
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(table, i(7, 9), c("x", 3, 10), c("y", 'e', 'd'));
@@ -164,9 +176,9 @@ public class QueryTableWhereTest extends QueryTableTestBase {
         assertEquals("", diff(whereResult,
                 testRefreshingTable(i(2, 6, 7), c("x", 1, 3, 3), c("y", 'a', 'c', 'e')), 10));
 
-        assertEquals(added, i(7));
-        assertEquals(removed, i(9));
-        assertEquals(modified, i());
+        assertEquals(base.added, i(7));
+        assertEquals(base.removed, i(9));
+        assertEquals(base.modified, i());
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             removeRows(table, i(2, 6, 7));
@@ -175,9 +187,9 @@ public class QueryTableWhereTest extends QueryTableTestBase {
 
         assertTableEquals(testRefreshingTable(i(), intCol("x"), charCol("y")), whereResult);
 
-        assertEquals(added, i());
-        assertEquals(removed, i(2, 6, 7));
-        assertEquals(modified, i());
+        assertEquals(base.added, i());
+        assertEquals(base.removed, i(2, 6, 7));
+        assertEquals(base.modified, i());
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             removeRows(table, i(9));
@@ -188,9 +200,9 @@ public class QueryTableWhereTest extends QueryTableTestBase {
         assertEquals("", diff(whereResult,
                 testRefreshingTable(i(2, 4, 6), c("x", 1, 21, 3), c("y", 'a', 'x', 'c')), 10));
 
-        assertEquals(added, i(2, 4, 6));
-        assertEquals(removed, i());
-        assertEquals(modified, i());
+        assertEquals(base.added, i(2, 4, 6));
+        assertEquals(base.removed, i());
+        assertEquals(base.modified, i());
 
     }
 
@@ -206,7 +218,7 @@ public class QueryTableWhereTest extends QueryTableTestBase {
                 testRefreshingTable(i(2), c("x", 3), c("y", 'c')), 10));
 
         final QueryTable whereResult = (QueryTable) table.whereOneOf(whereClause("x%2 == 1"), whereClause("y=='f'"));
-        final Listener whereResultListener = new ListenerWithGlobals(whereResult);
+        final Listener whereResultListener = base.newListenerWithGlobals(whereResult);
         whereResult.listenForUpdates(whereResultListener);
         assertEquals("", diff(whereResult,
                 testRefreshingTable(i(2, 6, 8), c("x", 1, 3, 4), c("y", 'a', 'c', 'f')), 10));
@@ -219,9 +231,9 @@ public class QueryTableWhereTest extends QueryTableTestBase {
 
         assertEquals("", diff(whereResult,
                 testRefreshingTable(i(2, 6, 8, 9), c("x", 1, 3, 4, 5), c("y", 'a', 'c', 'f', 'e')), 10));
-        assertEquals(added, i(9));
-        assertEquals(removed, i());
-        assertEquals(modified, i());
+        assertEquals(base.added, i(9));
+        assertEquals(base.removed, i());
+        assertEquals(base.modified, i());
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(table, i(7, 9), c("x", 3, 10), c("y", 'e', 'd'));
@@ -231,9 +243,9 @@ public class QueryTableWhereTest extends QueryTableTestBase {
         assertEquals("", diff(whereResult,
                 testRefreshingTable(i(2, 6, 7, 8), c("x", 1, 3, 3, 4), c("y", 'a', 'c', 'e', 'f')), 10));
 
-        assertEquals(added, i(7));
-        assertEquals(removed, i(9));
-        assertEquals(modified, i());
+        assertEquals(base.added, i(7));
+        assertEquals(base.removed, i(9));
+        assertEquals(base.modified, i());
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             removeRows(table, i(2, 6, 7));
@@ -243,9 +255,9 @@ public class QueryTableWhereTest extends QueryTableTestBase {
         assertEquals("", diff(whereResult,
                 testRefreshingTable(i(8), c("x", 4), c("y", 'f')), 10));
 
-        assertEquals(added, i());
-        assertEquals(removed, i(2, 6, 7));
-        assertEquals(modified, i());
+        assertEquals(base.added, i());
+        assertEquals(base.removed, i(2, 6, 7));
+        assertEquals(base.modified, i());
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
             removeRows(table, i(9));
@@ -256,9 +268,9 @@ public class QueryTableWhereTest extends QueryTableTestBase {
         assertEquals("", diff(whereResult,
                 testRefreshingTable(i(2, 4, 6, 8), c("x", 1, 21, 3, 4), c("y", 'a', 'x', 'c', 'f')), 10));
 
-        assertEquals(added, i(2, 4, 6));
-        assertEquals(removed, i());
-        assertEquals(modified, i());
+        assertEquals(base.added, i(2, 4, 6));
+        assertEquals(base.removed, i());
+        assertEquals(base.modified, i());
 
         TableTools.showWithIndex(table);
         final Table usingStringArray = table.whereOneOf("x%3 == 0", "y=='f'");
@@ -637,7 +649,7 @@ public class QueryTableWhereTest extends QueryTableTestBase {
     public void testWhereWithExcessiveShifting() {
         // Select a prime that guarantees shifts from the merge operations.
         final int PRIME = 61409;
-        Assert.assertTrue(2 * PRIME > UnionRedirection.CHUNK_MULTIPLE);
+        assertTrue(2 * PRIME > UnionRedirection.CHUNK_MULTIPLE);
 
         final ColumnInfo[] filteredInfo;
 
@@ -999,6 +1011,7 @@ public class QueryTableWhereTest extends QueryTableTestBase {
     }
 
 
+    @Test
     public void testDbDateTimeRangeFilter() {
         final DBDateTime startTime = DBTimeUtils.convertDateTime("2021-04-23T09:30 NY");
         final DBDateTime[] array = new DBDateTime[10];
@@ -1015,6 +1028,7 @@ public class QueryTableWhereTest extends QueryTableTestBase {
         assertTableEquals(backwards.where("DT < '" + array[5] + "'"), backwards.where("ii < 5"));
     }
 
+    @Test
     public void testCharRangeFilter() {
         char[] array = new char[10];
         for (int ii = 0; ii < array.length; ++ii) {
@@ -1047,6 +1061,7 @@ public class QueryTableWhereTest extends QueryTableTestBase {
         assertTableEquals(backwards.where("CH >= '" + array[5] + "'"), backwards.where("'" + array[5] + "' <= CH"));
     }
 
+    @Test
     public void testSingleSidedRangeFilterSimple() {
         final Table table = TableTools.emptyTable(10).update("L1=ii");
         final String bigIntConversion = "BI2=" + getClass().getCanonicalName() + ".convertToBigInteger(L1)";
@@ -1064,6 +1079,7 @@ public class QueryTableWhereTest extends QueryTableTestBase {
         assertTableEquals(augmentedBackwards.where("L1 >= 5"), augmentedBackwards.where("BI2 >= 5"));
     }
 
+    @Test
     public void testComparableRangeFilter() {
         final Random random = new Random(0);
 

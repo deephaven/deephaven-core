@@ -9,10 +9,10 @@ import io.deephaven.db.tables.TableDefinition;
 import io.deephaven.db.tables.utils.DBDateTime;
 import io.deephaven.db.tables.utils.DBTimeUtils;
 import io.deephaven.db.tables.utils.TableTools;
+import io.deephaven.db.v2.LiveTableTestCase;
 import io.deephaven.db.v2.TstUtils;
 import io.deephaven.db.v2.select.*;
 import io.deephaven.db.v2.utils.Index;
-import junit.framework.TestCase;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -22,7 +22,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Collections;
 
-public class SelectFilterFactoryTest extends TestCase {
+public class SelectFilterFactoryTest extends LiveTableTestCase {
 
     public void testIn() {
         assertEquals(MatchFilter.class, SelectFilterFactory.getExpression("Opra in oprasOfInterest").getClass());

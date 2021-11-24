@@ -359,7 +359,7 @@ public class QueryTableTest extends QueryTableTestBase {
 
         final QueryTable table1 = TstUtils.testRefreshingTable(i(2, 4, 6), c("x", 1, 2, 3), c("y", 'a', 'b', 'c'));
         final QueryTable table2 = (QueryTable) table1.updateView("z = x", "x = z + 1", "t = x - 3");
-        final Listener table2Listener = new ListenerWithGlobals(table2);
+        final Listener table2Listener = newListenerWithGlobals(table2);
         table2.listenForUpdates(table2Listener);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
@@ -415,7 +415,7 @@ public class QueryTableTest extends QueryTableTestBase {
 
         final QueryTable table3 = TstUtils.testRefreshingTable(i(2, 4, 6), c("x", 1, 2, 3), c("y", 'a', 'b', 'c'));
         final QueryTable table4 = (QueryTable) table3.view("z = x", "x = z + 1", "t = x - 3");
-        final Listener table4Listener = new ListenerWithGlobals(table4);
+        final Listener table4Listener = newListenerWithGlobals(table4);
         table4.listenForUpdates(table4Listener);
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {
@@ -1721,7 +1721,7 @@ public class QueryTableTest extends QueryTableTestBase {
         assertEquals("", diff(snapshot, testRefreshingTable(intCol("A"), stringCol("B"), intCol("T")), 10));
 
         final ListenerWithGlobals listener;
-        snapshot.listenForUpdates(listener = new ListenerWithGlobals(snapshot));
+        snapshot.listenForUpdates(listener = newListenerWithGlobals(snapshot));
         listener.reset();
 
         LiveTableMonitor.DEFAULT.runWithinUnitTestCycle(() -> {

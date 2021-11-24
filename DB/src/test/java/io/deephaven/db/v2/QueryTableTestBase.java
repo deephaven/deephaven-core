@@ -1,13 +1,9 @@
 package io.deephaven.db.v2;
 
-import io.deephaven.compilertools.CompilerTools;
-import io.deephaven.configuration.Configuration;
 import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.live.LiveTableMonitor;
 import io.deephaven.db.tables.utils.TableDiff;
-import io.deephaven.db.v2.sources.chunk.util.pools.ChunkPoolReleaseTracking;
 import io.deephaven.db.v2.utils.Index;
-import io.deephaven.db.v2.utils.UpdatePerformanceTracker;
 import org.apache.commons.lang3.mutable.MutableInt;
 
 import java.text.SimpleDateFormat;
@@ -17,14 +13,7 @@ import java.util.*;
  * QueryTable tests can extend this to get convenient EvalNuggets, JoinIncrementors, etc.
  */
 public abstract class QueryTableTestBase extends LiveTableTestCase {
-
-    private static final boolean ENABLE_COMPILER_TOOLS_LOGGING = Configuration.getInstance()
-            .getBooleanForClassWithDefault(QueryTableTestBase.class, "CompilerTools.logEnabled", false);
-
     protected final SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
-
-    private boolean oldLogEnabled;
-    private boolean oldCheckLtm;
 
     private static final GenerateTableUpdates.SimulationProfile NO_SHIFT_PROFILE =
             new GenerateTableUpdates.SimulationProfile();
@@ -34,27 +23,7 @@ public abstract class QueryTableTestBase extends LiveTableTestCase {
         NO_SHIFT_PROFILE.SHIFT_AGGRESSIVELY = 0;
     }
 
-    @Override
-    protected void setUp() throws Exception {
-        super.setUp();
-        oldLogEnabled = CompilerTools.setLogEnabled(ENABLE_COMPILER_TOOLS_LOGGING);
-        oldCheckLtm = LiveTableMonitor.DEFAULT.setCheckTableOperations(false);
-        UpdatePerformanceTracker.getInstance().enableUnitTestMode();
-        ChunkPoolReleaseTracking.enableStrict();
-    }
-
-    @Override
-    protected void tearDown() throws Exception {
-        try {
-            super.tearDown();
-        } finally {
-            CompilerTools.setLogEnabled(oldLogEnabled);
-            LiveTableMonitor.DEFAULT.setCheckTableOperations(oldCheckLtm);
-            ChunkPoolReleaseTracking.checkAndDisable();
-        }
-    }
-
-    final JoinIncrement leftStep = new JoinIncrement() {
+    public final JoinIncrement leftStep = new JoinIncrement() {
         @Override
         public void step(int leftSize, int rightSize, QueryTable leftTable, QueryTable rightTable,
                 TstUtils.ColumnInfo[] leftColumnInfo, TstUtils.ColumnInfo[] rightColumnInfo, EvalNuggetInterface[] en,
@@ -67,7 +36,7 @@ public abstract class QueryTableTestBase extends LiveTableTestCase {
             return "Left Step";
         }
     };
-    final JoinIncrement leftStepShift = new JoinIncrement() {
+    public final JoinIncrement leftStepShift = new JoinIncrement() {
         @Override
         public void step(int leftSize, int rightSize, QueryTable leftTable, QueryTable rightTable,
                 TstUtils.ColumnInfo[] leftColumnInfo, TstUtils.ColumnInfo[] rightColumnInfo, EvalNuggetInterface[] en,
@@ -93,7 +62,7 @@ public abstract class QueryTableTestBase extends LiveTableTestCase {
             return "Right Step";
         }
     };
-    final JoinIncrement rightStepShift = new JoinIncrement() {
+    public final JoinIncrement rightStepShift = new JoinIncrement() {
         @Override
         public void step(int leftSize, int rightSize, QueryTable leftTable, QueryTable rightTable,
                 TstUtils.ColumnInfo[] leftColumnInfo, TstUtils.ColumnInfo[] rightColumnInfo, EvalNuggetInterface[] en,
@@ -106,7 +75,7 @@ public abstract class QueryTableTestBase extends LiveTableTestCase {
             return "Right Shift Step";
         }
     };
-    final JoinIncrement leftRightStep = new JoinIncrement() {
+    public final JoinIncrement leftRightStep = new JoinIncrement() {
         @Override
         public void step(int leftSize, int rightSize, QueryTable leftTable, QueryTable rightTable,
                 TstUtils.ColumnInfo[] leftColumnInfo, TstUtils.ColumnInfo[] rightColumnInfo, EvalNuggetInterface[] en,
@@ -120,7 +89,7 @@ public abstract class QueryTableTestBase extends LiveTableTestCase {
             return "Left and Right Step";
         }
     };
-    final JoinIncrement leftRightStepShift = new JoinIncrement() {
+    public final JoinIncrement leftRightStepShift = new JoinIncrement() {
         @Override
         public void step(int leftSize, int rightSize, QueryTable leftTable, QueryTable rightTable,
                 TstUtils.ColumnInfo[] leftColumnInfo, TstUtils.ColumnInfo[] rightColumnInfo, EvalNuggetInterface[] en,
@@ -135,7 +104,7 @@ public abstract class QueryTableTestBase extends LiveTableTestCase {
         }
     };
 
-    final JoinIncrement leftRightConcurrentStepShift = new JoinIncrement() {
+    public final JoinIncrement leftRightConcurrentStepShift = new JoinIncrement() {
         @Override
         public void step(int leftSize, int rightSize, QueryTable leftTable, QueryTable rightTable,
                 TstUtils.ColumnInfo[] leftColumnInfo, TstUtils.ColumnInfo[] rightColumnInfo, EvalNuggetInterface[] en,
@@ -154,7 +123,7 @@ public abstract class QueryTableTestBase extends LiveTableTestCase {
         }
     };
 
-    final JoinIncrement[] joinIncrementors = new JoinIncrement[] {leftStep, rightStep, leftRightStep};
+    public final JoinIncrement[] joinIncrementors = new JoinIncrement[] {leftStep, rightStep, leftRightStep};
     final JoinIncrement[] joinIncrementorsShift = new JoinIncrement[] {leftStep, rightStep, leftRightStep,
             leftStepShift, rightStepShift, leftRightStepShift, leftRightConcurrentStepShift};
 
@@ -304,12 +273,12 @@ public abstract class QueryTableTestBase extends LiveTableTestCase {
         }
     }
 
-    protected ListenerWithGlobals newListenerWithGlobals(DynamicTable source) {
+    public ListenerWithGlobals newListenerWithGlobals(DynamicTable source) {
         return new ListenerWithGlobals(source);
     }
 
     protected class ListenerWithGlobals extends InstrumentedListenerAdapter {
-        protected ListenerWithGlobals(DynamicTable source) {
+        private ListenerWithGlobals(DynamicTable source) {
             super(source, false);
             reset();
         }

@@ -5,18 +5,20 @@
 package io.deephaven.db.v2;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
+import io.deephaven.compilertools.CompilerTools;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.UpdateErrorReporter;
 import io.deephaven.db.tables.live.LiveTableMonitor;
+import io.deephaven.db.tables.select.QueryScope;
 import io.deephaven.db.tables.utils.SystemicObjectTracker;
 import io.deephaven.db.util.liveness.LivenessScope;
 import io.deephaven.db.util.liveness.LivenessScopeStack;
+import io.deephaven.db.v2.sources.chunk.util.pools.ChunkPoolReleaseTracking;
 import io.deephaven.db.v2.utils.AsyncClientErrorNotifier;
+import io.deephaven.db.v2.utils.UpdatePerformanceTracker;
 import io.deephaven.util.ExceptionDetails;
 import io.deephaven.util.SafeCloseable;
 import junit.framework.TestCase;
-import org.jetbrains.annotations.NotNull;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -30,33 +32,51 @@ import java.util.function.Supplier;
 abstract public class LiveTableTestCase extends BaseArrayTestCase implements UpdateErrorReporter {
     static public boolean printTableUpdates = Configuration.getInstance()
             .getBooleanForClassWithDefault(LiveTableTestCase.class, "printTableUpdates", false);
+    private static final boolean ENABLE_COMPILER_TOOLS_LOGGING = Configuration.getInstance()
+            .getBooleanForClassWithDefault(QueryTableTestBase.class, "CompilerTools.logEnabled", false);
 
     private boolean oldMemoize;
     private UpdateErrorReporter oldReporter;
     private boolean expectError = false;
-    private SafeCloseable scopeCloseable;
+    private SafeCloseable livenessScopeCloseable;
+    private QueryScope originalQueryScope;
+    private boolean oldLogEnabled;
+    private boolean oldCheckLtm;
 
     List<Throwable> errors;
 
     @Override
     protected void setUp() throws Exception {
         super.setUp();
+
         LiveTableMonitor.DEFAULT.enableUnitTestMode();
         LiveTableMonitor.DEFAULT.resetForUnitTests(false);
         SystemicObjectTracker.markThreadSystemic();
         oldMemoize = QueryTable.setMemoizeResults(false);
         oldReporter = AsyncClientErrorNotifier.setReporter(this);
         errors = null;
-        scopeCloseable = LivenessScopeStack.open(new LivenessScope(true), true);
+        livenessScopeCloseable = LivenessScopeStack.open(new LivenessScope(true), true);
+        originalQueryScope = QueryScope.getScope();
+
+        oldLogEnabled = CompilerTools.setLogEnabled(ENABLE_COMPILER_TOOLS_LOGGING);
+        oldCheckLtm = LiveTableMonitor.DEFAULT.setCheckTableOperations(false);
+        UpdatePerformanceTracker.getInstance().enableUnitTestMode();
+        ChunkPoolReleaseTracking.enableStrict();
     }
 
     @Override
     protected void tearDown() throws Exception {
-        super.tearDown();
-        scopeCloseable.close();
-        LiveTableMonitor.DEFAULT.resetForUnitTests(true);
-        QueryTable.setMemoizeResults(oldMemoize);
+        ChunkPoolReleaseTracking.checkAndDisable();
+        LiveTableMonitor.DEFAULT.setCheckTableOperations(oldCheckLtm);
+        CompilerTools.setLogEnabled(oldLogEnabled);
+
+        QueryScope.setScope(originalQueryScope);
+        livenessScopeCloseable.close();
         AsyncClientErrorNotifier.setReporter(oldReporter);
+        QueryTable.setMemoizeResults(oldMemoize);
+        LiveTableMonitor.DEFAULT.resetForUnitTests(true);
+
+        super.tearDown();
     }
 
     @Override
@@ -130,10 +150,6 @@ abstract public class LiveTableTestCase extends BaseArrayTestCase implements Upd
         // prune the tree after each validation. The reason not to do it, however, is that this will sometimes expose
         // bugs with shared indices getting updated.
         // System.gc();
-    }
-
-    void assertEquals(@NotNull final Table expected, @NotNull final Table actual) {
-        TstUtils.assertTableEquals(expected, actual);
     }
 
     class ErrorExpectation implements Closeable {

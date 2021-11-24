@@ -85,33 +85,33 @@ public class CharChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
 
             long bytesWritten = 0;
             read = true;
-            try (final LittleEndianDataOutputStream dos = new LittleEndianDataOutputStream(outputStream)) {
-                // write the validity array with LSB indexing
-                if (sendValidityBuffer()) {
-                    final SerContext context = new SerContext();
-                    final Runnable flush = () -> {
-                        try {
-                            dos.writeLong(context.accumulator);
-                        } catch (final IOException e) {
-                            throw new UncheckedDeephavenException("Unexpected exception while draining data to OutputStream: ", e);
-                        }
-                        context.accumulator = 0;
-                        context.count = 0;
-                    };
-                    subset.forAllLongs(row -> {
-                        if (chunk.get((int) row) != NULL_CHAR) {
-                            context.accumulator |= 1L << context.count;
-                        }
-                        if (++context.count == 64) {
-                            flush.run();
-                        }
-                    });
-                    if (context.count > 0) {
+            final LittleEndianDataOutputStream dos = new LittleEndianDataOutputStream(outputStream);
+            // write the validity array with LSB indexing
+            if (sendValidityBuffer()) {
+                final SerContext context = new SerContext();
+                final Runnable flush = () -> {
+                    try {
+                        dos.writeLong(context.accumulator);
+                    } catch (final IOException e) {
+                        throw new UncheckedDeephavenException("Unexpected exception while draining data to OutputStream: ", e);
+                    }
+                    context.accumulator = 0;
+                    context.count = 0;
+                };
+                subset.forAllLongs(row -> {
+                    if (chunk.get((int) row) != NULL_CHAR) {
+                        context.accumulator |= 1L << context.count;
+                    }
+                    if (++context.count == 64) {
                         flush.run();
                     }
-
-                    bytesWritten += getValidityMapSerializationSizeFor(subset.intSize());
+                });
+                if (context.count > 0) {
+                    flush.run();
                 }
+
+                bytesWritten += getValidityMapSerializationSizeFor(subset.intSize());
+            }
 
                 // write the included values
                 subset.forAllLongs(row -> {
@@ -127,9 +127,8 @@ public class CharChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
                 final long bytesExtended = bytesWritten & REMAINDER_MOD_8_MASK;
                 if (bytesExtended > 0) {
                     bytesWritten += 8 - bytesExtended;
-                    dos.write(PADDING_BUFFER, 0, (int)(8 - bytesExtended));
+                    dos.write(PADDING_BUFFER, 0, (int) (8 - bytesExtended));
                 }
-            }
             return LongSizedDataStructure.intSize("CharChunkInputStreamGenerator", bytesWritten);
         }
     }

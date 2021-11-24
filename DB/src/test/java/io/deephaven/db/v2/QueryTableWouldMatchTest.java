@@ -4,7 +4,6 @@ import io.deephaven.db.tables.live.LiveTableMonitor;
 import io.deephaven.db.tables.select.MatchPair;
 import io.deephaven.db.tables.select.WouldMatchPair;
 import io.deephaven.db.v2.select.DynamicWhereFilter;
-import io.deephaven.db.v2.sources.chunk.util.pools.ChunkPoolReleaseTracking;
 import io.deephaven.test.types.OutOfBandTest;
 import junit.framework.TestCase;
 
@@ -26,7 +25,7 @@ public class QueryTableWouldMatchTest extends QueryTableTestBase {
 
         final QueryTable t1Matched = (QueryTable) t1.wouldMatch("HasAnE=Text.contains(`e`)", "isGt3=Number > 3",
                 "Compound=Bool || Text.length() < 5");
-        final Listener t1MatchedListener = new ListenerWithGlobals(t1Matched);
+        final Listener t1MatchedListener = newListenerWithGlobals(t1Matched);
         t1Matched.listenForUpdates(t1MatchedListener);
 
         show(t1Matched);

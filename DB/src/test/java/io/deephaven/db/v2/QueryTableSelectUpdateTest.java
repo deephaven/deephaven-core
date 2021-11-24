@@ -21,19 +21,15 @@ import io.deephaven.db.v2.sources.LongSparseArraySource;
 import io.deephaven.db.v2.utils.Index;
 import io.deephaven.db.v2.utils.RuntimeMemory;
 import io.deephaven.db.v2.utils.UpdatePerformanceTracker;
-import io.deephaven.test.types.OutOfBandTest;
+import io.deephaven.test.junit4.EngineCleanup;
 import io.deephaven.util.SafeCloseable;
 import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableInt;
-import org.junit.After;
-import org.junit.Assert;
+import org.junit.*;
 
 import java.io.IOException;
 import java.util.*;
 import java.util.function.Supplier;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
 
 import static io.deephaven.db.tables.utils.TableTools.*;
 import static io.deephaven.db.v2.TstUtils.*;
@@ -42,17 +38,9 @@ import static io.deephaven.db.v2.TstUtils.*;
  * Test QueryTable select and update operations.
  */
 public class QueryTableSelectUpdateTest {
-    private JUnit4QueryTableTestBase base = new JUnit4QueryTableTestBase();
 
-    @Before
-    public void setUp() throws Exception {
-        base.setUp();
-    }
-
-    @After
-    public void tearDown() throws Exception {
-        base.tearDown();
-    }
+    @Rule
+    public final EngineCleanup base = new EngineCleanup();
 
     @Test
     public void testSelectAndUpdate() {

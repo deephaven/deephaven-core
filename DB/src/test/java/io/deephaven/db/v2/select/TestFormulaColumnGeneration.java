@@ -4,10 +4,12 @@ import io.deephaven.db.tables.Table;
 import io.deephaven.db.tables.libs.QueryLibrary;
 import io.deephaven.db.tables.select.QueryScope;
 import io.deephaven.db.tables.utils.TableTools;
+import io.deephaven.test.junit4.EngineCleanup;
 import io.deephaven.db.v2.utils.ModelFileGenerator;
 import org.jetbrains.annotations.NotNull;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.FileNotFoundException;
@@ -31,6 +33,9 @@ public class TestFormulaColumnGeneration {
         new ModelFileGenerator(FormulaSample.class).generateFile(fc.generateClassBody());
         new ModelFileGenerator(FormulaKernelSample.class).generateFile(fc.generateKernelClassBody());
     }
+
+    @Rule
+    public final EngineCleanup base = new EngineCleanup();
 
     @Before
     public void setUp() {

@@ -12,11 +12,11 @@ import io.deephaven.db.v2.utils.IndexShiftData;
 import io.deephaven.db.v2.utils.RedirectionIndex;
 import io.deephaven.db.v2.utils.WrappedIndexRedirectionIndexImpl;
 import io.deephaven.qst.table.EmptyTable;
+import io.deephaven.test.junit4.EngineCleanup;
 import junit.framework.ComparisonFailure;
 import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.LinkedHashMap;
@@ -32,27 +32,18 @@ import static io.deephaven.db.v2.by.ComboAggregateFactory.*;
 /**
  * Unit tests that exercise special aggregation semantics for stream tables.
  */
-@SuppressWarnings("JUnit4AnnotatedMethodInJUnit3TestCase")
-public class StreamTableAggregationTest extends JUnit4QueryTableTestBase {
+public class StreamTableAggregationTest {
 
     private static final long INPUT_SIZE = 100_000L;
     private static final long MAX_RANDOM_ITERATION_SIZE = 10_000;
+
+    @Rule
+    public final EngineCleanup base = new EngineCleanup();
 
     private final Table source = Table.of(EmptyTable.of(INPUT_SIZE)
             .update("Sym = Long.toString(ii % 1000) + `_Sym`")
             .update("Price = ii / 100 - (ii % 100)")
             .update("Size = (long) (ii / 50 - (ii % 50))"));
-
-
-    @Before
-    public void setUp() throws Exception {
-        super.setUp();
-    }
-
-    @After
-    public void tearDown() throws Exception {
-        super.tearDown();
-    }
 
     /**
      * Execute a table operator ending in an aggregation.

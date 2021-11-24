@@ -11,13 +11,12 @@ import io.deephaven.db.util.config.MutableInputTable;
 import io.deephaven.db.v2.DynamicTable;
 import io.deephaven.db.v2.FailureListener;
 import io.deephaven.db.v2.TableUpdateValidator;
-import io.deephaven.test.junit4.JUnit4LiveTableTestCase;
+import io.deephaven.test.junit4.EngineCleanup;
 import io.deephaven.util.FunctionalInterfaces;
 import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -29,17 +28,8 @@ import static io.deephaven.db.v2.TstUtils.assertTableEquals;
 
 public class TestKeyedArrayBackedMutableTable {
 
-    private final JUnit4LiveTableTestCase liveTableTestCase = new JUnit4LiveTableTestCase();
-
-    @Before
-    public void before() throws Exception {
-        liveTableTestCase.setUp();
-    }
-
-    @After
-    public void after() throws Exception {
-        liveTableTestCase.tearDown();
-    }
+    @Rule
+    public final EngineCleanup liveTableTestCase = new EngineCleanup();
 
     @Test
     public void testSimple() throws Exception {
