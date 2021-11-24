@@ -6,15 +6,16 @@ import dagger.Module;
 import dagger.Provides;
 import dagger.multibindings.IntoSet;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.db.tables.Table;
-import io.deephaven.db.tables.utils.TableDiff;
-import io.deephaven.db.tables.utils.TableTools;
-import io.deephaven.db.util.AbstractScriptSession;
-import io.deephaven.db.util.NoLanguageDeephavenSession;
-import io.deephaven.db.util.liveness.LivenessScopeStack;
+import io.deephaven.engine.liveness.LivenessScopeStack;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.util.AbstractScriptSession;
+import io.deephaven.engine.util.NoLanguageDeephavenSession;
+import io.deephaven.engine.util.TableDiff;
+import io.deephaven.engine.util.TableTools;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.grpc_api.util.FlightExportTicketHelper;
+import io.deephaven.grpc_api.util.ScopeTicketHelper;
 import io.deephaven.proto.backplane.grpc.HandshakeRequest;
 import io.deephaven.proto.backplane.grpc.HandshakeResponse;
 import io.deephaven.proto.backplane.grpc.SessionServiceGrpc;
@@ -70,7 +71,10 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Deliberately much lower in scope (and running time) than BarrageMessageRoundTripTest, the only purpose of this test
