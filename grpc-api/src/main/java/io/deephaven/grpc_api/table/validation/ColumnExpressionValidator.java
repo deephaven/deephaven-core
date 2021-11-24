@@ -11,7 +11,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.lang.QueryLanguageParser;
 import io.deephaven.engine.table.impl.lang.QueryLanguageParser.Result;
 import io.deephaven.engine.table.impl.select.SelectColumnFactory;
-import io.deephaven.engine.table.impl.select.SelectFilterFactory;
+import io.deephaven.engine.table.impl.select.WhereFilterFactory;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.time.DateTimeUtil;
 import io.deephaven.engine.util.ColorUtilImpl;
@@ -72,7 +72,7 @@ public class ColumnExpressionValidator extends GenericVisitorAdapter<Void, Void>
     }
 
     public static WhereFilter[] validateSelectFilters(final String[] conditionalExpressions, final Table table) {
-        final WhereFilter[] whereFilters = SelectFilterFactory.getExpressions(conditionalExpressions);
+        final WhereFilter[] whereFilters = WhereFilterFactory.getExpressions(conditionalExpressions);
         final List<String> dummyAssignments = new ArrayList<>();
         for (int ii = 0; ii < whereFilters.length; ++ii) {
             final WhereFilter sf = whereFilters[ii];

@@ -28,7 +28,7 @@ class AddToInputTable extends FlightExampleBase {
 
         final TableSpec timestamp = InMemoryAppendOnlyInputTable.of(TableHeader.of(header));
         final TableSpec timestampLastBy =
-                timestamp.by(Collections.emptyList(), Collections.singletonList(Aggregation.AggLast("Timestamp")));
+                timestamp.aggBy(Collections.singletonList(Aggregation.AggLast("Timestamp")));
 
         final List<TableHandle> handles = flight.session().batch().execute(Arrays.asList(timestamp, timestampLastBy));
         try (

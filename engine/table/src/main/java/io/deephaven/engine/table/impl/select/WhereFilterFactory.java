@@ -35,9 +35,9 @@ import static io.deephaven.engine.table.impl.select.SelectFactoryConstants.*;
 /**
  * Given a user's filter string produce an appropriate WhereFilter instance.
  */
-public class SelectFilterFactory {
+public class WhereFilterFactory {
 
-    private static final Logger log = ProcessEnvironment.getDefaultLog(SelectFilterFactory.class);
+    private static final Logger log = ProcessEnvironment.getDefaultLog(WhereFilterFactory.class);
 
     private static final ExpressionParser<WhereFilter> parser = new ExpressionParser<>();
 
@@ -50,11 +50,11 @@ public class SelectFilterFactory {
                 final String columnName = matcher.group(1);
                 final FormulaParserConfiguration parserConfiguration = (FormulaParserConfiguration) args[0];
                 if (isRowVariable(columnName)) {
-                    log.debug().append("SelectFilterFactory creating ConditionFilter for expression: ")
+                    log.debug().append("WhereFilterFactory creating ConditionFilter for expression: ")
                             .append(expression).endl();
                     return ConditionFilter.createConditionFilter(expression, parserConfiguration);
                 }
-                log.debug().append("SelectFilterFactory creating MatchFilter for expression: ").append(expression)
+                log.debug().append("WhereFilterFactory creating MatchFilter for expression: ").append(expression)
                         .endl();
                 return new MatchFilter(MatchFilter.CaseSensitivity.MatchCase, columnName, matcher.group(2));
             }
@@ -68,7 +68,7 @@ public class SelectFilterFactory {
                 final FormulaParserConfiguration parserConfiguration = (FormulaParserConfiguration) args[0];
 
                 if (isRowVariable(columnName)) {
-                    log.debug().append("SelectFilterFactory creating ConditionFilter for expression: ")
+                    log.debug().append("WhereFilterFactory creating ConditionFilter for expression: ")
                             .append(expression).endl();
                     return ConditionFilter.createConditionFilter(expression, parserConfiguration);
                 }
@@ -77,7 +77,7 @@ public class SelectFilterFactory {
                 } catch (QueryScope.MissingVariableException e) {
                     return ConditionFilter.createConditionFilter(expression, parserConfiguration);
                 }
-                log.debug().append("SelectFilterFactory creating MatchFilter for expression: ").append(expression)
+                log.debug().append("WhereFilterFactory creating MatchFilter for expression: ").append(expression)
                         .endl();
                 return new MatchFilter(MatchFilter.CaseSensitivity.MatchCase, columnName, matcher.group(2));
             }
@@ -96,17 +96,17 @@ public class SelectFilterFactory {
                 final String conditionString = matcher.group(2);
                 final String value = matcher.group(3);
                 if (isRowVariable(columnName)) {
-                    log.debug().append("SelectFilterFactory creating ConditionFilter for expression: ")
+                    log.debug().append("WhereFilterFactory creating ConditionFilter for expression: ")
                             .append(expression).endl();
                     return ConditionFilter.createConditionFilter(expression, parserConfiguration);
                 }
                 try {
-                    log.debug().append("SelectFilterFactory creating RangeConditionFilter for expression: ")
+                    log.debug().append("WhereFilterFactory creating RangeConditionFilter for expression: ")
                             .append(expression).endl();
                     return new RangeConditionFilter(columnName, conditionString, value, expression,
                             parserConfiguration);
                 } catch (Exception e) {
-                    log.warn().append("SelectFilterFactory could not make RangeFilter for expression: ")
+                    log.warn().append("WhereFilterFactory could not make RangeFilter for expression: ")
                             .append(expression).append(" due to ").append(e)
                             .append(" Creating ConditionFilter instead.").endl();
                     return ConditionFilter.createConditionFilter(expression, parserConfiguration);
@@ -120,7 +120,7 @@ public class SelectFilterFactory {
             @Override
             public WhereFilter getExpression(String expression, Matcher matcher, Object... args) {
                 final SplitIgnoreQuotes splitter = new SplitIgnoreQuotes();
-                log.debug().append("SelectFilterFactory creating MatchFilter for expression: ").append(expression)
+                log.debug().append("WhereFilterFactory creating MatchFilter for expression: ").append(expression)
                         .endl();
                 return new MatchFilter(
                         matcher.group(2) == null ? MatchFilter.CaseSensitivity.MatchCase
@@ -137,7 +137,7 @@ public class SelectFilterFactory {
             @Override
             public WhereFilter getExpression(String expression, Matcher matcher, Object... args) {
                 final SplitIgnoreQuotes splitter = new SplitIgnoreQuotes();
-                log.debug().append("SelectFilterFactory creating StringContainsFilter for expression: ")
+                log.debug().append("WhereFilterFactory creating StringContainsFilter for expression: ")
                         .append(expression).endl();
                 final String[] values = splitter.split(matcher.group(5), ',');
                 final String anyAllPart = matcher.group(4);
@@ -159,7 +159,7 @@ public class SelectFilterFactory {
                     public WhereFilter getExpression(String expression, Matcher matcher, Object... args) {
                         final FormulaParserConfiguration parserConfiguration = (FormulaParserConfiguration) args[0];
 
-                        log.debug().append("SelectFilterFactory creating ConditionFilter for expression: ")
+                        log.debug().append("WhereFilterFactory creating ConditionFilter for expression: ")
                                 .append(expression).endl();
                         return ConditionFilter.createConditionFilter(matcher.group(1), parserConfiguration);
                     }
@@ -177,11 +177,11 @@ public class SelectFilterFactory {
     }
 
     public static WhereFilter[] getExpressions(String... expressions) {
-        return Arrays.stream(expressions).map(SelectFilterFactory::getExpression).toArray(WhereFilter[]::new);
+        return Arrays.stream(expressions).map(WhereFilterFactory::getExpression).toArray(WhereFilter[]::new);
     }
 
     public static WhereFilter[] getExpressions(Collection<String> expressions) {
-        return expressions.stream().map(SelectFilterFactory::getExpression).toArray(WhereFilter[]::new);
+        return expressions.stream().map(WhereFilterFactory::getExpression).toArray(WhereFilter[]::new);
     }
 
     public static WhereFilter[] expandQuickFilter(Table t, String quickFilter, Set<String> columnNames) {
@@ -322,9 +322,9 @@ public class SelectFilterFactory {
                     Arrays.stream(getExpressions(expressions)),
                     Stream.of(filterMode == QuickFilterMode.MULTI
                             ? ConjunctiveFilter.makeConjunctiveFilter(
-                                    SelectFilterFactory.expandQuickFilter(t, quickFilter, filterMode))
+                                    WhereFilterFactory.expandQuickFilter(t, quickFilter, filterMode))
                             : DisjunctiveFilter.makeDisjunctiveFilter(
-                                    SelectFilterFactory.expandQuickFilter(t, quickFilter, filterMode))))
+                                    WhereFilterFactory.expandQuickFilter(t, quickFilter, filterMode))))
                     .toArray(WhereFilter[]::new);
         }
         return getExpressions(expressions);

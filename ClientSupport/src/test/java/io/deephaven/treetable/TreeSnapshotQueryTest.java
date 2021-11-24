@@ -6,9 +6,9 @@ import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableMap;
+import io.deephaven.engine.table.impl.select.WhereFilterFactory;
 import io.deephaven.engine.table.lang.QueryLibrary;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.table.impl.select.SelectFilterFactory;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.select.WhereFilter;
@@ -485,7 +485,7 @@ public class TreeSnapshotQueryTest extends QueryTableTestBase {
 
         state.setCompareToTable(filterThenTree);
         testViewportAgainst(filterThenTree, state, 0, 30, allColumns, Collections.emptyList(),
-                SelectFilterFactory.getExpressions("!isNull(Website) && Website.contains(`ny`)"), true);
+                WhereFilterFactory.getExpressions("!isNull(Website) && Website.contains(`ny`)"), true);
 
         // Deliberately sorting first than filtering, it will produce the same result and is a different order than TSQ
         // does,
@@ -501,7 +501,7 @@ public class TreeSnapshotQueryTest extends QueryTableTestBase {
                 new SortDirective("Town_Name", SortDirective.DESCENDING, false));
 
         testViewportAgainst(filterAndSortThenTree, state, 37, 63, allColumns, directives,
-                SelectFilterFactory.getExpressions("!isNull(Website) && Website.contains(`ny`)"), true);
+                WhereFilterFactory.getExpressions("!isNull(Website) && Website.contains(`ny`)"), true);
         state.setCompareToTable(null);
     }
 
@@ -523,7 +523,7 @@ public class TreeSnapshotQueryTest extends QueryTableTestBase {
 
         final Table filtered = t.where("Bagel").rollup(List.of(AggLast("Dtest"), AggSum("I")), "Bagel", "Test");
         testViewportAgainst(filtered, state, 0, 7, allColumns, Collections.emptyList(),
-                SelectFilterFactory.getExpressions("Bagel"), true);
+                WhereFilterFactory.getExpressions("Bagel"), true);
 
         final List<SortDirective> directives = Arrays.asList(
                 new SortDirective("Test", SortDirective.DESCENDING, false),
@@ -539,7 +539,7 @@ public class TreeSnapshotQueryTest extends QueryTableTestBase {
 
         final Table filtered2 = t.where("Bagel").rollup(List.of(AggLast("Dtest"), AggSum("I")), "Bagel", "Test");
 
-        testViewportAgainst(filtered2, state, 0, 7, allColumns, directives, SelectFilterFactory.getExpressions("Bagel"),
+        testViewportAgainst(filtered2, state, 0, 7, allColumns, directives, WhereFilterFactory.getExpressions("Bagel"),
                 ct -> {
                     final Table sortTarget =
                             ct instanceof HierarchicalTable ? ((HierarchicalTable) ct).getRawRootTable() : ct;
@@ -565,7 +565,7 @@ public class TreeSnapshotQueryTest extends QueryTableTestBase {
 
         final Table filtered = t.where("Bagel").rollup(List.of(AggLast("Dtest"), AggSum("I")), true, "Bagel", "Test");
         testViewportAgainst(filtered, state, 0, 7, allColumns, Collections.emptyList(),
-                SelectFilterFactory.getExpressions("Bagel"), true);
+                WhereFilterFactory.getExpressions("Bagel"), true);
 
         final List<SortDirective> directives = Arrays.asList(
                 new SortDirective("Test", SortDirective.DESCENDING, false),
@@ -579,7 +579,7 @@ public class TreeSnapshotQueryTest extends QueryTableTestBase {
                     return sortTarget.sort("Bagel").sortDescending("Test");
                 }, true);
 
-        testViewportAgainst(filtered, state, 0, 7, allColumns, directives, SelectFilterFactory.getExpressions("Bagel"),
+        testViewportAgainst(filtered, state, 0, 7, allColumns, directives, WhereFilterFactory.getExpressions("Bagel"),
                 ct -> {
                     final Table sortTarget =
                             ct instanceof HierarchicalTable ? ((HierarchicalTable) ct).getRawRootTable() : ct;
@@ -595,7 +595,7 @@ public class TreeSnapshotQueryTest extends QueryTableTestBase {
                 }, true);
 
         state.addExpanded(true, new SmartKey(true, 6));
-        testViewportAgainst(filtered, state, 0, 24, allColumns, directives, SelectFilterFactory.getExpressions("Bagel"),
+        testViewportAgainst(filtered, state, 0, 24, allColumns, directives, WhereFilterFactory.getExpressions("Bagel"),
                 ct -> {
                     final Table sortTarget =
                             ct instanceof HierarchicalTable ? ((HierarchicalTable) ct).getRawRootTable() : ct;

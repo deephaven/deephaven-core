@@ -1,5 +1,7 @@
 package io.deephaven.engine.util.config;
 
+import io.deephaven.engine.exceptions.ArgumentException;
+import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.rowset.TrackingRowSet;
@@ -58,7 +60,7 @@ public interface MutableInputTable extends InputTableRowSetter, InputTableEnumGe
      *
      * @param tableToDelete the definition of the table to delete
      * @throws UnsupportedOperationException if this table does not support deletes
-     * @throws io.deephaven.db.exceptions.ArgumentException if the given definition isn't compatible to be used to
+     * @throws ArgumentException if the given definition isn't compatible to be used to
      *         delete
      */
     default void validateDelete(Table tableToDelete) {

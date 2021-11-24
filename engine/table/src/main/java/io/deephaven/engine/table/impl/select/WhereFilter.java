@@ -259,9 +259,9 @@ public interface WhereFilter extends Filter {
         @Override
         public void visit(RawString rawString) {
             if (inverted) {
-                out = SelectFilterFactory.getExpression(String.format("!(%s)", rawString.value()));
+                out = WhereFilterFactory.getExpression(String.format("!(%s)", rawString.value()));
             } else {
-                out = SelectFilterFactory.getExpression(rawString.value());
+                out = WhereFilterFactory.getExpression(rawString.value());
             }
         }
 
@@ -299,7 +299,7 @@ public interface WhereFilter extends Filter {
                 preferred.rhs().walk(new Value.Visitor() {
                     @Override
                     public void visit(ColumnName rhs) {
-                        out = SelectFilterFactory.getExpression(Strings.of(original));
+                        out = WhereFilterFactory.getExpression(Strings.of(original));
                     }
 
                     @Override
@@ -335,7 +335,7 @@ public interface WhereFilter extends Filter {
 
             @Override
             public void visit(long lhs) {
-                out = SelectFilterFactory.getExpression(Strings.of(original));
+                out = WhereFilterFactory.getExpression(Strings.of(original));
             }
         }
     }

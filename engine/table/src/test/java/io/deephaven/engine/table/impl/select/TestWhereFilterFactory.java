@@ -183,7 +183,7 @@ public class TestWhereFilterFactory extends TestCase {
 
     private String runSimpleFilterExpresion(String baseExpresion, String value) {
         String expression = STRING_COLUMN + baseExpresion + wrapBackTicks(value);
-        WhereFilter whereFilter = SelectFilterFactory.getExpression(expression);
+        WhereFilter whereFilter = WhereFilterFactory.getExpression(expression);
         whereFilter.init(table.getDefinition());
         RowSet rowSet = whereFilter.filter(table.getRowSet(), table.getRowSet(), table, false);
         ColumnSource columnSource = table.getColumnSource(STRING_COLUMN);
@@ -208,7 +208,7 @@ public class TestWhereFilterFactory extends TestCase {
 
     private List<Object> runDelimitedExpression(String columnName, String values) {
         String expression = columnName + " in " + values;
-        WhereFilter whereFilter = SelectFilterFactory.getExpression(expression);
+        WhereFilter whereFilter = WhereFilterFactory.getExpression(expression);
         whereFilter.init(table.getDefinition());
         RowSet rowSet = whereFilter.filter(table.getRowSet(), table.getRowSet(), table, false);
         ColumnSource columnSource = table.getColumnSource(columnName);

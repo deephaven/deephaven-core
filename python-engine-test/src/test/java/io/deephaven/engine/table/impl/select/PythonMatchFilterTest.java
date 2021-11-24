@@ -40,7 +40,7 @@ public class PythonMatchFilterTest extends PythonTest {
         Object iii = WorkerPythonEnvironment.DEFAULT.fetch("iii");
 
         QueryScope.addParam("iii", iii);
-        WhereFilter filter = SelectFilterFactory.getExpression("ival in iii");
+        WhereFilter filter = WhereFilterFactory.getExpression("ival in iii");
         assertEquals(MatchFilter.class, filter.getClass());
 
         TableDefinition tableDef =
@@ -59,7 +59,7 @@ public class PythonMatchFilterTest extends PythonTest {
         Object ss = WorkerPythonEnvironment.DEFAULT.fetch("ss");
 
         QueryScope.addParam("ss", ss);
-        WhereFilter filter = SelectFilterFactory.getExpression("sval in ss");
+        WhereFilter filter = WhereFilterFactory.getExpression("sval in ss");
         assertEquals(MatchFilter.class, filter.getClass());
 
         TableDefinition tableDef =

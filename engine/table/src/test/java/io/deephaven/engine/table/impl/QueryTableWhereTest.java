@@ -10,6 +10,7 @@ import io.deephaven.api.filter.FilterAnd;
 import io.deephaven.api.filter.FilterOr;
 import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.table.ShiftObliviousListener;
+import io.deephaven.engine.table.impl.QueryTableTestBase.TableComparator;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.time.DateTimeUtil;
@@ -44,6 +45,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.IntUnaryOperator;
 import org.junit.experimental.categories.Category;
 
+import static io.deephaven.engine.table.impl.RefreshingTableTestCase.printTableUpdates;
+import static io.deephaven.engine.table.impl.RefreshingTableTestCase.simulateShiftAwareStep;
 import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.engine.table.impl.TstUtils.*;
 import static java.util.Arrays.asList;
@@ -155,7 +158,7 @@ public class QueryTableWhereTest {
                 testRefreshingTable(i(2).toTracking(), c("x", 3), c("y", 'c')), 10));
 
         final QueryTable whereResult = (QueryTable) table.where(FilterOr.of(Filter.from("x%2 == 1")));
-        final ShiftObliviousListener whereResultListener = new ListenerWithGlobals(whereResult);
+        final ShiftObliviousListener whereResultListener = base.newListenerWithGlobals(whereResult);
         whereResult.listenForUpdates(whereResultListener);
         assertEquals("", diff(whereResult,
                 testRefreshingTable(i(2, 6).toTracking(), c("x", 1, 3), c("y", 'a', 'c')), 10));
@@ -222,7 +225,7 @@ public class QueryTableWhereTest {
                 testRefreshingTable(i(2).toTracking(), c("x", 3), c("y", 'c')), 10));
 
         final QueryTable whereResult = (QueryTable) table.where(FilterOr.of(Filter.from("x%2 == 1", "y=='f'")));
-        final ShiftObliviousListener whereResultListener = new ListenerWithGlobals(whereResult);
+        final ShiftObliviousListener whereResultListener = base.newListenerWithGlobals(whereResult);
         whereResult.listenForUpdates(whereResultListener);
         assertEquals("", diff(whereResult,
                 testRefreshingTable(i(2, 6, 8).toTracking(), c("x", 1, 3, 4), c("y", 'a', 'c', 'f')), 10));

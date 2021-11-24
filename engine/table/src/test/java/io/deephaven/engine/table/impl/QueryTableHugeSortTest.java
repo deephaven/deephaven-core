@@ -5,8 +5,9 @@ import io.deephaven.engine.table.lang.QueryScope;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.test.junit4.EngineCleanup;
 import io.deephaven.test.types.OutOfBandTest;
-import org.junit.After;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -20,6 +21,10 @@ import static io.deephaven.engine.table.impl.TstUtils.assertTableEquals;
 
 @Category(OutOfBandTest.class)
 public class QueryTableHugeSortTest {
+
+    @Rule
+    public final EngineCleanup rule = new EngineCleanup();
+
     @Test
     public void testHugeSort() {
         final int megaSortSize = SortHelpers.megaSortSize;
@@ -103,10 +108,5 @@ public class QueryTableHugeSortTest {
         assertTableEquals(sortedValues.view("Captain"), sortedGrouped.view("Captain"));
         final long compareDuration = System.currentTimeMillis() - compareStart;
         System.out.println("Compare Duration: " + compareDuration + "ms");
-    }
-
-    @After
-    public void clearScope() {
-        QueryScope.setScope(new QueryScope.StandaloneImpl());
     }
 }

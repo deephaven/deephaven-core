@@ -5,10 +5,10 @@ import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.select.WhereFilter;
+import io.deephaven.engine.table.impl.select.WhereFilterFactory;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.engine.updategraph.WaitNotification;
-import io.deephaven.engine.table.impl.select.SelectFilterFactory;
 import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.util.SafeCloseable;
@@ -593,7 +593,7 @@ public class TreeTableFilter implements Function<Table, Table>, MemoizedOperatio
     }
 
     public static Table rawFilterTree(Table tree, String... filters) {
-        return rawFilterTree(tree, SelectFilterFactory.getExpressions(filters));
+        return rawFilterTree(tree, WhereFilterFactory.getExpressions(filters));
     }
 
     public static Table rawFilterTree(Table tree, WhereFilter[] filters) {
@@ -601,7 +601,7 @@ public class TreeTableFilter implements Function<Table, Table>, MemoizedOperatio
     }
 
     public static Table filterTree(Table tree, String... filters) {
-        return filterTree(tree, SelectFilterFactory.getExpressions(filters));
+        return filterTree(tree, WhereFilterFactory.getExpressions(filters));
     }
 
     public static Table filterTree(Table tree, WhereFilter[] filters) {

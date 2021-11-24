@@ -19,8 +19,10 @@ import java.util.Arrays;
 import java.util.Random;
 
 import org.junit.Rule;
+import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
+import static io.deephaven.engine.table.impl.RefreshingTableTestCase.printTableUpdates;
 import static io.deephaven.engine.util.TableTools.*;
 import static io.deephaven.engine.table.impl.TstUtils.*;
 import static java.util.Arrays.asList;
@@ -31,6 +33,7 @@ public class QueryTableJoinTest {
     @Rule
     public final EngineCleanup base = new EngineCleanup();
 
+    @Test
     public void testAjIncremental() throws ParseException {
         final int maxSteps = 10;
         final int[] leftSizes = new int[] {10, 20};
@@ -326,6 +329,7 @@ public class QueryTableJoinTest {
         }
     }
 
+    @Test
     public void testAj() {
         Table table = testRefreshingTable(
                 c("Ticker", "AAPL", "IBM", "AAPL"),
@@ -414,6 +418,7 @@ public class QueryTableJoinTest {
     }
 
 
+    @Test
     public void testAjLt() {
         Table table = testRefreshingTable(
                 c("Ticker", "AAPL", "IBM", "AAPL"),
@@ -514,6 +519,7 @@ public class QueryTableJoinTest {
     }
 
 
+    @Test
     public void testSelfAj() {
         final QueryTable table = TstUtils.testRefreshingTable(i(1, 2, 3, 4, 5, 6, 7, 8).toTracking(),
                 c("Primary", "A", "A", "A", "A", "A", "A", "A", "A"),
@@ -544,6 +550,7 @@ public class QueryTableJoinTest {
 
     }
 
+    @Test
     public void testAjNull() {
         final QueryTable left = TstUtils.testRefreshingTable(i(1, 2, 3, 4).toTracking(),
                 c("LInt", 2, 4, 6, 8),
@@ -573,6 +580,7 @@ public class QueryTableJoinTest {
 
     }
 
+    @Test
     public void testAjEmptyRight() {
         final QueryTable left = TstUtils.testRefreshingTable(i(1, 2, 3, 4).toTracking(),
                 c("Group", "g", "g", "g", "g"),
@@ -605,6 +613,7 @@ public class QueryTableJoinTest {
 
     }
 
+    @Test
     public void testRaj() {
         Table table = testRefreshingTable(
                 c("Ticker", "AAPL", "IBM", "AAPL"),
@@ -777,6 +786,7 @@ public class QueryTableJoinTest {
     };
 
 
+    @Test
     public void testAjRegression0() {
         final QueryTable rightQueryTable = TstUtils.testRefreshingTable(
                 i(28, 36, 39, 42, 46, 49, 50, 51, 55, 56, 58, 64, 65, 66, 92, 96).toTracking(),
@@ -802,6 +812,7 @@ public class QueryTableJoinTest {
         assertEquals(432, result.getColumn("LI1").get(4));
     }
 
+    @Test
     public void testAjRegression1() {
         final QueryTable rightQueryTable =
                 TstUtils.testRefreshingTable(i(1, 27, 28, 35, 41, 46, 49, 50, 51, 55, 56, 65).toTracking(),
@@ -826,6 +837,7 @@ public class QueryTableJoinTest {
     }
 
 
+    @Test
     public void testJoin() {
         Table lTable = testRefreshingTable(c("X", "a", "b", "c"));
         Table rTable = testRefreshingTable(c("Y", "x", "y"));
@@ -871,6 +883,7 @@ public class QueryTableJoinTest {
         assertEquals(Arrays.asList("a", "b"), Arrays.asList(result.getColumn("X").get(0, 2)));
     }
 
+    @Test
     public void testLeftJoin() {
         Table table1 = newTable(
                 c("String", "c", "e", "g"));

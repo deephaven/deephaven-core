@@ -28,6 +28,7 @@ import io.deephaven.engine.table.impl.sources.TreeMapSource;
 import io.deephaven.engine.table.impl.sources.UnionRedirection;
 import io.deephaven.engine.chunk.util.pools.ChunkPoolReleaseTracking;
 import io.deephaven.engine.table.impl.util.*;
+import io.deephaven.test.junit4.EngineCleanup;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;

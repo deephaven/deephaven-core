@@ -1,7 +1,7 @@
 package io.deephaven.grpc_api.table.ops.filter;
 
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.select.SelectFilterFactory;
+import io.deephaven.engine.table.impl.select.WhereFilterFactory;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.time.TimeZone;
 import io.deephaven.engine.table.impl.select.*;
@@ -49,7 +49,7 @@ public class FilterFactory implements FilterVisitor<WhereFilter> {
     }
 
     private WhereFilter generateConditionFilter(Condition filter) {
-        return SelectFilterFactory.getExpression(FilterPrinter.print(filter));
+        return WhereFilterFactory.getExpression(FilterPrinter.print(filter));
     }
 
     @Override
@@ -236,7 +236,7 @@ public class FilterFactory implements FilterVisitor<WhereFilter> {
     public WhereFilter onSearch(String searchString, List<Reference> optionalReferencesList) {
         final Set<String> columnNames =
                 optionalReferencesList.stream().map(Reference::getColumnName).collect(Collectors.toSet());
-        WhereFilter[] whereFilters = SelectFilterFactory.expandQuickFilter(table, searchString, columnNames);
+        WhereFilter[] whereFilters = WhereFilterFactory.expandQuickFilter(table, searchString, columnNames);
         if (whereFilters.length == 0) {
             return WhereNoneFilter.INSTANCE;
         }

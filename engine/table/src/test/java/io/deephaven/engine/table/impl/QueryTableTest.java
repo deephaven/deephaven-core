@@ -24,7 +24,7 @@ import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.impl.select.MatchPairFactory;
 import io.deephaven.engine.table.lang.QueryScope;
 import io.deephaven.engine.table.impl.select.SelectColumnFactory;
-import io.deephaven.engine.table.impl.select.SelectFilterFactory;
+import io.deephaven.engine.table.impl.select.WhereFilterFactory;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.parquet.table.ParquetTools;
 import io.deephaven.engine.liveness.LivenessScopeStack;
@@ -2795,14 +2795,14 @@ public class QueryTableTest extends QueryTableTestBase {
             testMemoize(source,
                     t -> t.where(FilterOr.of(Filter.from("Sym in `aa`, `bb`", "intCol=7"))));
             testMemoize(source, t -> t.where(DisjunctiveFilter
-                    .makeDisjunctiveFilter(SelectFilterFactory.getExpressions("Sym in `aa`, `bb`", "intCol=7"))));
+                    .makeDisjunctiveFilter(WhereFilterFactory.getExpressions("Sym in `aa`, `bb`", "intCol=7"))));
             testMemoize(source, t -> t.where(ConjunctiveFilter
-                    .makeConjunctiveFilter(SelectFilterFactory.getExpressions("Sym in `aa`, `bb`", "intCol=7"))));
+                    .makeConjunctiveFilter(WhereFilterFactory.getExpressions("Sym in `aa`, `bb`", "intCol=7"))));
             testNoMemoize(source,
                     t -> t.where(ConjunctiveFilter.makeConjunctiveFilter(
-                            SelectFilterFactory.getExpressions("Sym in `aa`, `bb`", "intCol=7"))),
+                            WhereFilterFactory.getExpressions("Sym in `aa`, `bb`", "intCol=7"))),
                     t -> t.where(DisjunctiveFilter.makeDisjunctiveFilter(
-                            SelectFilterFactory.getExpressions("Sym in `aa`, `bb`", "intCol=7"))));
+                            WhereFilterFactory.getExpressions("Sym in `aa`, `bb`", "intCol=7"))));
             testNoMemoize(source, t -> t.where("Sym in `aa`, `bb`"), t -> t.where("Sym not in `aa`, `bb`"));
             testNoMemoize(source, t -> t.where("Sym in `aa`, `bb`"), t -> t.where("Sym in `aa`, `cc`"));
             testNoMemoize(source, t -> t.where("Sym.startsWith(`a`)"));

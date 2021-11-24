@@ -12,7 +12,7 @@ import io.deephaven.engine.table.lang.QueryLibrary;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.impl.select.MatchPairFactory;
 import io.deephaven.engine.table.lang.QueryScope;
-import io.deephaven.engine.table.impl.select.SelectFilterFactory;
+import io.deephaven.engine.table.impl.select.WhereFilterFactory;
 import io.deephaven.engine.util.TableDiff;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.liveness.LivenessScopeStack;
@@ -612,7 +612,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         final List<Function<Table, Table>> transformations = new ArrayList<>();
         transformations.add(t -> t.where("boolCol2"));
         transformations.add(t -> t.where(DisjunctiveFilter
-                .makeDisjunctiveFilter(SelectFilterFactory.expandQuickFilter(t, "10", QuickFilterMode.NORMAL))));
+                .makeDisjunctiveFilter(WhereFilterFactory.expandQuickFilter(t, "10", QuickFilterMode.NORMAL))));
         transformations.add(t -> t.sortDescending("doubleCol"));
         transformations.add(Table::flatten);
         testIterative(transformations);
