@@ -179,7 +179,8 @@ public abstract class FlightMessageRoundTripTest {
         currentSession = component.sessionService().getSessionForToken(sessionToken);
     }
 
-    protected /*abstract*/ int startServer(io.deephaven.server.test.FlightMessageRoundTripTest.TestComponent component) throws IOException {
+    protected /* abstract */ int startServer(
+            io.deephaven.server.test.FlightMessageRoundTripTest.TestComponent component) throws IOException {
         NettyServerBuilder serverBuilder = NettyServerBuilder.forPort(0);
         component.interceptors().forEach(serverBuilder::intercept);
         serverBuilder.addService(component.sessionGrpcService());

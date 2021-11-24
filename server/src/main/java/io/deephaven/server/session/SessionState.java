@@ -63,12 +63,7 @@ import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyExecuteLocked;
 /**
  * SessionState manages all exports for a single session.
  *
-<<<<<<< HEAD:grpc-api/src/main/java/io/deephaven/grpc_api/session/SessionState.java
- * It manages exported {@link io.deephaven.engine.liveness.LivenessReferent}. It cascades failures to child
-=======
- * It manages exported {@link LivenessReferent}. It cascades failures to child
->>>>>>> d19d5268e (Move server to server - TODO fix server deps):server/src/main/java/io/deephaven/server/session/SessionState.java
- * dependencies.
+ * It manages exported {@link LivenessReferent}. It cascades failures to child dependencies.
  *
  * TODO: - cyclical dependency detection - out-of-order dependency timeout
  *

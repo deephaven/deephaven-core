@@ -17,8 +17,7 @@ public class NettyServerModule {
     static GrpcServer serverBuilder(
             final @Named("grpc.port") int port,
             Set<BindableService> services,
-            Set<ServerInterceptor> interceptors
-    ) {
+            Set<ServerInterceptor> interceptors) {
         ServerBuilder<?> serverBuilder = ServerBuilder.forPort(port);
         services.forEach(serverBuilder::addService);
         interceptors.forEach(serverBuilder::intercept);
