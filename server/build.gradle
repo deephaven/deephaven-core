@@ -35,7 +35,9 @@ dependencies {
         runtimeOnly project(':extensions-suanshu')
     }
 
-    testCompile TestTools.projectDependency(project, 'engine-table'),
+    testImplementation project(':proto:proto-backplane-grpc')
+
+    testImplementation TestTools.projectDependency(project, 'engine-table'),
             TestTools.projectDependency(project, 'Util')
 
     runtimeOnly project(':Numerics'), project(':Integrations'), project(':extensions-kafka')
