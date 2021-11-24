@@ -5,7 +5,6 @@
 package io.deephaven.kafka.ingest;
 
 import gnu.trove.map.hash.TIntObjectHashMap;
-import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.hash.KeyedIntObjectHashMap;

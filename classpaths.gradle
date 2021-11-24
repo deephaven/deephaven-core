@@ -39,7 +39,6 @@ configurations {
     dhPlot.extendsFrom dhDb
     dhBenchmarkSupport.extendsFrom fishData, commonsCsv
     dhIntegrations.extendsFrom math3
-    dhKafka.extendsFrom dhDb
 }
 
 // exported properties
@@ -115,7 +114,4 @@ dependencies {
     dhBenchmarkSupport 'com.univocity:univocity-parsers:2.6.0',
             // https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-core
             'com.fasterxml.jackson.core:jackson-core:2.9.8'
-
-    dhKafka 'org.apache.kafka:kafka-clients:2.4.0',
-            'org.apache.avro:avro:1.9.2'
 }

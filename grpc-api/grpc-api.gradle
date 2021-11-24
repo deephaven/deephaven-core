@@ -53,7 +53,9 @@ dependencies {
     testCompile TestTools.projectDependency(project, 'engine-table'),
                 TestTools.projectDependency(project, 'Util')
 
-    runtimeOnly project(':Numerics'), project(':Integrations'), project(':Kafka')
+    runtimeOnly project(':Numerics'),
+            project(':Integrations'),
+            project(':extensions-kafka')
     Classpaths.inheritAssertJ(project)
 
     testRuntimeOnly project(':log-to-slf4j')

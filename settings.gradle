@@ -12,7 +12,7 @@ String[] mods = [ 'Util', 'Numerics', 'TableLogger', 'Plot',
         'CompilerTools', 'Generators',
         'Integrations', 'ModelFarm', 'ClientSupport',
         'BenchmarkSupport', 'python-engine-test', 'Parquet',
-        'Kafka', 'grpc-api', 'table-api', 'qst']
+        'grpc-api', 'table-api', 'qst']
 
         // new web projects; these modules are intended to form a complete, modular web application,
         // with heavy dependency isolation that should enable very fast rebuilds.

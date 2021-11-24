@@ -12,10 +12,12 @@ configurations {
 dependencies {
 
     compile project(':engine-table'),
-            project(':Plot')
-            project(':Kafka')
+            project(':Plot'),
+            project(':extensions-kafka')
 
-    runtime project(path: ':configs'), project(path: ':test-configs'), project(':Kafka')
+    runtime project(path: ':configs'),
+            project(path: ':test-configs'),
+            project(':extensions-kafka')
 
     runtimeOnly project(':log-to-slf4j')
     Classpaths.inheritLogbackClassic(project)

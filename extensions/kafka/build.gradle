@@ -2,29 +2,13 @@ plugins {
     id 'java-library'
 }
 
-apply plugin: 'base'
-apply plugin: 'java'
-
-sourceSets {
-    main {
-        java {
-            srcDir 'java'
-        }
-    }
-
-    test {
-        java {
-            srcDir 'test'
-        }
-    }
-}
-
-configurations {
-    compile.extendsFrom dhKafka
-}
+description 'Kafka: Integrating Engine tables with Kafka'
 
 dependencies {
-    api('org.apache.httpcomponents:httpclient:4.5.13')
+    api project(':engine-table'),
+            'org.apache.kafka:kafka-clients:2.4.0',
+            'org.apache.avro:avro:1.9.2',
+            'org.apache.httpcomponents:httpclient:4.5.13'
 
     // Alternative to confluent; requires source code changes for
     // different avro serializer class names.
@@ -34,12 +18,12 @@ dependencies {
     // to add their maven repository.
     api('io.confluent:kafka-avro-serializer:6.2.0')
 
-    compile project(':engine-table')
-    testCompile 'junit:junit:4.13.2'
-    testImplementation TestTools.projectDependency(project, 'engine-table')
-    testRuntime project(path: ':configs'), project(path: ':test-configs')
+    testImplementation TestTools.projectDependency(project, 'engine-table'),
+            'junit:junit:4.13.2'
 
-    testRuntimeOnly project(':log-to-slf4j')
+    testRuntimeOnly project(':log-to-slf4j'),
+            project(path: ':configs'),
+            project(path: ':test-configs')
     Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
 }
 
