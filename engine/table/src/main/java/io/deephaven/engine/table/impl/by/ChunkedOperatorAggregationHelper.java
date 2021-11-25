@@ -9,7 +9,7 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSequenceFactory;
-import io.deephaven.engine.table.impl.GroupingUtil;
+import io.deephaven.engine.table.impl.GroupingUtils;
 import io.deephaven.engine.table.impl.PrevColumnSource;
 import io.deephaven.engine.table.impl.indexer.RowSetIndexer;
 import io.deephaven.engine.time.DateTime;
@@ -102,7 +102,7 @@ public class ChunkedOperatorAggregationHelper {
         final ColumnSource<?>[] keySources =
                 Arrays.stream(keyNames).map(withView::getColumnSource).toArray(ColumnSource[]::new);
         final ColumnSource<?>[] reinterpretedKeySources = Arrays.stream(keySources)
-                .map(ReinterpretUtil::maybeConvertToPrimitive).toArray(ColumnSource[]::new);
+                .map(ReinterpretUtils::maybeConvertToPrimitive).toArray(ColumnSource[]::new);
 
         final AggregationContext ac = aggregationContextFactory.makeAggregationContext(withView, keyNames);
 
@@ -159,7 +159,7 @@ public class ChunkedOperatorAggregationHelper {
             ColumnSource<?> resultKeyColumnSource = keyHashTableSources[kci];
             if (keySources[kci] != reinterpretedKeySources[kci]) {
                 resultKeyColumnSource =
-                        ReinterpretUtil.convertToOriginal(keySources[kci].getType(), resultKeyColumnSource);
+                        ReinterpretUtils.convertToOriginal(keySources[kci].getType(), resultKeyColumnSource);
             }
             keyColumnsRaw[kci] = resultKeyColumnSource;
             if (withView.isRefreshing()) {
@@ -1380,7 +1380,7 @@ public class ChunkedOperatorAggregationHelper {
         final Pair<ArrayBackedColumnSource, ObjectArraySource<RowSet>> groupKeyIndexTable;
         final Map<Object, RowSet> grouping = RowSetIndexer.of(withView.getRowSet()).getGrouping(keySource);
         // noinspection unchecked
-        groupKeyIndexTable = GroupingUtil.groupingToFlatSources((ColumnSource) keySource, grouping);
+        groupKeyIndexTable = GroupingUtils.groupingToFlatSources((ColumnSource) keySource, grouping);
         final int responsiveGroups = grouping.size();
 
         final Map<String, ColumnSource<?>> resultColumnSourceMap = new LinkedHashMap<>();
@@ -1545,7 +1545,7 @@ public class ChunkedOperatorAggregationHelper {
                 : indexer.getGrouping(reinterpretedKeySources[0]);
         // noinspection unchecked
         groupKeyIndexTable =
-                GroupingUtil.groupingToFlatSources((ColumnSource) reinterpretedKeySources[0], grouping);
+                GroupingUtils.groupingToFlatSources((ColumnSource) reinterpretedKeySources[0], grouping);
         final int responsiveGroups = grouping.size();
 
         if (responsiveGroups == 0) {

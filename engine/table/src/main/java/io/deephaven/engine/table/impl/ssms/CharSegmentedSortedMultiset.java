@@ -7,7 +7,7 @@ import io.deephaven.engine.vector.ObjectVector;
 import io.deephaven.util.compare.CharComparisons;
 import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.engine.table.impl.by.SumIntChunk;
-import io.deephaven.engine.table.impl.sort.timsort.TimsortUtilities;
+import io.deephaven.engine.table.impl.sort.timsort.TimsortUtils;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.Attributes.ChunkLengths;
 import io.deephaven.engine.chunk.Attributes.Values;
@@ -26,7 +26,7 @@ public final class CharSegmentedSortedMultiset implements SegmentedSortedMultiSe
     private int size;
     private long totalSize;
 
-    private int minGallop = TimsortUtilities.INITIAL_GALLOP;
+    private int minGallop = TimsortUtils.INITIAL_GALLOP;
 
     /**
      * If we have only a single leaf, then we use the directory arrays for the leaf values, otherwise we use it to
@@ -157,7 +157,7 @@ public final class CharSegmentedSortedMultiset implements SegmentedSortedMultiSe
                         remaining -= gallopLength;
                     }
 
-                    if (gallopLength < TimsortUtilities.INITIAL_GALLOP) {
+                    if (gallopLength < TimsortUtils.INITIAL_GALLOP) {
                         minGallop++;
                     } else {
                         minGallop = Math.max(2, minGallop - 1);
@@ -187,7 +187,7 @@ public final class CharSegmentedSortedMultiset implements SegmentedSortedMultiSe
                         remaining -= gallopLength;
                     }
 
-                    if (gallopLength < TimsortUtilities.INITIAL_GALLOP) {
+                    if (gallopLength < TimsortUtils.INITIAL_GALLOP) {
                         minGallop++;
                     } else {
                         minGallop = Math.max(2, minGallop - 1);
@@ -298,7 +298,7 @@ public final class CharSegmentedSortedMultiset implements SegmentedSortedMultiSe
                             return;
                         }
                     }
-                    if (gallopLength < TimsortUtilities.INITIAL_GALLOP) {
+                    if (gallopLength < TimsortUtils.INITIAL_GALLOP) {
                         minGallop++;
                     } else {
                         minGallop = Math.max(2, minGallop - 1);
@@ -333,7 +333,7 @@ public final class CharSegmentedSortedMultiset implements SegmentedSortedMultiSe
                         }
                     }
 
-                    if (gallopLength < TimsortUtilities.INITIAL_GALLOP) {
+                    if (gallopLength < TimsortUtils.INITIAL_GALLOP) {
                         minGallop++;
                     } else {
                         minGallop = Math.max(2, minGallop - 1);

@@ -10,7 +10,7 @@ import io.deephaven.util.datastructures.SizeException;
 /**
  * Utilities for working with {@link LongChunk chunks} of row keys.
  */
-public class RowKeyChunkUtil {
+public class RowKeyChunkUtils {
 
     /**
      * Generates a {@code LongChunk<OrderedRowKeyRanges>} from a {@code LongChunk<Attributes.OrderedRowKeys>}.

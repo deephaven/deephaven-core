@@ -1,6 +1,6 @@
 package io.deephaven.replicators;
 
-import io.deephaven.replication.ReplicateUtilities;
+import io.deephaven.replication.ReplicationUtils;
 import org.apache.commons.io.FileUtils;
 
 import java.io.File;
@@ -26,6 +26,6 @@ public class ReplicateSegmentedSortedArrayTests {
     private static void fixupObjectSsaTest(String objectPath) throws IOException {
         final File objectFile = new File(objectPath);
         final List<String> lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
-        FileUtils.writeLines(objectFile, ReplicateUtilities.fixupChunkAttributes(lines));
+        FileUtils.writeLines(objectFile, ReplicationUtils.fixupChunkAttributes(lines));
     }
 }

@@ -21,7 +21,7 @@ import java.util.PrimitiveIterator;
 import java.util.function.IntToLongFunction;
 import java.util.function.LongConsumer;
 
-import static io.deephaven.engine.rowset.impl.RowSetUtil.Comparator;
+import static io.deephaven.engine.rowset.impl.RowSetUtils.Comparator;
 
 /**
  *

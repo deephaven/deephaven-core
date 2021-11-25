@@ -29,7 +29,7 @@ import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.FillUnordered;
 import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.table.impl.sources.ObjectArraySource;
-import io.deephaven.engine.table.impl.sources.ReinterpretUtil;
+import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.ChunkSink;
 import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.chunk.LongChunk;
@@ -351,7 +351,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
         for (int i = 0; i < sourceColumns.length; ++i) {
             // If the source column is a DBDate time we'll just always use longs to avoid silly reinterpretations during
             // serialization/deserialization
-            sourceColumns[i] = ReinterpretUtil.maybeConvertToPrimitive(sourceColumns[i]);
+            sourceColumns[i] = ReinterpretUtils.maybeConvertToPrimitive(sourceColumns[i]);
             deltaColumns[i] = ArrayBackedColumnSource.getMemoryColumnSource(capacity, sourceColumns[i].getType());
 
             if (deltaColumns[i] instanceof ObjectArraySource) {

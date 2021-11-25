@@ -137,7 +137,7 @@ public interface WritableRowRedirection extends RowRedirection {
      * @param shiftData The {@link RowSetShiftData} for this update
      */
     default void applyShift(final RowSet tableRowSet, final RowSetShiftData shiftData) {
-        RowRedirectionUtilities.applyRedirectionShift(this, tableRowSet, shiftData);
+        RowRedirectionUtils.applyRedirectionShift(this, tableRowSet, shiftData);
     }
 
     /**

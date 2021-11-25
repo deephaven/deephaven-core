@@ -5,15 +5,13 @@ package io.deephaven.engine.table.impl.sort.megamerge;
 
 import io.deephaven.util.compare.LongComparisons;
 import io.deephaven.engine.table.impl.sort.LongMegaMergeKernel;
-import io.deephaven.engine.table.impl.sort.timsort.TimsortUtilities;
+import io.deephaven.engine.table.impl.sort.timsort.TimsortUtils;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
-import io.deephaven.engine.table.impl.sources.LongArraySource;
 import io.deephaven.engine.table.impl.sources.LongArraySource;
 import io.deephaven.engine.chunk.Attributes.Any;
 import io.deephaven.engine.chunk.Attributes.Indices;
 import io.deephaven.engine.chunk.LongChunk;
 import io.deephaven.engine.chunk.Chunk;
-import io.deephaven.engine.chunk.LongChunk;
 
 public class LongLongMegaMergeDescendingKernel {
     private LongLongMegaMergeDescendingKernel() {
@@ -73,7 +71,7 @@ public class LongLongMegaMergeDescendingKernel {
 
         long ii = mergeEnd - 1;
 
-        int minGallop = TimsortUtilities.INITIAL_GALLOP;
+        int minGallop = TimsortUtils.INITIAL_GALLOP;
 
         no_data_left: while (ii >= mergeStartPosition) {
             int destWins = 0;
@@ -147,8 +145,8 @@ public class LongLongMegaMergeDescendingKernel {
                     minGallop--;
                 }
 
-                if (gallopLength1 < TimsortUtilities.INITIAL_GALLOP
-                        && gallopLength2 < TimsortUtilities.INITIAL_GALLOP) {
+                if (gallopLength1 < TimsortUtils.INITIAL_GALLOP
+                        && gallopLength2 < TimsortUtils.INITIAL_GALLOP) {
                     minGallop += 2; // undo the possible subtraction from above
                     break;
                 }

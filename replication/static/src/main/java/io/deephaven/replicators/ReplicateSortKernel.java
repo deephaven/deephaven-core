@@ -1,6 +1,6 @@
 package io.deephaven.replicators;
 
-import io.deephaven.replication.ReplicateUtilities;
+import io.deephaven.replication.ReplicationUtils;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.compare.CharComparisons;
 import org.apache.commons.io.FileUtils;
@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static io.deephaven.replication.ReplicatePrimitiveCode.*;
-import static io.deephaven.replication.ReplicateUtilities.*;
+import static io.deephaven.replication.ReplicationUtils.*;
 
 public class ReplicateSortKernel {
     public static void main(String[] args) throws IOException {
@@ -298,7 +298,7 @@ public class ReplicateSortKernel {
     public static List<String> fixupNanComparisons(List<String> lines, String type, boolean ascending) {
         final String lcType = type.toLowerCase();
 
-        lines = ReplicateUtilities.addImport(lines, "import io.deephaven.util.compare." + type + "Comparisons;");
+        lines = ReplicationUtils.addImport(lines, "import io.deephaven.util.compare." + type + "Comparisons;");
 
         lines = replaceRegion(lines, "comparison functions",
                 Arrays.asList("    private static int doComparison(" + lcType + " lhs, " + lcType + " rhs) {",
@@ -315,7 +315,7 @@ public class ReplicateSortKernel {
 
         List<String> lines = FileUtils.readLines(file, Charset.defaultCharset());
 
-        lines = ReplicateUtilities.addImport(lines, QueryConstants.class, CharComparisons.class);
+        lines = ReplicationUtils.addImport(lines, QueryConstants.class, CharComparisons.class);
 
         lines = globalReplacements(fixupCharNullComparisons(lines, ascending), oldName, newName);
 

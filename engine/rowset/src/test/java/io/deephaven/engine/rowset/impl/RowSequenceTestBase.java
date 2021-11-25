@@ -467,7 +467,7 @@ public abstract class RowSequenceTestBase {
 
     @Test
     public void testGetAverageRunLengthEstimate() {
-        final WritableRowSet ix = TstRowSetUtil.makeEmptyRsp();
+        final WritableRowSet ix = RowSetTstUtils.makeEmptyRsp();
         final long k0 = 1 << 14;
         final long rlen = 16;
         final long nRanges = 256;
@@ -506,7 +506,7 @@ public abstract class RowSequenceTestBase {
             final String msg, final long[] expected, final RowSequence rowSequence) {
         final LongChunk<Attributes.OrderedRowKeys> expectedIndices = LongChunk.chunkWrap(expected);
         try (final WritableLongChunk<OrderedRowKeyRanges> expectedRanges =
-                RowKeyChunkUtil.convertToOrderedKeyRanges(expectedIndices)) {
+                RowKeyChunkUtils.convertToOrderedKeyRanges(expectedIndices)) {
 
             // size must be identical
             assertEquals(msg, expectedIndices.size(), rowSequence.size());

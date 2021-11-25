@@ -19,7 +19,7 @@ import java.util.Random;
 
 import static org.junit.Assert.*;
 
-public class RowKeyChunkUtilTest {
+public class RowKeyChunkUtilsTest {
 
     @Test
     public void testChunkMaxSizeDoesntOverflowLongAccumulator() {
@@ -48,28 +48,28 @@ public class RowKeyChunkUtilTest {
     private void tryMaxChunkSizeTest(final long limit) {
         final LongChunk<OrderedRowKeys> chunk = createChunk(0, 2); // mind the gap
         final LongChunk<Attributes.OrderedRowKeyRanges> newChunk =
-                (limit == 0) ? RowKeyChunkUtil.convertToOrderedKeyRanges(chunk)
-                        : RowKeyChunkUtil.convertToOrderedKeyRanges(chunk, limit);
+                (limit == 0) ? RowKeyChunkUtils.convertToOrderedKeyRanges(chunk)
+                        : RowKeyChunkUtils.convertToOrderedKeyRanges(chunk, limit);
         validateChunk(newChunk, 0, 0, 2, 2);
     }
 
     @Test
     public void testConvertToRangesSingleton() {
-        validateChunk(RowKeyChunkUtil.convertToOrderedKeyRanges(createChunk(
+        validateChunk(RowKeyChunkUtils.convertToOrderedKeyRanges(createChunk(
                 42)),
                 42, 42);
     }
 
     @Test
     public void testConvertToRangesSingleRange() {
-        validateChunk(RowKeyChunkUtil.convertToOrderedKeyRanges(createChunk(
+        validateChunk(RowKeyChunkUtils.convertToOrderedKeyRanges(createChunk(
                 2, 3, 4, 5, 6, 7, 8, 9, 10, 11)),
                 2, 11);
     }
 
     @Test
     public void testConvertToRangesMultipleRanges() {
-        validateChunk(RowKeyChunkUtil.convertToOrderedKeyRanges(createChunk(
+        validateChunk(RowKeyChunkUtils.convertToOrderedKeyRanges(createChunk(
                 2, 3, 4, 8, 10, 11, 12, 13, 15)),
                 2, 4, 8, 8, 10, 13, 15, 15);
     }
@@ -77,28 +77,28 @@ public class RowKeyChunkUtilTest {
     @Test
     public void testConvertToRangesExtremes() {
         final int MI = Integer.MAX_VALUE;
-        validateChunk(RowKeyChunkUtil.convertToOrderedKeyRanges(createChunk(
+        validateChunk(RowKeyChunkUtils.convertToOrderedKeyRanges(createChunk(
                 0, 1, 2, 3, 4, MI - 4, MI - 3, MI - 2, MI - 1, MI)),
                 0, 4, MI - 4, MI);
     }
 
     @Test
     public void testConvertToIndicesSingleton() {
-        validateChunk(RowKeyChunkUtil.convertToOrderedKeyIndices(createChunk(
+        validateChunk(RowKeyChunkUtils.convertToOrderedKeyIndices(createChunk(
                 1022, 1022)),
                 1022);
     }
 
     @Test
     public void testConvertToIndicesSingleRange() {
-        validateChunk(RowKeyChunkUtil.convertToOrderedKeyIndices(createChunk(
+        validateChunk(RowKeyChunkUtils.convertToOrderedKeyIndices(createChunk(
                 512, 519)),
                 512, 513, 514, 515, 516, 517, 518, 519);
     }
 
     @Test
     public void testConvertToIndicesMultipleRanges() {
-        validateChunk(RowKeyChunkUtil.convertToOrderedKeyIndices(createChunk(
+        validateChunk(RowKeyChunkUtils.convertToOrderedKeyIndices(createChunk(
                 1, 5, 7, 7, 9, 12)),
                 1, 2, 3, 4, 5, 7, 9, 10, 11, 12);
     }
@@ -106,7 +106,7 @@ public class RowKeyChunkUtilTest {
     @Test
     public void testConvertToIndicesExtremes() {
         final int MI = Integer.MAX_VALUE;
-        validateChunk(RowKeyChunkUtil.convertToOrderedKeyIndices(createChunk(
+        validateChunk(RowKeyChunkUtils.convertToOrderedKeyIndices(createChunk(
                 0, 4, MI - 4, MI)),
                 0, 1, 2, 3, 4, MI - 4, MI - 3, MI - 2, MI - 1, MI);
     }
@@ -115,7 +115,7 @@ public class RowKeyChunkUtilTest {
     public void testGeneratedChunkIndiciesTooLarge() {
         // since ranges are inclusive, there is one too many elements to generate an indices chunk
         LongChunk<OrderedRowKeyRanges> chunk = createChunk(0, Chunk.MAXIMUM_SIZE);
-        RowKeyChunkUtil.convertToOrderedKeyIndices(chunk);
+        RowKeyChunkUtils.convertToOrderedKeyIndices(chunk);
     }
 
     @Test
@@ -125,7 +125,7 @@ public class RowKeyChunkUtilTest {
         for (int i = 0; i < indices.length; ++i) {
             indices[i] = ranges[i * 2] = ranges[i * 2 + 1] = 2 * i;
         }
-        validateChunk(createChunk(indices), RowKeyChunkUtil.convertToOrderedKeyIndices(createChunk(ranges)));
+        validateChunk(createChunk(indices), RowKeyChunkUtils.convertToOrderedKeyIndices(createChunk(ranges)));
     }
 
     @Test
@@ -135,8 +135,8 @@ public class RowKeyChunkUtilTest {
                 for (final int sparsityFactor : new int[] {1, 10, 1_000}) {
                     final Pair<LongChunk<OrderedRowKeyRanges>, LongChunk<OrderedRowKeys>> chunks =
                             generateChunks(indexCount, avgElementsPerRange, sparsityFactor);
-                    validateChunk(chunks.second, RowKeyChunkUtil.convertToOrderedKeyIndices(chunks.first));
-                    validateChunk(chunks.first, RowKeyChunkUtil.convertToOrderedKeyRanges(chunks.second));
+                    validateChunk(chunks.second, RowKeyChunkUtils.convertToOrderedKeyIndices(chunks.first));
+                    validateChunk(chunks.first, RowKeyChunkUtils.convertToOrderedKeyRanges(chunks.second));
                 }
             }
         }

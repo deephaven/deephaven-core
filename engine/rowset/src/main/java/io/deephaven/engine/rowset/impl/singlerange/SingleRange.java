@@ -5,7 +5,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.impl.OrderedLongSet;
 import io.deephaven.engine.rowset.impl.OrderedLongSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSequenceFactory;
-import io.deephaven.engine.rowset.impl.RowSetUtil;
+import io.deephaven.engine.rowset.impl.RowSetUtils;
 import io.deephaven.util.datastructures.LongAbortableConsumer;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.chunk.Attributes;
@@ -335,7 +335,7 @@ public abstract class SingleRange implements OrderedLongSet {
             } else if (tc.compareTargetTo(curr, dir) < 0) {
                 return -1;
             }
-            return curr = RowSetUtil.rangeSearch(curr, last,
+            return curr = RowSetUtils.rangeSearch(curr, last,
                     (long k) -> tc.compareTargetTo(k, dir));
         }
     }

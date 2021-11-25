@@ -171,7 +171,7 @@ public class ZeroKeyChunkedAjMergedListener extends MergedListener {
                     try (final RowSet prevRowSet = leftTable.getRowSet().getPrevRowSet()) {
                         rowRedirection.applyShift(prevRowSet, leftShifted);
                     }
-                    ChunkedAjUtilities.bothIncrementalLeftSsaShift(leftShifted, leftSsa, leftRestampRemovals, leftTable,
+                    ChunkedAjUtils.bothIncrementalLeftSsaShift(leftShifted, leftSsa, leftRestampRemovals, leftTable,
                             leftChunkSize, leftStampSource);
                 }
             } else {

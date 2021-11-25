@@ -69,7 +69,7 @@ public class PythonReplayListenerAdapter extends InstrumentedTableUpdateListener
     public PythonReplayListenerAdapter(String description, Table source, boolean retain,
             PyObject pyObjectIn) {
         super(description, source, retain);
-        pyCallable = PythonUtilities.pyListenerFunc(pyObjectIn);
+        pyCallable = PythonUtils.pyListenerFunc(pyObjectIn);
     }
 
     @Override

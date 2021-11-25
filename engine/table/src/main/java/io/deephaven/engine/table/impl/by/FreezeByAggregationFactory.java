@@ -8,7 +8,7 @@ import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.impl.sources.ReinterpretUtil;
+import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.impl.util.freezeby.FreezeByCountOperator;
@@ -51,7 +51,7 @@ public class FreezeByAggregationFactory implements AggregationContextFactory {
             // For DateTime columns, the in-memory source uses longs internally, and all supported aggregations (i.e.
             // min and max) work correctly against longs.
             final ColumnSource inputSource =
-                    columnSource.getType() == DateTime.class ? ReinterpretUtil.dateTimeToLongSource(columnSource)
+                    columnSource.getType() == DateTime.class ? ReinterpretUtils.dateTimeToLongSource(columnSource)
                             : columnSource;
 
             // noinspection unchecked

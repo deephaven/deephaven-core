@@ -13,7 +13,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class ReplicateUtilities {
+public class ReplicationUtils {
     /**
      * Take a list of lines; and apply a given fixup expressed as a code region, regular expression, then function from
      * the matcher to the replacement line.

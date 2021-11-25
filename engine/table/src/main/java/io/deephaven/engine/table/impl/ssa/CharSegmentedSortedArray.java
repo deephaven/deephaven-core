@@ -2,7 +2,7 @@ package io.deephaven.engine.table.impl.ssa;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.table.impl.sort.timsort.TimsortUtilities;
+import io.deephaven.engine.table.impl.sort.timsort.TimsortUtils;
 import io.deephaven.engine.chunk.Attributes.Any;
 import io.deephaven.engine.chunk.Attributes.RowKeys;
 import io.deephaven.engine.chunk.*;
@@ -30,7 +30,7 @@ public final class CharSegmentedSortedArray implements SegmentedSortedArray {
     private int leafCount;
     private int size;
 
-    private int minGallop = TimsortUtilities.INITIAL_GALLOP;
+    private int minGallop = TimsortUtils.INITIAL_GALLOP;
 
     /**
      * If we have only a single leaf, then we use the directory arrays for the leaf values, otherwise we use it to
@@ -600,7 +600,7 @@ public final class CharSegmentedSortedArray implements SegmentedSortedArray {
                 lwins = 1;
                 iwins = 0;
 
-                if (gallopLength < TimsortUtilities.INITIAL_GALLOP) {
+                if (gallopLength < TimsortUtils.INITIAL_GALLOP) {
                     minGallop++;
                 } else {
                     minGallop = Math.max(2, minGallop - 1);
@@ -634,7 +634,7 @@ public final class CharSegmentedSortedArray implements SegmentedSortedArray {
                 lwins = 0;
                 iwins = 1;
 
-                if (gallopLength < TimsortUtilities.INITIAL_GALLOP) {
+                if (gallopLength < TimsortUtils.INITIAL_GALLOP) {
                     minGallop++;
                 } else {
                     minGallop = Math.max(2, minGallop - 1);
@@ -714,7 +714,7 @@ public final class CharSegmentedSortedArray implements SegmentedSortedArray {
                     prior = leafIndices[rposl - 1];
                 }
 
-                if (gallopSize > TimsortUtilities.INITIAL_GALLOP) {
+                if (gallopSize > TimsortUtils.INITIAL_GALLOP) {
                     minGallop = Math.max(2, minGallop - 1);
                 } else {
                     minGallop++;
@@ -1115,7 +1115,7 @@ public final class CharSegmentedSortedArray implements SegmentedSortedArray {
                     leafPos += gallopSize;
                 }
 
-                if (gallopSize > TimsortUtilities.INITIAL_GALLOP) {
+                if (gallopSize > TimsortUtils.INITIAL_GALLOP) {
                     minGallop = Math.max(2, minGallop - 1);
                 } else {
                     minGallop++;
@@ -1211,7 +1211,7 @@ public final class CharSegmentedSortedArray implements SegmentedSortedArray {
                     leafPos -= gallopSize;
                 }
 
-                if (gallopSize > TimsortUtilities.INITIAL_GALLOP) {
+                if (gallopSize > TimsortUtils.INITIAL_GALLOP) {
                     minGallop = Math.max(2, minGallop - 1);
                 } else {
                     minGallop++;

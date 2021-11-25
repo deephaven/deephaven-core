@@ -9,7 +9,7 @@ import org.jpy.PyObject;
 /**
  * Utilities for implementing python functionality.
  */
-class PythonUtilities {
+class PythonUtils {
 
     /**
      * Gets the python function that should be called by a listener. The input can be either (1) a callable or (2) an

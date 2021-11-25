@@ -1,6 +1,6 @@
 package io.deephaven.replicators;
 
-import io.deephaven.replication.ReplicateUtilities;
+import io.deephaven.replication.ReplicationUtils;
 import org.apache.commons.io.FileUtils;
 import org.jetbrains.annotations.NotNull;
 
@@ -11,8 +11,8 @@ import java.util.List;
 
 import static io.deephaven.replication.ReplicatePrimitiveCode.charToAllButBoolean;
 import static io.deephaven.replication.ReplicatePrimitiveCode.charToObject;
-import static io.deephaven.replication.ReplicateUtilities.globalReplacements;
-import static io.deephaven.replication.ReplicateUtilities.simpleFixup;
+import static io.deephaven.replication.ReplicationUtils.globalReplacements;
+import static io.deephaven.replication.ReplicationUtils.simpleFixup;
 
 public class ReplicateSegmentedSortedArray {
     public static void main(String[] args) throws IOException {
@@ -184,8 +184,8 @@ public class ReplicateSegmentedSortedArray {
     private static void fixupObjectSsa(String objectPath, boolean ascending) throws IOException {
         final File objectFile = new File(objectPath);
         final List<String> lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
-        FileUtils.writeLines(objectFile, ReplicateUtilities.simpleFixup(
-                ReplicateSortKernel.fixupObjectComparisons(ReplicateUtilities.fixupChunkAttributes(lines), ascending),
+        FileUtils.writeLines(objectFile, ReplicationUtils.simpleFixup(
+                ReplicateSortKernel.fixupObjectComparisons(ReplicationUtils.fixupChunkAttributes(lines), ascending),
                 "fillValue", "Object.MIN_VALUE", "null"));
     }
 }

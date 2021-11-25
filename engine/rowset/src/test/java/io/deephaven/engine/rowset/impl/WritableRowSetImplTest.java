@@ -43,7 +43,7 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.LongStream;
 
-import static io.deephaven.engine.rowset.impl.TstRowSetUtil.rowSetFromString;
+import static io.deephaven.engine.rowset.impl.RowSetTstUtils.rowSetFromString;
 import static io.deephaven.engine.rowset.impl.rsp.RspArray.BLOCK_LAST;
 import static io.deephaven.engine.rowset.impl.rsp.RspArray.BLOCK_SIZE;
 import static java.lang.Math.max;
@@ -180,12 +180,12 @@ public class WritableRowSetImplTest extends TestCase {
         copy = (RowSet) doSerDeser(rowSet);
         assertEquals(rowSet, copy);
 
-        rowSet = TstRowSetUtil.rowSetFromString(
+        rowSet = RowSetTstUtils.rowSetFromString(
                 "0,2,4-5,8-9,12-17,19-20,22,25-29,33-38,41-45,47,49-54,56,58-59,61-73,75-78,80,82-85,89,91-104,106-110,112-114,116-117,120-132,135-136,138-141,143-144,146,148-154,157-159,161,163-166,168,170,172-189,193-196,198-206,209-210,213,215-235,237-245,248-250,252-262,264-267,269-271,273-276,278-281,284-289,291,293-294,296-301,303,305-307,309-317,319-345,347-354,356-366,368-378,380-387,389-393,395-401,403-409,411-421,424-428,430-437,439-460,462-463,465-473,475-488,490-497,499-503,505-510,512-519,521,523-531,533-540,542-543,545-562,564-570,572-595,597-642,644,646-664,666-670,674-675,677-680,682-689,691-718,720-740,742-764,766-801,803-821,823-826,828-831,833-840,842-887,890-892,894-901,903-928,930-951,953-957,959-964,966-996,998-1010,1013-1016,1018-1022,1024-1064,1066-1072,1074-1094,1096-1107,1109-1181,1183-1193,1195-1199,1201-1253,1255-1288,1290-1291,1293-1311,1313-1328,1330-1345,1347-1349,1352-1446,1448-1473,1475-1511,1513-1567,1569-1572,1574-1580,1582-1615,1617-1643,1645,1647-1687,1689-1691,1693-1695,1697-1698,1700-1709,1711-1732,1734,1735-1751,1753-1792,1794-1831,1833-1849,1851-1857,1859-1866,1868-1880,1882-1885,1887-1920,1922-1926,1931-2566");
         copy = (RowSet) doSerDeser(rowSet);
         assertEquals(rowSet, copy);
 
-        rowSet = TstRowSetUtil.rowSetFromString(
+        rowSet = RowSetTstUtils.rowSetFromString(
                 "1-2,4,6,9-12,14-18,20-21,24-26,28-33,35,37-39,41-42,44,46-53,55-59,61-62,64,67,69,71-72,74-75,77-79,83-85,87-91,93-95,97,100-112,114,116,118,120-122,124-126,128-130,134-138,140-146,148-149,151,153-154,156,158-159,161-163,165-169,171-172,174-178,182-192,198-200,202,205,207-234,236-243,245,247-249,252-260,262-267,269,271-273,275-279,283-284,286-291,293-295,297-303,306-311,313,315-320,322,324-326,328-330,332-335,337-350,352-355,357,359-364,366,369-376,378-379,381-391,393,395-406,408-425,427-466,470-471,473-477,480-490,492-497,499-513,515-522,524-529,531-535,539-549,552-553,555-563,565-570,572-578,580-624,626-634,636-650,652-654,656-657,659,661-665,667-673,675-677,679,681,683-684,686,688-692,694-695,697-717,719-733,735-739,741-743,745-750,752-755,757-760,762-778,780,782-799,801-809,811-817,819-822,824-827,829-835,838-907,909-924,926-928,930-942,944-1049,1051,1053-1058,1060-1064,1066-1069,1071-1080,1082-1089,1091-1092,1094,1096-1098,1100-1102,1104-1109,1111-1121,1123-1142,1144-1156,1158-1162,1164-1169,1171-1175,1177-1190,1192-1195,1198-1199,1201-1211,1214,1216-1218,1220-1221,1223-1231,1233-1234,1236-1239,1241-1287,1289-1304,1306-1307,1309-1317,1319-1327,1329-1331,1333-1335,1337-1340,1342-1344,1346-1350,1352-1354,1356-1371,1373-1393,1395-1398,1400,1402-1479,1481-1486,1488-1490,1493,1495-1507,1509,1511-1543,1545-1550,1553-1556,1558-1564,1566-1582,1584,1586,1589-1590,1592-1615,1617-1626,1628-1634,1636-1643,1645,1647-1657,1659-1668,1670-1673,1675-1681,1683-1690,1693-1695,1697-1699,1701-1713,1715-1716,1718-1722,1724-1746,1748-1750,1753-1755,1757-1794,1796-1804,1806-1821,1823-1826,1828-1830,1832-1835,1837-1843,1846,1847-1856,1858-1894,1896-1908,1910-1916,1918-1924,1926,1928-1929,1936-2566");
         copy = (RowSet) doSerDeser(rowSet);
         assertEquals(rowSet, copy);
@@ -1610,7 +1610,7 @@ public class WritableRowSetImplTest extends TestCase {
     private RowSet getUnionIndexStrings(final String[] indexStrings) {
         final RowSetBuilderRandom result = RowSetFactory.builderRandom();
         for (String indexString : indexStrings) {
-            final RowSet rowSetToAdd = TstRowSetUtil.rowSetFromString(indexString);
+            final RowSet rowSetToAdd = RowSetTstUtils.rowSetFromString(indexString);
             rowSetToAdd.validate();
             result.addRowSet(rowSetToAdd);
             assertEquals(1, getRefCount(rowSetToAdd));
@@ -2583,11 +2583,11 @@ public class WritableRowSetImplTest extends TestCase {
     }
 
     public void testReleaseReleasedRegression0case0Rsp() {
-        releaseReleasedRegression0case0(TstRowSetUtil.makeEmptyRsp());
+        releaseReleasedRegression0case0(RowSetTstUtils.makeEmptyRsp());
     }
 
     public void testReleaseReleasedRegression0case0SR() {
-        releaseReleasedRegression0case0(TstRowSetUtil.makeEmptySr());
+        releaseReleasedRegression0case0(RowSetTstUtils.makeEmptySr());
     }
 
     private void releaseReleasedRegression0case1(final WritableRowSet ix) {
@@ -2602,11 +2602,11 @@ public class WritableRowSetImplTest extends TestCase {
     }
 
     public void testReleaseReleasedRegression0case1Rsp() {
-        releaseReleasedRegression0case1(TstRowSetUtil.makeEmptyRsp());
+        releaseReleasedRegression0case1(RowSetTstUtils.makeEmptyRsp());
     }
 
     public void testReleaseReleasedRegression0case1SR() {
-        releaseReleasedRegression0case1(TstRowSetUtil.makeEmptySr());
+        releaseReleasedRegression0case1(RowSetTstUtils.makeEmptySr());
     }
 
     private static void releaseReleasedRegression0case2(final WritableRowSet ix) {
@@ -2621,11 +2621,11 @@ public class WritableRowSetImplTest extends TestCase {
     }
 
     public void testReleaseReleasedRegression0case2Rsp() {
-        releaseReleasedRegression0case2(TstRowSetUtil.makeEmptyRsp());
+        releaseReleasedRegression0case2(RowSetTstUtils.makeEmptyRsp());
     }
 
     public void testReleaseReleasedRegression0case2SR() {
-        releaseReleasedRegression0case2(TstRowSetUtil.makeEmptySr());
+        releaseReleasedRegression0case2(RowSetTstUtils.makeEmptySr());
     }
 
     public void testSearchIteratorRegression0() {
@@ -2750,9 +2750,9 @@ public class WritableRowSetImplTest extends TestCase {
     }
 
     public void testSubsetOf() {
-        final WritableRowSet ix1 = TstRowSetUtil.makeEmptySr();
+        final WritableRowSet ix1 = RowSetTstUtils.makeEmptySr();
         ix1.insertRange(0, 1);
-        final RowSet ix2 = TstRowSetUtil.makeSingleRange(0, 2);
+        final RowSet ix2 = RowSetTstUtils.makeSingleRange(0, 2);
         assertTrue(ix1.subsetOf(ix2));
     }
 
@@ -2802,14 +2802,14 @@ public class WritableRowSetImplTest extends TestCase {
                 -2697, 2702, 2723,
                 2741, 2751, 2757, 2784, 2792, 2799, 2818, 2824, 2838, 2853, 2857, 2863
         });
-        final WritableRowSet ix1 = TstRowSetUtil.makeEmptyRsp();
+        final WritableRowSet ix1 = RowSetTstUtils.makeEmptyRsp();
         rvs2ix(ix1, new long[] {296, 366, 370, 386, 409, 411, 453});
         assertTrue(ix1.subsetOf(ix0));
     }
 
     public void testIntersectRegression0() {
-        WritableRowSet ix0 = TstRowSetUtil.makeEmptySr();
-        WritableRowSet ix1 = TstRowSetUtil.makeEmptyRsp();
+        WritableRowSet ix0 = RowSetTstUtils.makeEmptySr();
+        WritableRowSet ix1 = RowSetTstUtils.makeEmptyRsp();
         ix0 = rowSetFromString(
                 "87,236,275,324,329,468,505,673,705,779,834,848,917,1017,1019,1062,1366,1405,1453,1575,1599,1757," +
                         "1834,1853,1856,1895,1960,2098,2167,2218,2411,2606,2686,2842,2958,3225,3451,3509,3587,3601," +
@@ -2827,12 +2827,12 @@ public class WritableRowSetImplTest extends TestCase {
     }
 
     public void testConversionRemovalRefCount0() {
-        WritableRowSet ix0 = TstRowSetUtil.makeEmptySr();
+        WritableRowSet ix0 = RowSetTstUtils.makeEmptySr();
         final int n = 4;
         for (int i = 0; i < SortedRanges.MAX_CAPACITY - n; ++i) {
             ix0.insert(i * 6L + 2);
         }
-        final WritableRowSet ix1 = TstRowSetUtil.makeEmptySr();
+        final WritableRowSet ix1 = RowSetTstUtils.makeEmptySr();
         for (int i = 0; i < n + 1; ++i) {
             ix1.insert(i * 6 + 4);
         }
@@ -2847,7 +2847,7 @@ public class WritableRowSetImplTest extends TestCase {
     }
 
     public void testSubsetOfMixed() {
-        final WritableRowSet ix0 = TstRowSetUtil.makeEmptySr();
+        final WritableRowSet ix0 = RowSetTstUtils.makeEmptySr();
         final long bkSz = BLOCK_SIZE;
         final long off0 = bkSz;
         ix0.insertRange(off0 + 7, off0 + 9);
@@ -2857,7 +2857,7 @@ public class WritableRowSetImplTest extends TestCase {
         ix0.insert(off2 + 20);
         final long off3 = off2 + 3 * bkSz;
         ix0.insertRange(off2 + 33, off3 + 45);
-        final WritableRowSet ix1 = TstRowSetUtil.makeEmptyRsp();
+        final WritableRowSet ix1 = RowSetTstUtils.makeEmptyRsp();
         ix1.insertRange(off0 + 7, off0 + 9);
         ix1.insertRange(off1 + 13, off1 + 15);
         ix1.insert(off2 + 20);
@@ -2910,11 +2910,11 @@ public class WritableRowSetImplTest extends TestCase {
                 "232459,232490,232494,232499,232516-232518,232525,232543,232558,232580,232591,232598,232603,232640," +
                 "232649,232660,232673,232677,232686,232709,232715,232721,232723,232739,232743,232757,232771,232773," +
                 "232776,232778,232783,232796,232810,232823";
-        WritableRowSet ix0 = TstRowSetUtil.makeEmptySr();
+        WritableRowSet ix0 = RowSetTstUtils.makeEmptySr();
         ix0 = rowSetFromString(ix0Str, ix0);
-        WritableRowSet ix1 = TstRowSetUtil.makeEmptyRsp();
+        WritableRowSet ix1 = RowSetTstUtils.makeEmptyRsp();
         ix1 = rowSetFromString(ix1Str, ix1);
-        WritableRowSet ix0Rsp = TstRowSetUtil.makeEmptyRsp();
+        WritableRowSet ix0Rsp = RowSetTstUtils.makeEmptyRsp();
         ix0Rsp = rowSetFromString(ix0Str, ix0Rsp);
         ix0.remove(ix1);
         ix0Rsp.remove(ix1);
@@ -2923,13 +2923,13 @@ public class WritableRowSetImplTest extends TestCase {
     }
 
     public void testMinusRegression1() {
-        final WritableRowSet ix0 = TstRowSetUtil.makeEmptySr();
+        final WritableRowSet ix0 = RowSetTstUtils.makeEmptySr();
         rvs2ix(ix0, new long[] {
                 10, -12, 14, 16, 18, 20, 22, 24, 26, 28, -29, 31, 33, -34, 36, 38, -39, 41, 43, 45, -47, 49, 51, 53, 55,
                 57, 59, 61, 63, -64,
                 66, -67, 69, 71, -76, 78, -80, 82, -83, 85, -88, 90, -91, 93, -94, 96, 98, 100, 102, -110, 112, -113
         });
-        final WritableRowSet ix1 = TstRowSetUtil.makeEmptySr();
+        final WritableRowSet ix1 = RowSetTstUtils.makeEmptySr();
         rvs2ix(ix1, new long[] {24, 28, 31, 38, 51, 57, 59, 61, 74, 90, 93, 107, -108, 110});
         final RowSet ix3 = ix0.minus(ix1);
         final RowSet intersect = ix0.intersect(ix1);
@@ -2951,11 +2951,11 @@ public class WritableRowSetImplTest extends TestCase {
                 "1677-1678,1732,1761,1774,1804,1811,1813,1843,1856,1890,1903,1918,1927,1933,1942,2009,2068,2155,2184," +
                 "2189,2206,2210,2221,2223,2230,2303,2310,2316,2329,2347,2352,2354,2380,2458,2474,2482,2489,2494,2503," +
                 "2622,2625,2631,2635,2640,2643-2644,2684,2686,2688,2690,2704,2725,2811,2829,2839";
-        WritableRowSet ix0 = TstRowSetUtil.makeEmptySr();
+        WritableRowSet ix0 = RowSetTstUtils.makeEmptySr();
         ix0 = rowSetFromString(ix0Str, ix0);
-        WritableRowSet ix1 = TstRowSetUtil.makeEmptyRsp();
+        WritableRowSet ix1 = RowSetTstUtils.makeEmptyRsp();
         ix1 = rowSetFromString(ix1Str, ix1);
-        WritableRowSet ix0Rsp = TstRowSetUtil.makeEmptyRsp();
+        WritableRowSet ix0Rsp = RowSetTstUtils.makeEmptyRsp();
         ix0Rsp = rowSetFromString(ix0Str, ix0Rsp);
         RowSet result = ix0.minus(ix1);
         RowSet rspResult = ix0Rsp.minus(ix1);
@@ -2964,25 +2964,25 @@ public class WritableRowSetImplTest extends TestCase {
     }
 
     public void testRemoveRegression1() {
-        WritableRowSet ix0 = TstRowSetUtil.makeEmptyRsp();
+        WritableRowSet ix0 = RowSetTstUtils.makeEmptyRsp();
         ix0 = rowSetFromString("0-65536,131071-393215", ix0);
-        WritableRowSet ix1 = TstRowSetUtil.makeEmptySr();
+        WritableRowSet ix1 = RowSetTstUtils.makeEmptySr();
         ix1 = rowSetFromString("195608,196607", ix1);
         ix0.remove(ix1);
-        WritableRowSet expected = TstRowSetUtil.makeEmptySr();
+        WritableRowSet expected = RowSetTstUtils.makeEmptySr();
         expected = rowSetFromString("0-65536,131071-195607,195609-196606,196608-393215", expected);
         assertEquals(expected.size(), ix0.size());
         assertTrue(expected.subsetOf(ix0));
     }
 
     public void testRemoveRegression2() {
-        WritableRowSet ix0 = TstRowSetUtil.makeEmptyRsp();
+        WritableRowSet ix0 = RowSetTstUtils.makeEmptyRsp();
         ix0.insert(0);
         ix0.insert(65535);
         for (int i = 2; i <= 65534; i += 2) {
             ix0.insert(i);
         }
-        WritableRowSet ix1 = TstRowSetUtil.makeEmptySr();
+        WritableRowSet ix1 = RowSetTstUtils.makeEmptySr();
         ix1.insert(0);
         ix1.insert(65535);
         ix0.remove(ix1);
@@ -3072,14 +3072,14 @@ public class WritableRowSetImplTest extends TestCase {
         final long end0 = 3 * BLOCK_SIZE + BLOCK_SIZE / 2;
         int i0 = 0;
         for (RowSet ix0 : new RowSet[] {
-                TstRowSetUtil.makeSingleRange(start0, end0),
+                RowSetTstUtils.makeSingleRange(start0, end0),
                 new WritableRowSetImpl(new RspBitmap(start0, end0)),
                 new WritableRowSetImpl(SortedRanges.makeSingleRange(start0, end0))}) {
             final long start1 = 4 * BLOCK_SIZE + BLOCK_SIZE / 2;
             final long end1 = 5 * BLOCK_SIZE + BLOCK_SIZE / 2;
             int i1 = 0;
             for (RowSet ix1 : new RowSet[] {
-                    TstRowSetUtil.makeSingleRange(start1, end1),
+                    RowSetTstUtils.makeSingleRange(start1, end1),
                     new WritableRowSetImpl(new RspBitmap(start1, end1)),
                     new WritableRowSetImpl(SortedRanges.makeSingleRange(start1, end1))}) {
                 int ia = 0;

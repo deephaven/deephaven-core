@@ -6,7 +6,7 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.DataColumn;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtil;
+import io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtils;
 import io.deephaven.engine.table.lang.QueryLibraryImports;
 import io.deephaven.engine.table.lang.QueryScopeParam;
 import io.deephaven.engine.time.DateTimeUtils;
@@ -106,7 +106,7 @@ public class QueryLibraryImportsDefaults implements QueryLibraryImports {
                 BinSearch.class,
                 Casting.class,
                 PrimitiveParseUtil.class,
-                QueryLanguageFunctionUtil.class,
+                QueryLanguageFunctionUtils.class,
                 DateTimeUtils.class,
                 TimeZone.class,
                 io.deephaven.base.string.cache.CompressedString.class,

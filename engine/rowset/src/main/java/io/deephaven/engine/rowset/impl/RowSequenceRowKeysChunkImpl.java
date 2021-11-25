@@ -154,7 +154,7 @@ public class RowSequenceRowKeysChunkImpl implements RowSequence {
         if (asRangesChunk != null) {
             return asRangesChunk;
         }
-        return asRangesChunk = RowKeyChunkUtil.convertToOrderedKeyRanges(backingChunk);
+        return asRangesChunk = RowKeyChunkUtils.convertToOrderedKeyRanges(backingChunk);
     }
 
     @Override
@@ -167,7 +167,7 @@ public class RowSequenceRowKeysChunkImpl implements RowSequence {
 
     @Override
     public final void fillRowKeyRangesChunk(final WritableLongChunk<Attributes.OrderedRowKeyRanges> chunkToFill) {
-        RowKeyChunkUtil.convertToOrderedKeyRanges(backingChunk, chunkToFill);
+        RowKeyChunkUtils.convertToOrderedKeyRanges(backingChunk, chunkToFill);
     }
 
     @Override

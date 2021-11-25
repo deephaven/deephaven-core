@@ -9,7 +9,7 @@ import io.deephaven.util.QueryConstants;
 import org.jpy.PyObject;
 
 @SuppressWarnings({"unused", "WeakerAccess", "SimplifiableIfStatement"})
-public final class QueryLanguageFunctionUtil {
+public final class QueryLanguageFunctionUtils {
 
     public static boolean eq(Object obj1, Object obj2) {
         // noinspection SimplifiableBooleanExpression

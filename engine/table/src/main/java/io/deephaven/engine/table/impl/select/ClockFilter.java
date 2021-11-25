@@ -12,7 +12,7 @@ import io.deephaven.engine.rowset.RowSetBuilderRandom;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtil;
+import io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtils;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.updategraph.DynamicNode;
@@ -149,7 +149,7 @@ public abstract class ClockFilter extends WhereFilterLivenessArtifactImpl implem
             final long firstKeyAdded = nextKey;
             long lastKeyAdded = -1L;
             while (nextKey <= lastKey
-                    && QueryLanguageFunctionUtil.lessEquals(nanosColumnSource.getLong(nextKey), nowNanos)) {
+                    && QueryLanguageFunctionUtils.lessEquals(nanosColumnSource.getLong(nextKey), nowNanos)) {
                 lastKeyAdded = nextKey++;
             }
             if (lastKeyAdded == -1L) {

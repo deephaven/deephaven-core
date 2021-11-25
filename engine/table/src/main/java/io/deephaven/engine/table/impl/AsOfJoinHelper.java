@@ -63,19 +63,19 @@ public class AsOfJoinHelper {
                 .map(mp -> leftTable.getColumnSource(mp.leftColumn)).toArray(ColumnSource[]::new);
         final ColumnSource<?>[] leftSources = new ColumnSource[originalLeftSources.length];
         for (int ii = 0; ii < leftSources.length; ++ii) {
-            leftSources[ii] = ReinterpretUtil.maybeConvertToPrimitive(originalLeftSources[ii]);
+            leftSources[ii] = ReinterpretUtils.maybeConvertToPrimitive(originalLeftSources[ii]);
         }
         final ColumnSource<?>[] originalRightSources = Arrays.stream(columnsToMatch).limit(keyColumnCount)
                 .map(mp -> rightTable.getColumnSource(mp.rightColumn)).toArray(ColumnSource[]::new);
         final ColumnSource<?>[] rightSources = new ColumnSource[originalLeftSources.length];
         for (int ii = 0; ii < leftSources.length; ++ii) {
-            rightSources[ii] = ReinterpretUtil.maybeConvertToPrimitive(originalRightSources[ii]);
+            rightSources[ii] = ReinterpretUtils.maybeConvertToPrimitive(originalRightSources[ii]);
         }
 
         final ColumnSource<?> leftStampSource =
-                ReinterpretUtil.maybeConvertToPrimitive(leftTable.getColumnSource(stampPair.leftColumn()));
+                ReinterpretUtils.maybeConvertToPrimitive(leftTable.getColumnSource(stampPair.leftColumn()));
         final ColumnSource<?> originalRightStampSource = rightTable.getColumnSource(stampPair.rightColumn());
-        final ColumnSource<?> rightStampSource = ReinterpretUtil.maybeConvertToPrimitive(originalRightStampSource);
+        final ColumnSource<?> rightStampSource = ReinterpretUtils.maybeConvertToPrimitive(originalRightStampSource);
 
         if (leftStampSource.getType() != rightStampSource.getType()) {
             throw new IllegalArgumentException("Can not aj() with different stamp types: left="
@@ -164,7 +164,7 @@ public class AsOfJoinHelper {
         if (leftGrouping != null) {
             final MutableInt groupSize = new MutableInt();
             // noinspection unchecked,rawtypes
-            leftGroupedSources = GroupingUtil.groupingToFlatSources((ColumnSource) leftSources[0], leftGrouping,
+            leftGroupedSources = GroupingUtils.groupingToFlatSources((ColumnSource) leftSources[0], leftGrouping,
                     leftTable.getRowSet(), groupSize);
             leftGroupingSize = groupSize.intValue();
         } else {
@@ -177,7 +177,7 @@ public class AsOfJoinHelper {
         if (rightGrouping != null) {
             final MutableInt groupSize = new MutableInt();
             // noinspection unchecked,rawtypes
-            rightGroupedSources = GroupingUtil.groupingToFlatSources((ColumnSource) rightSources[0],
+            rightGroupedSources = GroupingUtils.groupingToFlatSources((ColumnSource) rightSources[0],
                     rightGrouping, rightTable.getRowSet(), groupSize);
             rightGroupingSize = groupSize.intValue();
         } else {

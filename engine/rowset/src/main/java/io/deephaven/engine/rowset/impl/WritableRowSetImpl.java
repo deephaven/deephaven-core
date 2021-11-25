@@ -244,7 +244,7 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
 
     @Override
     public final TLongArrayList[] findMissing(final RowSet keys) {
-        return RowSetUtil.findMissing(this, keys);
+        return RowSetUtils.findMissing(this, keys);
     }
 
     @NotNull
@@ -406,41 +406,41 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
 
     @Override
     public final void fillRowKeyChunk(final WritableLongChunk<? extends RowKeys> chunkToFill) {
-        RowSetUtil.fillKeyIndicesChunk(this, chunkToFill);
+        RowSetUtils.fillKeyIndicesChunk(this, chunkToFill);
     }
 
     @Override
     public final void fillRowKeyRangesChunk(final WritableLongChunk<OrderedRowKeyRanges> chunkToFill) {
-        RowSetUtil.fillKeyRangesChunk(this, chunkToFill);
+        RowSetUtils.fillKeyRangesChunk(this, chunkToFill);
     }
 
     @Override
     public LogOutput append(LogOutput logOutput) {
-        return RowSetUtil.append(logOutput, rangeIterator());
+        return RowSetUtils.append(logOutput, rangeIterator());
     }
 
     @Override
     public String toString() {
-        return RowSetUtil.toString(this, 200);
+        return RowSetUtils.toString(this, 200);
     }
 
     public String toString(final int maxRanges) {
-        return RowSetUtil.toString(this, maxRanges);
+        return RowSetUtils.toString(this, maxRanges);
     }
 
     @SuppressWarnings("EqualsWhichDoesntCheckParameterClass")
     public final boolean equals(final Object obj) {
-        return RowSetUtil.equals(this, obj);
+        return RowSetUtils.equals(this, obj);
     }
 
     @Override
     public final void writeExternal(@NotNull final ObjectOutput out) throws IOException {
-        ExternalizableRowSetUtil.writeExternalCompressedDeltas(out, this);
+        ExternalizableRowSetUtils.writeExternalCompressedDeltas(out, this);
     }
 
     @Override
     public void readExternal(@NotNull final ObjectInput in) throws IOException {
-        try (final RowSet readRowSet = ExternalizableRowSetUtil.readExternalCompressedDelta(in)) {
+        try (final RowSet readRowSet = ExternalizableRowSetUtils.readExternalCompressedDelta(in)) {
             assign(getInnerSet(readRowSet).ixCowRef());
         }
     }

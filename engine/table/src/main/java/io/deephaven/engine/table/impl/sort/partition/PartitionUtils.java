@@ -8,7 +8,7 @@ import io.deephaven.engine.rowset.RowSet;
 
 import java.util.Random;
 
-class PartitionUtilities {
+class PartitionUtils {
     /**
      * Floyd's sampling algorithm described in
      * http://www.nowherenearithaca.com/2013/05/robert-floyds-tiny-and-beautiful.html

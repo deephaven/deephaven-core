@@ -7,7 +7,7 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSequenceFactory;
-import io.deephaven.engine.table.impl.GroupingUtil;
+import io.deephaven.engine.table.impl.GroupingUtils;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.indexer.RowSetIndexer;
@@ -197,7 +197,7 @@ public class AggregationHelper {
             @NotNull final ColumnSource<T> keyColumnSource,
             @NotNull final Map<T, RowSet> groupToIndex) {
         final Pair<ArrayBackedColumnSource<T>, ObjectArraySource<TrackingWritableRowSet>> flatResultColumnSources =
-                GroupingUtil.groupingToFlatSources(keyColumnSource, groupToIndex);
+                GroupingUtils.groupingToFlatSources(keyColumnSource, groupToIndex);
         final ArrayBackedColumnSource<?> resultKeyColumnSource = flatResultColumnSources.getFirst();
         final ObjectArraySource<TrackingWritableRowSet> resultIndexColumnSource = flatResultColumnSources.getSecond();
 
@@ -253,7 +253,7 @@ public class AggregationHelper {
             ColumnSource<?> resultKeyColumnSource = keyHashTableSources[kci];
             if (keyColumnSources[kci] != maybeReinterpretedKeyColumnSources[kci]) {
                 resultKeyColumnSource =
-                        ReinterpretUtil.convertToOriginal(keyColumnSources[kci].getType(), resultKeyColumnSource);
+                        ReinterpretUtils.convertToOriginal(keyColumnSources[kci].getType(), resultKeyColumnSource);
             }
             resultColumnSourceMap.put(keyColumnNames[kci],
                     new RedirectedColumnSource<>(resultIndexToHashSlot, resultKeyColumnSource));
@@ -474,7 +474,7 @@ public class AggregationHelper {
                 maybeGetGroupingForAggregation(aggregationControl, inputTable, keyColumnSources);
         if (groupingForAggregation != null) {
             final LocalTableMap staticGroupedResult = new LocalTableMap(null, inputTable.getDefinition());
-            GroupingUtil.forEachResponsiveGroup(groupingForAggregation, inputTable.getRowSet(),
+            GroupingUtils.forEachResponsiveGroup(groupingForAggregation, inputTable.getRowSet(),
                     (final Object key, final WritableRowSet rowSet) -> staticGroupedResult.put(key,
                             subTableSource.getSubTable(rowSet.toTracking())));
             return staticGroupedResult;
@@ -582,7 +582,7 @@ public class AggregationHelper {
         final ColumnSource<?>[] maybeReinterpretedKeyColumnSources = new ColumnSource[keyColumnSources.length];
         for (int kci = 0; kci < keyColumnSources.length; ++kci) {
             maybeReinterpretedKeyColumnSources[kci] =
-                    ReinterpretUtil.maybeConvertToPrimitive(keyColumnSources[kci]);
+                    ReinterpretUtils.maybeConvertToPrimitive(keyColumnSources[kci]);
         }
         return maybeReinterpretedKeyColumnSources;
     }

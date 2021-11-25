@@ -26,8 +26,8 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
-import static io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtil.minus;
-import static io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtil.plus;
+import static io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtils.minus;
+import static io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtils.plus;
 
 /**
  * Query performance instrumentation tools. Manages a hierarchy of {@link QueryPerformanceNugget} instances.

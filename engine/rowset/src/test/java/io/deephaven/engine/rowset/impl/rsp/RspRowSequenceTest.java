@@ -12,8 +12,8 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.rowset.impl.RowSequenceTestBase;
+import io.deephaven.engine.rowset.impl.RowSetTstUtils;
 import io.deephaven.engine.rowset.impl.TrackingWritableRowSetImpl;
-import io.deephaven.engine.rowset.impl.TstRowSetUtil;
 import org.junit.Test;
 
 import java.util.Random;
@@ -499,7 +499,7 @@ public class RspRowSequenceTest extends RowSequenceTestBase {
 
     @Test
     public void testAdvaceBugRsp() {
-        advanceBug(TstRowSetUtil.makeEmptyRsp());
+        advanceBug(RowSetTstUtils.makeEmptyRsp());
     }
 
     @Test
@@ -520,7 +520,7 @@ public class RspRowSequenceTest extends RowSequenceTestBase {
 
     @Test
     public void testAsKeyRangesChunkRegression0() {
-        WritableRowSet rowSet = TstRowSetUtil.makeSingleRange(130972, 131071);
+        WritableRowSet rowSet = RowSetTstUtils.makeSingleRange(130972, 131071);
         rowSet.insert(262144);
 
         final long CHUNK_SIZE = 4096;
@@ -560,7 +560,7 @@ public class RspRowSequenceTest extends RowSequenceTestBase {
 
     @Test
     public void testAsKeyRangesChunkRegression0Rsp() {
-        WritableRowSet rowSet = TstRowSetUtil.makeSingleRange(130972, 131071);
+        WritableRowSet rowSet = RowSetTstUtils.makeSingleRange(130972, 131071);
         rowSet.insert(262144);
 
         final long CHUNK_SIZE = 4096;

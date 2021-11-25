@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.function.Function;
 
 import static io.deephaven.replication.ReplicatePrimitiveCode.*;
-import static io.deephaven.replication.ReplicateUtilities.*;
+import static io.deephaven.replication.ReplicationUtils.*;
 
 //
 public class ReplicateSegmentedSortedMultiset {

@@ -9,7 +9,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtil;
+import io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -60,7 +60,7 @@ public class UnsortedClockFilter extends ClockFilter {
         public int compare(final Range r1, final Range r2) {
             Assert.assertion(!r1.isEmpty(), "!r1.isEmpty()");
             Assert.assertion(!r2.isEmpty(), "!r2.isEmpty()");
-            return QueryLanguageFunctionUtil.compareTo(nanosColumnSource.getLong(r1.nextKey),
+            return QueryLanguageFunctionUtils.compareTo(nanosColumnSource.getLong(r1.nextKey),
                     nanosColumnSource.getLong(r2.nextKey));
         }
     }
@@ -86,17 +86,17 @@ public class UnsortedClockFilter extends ClockFilter {
         long activeRangeFirstKey = selectionIterator.nextLong();
         long activeRangeLastKey = activeRangeFirstKey;
         long previousValue = nanosColumnSource.getLong(activeRangeFirstKey);
-        boolean activeRangeIsDeferred = QueryLanguageFunctionUtil.greater(previousValue, nowNanos);
+        boolean activeRangeIsDeferred = QueryLanguageFunctionUtils.greater(previousValue, nowNanos);
 
         while (selectionIterator.hasNext()) {
             final long currentKey = selectionIterator.nextLong();
             final long currentValue = nanosColumnSource.getLong(currentKey);
-            final boolean currentIsDeferred = QueryLanguageFunctionUtil.greater(currentValue, nowNanos);
+            final boolean currentIsDeferred = QueryLanguageFunctionUtils.greater(currentValue, nowNanos);
 
             // If we observe a change in deferral status, a discontinuity in the keys, or a decrease in the values, we
             // have entered a new range
             if (currentIsDeferred != activeRangeIsDeferred || currentKey != activeRangeLastKey + 1
-                    || QueryLanguageFunctionUtil.less(currentValue, previousValue)) {
+                    || QueryLanguageFunctionUtils.less(currentValue, previousValue)) {
                 // Add the current range, as appropriate
                 if (activeRangeIsDeferred) {
                     rangesByNextTime.add(new Range(activeRangeFirstKey, activeRangeLastKey));

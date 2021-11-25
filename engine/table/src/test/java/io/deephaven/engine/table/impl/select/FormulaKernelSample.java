@@ -12,7 +12,7 @@ import io.deephaven.engine.table.lang.QueryScopeParam;
 import io.deephaven.engine.vector.LongVector;
 import io.deephaven.engine.vector.Vector;
 
-import static io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtil.*;
+import static io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtils.*;
 
 public class FormulaKernelSample implements io.deephaven.engine.table.impl.select.formula.FormulaKernel {
     public static final io.deephaven.engine.table.impl.select.formula.FormulaKernelFactory __FORMULA_KERNEL_FACTORY = FormulaKernelSample::new;

@@ -530,7 +530,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession implements Scr
                 "import static io.deephaven.libs.GroovyStaticImports.*;\n" +
                 "import static io.deephaven.engine.time.DateTimeUtils.*;\n" +
                 "import static io.deephaven.engine.time.TimeZone.*;\n" +
-                "import static io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtil.*;\n" +
+                "import static io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtils.*;\n" +
                 "import static io.deephaven.api.agg.Aggregation.*;\n" +
                 StringUtils.joinStrings(scriptImports, "\n") + "\n";
         return new Pair<>(commandPrefix, commandPrefix + command

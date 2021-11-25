@@ -64,9 +64,9 @@ public abstract class BaseStreamFirstOrLastChunkedOperator implements IterativeC
             final ArrayBackedColumnSource<?> resultSource = ArrayBackedColumnSource.getMemoryColumnSource(0,
                     streamSource.getType(), streamSource.getComponentType());
             resultColumnsMutable.put(resultPair.leftColumn(), resultSource);
-            inputColumns[ci] = ReinterpretUtil.maybeConvertToPrimitive(streamSource);
+            inputColumns[ci] = ReinterpretUtils.maybeConvertToPrimitive(streamSource);
             // Note that ArrayBackedColumnSources implementations reinterpret very efficiently where applicable.
-            outputColumns[ci] = (WritableColumnSource<?>) ReinterpretUtil.maybeConvertToPrimitive(resultSource);
+            outputColumns[ci] = (WritableColumnSource<?>) ReinterpretUtils.maybeConvertToPrimitive(resultSource);
             Assert.eq(inputColumns[ci].getChunkType(), "inputColumns[ci].getChunkType()",
                     outputColumns[ci].getChunkType(), "outputColumns[ci].getChunkType()");
         }

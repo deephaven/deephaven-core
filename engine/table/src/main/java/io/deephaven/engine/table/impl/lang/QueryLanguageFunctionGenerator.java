@@ -56,55 +56,55 @@ public class QueryLanguageFunctionGenerator {
                 "        String description;\n" +
                 "\n" +
                 "        try '{'\n" +
-                "            dbResult = QueryLanguageFunctionUtil.{0}(value1, value2);\n" +
+                "            dbResult = QueryLanguageFunctionUtils.{0}(value1, value2);\n" +
                 "            expectedResult = value1{7}{8}value2;\n" +
                 "            compareResult = {13}.compare(dbResult, expectedResult);\n" +
-                "            description = \"{13}.compare(QueryLanguageFunctionUtil.{0}(value1, value2), value1{7}{8}value2)\";\n"
+                "            description = \"{13}.compare(QueryLanguageFunctionUtils.{0}(value1, value2), value1{7}{8}value2)\";\n"
                 +
                 "            TestCase.assertEquals(description, 0, compareResult);\n" +
                 /*
                  * ---------- This one runs into ArithmeticExceptions doing stuff like 0 % 0 ---------- "\n" +
-                 * "            dbResult = QueryLanguageFunctionUtil.{0}(value1, zero2);\n" +
+                 * "            dbResult = QueryLanguageFunctionUtils.{0}(value1, zero2);\n" +
                  * "            expectedResult = value1{7}{8}zero2;\n" +
                  * "            compareResult = {13}.compare(dbResult, expectedResult);\n" +
-                 * "            description = \"{13}.compare(QueryLanguageFunctionUtil.{0}(value1, zero2), value1{7}{8}zero2)\";\n"
+                 * "            description = \"{13}.compare(QueryLanguageFunctionUtils.{0}(value1, zero2), value1{7}{8}zero2)\";\n"
                  * + "            TestCase.assertEquals(description, 0, compareResult);\n" +
                  */
                 "\n" +
-                "            dbResult = QueryLanguageFunctionUtil.{0}(value1, QueryConstants.NULL_{5});\n" +
+                "            dbResult = QueryLanguageFunctionUtils.{0}(value1, QueryConstants.NULL_{5});\n" +
                 "            expectedResult = QueryConstants.NULL_{6};\n" +
                 "            compareResult = {13}.compare(dbResult, expectedResult);\n" +
-                "            description = \"{13}.compare(QueryLanguageFunctionUtil.{0}(value1, QueryConstants.NULL_{5}), QueryConstants.NULL_{6})\";\n"
+                "            description = \"{13}.compare(QueryLanguageFunctionUtils.{0}(value1, QueryConstants.NULL_{5}), QueryConstants.NULL_{6})\";\n"
                 +
                 "            TestCase.assertEquals(description, 0, compareResult);\n" +
                 "\n" +
-                "            dbResult = QueryLanguageFunctionUtil.{0}(zero1, value2);\n" +
+                "            dbResult = QueryLanguageFunctionUtils.{0}(zero1, value2);\n" +
                 "            expectedResult = zero1{7}{8}value2;\n" +
                 "            compareResult = {13}.compare(dbResult, expectedResult);\n" +
-                "            description = \"{13}.compare(QueryLanguageFunctionUtil.{0}(zero1, value2), zero1{7}{8}value2)\";\n"
+                "            description = \"{13}.compare(QueryLanguageFunctionUtils.{0}(zero1, value2), zero1{7}{8}value2)\";\n"
                 +
                 "            TestCase.assertEquals(description, 0, compareResult);\n" +
                 "\n" +
-                "            dbResult = QueryLanguageFunctionUtil.{0}(QueryConstants.NULL_{4}, value2);\n" +
+                "            dbResult = QueryLanguageFunctionUtils.{0}(QueryConstants.NULL_{4}, value2);\n" +
                 "            expectedResult = QueryConstants.NULL_{6};\n" +
                 "            compareResult = {13}.compare(dbResult, expectedResult);\n" +
-                "            description = \"{13}.compare(QueryLanguageFunctionUtil.{0}(QueryConstants.NULL_{4}, value2), QueryConstants.NULL_{6})\";\n"
+                "            description = \"{13}.compare(QueryLanguageFunctionUtils.{0}(QueryConstants.NULL_{4}, value2), QueryConstants.NULL_{6})\";\n"
                 +
                 "            TestCase.assertEquals(description, 0, compareResult);\n" +
                 "\n" +
-                "            dbResult = QueryLanguageFunctionUtil.{0}(QueryConstants.NULL_{4}, QueryConstants.NULL_{5});\n"
+                "            dbResult = QueryLanguageFunctionUtils.{0}(QueryConstants.NULL_{4}, QueryConstants.NULL_{5});\n"
                 +
                 "            expectedResult = QueryConstants.NULL_{6};\n" +
                 "            compareResult = {13}.compare(dbResult, expectedResult);\n" +
-                "            description = \"{13}.compare(QueryLanguageFunctionUtil.{0}(QueryConstants.NULL_{4}, QueryConstants.NULL_{5}), QueryConstants.NULL_{6})\";\n"
+                "            description = \"{13}.compare(QueryLanguageFunctionUtils.{0}(QueryConstants.NULL_{4}, QueryConstants.NULL_{5}), QueryConstants.NULL_{6})\";\n"
                 +
                 "            TestCase.assertEquals(description, 0, compareResult);\n" +
                 /*----------  Same issue as above  ----------
                 "\n" +
-                "            dbResult = QueryLanguageFunctionUtil.{0}(zero1, zero2);\n" +
+                "            dbResult = QueryLanguageFunctionUtils.{0}(zero1, zero2);\n" +
                 "            expectedResult = zero1{7}{8}zero2;\n" +
                 "            compareResult = {13}.compare(dbResult, expectedResult);\n" +
-                "            description = \"{13}.compare(QueryLanguageFunctionUtil.{0}(zero1, zero2), zero1{7}{8}zero2)\";\n" +
+                "            description = \"{13}.compare(QueryLanguageFunctionUtils.{0}(zero1, zero2), zero1{7}{8}zero2)\";\n" +
                 "            TestCase.assertEquals(description, 0, compareResult);\n" +*/
                 "        '}' catch (Exception ex) '{'\n" +
                 "            throw new RuntimeException(\"Comparison failure: dbResult=\" + dbResult + \", expectedResult=\" + expectedResult, ex);\n"
@@ -120,21 +120,21 @@ public class QueryLanguageFunctionGenerator {
                 "        final {2} value2 = {12};\n" +
                 "        final {1} zero1 = 0;\n" +
                 "        final {2} zero2 = 0;\n\n" +
-                "        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Float.NaN));\n" +
-                "        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Float.NaN, value1));\n" +
-                "        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Double.NaN));\n" +
-                "        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Double.NaN, value1));\n" +
-                "        TestCase.assertEquals( 0, QueryLanguageFunctionUtil.compareTo(zero1, zero2));\n" +
-                "        TestCase.assertEquals( 0, QueryLanguageFunctionUtil.compareTo(zero2, zero1));\n" +
-                "        TestCase.assertEquals( 0, QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_{4}, QueryConstants.NULL_{5}));\n"
+                "        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Float.NaN));\n" +
+                "        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Float.NaN, value1));\n" +
+                "        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Double.NaN));\n" +
+                "        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Double.NaN, value1));\n" +
+                "        TestCase.assertEquals( 0, QueryLanguageFunctionUtils.compareTo(zero1, zero2));\n" +
+                "        TestCase.assertEquals( 0, QueryLanguageFunctionUtils.compareTo(zero2, zero1));\n" +
+                "        TestCase.assertEquals( 0, QueryLanguageFunctionUtils.compareTo(QueryConstants.NULL_{4}, QueryConstants.NULL_{5}));\n"
                 +
-                "        TestCase.assertEquals( 0, QueryLanguageFunctionUtil.compareTo(value1, value1));\n" +
-                "        TestCase.assertEquals( 0, QueryLanguageFunctionUtil.compareTo(value2, value2));\n" +
-                "        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, value2));\n" +
-                "        TestCase.assertEquals( 1, QueryLanguageFunctionUtil.compareTo(value2, value1));\n" +
-                "        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value1, value2));\n" +
-                "        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value2, value1));\n" +
-                "        TestCase.assertEquals( 1, QueryLanguageFunctionUtil.compareTo(-value1, -value2));\n" +
+                "        TestCase.assertEquals( 0, QueryLanguageFunctionUtils.compareTo(value1, value1));\n" +
+                "        TestCase.assertEquals( 0, QueryLanguageFunctionUtils.compareTo(value2, value2));\n" +
+                "        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, value2));\n" +
+                "        TestCase.assertEquals( 1, QueryLanguageFunctionUtils.compareTo(value2, value1));\n" +
+                "        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value1, value2));\n" +
+                "        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value2, value1));\n" +
+                "        TestCase.assertEquals( 1, QueryLanguageFunctionUtils.compareTo(-value1, -value2));\n" +
                 "    '}'");
 
         /*
@@ -323,7 +323,7 @@ public class QueryLanguageFunctionGenerator {
         buf.append("import org.jpy.PyObject;\n\n");
 
         buf.append("@SuppressWarnings({\"unused\", \"WeakerAccess\", \"SimplifiableIfStatement\"})\n");
-        buf.append("public final class QueryLanguageFunctionUtil {\n\n");
+        buf.append("public final class QueryLanguageFunctionUtils {\n\n");
 
         // ------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -685,7 +685,7 @@ public class QueryLanguageFunctionGenerator {
         buf.append("}\n");
         testBuf.append("}\n");
 
-        String fileName = "./engine/table/src/main/java/io/deephaven/engine/tables/lang/QueryLanguageFunctionUtil.java";
+        String fileName = "./engine/table/src/main/java/io/deephaven/engine/tables/lang/QueryLanguageFunctionUtils.java";
         String testFileName =
                 "./engine/table/src/test/java/io/deephaven/engine/tables/lang/TestLanguageFunctionUtil.java";
         try {
@@ -700,9 +700,9 @@ public class QueryLanguageFunctionGenerator {
             e.printStackTrace();
         }
 
-        System.out.println("Finished generating QueryLanguageFunctionUtil in "
+        System.out.println("Finished generating QueryLanguageFunctionUtils in "
                 + new DecimalFormat().format(System.currentTimeMillis() - start) + " millis");
-        System.out.println("Wrote QueryLanguageFunctionUtil to: " + fileName);
+        System.out.println("Wrote QueryLanguageFunctionUtils to: " + fileName);
         System.out.println("Wrote TestLanguageFunctionUtil to: " + testFileName);
     }
 

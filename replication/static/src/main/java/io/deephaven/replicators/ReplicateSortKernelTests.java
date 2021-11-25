@@ -1,6 +1,6 @@
 package io.deephaven.replicators;
 
-import io.deephaven.replication.ReplicateUtilities;
+import io.deephaven.replication.ReplicationUtils;
 import org.apache.commons.io.FileUtils;
 import org.jetbrains.annotations.NotNull;
 
@@ -67,7 +67,7 @@ public class ReplicateSortKernelTests {
         final File objectFile = new File(objectPath);
         List<String> lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
 
-        lines = ReplicateUtilities.globalReplacements(lines, "ObjectArraySource\\(\\)",
+        lines = ReplicationUtils.globalReplacements(lines, "ObjectArraySource\\(\\)",
                 "ObjectArraySource(String.class)", "ObjectChunk<Values>", "ObjectChunk<Object, Values>");
 
         FileUtils.writeLines(objectFile, lines);
@@ -75,7 +75,7 @@ public class ReplicateSortKernelTests {
 
     @NotNull
     private static List<String> fixupGetJavaComparator(List<String> lines) {
-        return ReplicateUtilities.applyFixup(lines, "getJavaComparator",
+        return ReplicationUtils.applyFixup(lines, "getJavaComparator",
                 "(.*)Comparator.comparing\\(ObjectLongTuple::getFirstElement\\)(.*)",
                 m -> Arrays.asList("        // noinspection unchecked",
                         m.group(1) + "Comparator.comparing(x -> (Comparable)x.getFirstElement())" + m.group(2)));
@@ -83,7 +83,7 @@ public class ReplicateSortKernelTests {
 
     @NotNull
     private static List<String> fixupGetJavaMultiComparator(List<String> lines) {
-        return ReplicateUtilities.applyFixup(lines, "getJavaMultiComparator",
+        return ReplicationUtils.applyFixup(lines, "getJavaMultiComparator",
                 "(.*)Comparator.comparing\\(ObjectLongLongTuple::getFirstElement\\).thenComparing\\(ObjectLongLongTuple::getSecondElement\\)(.*)",
                 m -> Arrays.asList("        // noinspection unchecked",
                         m.group(1)
@@ -93,7 +93,7 @@ public class ReplicateSortKernelTests {
 
     @NotNull
     private static List<String> fixupMergesort(List<String> lines) {
-        return ReplicateUtilities.applyFixup(lines, "mergesort", "(.*)Object.compare\\((.*), (.*)\\)\\)(.*)",
+        return ReplicationUtils.applyFixup(lines, "mergesort", "(.*)Object.compare\\((.*), (.*)\\)\\)(.*)",
                 m -> Arrays.asList("            // noinspection unchecked",
                         m.group(1) + "Objects.compare((Comparable)" + m.group(2) + ", (Comparable)" + m.group(3)
                                 + ", Comparator.naturalOrder()))" + m.group(4)));
@@ -101,7 +101,7 @@ public class ReplicateSortKernelTests {
 
     @NotNull
     private static List<String> fixupTupleColumnSource(List<String> lines) {
-        return ReplicateUtilities.replaceRegion(lines, "tuple column source", Arrays.asList(
+        return ReplicationUtils.replaceRegion(lines, "tuple column source", Arrays.asList(
                 "                @Override",
                 "                public Object get(long rowSet) {",
                 "                    return javaTuples.get(((int)rowSet) / 10).getFirstElement();",

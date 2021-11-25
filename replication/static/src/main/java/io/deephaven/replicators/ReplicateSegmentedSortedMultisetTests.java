@@ -1,6 +1,6 @@
 package io.deephaven.replicators;
 
-import io.deephaven.replication.ReplicateUtilities;
+import io.deephaven.replication.ReplicationUtils;
 import org.apache.commons.io.FileUtils;
 
 import java.io.File;
@@ -9,7 +9,7 @@ import java.nio.charset.Charset;
 import java.util.List;
 
 import static io.deephaven.replication.ReplicatePrimitiveCode.*;
-import static io.deephaven.replication.ReplicateUtilities.*;
+import static io.deephaven.replication.ReplicationUtils.*;
 
 public class ReplicateSegmentedSortedMultisetTests {
     public static void main(String[] args) throws IOException {
@@ -47,6 +47,6 @@ public class ReplicateSegmentedSortedMultisetTests {
                 "new ObjectSegmentedSortedMultiset(desc.nodeSize(), Object.class)");
         lines = removeImport(lines, "\\s*import static.*QueryConstants.*;");
         lines = removeRegion(lines, "SortFixupSanityCheck");
-        FileUtils.writeLines(objectFile, ReplicateUtilities.fixupChunkAttributes(lines));
+        FileUtils.writeLines(objectFile, ReplicationUtils.fixupChunkAttributes(lines));
     }
 }

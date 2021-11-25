@@ -26,7 +26,7 @@ import static io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource.get
 /**
  * Utilities for creating or interacting with grouping information.
  */
-public class GroupingUtil {
+public class GroupingUtils {
 
     /**
      * Get a map from unique, boxed values in this column to a long[2] range of keys.

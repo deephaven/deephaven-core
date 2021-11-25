@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.Objects;
 
 import static io.deephaven.replication.ReplicatePrimitiveCode.*;
-import static io.deephaven.replication.ReplicateUtilities.*;
+import static io.deephaven.replication.ReplicationUtils.*;
 
 public class ReplicateHashing {
     public static void main(String[] args) throws IOException {

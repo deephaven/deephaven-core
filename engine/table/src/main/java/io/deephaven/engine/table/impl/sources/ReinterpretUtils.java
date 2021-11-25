@@ -4,7 +4,7 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.time.DateTime;
 import org.jetbrains.annotations.NotNull;
 
-public class ReinterpretUtil {
+public class ReinterpretUtils {
 
     /**
      * Given a DateTime column source turn it into a long column source, either via reinterpretation or wrapping.

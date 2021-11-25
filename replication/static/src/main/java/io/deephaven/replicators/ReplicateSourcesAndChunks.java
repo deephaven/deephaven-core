@@ -4,7 +4,7 @@
 
 package io.deephaven.replicators;
 
-import io.deephaven.replication.ReplicateUtilities;
+import io.deephaven.replication.ReplicationUtils;
 import org.apache.commons.io.FileUtils;
 
 import java.io.File;
@@ -16,7 +16,7 @@ import java.util.Collections;
 import java.util.List;
 
 import static io.deephaven.replication.ReplicatePrimitiveCode.*;
-import static io.deephaven.replication.ReplicateUtilities.*;
+import static io.deephaven.replication.ReplicationUtils.*;
 
 public class ReplicateSourcesAndChunks {
 
@@ -86,8 +86,8 @@ public class ReplicateSourcesAndChunks {
                 "set\\(long key, Object", "set(long key, T",
                 "final ObjectChunk<[?] extends Attributes.Values>", "final ObjectChunk<T, ? extends Attributes.Values>",
                 "unbox\\((.*)\\)", "$1");
-        lines = ReplicateUtilities.removeRegion(lines, "UnboxedSetter");
-        lines = ReplicateUtilities.replaceRegion(lines, "Constructor", Arrays.asList(
+        lines = ReplicationUtils.removeRegion(lines, "UnboxedSetter");
+        lines = ReplicationUtils.replaceRegion(lines, "Constructor", Arrays.asList(
                 "    public ObjectSingleValueSource(Class<T> type) {",
                 "        super(type);",
                 "        current = null;",
@@ -116,7 +116,7 @@ public class ReplicateSourcesAndChunks {
                 "ObjectChunk<\\? extends Attributes.Values>", "ObjectChunk<T, ? extends Attributes.Values>",
                 "QueryConstants.NULL_OBJECT", "null");
 
-        lines = ReplicateUtilities.replaceRegion(lines, "constructor", Arrays.asList(
+        lines = ReplicationUtils.replaceRegion(lines, "constructor", Arrays.asList(
                 "    protected ObjectChunkColumnSource(Class<T> type, Class<?> componentType) {",
                 "        this(type, componentType, new TLongArrayList());",
                 "    }",
@@ -173,8 +173,8 @@ public class ReplicateSourcesAndChunks {
         final String className = charToBoolean("engine/chunk/src/main/java/io/deephaven/engine/chunk/CharChunk.java");
         final File classFile = new File(className);
         List<String> classLines = FileUtils.readLines(classFile, Charset.defaultCharset());
-        classLines = ReplicateUtilities.removeRegion(classLines, "BufferImports");
-        classLines = ReplicateUtilities.removeRegion(classLines, "CopyToBuffer");
+        classLines = ReplicationUtils.removeRegion(classLines, "BufferImports");
+        classLines = ReplicationUtils.removeRegion(classLines, "CopyToBuffer");
         FileUtils.writeLines(classFile, classLines);
     }
 
@@ -201,8 +201,8 @@ public class ReplicateSourcesAndChunks {
                 "        //noinspection unchecked",
                 "        return (T[])new Object[capacity];",
                 "    }"));
-        lines = ReplicateUtilities.removeRegion(lines, "BufferImports");
-        lines = ReplicateUtilities.removeRegion(lines, "CopyToBuffer");
+        lines = ReplicationUtils.removeRegion(lines, "BufferImports");
+        lines = ReplicationUtils.removeRegion(lines, "CopyToBuffer");
         lines = expandDowncast(lines, "ObjectChunk");
         FileUtils.writeLines(classFile, lines);
     }
@@ -238,7 +238,7 @@ public class ReplicateSourcesAndChunks {
         for (String fileName : files) {
             final File classFile = new File(fileName);
             List<String> lines = FileUtils.readLines(classFile, Charset.defaultCharset());
-            lines = ReplicateUtilities.removeRegion(lines, "SortFixup");
+            lines = ReplicationUtils.removeRegion(lines, "SortFixup");
             FileUtils.writeLines(classFile, lines);
         }
         replicateWritableBooleanChunks();
@@ -252,14 +252,14 @@ public class ReplicateSourcesAndChunks {
         List<String> writableBooleanChunkClassLines =
                 FileUtils.readLines(writableBooleanChunkClassFile, Charset.defaultCharset());
         writableBooleanChunkClassLines =
-                ReplicateUtilities.removeRegion(writableBooleanChunkClassLines, "BufferImports");
+                ReplicationUtils.removeRegion(writableBooleanChunkClassLines, "BufferImports");
         writableBooleanChunkClassLines =
-                ReplicateUtilities.removeRegion(writableBooleanChunkClassLines, "CopyFromBuffer");
+                ReplicationUtils.removeRegion(writableBooleanChunkClassLines, "CopyFromBuffer");
         writableBooleanChunkClassLines =
-                ReplicateUtilities.removeRegion(writableBooleanChunkClassLines, "FillWithNullValueImports");
+                ReplicationUtils.removeRegion(writableBooleanChunkClassLines, "FillWithNullValueImports");
         writableBooleanChunkClassLines =
-                ReplicateUtilities.removeRegion(writableBooleanChunkClassLines, "FillWithNullValueImpl");
-        writableBooleanChunkClassLines = ReplicateUtilities.removeRegion(writableBooleanChunkClassLines, "sort");
+                ReplicationUtils.removeRegion(writableBooleanChunkClassLines, "FillWithNullValueImpl");
+        writableBooleanChunkClassLines = ReplicationUtils.removeRegion(writableBooleanChunkClassLines, "sort");
         FileUtils.writeLines(writableBooleanChunkClassFile, writableBooleanChunkClassLines);
     }
 
@@ -278,19 +278,19 @@ public class ReplicateSourcesAndChunks {
                 "Object value", "T value",
                 "( +)(final T\\[] typedArray)", "$1//noinspection unchecked" + "\n$1$2",
                 "NULL_OBJECT", "null");
-        lines = ReplicateUtilities.removeRegion(lines, "CopyFromBuffer");
-        lines = ReplicateUtilities.removeRegion(lines, "FillWithNullValueImports");
-        lines = ReplicateUtilities.removeRegion(lines, "BufferImports");
+        lines = ReplicationUtils.removeRegion(lines, "CopyFromBuffer");
+        lines = ReplicationUtils.removeRegion(lines, "FillWithNullValueImports");
+        lines = ReplicationUtils.removeRegion(lines, "BufferImports");
         lines = expandDowncast(lines, "WritableObjectChunk");
-        lines = ReplicateUtilities.replaceRegion(lines, "fillWithBoxedValue", Arrays.asList(
+        lines = ReplicationUtils.replaceRegion(lines, "fillWithBoxedValue", Arrays.asList(
                 "    @Override\n" +
                         "    public final void fillWithBoxedValue(int offset, int size, Object value) {\n" +
                         "        fillWithValue(offset,size, (T)value);\n" +
                         "    }"));
-        lines = ReplicateUtilities.addImport(lines,
+        lines = ReplicationUtils.addImport(lines,
                 "import io.deephaven.util.compare.ObjectComparisons;",
                 "import java.util.Comparator;");
-        lines = ReplicateUtilities.replaceRegion(lines, "sort", Arrays.asList(
+        lines = ReplicationUtils.replaceRegion(lines, "sort", Arrays.asList(
                 "    private static final Comparator<Comparable<Object>> COMPARATOR = Comparator.nullsFirst(Comparator.naturalOrder());",
                 "",
                 "    @Override",
@@ -314,14 +314,14 @@ public class ReplicateSourcesAndChunks {
         List<String> writableBooleanChunkClassLines =
                 FileUtils.readLines(writableBooleanChunkClassFile, Charset.defaultCharset());
         writableBooleanChunkClassLines =
-                ReplicateUtilities.removeRegion(writableBooleanChunkClassLines, "BufferImports");
+                ReplicationUtils.removeRegion(writableBooleanChunkClassLines, "BufferImports");
         writableBooleanChunkClassLines =
-                ReplicateUtilities.removeRegion(writableBooleanChunkClassLines, "CopyFromBuffer");
+                ReplicationUtils.removeRegion(writableBooleanChunkClassLines, "CopyFromBuffer");
         writableBooleanChunkClassLines =
-                ReplicateUtilities.removeRegion(writableBooleanChunkClassLines, "FillWithNullValueImports");
+                ReplicationUtils.removeRegion(writableBooleanChunkClassLines, "FillWithNullValueImports");
         writableBooleanChunkClassLines =
-                ReplicateUtilities.removeRegion(writableBooleanChunkClassLines, "FillWithNullValueImpl");
-        writableBooleanChunkClassLines = ReplicateUtilities.removeRegion(writableBooleanChunkClassLines, "sort");
+                ReplicationUtils.removeRegion(writableBooleanChunkClassLines, "FillWithNullValueImpl");
+        writableBooleanChunkClassLines = ReplicationUtils.removeRegion(writableBooleanChunkClassLines, "sort");
         FileUtils.writeLines(writableBooleanChunkClassFile, writableBooleanChunkClassLines);
     }
 
@@ -339,9 +339,9 @@ public class ReplicateSourcesAndChunks {
                 "Object value", "T value",
                 "( +)(final T\\[] realType)", "$1//noinspection unchecked" + "\n$1$2",
                 "NULL_OBJECT", "null");
-        lines = ReplicateUtilities.removeRegion(lines, "CopyFromBuffer");
-        lines = ReplicateUtilities.removeRegion(lines, "FillWithNullValueImports");
-        lines = ReplicateUtilities.removeRegion(lines, "BufferImports");
+        lines = ReplicationUtils.removeRegion(lines, "CopyFromBuffer");
+        lines = ReplicationUtils.removeRegion(lines, "FillWithNullValueImports");
+        lines = ReplicationUtils.removeRegion(lines, "BufferImports");
         lines = expandDowncast(lines, "WritableObjectChunkChunk");
         FileUtils.writeLines(classFile, lines);
     }

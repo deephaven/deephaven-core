@@ -703,7 +703,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         private static int searchPos(
                 final MutableLong outData,
                 final SortedRanges sar,
-                final RowSetUtil.Comparator comp, final int startPos) { // startPos points to the beginning of a
+                final RowSetUtils.Comparator comp, final int startPos) { // startPos points to the beginning of a
                                                                         // range.
             final long endPosUnpackedData = sar.unpackedGet(sar.count - 1);
             final long endPosUnpackedValue = Math.abs(endPosUnpackedData);
@@ -769,7 +769,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                     }
                     return -1;
                 }
-                currRangeStart = RowSetUtil.rangeSearch(currRangeStart, currRangeEnd,
+                currRangeStart = RowSetUtils.rangeSearch(currRangeStart, currRangeEnd,
                         (final long v) -> comp.compareTargetTo(v, dir));
                 return currRangeStart;
             }
@@ -778,7 +778,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                 close();
                 return currRangeEnd;
             }
-            final RowSetUtil.Comparator ixComp = (final long v) -> comp.compareTargetTo(v, dir);
+            final RowSetUtils.Comparator ixComp = (final long v) -> comp.compareTargetTo(v, dir);
             final MutableLong outValue = new MutableLong();
             final int i = searchPos(outValue, sar, ixComp, nextRangeIdx);
             if (i < nextRangeIdx) {
@@ -802,7 +802,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
             final boolean nextNeg = nextData < 0;
             if (nextNeg) {
                 final long searchEndValue = -nextData - 1;
-                currRangeStart = RowSetUtil.rangeSearch(data, searchEndValue,
+                currRangeStart = RowSetUtils.rangeSearch(data, searchEndValue,
                         (final long v) -> comp.compareTargetTo(v, dir));
                 currRangeEnd = -nextData;
                 nextRangeIdx = next + 1;

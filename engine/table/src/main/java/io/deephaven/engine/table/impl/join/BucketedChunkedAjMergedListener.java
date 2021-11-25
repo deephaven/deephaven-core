@@ -267,7 +267,7 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                                     slotSit.next();
                                     final RowSet rowSetToShift =
                                             shiftedRowSet.subSetByKeyRange(slotSit.beginRange(), slotSit.endRange());
-                                    ChunkedAjUtilities.applyOneShift(leftSsa, leftChunkSize, leftStampSource,
+                                    ChunkedAjUtils.applyOneShift(leftSsa, leftChunkSize, leftStampSource,
                                             leftShiftFillContext, shiftSortContext, stampKeys, stampValues, slotSit,
                                             rowSetToShift);
                                     rowSetToShift.close();

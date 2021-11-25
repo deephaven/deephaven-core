@@ -11,7 +11,7 @@ import gnu.trove.list.array.TLongArrayList;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.mutable.MutableLong;
 
-public class RowSetUtil {
+public class RowSetUtils {
 
     static String toString(RowSet rowSet, int maxRanges) {
         int count = 0;
@@ -124,7 +124,7 @@ public class RowSetUtil {
             return false;
         }
         final RowSet otherRowSet = (RowSet) other;
-        return index.size() == otherRowSet.size() && RowSetUtil.equalsDeepImpl(index, otherRowSet);
+        return index.size() == otherRowSet.size() && RowSetUtils.equalsDeepImpl(index, otherRowSet);
     }
 
     public interface Comparator {

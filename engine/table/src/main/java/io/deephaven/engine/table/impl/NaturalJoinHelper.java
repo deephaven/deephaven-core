@@ -133,7 +133,7 @@ class NaturalJoinHelper {
 
                         // noinspection unchecked,rawtypes
                         final Pair<ArrayBackedColumnSource<?>, ObjectArraySource<WritableRowSet>> flatResultColumnSources =
-                                GroupingUtil.groupingToFlatSources(
+                                GroupingUtils.groupingToFlatSources(
                                         (ColumnSource) bucketingContext.leftSources[0], grouping, leftTable.getRowSet(),
                                         groupingSize);
                         final ArrayBackedColumnSource<?> groupSource = flatResultColumnSources.getFirst();
@@ -183,7 +183,7 @@ class NaturalJoinHelper {
                     final MutableInt groupingSize = new MutableInt();
                     // noinspection unchecked,rawtypes
                     final Pair<ArrayBackedColumnSource<?>, ObjectArraySource<RowSet>> flatResultColumnSources =
-                            GroupingUtil.groupingToFlatSources((ColumnSource) bucketingContext.leftSources[0],
+                            GroupingUtils.groupingToFlatSources((ColumnSource) bucketingContext.leftSources[0],
                                     grouping, leftTable.getRowSet(), groupingSize);
                     final ArrayBackedColumnSource<?> groupSource = flatResultColumnSources.getFirst();
                     final ObjectArraySource<RowSet> rowSetSource = flatResultColumnSources.getSecond();

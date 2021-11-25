@@ -33,7 +33,7 @@ public class IntLongTimsortKernel {
             temporaryValues = WritableIntChunk.makeWritableChunk((size + 2) / 2);
             runStarts = new int[(size + 31) / 32];
             runLengths = new int[(size + 31) / 32];
-            minGallop = TimsortUtilities.INITIAL_GALLOP;
+            minGallop = TimsortUtils.INITIAL_GALLOP;
         }
 
         @Override
@@ -91,7 +91,7 @@ public class IntLongTimsortKernel {
             return;
         }
 
-        final int minRun = TimsortUtilities.getRunLength(length);
+        final int minRun = TimsortUtils.getRunLength(length);
 
         if (length <= minRun) {
             insertionSort(indexKeys, valuesToSort, offset, length);
@@ -382,7 +382,7 @@ public class IntLongTimsortKernel {
                     context.minGallop--;
                 }
 
-                if (gallopLength1 < TimsortUtilities.INITIAL_GALLOP && gallopLength2 < TimsortUtilities.INITIAL_GALLOP) {
+                if (gallopLength1 < TimsortUtils.INITIAL_GALLOP && gallopLength2 < TimsortUtils.INITIAL_GALLOP) {
                     context.minGallop += 2; // undo the possible subtraction from above
                     break;
                 }
@@ -488,7 +488,7 @@ public class IntLongTimsortKernel {
                     context.minGallop--;
                 }
 
-                if (gallopLength1 < TimsortUtilities.INITIAL_GALLOP && gallopLength2 < TimsortUtilities.INITIAL_GALLOP) {
+                if (gallopLength1 < TimsortUtils.INITIAL_GALLOP && gallopLength2 < TimsortUtils.INITIAL_GALLOP) {
                     context.minGallop += 2; // undo the possible subtraction from above
                     break;
                 }

@@ -1,6 +1,6 @@
 package io.deephaven.engine.table.impl.sort.timsort;
 
-public class TimsortUtilities {
+public class TimsortUtils {
     /**
      * The initial setting for the number of consecutive values taken from either run1 or run2 before we switch to
      * galloping mode.

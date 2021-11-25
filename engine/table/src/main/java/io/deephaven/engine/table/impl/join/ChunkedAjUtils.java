@@ -17,7 +17,7 @@ import io.deephaven.engine.table.impl.util.SizedSafeCloseable;
 
 import static io.deephaven.engine.chunk.Attributes.*;
 
-class ChunkedAjUtilities {
+class ChunkedAjUtils {
     static void bothIncrementalLeftSsaShift(RowSetShiftData shiftData, SegmentedSortedArray leftSsa,
             RowSet restampRemovals, QueryTable table,
             int nodeSize, ColumnSource<?> stampSource) {

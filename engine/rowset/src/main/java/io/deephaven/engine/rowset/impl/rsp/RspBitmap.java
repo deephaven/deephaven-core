@@ -8,7 +8,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.impl.OrderedLongSet;
 import io.deephaven.engine.rowset.impl.OrderedLongSetBuilderSequential;
 import io.deephaven.engine.rowset.impl.RowSetCounts;
-import io.deephaven.engine.rowset.impl.RowSetUtil;
+import io.deephaven.engine.rowset.impl.RowSetUtils;
 import io.deephaven.engine.rowset.impl.rsp.container.*;
 import io.deephaven.engine.rowset.impl.singlerange.SingleRange;
 import io.deephaven.engine.rowset.impl.sortedranges.SortedRanges;
@@ -1957,7 +1957,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
                 curr = next = it.start();
                 currRangeEnd = it.end();
             }
-            final RowSetUtil.Comparator comp = (long k) -> tc.compareTargetTo(k, dir);
+            final RowSetUtils.Comparator comp = (long k) -> tc.compareTargetTo(k, dir);
             int c = comp.directionToTargetFrom(curr);
             if (c < 0) {
                 return -1;

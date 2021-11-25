@@ -4,7 +4,7 @@
 
 package io.deephaven.replicators;
 
-import io.deephaven.replication.ReplicateUtilities;
+import io.deephaven.replication.ReplicationUtils;
 import org.apache.commons.io.FileUtils;
 
 import java.io.File;
@@ -35,7 +35,7 @@ public class ReplicatePrimitiveLibs {
         for (String file : files) {
             final File fileyfile = new File(file);
             List<String> lines = FileUtils.readLines(fileyfile, Charset.defaultCharset());
-            lines = ReplicateUtilities.removeRegion(lines, "SortFixup");
+            lines = ReplicationUtils.removeRegion(lines, "SortFixup");
             FileUtils.writeLines(fileyfile, lines);
         }
     }

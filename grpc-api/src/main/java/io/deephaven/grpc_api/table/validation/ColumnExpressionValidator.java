@@ -5,7 +5,7 @@ import com.github.javaparser.ParseResult;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.ColumnDefinition;
-import io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtil;
+import io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtils;
 import io.deephaven.engine.table.impl.SelectValidationResult;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.lang.QueryLanguageParser;
@@ -47,7 +47,7 @@ public class ColumnExpressionValidator extends GenericVisitorAdapter<Void, Void>
         // list all static methods in supported util classes:
         whitelistedStaticMethods = Stream
                 .of(
-                        QueryLanguageFunctionUtil.class,
+                        QueryLanguageFunctionUtils.class,
                         GroovyStaticImports.class,
                         DateTimeUtils.class,
                         ColorUtilImpl.class)

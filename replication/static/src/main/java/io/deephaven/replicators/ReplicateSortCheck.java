@@ -1,6 +1,6 @@
 package io.deephaven.replicators;
 
-import io.deephaven.replication.ReplicateUtilities;
+import io.deephaven.replication.ReplicationUtils;
 import org.apache.commons.io.FileUtils;
 import org.jetbrains.annotations.NotNull;
 
@@ -12,8 +12,8 @@ import java.util.List;
 
 import static io.deephaven.replication.ReplicatePrimitiveCode.charToAllButBoolean;
 import static io.deephaven.replication.ReplicatePrimitiveCode.charToObject;
-import static io.deephaven.replication.ReplicateUtilities.globalReplacements;
-import static io.deephaven.replication.ReplicateUtilities.simpleFixup;
+import static io.deephaven.replication.ReplicationUtils.globalReplacements;
+import static io.deephaven.replication.ReplicationUtils.simpleFixup;
 
 public class ReplicateSortCheck {
     public static void main(String[] args) throws IOException {
@@ -25,7 +25,7 @@ public class ReplicateSortCheck {
         invertList.addAll(charToAllButBoolean(charSortCheckPath));
         final String objectPath = charToObject(charSortCheckPath);
         invertList.add(objectPath);
-        ReplicateUtilities.fixupChunkAttributes(objectPath);
+        ReplicationUtils.fixupChunkAttributes(objectPath);
 
         for (final String kernel : invertList) {
             invertSense(kernel, ascendingNameToDescendingName(kernel));

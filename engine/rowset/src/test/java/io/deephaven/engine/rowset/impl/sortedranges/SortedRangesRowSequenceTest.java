@@ -5,8 +5,8 @@ import static org.junit.Assert.*;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.impl.RowSequenceTestBase;
+import io.deephaven.engine.rowset.impl.RowSetTstUtils;
 import io.deephaven.engine.rowset.impl.TrackingWritableRowSetImpl;
-import io.deephaven.engine.rowset.impl.TstRowSetUtil;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.Test;
 
@@ -71,7 +71,7 @@ public class SortedRangesRowSequenceTest extends RowSequenceTestBase {
 
     @Test
     public void testAdvanceBugSr() {
-        advanceBug(TstRowSetUtil.makeEmptySr());
+        advanceBug(RowSetTstUtils.makeEmptySr());
     }
 
     @Test
@@ -137,7 +137,7 @@ public class SortedRangesRowSequenceTest extends RowSequenceTestBase {
 
     @Test
     public void testOkNextWithLengthCase0() {
-        final SortedRanges sr = TstRowSetUtil.sortedRangesFromString(
+        final SortedRanges sr = RowSetTstUtils.sortedRangesFromString(
                 "0-21,23,25-32,34-38,40-43,45-48,50-63,65-66,68,70,72-73");
         assertNotNull(sr);
         for (int step = 1; step < 7; ++step) {

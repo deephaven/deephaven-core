@@ -10,11 +10,10 @@ import java.util.Objects;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.vector.ObjectVector;
 import io.deephaven.engine.vector.ObjectVectorDirect;
-import io.deephaven.engine.vector.ObjectVector;
 import io.deephaven.util.compare.ObjectComparisons;
 import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.engine.table.impl.by.SumIntChunk;
-import io.deephaven.engine.table.impl.sort.timsort.TimsortUtilities;
+import io.deephaven.engine.table.impl.sort.timsort.TimsortUtils;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.Attributes.ChunkLengths;
 import io.deephaven.engine.chunk.Attributes.Values;
@@ -22,7 +21,6 @@ import io.deephaven.util.annotations.VisibleForTesting;
 import org.apache.commons.lang3.mutable.MutableInt;
 
 import java.util.Arrays;
-import java.util.Objects;
 
 
 public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMultiSet<Object>, ObjectVector {
@@ -31,7 +29,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
     private int size;
     private long totalSize;
 
-    private int minGallop = TimsortUtilities.INITIAL_GALLOP;
+    private int minGallop = TimsortUtils.INITIAL_GALLOP;
 
     /**
      * If we have only a single leaf, then we use the directory arrays for the leaf values, otherwise we use it to
@@ -171,7 +169,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
                         remaining -= gallopLength;
                     }
 
-                    if (gallopLength < TimsortUtilities.INITIAL_GALLOP) {
+                    if (gallopLength < TimsortUtils.INITIAL_GALLOP) {
                         minGallop++;
                     } else {
                         minGallop = Math.max(2, minGallop - 1);
@@ -201,7 +199,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
                         remaining -= gallopLength;
                     }
 
-                    if (gallopLength < TimsortUtilities.INITIAL_GALLOP) {
+                    if (gallopLength < TimsortUtils.INITIAL_GALLOP) {
                         minGallop++;
                     } else {
                         minGallop = Math.max(2, minGallop - 1);
@@ -312,7 +310,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
                             return;
                         }
                     }
-                    if (gallopLength < TimsortUtilities.INITIAL_GALLOP) {
+                    if (gallopLength < TimsortUtils.INITIAL_GALLOP) {
                         minGallop++;
                     } else {
                         minGallop = Math.max(2, minGallop - 1);
@@ -347,7 +345,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
                         }
                     }
 
-                    if (gallopLength < TimsortUtilities.INITIAL_GALLOP) {
+                    if (gallopLength < TimsortUtils.INITIAL_GALLOP) {
                         minGallop++;
                     } else {
                         minGallop = Math.max(2, minGallop - 1);

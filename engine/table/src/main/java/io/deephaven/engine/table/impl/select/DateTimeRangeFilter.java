@@ -6,7 +6,7 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.impl.sources.ReinterpretUtil;
+import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.rowset.WritableRowSet;
@@ -67,7 +67,7 @@ public class DateTimeRangeFilter extends LongRangeFilter {
 
         // noinspection unchecked
         final ColumnSource<Long> dateTimeColumnSource =
-                ReinterpretUtil.dateTimeToLongSource((ColumnSource<DateTime>) columnSource);
+                ReinterpretUtils.dateTimeToLongSource((ColumnSource<DateTime>) columnSource);
         return super.binarySearch(selection, dateTimeColumnSource, usePrev, reverse);
     }
 

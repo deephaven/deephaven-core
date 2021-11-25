@@ -4,7 +4,7 @@
 
 package io.deephaven.replicators;
 
-import io.deephaven.replication.ReplicateUtilities;
+import io.deephaven.replication.ReplicationUtils;
 import io.deephaven.util.QueryConstants;
 import org.apache.commons.io.FileUtils;
 
@@ -51,13 +51,13 @@ public class ReplicateOperators {
         final String objectAddOnlyMinMax = charToObject(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/by/CharChunkedAddOnlyMinMaxOperator.java");
         final File objectAddOnlyMinMaxFile = new File(objectAddOnlyMinMax);
-        List<String> lines = ReplicateUtilities
+        List<String> lines = ReplicationUtils
                 .fixupChunkAttributes(FileUtils.readLines(objectAddOnlyMinMaxFile, Charset.defaultCharset()));
-        lines = ReplicateUtilities.globalReplacements(lines, "QueryConstants.NULL_OBJECT", "null", "getObject", "get");
-        lines = ReplicateUtilities.removeImport(lines, QueryConstants.class);
-        lines = ReplicateUtilities.replaceRegion(lines, "extra constructor params",
+        lines = ReplicationUtils.globalReplacements(lines, "QueryConstants.NULL_OBJECT", "null", "getObject", "get");
+        lines = ReplicationUtils.removeImport(lines, QueryConstants.class);
+        lines = ReplicationUtils.replaceRegion(lines, "extra constructor params",
                 Collections.singletonList("            Class<?> type,"));
-        lines = ReplicateUtilities.replaceRegion(lines, "resultColumn initialization",
+        lines = ReplicationUtils.replaceRegion(lines, "resultColumn initialization",
                 Collections.singletonList("        resultColumn = new ObjectArraySource<>(type);"));
         FileUtils.writeLines(objectAddOnlyMinMaxFile, lines);
     }
@@ -66,14 +66,14 @@ public class ReplicateOperators {
         final File longAddOnlyMinMaxFile =
                 new File(
                         "engine/table/src/main/java/io/deephaven/engine/table/impl/by/LongChunkedAddOnlyMinMaxOperator.java");
-        List<String> lines = ReplicateUtilities
+        List<String> lines = ReplicationUtils
                 .fixupChunkAttributes(FileUtils.readLines(longAddOnlyMinMaxFile, Charset.defaultCharset()));
-        lines = ReplicateUtilities.globalReplacements(lines, "LongArraySource", "AbstractLongArraySource");
-        lines = ReplicateUtilities.replaceRegion(lines, "extra constructor params",
+        lines = ReplicationUtils.globalReplacements(lines, "LongArraySource", "AbstractLongArraySource");
+        lines = ReplicationUtils.replaceRegion(lines, "extra constructor params",
                 Collections.singletonList("            Class<?> type,"));
-        lines = ReplicateUtilities.replaceRegion(lines, "resultColumn initialization", Collections.singletonList(
+        lines = ReplicationUtils.replaceRegion(lines, "resultColumn initialization", Collections.singletonList(
                 "        resultColumn = type == DateTime.class ? new DateTimeArraySource() : new LongArraySource();"));
-        lines = ReplicateUtilities.addImport(lines,
+        lines = ReplicationUtils.addImport(lines,
                 "import io.deephaven.engine.time.DateTime;",
                 "import io.deephaven.engine.table.impl.sources.DateTimeArraySource;",
                 "import io.deephaven.engine.table.impl.sources.LongArraySource;");
@@ -87,9 +87,9 @@ public class ReplicateOperators {
             final String objectClassName =
                     charToObject(charClassJavaPath);
             final File objectClassFile = new File(objectClassName);
-            List<String> lines = ReplicateUtilities
+            List<String> lines = ReplicationUtils
                     .fixupChunkAttributes(FileUtils.readLines(objectClassFile, Charset.defaultCharset()));
-            lines = ReplicateUtilities.replaceRegion(lines, "sortColumnValues initialization",
+            lines = ReplicationUtils.replaceRegion(lines, "sortColumnValues initialization",
                     Collections.singletonList("        sortColumnValues = new ObjectArraySource<>(Object.class);"));
             FileUtils.writeLines(objectClassFile, lines);
         }

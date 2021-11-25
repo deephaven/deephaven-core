@@ -18,7 +18,7 @@ public class RowSequenceKeyRangesChunkImplTest extends RowSequenceTestBase {
     @Override
     protected RowSequence create(long... values) {
         return RowSequenceFactory.takeKeyRangesChunkAndMakeRowSequence(
-                RowKeyChunkUtil.convertToOrderedKeyRanges(LongChunk.chunkWrap(values)));
+                RowKeyChunkUtils.convertToOrderedKeyRanges(LongChunk.chunkWrap(values)));
     }
 
     @Test

@@ -60,7 +60,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         classImports.add(LanguageParserDummyInterface.class);
 
         staticImports = new HashSet<>();
-        staticImports.add(QueryLanguageFunctionUtil.class);
+        staticImports.add(QueryLanguageFunctionUtils.class);
         staticImports.add(Math.class);
         staticImports.add(QueryConstants.class);
         staticImports.add(TestQueryLanguageParser.class);

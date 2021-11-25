@@ -9,7 +9,7 @@ import java.util.List;
 
 import static io.deephaven.replication.ReplicatePrimitiveCode.charToAll;
 import static io.deephaven.replication.ReplicatePrimitiveCode.charToObject;
-import static io.deephaven.replication.ReplicateUtilities.globalReplacements;
+import static io.deephaven.replication.ReplicationUtils.globalReplacements;
 
 public class ReplicateCopyKernelTests {
     public static void main(String[] args) throws IOException {

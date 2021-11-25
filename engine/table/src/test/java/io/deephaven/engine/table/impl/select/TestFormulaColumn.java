@@ -9,7 +9,7 @@ import io.deephaven.base.verify.AssertionFailure;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtil;
+import io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtils;
 import io.deephaven.engine.table.impl.lang.QueryLanguageParser.QueryLanguageParseException;
 import io.deephaven.engine.table.lang.QueryLibrary;
 import io.deephaven.engine.table.lang.QueryScope;
@@ -143,13 +143,13 @@ public class TestFormulaColumn {
     @Test
     public void testReturnUnboxedType() {
         for (int row = 0; row < testDataTable.size(); row++) {
-            checkPrimitive(row, "new Byte(ByteCol)", QueryLanguageFunctionUtil.byteCast(BASE_VALUES[row]));
-            checkPrimitive(row, "new Short(ShortCol)", QueryLanguageFunctionUtil.shortCast(BASE_VALUES[row]));
-            checkPrimitive(row, "new Character(CharCol)", QueryLanguageFunctionUtil.charCast(BASE_VALUES[row]));
-            checkPrimitive(row, "new Integer(IntCol)", QueryLanguageFunctionUtil.intCast(BASE_VALUES[row]));
-            checkPrimitive(row, "new Long(LongCol)", QueryLanguageFunctionUtil.longCast(BASE_VALUES[row]));
-            checkPrimitive(row, "new Float(FloatCol)", QueryLanguageFunctionUtil.floatCast(BASE_VALUES[row]));
-            checkPrimitive(row, "new Double(DoubleCol)", QueryLanguageFunctionUtil.doubleCast(BASE_VALUES[row]));
+            checkPrimitive(row, "new Byte(ByteCol)", QueryLanguageFunctionUtils.byteCast(BASE_VALUES[row]));
+            checkPrimitive(row, "new Short(ShortCol)", QueryLanguageFunctionUtils.shortCast(BASE_VALUES[row]));
+            checkPrimitive(row, "new Character(CharCol)", QueryLanguageFunctionUtils.charCast(BASE_VALUES[row]));
+            checkPrimitive(row, "new Integer(IntCol)", QueryLanguageFunctionUtils.intCast(BASE_VALUES[row]));
+            checkPrimitive(row, "new Long(LongCol)", QueryLanguageFunctionUtils.longCast(BASE_VALUES[row]));
+            checkPrimitive(row, "new Float(FloatCol)", QueryLanguageFunctionUtils.floatCast(BASE_VALUES[row]));
+            checkPrimitive(row, "new Double(DoubleCol)", QueryLanguageFunctionUtils.doubleCast(BASE_VALUES[row]));
         }
     }
 
@@ -261,11 +261,11 @@ public class TestFormulaColumn {
             checkPrimitive(row, expression, result);
 
             expression = "Math.sqrt(DoubleCol)";
-            result = Math.sqrt(QueryLanguageFunctionUtil.doubleCast(BASE_VALUES[row]));
+            result = Math.sqrt(QueryLanguageFunctionUtils.doubleCast(BASE_VALUES[row]));
             checkPrimitive(row, expression, result);
 
             expression = "Math.sqrt(IntCol)";
-            result = Math.sqrt(QueryLanguageFunctionUtil.doubleCast(BASE_VALUES[row]));
+            result = Math.sqrt(QueryLanguageFunctionUtils.doubleCast(BASE_VALUES[row]));
             checkPrimitive(row, expression, result);
         }
     }
@@ -555,7 +555,7 @@ public class TestFormulaColumn {
     private void testWrapWithCastHelper(final Class<?> type, final String cast) {
         final String theFormula = "theFormula";
         final String expected = cast == null ? theFormula
-                : QueryLanguageFunctionUtil.class.getCanonicalName() + '.' + cast + '(' + theFormula + ')';
+                : QueryLanguageFunctionUtils.class.getCanonicalName() + '.' + cast + '(' + theFormula + ')';
         final TypeAnalyzer ta = TypeAnalyzer.create(type);
         final String possiblyWrappedExpression = ta.wrapWithCastIfNecessary(theFormula);
         Assert.equals(possiblyWrappedExpression, "possiblyWrappedExpression", expected);

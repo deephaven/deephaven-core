@@ -16,7 +16,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.impl.ShiftObliviousInstrumentedListener;
-import io.deephaven.engine.table.impl.sources.ReinterpretUtil;
+import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.util.*;
 import io.deephaven.io.log.LogEntry;
 import io.deephaven.engine.table.ColumnDefinition;
@@ -1365,7 +1365,7 @@ public class ConstructSnapshot {
 
     private static <T> Object getSnapshotData(final ColumnSource<T> columnSource, final SharedContext sharedContext,
             final RowSet rowSet, final boolean usePrev) {
-        final ColumnSource<?> sourceToUse = ReinterpretUtil.maybeConvertToPrimitive(columnSource);
+        final ColumnSource<?> sourceToUse = ReinterpretUtils.maybeConvertToPrimitive(columnSource);
         final Class<?> type = sourceToUse.getType();
         final int size = rowSet.intSize();
         try (final ColumnSource.FillContext context = sourceToUse.makeFillContext(size, sharedContext)) {
@@ -1393,7 +1393,7 @@ public class ConstructSnapshot {
 
     private static <T> WritableChunk<Values> getSnapshotDataAsChunk(final ColumnSource<T> columnSource,
             final SharedContext sharedContext, final RowSet rowSet, final boolean usePrev) {
-        final ColumnSource<?> sourceToUse = ReinterpretUtil.maybeConvertToPrimitive(columnSource);
+        final ColumnSource<?> sourceToUse = ReinterpretUtils.maybeConvertToPrimitive(columnSource);
         final int size = rowSet.intSize();
         try (final ColumnSource.FillContext context = sharedContext != null
                 ? sourceToUse.makeFillContext(size, sharedContext)

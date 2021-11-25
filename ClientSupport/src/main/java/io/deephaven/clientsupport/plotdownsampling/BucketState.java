@@ -3,7 +3,7 @@ package io.deephaven.clientsupport.plotdownsampling;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.rowset.impl.RowSetUtil;
+import io.deephaven.engine.rowset.impl.RowSetUtils;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.chunk.Chunk;
@@ -213,7 +213,7 @@ public class BucketState {
                 }
                 RowSequence.Iterator keysIterator = rowSet.getRowSequenceIterator();
                 MutableLong position = new MutableLong(0);
-                RowSetUtil.forAllInvertedLongRanges(rowSet, nullsForCol, (first, last) -> {
+                RowSetUtils.forAllInvertedLongRanges(rowSet, nullsForCol, (first, last) -> {
                     if (first > 0) {
                         // Advance to (first - 1)
                         keysIterator.getNextRowSequenceWithLength(first - 1 - position.longValue());

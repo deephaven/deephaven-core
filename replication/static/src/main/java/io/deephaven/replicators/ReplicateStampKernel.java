@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static io.deephaven.replication.ReplicatePrimitiveCode.*;
-import static io.deephaven.replication.ReplicateUtilities.globalReplacements;
+import static io.deephaven.replication.ReplicationUtils.globalReplacements;
 
 public class ReplicateStampKernel {
     public static void main(String[] args) throws IOException {

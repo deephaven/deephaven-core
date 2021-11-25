@@ -61,7 +61,7 @@ public class PythonShiftObliviousListenerAdapter extends ShiftObliviousInstrumen
      */
     public PythonShiftObliviousListenerAdapter(String description, Table source, boolean retain, PyObject pyObjectIn) {
         super(description, source, retain);
-        pyCallable = PythonUtilities.pyListenerFunc(pyObjectIn);
+        pyCallable = PythonUtils.pyListenerFunc(pyObjectIn);
     }
 
     @Override

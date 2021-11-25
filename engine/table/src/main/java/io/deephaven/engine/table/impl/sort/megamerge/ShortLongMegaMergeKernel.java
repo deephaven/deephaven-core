@@ -5,7 +5,7 @@ package io.deephaven.engine.table.impl.sort.megamerge;
 
 import io.deephaven.util.compare.ShortComparisons;
 import io.deephaven.engine.table.impl.sort.LongMegaMergeKernel;
-import io.deephaven.engine.table.impl.sort.timsort.TimsortUtilities;
+import io.deephaven.engine.table.impl.sort.timsort.TimsortUtils;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.ShortArraySource;
 import io.deephaven.engine.table.impl.sources.LongArraySource;
@@ -73,7 +73,7 @@ public class ShortLongMegaMergeKernel {
 
         long ii = mergeEnd - 1;
 
-        int minGallop = TimsortUtilities.INITIAL_GALLOP;
+        int minGallop = TimsortUtils.INITIAL_GALLOP;
 
         no_data_left: while (ii >= mergeStartPosition) {
             int destWins = 0;
@@ -147,8 +147,8 @@ public class ShortLongMegaMergeKernel {
                     minGallop--;
                 }
 
-                if (gallopLength1 < TimsortUtilities.INITIAL_GALLOP
-                        && gallopLength2 < TimsortUtilities.INITIAL_GALLOP) {
+                if (gallopLength1 < TimsortUtils.INITIAL_GALLOP
+                        && gallopLength2 < TimsortUtils.INITIAL_GALLOP) {
                     minGallop += 2; // undo the possible subtraction from above
                     break;
                 }

@@ -1,6 +1,6 @@
 package io.deephaven.replicators;
 
-import io.deephaven.replication.ReplicateUtilities;
+import io.deephaven.replication.ReplicationUtils;
 import org.apache.commons.io.FileUtils;
 
 import java.io.File;
@@ -32,7 +32,7 @@ public class ReplicateFreezeBy {
     private static void fixupObject(String objectResult) throws IOException {
         final File objectFile = new File(objectResult);
         final List<String> lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
-        final List<String> newLines = ReplicateUtilities.replaceRegion(lines, "clearIndex",
+        final List<String> newLines = ReplicationUtils.replaceRegion(lines, "clearIndex",
                 Collections.singletonList("        removed.forAllRowKeys(idx -> resultSource.set(idx, null));"));
         FileUtils.writeLines(objectFile, newLines);
     }
@@ -41,7 +41,7 @@ public class ReplicateFreezeBy {
         final File booleanFile = new File(booleanResult);
         final List<String> lines = FileUtils.readLines(booleanFile, Charset.defaultCharset());
         final List<String> newLines =
-                ReplicateUtilities.globalReplacements(lines, "final BooleanChunk asBoolean = values.asBooleanChunk",
+                ReplicationUtils.globalReplacements(lines, "final BooleanChunk asBoolean = values.asBooleanChunk",
                         "final ObjectChunk<Boolean, ?> asBoolean = values.asObjectChunk");
         FileUtils.writeLines(booleanFile, newLines);
     }
@@ -50,7 +50,7 @@ public class ReplicateFreezeBy {
         final File longFile = new File(longResult);
         final List<String> lines = FileUtils.readLines(longFile, Charset.defaultCharset());
         final List<String> newLines =
-                ReplicateUtilities.globalReplacements(0, lines, "LongArraySource", "AbstractLongArraySource");
+                ReplicationUtils.globalReplacements(0, lines, "LongArraySource", "AbstractLongArraySource");
         FileUtils.writeLines(longFile, newLines);
     }
 }

@@ -4,7 +4,8 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetShiftData;
 
-public class RowRedirectionUtilities {
+public class RowRedirectionUtils {
+
     private static final long SEARCH_ITERATOR_THRESHOLD = 512;
 
     static void applyRedirectionShift(final WritableRowRedirection rowRedirection, final RowSet filterIndex,

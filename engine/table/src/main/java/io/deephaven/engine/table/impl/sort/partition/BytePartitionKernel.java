@@ -104,7 +104,7 @@ public class BytePartitionKernel {
         pivotKeys.setSize(0);
         final int pivotsRequired = nPartitions - 1;
         final int samplesRequired = pivotsRequired * 3;
-        PartitionUtilities.sampleIndexKeys(0, rowSet, samplesRequired, pivotKeys);
+        PartitionUtils.sampleIndexKeys(0, rowSet, samplesRequired, pivotKeys);
 
         final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
         for (int ii = 0; ii < pivotKeys.size(); ++ii) {

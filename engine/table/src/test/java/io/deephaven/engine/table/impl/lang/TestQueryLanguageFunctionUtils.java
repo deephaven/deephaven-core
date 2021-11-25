@@ -10,7 +10,7 @@ import io.deephaven.util.QueryConstants;
 import junit.framework.TestCase;
 
 @SuppressWarnings({"unused", "WeakerAccess", "NumericOverflow"})
-public final class TestQueryLanguageFunctionUtil extends TestCase {
+public final class TestQueryLanguageFunctionUtils extends TestCase {
 
     public static void test_plus_int_int() {
         final int value1 = 42;
@@ -23,37 +23,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.plus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, value2);
             expectedResult = value1 + value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.plus(value1, value2), value1+value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.plus(value1, value2), value1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_INT);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_INT);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_INT), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_INT), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(zero1, value2);
             expectedResult = zero1 + value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.plus(zero1, value2), zero1+value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.plus(zero1, value2), zero1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_INT, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_INT, value2);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_INT, value2), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_INT, value2), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_INT, QueryConstants.NULL_INT);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_INT, QueryConstants.NULL_INT);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_INT, QueryConstants.NULL_INT), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_INT, QueryConstants.NULL_INT), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -73,37 +73,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.plus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, value2);
             expectedResult = value1 + value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.plus(value1, value2), value1+value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.plus(value1, value2), value1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_DOUBLE);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_DOUBLE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(zero1, value2);
             expectedResult = zero1 + value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.plus(zero1, value2), zero1+value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.plus(zero1, value2), zero1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_INT, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_INT, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_INT, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_INT, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_INT, QueryConstants.NULL_DOUBLE);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_INT, QueryConstants.NULL_DOUBLE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_INT, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_INT, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -123,37 +123,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.plus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, value2);
             expectedResult = value1 + value2;
             compareResult = Long.compare(dbResult, expectedResult);
-            description = "Long.compare(QueryLanguageFunctionUtil.plus(value1, value2), value1+value2)";
+            description = "Long.compare(QueryLanguageFunctionUtils.plus(value1, value2), value1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_LONG);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_LONG);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_LONG), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_LONG), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(zero1, value2);
             expectedResult = zero1 + value2;
             compareResult = Long.compare(dbResult, expectedResult);
-            description = "Long.compare(QueryLanguageFunctionUtil.plus(zero1, value2), zero1+value2)";
+            description = "Long.compare(QueryLanguageFunctionUtils.plus(zero1, value2), zero1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_INT, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_INT, value2);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_INT, value2), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_INT, value2), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_INT, QueryConstants.NULL_LONG);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_INT, QueryConstants.NULL_LONG);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_INT, QueryConstants.NULL_LONG), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_INT, QueryConstants.NULL_LONG), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -173,37 +173,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.plus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, value2);
             expectedResult = value1 + value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.plus(value1, value2), value1+value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.plus(value1, value2), value1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_FLOAT);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_FLOAT);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(zero1, value2);
             expectedResult = zero1 + value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.plus(zero1, value2), zero1+value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.plus(zero1, value2), zero1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_INT, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_INT, value2);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_INT, value2), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_INT, value2), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_INT, QueryConstants.NULL_FLOAT);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_INT, QueryConstants.NULL_FLOAT);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_INT, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_INT, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -223,37 +223,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.plus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, value2);
             expectedResult = value1 + value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.plus(value1, value2), value1+value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.plus(value1, value2), value1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_CHAR);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_CHAR);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_CHAR), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_CHAR), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(zero1, value2);
             expectedResult = zero1 + value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.plus(zero1, value2), zero1+value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.plus(zero1, value2), zero1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_INT, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_INT, value2);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_INT, value2), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_INT, value2), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_INT, QueryConstants.NULL_CHAR);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_INT, QueryConstants.NULL_CHAR);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_INT, QueryConstants.NULL_CHAR), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_INT, QueryConstants.NULL_CHAR), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -273,37 +273,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.plus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, value2);
             expectedResult = value1 + value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.plus(value1, value2), value1+value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.plus(value1, value2), value1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_BYTE);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_BYTE);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_BYTE), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_BYTE), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(zero1, value2);
             expectedResult = zero1 + value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.plus(zero1, value2), zero1+value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.plus(zero1, value2), zero1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_INT, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_INT, value2);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_INT, value2), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_INT, value2), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_INT, QueryConstants.NULL_BYTE);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_INT, QueryConstants.NULL_BYTE);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_INT, QueryConstants.NULL_BYTE), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_INT, QueryConstants.NULL_BYTE), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -323,37 +323,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.plus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, value2);
             expectedResult = value1 + value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.plus(value1, value2), value1+value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.plus(value1, value2), value1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_SHORT);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_SHORT);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_SHORT), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_SHORT), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(zero1, value2);
             expectedResult = zero1 + value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.plus(zero1, value2), zero1+value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.plus(zero1, value2), zero1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_INT, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_INT, value2);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_INT, value2), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_INT, value2), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_INT, QueryConstants.NULL_SHORT);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_INT, QueryConstants.NULL_SHORT);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_INT, QueryConstants.NULL_SHORT), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_INT, QueryConstants.NULL_SHORT), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -373,37 +373,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.plus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, value2);
             expectedResult = value1 + value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.plus(value1, value2), value1+value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.plus(value1, value2), value1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_INT);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_INT);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_INT), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_INT), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(zero1, value2);
             expectedResult = zero1 + value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.plus(zero1, value2), zero1+value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.plus(zero1, value2), zero1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_DOUBLE, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_DOUBLE, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_DOUBLE, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_DOUBLE, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_INT);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_INT);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_INT), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_INT), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -423,37 +423,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.plus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, value2);
             expectedResult = value1 + value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.plus(value1, value2), value1+value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.plus(value1, value2), value1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_DOUBLE);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_DOUBLE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(zero1, value2);
             expectedResult = zero1 + value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.plus(zero1, value2), zero1+value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.plus(zero1, value2), zero1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_DOUBLE, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_DOUBLE, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_DOUBLE, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_DOUBLE, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_DOUBLE);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_DOUBLE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -473,37 +473,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.plus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, value2);
             expectedResult = value1 + value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.plus(value1, value2), value1+value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.plus(value1, value2), value1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_LONG);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_LONG);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_LONG), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_LONG), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(zero1, value2);
             expectedResult = zero1 + value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.plus(zero1, value2), zero1+value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.plus(zero1, value2), zero1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_DOUBLE, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_DOUBLE, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_DOUBLE, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_DOUBLE, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_LONG);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_LONG);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_LONG), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_LONG), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -523,37 +523,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.plus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, value2);
             expectedResult = value1 + value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.plus(value1, value2), value1+value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.plus(value1, value2), value1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_FLOAT);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_FLOAT);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_FLOAT), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_FLOAT), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(zero1, value2);
             expectedResult = zero1 + value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.plus(zero1, value2), zero1+value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.plus(zero1, value2), zero1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_DOUBLE, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_DOUBLE, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_DOUBLE, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_DOUBLE, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_FLOAT);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_FLOAT);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_FLOAT), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_FLOAT), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -573,37 +573,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.plus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, value2);
             expectedResult = value1 + value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.plus(value1, value2), value1+value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.plus(value1, value2), value1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_CHAR);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_CHAR);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_CHAR), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_CHAR), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(zero1, value2);
             expectedResult = zero1 + value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.plus(zero1, value2), zero1+value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.plus(zero1, value2), zero1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_DOUBLE, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_DOUBLE, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_DOUBLE, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_DOUBLE, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_CHAR);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_CHAR);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_CHAR), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_CHAR), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -623,37 +623,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.plus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, value2);
             expectedResult = value1 + value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.plus(value1, value2), value1+value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.plus(value1, value2), value1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_BYTE);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_BYTE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_BYTE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_BYTE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(zero1, value2);
             expectedResult = zero1 + value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.plus(zero1, value2), zero1+value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.plus(zero1, value2), zero1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_DOUBLE, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_DOUBLE, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_DOUBLE, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_DOUBLE, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_BYTE);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_BYTE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_BYTE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_BYTE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -673,37 +673,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.plus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, value2);
             expectedResult = value1 + value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.plus(value1, value2), value1+value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.plus(value1, value2), value1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_SHORT);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_SHORT);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_SHORT), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_SHORT), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(zero1, value2);
             expectedResult = zero1 + value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.plus(zero1, value2), zero1+value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.plus(zero1, value2), zero1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_DOUBLE, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_DOUBLE, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_DOUBLE, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_DOUBLE, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_SHORT);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_SHORT);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_SHORT), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_SHORT), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -723,37 +723,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.plus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, value2);
             expectedResult = value1 + value2;
             compareResult = Long.compare(dbResult, expectedResult);
-            description = "Long.compare(QueryLanguageFunctionUtil.plus(value1, value2), value1+value2)";
+            description = "Long.compare(QueryLanguageFunctionUtils.plus(value1, value2), value1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_INT);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_INT);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_INT), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_INT), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(zero1, value2);
             expectedResult = zero1 + value2;
             compareResult = Long.compare(dbResult, expectedResult);
-            description = "Long.compare(QueryLanguageFunctionUtil.plus(zero1, value2), zero1+value2)";
+            description = "Long.compare(QueryLanguageFunctionUtils.plus(zero1, value2), zero1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_LONG, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_LONG, value2);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_LONG, value2), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_LONG, value2), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_LONG, QueryConstants.NULL_INT);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_LONG, QueryConstants.NULL_INT);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_LONG, QueryConstants.NULL_INT), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_LONG, QueryConstants.NULL_INT), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -773,37 +773,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.plus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, value2);
             expectedResult = value1 + value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.plus(value1, value2), value1+value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.plus(value1, value2), value1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_DOUBLE);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_DOUBLE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(zero1, value2);
             expectedResult = zero1 + value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.plus(zero1, value2), zero1+value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.plus(zero1, value2), zero1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_LONG, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_LONG, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_LONG, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_LONG, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_LONG, QueryConstants.NULL_DOUBLE);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_LONG, QueryConstants.NULL_DOUBLE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_LONG, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_LONG, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -823,37 +823,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.plus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, value2);
             expectedResult = value1 + value2;
             compareResult = Long.compare(dbResult, expectedResult);
-            description = "Long.compare(QueryLanguageFunctionUtil.plus(value1, value2), value1+value2)";
+            description = "Long.compare(QueryLanguageFunctionUtils.plus(value1, value2), value1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_LONG);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_LONG);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_LONG), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_LONG), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(zero1, value2);
             expectedResult = zero1 + value2;
             compareResult = Long.compare(dbResult, expectedResult);
-            description = "Long.compare(QueryLanguageFunctionUtil.plus(zero1, value2), zero1+value2)";
+            description = "Long.compare(QueryLanguageFunctionUtils.plus(zero1, value2), zero1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_LONG, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_LONG, value2);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_LONG, value2), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_LONG, value2), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_LONG, QueryConstants.NULL_LONG);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_LONG, QueryConstants.NULL_LONG);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_LONG, QueryConstants.NULL_LONG), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_LONG, QueryConstants.NULL_LONG), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -873,37 +873,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.plus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, value2);
             expectedResult = value1 + value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.plus(value1, value2), value1+value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.plus(value1, value2), value1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_FLOAT);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_FLOAT);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(zero1, value2);
             expectedResult = zero1 + value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.plus(zero1, value2), zero1+value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.plus(zero1, value2), zero1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_LONG, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_LONG, value2);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_LONG, value2), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_LONG, value2), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_LONG, QueryConstants.NULL_FLOAT);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_LONG, QueryConstants.NULL_FLOAT);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_LONG, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_LONG, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -923,37 +923,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.plus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, value2);
             expectedResult = value1 + value2;
             compareResult = Long.compare(dbResult, expectedResult);
-            description = "Long.compare(QueryLanguageFunctionUtil.plus(value1, value2), value1+value2)";
+            description = "Long.compare(QueryLanguageFunctionUtils.plus(value1, value2), value1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_CHAR);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_CHAR);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_CHAR), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_CHAR), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(zero1, value2);
             expectedResult = zero1 + value2;
             compareResult = Long.compare(dbResult, expectedResult);
-            description = "Long.compare(QueryLanguageFunctionUtil.plus(zero1, value2), zero1+value2)";
+            description = "Long.compare(QueryLanguageFunctionUtils.plus(zero1, value2), zero1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_LONG, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_LONG, value2);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_LONG, value2), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_LONG, value2), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_LONG, QueryConstants.NULL_CHAR);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_LONG, QueryConstants.NULL_CHAR);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_LONG, QueryConstants.NULL_CHAR), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_LONG, QueryConstants.NULL_CHAR), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -973,37 +973,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.plus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, value2);
             expectedResult = value1 + value2;
             compareResult = Long.compare(dbResult, expectedResult);
-            description = "Long.compare(QueryLanguageFunctionUtil.plus(value1, value2), value1+value2)";
+            description = "Long.compare(QueryLanguageFunctionUtils.plus(value1, value2), value1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_BYTE);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_BYTE);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_BYTE), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_BYTE), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(zero1, value2);
             expectedResult = zero1 + value2;
             compareResult = Long.compare(dbResult, expectedResult);
-            description = "Long.compare(QueryLanguageFunctionUtil.plus(zero1, value2), zero1+value2)";
+            description = "Long.compare(QueryLanguageFunctionUtils.plus(zero1, value2), zero1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_LONG, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_LONG, value2);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_LONG, value2), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_LONG, value2), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_LONG, QueryConstants.NULL_BYTE);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_LONG, QueryConstants.NULL_BYTE);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_LONG, QueryConstants.NULL_BYTE), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_LONG, QueryConstants.NULL_BYTE), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -1023,37 +1023,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.plus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, value2);
             expectedResult = value1 + value2;
             compareResult = Long.compare(dbResult, expectedResult);
-            description = "Long.compare(QueryLanguageFunctionUtil.plus(value1, value2), value1+value2)";
+            description = "Long.compare(QueryLanguageFunctionUtils.plus(value1, value2), value1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_SHORT);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_SHORT);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_SHORT), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_SHORT), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(zero1, value2);
             expectedResult = zero1 + value2;
             compareResult = Long.compare(dbResult, expectedResult);
-            description = "Long.compare(QueryLanguageFunctionUtil.plus(zero1, value2), zero1+value2)";
+            description = "Long.compare(QueryLanguageFunctionUtils.plus(zero1, value2), zero1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_LONG, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_LONG, value2);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_LONG, value2), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_LONG, value2), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_LONG, QueryConstants.NULL_SHORT);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_LONG, QueryConstants.NULL_SHORT);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_LONG, QueryConstants.NULL_SHORT), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_LONG, QueryConstants.NULL_SHORT), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -1073,37 +1073,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.plus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, value2);
             expectedResult = value1 + value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.plus(value1, value2), value1+value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.plus(value1, value2), value1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_INT);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_INT);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_INT), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_INT), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(zero1, value2);
             expectedResult = zero1 + value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.plus(zero1, value2), zero1+value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.plus(zero1, value2), zero1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_FLOAT, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_FLOAT, value2);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_FLOAT, value2), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_FLOAT, value2), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_FLOAT, QueryConstants.NULL_INT);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_FLOAT, QueryConstants.NULL_INT);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_FLOAT, QueryConstants.NULL_INT), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_FLOAT, QueryConstants.NULL_INT), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -1123,37 +1123,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.plus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, value2);
             expectedResult = value1 + value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.plus(value1, value2), value1+value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.plus(value1, value2), value1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_DOUBLE);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_DOUBLE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(zero1, value2);
             expectedResult = zero1 + value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.plus(zero1, value2), zero1+value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.plus(zero1, value2), zero1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_FLOAT, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_FLOAT, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_FLOAT, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_FLOAT, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_FLOAT, QueryConstants.NULL_DOUBLE);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_FLOAT, QueryConstants.NULL_DOUBLE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_FLOAT, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_FLOAT, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -1173,37 +1173,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.plus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, value2);
             expectedResult = value1 + value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.plus(value1, value2), value1+value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.plus(value1, value2), value1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_LONG);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_LONG);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_LONG), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_LONG), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(zero1, value2);
             expectedResult = zero1 + value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.plus(zero1, value2), zero1+value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.plus(zero1, value2), zero1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_FLOAT, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_FLOAT, value2);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_FLOAT, value2), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_FLOAT, value2), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_FLOAT, QueryConstants.NULL_LONG);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_FLOAT, QueryConstants.NULL_LONG);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_FLOAT, QueryConstants.NULL_LONG), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_FLOAT, QueryConstants.NULL_LONG), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -1223,37 +1223,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.plus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, value2);
             expectedResult = value1 + value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.plus(value1, value2), value1+value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.plus(value1, value2), value1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_FLOAT);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_FLOAT);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(zero1, value2);
             expectedResult = zero1 + value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.plus(zero1, value2), zero1+value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.plus(zero1, value2), zero1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_FLOAT, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_FLOAT, value2);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_FLOAT, value2), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_FLOAT, value2), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_FLOAT, QueryConstants.NULL_FLOAT);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_FLOAT, QueryConstants.NULL_FLOAT);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_FLOAT, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_FLOAT, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -1273,37 +1273,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.plus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, value2);
             expectedResult = value1 + value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.plus(value1, value2), value1+value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.plus(value1, value2), value1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_CHAR);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_CHAR);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_CHAR), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_CHAR), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(zero1, value2);
             expectedResult = zero1 + value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.plus(zero1, value2), zero1+value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.plus(zero1, value2), zero1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_FLOAT, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_FLOAT, value2);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_FLOAT, value2), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_FLOAT, value2), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_FLOAT, QueryConstants.NULL_CHAR);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_FLOAT, QueryConstants.NULL_CHAR);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_FLOAT, QueryConstants.NULL_CHAR), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_FLOAT, QueryConstants.NULL_CHAR), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -1323,37 +1323,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.plus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, value2);
             expectedResult = value1 + value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.plus(value1, value2), value1+value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.plus(value1, value2), value1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_BYTE);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_BYTE);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_BYTE), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_BYTE), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(zero1, value2);
             expectedResult = zero1 + value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.plus(zero1, value2), zero1+value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.plus(zero1, value2), zero1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_FLOAT, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_FLOAT, value2);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_FLOAT, value2), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_FLOAT, value2), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_FLOAT, QueryConstants.NULL_BYTE);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_FLOAT, QueryConstants.NULL_BYTE);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_FLOAT, QueryConstants.NULL_BYTE), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_FLOAT, QueryConstants.NULL_BYTE), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -1373,37 +1373,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.plus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, value2);
             expectedResult = value1 + value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.plus(value1, value2), value1+value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.plus(value1, value2), value1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_SHORT);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_SHORT);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_SHORT), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_SHORT), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(zero1, value2);
             expectedResult = zero1 + value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.plus(zero1, value2), zero1+value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.plus(zero1, value2), zero1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_FLOAT, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_FLOAT, value2);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_FLOAT, value2), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_FLOAT, value2), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_FLOAT, QueryConstants.NULL_SHORT);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_FLOAT, QueryConstants.NULL_SHORT);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_FLOAT, QueryConstants.NULL_SHORT), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_FLOAT, QueryConstants.NULL_SHORT), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -1423,37 +1423,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.plus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, value2);
             expectedResult = value1 + value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.plus(value1, value2), value1+value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.plus(value1, value2), value1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_INT);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_INT);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_INT), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_INT), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(zero1, value2);
             expectedResult = zero1 + value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.plus(zero1, value2), zero1+value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.plus(zero1, value2), zero1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_CHAR, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_CHAR, value2);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_CHAR, value2), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_CHAR, value2), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_CHAR, QueryConstants.NULL_INT);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_CHAR, QueryConstants.NULL_INT);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_CHAR, QueryConstants.NULL_INT), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_CHAR, QueryConstants.NULL_INT), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -1473,37 +1473,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.plus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, value2);
             expectedResult = value1 + value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.plus(value1, value2), value1+value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.plus(value1, value2), value1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_DOUBLE);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_DOUBLE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(zero1, value2);
             expectedResult = zero1 + value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.plus(zero1, value2), zero1+value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.plus(zero1, value2), zero1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_CHAR, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_CHAR, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_CHAR, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_CHAR, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_CHAR, QueryConstants.NULL_DOUBLE);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_CHAR, QueryConstants.NULL_DOUBLE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_CHAR, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_CHAR, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -1523,37 +1523,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.plus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, value2);
             expectedResult = value1 + value2;
             compareResult = Long.compare(dbResult, expectedResult);
-            description = "Long.compare(QueryLanguageFunctionUtil.plus(value1, value2), value1+value2)";
+            description = "Long.compare(QueryLanguageFunctionUtils.plus(value1, value2), value1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_LONG);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_LONG);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_LONG), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_LONG), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(zero1, value2);
             expectedResult = zero1 + value2;
             compareResult = Long.compare(dbResult, expectedResult);
-            description = "Long.compare(QueryLanguageFunctionUtil.plus(zero1, value2), zero1+value2)";
+            description = "Long.compare(QueryLanguageFunctionUtils.plus(zero1, value2), zero1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_CHAR, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_CHAR, value2);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_CHAR, value2), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_CHAR, value2), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_CHAR, QueryConstants.NULL_LONG);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_CHAR, QueryConstants.NULL_LONG);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_CHAR, QueryConstants.NULL_LONG), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_CHAR, QueryConstants.NULL_LONG), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -1573,37 +1573,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.plus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, value2);
             expectedResult = value1 + value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.plus(value1, value2), value1+value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.plus(value1, value2), value1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_FLOAT);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_FLOAT);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(zero1, value2);
             expectedResult = zero1 + value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.plus(zero1, value2), zero1+value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.plus(zero1, value2), zero1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_CHAR, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_CHAR, value2);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_CHAR, value2), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_CHAR, value2), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_CHAR, QueryConstants.NULL_FLOAT);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_CHAR, QueryConstants.NULL_FLOAT);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_CHAR, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_CHAR, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -1623,37 +1623,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.plus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, value2);
             expectedResult = value1 + value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.plus(value1, value2), value1+value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.plus(value1, value2), value1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_CHAR);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_CHAR);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_CHAR), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_CHAR), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(zero1, value2);
             expectedResult = zero1 + value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.plus(zero1, value2), zero1+value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.plus(zero1, value2), zero1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_CHAR, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_CHAR, value2);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_CHAR, value2), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_CHAR, value2), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_CHAR, QueryConstants.NULL_CHAR);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_CHAR, QueryConstants.NULL_CHAR);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_CHAR, QueryConstants.NULL_CHAR), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_CHAR, QueryConstants.NULL_CHAR), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -1673,37 +1673,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.plus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, value2);
             expectedResult = value1 + value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.plus(value1, value2), value1+value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.plus(value1, value2), value1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_BYTE);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_BYTE);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_BYTE), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_BYTE), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(zero1, value2);
             expectedResult = zero1 + value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.plus(zero1, value2), zero1+value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.plus(zero1, value2), zero1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_CHAR, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_CHAR, value2);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_CHAR, value2), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_CHAR, value2), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_CHAR, QueryConstants.NULL_BYTE);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_CHAR, QueryConstants.NULL_BYTE);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_CHAR, QueryConstants.NULL_BYTE), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_CHAR, QueryConstants.NULL_BYTE), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -1723,37 +1723,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.plus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, value2);
             expectedResult = value1 + value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.plus(value1, value2), value1+value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.plus(value1, value2), value1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_SHORT);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_SHORT);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_SHORT), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_SHORT), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(zero1, value2);
             expectedResult = zero1 + value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.plus(zero1, value2), zero1+value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.plus(zero1, value2), zero1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_CHAR, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_CHAR, value2);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_CHAR, value2), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_CHAR, value2), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_CHAR, QueryConstants.NULL_SHORT);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_CHAR, QueryConstants.NULL_SHORT);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_CHAR, QueryConstants.NULL_SHORT), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_CHAR, QueryConstants.NULL_SHORT), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -1773,37 +1773,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.plus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, value2);
             expectedResult = value1 + value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.plus(value1, value2), value1+value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.plus(value1, value2), value1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_INT);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_INT);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_INT), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_INT), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(zero1, value2);
             expectedResult = zero1 + value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.plus(zero1, value2), zero1+value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.plus(zero1, value2), zero1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_BYTE, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_BYTE, value2);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_BYTE, value2), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_BYTE, value2), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_BYTE, QueryConstants.NULL_INT);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_BYTE, QueryConstants.NULL_INT);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_BYTE, QueryConstants.NULL_INT), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_BYTE, QueryConstants.NULL_INT), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -1823,37 +1823,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.plus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, value2);
             expectedResult = value1 + value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.plus(value1, value2), value1+value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.plus(value1, value2), value1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_DOUBLE);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_DOUBLE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(zero1, value2);
             expectedResult = zero1 + value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.plus(zero1, value2), zero1+value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.plus(zero1, value2), zero1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_BYTE, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_BYTE, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_BYTE, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_BYTE, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_BYTE, QueryConstants.NULL_DOUBLE);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_BYTE, QueryConstants.NULL_DOUBLE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_BYTE, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_BYTE, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -1873,37 +1873,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.plus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, value2);
             expectedResult = value1 + value2;
             compareResult = Long.compare(dbResult, expectedResult);
-            description = "Long.compare(QueryLanguageFunctionUtil.plus(value1, value2), value1+value2)";
+            description = "Long.compare(QueryLanguageFunctionUtils.plus(value1, value2), value1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_LONG);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_LONG);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_LONG), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_LONG), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(zero1, value2);
             expectedResult = zero1 + value2;
             compareResult = Long.compare(dbResult, expectedResult);
-            description = "Long.compare(QueryLanguageFunctionUtil.plus(zero1, value2), zero1+value2)";
+            description = "Long.compare(QueryLanguageFunctionUtils.plus(zero1, value2), zero1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_BYTE, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_BYTE, value2);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_BYTE, value2), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_BYTE, value2), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_BYTE, QueryConstants.NULL_LONG);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_BYTE, QueryConstants.NULL_LONG);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_BYTE, QueryConstants.NULL_LONG), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_BYTE, QueryConstants.NULL_LONG), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -1923,37 +1923,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.plus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, value2);
             expectedResult = value1 + value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.plus(value1, value2), value1+value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.plus(value1, value2), value1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_FLOAT);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_FLOAT);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(zero1, value2);
             expectedResult = zero1 + value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.plus(zero1, value2), zero1+value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.plus(zero1, value2), zero1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_BYTE, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_BYTE, value2);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_BYTE, value2), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_BYTE, value2), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_BYTE, QueryConstants.NULL_FLOAT);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_BYTE, QueryConstants.NULL_FLOAT);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_BYTE, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_BYTE, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -1973,37 +1973,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.plus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, value2);
             expectedResult = value1 + value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.plus(value1, value2), value1+value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.plus(value1, value2), value1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_CHAR);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_CHAR);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_CHAR), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_CHAR), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(zero1, value2);
             expectedResult = zero1 + value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.plus(zero1, value2), zero1+value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.plus(zero1, value2), zero1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_BYTE, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_BYTE, value2);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_BYTE, value2), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_BYTE, value2), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_BYTE, QueryConstants.NULL_CHAR);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_BYTE, QueryConstants.NULL_CHAR);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_BYTE, QueryConstants.NULL_CHAR), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_BYTE, QueryConstants.NULL_CHAR), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -2023,37 +2023,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.plus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, value2);
             expectedResult = value1 + value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.plus(value1, value2), value1+value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.plus(value1, value2), value1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_BYTE);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_BYTE);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_BYTE), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_BYTE), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(zero1, value2);
             expectedResult = zero1 + value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.plus(zero1, value2), zero1+value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.plus(zero1, value2), zero1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_BYTE, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_BYTE, value2);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_BYTE, value2), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_BYTE, value2), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_BYTE, QueryConstants.NULL_BYTE);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_BYTE, QueryConstants.NULL_BYTE);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_BYTE, QueryConstants.NULL_BYTE), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_BYTE, QueryConstants.NULL_BYTE), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -2073,37 +2073,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.plus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, value2);
             expectedResult = value1 + value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.plus(value1, value2), value1+value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.plus(value1, value2), value1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_SHORT);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_SHORT);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_SHORT), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_SHORT), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(zero1, value2);
             expectedResult = zero1 + value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.plus(zero1, value2), zero1+value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.plus(zero1, value2), zero1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_BYTE, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_BYTE, value2);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_BYTE, value2), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_BYTE, value2), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_BYTE, QueryConstants.NULL_SHORT);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_BYTE, QueryConstants.NULL_SHORT);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_BYTE, QueryConstants.NULL_SHORT), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_BYTE, QueryConstants.NULL_SHORT), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -2123,37 +2123,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.plus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, value2);
             expectedResult = value1 + value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.plus(value1, value2), value1+value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.plus(value1, value2), value1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_INT);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_INT);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_INT), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_INT), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(zero1, value2);
             expectedResult = zero1 + value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.plus(zero1, value2), zero1+value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.plus(zero1, value2), zero1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_SHORT, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_SHORT, value2);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_SHORT, value2), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_SHORT, value2), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_SHORT, QueryConstants.NULL_INT);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_SHORT, QueryConstants.NULL_INT);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_SHORT, QueryConstants.NULL_INT), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_SHORT, QueryConstants.NULL_INT), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -2173,37 +2173,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.plus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, value2);
             expectedResult = value1 + value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.plus(value1, value2), value1+value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.plus(value1, value2), value1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_DOUBLE);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_DOUBLE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(zero1, value2);
             expectedResult = zero1 + value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.plus(zero1, value2), zero1+value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.plus(zero1, value2), zero1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_SHORT, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_SHORT, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_SHORT, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_SHORT, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_SHORT, QueryConstants.NULL_DOUBLE);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_SHORT, QueryConstants.NULL_DOUBLE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_SHORT, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_SHORT, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -2223,37 +2223,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.plus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, value2);
             expectedResult = value1 + value2;
             compareResult = Long.compare(dbResult, expectedResult);
-            description = "Long.compare(QueryLanguageFunctionUtil.plus(value1, value2), value1+value2)";
+            description = "Long.compare(QueryLanguageFunctionUtils.plus(value1, value2), value1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_LONG);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_LONG);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_LONG), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_LONG), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(zero1, value2);
             expectedResult = zero1 + value2;
             compareResult = Long.compare(dbResult, expectedResult);
-            description = "Long.compare(QueryLanguageFunctionUtil.plus(zero1, value2), zero1+value2)";
+            description = "Long.compare(QueryLanguageFunctionUtils.plus(zero1, value2), zero1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_SHORT, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_SHORT, value2);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_SHORT, value2), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_SHORT, value2), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_SHORT, QueryConstants.NULL_LONG);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_SHORT, QueryConstants.NULL_LONG);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_SHORT, QueryConstants.NULL_LONG), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_SHORT, QueryConstants.NULL_LONG), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -2273,37 +2273,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.plus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, value2);
             expectedResult = value1 + value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.plus(value1, value2), value1+value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.plus(value1, value2), value1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_FLOAT);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_FLOAT);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(zero1, value2);
             expectedResult = zero1 + value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.plus(zero1, value2), zero1+value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.plus(zero1, value2), zero1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_SHORT, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_SHORT, value2);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_SHORT, value2), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_SHORT, value2), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_SHORT, QueryConstants.NULL_FLOAT);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_SHORT, QueryConstants.NULL_FLOAT);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_SHORT, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_SHORT, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -2323,37 +2323,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.plus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, value2);
             expectedResult = value1 + value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.plus(value1, value2), value1+value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.plus(value1, value2), value1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_CHAR);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_CHAR);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_CHAR), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_CHAR), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(zero1, value2);
             expectedResult = zero1 + value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.plus(zero1, value2), zero1+value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.plus(zero1, value2), zero1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_SHORT, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_SHORT, value2);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_SHORT, value2), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_SHORT, value2), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_SHORT, QueryConstants.NULL_CHAR);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_SHORT, QueryConstants.NULL_CHAR);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_SHORT, QueryConstants.NULL_CHAR), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_SHORT, QueryConstants.NULL_CHAR), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -2373,37 +2373,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.plus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, value2);
             expectedResult = value1 + value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.plus(value1, value2), value1+value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.plus(value1, value2), value1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_BYTE);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_BYTE);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_BYTE), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_BYTE), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(zero1, value2);
             expectedResult = zero1 + value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.plus(zero1, value2), zero1+value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.plus(zero1, value2), zero1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_SHORT, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_SHORT, value2);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_SHORT, value2), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_SHORT, value2), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_SHORT, QueryConstants.NULL_BYTE);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_SHORT, QueryConstants.NULL_BYTE);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_SHORT, QueryConstants.NULL_BYTE), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_SHORT, QueryConstants.NULL_BYTE), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -2423,37 +2423,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.plus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, value2);
             expectedResult = value1 + value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.plus(value1, value2), value1+value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.plus(value1, value2), value1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_SHORT);
+            dbResult = QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_SHORT);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.plus(value1, QueryConstants.NULL_SHORT), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.plus(value1, QueryConstants.NULL_SHORT), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(zero1, value2);
             expectedResult = zero1 + value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.plus(zero1, value2), zero1+value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.plus(zero1, value2), zero1+value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_SHORT, value2);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_SHORT, value2);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_SHORT, value2), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_SHORT, value2), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.plus(QueryConstants.NULL_SHORT, QueryConstants.NULL_SHORT);
+            dbResult = QueryLanguageFunctionUtils.plus(QueryConstants.NULL_SHORT, QueryConstants.NULL_SHORT);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.plus(QueryConstants.NULL_SHORT, QueryConstants.NULL_SHORT), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.plus(QueryConstants.NULL_SHORT, QueryConstants.NULL_SHORT), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -2473,37 +2473,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.minus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, value2);
             expectedResult = value1 - value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.minus(value1, value2), value1-value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.minus(value1, value2), value1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_INT);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_INT);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_INT), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_INT), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(zero1, value2);
             expectedResult = zero1 - value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.minus(zero1, value2), zero1-value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.minus(zero1, value2), zero1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_INT, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_INT, value2);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_INT, value2), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_INT, value2), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_INT, QueryConstants.NULL_INT);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_INT, QueryConstants.NULL_INT);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_INT, QueryConstants.NULL_INT), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_INT, QueryConstants.NULL_INT), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -2523,37 +2523,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.minus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, value2);
             expectedResult = value1 - value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.minus(value1, value2), value1-value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.minus(value1, value2), value1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_DOUBLE);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_DOUBLE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(zero1, value2);
             expectedResult = zero1 - value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.minus(zero1, value2), zero1-value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.minus(zero1, value2), zero1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_INT, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_INT, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_INT, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_INT, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_INT, QueryConstants.NULL_DOUBLE);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_INT, QueryConstants.NULL_DOUBLE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_INT, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_INT, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -2573,37 +2573,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.minus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, value2);
             expectedResult = value1 - value2;
             compareResult = Long.compare(dbResult, expectedResult);
-            description = "Long.compare(QueryLanguageFunctionUtil.minus(value1, value2), value1-value2)";
+            description = "Long.compare(QueryLanguageFunctionUtils.minus(value1, value2), value1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_LONG);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_LONG);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_LONG), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_LONG), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(zero1, value2);
             expectedResult = zero1 - value2;
             compareResult = Long.compare(dbResult, expectedResult);
-            description = "Long.compare(QueryLanguageFunctionUtil.minus(zero1, value2), zero1-value2)";
+            description = "Long.compare(QueryLanguageFunctionUtils.minus(zero1, value2), zero1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_INT, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_INT, value2);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_INT, value2), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_INT, value2), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_INT, QueryConstants.NULL_LONG);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_INT, QueryConstants.NULL_LONG);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_INT, QueryConstants.NULL_LONG), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_INT, QueryConstants.NULL_LONG), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -2623,37 +2623,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.minus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, value2);
             expectedResult = value1 - value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.minus(value1, value2), value1-value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.minus(value1, value2), value1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_FLOAT);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_FLOAT);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(zero1, value2);
             expectedResult = zero1 - value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.minus(zero1, value2), zero1-value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.minus(zero1, value2), zero1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_INT, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_INT, value2);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_INT, value2), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_INT, value2), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_INT, QueryConstants.NULL_FLOAT);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_INT, QueryConstants.NULL_FLOAT);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_INT, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_INT, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -2673,37 +2673,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.minus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, value2);
             expectedResult = value1 - value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.minus(value1, value2), value1-value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.minus(value1, value2), value1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_CHAR);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_CHAR);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_CHAR), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_CHAR), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(zero1, value2);
             expectedResult = zero1 - value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.minus(zero1, value2), zero1-value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.minus(zero1, value2), zero1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_INT, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_INT, value2);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_INT, value2), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_INT, value2), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_INT, QueryConstants.NULL_CHAR);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_INT, QueryConstants.NULL_CHAR);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_INT, QueryConstants.NULL_CHAR), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_INT, QueryConstants.NULL_CHAR), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -2723,37 +2723,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.minus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, value2);
             expectedResult = value1 - value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.minus(value1, value2), value1-value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.minus(value1, value2), value1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_BYTE);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_BYTE);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_BYTE), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_BYTE), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(zero1, value2);
             expectedResult = zero1 - value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.minus(zero1, value2), zero1-value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.minus(zero1, value2), zero1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_INT, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_INT, value2);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_INT, value2), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_INT, value2), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_INT, QueryConstants.NULL_BYTE);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_INT, QueryConstants.NULL_BYTE);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_INT, QueryConstants.NULL_BYTE), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_INT, QueryConstants.NULL_BYTE), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -2773,37 +2773,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.minus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, value2);
             expectedResult = value1 - value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.minus(value1, value2), value1-value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.minus(value1, value2), value1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_SHORT);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_SHORT);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_SHORT), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_SHORT), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(zero1, value2);
             expectedResult = zero1 - value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.minus(zero1, value2), zero1-value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.minus(zero1, value2), zero1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_INT, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_INT, value2);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_INT, value2), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_INT, value2), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_INT, QueryConstants.NULL_SHORT);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_INT, QueryConstants.NULL_SHORT);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_INT, QueryConstants.NULL_SHORT), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_INT, QueryConstants.NULL_SHORT), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -2823,37 +2823,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.minus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, value2);
             expectedResult = value1 - value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.minus(value1, value2), value1-value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.minus(value1, value2), value1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_INT);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_INT);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_INT), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_INT), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(zero1, value2);
             expectedResult = zero1 - value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.minus(zero1, value2), zero1-value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.minus(zero1, value2), zero1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_DOUBLE, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_DOUBLE, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_DOUBLE, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_DOUBLE, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_INT);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_INT);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_INT), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_INT), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -2873,37 +2873,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.minus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, value2);
             expectedResult = value1 - value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.minus(value1, value2), value1-value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.minus(value1, value2), value1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_DOUBLE);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_DOUBLE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(zero1, value2);
             expectedResult = zero1 - value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.minus(zero1, value2), zero1-value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.minus(zero1, value2), zero1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_DOUBLE, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_DOUBLE, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_DOUBLE, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_DOUBLE, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_DOUBLE);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_DOUBLE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -2923,37 +2923,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.minus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, value2);
             expectedResult = value1 - value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.minus(value1, value2), value1-value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.minus(value1, value2), value1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_LONG);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_LONG);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_LONG), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_LONG), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(zero1, value2);
             expectedResult = zero1 - value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.minus(zero1, value2), zero1-value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.minus(zero1, value2), zero1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_DOUBLE, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_DOUBLE, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_DOUBLE, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_DOUBLE, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_LONG);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_LONG);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_LONG), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_LONG), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -2973,37 +2973,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.minus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, value2);
             expectedResult = value1 - value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.minus(value1, value2), value1-value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.minus(value1, value2), value1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_FLOAT);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_FLOAT);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_FLOAT), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_FLOAT), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(zero1, value2);
             expectedResult = zero1 - value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.minus(zero1, value2), zero1-value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.minus(zero1, value2), zero1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_DOUBLE, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_DOUBLE, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_DOUBLE, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_DOUBLE, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_FLOAT);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_FLOAT);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_FLOAT), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_FLOAT), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -3023,37 +3023,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.minus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, value2);
             expectedResult = value1 - value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.minus(value1, value2), value1-value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.minus(value1, value2), value1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_CHAR);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_CHAR);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_CHAR), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_CHAR), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(zero1, value2);
             expectedResult = zero1 - value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.minus(zero1, value2), zero1-value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.minus(zero1, value2), zero1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_DOUBLE, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_DOUBLE, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_DOUBLE, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_DOUBLE, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_CHAR);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_CHAR);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_CHAR), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_CHAR), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -3073,37 +3073,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.minus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, value2);
             expectedResult = value1 - value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.minus(value1, value2), value1-value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.minus(value1, value2), value1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_BYTE);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_BYTE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_BYTE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_BYTE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(zero1, value2);
             expectedResult = zero1 - value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.minus(zero1, value2), zero1-value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.minus(zero1, value2), zero1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_DOUBLE, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_DOUBLE, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_DOUBLE, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_DOUBLE, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_BYTE);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_BYTE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_BYTE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_BYTE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -3123,37 +3123,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.minus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, value2);
             expectedResult = value1 - value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.minus(value1, value2), value1-value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.minus(value1, value2), value1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_SHORT);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_SHORT);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_SHORT), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_SHORT), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(zero1, value2);
             expectedResult = zero1 - value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.minus(zero1, value2), zero1-value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.minus(zero1, value2), zero1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_DOUBLE, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_DOUBLE, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_DOUBLE, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_DOUBLE, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_SHORT);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_SHORT);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_SHORT), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_SHORT), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -3173,37 +3173,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.minus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, value2);
             expectedResult = value1 - value2;
             compareResult = Long.compare(dbResult, expectedResult);
-            description = "Long.compare(QueryLanguageFunctionUtil.minus(value1, value2), value1-value2)";
+            description = "Long.compare(QueryLanguageFunctionUtils.minus(value1, value2), value1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_INT);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_INT);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_INT), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_INT), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(zero1, value2);
             expectedResult = zero1 - value2;
             compareResult = Long.compare(dbResult, expectedResult);
-            description = "Long.compare(QueryLanguageFunctionUtil.minus(zero1, value2), zero1-value2)";
+            description = "Long.compare(QueryLanguageFunctionUtils.minus(zero1, value2), zero1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_LONG, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_LONG, value2);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_LONG, value2), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_LONG, value2), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_LONG, QueryConstants.NULL_INT);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_LONG, QueryConstants.NULL_INT);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_LONG, QueryConstants.NULL_INT), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_LONG, QueryConstants.NULL_INT), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -3223,37 +3223,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.minus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, value2);
             expectedResult = value1 - value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.minus(value1, value2), value1-value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.minus(value1, value2), value1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_DOUBLE);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_DOUBLE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(zero1, value2);
             expectedResult = zero1 - value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.minus(zero1, value2), zero1-value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.minus(zero1, value2), zero1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_LONG, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_LONG, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_LONG, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_LONG, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_LONG, QueryConstants.NULL_DOUBLE);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_LONG, QueryConstants.NULL_DOUBLE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_LONG, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_LONG, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -3273,37 +3273,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.minus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, value2);
             expectedResult = value1 - value2;
             compareResult = Long.compare(dbResult, expectedResult);
-            description = "Long.compare(QueryLanguageFunctionUtil.minus(value1, value2), value1-value2)";
+            description = "Long.compare(QueryLanguageFunctionUtils.minus(value1, value2), value1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_LONG);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_LONG);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_LONG), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_LONG), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(zero1, value2);
             expectedResult = zero1 - value2;
             compareResult = Long.compare(dbResult, expectedResult);
-            description = "Long.compare(QueryLanguageFunctionUtil.minus(zero1, value2), zero1-value2)";
+            description = "Long.compare(QueryLanguageFunctionUtils.minus(zero1, value2), zero1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_LONG, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_LONG, value2);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_LONG, value2), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_LONG, value2), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_LONG, QueryConstants.NULL_LONG);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_LONG, QueryConstants.NULL_LONG);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_LONG, QueryConstants.NULL_LONG), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_LONG, QueryConstants.NULL_LONG), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -3323,37 +3323,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.minus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, value2);
             expectedResult = value1 - value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.minus(value1, value2), value1-value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.minus(value1, value2), value1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_FLOAT);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_FLOAT);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(zero1, value2);
             expectedResult = zero1 - value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.minus(zero1, value2), zero1-value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.minus(zero1, value2), zero1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_LONG, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_LONG, value2);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_LONG, value2), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_LONG, value2), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_LONG, QueryConstants.NULL_FLOAT);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_LONG, QueryConstants.NULL_FLOAT);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_LONG, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_LONG, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -3373,37 +3373,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.minus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, value2);
             expectedResult = value1 - value2;
             compareResult = Long.compare(dbResult, expectedResult);
-            description = "Long.compare(QueryLanguageFunctionUtil.minus(value1, value2), value1-value2)";
+            description = "Long.compare(QueryLanguageFunctionUtils.minus(value1, value2), value1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_CHAR);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_CHAR);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_CHAR), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_CHAR), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(zero1, value2);
             expectedResult = zero1 - value2;
             compareResult = Long.compare(dbResult, expectedResult);
-            description = "Long.compare(QueryLanguageFunctionUtil.minus(zero1, value2), zero1-value2)";
+            description = "Long.compare(QueryLanguageFunctionUtils.minus(zero1, value2), zero1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_LONG, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_LONG, value2);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_LONG, value2), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_LONG, value2), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_LONG, QueryConstants.NULL_CHAR);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_LONG, QueryConstants.NULL_CHAR);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_LONG, QueryConstants.NULL_CHAR), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_LONG, QueryConstants.NULL_CHAR), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -3423,37 +3423,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.minus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, value2);
             expectedResult = value1 - value2;
             compareResult = Long.compare(dbResult, expectedResult);
-            description = "Long.compare(QueryLanguageFunctionUtil.minus(value1, value2), value1-value2)";
+            description = "Long.compare(QueryLanguageFunctionUtils.minus(value1, value2), value1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_BYTE);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_BYTE);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_BYTE), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_BYTE), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(zero1, value2);
             expectedResult = zero1 - value2;
             compareResult = Long.compare(dbResult, expectedResult);
-            description = "Long.compare(QueryLanguageFunctionUtil.minus(zero1, value2), zero1-value2)";
+            description = "Long.compare(QueryLanguageFunctionUtils.minus(zero1, value2), zero1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_LONG, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_LONG, value2);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_LONG, value2), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_LONG, value2), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_LONG, QueryConstants.NULL_BYTE);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_LONG, QueryConstants.NULL_BYTE);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_LONG, QueryConstants.NULL_BYTE), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_LONG, QueryConstants.NULL_BYTE), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -3473,37 +3473,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.minus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, value2);
             expectedResult = value1 - value2;
             compareResult = Long.compare(dbResult, expectedResult);
-            description = "Long.compare(QueryLanguageFunctionUtil.minus(value1, value2), value1-value2)";
+            description = "Long.compare(QueryLanguageFunctionUtils.minus(value1, value2), value1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_SHORT);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_SHORT);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_SHORT), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_SHORT), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(zero1, value2);
             expectedResult = zero1 - value2;
             compareResult = Long.compare(dbResult, expectedResult);
-            description = "Long.compare(QueryLanguageFunctionUtil.minus(zero1, value2), zero1-value2)";
+            description = "Long.compare(QueryLanguageFunctionUtils.minus(zero1, value2), zero1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_LONG, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_LONG, value2);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_LONG, value2), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_LONG, value2), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_LONG, QueryConstants.NULL_SHORT);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_LONG, QueryConstants.NULL_SHORT);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_LONG, QueryConstants.NULL_SHORT), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_LONG, QueryConstants.NULL_SHORT), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -3523,37 +3523,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.minus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, value2);
             expectedResult = value1 - value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.minus(value1, value2), value1-value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.minus(value1, value2), value1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_INT);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_INT);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_INT), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_INT), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(zero1, value2);
             expectedResult = zero1 - value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.minus(zero1, value2), zero1-value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.minus(zero1, value2), zero1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_FLOAT, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_FLOAT, value2);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_FLOAT, value2), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_FLOAT, value2), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_FLOAT, QueryConstants.NULL_INT);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_FLOAT, QueryConstants.NULL_INT);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_FLOAT, QueryConstants.NULL_INT), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_FLOAT, QueryConstants.NULL_INT), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -3573,37 +3573,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.minus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, value2);
             expectedResult = value1 - value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.minus(value1, value2), value1-value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.minus(value1, value2), value1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_DOUBLE);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_DOUBLE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(zero1, value2);
             expectedResult = zero1 - value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.minus(zero1, value2), zero1-value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.minus(zero1, value2), zero1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_FLOAT, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_FLOAT, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_FLOAT, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_FLOAT, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_FLOAT, QueryConstants.NULL_DOUBLE);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_FLOAT, QueryConstants.NULL_DOUBLE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_FLOAT, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_FLOAT, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -3623,37 +3623,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.minus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, value2);
             expectedResult = value1 - value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.minus(value1, value2), value1-value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.minus(value1, value2), value1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_LONG);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_LONG);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_LONG), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_LONG), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(zero1, value2);
             expectedResult = zero1 - value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.minus(zero1, value2), zero1-value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.minus(zero1, value2), zero1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_FLOAT, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_FLOAT, value2);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_FLOAT, value2), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_FLOAT, value2), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_FLOAT, QueryConstants.NULL_LONG);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_FLOAT, QueryConstants.NULL_LONG);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_FLOAT, QueryConstants.NULL_LONG), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_FLOAT, QueryConstants.NULL_LONG), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -3673,37 +3673,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.minus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, value2);
             expectedResult = value1 - value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.minus(value1, value2), value1-value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.minus(value1, value2), value1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_FLOAT);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_FLOAT);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(zero1, value2);
             expectedResult = zero1 - value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.minus(zero1, value2), zero1-value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.minus(zero1, value2), zero1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_FLOAT, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_FLOAT, value2);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_FLOAT, value2), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_FLOAT, value2), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_FLOAT, QueryConstants.NULL_FLOAT);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_FLOAT, QueryConstants.NULL_FLOAT);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_FLOAT, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_FLOAT, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -3723,37 +3723,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.minus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, value2);
             expectedResult = value1 - value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.minus(value1, value2), value1-value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.minus(value1, value2), value1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_CHAR);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_CHAR);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_CHAR), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_CHAR), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(zero1, value2);
             expectedResult = zero1 - value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.minus(zero1, value2), zero1-value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.minus(zero1, value2), zero1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_FLOAT, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_FLOAT, value2);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_FLOAT, value2), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_FLOAT, value2), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_FLOAT, QueryConstants.NULL_CHAR);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_FLOAT, QueryConstants.NULL_CHAR);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_FLOAT, QueryConstants.NULL_CHAR), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_FLOAT, QueryConstants.NULL_CHAR), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -3773,37 +3773,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.minus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, value2);
             expectedResult = value1 - value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.minus(value1, value2), value1-value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.minus(value1, value2), value1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_BYTE);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_BYTE);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_BYTE), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_BYTE), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(zero1, value2);
             expectedResult = zero1 - value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.minus(zero1, value2), zero1-value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.minus(zero1, value2), zero1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_FLOAT, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_FLOAT, value2);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_FLOAT, value2), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_FLOAT, value2), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_FLOAT, QueryConstants.NULL_BYTE);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_FLOAT, QueryConstants.NULL_BYTE);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_FLOAT, QueryConstants.NULL_BYTE), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_FLOAT, QueryConstants.NULL_BYTE), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -3823,37 +3823,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.minus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, value2);
             expectedResult = value1 - value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.minus(value1, value2), value1-value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.minus(value1, value2), value1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_SHORT);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_SHORT);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_SHORT), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_SHORT), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(zero1, value2);
             expectedResult = zero1 - value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.minus(zero1, value2), zero1-value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.minus(zero1, value2), zero1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_FLOAT, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_FLOAT, value2);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_FLOAT, value2), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_FLOAT, value2), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_FLOAT, QueryConstants.NULL_SHORT);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_FLOAT, QueryConstants.NULL_SHORT);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_FLOAT, QueryConstants.NULL_SHORT), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_FLOAT, QueryConstants.NULL_SHORT), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -3873,37 +3873,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.minus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, value2);
             expectedResult = value1 - value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.minus(value1, value2), value1-value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.minus(value1, value2), value1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_INT);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_INT);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_INT), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_INT), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(zero1, value2);
             expectedResult = zero1 - value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.minus(zero1, value2), zero1-value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.minus(zero1, value2), zero1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_CHAR, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_CHAR, value2);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_CHAR, value2), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_CHAR, value2), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_CHAR, QueryConstants.NULL_INT);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_CHAR, QueryConstants.NULL_INT);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_CHAR, QueryConstants.NULL_INT), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_CHAR, QueryConstants.NULL_INT), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -3923,37 +3923,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.minus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, value2);
             expectedResult = value1 - value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.minus(value1, value2), value1-value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.minus(value1, value2), value1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_DOUBLE);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_DOUBLE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(zero1, value2);
             expectedResult = zero1 - value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.minus(zero1, value2), zero1-value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.minus(zero1, value2), zero1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_CHAR, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_CHAR, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_CHAR, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_CHAR, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_CHAR, QueryConstants.NULL_DOUBLE);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_CHAR, QueryConstants.NULL_DOUBLE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_CHAR, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_CHAR, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -3973,37 +3973,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.minus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, value2);
             expectedResult = value1 - value2;
             compareResult = Long.compare(dbResult, expectedResult);
-            description = "Long.compare(QueryLanguageFunctionUtil.minus(value1, value2), value1-value2)";
+            description = "Long.compare(QueryLanguageFunctionUtils.minus(value1, value2), value1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_LONG);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_LONG);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_LONG), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_LONG), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(zero1, value2);
             expectedResult = zero1 - value2;
             compareResult = Long.compare(dbResult, expectedResult);
-            description = "Long.compare(QueryLanguageFunctionUtil.minus(zero1, value2), zero1-value2)";
+            description = "Long.compare(QueryLanguageFunctionUtils.minus(zero1, value2), zero1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_CHAR, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_CHAR, value2);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_CHAR, value2), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_CHAR, value2), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_CHAR, QueryConstants.NULL_LONG);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_CHAR, QueryConstants.NULL_LONG);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_CHAR, QueryConstants.NULL_LONG), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_CHAR, QueryConstants.NULL_LONG), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -4023,37 +4023,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.minus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, value2);
             expectedResult = value1 - value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.minus(value1, value2), value1-value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.minus(value1, value2), value1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_FLOAT);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_FLOAT);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(zero1, value2);
             expectedResult = zero1 - value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.minus(zero1, value2), zero1-value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.minus(zero1, value2), zero1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_CHAR, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_CHAR, value2);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_CHAR, value2), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_CHAR, value2), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_CHAR, QueryConstants.NULL_FLOAT);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_CHAR, QueryConstants.NULL_FLOAT);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_CHAR, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_CHAR, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -4073,37 +4073,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.minus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, value2);
             expectedResult = value1 - value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.minus(value1, value2), value1-value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.minus(value1, value2), value1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_CHAR);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_CHAR);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_CHAR), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_CHAR), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(zero1, value2);
             expectedResult = zero1 - value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.minus(zero1, value2), zero1-value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.minus(zero1, value2), zero1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_CHAR, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_CHAR, value2);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_CHAR, value2), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_CHAR, value2), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_CHAR, QueryConstants.NULL_CHAR);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_CHAR, QueryConstants.NULL_CHAR);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_CHAR, QueryConstants.NULL_CHAR), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_CHAR, QueryConstants.NULL_CHAR), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -4123,37 +4123,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.minus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, value2);
             expectedResult = value1 - value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.minus(value1, value2), value1-value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.minus(value1, value2), value1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_BYTE);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_BYTE);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_BYTE), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_BYTE), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(zero1, value2);
             expectedResult = zero1 - value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.minus(zero1, value2), zero1-value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.minus(zero1, value2), zero1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_CHAR, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_CHAR, value2);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_CHAR, value2), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_CHAR, value2), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_CHAR, QueryConstants.NULL_BYTE);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_CHAR, QueryConstants.NULL_BYTE);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_CHAR, QueryConstants.NULL_BYTE), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_CHAR, QueryConstants.NULL_BYTE), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -4173,37 +4173,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.minus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, value2);
             expectedResult = value1 - value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.minus(value1, value2), value1-value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.minus(value1, value2), value1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_SHORT);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_SHORT);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_SHORT), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_SHORT), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(zero1, value2);
             expectedResult = zero1 - value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.minus(zero1, value2), zero1-value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.minus(zero1, value2), zero1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_CHAR, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_CHAR, value2);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_CHAR, value2), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_CHAR, value2), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_CHAR, QueryConstants.NULL_SHORT);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_CHAR, QueryConstants.NULL_SHORT);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_CHAR, QueryConstants.NULL_SHORT), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_CHAR, QueryConstants.NULL_SHORT), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -4223,37 +4223,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.minus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, value2);
             expectedResult = value1 - value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.minus(value1, value2), value1-value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.minus(value1, value2), value1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_INT);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_INT);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_INT), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_INT), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(zero1, value2);
             expectedResult = zero1 - value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.minus(zero1, value2), zero1-value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.minus(zero1, value2), zero1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_BYTE, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_BYTE, value2);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_BYTE, value2), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_BYTE, value2), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_BYTE, QueryConstants.NULL_INT);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_BYTE, QueryConstants.NULL_INT);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_BYTE, QueryConstants.NULL_INT), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_BYTE, QueryConstants.NULL_INT), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -4273,37 +4273,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.minus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, value2);
             expectedResult = value1 - value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.minus(value1, value2), value1-value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.minus(value1, value2), value1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_DOUBLE);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_DOUBLE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(zero1, value2);
             expectedResult = zero1 - value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.minus(zero1, value2), zero1-value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.minus(zero1, value2), zero1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_BYTE, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_BYTE, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_BYTE, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_BYTE, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_BYTE, QueryConstants.NULL_DOUBLE);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_BYTE, QueryConstants.NULL_DOUBLE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_BYTE, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_BYTE, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -4323,37 +4323,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.minus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, value2);
             expectedResult = value1 - value2;
             compareResult = Long.compare(dbResult, expectedResult);
-            description = "Long.compare(QueryLanguageFunctionUtil.minus(value1, value2), value1-value2)";
+            description = "Long.compare(QueryLanguageFunctionUtils.minus(value1, value2), value1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_LONG);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_LONG);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_LONG), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_LONG), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(zero1, value2);
             expectedResult = zero1 - value2;
             compareResult = Long.compare(dbResult, expectedResult);
-            description = "Long.compare(QueryLanguageFunctionUtil.minus(zero1, value2), zero1-value2)";
+            description = "Long.compare(QueryLanguageFunctionUtils.minus(zero1, value2), zero1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_BYTE, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_BYTE, value2);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_BYTE, value2), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_BYTE, value2), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_BYTE, QueryConstants.NULL_LONG);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_BYTE, QueryConstants.NULL_LONG);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_BYTE, QueryConstants.NULL_LONG), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_BYTE, QueryConstants.NULL_LONG), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -4373,37 +4373,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.minus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, value2);
             expectedResult = value1 - value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.minus(value1, value2), value1-value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.minus(value1, value2), value1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_FLOAT);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_FLOAT);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(zero1, value2);
             expectedResult = zero1 - value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.minus(zero1, value2), zero1-value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.minus(zero1, value2), zero1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_BYTE, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_BYTE, value2);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_BYTE, value2), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_BYTE, value2), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_BYTE, QueryConstants.NULL_FLOAT);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_BYTE, QueryConstants.NULL_FLOAT);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_BYTE, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_BYTE, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -4423,37 +4423,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.minus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, value2);
             expectedResult = value1 - value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.minus(value1, value2), value1-value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.minus(value1, value2), value1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_CHAR);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_CHAR);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_CHAR), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_CHAR), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(zero1, value2);
             expectedResult = zero1 - value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.minus(zero1, value2), zero1-value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.minus(zero1, value2), zero1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_BYTE, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_BYTE, value2);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_BYTE, value2), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_BYTE, value2), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_BYTE, QueryConstants.NULL_CHAR);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_BYTE, QueryConstants.NULL_CHAR);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_BYTE, QueryConstants.NULL_CHAR), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_BYTE, QueryConstants.NULL_CHAR), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -4473,37 +4473,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.minus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, value2);
             expectedResult = value1 - value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.minus(value1, value2), value1-value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.minus(value1, value2), value1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_BYTE);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_BYTE);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_BYTE), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_BYTE), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(zero1, value2);
             expectedResult = zero1 - value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.minus(zero1, value2), zero1-value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.minus(zero1, value2), zero1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_BYTE, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_BYTE, value2);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_BYTE, value2), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_BYTE, value2), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_BYTE, QueryConstants.NULL_BYTE);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_BYTE, QueryConstants.NULL_BYTE);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_BYTE, QueryConstants.NULL_BYTE), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_BYTE, QueryConstants.NULL_BYTE), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -4523,37 +4523,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.minus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, value2);
             expectedResult = value1 - value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.minus(value1, value2), value1-value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.minus(value1, value2), value1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_SHORT);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_SHORT);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_SHORT), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_SHORT), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(zero1, value2);
             expectedResult = zero1 - value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.minus(zero1, value2), zero1-value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.minus(zero1, value2), zero1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_BYTE, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_BYTE, value2);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_BYTE, value2), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_BYTE, value2), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_BYTE, QueryConstants.NULL_SHORT);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_BYTE, QueryConstants.NULL_SHORT);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_BYTE, QueryConstants.NULL_SHORT), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_BYTE, QueryConstants.NULL_SHORT), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -4573,37 +4573,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.minus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, value2);
             expectedResult = value1 - value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.minus(value1, value2), value1-value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.minus(value1, value2), value1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_INT);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_INT);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_INT), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_INT), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(zero1, value2);
             expectedResult = zero1 - value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.minus(zero1, value2), zero1-value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.minus(zero1, value2), zero1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_SHORT, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_SHORT, value2);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_SHORT, value2), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_SHORT, value2), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_SHORT, QueryConstants.NULL_INT);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_SHORT, QueryConstants.NULL_INT);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_SHORT, QueryConstants.NULL_INT), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_SHORT, QueryConstants.NULL_INT), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -4623,37 +4623,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.minus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, value2);
             expectedResult = value1 - value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.minus(value1, value2), value1-value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.minus(value1, value2), value1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_DOUBLE);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_DOUBLE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(zero1, value2);
             expectedResult = zero1 - value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.minus(zero1, value2), zero1-value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.minus(zero1, value2), zero1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_SHORT, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_SHORT, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_SHORT, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_SHORT, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_SHORT, QueryConstants.NULL_DOUBLE);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_SHORT, QueryConstants.NULL_DOUBLE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_SHORT, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_SHORT, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -4673,37 +4673,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.minus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, value2);
             expectedResult = value1 - value2;
             compareResult = Long.compare(dbResult, expectedResult);
-            description = "Long.compare(QueryLanguageFunctionUtil.minus(value1, value2), value1-value2)";
+            description = "Long.compare(QueryLanguageFunctionUtils.minus(value1, value2), value1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_LONG);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_LONG);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_LONG), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_LONG), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(zero1, value2);
             expectedResult = zero1 - value2;
             compareResult = Long.compare(dbResult, expectedResult);
-            description = "Long.compare(QueryLanguageFunctionUtil.minus(zero1, value2), zero1-value2)";
+            description = "Long.compare(QueryLanguageFunctionUtils.minus(zero1, value2), zero1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_SHORT, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_SHORT, value2);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_SHORT, value2), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_SHORT, value2), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_SHORT, QueryConstants.NULL_LONG);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_SHORT, QueryConstants.NULL_LONG);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_SHORT, QueryConstants.NULL_LONG), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_SHORT, QueryConstants.NULL_LONG), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -4723,37 +4723,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.minus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, value2);
             expectedResult = value1 - value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.minus(value1, value2), value1-value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.minus(value1, value2), value1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_FLOAT);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_FLOAT);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(zero1, value2);
             expectedResult = zero1 - value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.minus(zero1, value2), zero1-value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.minus(zero1, value2), zero1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_SHORT, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_SHORT, value2);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_SHORT, value2), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_SHORT, value2), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_SHORT, QueryConstants.NULL_FLOAT);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_SHORT, QueryConstants.NULL_FLOAT);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_SHORT, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_SHORT, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -4773,37 +4773,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.minus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, value2);
             expectedResult = value1 - value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.minus(value1, value2), value1-value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.minus(value1, value2), value1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_CHAR);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_CHAR);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_CHAR), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_CHAR), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(zero1, value2);
             expectedResult = zero1 - value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.minus(zero1, value2), zero1-value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.minus(zero1, value2), zero1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_SHORT, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_SHORT, value2);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_SHORT, value2), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_SHORT, value2), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_SHORT, QueryConstants.NULL_CHAR);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_SHORT, QueryConstants.NULL_CHAR);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_SHORT, QueryConstants.NULL_CHAR), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_SHORT, QueryConstants.NULL_CHAR), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -4823,37 +4823,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.minus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, value2);
             expectedResult = value1 - value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.minus(value1, value2), value1-value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.minus(value1, value2), value1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_BYTE);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_BYTE);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_BYTE), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_BYTE), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(zero1, value2);
             expectedResult = zero1 - value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.minus(zero1, value2), zero1-value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.minus(zero1, value2), zero1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_SHORT, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_SHORT, value2);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_SHORT, value2), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_SHORT, value2), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_SHORT, QueryConstants.NULL_BYTE);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_SHORT, QueryConstants.NULL_BYTE);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_SHORT, QueryConstants.NULL_BYTE), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_SHORT, QueryConstants.NULL_BYTE), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -4873,37 +4873,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.minus(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, value2);
             expectedResult = value1 - value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.minus(value1, value2), value1-value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.minus(value1, value2), value1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_SHORT);
+            dbResult = QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_SHORT);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.minus(value1, QueryConstants.NULL_SHORT), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.minus(value1, QueryConstants.NULL_SHORT), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(zero1, value2);
             expectedResult = zero1 - value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.minus(zero1, value2), zero1-value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.minus(zero1, value2), zero1-value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_SHORT, value2);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_SHORT, value2);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_SHORT, value2), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_SHORT, value2), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.minus(QueryConstants.NULL_SHORT, QueryConstants.NULL_SHORT);
+            dbResult = QueryLanguageFunctionUtils.minus(QueryConstants.NULL_SHORT, QueryConstants.NULL_SHORT);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.minus(QueryConstants.NULL_SHORT, QueryConstants.NULL_SHORT), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.minus(QueryConstants.NULL_SHORT, QueryConstants.NULL_SHORT), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -4923,37 +4923,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, value2);
             expectedResult = value1 * value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.multiply(value1, value2), value1*value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.multiply(value1, value2), value1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_INT);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_INT);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_INT), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_INT), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(zero1, value2);
             expectedResult = zero1 * value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.multiply(zero1, value2), zero1*value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.multiply(zero1, value2), zero1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_INT, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_INT, value2);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_INT, value2), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_INT, value2), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_INT, QueryConstants.NULL_INT);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_INT, QueryConstants.NULL_INT);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_INT, QueryConstants.NULL_INT), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_INT, QueryConstants.NULL_INT), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -4973,37 +4973,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, value2);
             expectedResult = value1 * value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.multiply(value1, value2), value1*value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.multiply(value1, value2), value1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_DOUBLE);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_DOUBLE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(zero1, value2);
             expectedResult = zero1 * value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.multiply(zero1, value2), zero1*value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.multiply(zero1, value2), zero1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_INT, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_INT, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_INT, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_INT, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_INT, QueryConstants.NULL_DOUBLE);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_INT, QueryConstants.NULL_DOUBLE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_INT, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_INT, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -5023,37 +5023,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, value2);
             expectedResult = value1 * value2;
             compareResult = Long.compare(dbResult, expectedResult);
-            description = "Long.compare(QueryLanguageFunctionUtil.multiply(value1, value2), value1*value2)";
+            description = "Long.compare(QueryLanguageFunctionUtils.multiply(value1, value2), value1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_LONG);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_LONG);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_LONG), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_LONG), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(zero1, value2);
             expectedResult = zero1 * value2;
             compareResult = Long.compare(dbResult, expectedResult);
-            description = "Long.compare(QueryLanguageFunctionUtil.multiply(zero1, value2), zero1*value2)";
+            description = "Long.compare(QueryLanguageFunctionUtils.multiply(zero1, value2), zero1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_INT, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_INT, value2);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_INT, value2), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_INT, value2), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_INT, QueryConstants.NULL_LONG);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_INT, QueryConstants.NULL_LONG);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_INT, QueryConstants.NULL_LONG), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_INT, QueryConstants.NULL_LONG), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -5073,37 +5073,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, value2);
             expectedResult = value1 * value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.multiply(value1, value2), value1*value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.multiply(value1, value2), value1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_FLOAT);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_FLOAT);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(zero1, value2);
             expectedResult = zero1 * value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.multiply(zero1, value2), zero1*value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.multiply(zero1, value2), zero1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_INT, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_INT, value2);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_INT, value2), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_INT, value2), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_INT, QueryConstants.NULL_FLOAT);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_INT, QueryConstants.NULL_FLOAT);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_INT, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_INT, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -5123,37 +5123,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, value2);
             expectedResult = value1 * value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.multiply(value1, value2), value1*value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.multiply(value1, value2), value1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_CHAR);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_CHAR);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_CHAR), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_CHAR), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(zero1, value2);
             expectedResult = zero1 * value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.multiply(zero1, value2), zero1*value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.multiply(zero1, value2), zero1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_INT, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_INT, value2);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_INT, value2), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_INT, value2), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_INT, QueryConstants.NULL_CHAR);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_INT, QueryConstants.NULL_CHAR);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_INT, QueryConstants.NULL_CHAR), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_INT, QueryConstants.NULL_CHAR), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -5173,37 +5173,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, value2);
             expectedResult = value1 * value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.multiply(value1, value2), value1*value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.multiply(value1, value2), value1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_BYTE);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_BYTE);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_BYTE), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_BYTE), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(zero1, value2);
             expectedResult = zero1 * value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.multiply(zero1, value2), zero1*value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.multiply(zero1, value2), zero1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_INT, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_INT, value2);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_INT, value2), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_INT, value2), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_INT, QueryConstants.NULL_BYTE);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_INT, QueryConstants.NULL_BYTE);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_INT, QueryConstants.NULL_BYTE), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_INT, QueryConstants.NULL_BYTE), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -5223,37 +5223,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, value2);
             expectedResult = value1 * value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.multiply(value1, value2), value1*value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.multiply(value1, value2), value1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_SHORT);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_SHORT);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_SHORT), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_SHORT), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(zero1, value2);
             expectedResult = zero1 * value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.multiply(zero1, value2), zero1*value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.multiply(zero1, value2), zero1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_INT, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_INT, value2);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_INT, value2), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_INT, value2), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_INT, QueryConstants.NULL_SHORT);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_INT, QueryConstants.NULL_SHORT);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_INT, QueryConstants.NULL_SHORT), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_INT, QueryConstants.NULL_SHORT), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -5273,37 +5273,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, value2);
             expectedResult = value1 * value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.multiply(value1, value2), value1*value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.multiply(value1, value2), value1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_INT);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_INT);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_INT), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_INT), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(zero1, value2);
             expectedResult = zero1 * value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.multiply(zero1, value2), zero1*value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.multiply(zero1, value2), zero1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_DOUBLE, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_DOUBLE, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_DOUBLE, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_DOUBLE, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_INT);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_INT);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_INT), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_INT), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -5323,37 +5323,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, value2);
             expectedResult = value1 * value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.multiply(value1, value2), value1*value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.multiply(value1, value2), value1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_DOUBLE);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_DOUBLE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(zero1, value2);
             expectedResult = zero1 * value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.multiply(zero1, value2), zero1*value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.multiply(zero1, value2), zero1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_DOUBLE, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_DOUBLE, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_DOUBLE, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_DOUBLE, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_DOUBLE);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_DOUBLE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -5373,37 +5373,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, value2);
             expectedResult = value1 * value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.multiply(value1, value2), value1*value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.multiply(value1, value2), value1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_LONG);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_LONG);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_LONG), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_LONG), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(zero1, value2);
             expectedResult = zero1 * value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.multiply(zero1, value2), zero1*value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.multiply(zero1, value2), zero1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_DOUBLE, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_DOUBLE, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_DOUBLE, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_DOUBLE, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_LONG);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_LONG);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_LONG), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_LONG), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -5423,37 +5423,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, value2);
             expectedResult = value1 * value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.multiply(value1, value2), value1*value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.multiply(value1, value2), value1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_FLOAT);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_FLOAT);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_FLOAT), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_FLOAT), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(zero1, value2);
             expectedResult = zero1 * value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.multiply(zero1, value2), zero1*value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.multiply(zero1, value2), zero1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_DOUBLE, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_DOUBLE, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_DOUBLE, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_DOUBLE, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_FLOAT);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_FLOAT);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_FLOAT), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_FLOAT), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -5473,37 +5473,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, value2);
             expectedResult = value1 * value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.multiply(value1, value2), value1*value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.multiply(value1, value2), value1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_CHAR);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_CHAR);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_CHAR), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_CHAR), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(zero1, value2);
             expectedResult = zero1 * value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.multiply(zero1, value2), zero1*value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.multiply(zero1, value2), zero1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_DOUBLE, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_DOUBLE, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_DOUBLE, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_DOUBLE, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_CHAR);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_CHAR);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_CHAR), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_CHAR), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -5523,37 +5523,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, value2);
             expectedResult = value1 * value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.multiply(value1, value2), value1*value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.multiply(value1, value2), value1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_BYTE);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_BYTE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_BYTE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_BYTE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(zero1, value2);
             expectedResult = zero1 * value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.multiply(zero1, value2), zero1*value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.multiply(zero1, value2), zero1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_DOUBLE, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_DOUBLE, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_DOUBLE, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_DOUBLE, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_BYTE);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_BYTE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_BYTE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_BYTE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -5573,37 +5573,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, value2);
             expectedResult = value1 * value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.multiply(value1, value2), value1*value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.multiply(value1, value2), value1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_SHORT);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_SHORT);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_SHORT), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_SHORT), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(zero1, value2);
             expectedResult = zero1 * value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.multiply(zero1, value2), zero1*value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.multiply(zero1, value2), zero1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_DOUBLE, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_DOUBLE, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_DOUBLE, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_DOUBLE, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_SHORT);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_SHORT);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_SHORT), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_SHORT), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -5623,37 +5623,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, value2);
             expectedResult = value1 * value2;
             compareResult = Long.compare(dbResult, expectedResult);
-            description = "Long.compare(QueryLanguageFunctionUtil.multiply(value1, value2), value1*value2)";
+            description = "Long.compare(QueryLanguageFunctionUtils.multiply(value1, value2), value1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_INT);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_INT);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_INT), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_INT), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(zero1, value2);
             expectedResult = zero1 * value2;
             compareResult = Long.compare(dbResult, expectedResult);
-            description = "Long.compare(QueryLanguageFunctionUtil.multiply(zero1, value2), zero1*value2)";
+            description = "Long.compare(QueryLanguageFunctionUtils.multiply(zero1, value2), zero1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_LONG, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_LONG, value2);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_LONG, value2), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_LONG, value2), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_LONG, QueryConstants.NULL_INT);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_LONG, QueryConstants.NULL_INT);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_LONG, QueryConstants.NULL_INT), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_LONG, QueryConstants.NULL_INT), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -5673,37 +5673,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, value2);
             expectedResult = value1 * value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.multiply(value1, value2), value1*value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.multiply(value1, value2), value1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_DOUBLE);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_DOUBLE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(zero1, value2);
             expectedResult = zero1 * value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.multiply(zero1, value2), zero1*value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.multiply(zero1, value2), zero1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_LONG, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_LONG, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_LONG, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_LONG, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_LONG, QueryConstants.NULL_DOUBLE);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_LONG, QueryConstants.NULL_DOUBLE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_LONG, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_LONG, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -5723,37 +5723,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, value2);
             expectedResult = value1 * value2;
             compareResult = Long.compare(dbResult, expectedResult);
-            description = "Long.compare(QueryLanguageFunctionUtil.multiply(value1, value2), value1*value2)";
+            description = "Long.compare(QueryLanguageFunctionUtils.multiply(value1, value2), value1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_LONG);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_LONG);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_LONG), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_LONG), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(zero1, value2);
             expectedResult = zero1 * value2;
             compareResult = Long.compare(dbResult, expectedResult);
-            description = "Long.compare(QueryLanguageFunctionUtil.multiply(zero1, value2), zero1*value2)";
+            description = "Long.compare(QueryLanguageFunctionUtils.multiply(zero1, value2), zero1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_LONG, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_LONG, value2);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_LONG, value2), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_LONG, value2), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_LONG, QueryConstants.NULL_LONG);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_LONG, QueryConstants.NULL_LONG);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_LONG, QueryConstants.NULL_LONG), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_LONG, QueryConstants.NULL_LONG), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -5773,37 +5773,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, value2);
             expectedResult = value1 * value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.multiply(value1, value2), value1*value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.multiply(value1, value2), value1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_FLOAT);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_FLOAT);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(zero1, value2);
             expectedResult = zero1 * value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.multiply(zero1, value2), zero1*value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.multiply(zero1, value2), zero1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_LONG, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_LONG, value2);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_LONG, value2), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_LONG, value2), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_LONG, QueryConstants.NULL_FLOAT);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_LONG, QueryConstants.NULL_FLOAT);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_LONG, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_LONG, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -5823,37 +5823,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, value2);
             expectedResult = value1 * value2;
             compareResult = Long.compare(dbResult, expectedResult);
-            description = "Long.compare(QueryLanguageFunctionUtil.multiply(value1, value2), value1*value2)";
+            description = "Long.compare(QueryLanguageFunctionUtils.multiply(value1, value2), value1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_CHAR);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_CHAR);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_CHAR), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_CHAR), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(zero1, value2);
             expectedResult = zero1 * value2;
             compareResult = Long.compare(dbResult, expectedResult);
-            description = "Long.compare(QueryLanguageFunctionUtil.multiply(zero1, value2), zero1*value2)";
+            description = "Long.compare(QueryLanguageFunctionUtils.multiply(zero1, value2), zero1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_LONG, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_LONG, value2);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_LONG, value2), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_LONG, value2), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_LONG, QueryConstants.NULL_CHAR);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_LONG, QueryConstants.NULL_CHAR);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_LONG, QueryConstants.NULL_CHAR), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_LONG, QueryConstants.NULL_CHAR), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -5873,37 +5873,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, value2);
             expectedResult = value1 * value2;
             compareResult = Long.compare(dbResult, expectedResult);
-            description = "Long.compare(QueryLanguageFunctionUtil.multiply(value1, value2), value1*value2)";
+            description = "Long.compare(QueryLanguageFunctionUtils.multiply(value1, value2), value1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_BYTE);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_BYTE);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_BYTE), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_BYTE), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(zero1, value2);
             expectedResult = zero1 * value2;
             compareResult = Long.compare(dbResult, expectedResult);
-            description = "Long.compare(QueryLanguageFunctionUtil.multiply(zero1, value2), zero1*value2)";
+            description = "Long.compare(QueryLanguageFunctionUtils.multiply(zero1, value2), zero1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_LONG, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_LONG, value2);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_LONG, value2), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_LONG, value2), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_LONG, QueryConstants.NULL_BYTE);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_LONG, QueryConstants.NULL_BYTE);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_LONG, QueryConstants.NULL_BYTE), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_LONG, QueryConstants.NULL_BYTE), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -5923,37 +5923,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, value2);
             expectedResult = value1 * value2;
             compareResult = Long.compare(dbResult, expectedResult);
-            description = "Long.compare(QueryLanguageFunctionUtil.multiply(value1, value2), value1*value2)";
+            description = "Long.compare(QueryLanguageFunctionUtils.multiply(value1, value2), value1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_SHORT);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_SHORT);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_SHORT), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_SHORT), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(zero1, value2);
             expectedResult = zero1 * value2;
             compareResult = Long.compare(dbResult, expectedResult);
-            description = "Long.compare(QueryLanguageFunctionUtil.multiply(zero1, value2), zero1*value2)";
+            description = "Long.compare(QueryLanguageFunctionUtils.multiply(zero1, value2), zero1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_LONG, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_LONG, value2);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_LONG, value2), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_LONG, value2), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_LONG, QueryConstants.NULL_SHORT);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_LONG, QueryConstants.NULL_SHORT);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_LONG, QueryConstants.NULL_SHORT), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_LONG, QueryConstants.NULL_SHORT), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -5973,37 +5973,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, value2);
             expectedResult = value1 * value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.multiply(value1, value2), value1*value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.multiply(value1, value2), value1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_INT);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_INT);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_INT), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_INT), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(zero1, value2);
             expectedResult = zero1 * value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.multiply(zero1, value2), zero1*value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.multiply(zero1, value2), zero1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_FLOAT, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_FLOAT, value2);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_FLOAT, value2), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_FLOAT, value2), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_FLOAT, QueryConstants.NULL_INT);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_FLOAT, QueryConstants.NULL_INT);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_FLOAT, QueryConstants.NULL_INT), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_FLOAT, QueryConstants.NULL_INT), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -6023,37 +6023,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, value2);
             expectedResult = value1 * value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.multiply(value1, value2), value1*value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.multiply(value1, value2), value1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_DOUBLE);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_DOUBLE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(zero1, value2);
             expectedResult = zero1 * value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.multiply(zero1, value2), zero1*value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.multiply(zero1, value2), zero1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_FLOAT, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_FLOAT, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_FLOAT, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_FLOAT, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_FLOAT, QueryConstants.NULL_DOUBLE);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_FLOAT, QueryConstants.NULL_DOUBLE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_FLOAT, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_FLOAT, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -6073,37 +6073,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, value2);
             expectedResult = value1 * value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.multiply(value1, value2), value1*value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.multiply(value1, value2), value1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_LONG);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_LONG);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_LONG), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_LONG), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(zero1, value2);
             expectedResult = zero1 * value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.multiply(zero1, value2), zero1*value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.multiply(zero1, value2), zero1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_FLOAT, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_FLOAT, value2);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_FLOAT, value2), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_FLOAT, value2), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_FLOAT, QueryConstants.NULL_LONG);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_FLOAT, QueryConstants.NULL_LONG);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_FLOAT, QueryConstants.NULL_LONG), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_FLOAT, QueryConstants.NULL_LONG), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -6123,37 +6123,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, value2);
             expectedResult = value1 * value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.multiply(value1, value2), value1*value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.multiply(value1, value2), value1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_FLOAT);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_FLOAT);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(zero1, value2);
             expectedResult = zero1 * value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.multiply(zero1, value2), zero1*value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.multiply(zero1, value2), zero1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_FLOAT, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_FLOAT, value2);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_FLOAT, value2), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_FLOAT, value2), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_FLOAT, QueryConstants.NULL_FLOAT);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_FLOAT, QueryConstants.NULL_FLOAT);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_FLOAT, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_FLOAT, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -6173,37 +6173,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, value2);
             expectedResult = value1 * value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.multiply(value1, value2), value1*value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.multiply(value1, value2), value1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_CHAR);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_CHAR);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_CHAR), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_CHAR), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(zero1, value2);
             expectedResult = zero1 * value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.multiply(zero1, value2), zero1*value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.multiply(zero1, value2), zero1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_FLOAT, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_FLOAT, value2);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_FLOAT, value2), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_FLOAT, value2), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_FLOAT, QueryConstants.NULL_CHAR);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_FLOAT, QueryConstants.NULL_CHAR);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_FLOAT, QueryConstants.NULL_CHAR), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_FLOAT, QueryConstants.NULL_CHAR), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -6223,37 +6223,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, value2);
             expectedResult = value1 * value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.multiply(value1, value2), value1*value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.multiply(value1, value2), value1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_BYTE);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_BYTE);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_BYTE), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_BYTE), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(zero1, value2);
             expectedResult = zero1 * value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.multiply(zero1, value2), zero1*value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.multiply(zero1, value2), zero1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_FLOAT, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_FLOAT, value2);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_FLOAT, value2), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_FLOAT, value2), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_FLOAT, QueryConstants.NULL_BYTE);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_FLOAT, QueryConstants.NULL_BYTE);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_FLOAT, QueryConstants.NULL_BYTE), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_FLOAT, QueryConstants.NULL_BYTE), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -6273,37 +6273,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, value2);
             expectedResult = value1 * value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.multiply(value1, value2), value1*value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.multiply(value1, value2), value1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_SHORT);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_SHORT);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_SHORT), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_SHORT), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(zero1, value2);
             expectedResult = zero1 * value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.multiply(zero1, value2), zero1*value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.multiply(zero1, value2), zero1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_FLOAT, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_FLOAT, value2);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_FLOAT, value2), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_FLOAT, value2), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_FLOAT, QueryConstants.NULL_SHORT);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_FLOAT, QueryConstants.NULL_SHORT);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_FLOAT, QueryConstants.NULL_SHORT), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_FLOAT, QueryConstants.NULL_SHORT), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -6323,37 +6323,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, value2);
             expectedResult = value1 * value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.multiply(value1, value2), value1*value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.multiply(value1, value2), value1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_INT);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_INT);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_INT), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_INT), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(zero1, value2);
             expectedResult = zero1 * value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.multiply(zero1, value2), zero1*value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.multiply(zero1, value2), zero1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_CHAR, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_CHAR, value2);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_CHAR, value2), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_CHAR, value2), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_CHAR, QueryConstants.NULL_INT);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_CHAR, QueryConstants.NULL_INT);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_CHAR, QueryConstants.NULL_INT), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_CHAR, QueryConstants.NULL_INT), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -6373,37 +6373,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, value2);
             expectedResult = value1 * value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.multiply(value1, value2), value1*value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.multiply(value1, value2), value1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_DOUBLE);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_DOUBLE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(zero1, value2);
             expectedResult = zero1 * value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.multiply(zero1, value2), zero1*value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.multiply(zero1, value2), zero1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_CHAR, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_CHAR, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_CHAR, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_CHAR, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_CHAR, QueryConstants.NULL_DOUBLE);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_CHAR, QueryConstants.NULL_DOUBLE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_CHAR, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_CHAR, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -6423,37 +6423,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, value2);
             expectedResult = value1 * value2;
             compareResult = Long.compare(dbResult, expectedResult);
-            description = "Long.compare(QueryLanguageFunctionUtil.multiply(value1, value2), value1*value2)";
+            description = "Long.compare(QueryLanguageFunctionUtils.multiply(value1, value2), value1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_LONG);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_LONG);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_LONG), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_LONG), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(zero1, value2);
             expectedResult = zero1 * value2;
             compareResult = Long.compare(dbResult, expectedResult);
-            description = "Long.compare(QueryLanguageFunctionUtil.multiply(zero1, value2), zero1*value2)";
+            description = "Long.compare(QueryLanguageFunctionUtils.multiply(zero1, value2), zero1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_CHAR, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_CHAR, value2);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_CHAR, value2), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_CHAR, value2), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_CHAR, QueryConstants.NULL_LONG);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_CHAR, QueryConstants.NULL_LONG);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_CHAR, QueryConstants.NULL_LONG), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_CHAR, QueryConstants.NULL_LONG), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -6473,37 +6473,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, value2);
             expectedResult = value1 * value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.multiply(value1, value2), value1*value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.multiply(value1, value2), value1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_FLOAT);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_FLOAT);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(zero1, value2);
             expectedResult = zero1 * value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.multiply(zero1, value2), zero1*value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.multiply(zero1, value2), zero1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_CHAR, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_CHAR, value2);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_CHAR, value2), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_CHAR, value2), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_CHAR, QueryConstants.NULL_FLOAT);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_CHAR, QueryConstants.NULL_FLOAT);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_CHAR, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_CHAR, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -6523,37 +6523,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, value2);
             expectedResult = value1 * value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.multiply(value1, value2), value1*value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.multiply(value1, value2), value1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_CHAR);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_CHAR);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_CHAR), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_CHAR), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(zero1, value2);
             expectedResult = zero1 * value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.multiply(zero1, value2), zero1*value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.multiply(zero1, value2), zero1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_CHAR, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_CHAR, value2);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_CHAR, value2), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_CHAR, value2), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_CHAR, QueryConstants.NULL_CHAR);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_CHAR, QueryConstants.NULL_CHAR);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_CHAR, QueryConstants.NULL_CHAR), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_CHAR, QueryConstants.NULL_CHAR), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -6573,37 +6573,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, value2);
             expectedResult = value1 * value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.multiply(value1, value2), value1*value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.multiply(value1, value2), value1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_BYTE);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_BYTE);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_BYTE), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_BYTE), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(zero1, value2);
             expectedResult = zero1 * value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.multiply(zero1, value2), zero1*value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.multiply(zero1, value2), zero1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_CHAR, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_CHAR, value2);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_CHAR, value2), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_CHAR, value2), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_CHAR, QueryConstants.NULL_BYTE);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_CHAR, QueryConstants.NULL_BYTE);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_CHAR, QueryConstants.NULL_BYTE), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_CHAR, QueryConstants.NULL_BYTE), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -6623,37 +6623,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, value2);
             expectedResult = value1 * value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.multiply(value1, value2), value1*value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.multiply(value1, value2), value1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_SHORT);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_SHORT);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_SHORT), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_SHORT), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(zero1, value2);
             expectedResult = zero1 * value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.multiply(zero1, value2), zero1*value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.multiply(zero1, value2), zero1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_CHAR, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_CHAR, value2);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_CHAR, value2), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_CHAR, value2), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_CHAR, QueryConstants.NULL_SHORT);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_CHAR, QueryConstants.NULL_SHORT);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_CHAR, QueryConstants.NULL_SHORT), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_CHAR, QueryConstants.NULL_SHORT), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -6673,37 +6673,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, value2);
             expectedResult = value1 * value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.multiply(value1, value2), value1*value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.multiply(value1, value2), value1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_INT);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_INT);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_INT), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_INT), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(zero1, value2);
             expectedResult = zero1 * value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.multiply(zero1, value2), zero1*value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.multiply(zero1, value2), zero1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_BYTE, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_BYTE, value2);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_BYTE, value2), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_BYTE, value2), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_BYTE, QueryConstants.NULL_INT);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_BYTE, QueryConstants.NULL_INT);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_BYTE, QueryConstants.NULL_INT), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_BYTE, QueryConstants.NULL_INT), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -6723,37 +6723,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, value2);
             expectedResult = value1 * value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.multiply(value1, value2), value1*value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.multiply(value1, value2), value1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_DOUBLE);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_DOUBLE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(zero1, value2);
             expectedResult = zero1 * value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.multiply(zero1, value2), zero1*value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.multiply(zero1, value2), zero1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_BYTE, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_BYTE, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_BYTE, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_BYTE, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_BYTE, QueryConstants.NULL_DOUBLE);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_BYTE, QueryConstants.NULL_DOUBLE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_BYTE, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_BYTE, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -6773,37 +6773,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, value2);
             expectedResult = value1 * value2;
             compareResult = Long.compare(dbResult, expectedResult);
-            description = "Long.compare(QueryLanguageFunctionUtil.multiply(value1, value2), value1*value2)";
+            description = "Long.compare(QueryLanguageFunctionUtils.multiply(value1, value2), value1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_LONG);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_LONG);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_LONG), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_LONG), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(zero1, value2);
             expectedResult = zero1 * value2;
             compareResult = Long.compare(dbResult, expectedResult);
-            description = "Long.compare(QueryLanguageFunctionUtil.multiply(zero1, value2), zero1*value2)";
+            description = "Long.compare(QueryLanguageFunctionUtils.multiply(zero1, value2), zero1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_BYTE, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_BYTE, value2);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_BYTE, value2), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_BYTE, value2), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_BYTE, QueryConstants.NULL_LONG);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_BYTE, QueryConstants.NULL_LONG);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_BYTE, QueryConstants.NULL_LONG), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_BYTE, QueryConstants.NULL_LONG), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -6823,37 +6823,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, value2);
             expectedResult = value1 * value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.multiply(value1, value2), value1*value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.multiply(value1, value2), value1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_FLOAT);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_FLOAT);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(zero1, value2);
             expectedResult = zero1 * value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.multiply(zero1, value2), zero1*value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.multiply(zero1, value2), zero1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_BYTE, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_BYTE, value2);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_BYTE, value2), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_BYTE, value2), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_BYTE, QueryConstants.NULL_FLOAT);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_BYTE, QueryConstants.NULL_FLOAT);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_BYTE, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_BYTE, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -6873,37 +6873,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, value2);
             expectedResult = value1 * value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.multiply(value1, value2), value1*value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.multiply(value1, value2), value1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_CHAR);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_CHAR);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_CHAR), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_CHAR), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(zero1, value2);
             expectedResult = zero1 * value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.multiply(zero1, value2), zero1*value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.multiply(zero1, value2), zero1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_BYTE, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_BYTE, value2);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_BYTE, value2), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_BYTE, value2), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_BYTE, QueryConstants.NULL_CHAR);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_BYTE, QueryConstants.NULL_CHAR);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_BYTE, QueryConstants.NULL_CHAR), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_BYTE, QueryConstants.NULL_CHAR), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -6923,37 +6923,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, value2);
             expectedResult = value1 * value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.multiply(value1, value2), value1*value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.multiply(value1, value2), value1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_BYTE);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_BYTE);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_BYTE), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_BYTE), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(zero1, value2);
             expectedResult = zero1 * value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.multiply(zero1, value2), zero1*value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.multiply(zero1, value2), zero1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_BYTE, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_BYTE, value2);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_BYTE, value2), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_BYTE, value2), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_BYTE, QueryConstants.NULL_BYTE);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_BYTE, QueryConstants.NULL_BYTE);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_BYTE, QueryConstants.NULL_BYTE), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_BYTE, QueryConstants.NULL_BYTE), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -6973,37 +6973,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, value2);
             expectedResult = value1 * value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.multiply(value1, value2), value1*value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.multiply(value1, value2), value1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_SHORT);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_SHORT);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_SHORT), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_SHORT), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(zero1, value2);
             expectedResult = zero1 * value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.multiply(zero1, value2), zero1*value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.multiply(zero1, value2), zero1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_BYTE, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_BYTE, value2);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_BYTE, value2), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_BYTE, value2), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_BYTE, QueryConstants.NULL_SHORT);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_BYTE, QueryConstants.NULL_SHORT);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_BYTE, QueryConstants.NULL_SHORT), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_BYTE, QueryConstants.NULL_SHORT), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -7023,37 +7023,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, value2);
             expectedResult = value1 * value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.multiply(value1, value2), value1*value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.multiply(value1, value2), value1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_INT);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_INT);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_INT), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_INT), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(zero1, value2);
             expectedResult = zero1 * value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.multiply(zero1, value2), zero1*value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.multiply(zero1, value2), zero1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_SHORT, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_SHORT, value2);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_SHORT, value2), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_SHORT, value2), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_SHORT, QueryConstants.NULL_INT);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_SHORT, QueryConstants.NULL_INT);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_SHORT, QueryConstants.NULL_INT), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_SHORT, QueryConstants.NULL_INT), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -7073,37 +7073,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, value2);
             expectedResult = value1 * value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.multiply(value1, value2), value1*value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.multiply(value1, value2), value1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_DOUBLE);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_DOUBLE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(zero1, value2);
             expectedResult = zero1 * value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.multiply(zero1, value2), zero1*value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.multiply(zero1, value2), zero1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_SHORT, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_SHORT, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_SHORT, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_SHORT, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_SHORT, QueryConstants.NULL_DOUBLE);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_SHORT, QueryConstants.NULL_DOUBLE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_SHORT, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_SHORT, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -7123,37 +7123,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, value2);
             expectedResult = value1 * value2;
             compareResult = Long.compare(dbResult, expectedResult);
-            description = "Long.compare(QueryLanguageFunctionUtil.multiply(value1, value2), value1*value2)";
+            description = "Long.compare(QueryLanguageFunctionUtils.multiply(value1, value2), value1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_LONG);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_LONG);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_LONG), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_LONG), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(zero1, value2);
             expectedResult = zero1 * value2;
             compareResult = Long.compare(dbResult, expectedResult);
-            description = "Long.compare(QueryLanguageFunctionUtil.multiply(zero1, value2), zero1*value2)";
+            description = "Long.compare(QueryLanguageFunctionUtils.multiply(zero1, value2), zero1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_SHORT, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_SHORT, value2);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_SHORT, value2), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_SHORT, value2), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_SHORT, QueryConstants.NULL_LONG);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_SHORT, QueryConstants.NULL_LONG);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_SHORT, QueryConstants.NULL_LONG), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_SHORT, QueryConstants.NULL_LONG), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -7173,37 +7173,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, value2);
             expectedResult = value1 * value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.multiply(value1, value2), value1*value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.multiply(value1, value2), value1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_FLOAT);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_FLOAT);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(zero1, value2);
             expectedResult = zero1 * value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.multiply(zero1, value2), zero1*value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.multiply(zero1, value2), zero1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_SHORT, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_SHORT, value2);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_SHORT, value2), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_SHORT, value2), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_SHORT, QueryConstants.NULL_FLOAT);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_SHORT, QueryConstants.NULL_FLOAT);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_SHORT, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_SHORT, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -7223,37 +7223,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, value2);
             expectedResult = value1 * value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.multiply(value1, value2), value1*value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.multiply(value1, value2), value1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_CHAR);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_CHAR);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_CHAR), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_CHAR), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(zero1, value2);
             expectedResult = zero1 * value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.multiply(zero1, value2), zero1*value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.multiply(zero1, value2), zero1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_SHORT, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_SHORT, value2);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_SHORT, value2), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_SHORT, value2), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_SHORT, QueryConstants.NULL_CHAR);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_SHORT, QueryConstants.NULL_CHAR);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_SHORT, QueryConstants.NULL_CHAR), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_SHORT, QueryConstants.NULL_CHAR), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -7273,37 +7273,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, value2);
             expectedResult = value1 * value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.multiply(value1, value2), value1*value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.multiply(value1, value2), value1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_BYTE);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_BYTE);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_BYTE), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_BYTE), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(zero1, value2);
             expectedResult = zero1 * value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.multiply(zero1, value2), zero1*value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.multiply(zero1, value2), zero1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_SHORT, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_SHORT, value2);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_SHORT, value2), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_SHORT, value2), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_SHORT, QueryConstants.NULL_BYTE);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_SHORT, QueryConstants.NULL_BYTE);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_SHORT, QueryConstants.NULL_BYTE), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_SHORT, QueryConstants.NULL_BYTE), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -7323,37 +7323,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, value2);
             expectedResult = value1 * value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.multiply(value1, value2), value1*value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.multiply(value1, value2), value1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_SHORT);
+            dbResult = QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_SHORT);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.multiply(value1, QueryConstants.NULL_SHORT), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.multiply(value1, QueryConstants.NULL_SHORT), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(zero1, value2);
             expectedResult = zero1 * value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.multiply(zero1, value2), zero1*value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.multiply(zero1, value2), zero1*value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_SHORT, value2);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_SHORT, value2);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_SHORT, value2), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_SHORT, value2), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_SHORT, QueryConstants.NULL_SHORT);
+            dbResult = QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_SHORT, QueryConstants.NULL_SHORT);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.multiply(QueryConstants.NULL_SHORT, QueryConstants.NULL_SHORT), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.multiply(QueryConstants.NULL_SHORT, QueryConstants.NULL_SHORT), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -7373,37 +7373,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.divide(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, value2);
             expectedResult = value1 / (double) value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.divide(value1, value2), value1/(double)value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.divide(value1, value2), value1/(double)value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_INT);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_INT);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_INT), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_INT), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(zero1, value2);
             expectedResult = zero1 / (double) value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.divide(zero1, value2), zero1/(double)value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.divide(zero1, value2), zero1/(double)value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_INT, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_INT, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_INT, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_INT, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_INT, QueryConstants.NULL_INT);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_INT, QueryConstants.NULL_INT);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_INT, QueryConstants.NULL_INT), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_INT, QueryConstants.NULL_INT), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -7423,37 +7423,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.divide(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, value2);
             expectedResult = value1 / value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.divide(value1, value2), value1/value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.divide(value1, value2), value1/value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_DOUBLE);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_DOUBLE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(zero1, value2);
             expectedResult = zero1 / value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.divide(zero1, value2), zero1/value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.divide(zero1, value2), zero1/value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_INT, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_INT, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_INT, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_INT, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_INT, QueryConstants.NULL_DOUBLE);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_INT, QueryConstants.NULL_DOUBLE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_INT, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_INT, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -7473,37 +7473,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.divide(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, value2);
             expectedResult = value1 / (double) value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.divide(value1, value2), value1/(double)value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.divide(value1, value2), value1/(double)value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_LONG);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_LONG);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_LONG), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_LONG), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(zero1, value2);
             expectedResult = zero1 / (double) value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.divide(zero1, value2), zero1/(double)value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.divide(zero1, value2), zero1/(double)value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_INT, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_INT, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_INT, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_INT, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_INT, QueryConstants.NULL_LONG);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_INT, QueryConstants.NULL_LONG);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_INT, QueryConstants.NULL_LONG), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_INT, QueryConstants.NULL_LONG), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -7523,37 +7523,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.divide(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, value2);
             expectedResult = value1 / value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.divide(value1, value2), value1/value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.divide(value1, value2), value1/value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_FLOAT);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_FLOAT);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(zero1, value2);
             expectedResult = zero1 / value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.divide(zero1, value2), zero1/value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.divide(zero1, value2), zero1/value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_INT, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_INT, value2);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_INT, value2), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_INT, value2), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_INT, QueryConstants.NULL_FLOAT);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_INT, QueryConstants.NULL_FLOAT);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_INT, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_INT, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -7573,37 +7573,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.divide(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, value2);
             expectedResult = value1 / (double) value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.divide(value1, value2), value1/(double)value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.divide(value1, value2), value1/(double)value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_CHAR);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_CHAR);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_CHAR), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_CHAR), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(zero1, value2);
             expectedResult = zero1 / (double) value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.divide(zero1, value2), zero1/(double)value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.divide(zero1, value2), zero1/(double)value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_INT, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_INT, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_INT, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_INT, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_INT, QueryConstants.NULL_CHAR);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_INT, QueryConstants.NULL_CHAR);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_INT, QueryConstants.NULL_CHAR), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_INT, QueryConstants.NULL_CHAR), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -7623,37 +7623,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.divide(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, value2);
             expectedResult = value1 / (double) value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.divide(value1, value2), value1/(double)value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.divide(value1, value2), value1/(double)value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_BYTE);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_BYTE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_BYTE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_BYTE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(zero1, value2);
             expectedResult = zero1 / (double) value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.divide(zero1, value2), zero1/(double)value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.divide(zero1, value2), zero1/(double)value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_INT, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_INT, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_INT, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_INT, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_INT, QueryConstants.NULL_BYTE);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_INT, QueryConstants.NULL_BYTE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_INT, QueryConstants.NULL_BYTE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_INT, QueryConstants.NULL_BYTE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -7673,37 +7673,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.divide(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, value2);
             expectedResult = value1 / (double) value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.divide(value1, value2), value1/(double)value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.divide(value1, value2), value1/(double)value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_SHORT);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_SHORT);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_SHORT), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_SHORT), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(zero1, value2);
             expectedResult = zero1 / (double) value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.divide(zero1, value2), zero1/(double)value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.divide(zero1, value2), zero1/(double)value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_INT, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_INT, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_INT, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_INT, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_INT, QueryConstants.NULL_SHORT);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_INT, QueryConstants.NULL_SHORT);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_INT, QueryConstants.NULL_SHORT), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_INT, QueryConstants.NULL_SHORT), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -7723,37 +7723,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.divide(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, value2);
             expectedResult = value1 / (double) value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.divide(value1, value2), value1/(double)value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.divide(value1, value2), value1/(double)value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_INT);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_INT);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_INT), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_INT), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(zero1, value2);
             expectedResult = zero1 / (double) value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.divide(zero1, value2), zero1/(double)value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.divide(zero1, value2), zero1/(double)value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_DOUBLE, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_DOUBLE, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_DOUBLE, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_DOUBLE, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_INT);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_INT);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_INT), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_INT), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -7773,37 +7773,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.divide(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, value2);
             expectedResult = value1 / value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.divide(value1, value2), value1/value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.divide(value1, value2), value1/value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_DOUBLE);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_DOUBLE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(zero1, value2);
             expectedResult = zero1 / value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.divide(zero1, value2), zero1/value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.divide(zero1, value2), zero1/value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_DOUBLE, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_DOUBLE, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_DOUBLE, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_DOUBLE, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_DOUBLE);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_DOUBLE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -7823,37 +7823,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.divide(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, value2);
             expectedResult = value1 / (double) value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.divide(value1, value2), value1/(double)value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.divide(value1, value2), value1/(double)value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_LONG);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_LONG);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_LONG), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_LONG), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(zero1, value2);
             expectedResult = zero1 / (double) value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.divide(zero1, value2), zero1/(double)value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.divide(zero1, value2), zero1/(double)value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_DOUBLE, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_DOUBLE, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_DOUBLE, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_DOUBLE, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_LONG);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_LONG);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_LONG), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_LONG), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -7873,37 +7873,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.divide(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, value2);
             expectedResult = value1 / value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.divide(value1, value2), value1/value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.divide(value1, value2), value1/value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_FLOAT);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_FLOAT);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_FLOAT), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_FLOAT), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(zero1, value2);
             expectedResult = zero1 / value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.divide(zero1, value2), zero1/value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.divide(zero1, value2), zero1/value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_DOUBLE, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_DOUBLE, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_DOUBLE, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_DOUBLE, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_FLOAT);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_FLOAT);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_FLOAT), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_FLOAT), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -7923,37 +7923,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.divide(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, value2);
             expectedResult = value1 / (double) value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.divide(value1, value2), value1/(double)value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.divide(value1, value2), value1/(double)value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_CHAR);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_CHAR);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_CHAR), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_CHAR), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(zero1, value2);
             expectedResult = zero1 / (double) value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.divide(zero1, value2), zero1/(double)value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.divide(zero1, value2), zero1/(double)value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_DOUBLE, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_DOUBLE, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_DOUBLE, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_DOUBLE, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_CHAR);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_CHAR);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_CHAR), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_CHAR), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -7973,37 +7973,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.divide(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, value2);
             expectedResult = value1 / (double) value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.divide(value1, value2), value1/(double)value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.divide(value1, value2), value1/(double)value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_BYTE);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_BYTE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_BYTE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_BYTE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(zero1, value2);
             expectedResult = zero1 / (double) value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.divide(zero1, value2), zero1/(double)value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.divide(zero1, value2), zero1/(double)value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_DOUBLE, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_DOUBLE, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_DOUBLE, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_DOUBLE, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_BYTE);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_BYTE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_BYTE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_BYTE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -8023,37 +8023,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.divide(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, value2);
             expectedResult = value1 / (double) value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.divide(value1, value2), value1/(double)value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.divide(value1, value2), value1/(double)value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_SHORT);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_SHORT);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_SHORT), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_SHORT), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(zero1, value2);
             expectedResult = zero1 / (double) value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.divide(zero1, value2), zero1/(double)value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.divide(zero1, value2), zero1/(double)value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_DOUBLE, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_DOUBLE, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_DOUBLE, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_DOUBLE, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_SHORT);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_SHORT);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_SHORT), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_SHORT), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -8073,37 +8073,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.divide(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, value2);
             expectedResult = value1 / (double) value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.divide(value1, value2), value1/(double)value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.divide(value1, value2), value1/(double)value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_INT);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_INT);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_INT), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_INT), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(zero1, value2);
             expectedResult = zero1 / (double) value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.divide(zero1, value2), zero1/(double)value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.divide(zero1, value2), zero1/(double)value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_LONG, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_LONG, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_LONG, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_LONG, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_LONG, QueryConstants.NULL_INT);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_LONG, QueryConstants.NULL_INT);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_LONG, QueryConstants.NULL_INT), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_LONG, QueryConstants.NULL_INT), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -8123,37 +8123,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.divide(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, value2);
             expectedResult = value1 / value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.divide(value1, value2), value1/value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.divide(value1, value2), value1/value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_DOUBLE);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_DOUBLE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(zero1, value2);
             expectedResult = zero1 / value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.divide(zero1, value2), zero1/value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.divide(zero1, value2), zero1/value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_LONG, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_LONG, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_LONG, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_LONG, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_LONG, QueryConstants.NULL_DOUBLE);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_LONG, QueryConstants.NULL_DOUBLE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_LONG, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_LONG, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -8173,37 +8173,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.divide(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, value2);
             expectedResult = value1 / (double) value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.divide(value1, value2), value1/(double)value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.divide(value1, value2), value1/(double)value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_LONG);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_LONG);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_LONG), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_LONG), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(zero1, value2);
             expectedResult = zero1 / (double) value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.divide(zero1, value2), zero1/(double)value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.divide(zero1, value2), zero1/(double)value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_LONG, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_LONG, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_LONG, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_LONG, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_LONG, QueryConstants.NULL_LONG);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_LONG, QueryConstants.NULL_LONG);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_LONG, QueryConstants.NULL_LONG), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_LONG, QueryConstants.NULL_LONG), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -8223,37 +8223,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.divide(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, value2);
             expectedResult = value1 / value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.divide(value1, value2), value1/value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.divide(value1, value2), value1/value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_FLOAT);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_FLOAT);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(zero1, value2);
             expectedResult = zero1 / value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.divide(zero1, value2), zero1/value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.divide(zero1, value2), zero1/value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_LONG, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_LONG, value2);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_LONG, value2), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_LONG, value2), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_LONG, QueryConstants.NULL_FLOAT);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_LONG, QueryConstants.NULL_FLOAT);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_LONG, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_LONG, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -8273,37 +8273,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.divide(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, value2);
             expectedResult = value1 / (double) value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.divide(value1, value2), value1/(double)value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.divide(value1, value2), value1/(double)value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_CHAR);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_CHAR);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_CHAR), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_CHAR), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(zero1, value2);
             expectedResult = zero1 / (double) value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.divide(zero1, value2), zero1/(double)value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.divide(zero1, value2), zero1/(double)value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_LONG, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_LONG, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_LONG, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_LONG, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_LONG, QueryConstants.NULL_CHAR);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_LONG, QueryConstants.NULL_CHAR);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_LONG, QueryConstants.NULL_CHAR), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_LONG, QueryConstants.NULL_CHAR), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -8323,37 +8323,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.divide(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, value2);
             expectedResult = value1 / (double) value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.divide(value1, value2), value1/(double)value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.divide(value1, value2), value1/(double)value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_BYTE);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_BYTE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_BYTE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_BYTE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(zero1, value2);
             expectedResult = zero1 / (double) value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.divide(zero1, value2), zero1/(double)value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.divide(zero1, value2), zero1/(double)value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_LONG, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_LONG, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_LONG, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_LONG, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_LONG, QueryConstants.NULL_BYTE);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_LONG, QueryConstants.NULL_BYTE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_LONG, QueryConstants.NULL_BYTE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_LONG, QueryConstants.NULL_BYTE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -8373,37 +8373,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.divide(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, value2);
             expectedResult = value1 / (double) value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.divide(value1, value2), value1/(double)value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.divide(value1, value2), value1/(double)value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_SHORT);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_SHORT);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_SHORT), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_SHORT), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(zero1, value2);
             expectedResult = zero1 / (double) value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.divide(zero1, value2), zero1/(double)value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.divide(zero1, value2), zero1/(double)value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_LONG, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_LONG, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_LONG, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_LONG, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_LONG, QueryConstants.NULL_SHORT);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_LONG, QueryConstants.NULL_SHORT);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_LONG, QueryConstants.NULL_SHORT), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_LONG, QueryConstants.NULL_SHORT), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -8423,37 +8423,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.divide(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, value2);
             expectedResult = value1 / (double) value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.divide(value1, value2), value1/(double)value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.divide(value1, value2), value1/(double)value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_INT);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_INT);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_INT), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_INT), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(zero1, value2);
             expectedResult = zero1 / (double) value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.divide(zero1, value2), zero1/(double)value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.divide(zero1, value2), zero1/(double)value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_FLOAT, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_FLOAT, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_FLOAT, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_FLOAT, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_FLOAT, QueryConstants.NULL_INT);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_FLOAT, QueryConstants.NULL_INT);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_FLOAT, QueryConstants.NULL_INT), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_FLOAT, QueryConstants.NULL_INT), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -8473,37 +8473,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.divide(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, value2);
             expectedResult = value1 / value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.divide(value1, value2), value1/value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.divide(value1, value2), value1/value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_DOUBLE);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_DOUBLE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(zero1, value2);
             expectedResult = zero1 / value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.divide(zero1, value2), zero1/value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.divide(zero1, value2), zero1/value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_FLOAT, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_FLOAT, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_FLOAT, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_FLOAT, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_FLOAT, QueryConstants.NULL_DOUBLE);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_FLOAT, QueryConstants.NULL_DOUBLE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_FLOAT, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_FLOAT, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -8523,37 +8523,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.divide(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, value2);
             expectedResult = value1 / (double) value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.divide(value1, value2), value1/(double)value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.divide(value1, value2), value1/(double)value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_LONG);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_LONG);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_LONG), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_LONG), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(zero1, value2);
             expectedResult = zero1 / (double) value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.divide(zero1, value2), zero1/(double)value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.divide(zero1, value2), zero1/(double)value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_FLOAT, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_FLOAT, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_FLOAT, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_FLOAT, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_FLOAT, QueryConstants.NULL_LONG);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_FLOAT, QueryConstants.NULL_LONG);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_FLOAT, QueryConstants.NULL_LONG), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_FLOAT, QueryConstants.NULL_LONG), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -8573,37 +8573,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.divide(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, value2);
             expectedResult = value1 / value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.divide(value1, value2), value1/value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.divide(value1, value2), value1/value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_FLOAT);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_FLOAT);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(zero1, value2);
             expectedResult = zero1 / value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.divide(zero1, value2), zero1/value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.divide(zero1, value2), zero1/value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_FLOAT, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_FLOAT, value2);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_FLOAT, value2), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_FLOAT, value2), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_FLOAT, QueryConstants.NULL_FLOAT);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_FLOAT, QueryConstants.NULL_FLOAT);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_FLOAT, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_FLOAT, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -8623,37 +8623,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.divide(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, value2);
             expectedResult = value1 / (double) value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.divide(value1, value2), value1/(double)value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.divide(value1, value2), value1/(double)value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_CHAR);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_CHAR);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_CHAR), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_CHAR), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(zero1, value2);
             expectedResult = zero1 / (double) value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.divide(zero1, value2), zero1/(double)value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.divide(zero1, value2), zero1/(double)value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_FLOAT, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_FLOAT, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_FLOAT, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_FLOAT, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_FLOAT, QueryConstants.NULL_CHAR);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_FLOAT, QueryConstants.NULL_CHAR);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_FLOAT, QueryConstants.NULL_CHAR), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_FLOAT, QueryConstants.NULL_CHAR), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -8673,37 +8673,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.divide(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, value2);
             expectedResult = value1 / (double) value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.divide(value1, value2), value1/(double)value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.divide(value1, value2), value1/(double)value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_BYTE);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_BYTE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_BYTE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_BYTE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(zero1, value2);
             expectedResult = zero1 / (double) value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.divide(zero1, value2), zero1/(double)value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.divide(zero1, value2), zero1/(double)value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_FLOAT, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_FLOAT, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_FLOAT, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_FLOAT, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_FLOAT, QueryConstants.NULL_BYTE);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_FLOAT, QueryConstants.NULL_BYTE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_FLOAT, QueryConstants.NULL_BYTE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_FLOAT, QueryConstants.NULL_BYTE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -8723,37 +8723,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.divide(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, value2);
             expectedResult = value1 / (double) value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.divide(value1, value2), value1/(double)value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.divide(value1, value2), value1/(double)value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_SHORT);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_SHORT);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_SHORT), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_SHORT), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(zero1, value2);
             expectedResult = zero1 / (double) value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.divide(zero1, value2), zero1/(double)value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.divide(zero1, value2), zero1/(double)value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_FLOAT, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_FLOAT, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_FLOAT, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_FLOAT, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_FLOAT, QueryConstants.NULL_SHORT);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_FLOAT, QueryConstants.NULL_SHORT);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_FLOAT, QueryConstants.NULL_SHORT), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_FLOAT, QueryConstants.NULL_SHORT), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -8773,37 +8773,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.divide(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, value2);
             expectedResult = value1 / (double) value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.divide(value1, value2), value1/(double)value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.divide(value1, value2), value1/(double)value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_INT);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_INT);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_INT), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_INT), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(zero1, value2);
             expectedResult = zero1 / (double) value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.divide(zero1, value2), zero1/(double)value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.divide(zero1, value2), zero1/(double)value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_CHAR, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_CHAR, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_CHAR, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_CHAR, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_CHAR, QueryConstants.NULL_INT);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_CHAR, QueryConstants.NULL_INT);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_CHAR, QueryConstants.NULL_INT), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_CHAR, QueryConstants.NULL_INT), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -8823,37 +8823,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.divide(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, value2);
             expectedResult = value1 / value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.divide(value1, value2), value1/value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.divide(value1, value2), value1/value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_DOUBLE);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_DOUBLE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(zero1, value2);
             expectedResult = zero1 / value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.divide(zero1, value2), zero1/value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.divide(zero1, value2), zero1/value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_CHAR, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_CHAR, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_CHAR, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_CHAR, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_CHAR, QueryConstants.NULL_DOUBLE);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_CHAR, QueryConstants.NULL_DOUBLE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_CHAR, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_CHAR, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -8873,37 +8873,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.divide(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, value2);
             expectedResult = value1 / (double) value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.divide(value1, value2), value1/(double)value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.divide(value1, value2), value1/(double)value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_LONG);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_LONG);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_LONG), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_LONG), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(zero1, value2);
             expectedResult = zero1 / (double) value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.divide(zero1, value2), zero1/(double)value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.divide(zero1, value2), zero1/(double)value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_CHAR, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_CHAR, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_CHAR, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_CHAR, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_CHAR, QueryConstants.NULL_LONG);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_CHAR, QueryConstants.NULL_LONG);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_CHAR, QueryConstants.NULL_LONG), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_CHAR, QueryConstants.NULL_LONG), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -8923,37 +8923,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.divide(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, value2);
             expectedResult = value1 / value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.divide(value1, value2), value1/value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.divide(value1, value2), value1/value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_FLOAT);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_FLOAT);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(zero1, value2);
             expectedResult = zero1 / value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.divide(zero1, value2), zero1/value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.divide(zero1, value2), zero1/value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_CHAR, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_CHAR, value2);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_CHAR, value2), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_CHAR, value2), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_CHAR, QueryConstants.NULL_FLOAT);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_CHAR, QueryConstants.NULL_FLOAT);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_CHAR, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_CHAR, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -8973,37 +8973,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.divide(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, value2);
             expectedResult = value1 / (double) value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.divide(value1, value2), value1/(double)value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.divide(value1, value2), value1/(double)value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_CHAR);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_CHAR);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_CHAR), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_CHAR), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(zero1, value2);
             expectedResult = zero1 / (double) value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.divide(zero1, value2), zero1/(double)value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.divide(zero1, value2), zero1/(double)value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_CHAR, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_CHAR, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_CHAR, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_CHAR, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_CHAR, QueryConstants.NULL_CHAR);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_CHAR, QueryConstants.NULL_CHAR);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_CHAR, QueryConstants.NULL_CHAR), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_CHAR, QueryConstants.NULL_CHAR), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -9023,37 +9023,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.divide(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, value2);
             expectedResult = value1 / (double) value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.divide(value1, value2), value1/(double)value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.divide(value1, value2), value1/(double)value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_BYTE);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_BYTE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_BYTE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_BYTE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(zero1, value2);
             expectedResult = zero1 / (double) value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.divide(zero1, value2), zero1/(double)value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.divide(zero1, value2), zero1/(double)value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_CHAR, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_CHAR, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_CHAR, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_CHAR, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_CHAR, QueryConstants.NULL_BYTE);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_CHAR, QueryConstants.NULL_BYTE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_CHAR, QueryConstants.NULL_BYTE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_CHAR, QueryConstants.NULL_BYTE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -9073,37 +9073,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.divide(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, value2);
             expectedResult = value1 / (double) value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.divide(value1, value2), value1/(double)value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.divide(value1, value2), value1/(double)value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_SHORT);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_SHORT);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_SHORT), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_SHORT), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(zero1, value2);
             expectedResult = zero1 / (double) value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.divide(zero1, value2), zero1/(double)value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.divide(zero1, value2), zero1/(double)value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_CHAR, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_CHAR, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_CHAR, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_CHAR, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_CHAR, QueryConstants.NULL_SHORT);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_CHAR, QueryConstants.NULL_SHORT);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_CHAR, QueryConstants.NULL_SHORT), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_CHAR, QueryConstants.NULL_SHORT), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -9123,37 +9123,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.divide(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, value2);
             expectedResult = value1 / (double) value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.divide(value1, value2), value1/(double)value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.divide(value1, value2), value1/(double)value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_INT);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_INT);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_INT), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_INT), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(zero1, value2);
             expectedResult = zero1 / (double) value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.divide(zero1, value2), zero1/(double)value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.divide(zero1, value2), zero1/(double)value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_BYTE, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_BYTE, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_BYTE, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_BYTE, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_BYTE, QueryConstants.NULL_INT);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_BYTE, QueryConstants.NULL_INT);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_BYTE, QueryConstants.NULL_INT), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_BYTE, QueryConstants.NULL_INT), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -9173,37 +9173,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.divide(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, value2);
             expectedResult = value1 / value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.divide(value1, value2), value1/value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.divide(value1, value2), value1/value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_DOUBLE);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_DOUBLE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(zero1, value2);
             expectedResult = zero1 / value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.divide(zero1, value2), zero1/value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.divide(zero1, value2), zero1/value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_BYTE, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_BYTE, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_BYTE, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_BYTE, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_BYTE, QueryConstants.NULL_DOUBLE);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_BYTE, QueryConstants.NULL_DOUBLE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_BYTE, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_BYTE, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -9223,37 +9223,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.divide(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, value2);
             expectedResult = value1 / (double) value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.divide(value1, value2), value1/(double)value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.divide(value1, value2), value1/(double)value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_LONG);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_LONG);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_LONG), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_LONG), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(zero1, value2);
             expectedResult = zero1 / (double) value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.divide(zero1, value2), zero1/(double)value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.divide(zero1, value2), zero1/(double)value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_BYTE, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_BYTE, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_BYTE, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_BYTE, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_BYTE, QueryConstants.NULL_LONG);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_BYTE, QueryConstants.NULL_LONG);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_BYTE, QueryConstants.NULL_LONG), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_BYTE, QueryConstants.NULL_LONG), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -9273,37 +9273,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.divide(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, value2);
             expectedResult = value1 / value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.divide(value1, value2), value1/value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.divide(value1, value2), value1/value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_FLOAT);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_FLOAT);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(zero1, value2);
             expectedResult = zero1 / value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.divide(zero1, value2), zero1/value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.divide(zero1, value2), zero1/value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_BYTE, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_BYTE, value2);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_BYTE, value2), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_BYTE, value2), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_BYTE, QueryConstants.NULL_FLOAT);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_BYTE, QueryConstants.NULL_FLOAT);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_BYTE, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_BYTE, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -9323,37 +9323,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.divide(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, value2);
             expectedResult = value1 / (double) value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.divide(value1, value2), value1/(double)value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.divide(value1, value2), value1/(double)value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_CHAR);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_CHAR);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_CHAR), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_CHAR), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(zero1, value2);
             expectedResult = zero1 / (double) value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.divide(zero1, value2), zero1/(double)value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.divide(zero1, value2), zero1/(double)value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_BYTE, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_BYTE, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_BYTE, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_BYTE, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_BYTE, QueryConstants.NULL_CHAR);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_BYTE, QueryConstants.NULL_CHAR);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_BYTE, QueryConstants.NULL_CHAR), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_BYTE, QueryConstants.NULL_CHAR), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -9373,37 +9373,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.divide(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, value2);
             expectedResult = value1 / (double) value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.divide(value1, value2), value1/(double)value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.divide(value1, value2), value1/(double)value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_BYTE);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_BYTE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_BYTE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_BYTE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(zero1, value2);
             expectedResult = zero1 / (double) value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.divide(zero1, value2), zero1/(double)value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.divide(zero1, value2), zero1/(double)value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_BYTE, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_BYTE, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_BYTE, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_BYTE, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_BYTE, QueryConstants.NULL_BYTE);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_BYTE, QueryConstants.NULL_BYTE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_BYTE, QueryConstants.NULL_BYTE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_BYTE, QueryConstants.NULL_BYTE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -9423,37 +9423,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.divide(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, value2);
             expectedResult = value1 / (double) value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.divide(value1, value2), value1/(double)value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.divide(value1, value2), value1/(double)value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_SHORT);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_SHORT);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_SHORT), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_SHORT), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(zero1, value2);
             expectedResult = zero1 / (double) value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.divide(zero1, value2), zero1/(double)value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.divide(zero1, value2), zero1/(double)value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_BYTE, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_BYTE, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_BYTE, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_BYTE, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_BYTE, QueryConstants.NULL_SHORT);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_BYTE, QueryConstants.NULL_SHORT);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_BYTE, QueryConstants.NULL_SHORT), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_BYTE, QueryConstants.NULL_SHORT), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -9473,37 +9473,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.divide(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, value2);
             expectedResult = value1 / (double) value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.divide(value1, value2), value1/(double)value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.divide(value1, value2), value1/(double)value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_INT);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_INT);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_INT), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_INT), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(zero1, value2);
             expectedResult = zero1 / (double) value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.divide(zero1, value2), zero1/(double)value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.divide(zero1, value2), zero1/(double)value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_SHORT, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_SHORT, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_SHORT, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_SHORT, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_SHORT, QueryConstants.NULL_INT);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_SHORT, QueryConstants.NULL_INT);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_SHORT, QueryConstants.NULL_INT), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_SHORT, QueryConstants.NULL_INT), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -9523,37 +9523,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.divide(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, value2);
             expectedResult = value1 / value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.divide(value1, value2), value1/value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.divide(value1, value2), value1/value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_DOUBLE);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_DOUBLE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(zero1, value2);
             expectedResult = zero1 / value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.divide(zero1, value2), zero1/value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.divide(zero1, value2), zero1/value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_SHORT, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_SHORT, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_SHORT, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_SHORT, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_SHORT, QueryConstants.NULL_DOUBLE);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_SHORT, QueryConstants.NULL_DOUBLE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_SHORT, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_SHORT, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -9573,37 +9573,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.divide(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, value2);
             expectedResult = value1 / (double) value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.divide(value1, value2), value1/(double)value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.divide(value1, value2), value1/(double)value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_LONG);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_LONG);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_LONG), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_LONG), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(zero1, value2);
             expectedResult = zero1 / (double) value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.divide(zero1, value2), zero1/(double)value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.divide(zero1, value2), zero1/(double)value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_SHORT, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_SHORT, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_SHORT, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_SHORT, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_SHORT, QueryConstants.NULL_LONG);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_SHORT, QueryConstants.NULL_LONG);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_SHORT, QueryConstants.NULL_LONG), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_SHORT, QueryConstants.NULL_LONG), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -9623,37 +9623,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.divide(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, value2);
             expectedResult = value1 / value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.divide(value1, value2), value1/value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.divide(value1, value2), value1/value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_FLOAT);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_FLOAT);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(zero1, value2);
             expectedResult = zero1 / value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.divide(zero1, value2), zero1/value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.divide(zero1, value2), zero1/value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_SHORT, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_SHORT, value2);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_SHORT, value2), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_SHORT, value2), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_SHORT, QueryConstants.NULL_FLOAT);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_SHORT, QueryConstants.NULL_FLOAT);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_SHORT, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_SHORT, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -9673,37 +9673,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.divide(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, value2);
             expectedResult = value1 / (double) value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.divide(value1, value2), value1/(double)value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.divide(value1, value2), value1/(double)value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_CHAR);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_CHAR);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_CHAR), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_CHAR), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(zero1, value2);
             expectedResult = zero1 / (double) value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.divide(zero1, value2), zero1/(double)value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.divide(zero1, value2), zero1/(double)value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_SHORT, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_SHORT, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_SHORT, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_SHORT, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_SHORT, QueryConstants.NULL_CHAR);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_SHORT, QueryConstants.NULL_CHAR);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_SHORT, QueryConstants.NULL_CHAR), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_SHORT, QueryConstants.NULL_CHAR), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -9723,37 +9723,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.divide(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, value2);
             expectedResult = value1 / (double) value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.divide(value1, value2), value1/(double)value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.divide(value1, value2), value1/(double)value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_BYTE);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_BYTE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_BYTE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_BYTE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(zero1, value2);
             expectedResult = zero1 / (double) value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.divide(zero1, value2), zero1/(double)value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.divide(zero1, value2), zero1/(double)value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_SHORT, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_SHORT, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_SHORT, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_SHORT, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_SHORT, QueryConstants.NULL_BYTE);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_SHORT, QueryConstants.NULL_BYTE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_SHORT, QueryConstants.NULL_BYTE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_SHORT, QueryConstants.NULL_BYTE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -9773,37 +9773,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.divide(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, value2);
             expectedResult = value1 / (double) value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.divide(value1, value2), value1/(double)value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.divide(value1, value2), value1/(double)value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_SHORT);
+            dbResult = QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_SHORT);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(value1, QueryConstants.NULL_SHORT), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(value1, QueryConstants.NULL_SHORT), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(zero1, value2);
             expectedResult = zero1 / (double) value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.divide(zero1, value2), zero1/(double)value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.divide(zero1, value2), zero1/(double)value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_SHORT, value2);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_SHORT, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_SHORT, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_SHORT, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.divide(QueryConstants.NULL_SHORT, QueryConstants.NULL_SHORT);
+            dbResult = QueryLanguageFunctionUtils.divide(QueryConstants.NULL_SHORT, QueryConstants.NULL_SHORT);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.divide(QueryConstants.NULL_SHORT, QueryConstants.NULL_SHORT), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.divide(QueryConstants.NULL_SHORT, QueryConstants.NULL_SHORT), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -9823,37 +9823,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, value2);
             expectedResult = value1 % value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.remainder(value1, value2), value1%value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.remainder(value1, value2), value1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_INT);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_INT);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_INT), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_INT), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(zero1, value2);
             expectedResult = zero1 % value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.remainder(zero1, value2), zero1%value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.remainder(zero1, value2), zero1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_INT, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_INT, value2);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_INT, value2), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_INT, value2), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_INT, QueryConstants.NULL_INT);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_INT, QueryConstants.NULL_INT);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_INT, QueryConstants.NULL_INT), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_INT, QueryConstants.NULL_INT), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -9873,37 +9873,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, value2);
             expectedResult = value1 % value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.remainder(value1, value2), value1%value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.remainder(value1, value2), value1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_DOUBLE);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_DOUBLE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(zero1, value2);
             expectedResult = zero1 % value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.remainder(zero1, value2), zero1%value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.remainder(zero1, value2), zero1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_INT, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_INT, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_INT, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_INT, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_INT, QueryConstants.NULL_DOUBLE);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_INT, QueryConstants.NULL_DOUBLE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_INT, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_INT, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -9923,37 +9923,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, value2);
             expectedResult = value1 % value2;
             compareResult = Long.compare(dbResult, expectedResult);
-            description = "Long.compare(QueryLanguageFunctionUtil.remainder(value1, value2), value1%value2)";
+            description = "Long.compare(QueryLanguageFunctionUtils.remainder(value1, value2), value1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_LONG);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_LONG);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_LONG), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_LONG), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(zero1, value2);
             expectedResult = zero1 % value2;
             compareResult = Long.compare(dbResult, expectedResult);
-            description = "Long.compare(QueryLanguageFunctionUtil.remainder(zero1, value2), zero1%value2)";
+            description = "Long.compare(QueryLanguageFunctionUtils.remainder(zero1, value2), zero1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_INT, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_INT, value2);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_INT, value2), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_INT, value2), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_INT, QueryConstants.NULL_LONG);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_INT, QueryConstants.NULL_LONG);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_INT, QueryConstants.NULL_LONG), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_INT, QueryConstants.NULL_LONG), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -9973,37 +9973,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, value2);
             expectedResult = value1 % value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.remainder(value1, value2), value1%value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.remainder(value1, value2), value1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_FLOAT);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_FLOAT);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(zero1, value2);
             expectedResult = zero1 % value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.remainder(zero1, value2), zero1%value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.remainder(zero1, value2), zero1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_INT, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_INT, value2);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_INT, value2), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_INT, value2), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_INT, QueryConstants.NULL_FLOAT);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_INT, QueryConstants.NULL_FLOAT);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_INT, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_INT, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -10023,37 +10023,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, value2);
             expectedResult = value1 % value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.remainder(value1, value2), value1%value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.remainder(value1, value2), value1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_CHAR);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_CHAR);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_CHAR), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_CHAR), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(zero1, value2);
             expectedResult = zero1 % value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.remainder(zero1, value2), zero1%value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.remainder(zero1, value2), zero1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_INT, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_INT, value2);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_INT, value2), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_INT, value2), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_INT, QueryConstants.NULL_CHAR);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_INT, QueryConstants.NULL_CHAR);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_INT, QueryConstants.NULL_CHAR), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_INT, QueryConstants.NULL_CHAR), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -10073,37 +10073,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, value2);
             expectedResult = value1 % value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.remainder(value1, value2), value1%value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.remainder(value1, value2), value1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_BYTE);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_BYTE);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_BYTE), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_BYTE), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(zero1, value2);
             expectedResult = zero1 % value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.remainder(zero1, value2), zero1%value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.remainder(zero1, value2), zero1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_INT, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_INT, value2);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_INT, value2), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_INT, value2), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_INT, QueryConstants.NULL_BYTE);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_INT, QueryConstants.NULL_BYTE);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_INT, QueryConstants.NULL_BYTE), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_INT, QueryConstants.NULL_BYTE), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -10123,37 +10123,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, value2);
             expectedResult = value1 % value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.remainder(value1, value2), value1%value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.remainder(value1, value2), value1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_SHORT);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_SHORT);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_SHORT), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_SHORT), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(zero1, value2);
             expectedResult = zero1 % value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.remainder(zero1, value2), zero1%value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.remainder(zero1, value2), zero1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_INT, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_INT, value2);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_INT, value2), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_INT, value2), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_INT, QueryConstants.NULL_SHORT);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_INT, QueryConstants.NULL_SHORT);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_INT, QueryConstants.NULL_SHORT), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_INT, QueryConstants.NULL_SHORT), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -10173,37 +10173,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, value2);
             expectedResult = value1 % value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.remainder(value1, value2), value1%value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.remainder(value1, value2), value1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_INT);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_INT);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_INT), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_INT), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(zero1, value2);
             expectedResult = zero1 % value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.remainder(zero1, value2), zero1%value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.remainder(zero1, value2), zero1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_DOUBLE, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_DOUBLE, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_DOUBLE, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_DOUBLE, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_INT);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_INT);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_INT), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_INT), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -10223,37 +10223,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, value2);
             expectedResult = value1 % value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.remainder(value1, value2), value1%value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.remainder(value1, value2), value1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_DOUBLE);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_DOUBLE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(zero1, value2);
             expectedResult = zero1 % value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.remainder(zero1, value2), zero1%value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.remainder(zero1, value2), zero1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_DOUBLE, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_DOUBLE, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_DOUBLE, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_DOUBLE, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_DOUBLE);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_DOUBLE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -10273,37 +10273,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, value2);
             expectedResult = value1 % value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.remainder(value1, value2), value1%value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.remainder(value1, value2), value1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_LONG);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_LONG);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_LONG), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_LONG), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(zero1, value2);
             expectedResult = zero1 % value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.remainder(zero1, value2), zero1%value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.remainder(zero1, value2), zero1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_DOUBLE, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_DOUBLE, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_DOUBLE, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_DOUBLE, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_LONG);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_LONG);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_LONG), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_LONG), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -10323,37 +10323,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, value2);
             expectedResult = value1 % value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.remainder(value1, value2), value1%value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.remainder(value1, value2), value1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_FLOAT);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_FLOAT);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_FLOAT), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_FLOAT), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(zero1, value2);
             expectedResult = zero1 % value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.remainder(zero1, value2), zero1%value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.remainder(zero1, value2), zero1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_DOUBLE, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_DOUBLE, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_DOUBLE, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_DOUBLE, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_FLOAT);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_FLOAT);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_FLOAT), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_FLOAT), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -10373,37 +10373,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, value2);
             expectedResult = value1 % value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.remainder(value1, value2), value1%value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.remainder(value1, value2), value1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_CHAR);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_CHAR);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_CHAR), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_CHAR), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(zero1, value2);
             expectedResult = zero1 % value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.remainder(zero1, value2), zero1%value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.remainder(zero1, value2), zero1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_DOUBLE, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_DOUBLE, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_DOUBLE, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_DOUBLE, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_CHAR);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_CHAR);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_CHAR), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_CHAR), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -10423,37 +10423,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, value2);
             expectedResult = value1 % value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.remainder(value1, value2), value1%value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.remainder(value1, value2), value1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_BYTE);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_BYTE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_BYTE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_BYTE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(zero1, value2);
             expectedResult = zero1 % value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.remainder(zero1, value2), zero1%value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.remainder(zero1, value2), zero1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_DOUBLE, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_DOUBLE, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_DOUBLE, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_DOUBLE, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_BYTE);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_BYTE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_BYTE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_BYTE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -10473,37 +10473,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, value2);
             expectedResult = value1 % value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.remainder(value1, value2), value1%value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.remainder(value1, value2), value1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_SHORT);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_SHORT);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_SHORT), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_SHORT), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(zero1, value2);
             expectedResult = zero1 % value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.remainder(zero1, value2), zero1%value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.remainder(zero1, value2), zero1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_DOUBLE, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_DOUBLE, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_DOUBLE, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_DOUBLE, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_SHORT);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_SHORT);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_SHORT), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_SHORT), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -10523,37 +10523,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, value2);
             expectedResult = value1 % value2;
             compareResult = Long.compare(dbResult, expectedResult);
-            description = "Long.compare(QueryLanguageFunctionUtil.remainder(value1, value2), value1%value2)";
+            description = "Long.compare(QueryLanguageFunctionUtils.remainder(value1, value2), value1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_INT);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_INT);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_INT), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_INT), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(zero1, value2);
             expectedResult = zero1 % value2;
             compareResult = Long.compare(dbResult, expectedResult);
-            description = "Long.compare(QueryLanguageFunctionUtil.remainder(zero1, value2), zero1%value2)";
+            description = "Long.compare(QueryLanguageFunctionUtils.remainder(zero1, value2), zero1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_LONG, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_LONG, value2);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_LONG, value2), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_LONG, value2), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_LONG, QueryConstants.NULL_INT);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_LONG, QueryConstants.NULL_INT);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_LONG, QueryConstants.NULL_INT), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_LONG, QueryConstants.NULL_INT), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -10573,37 +10573,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, value2);
             expectedResult = value1 % value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.remainder(value1, value2), value1%value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.remainder(value1, value2), value1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_DOUBLE);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_DOUBLE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(zero1, value2);
             expectedResult = zero1 % value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.remainder(zero1, value2), zero1%value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.remainder(zero1, value2), zero1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_LONG, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_LONG, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_LONG, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_LONG, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_LONG, QueryConstants.NULL_DOUBLE);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_LONG, QueryConstants.NULL_DOUBLE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_LONG, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_LONG, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -10623,37 +10623,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, value2);
             expectedResult = value1 % value2;
             compareResult = Long.compare(dbResult, expectedResult);
-            description = "Long.compare(QueryLanguageFunctionUtil.remainder(value1, value2), value1%value2)";
+            description = "Long.compare(QueryLanguageFunctionUtils.remainder(value1, value2), value1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_LONG);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_LONG);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_LONG), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_LONG), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(zero1, value2);
             expectedResult = zero1 % value2;
             compareResult = Long.compare(dbResult, expectedResult);
-            description = "Long.compare(QueryLanguageFunctionUtil.remainder(zero1, value2), zero1%value2)";
+            description = "Long.compare(QueryLanguageFunctionUtils.remainder(zero1, value2), zero1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_LONG, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_LONG, value2);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_LONG, value2), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_LONG, value2), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_LONG, QueryConstants.NULL_LONG);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_LONG, QueryConstants.NULL_LONG);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_LONG, QueryConstants.NULL_LONG), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_LONG, QueryConstants.NULL_LONG), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -10673,37 +10673,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, value2);
             expectedResult = value1 % value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.remainder(value1, value2), value1%value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.remainder(value1, value2), value1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_FLOAT);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_FLOAT);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(zero1, value2);
             expectedResult = zero1 % value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.remainder(zero1, value2), zero1%value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.remainder(zero1, value2), zero1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_LONG, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_LONG, value2);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_LONG, value2), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_LONG, value2), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_LONG, QueryConstants.NULL_FLOAT);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_LONG, QueryConstants.NULL_FLOAT);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_LONG, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_LONG, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -10723,37 +10723,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, value2);
             expectedResult = value1 % value2;
             compareResult = Long.compare(dbResult, expectedResult);
-            description = "Long.compare(QueryLanguageFunctionUtil.remainder(value1, value2), value1%value2)";
+            description = "Long.compare(QueryLanguageFunctionUtils.remainder(value1, value2), value1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_CHAR);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_CHAR);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_CHAR), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_CHAR), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(zero1, value2);
             expectedResult = zero1 % value2;
             compareResult = Long.compare(dbResult, expectedResult);
-            description = "Long.compare(QueryLanguageFunctionUtil.remainder(zero1, value2), zero1%value2)";
+            description = "Long.compare(QueryLanguageFunctionUtils.remainder(zero1, value2), zero1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_LONG, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_LONG, value2);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_LONG, value2), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_LONG, value2), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_LONG, QueryConstants.NULL_CHAR);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_LONG, QueryConstants.NULL_CHAR);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_LONG, QueryConstants.NULL_CHAR), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_LONG, QueryConstants.NULL_CHAR), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -10773,37 +10773,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, value2);
             expectedResult = value1 % value2;
             compareResult = Long.compare(dbResult, expectedResult);
-            description = "Long.compare(QueryLanguageFunctionUtil.remainder(value1, value2), value1%value2)";
+            description = "Long.compare(QueryLanguageFunctionUtils.remainder(value1, value2), value1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_BYTE);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_BYTE);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_BYTE), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_BYTE), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(zero1, value2);
             expectedResult = zero1 % value2;
             compareResult = Long.compare(dbResult, expectedResult);
-            description = "Long.compare(QueryLanguageFunctionUtil.remainder(zero1, value2), zero1%value2)";
+            description = "Long.compare(QueryLanguageFunctionUtils.remainder(zero1, value2), zero1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_LONG, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_LONG, value2);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_LONG, value2), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_LONG, value2), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_LONG, QueryConstants.NULL_BYTE);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_LONG, QueryConstants.NULL_BYTE);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_LONG, QueryConstants.NULL_BYTE), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_LONG, QueryConstants.NULL_BYTE), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -10823,37 +10823,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, value2);
             expectedResult = value1 % value2;
             compareResult = Long.compare(dbResult, expectedResult);
-            description = "Long.compare(QueryLanguageFunctionUtil.remainder(value1, value2), value1%value2)";
+            description = "Long.compare(QueryLanguageFunctionUtils.remainder(value1, value2), value1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_SHORT);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_SHORT);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_SHORT), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_SHORT), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(zero1, value2);
             expectedResult = zero1 % value2;
             compareResult = Long.compare(dbResult, expectedResult);
-            description = "Long.compare(QueryLanguageFunctionUtil.remainder(zero1, value2), zero1%value2)";
+            description = "Long.compare(QueryLanguageFunctionUtils.remainder(zero1, value2), zero1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_LONG, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_LONG, value2);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_LONG, value2), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_LONG, value2), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_LONG, QueryConstants.NULL_SHORT);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_LONG, QueryConstants.NULL_SHORT);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_LONG, QueryConstants.NULL_SHORT), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_LONG, QueryConstants.NULL_SHORT), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -10873,37 +10873,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, value2);
             expectedResult = value1 % value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.remainder(value1, value2), value1%value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.remainder(value1, value2), value1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_INT);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_INT);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_INT), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_INT), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(zero1, value2);
             expectedResult = zero1 % value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.remainder(zero1, value2), zero1%value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.remainder(zero1, value2), zero1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_FLOAT, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_FLOAT, value2);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_FLOAT, value2), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_FLOAT, value2), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_FLOAT, QueryConstants.NULL_INT);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_FLOAT, QueryConstants.NULL_INT);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_FLOAT, QueryConstants.NULL_INT), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_FLOAT, QueryConstants.NULL_INT), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -10923,37 +10923,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, value2);
             expectedResult = value1 % value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.remainder(value1, value2), value1%value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.remainder(value1, value2), value1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_DOUBLE);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_DOUBLE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(zero1, value2);
             expectedResult = zero1 % value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.remainder(zero1, value2), zero1%value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.remainder(zero1, value2), zero1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_FLOAT, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_FLOAT, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_FLOAT, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_FLOAT, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_FLOAT, QueryConstants.NULL_DOUBLE);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_FLOAT, QueryConstants.NULL_DOUBLE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_FLOAT, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_FLOAT, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -10973,37 +10973,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, value2);
             expectedResult = value1 % value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.remainder(value1, value2), value1%value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.remainder(value1, value2), value1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_LONG);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_LONG);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_LONG), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_LONG), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(zero1, value2);
             expectedResult = zero1 % value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.remainder(zero1, value2), zero1%value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.remainder(zero1, value2), zero1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_FLOAT, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_FLOAT, value2);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_FLOAT, value2), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_FLOAT, value2), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_FLOAT, QueryConstants.NULL_LONG);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_FLOAT, QueryConstants.NULL_LONG);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_FLOAT, QueryConstants.NULL_LONG), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_FLOAT, QueryConstants.NULL_LONG), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -11023,37 +11023,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, value2);
             expectedResult = value1 % value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.remainder(value1, value2), value1%value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.remainder(value1, value2), value1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_FLOAT);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_FLOAT);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(zero1, value2);
             expectedResult = zero1 % value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.remainder(zero1, value2), zero1%value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.remainder(zero1, value2), zero1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_FLOAT, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_FLOAT, value2);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_FLOAT, value2), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_FLOAT, value2), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_FLOAT, QueryConstants.NULL_FLOAT);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_FLOAT, QueryConstants.NULL_FLOAT);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_FLOAT, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_FLOAT, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -11073,37 +11073,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, value2);
             expectedResult = value1 % value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.remainder(value1, value2), value1%value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.remainder(value1, value2), value1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_CHAR);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_CHAR);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_CHAR), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_CHAR), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(zero1, value2);
             expectedResult = zero1 % value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.remainder(zero1, value2), zero1%value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.remainder(zero1, value2), zero1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_FLOAT, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_FLOAT, value2);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_FLOAT, value2), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_FLOAT, value2), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_FLOAT, QueryConstants.NULL_CHAR);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_FLOAT, QueryConstants.NULL_CHAR);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_FLOAT, QueryConstants.NULL_CHAR), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_FLOAT, QueryConstants.NULL_CHAR), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -11123,37 +11123,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, value2);
             expectedResult = value1 % value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.remainder(value1, value2), value1%value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.remainder(value1, value2), value1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_BYTE);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_BYTE);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_BYTE), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_BYTE), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(zero1, value2);
             expectedResult = zero1 % value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.remainder(zero1, value2), zero1%value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.remainder(zero1, value2), zero1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_FLOAT, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_FLOAT, value2);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_FLOAT, value2), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_FLOAT, value2), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_FLOAT, QueryConstants.NULL_BYTE);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_FLOAT, QueryConstants.NULL_BYTE);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_FLOAT, QueryConstants.NULL_BYTE), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_FLOAT, QueryConstants.NULL_BYTE), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -11173,37 +11173,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, value2);
             expectedResult = value1 % value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.remainder(value1, value2), value1%value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.remainder(value1, value2), value1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_SHORT);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_SHORT);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_SHORT), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_SHORT), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(zero1, value2);
             expectedResult = zero1 % value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.remainder(zero1, value2), zero1%value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.remainder(zero1, value2), zero1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_FLOAT, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_FLOAT, value2);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_FLOAT, value2), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_FLOAT, value2), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_FLOAT, QueryConstants.NULL_SHORT);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_FLOAT, QueryConstants.NULL_SHORT);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_FLOAT, QueryConstants.NULL_SHORT), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_FLOAT, QueryConstants.NULL_SHORT), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -11223,37 +11223,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, value2);
             expectedResult = value1 % value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.remainder(value1, value2), value1%value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.remainder(value1, value2), value1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_INT);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_INT);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_INT), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_INT), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(zero1, value2);
             expectedResult = zero1 % value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.remainder(zero1, value2), zero1%value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.remainder(zero1, value2), zero1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_CHAR, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_CHAR, value2);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_CHAR, value2), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_CHAR, value2), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_CHAR, QueryConstants.NULL_INT);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_CHAR, QueryConstants.NULL_INT);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_CHAR, QueryConstants.NULL_INT), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_CHAR, QueryConstants.NULL_INT), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -11273,37 +11273,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, value2);
             expectedResult = value1 % value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.remainder(value1, value2), value1%value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.remainder(value1, value2), value1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_DOUBLE);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_DOUBLE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(zero1, value2);
             expectedResult = zero1 % value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.remainder(zero1, value2), zero1%value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.remainder(zero1, value2), zero1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_CHAR, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_CHAR, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_CHAR, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_CHAR, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_CHAR, QueryConstants.NULL_DOUBLE);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_CHAR, QueryConstants.NULL_DOUBLE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_CHAR, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_CHAR, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -11323,37 +11323,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, value2);
             expectedResult = value1 % value2;
             compareResult = Long.compare(dbResult, expectedResult);
-            description = "Long.compare(QueryLanguageFunctionUtil.remainder(value1, value2), value1%value2)";
+            description = "Long.compare(QueryLanguageFunctionUtils.remainder(value1, value2), value1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_LONG);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_LONG);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_LONG), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_LONG), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(zero1, value2);
             expectedResult = zero1 % value2;
             compareResult = Long.compare(dbResult, expectedResult);
-            description = "Long.compare(QueryLanguageFunctionUtil.remainder(zero1, value2), zero1%value2)";
+            description = "Long.compare(QueryLanguageFunctionUtils.remainder(zero1, value2), zero1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_CHAR, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_CHAR, value2);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_CHAR, value2), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_CHAR, value2), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_CHAR, QueryConstants.NULL_LONG);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_CHAR, QueryConstants.NULL_LONG);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_CHAR, QueryConstants.NULL_LONG), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_CHAR, QueryConstants.NULL_LONG), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -11373,37 +11373,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, value2);
             expectedResult = value1 % value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.remainder(value1, value2), value1%value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.remainder(value1, value2), value1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_FLOAT);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_FLOAT);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(zero1, value2);
             expectedResult = zero1 % value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.remainder(zero1, value2), zero1%value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.remainder(zero1, value2), zero1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_CHAR, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_CHAR, value2);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_CHAR, value2), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_CHAR, value2), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_CHAR, QueryConstants.NULL_FLOAT);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_CHAR, QueryConstants.NULL_FLOAT);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_CHAR, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_CHAR, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -11423,37 +11423,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, value2);
             expectedResult = value1 % value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.remainder(value1, value2), value1%value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.remainder(value1, value2), value1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_CHAR);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_CHAR);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_CHAR), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_CHAR), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(zero1, value2);
             expectedResult = zero1 % value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.remainder(zero1, value2), zero1%value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.remainder(zero1, value2), zero1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_CHAR, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_CHAR, value2);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_CHAR, value2), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_CHAR, value2), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_CHAR, QueryConstants.NULL_CHAR);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_CHAR, QueryConstants.NULL_CHAR);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_CHAR, QueryConstants.NULL_CHAR), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_CHAR, QueryConstants.NULL_CHAR), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -11473,37 +11473,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, value2);
             expectedResult = value1 % value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.remainder(value1, value2), value1%value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.remainder(value1, value2), value1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_BYTE);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_BYTE);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_BYTE), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_BYTE), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(zero1, value2);
             expectedResult = zero1 % value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.remainder(zero1, value2), zero1%value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.remainder(zero1, value2), zero1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_CHAR, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_CHAR, value2);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_CHAR, value2), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_CHAR, value2), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_CHAR, QueryConstants.NULL_BYTE);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_CHAR, QueryConstants.NULL_BYTE);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_CHAR, QueryConstants.NULL_BYTE), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_CHAR, QueryConstants.NULL_BYTE), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -11523,37 +11523,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, value2);
             expectedResult = value1 % value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.remainder(value1, value2), value1%value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.remainder(value1, value2), value1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_SHORT);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_SHORT);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_SHORT), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_SHORT), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(zero1, value2);
             expectedResult = zero1 % value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.remainder(zero1, value2), zero1%value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.remainder(zero1, value2), zero1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_CHAR, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_CHAR, value2);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_CHAR, value2), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_CHAR, value2), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_CHAR, QueryConstants.NULL_SHORT);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_CHAR, QueryConstants.NULL_SHORT);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_CHAR, QueryConstants.NULL_SHORT), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_CHAR, QueryConstants.NULL_SHORT), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -11573,37 +11573,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, value2);
             expectedResult = value1 % value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.remainder(value1, value2), value1%value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.remainder(value1, value2), value1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_INT);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_INT);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_INT), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_INT), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(zero1, value2);
             expectedResult = zero1 % value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.remainder(zero1, value2), zero1%value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.remainder(zero1, value2), zero1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_BYTE, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_BYTE, value2);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_BYTE, value2), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_BYTE, value2), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_BYTE, QueryConstants.NULL_INT);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_BYTE, QueryConstants.NULL_INT);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_BYTE, QueryConstants.NULL_INT), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_BYTE, QueryConstants.NULL_INT), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -11623,37 +11623,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, value2);
             expectedResult = value1 % value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.remainder(value1, value2), value1%value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.remainder(value1, value2), value1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_DOUBLE);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_DOUBLE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(zero1, value2);
             expectedResult = zero1 % value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.remainder(zero1, value2), zero1%value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.remainder(zero1, value2), zero1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_BYTE, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_BYTE, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_BYTE, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_BYTE, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_BYTE, QueryConstants.NULL_DOUBLE);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_BYTE, QueryConstants.NULL_DOUBLE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_BYTE, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_BYTE, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -11673,37 +11673,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, value2);
             expectedResult = value1 % value2;
             compareResult = Long.compare(dbResult, expectedResult);
-            description = "Long.compare(QueryLanguageFunctionUtil.remainder(value1, value2), value1%value2)";
+            description = "Long.compare(QueryLanguageFunctionUtils.remainder(value1, value2), value1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_LONG);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_LONG);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_LONG), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_LONG), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(zero1, value2);
             expectedResult = zero1 % value2;
             compareResult = Long.compare(dbResult, expectedResult);
-            description = "Long.compare(QueryLanguageFunctionUtil.remainder(zero1, value2), zero1%value2)";
+            description = "Long.compare(QueryLanguageFunctionUtils.remainder(zero1, value2), zero1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_BYTE, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_BYTE, value2);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_BYTE, value2), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_BYTE, value2), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_BYTE, QueryConstants.NULL_LONG);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_BYTE, QueryConstants.NULL_LONG);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_BYTE, QueryConstants.NULL_LONG), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_BYTE, QueryConstants.NULL_LONG), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -11723,37 +11723,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, value2);
             expectedResult = value1 % value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.remainder(value1, value2), value1%value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.remainder(value1, value2), value1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_FLOAT);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_FLOAT);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(zero1, value2);
             expectedResult = zero1 % value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.remainder(zero1, value2), zero1%value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.remainder(zero1, value2), zero1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_BYTE, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_BYTE, value2);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_BYTE, value2), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_BYTE, value2), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_BYTE, QueryConstants.NULL_FLOAT);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_BYTE, QueryConstants.NULL_FLOAT);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_BYTE, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_BYTE, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -11773,37 +11773,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, value2);
             expectedResult = value1 % value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.remainder(value1, value2), value1%value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.remainder(value1, value2), value1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_CHAR);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_CHAR);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_CHAR), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_CHAR), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(zero1, value2);
             expectedResult = zero1 % value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.remainder(zero1, value2), zero1%value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.remainder(zero1, value2), zero1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_BYTE, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_BYTE, value2);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_BYTE, value2), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_BYTE, value2), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_BYTE, QueryConstants.NULL_CHAR);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_BYTE, QueryConstants.NULL_CHAR);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_BYTE, QueryConstants.NULL_CHAR), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_BYTE, QueryConstants.NULL_CHAR), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -11823,37 +11823,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, value2);
             expectedResult = value1 % value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.remainder(value1, value2), value1%value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.remainder(value1, value2), value1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_BYTE);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_BYTE);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_BYTE), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_BYTE), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(zero1, value2);
             expectedResult = zero1 % value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.remainder(zero1, value2), zero1%value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.remainder(zero1, value2), zero1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_BYTE, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_BYTE, value2);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_BYTE, value2), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_BYTE, value2), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_BYTE, QueryConstants.NULL_BYTE);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_BYTE, QueryConstants.NULL_BYTE);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_BYTE, QueryConstants.NULL_BYTE), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_BYTE, QueryConstants.NULL_BYTE), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -11873,37 +11873,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, value2);
             expectedResult = value1 % value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.remainder(value1, value2), value1%value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.remainder(value1, value2), value1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_SHORT);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_SHORT);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_SHORT), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_SHORT), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(zero1, value2);
             expectedResult = zero1 % value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.remainder(zero1, value2), zero1%value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.remainder(zero1, value2), zero1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_BYTE, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_BYTE, value2);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_BYTE, value2), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_BYTE, value2), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_BYTE, QueryConstants.NULL_SHORT);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_BYTE, QueryConstants.NULL_SHORT);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_BYTE, QueryConstants.NULL_SHORT), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_BYTE, QueryConstants.NULL_SHORT), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -11923,37 +11923,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, value2);
             expectedResult = value1 % value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.remainder(value1, value2), value1%value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.remainder(value1, value2), value1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_INT);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_INT);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_INT), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_INT), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(zero1, value2);
             expectedResult = zero1 % value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.remainder(zero1, value2), zero1%value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.remainder(zero1, value2), zero1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_SHORT, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_SHORT, value2);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_SHORT, value2), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_SHORT, value2), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_SHORT, QueryConstants.NULL_INT);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_SHORT, QueryConstants.NULL_INT);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_SHORT, QueryConstants.NULL_INT), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_SHORT, QueryConstants.NULL_INT), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -11973,37 +11973,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, value2);
             expectedResult = value1 % value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.remainder(value1, value2), value1%value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.remainder(value1, value2), value1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_DOUBLE);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_DOUBLE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(zero1, value2);
             expectedResult = zero1 % value2;
             compareResult = Double.compare(dbResult, expectedResult);
-            description = "Double.compare(QueryLanguageFunctionUtil.remainder(zero1, value2), zero1%value2)";
+            description = "Double.compare(QueryLanguageFunctionUtils.remainder(zero1, value2), zero1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_SHORT, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_SHORT, value2);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_SHORT, value2), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_SHORT, value2), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_SHORT, QueryConstants.NULL_DOUBLE);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_SHORT, QueryConstants.NULL_DOUBLE);
             expectedResult = QueryConstants.NULL_DOUBLE;
             compareResult = Double.compare(dbResult, expectedResult);
             description =
-                    "Double.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_SHORT, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
+                    "Double.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_SHORT, QueryConstants.NULL_DOUBLE), QueryConstants.NULL_DOUBLE)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -12023,37 +12023,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, value2);
             expectedResult = value1 % value2;
             compareResult = Long.compare(dbResult, expectedResult);
-            description = "Long.compare(QueryLanguageFunctionUtil.remainder(value1, value2), value1%value2)";
+            description = "Long.compare(QueryLanguageFunctionUtils.remainder(value1, value2), value1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_LONG);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_LONG);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_LONG), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_LONG), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(zero1, value2);
             expectedResult = zero1 % value2;
             compareResult = Long.compare(dbResult, expectedResult);
-            description = "Long.compare(QueryLanguageFunctionUtil.remainder(zero1, value2), zero1%value2)";
+            description = "Long.compare(QueryLanguageFunctionUtils.remainder(zero1, value2), zero1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_SHORT, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_SHORT, value2);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_SHORT, value2), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_SHORT, value2), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_SHORT, QueryConstants.NULL_LONG);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_SHORT, QueryConstants.NULL_LONG);
             expectedResult = QueryConstants.NULL_LONG;
             compareResult = Long.compare(dbResult, expectedResult);
             description =
-                    "Long.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_SHORT, QueryConstants.NULL_LONG), QueryConstants.NULL_LONG)";
+                    "Long.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_SHORT, QueryConstants.NULL_LONG), QueryConstants.NULL_LONG)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -12073,37 +12073,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, value2);
             expectedResult = value1 % value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.remainder(value1, value2), value1%value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.remainder(value1, value2), value1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_FLOAT);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_FLOAT);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(zero1, value2);
             expectedResult = zero1 % value2;
             compareResult = Float.compare(dbResult, expectedResult);
-            description = "Float.compare(QueryLanguageFunctionUtil.remainder(zero1, value2), zero1%value2)";
+            description = "Float.compare(QueryLanguageFunctionUtils.remainder(zero1, value2), zero1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_SHORT, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_SHORT, value2);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_SHORT, value2), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_SHORT, value2), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_SHORT, QueryConstants.NULL_FLOAT);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_SHORT, QueryConstants.NULL_FLOAT);
             expectedResult = QueryConstants.NULL_FLOAT;
             compareResult = Float.compare(dbResult, expectedResult);
             description =
-                    "Float.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_SHORT, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
+                    "Float.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_SHORT, QueryConstants.NULL_FLOAT), QueryConstants.NULL_FLOAT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -12123,37 +12123,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, value2);
             expectedResult = value1 % value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.remainder(value1, value2), value1%value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.remainder(value1, value2), value1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_CHAR);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_CHAR);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_CHAR), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_CHAR), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(zero1, value2);
             expectedResult = zero1 % value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.remainder(zero1, value2), zero1%value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.remainder(zero1, value2), zero1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_SHORT, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_SHORT, value2);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_SHORT, value2), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_SHORT, value2), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_SHORT, QueryConstants.NULL_CHAR);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_SHORT, QueryConstants.NULL_CHAR);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_SHORT, QueryConstants.NULL_CHAR), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_SHORT, QueryConstants.NULL_CHAR), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -12173,37 +12173,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, value2);
             expectedResult = value1 % value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.remainder(value1, value2), value1%value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.remainder(value1, value2), value1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_BYTE);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_BYTE);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_BYTE), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_BYTE), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(zero1, value2);
             expectedResult = zero1 % value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.remainder(zero1, value2), zero1%value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.remainder(zero1, value2), zero1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_SHORT, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_SHORT, value2);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_SHORT, value2), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_SHORT, value2), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_SHORT, QueryConstants.NULL_BYTE);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_SHORT, QueryConstants.NULL_BYTE);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_SHORT, QueryConstants.NULL_BYTE), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_SHORT, QueryConstants.NULL_BYTE), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -12223,37 +12223,37 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         String description;
 
         try {
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, value2);
             expectedResult = value1 % value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.remainder(value1, value2), value1%value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.remainder(value1, value2), value1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_SHORT);
+            dbResult = QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_SHORT);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.remainder(value1, QueryConstants.NULL_SHORT), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.remainder(value1, QueryConstants.NULL_SHORT), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(zero1, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(zero1, value2);
             expectedResult = zero1 % value2;
             compareResult = Integer.compare(dbResult, expectedResult);
-            description = "Integer.compare(QueryLanguageFunctionUtil.remainder(zero1, value2), zero1%value2)";
+            description = "Integer.compare(QueryLanguageFunctionUtils.remainder(zero1, value2), zero1%value2)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_SHORT, value2);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_SHORT, value2);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_SHORT, value2), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_SHORT, value2), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
 
-            dbResult = QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_SHORT, QueryConstants.NULL_SHORT);
+            dbResult = QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_SHORT, QueryConstants.NULL_SHORT);
             expectedResult = QueryConstants.NULL_INT;
             compareResult = Integer.compare(dbResult, expectedResult);
             description =
-                    "Integer.compare(QueryLanguageFunctionUtil.remainder(QueryConstants.NULL_SHORT, QueryConstants.NULL_SHORT), QueryConstants.NULL_INT)";
+                    "Integer.compare(QueryLanguageFunctionUtils.remainder(QueryConstants.NULL_SHORT, QueryConstants.NULL_SHORT), QueryConstants.NULL_INT)";
             TestCase.assertEquals(description, 0, compareResult);
         } catch (Exception ex) {
             throw new RuntimeException(
@@ -12268,20 +12268,20 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         final int zero1 = 0;
         final int zero2 = 0;
 
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Float.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Float.NaN, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Double.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Double.NaN, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero1, zero2));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero2, zero1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_INT, QueryConstants.NULL_INT));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value1, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value2, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, value2));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(value2, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value1, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value2, value1));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(-value1, -value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Float.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Float.NaN, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Double.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Double.NaN, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero1, zero2));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero2, zero1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(QueryConstants.NULL_INT, QueryConstants.NULL_INT));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value1, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value2, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, value2));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(value2, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value1, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value2, value1));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(-value1, -value2));
     }
 
     public static void test_compare_int_double_compare() {
@@ -12290,21 +12290,21 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         final int zero1 = 0;
         final double zero2 = 0;
 
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Float.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Float.NaN, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Double.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Double.NaN, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero1, zero2));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero2, zero1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Float.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Float.NaN, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Double.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Double.NaN, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero1, zero2));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero2, zero1));
         TestCase.assertEquals(0,
-                QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_INT, QueryConstants.NULL_DOUBLE));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value1, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value2, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, value2));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(value2, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value1, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value2, value1));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(-value1, -value2));
+                QueryLanguageFunctionUtils.compareTo(QueryConstants.NULL_INT, QueryConstants.NULL_DOUBLE));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value1, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value2, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, value2));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(value2, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value1, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value2, value1));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(-value1, -value2));
     }
 
     public static void test_compare_int_long_compare() {
@@ -12313,21 +12313,21 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         final int zero1 = 0;
         final long zero2 = 0;
 
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Float.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Float.NaN, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Double.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Double.NaN, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero1, zero2));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero2, zero1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Float.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Float.NaN, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Double.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Double.NaN, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero1, zero2));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero2, zero1));
         TestCase.assertEquals(0,
-                QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_INT, QueryConstants.NULL_LONG));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value1, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value2, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, value2));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(value2, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value1, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value2, value1));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(-value1, -value2));
+                QueryLanguageFunctionUtils.compareTo(QueryConstants.NULL_INT, QueryConstants.NULL_LONG));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value1, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value2, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, value2));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(value2, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value1, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value2, value1));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(-value1, -value2));
     }
 
     public static void test_compare_int_float_compare() {
@@ -12336,21 +12336,21 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         final int zero1 = 0;
         final float zero2 = 0;
 
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Float.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Float.NaN, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Double.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Double.NaN, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero1, zero2));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero2, zero1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Float.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Float.NaN, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Double.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Double.NaN, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero1, zero2));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero2, zero1));
         TestCase.assertEquals(0,
-                QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_INT, QueryConstants.NULL_FLOAT));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value1, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value2, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, value2));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(value2, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value1, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value2, value1));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(-value1, -value2));
+                QueryLanguageFunctionUtils.compareTo(QueryConstants.NULL_INT, QueryConstants.NULL_FLOAT));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value1, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value2, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, value2));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(value2, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value1, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value2, value1));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(-value1, -value2));
     }
 
     public static void test_compare_int_char_compare() {
@@ -12359,21 +12359,21 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         final int zero1 = 0;
         final char zero2 = 0;
 
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Float.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Float.NaN, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Double.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Double.NaN, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero1, zero2));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero2, zero1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Float.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Float.NaN, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Double.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Double.NaN, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero1, zero2));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero2, zero1));
         TestCase.assertEquals(0,
-                QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_INT, QueryConstants.NULL_CHAR));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value1, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value2, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, value2));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(value2, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value1, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value2, value1));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(-value1, -value2));
+                QueryLanguageFunctionUtils.compareTo(QueryConstants.NULL_INT, QueryConstants.NULL_CHAR));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value1, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value2, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, value2));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(value2, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value1, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value2, value1));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(-value1, -value2));
     }
 
     public static void test_compare_int_byte_compare() {
@@ -12382,21 +12382,21 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         final int zero1 = 0;
         final byte zero2 = 0;
 
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Float.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Float.NaN, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Double.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Double.NaN, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero1, zero2));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero2, zero1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Float.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Float.NaN, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Double.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Double.NaN, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero1, zero2));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero2, zero1));
         TestCase.assertEquals(0,
-                QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_INT, QueryConstants.NULL_BYTE));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value1, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value2, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, value2));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(value2, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value1, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value2, value1));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(-value1, -value2));
+                QueryLanguageFunctionUtils.compareTo(QueryConstants.NULL_INT, QueryConstants.NULL_BYTE));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value1, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value2, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, value2));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(value2, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value1, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value2, value1));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(-value1, -value2));
     }
 
     public static void test_compare_int_short_compare() {
@@ -12405,21 +12405,21 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         final int zero1 = 0;
         final short zero2 = 0;
 
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Float.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Float.NaN, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Double.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Double.NaN, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero1, zero2));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero2, zero1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Float.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Float.NaN, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Double.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Double.NaN, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero1, zero2));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero2, zero1));
         TestCase.assertEquals(0,
-                QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_INT, QueryConstants.NULL_SHORT));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value1, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value2, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, value2));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(value2, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value1, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value2, value1));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(-value1, -value2));
+                QueryLanguageFunctionUtils.compareTo(QueryConstants.NULL_INT, QueryConstants.NULL_SHORT));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value1, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value2, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, value2));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(value2, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value1, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value2, value1));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(-value1, -value2));
     }
 
     public static void test_compare_double_int_compare() {
@@ -12428,21 +12428,21 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         final double zero1 = 0;
         final int zero2 = 0;
 
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Float.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Float.NaN, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Double.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Double.NaN, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero1, zero2));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero2, zero1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Float.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Float.NaN, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Double.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Double.NaN, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero1, zero2));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero2, zero1));
         TestCase.assertEquals(0,
-                QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_INT));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value1, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value2, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, value2));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(value2, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value1, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value2, value1));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(-value1, -value2));
+                QueryLanguageFunctionUtils.compareTo(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_INT));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value1, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value2, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, value2));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(value2, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value1, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value2, value1));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(-value1, -value2));
     }
 
     public static void test_compare_double_double_compare() {
@@ -12451,21 +12451,21 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         final double zero1 = 0;
         final double zero2 = 0;
 
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Float.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Float.NaN, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Double.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Double.NaN, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero1, zero2));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero2, zero1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Float.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Float.NaN, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Double.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Double.NaN, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero1, zero2));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero2, zero1));
         TestCase.assertEquals(0,
-                QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_DOUBLE));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value1, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value2, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, value2));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(value2, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value1, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value2, value1));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(-value1, -value2));
+                QueryLanguageFunctionUtils.compareTo(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_DOUBLE));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value1, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value2, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, value2));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(value2, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value1, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value2, value1));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(-value1, -value2));
     }
 
     public static void test_compare_double_long_compare() {
@@ -12474,21 +12474,21 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         final double zero1 = 0;
         final long zero2 = 0;
 
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Float.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Float.NaN, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Double.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Double.NaN, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero1, zero2));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero2, zero1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Float.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Float.NaN, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Double.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Double.NaN, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero1, zero2));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero2, zero1));
         TestCase.assertEquals(0,
-                QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_LONG));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value1, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value2, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, value2));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(value2, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value1, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value2, value1));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(-value1, -value2));
+                QueryLanguageFunctionUtils.compareTo(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_LONG));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value1, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value2, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, value2));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(value2, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value1, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value2, value1));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(-value1, -value2));
     }
 
     public static void test_compare_double_float_compare() {
@@ -12497,21 +12497,21 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         final double zero1 = 0;
         final float zero2 = 0;
 
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Float.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Float.NaN, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Double.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Double.NaN, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero1, zero2));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero2, zero1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Float.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Float.NaN, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Double.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Double.NaN, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero1, zero2));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero2, zero1));
         TestCase.assertEquals(0,
-                QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_FLOAT));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value1, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value2, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, value2));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(value2, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value1, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value2, value1));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(-value1, -value2));
+                QueryLanguageFunctionUtils.compareTo(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_FLOAT));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value1, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value2, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, value2));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(value2, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value1, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value2, value1));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(-value1, -value2));
     }
 
     public static void test_compare_double_char_compare() {
@@ -12520,21 +12520,21 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         final double zero1 = 0;
         final char zero2 = 0;
 
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Float.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Float.NaN, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Double.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Double.NaN, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero1, zero2));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero2, zero1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Float.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Float.NaN, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Double.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Double.NaN, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero1, zero2));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero2, zero1));
         TestCase.assertEquals(0,
-                QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_CHAR));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value1, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value2, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, value2));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(value2, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value1, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value2, value1));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(-value1, -value2));
+                QueryLanguageFunctionUtils.compareTo(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_CHAR));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value1, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value2, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, value2));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(value2, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value1, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value2, value1));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(-value1, -value2));
     }
 
     public static void test_compare_double_byte_compare() {
@@ -12543,21 +12543,21 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         final double zero1 = 0;
         final byte zero2 = 0;
 
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Float.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Float.NaN, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Double.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Double.NaN, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero1, zero2));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero2, zero1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Float.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Float.NaN, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Double.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Double.NaN, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero1, zero2));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero2, zero1));
         TestCase.assertEquals(0,
-                QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_BYTE));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value1, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value2, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, value2));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(value2, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value1, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value2, value1));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(-value1, -value2));
+                QueryLanguageFunctionUtils.compareTo(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_BYTE));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value1, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value2, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, value2));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(value2, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value1, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value2, value1));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(-value1, -value2));
     }
 
     public static void test_compare_double_short_compare() {
@@ -12566,21 +12566,21 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         final double zero1 = 0;
         final short zero2 = 0;
 
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Float.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Float.NaN, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Double.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Double.NaN, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero1, zero2));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero2, zero1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Float.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Float.NaN, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Double.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Double.NaN, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero1, zero2));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero2, zero1));
         TestCase.assertEquals(0,
-                QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_SHORT));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value1, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value2, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, value2));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(value2, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value1, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value2, value1));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(-value1, -value2));
+                QueryLanguageFunctionUtils.compareTo(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_SHORT));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value1, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value2, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, value2));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(value2, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value1, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value2, value1));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(-value1, -value2));
     }
 
     public static void test_compare_long_int_compare() {
@@ -12589,21 +12589,21 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         final long zero1 = 0;
         final int zero2 = 0;
 
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Float.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Float.NaN, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Double.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Double.NaN, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero1, zero2));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero2, zero1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Float.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Float.NaN, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Double.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Double.NaN, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero1, zero2));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero2, zero1));
         TestCase.assertEquals(0,
-                QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_LONG, QueryConstants.NULL_INT));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value1, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value2, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, value2));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(value2, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value1, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value2, value1));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(-value1, -value2));
+                QueryLanguageFunctionUtils.compareTo(QueryConstants.NULL_LONG, QueryConstants.NULL_INT));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value1, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value2, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, value2));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(value2, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value1, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value2, value1));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(-value1, -value2));
     }
 
     public static void test_compare_long_double_compare() {
@@ -12612,21 +12612,21 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         final long zero1 = 0;
         final double zero2 = 0;
 
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Float.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Float.NaN, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Double.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Double.NaN, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero1, zero2));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero2, zero1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Float.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Float.NaN, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Double.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Double.NaN, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero1, zero2));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero2, zero1));
         TestCase.assertEquals(0,
-                QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_LONG, QueryConstants.NULL_DOUBLE));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value1, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value2, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, value2));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(value2, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value1, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value2, value1));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(-value1, -value2));
+                QueryLanguageFunctionUtils.compareTo(QueryConstants.NULL_LONG, QueryConstants.NULL_DOUBLE));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value1, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value2, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, value2));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(value2, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value1, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value2, value1));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(-value1, -value2));
     }
 
     public static void test_compare_long_long_compare() {
@@ -12635,21 +12635,21 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         final long zero1 = 0;
         final long zero2 = 0;
 
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Float.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Float.NaN, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Double.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Double.NaN, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero1, zero2));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero2, zero1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Float.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Float.NaN, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Double.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Double.NaN, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero1, zero2));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero2, zero1));
         TestCase.assertEquals(0,
-                QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_LONG, QueryConstants.NULL_LONG));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value1, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value2, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, value2));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(value2, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value1, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value2, value1));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(-value1, -value2));
+                QueryLanguageFunctionUtils.compareTo(QueryConstants.NULL_LONG, QueryConstants.NULL_LONG));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value1, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value2, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, value2));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(value2, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value1, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value2, value1));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(-value1, -value2));
     }
 
     public static void test_compare_long_float_compare() {
@@ -12658,21 +12658,21 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         final long zero1 = 0;
         final float zero2 = 0;
 
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Float.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Float.NaN, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Double.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Double.NaN, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero1, zero2));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero2, zero1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Float.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Float.NaN, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Double.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Double.NaN, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero1, zero2));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero2, zero1));
         TestCase.assertEquals(0,
-                QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_LONG, QueryConstants.NULL_FLOAT));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value1, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value2, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, value2));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(value2, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value1, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value2, value1));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(-value1, -value2));
+                QueryLanguageFunctionUtils.compareTo(QueryConstants.NULL_LONG, QueryConstants.NULL_FLOAT));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value1, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value2, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, value2));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(value2, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value1, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value2, value1));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(-value1, -value2));
     }
 
     public static void test_compare_long_char_compare() {
@@ -12681,21 +12681,21 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         final long zero1 = 0;
         final char zero2 = 0;
 
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Float.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Float.NaN, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Double.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Double.NaN, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero1, zero2));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero2, zero1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Float.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Float.NaN, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Double.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Double.NaN, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero1, zero2));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero2, zero1));
         TestCase.assertEquals(0,
-                QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_LONG, QueryConstants.NULL_CHAR));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value1, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value2, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, value2));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(value2, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value1, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value2, value1));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(-value1, -value2));
+                QueryLanguageFunctionUtils.compareTo(QueryConstants.NULL_LONG, QueryConstants.NULL_CHAR));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value1, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value2, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, value2));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(value2, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value1, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value2, value1));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(-value1, -value2));
     }
 
     public static void test_compare_long_byte_compare() {
@@ -12704,21 +12704,21 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         final long zero1 = 0;
         final byte zero2 = 0;
 
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Float.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Float.NaN, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Double.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Double.NaN, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero1, zero2));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero2, zero1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Float.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Float.NaN, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Double.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Double.NaN, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero1, zero2));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero2, zero1));
         TestCase.assertEquals(0,
-                QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_LONG, QueryConstants.NULL_BYTE));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value1, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value2, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, value2));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(value2, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value1, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value2, value1));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(-value1, -value2));
+                QueryLanguageFunctionUtils.compareTo(QueryConstants.NULL_LONG, QueryConstants.NULL_BYTE));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value1, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value2, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, value2));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(value2, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value1, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value2, value1));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(-value1, -value2));
     }
 
     public static void test_compare_long_short_compare() {
@@ -12727,21 +12727,21 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         final long zero1 = 0;
         final short zero2 = 0;
 
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Float.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Float.NaN, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Double.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Double.NaN, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero1, zero2));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero2, zero1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Float.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Float.NaN, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Double.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Double.NaN, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero1, zero2));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero2, zero1));
         TestCase.assertEquals(0,
-                QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_LONG, QueryConstants.NULL_SHORT));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value1, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value2, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, value2));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(value2, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value1, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value2, value1));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(-value1, -value2));
+                QueryLanguageFunctionUtils.compareTo(QueryConstants.NULL_LONG, QueryConstants.NULL_SHORT));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value1, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value2, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, value2));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(value2, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value1, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value2, value1));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(-value1, -value2));
     }
 
     public static void test_compare_float_int_compare() {
@@ -12750,21 +12750,21 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         final float zero1 = 0;
         final int zero2 = 0;
 
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Float.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Float.NaN, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Double.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Double.NaN, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero1, zero2));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero2, zero1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Float.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Float.NaN, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Double.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Double.NaN, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero1, zero2));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero2, zero1));
         TestCase.assertEquals(0,
-                QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_FLOAT, QueryConstants.NULL_INT));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value1, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value2, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, value2));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(value2, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value1, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value2, value1));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(-value1, -value2));
+                QueryLanguageFunctionUtils.compareTo(QueryConstants.NULL_FLOAT, QueryConstants.NULL_INT));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value1, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value2, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, value2));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(value2, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value1, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value2, value1));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(-value1, -value2));
     }
 
     public static void test_compare_float_double_compare() {
@@ -12773,21 +12773,21 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         final float zero1 = 0;
         final double zero2 = 0;
 
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Float.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Float.NaN, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Double.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Double.NaN, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero1, zero2));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero2, zero1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Float.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Float.NaN, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Double.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Double.NaN, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero1, zero2));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero2, zero1));
         TestCase.assertEquals(0,
-                QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_FLOAT, QueryConstants.NULL_DOUBLE));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value1, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value2, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, value2));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(value2, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value1, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value2, value1));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(-value1, -value2));
+                QueryLanguageFunctionUtils.compareTo(QueryConstants.NULL_FLOAT, QueryConstants.NULL_DOUBLE));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value1, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value2, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, value2));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(value2, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value1, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value2, value1));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(-value1, -value2));
     }
 
     public static void test_compare_float_long_compare() {
@@ -12796,21 +12796,21 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         final float zero1 = 0;
         final long zero2 = 0;
 
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Float.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Float.NaN, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Double.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Double.NaN, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero1, zero2));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero2, zero1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Float.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Float.NaN, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Double.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Double.NaN, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero1, zero2));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero2, zero1));
         TestCase.assertEquals(0,
-                QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_FLOAT, QueryConstants.NULL_LONG));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value1, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value2, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, value2));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(value2, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value1, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value2, value1));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(-value1, -value2));
+                QueryLanguageFunctionUtils.compareTo(QueryConstants.NULL_FLOAT, QueryConstants.NULL_LONG));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value1, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value2, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, value2));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(value2, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value1, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value2, value1));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(-value1, -value2));
     }
 
     public static void test_compare_float_float_compare() {
@@ -12819,21 +12819,21 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         final float zero1 = 0;
         final float zero2 = 0;
 
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Float.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Float.NaN, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Double.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Double.NaN, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero1, zero2));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero2, zero1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Float.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Float.NaN, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Double.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Double.NaN, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero1, zero2));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero2, zero1));
         TestCase.assertEquals(0,
-                QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_FLOAT, QueryConstants.NULL_FLOAT));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value1, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value2, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, value2));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(value2, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value1, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value2, value1));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(-value1, -value2));
+                QueryLanguageFunctionUtils.compareTo(QueryConstants.NULL_FLOAT, QueryConstants.NULL_FLOAT));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value1, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value2, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, value2));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(value2, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value1, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value2, value1));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(-value1, -value2));
     }
 
     public static void test_compare_float_char_compare() {
@@ -12842,21 +12842,21 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         final float zero1 = 0;
         final char zero2 = 0;
 
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Float.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Float.NaN, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Double.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Double.NaN, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero1, zero2));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero2, zero1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Float.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Float.NaN, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Double.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Double.NaN, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero1, zero2));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero2, zero1));
         TestCase.assertEquals(0,
-                QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_FLOAT, QueryConstants.NULL_CHAR));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value1, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value2, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, value2));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(value2, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value1, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value2, value1));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(-value1, -value2));
+                QueryLanguageFunctionUtils.compareTo(QueryConstants.NULL_FLOAT, QueryConstants.NULL_CHAR));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value1, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value2, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, value2));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(value2, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value1, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value2, value1));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(-value1, -value2));
     }
 
     public static void test_compare_float_byte_compare() {
@@ -12865,21 +12865,21 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         final float zero1 = 0;
         final byte zero2 = 0;
 
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Float.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Float.NaN, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Double.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Double.NaN, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero1, zero2));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero2, zero1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Float.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Float.NaN, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Double.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Double.NaN, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero1, zero2));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero2, zero1));
         TestCase.assertEquals(0,
-                QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_FLOAT, QueryConstants.NULL_BYTE));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value1, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value2, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, value2));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(value2, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value1, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value2, value1));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(-value1, -value2));
+                QueryLanguageFunctionUtils.compareTo(QueryConstants.NULL_FLOAT, QueryConstants.NULL_BYTE));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value1, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value2, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, value2));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(value2, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value1, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value2, value1));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(-value1, -value2));
     }
 
     public static void test_compare_float_short_compare() {
@@ -12888,21 +12888,21 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         final float zero1 = 0;
         final short zero2 = 0;
 
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Float.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Float.NaN, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Double.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Double.NaN, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero1, zero2));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero2, zero1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Float.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Float.NaN, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Double.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Double.NaN, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero1, zero2));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero2, zero1));
         TestCase.assertEquals(0,
-                QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_FLOAT, QueryConstants.NULL_SHORT));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value1, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value2, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, value2));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(value2, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value1, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value2, value1));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(-value1, -value2));
+                QueryLanguageFunctionUtils.compareTo(QueryConstants.NULL_FLOAT, QueryConstants.NULL_SHORT));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value1, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value2, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, value2));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(value2, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value1, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value2, value1));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(-value1, -value2));
     }
 
     public static void test_compare_char_int_compare() {
@@ -12911,21 +12911,21 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         final char zero1 = 0;
         final int zero2 = 0;
 
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Float.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Float.NaN, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Double.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Double.NaN, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero1, zero2));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero2, zero1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Float.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Float.NaN, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Double.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Double.NaN, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero1, zero2));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero2, zero1));
         TestCase.assertEquals(0,
-                QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_CHAR, QueryConstants.NULL_INT));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value1, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value2, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, value2));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(value2, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value1, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value2, value1));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(-value1, -value2));
+                QueryLanguageFunctionUtils.compareTo(QueryConstants.NULL_CHAR, QueryConstants.NULL_INT));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value1, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value2, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, value2));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(value2, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value1, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value2, value1));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(-value1, -value2));
     }
 
     public static void test_compare_char_double_compare() {
@@ -12934,21 +12934,21 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         final char zero1 = 0;
         final double zero2 = 0;
 
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Float.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Float.NaN, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Double.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Double.NaN, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero1, zero2));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero2, zero1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Float.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Float.NaN, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Double.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Double.NaN, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero1, zero2));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero2, zero1));
         TestCase.assertEquals(0,
-                QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_CHAR, QueryConstants.NULL_DOUBLE));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value1, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value2, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, value2));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(value2, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value1, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value2, value1));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(-value1, -value2));
+                QueryLanguageFunctionUtils.compareTo(QueryConstants.NULL_CHAR, QueryConstants.NULL_DOUBLE));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value1, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value2, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, value2));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(value2, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value1, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value2, value1));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(-value1, -value2));
     }
 
     public static void test_compare_char_long_compare() {
@@ -12957,21 +12957,21 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         final char zero1 = 0;
         final long zero2 = 0;
 
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Float.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Float.NaN, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Double.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Double.NaN, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero1, zero2));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero2, zero1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Float.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Float.NaN, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Double.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Double.NaN, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero1, zero2));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero2, zero1));
         TestCase.assertEquals(0,
-                QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_CHAR, QueryConstants.NULL_LONG));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value1, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value2, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, value2));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(value2, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value1, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value2, value1));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(-value1, -value2));
+                QueryLanguageFunctionUtils.compareTo(QueryConstants.NULL_CHAR, QueryConstants.NULL_LONG));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value1, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value2, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, value2));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(value2, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value1, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value2, value1));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(-value1, -value2));
     }
 
     public static void test_compare_char_float_compare() {
@@ -12980,21 +12980,21 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         final char zero1 = 0;
         final float zero2 = 0;
 
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Float.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Float.NaN, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Double.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Double.NaN, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero1, zero2));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero2, zero1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Float.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Float.NaN, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Double.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Double.NaN, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero1, zero2));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero2, zero1));
         TestCase.assertEquals(0,
-                QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_CHAR, QueryConstants.NULL_FLOAT));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value1, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value2, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, value2));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(value2, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value1, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value2, value1));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(-value1, -value2));
+                QueryLanguageFunctionUtils.compareTo(QueryConstants.NULL_CHAR, QueryConstants.NULL_FLOAT));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value1, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value2, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, value2));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(value2, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value1, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value2, value1));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(-value1, -value2));
     }
 
     public static void test_compare_char_char_compare() {
@@ -13003,21 +13003,21 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         final char zero1 = 0;
         final char zero2 = 0;
 
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Float.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Float.NaN, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Double.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Double.NaN, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero1, zero2));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero2, zero1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Float.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Float.NaN, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Double.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Double.NaN, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero1, zero2));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero2, zero1));
         TestCase.assertEquals(0,
-                QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_CHAR, QueryConstants.NULL_CHAR));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value1, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value2, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, value2));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(value2, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value1, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value2, value1));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(-value1, -value2));
+                QueryLanguageFunctionUtils.compareTo(QueryConstants.NULL_CHAR, QueryConstants.NULL_CHAR));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value1, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value2, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, value2));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(value2, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value1, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value2, value1));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(-value1, -value2));
     }
 
     public static void test_compare_char_byte_compare() {
@@ -13026,21 +13026,21 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         final char zero1 = 0;
         final byte zero2 = 0;
 
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Float.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Float.NaN, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Double.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Double.NaN, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero1, zero2));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero2, zero1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Float.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Float.NaN, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Double.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Double.NaN, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero1, zero2));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero2, zero1));
         TestCase.assertEquals(0,
-                QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_CHAR, QueryConstants.NULL_BYTE));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value1, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value2, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, value2));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(value2, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value1, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value2, value1));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(-value1, -value2));
+                QueryLanguageFunctionUtils.compareTo(QueryConstants.NULL_CHAR, QueryConstants.NULL_BYTE));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value1, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value2, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, value2));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(value2, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value1, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value2, value1));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(-value1, -value2));
     }
 
     public static void test_compare_char_short_compare() {
@@ -13049,21 +13049,21 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         final char zero1 = 0;
         final short zero2 = 0;
 
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Float.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Float.NaN, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Double.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Double.NaN, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero1, zero2));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero2, zero1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Float.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Float.NaN, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Double.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Double.NaN, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero1, zero2));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero2, zero1));
         TestCase.assertEquals(0,
-                QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_CHAR, QueryConstants.NULL_SHORT));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value1, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value2, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, value2));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(value2, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value1, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value2, value1));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(-value1, -value2));
+                QueryLanguageFunctionUtils.compareTo(QueryConstants.NULL_CHAR, QueryConstants.NULL_SHORT));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value1, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value2, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, value2));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(value2, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value1, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value2, value1));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(-value1, -value2));
     }
 
     public static void test_compare_byte_int_compare() {
@@ -13072,21 +13072,21 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         final byte zero1 = 0;
         final int zero2 = 0;
 
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Float.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Float.NaN, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Double.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Double.NaN, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero1, zero2));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero2, zero1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Float.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Float.NaN, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Double.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Double.NaN, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero1, zero2));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero2, zero1));
         TestCase.assertEquals(0,
-                QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_BYTE, QueryConstants.NULL_INT));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value1, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value2, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, value2));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(value2, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value1, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value2, value1));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(-value1, -value2));
+                QueryLanguageFunctionUtils.compareTo(QueryConstants.NULL_BYTE, QueryConstants.NULL_INT));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value1, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value2, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, value2));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(value2, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value1, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value2, value1));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(-value1, -value2));
     }
 
     public static void test_compare_byte_double_compare() {
@@ -13095,21 +13095,21 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         final byte zero1 = 0;
         final double zero2 = 0;
 
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Float.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Float.NaN, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Double.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Double.NaN, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero1, zero2));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero2, zero1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Float.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Float.NaN, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Double.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Double.NaN, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero1, zero2));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero2, zero1));
         TestCase.assertEquals(0,
-                QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_BYTE, QueryConstants.NULL_DOUBLE));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value1, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value2, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, value2));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(value2, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value1, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value2, value1));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(-value1, -value2));
+                QueryLanguageFunctionUtils.compareTo(QueryConstants.NULL_BYTE, QueryConstants.NULL_DOUBLE));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value1, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value2, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, value2));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(value2, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value1, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value2, value1));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(-value1, -value2));
     }
 
     public static void test_compare_byte_long_compare() {
@@ -13118,21 +13118,21 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         final byte zero1 = 0;
         final long zero2 = 0;
 
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Float.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Float.NaN, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Double.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Double.NaN, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero1, zero2));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero2, zero1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Float.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Float.NaN, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Double.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Double.NaN, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero1, zero2));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero2, zero1));
         TestCase.assertEquals(0,
-                QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_BYTE, QueryConstants.NULL_LONG));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value1, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value2, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, value2));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(value2, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value1, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value2, value1));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(-value1, -value2));
+                QueryLanguageFunctionUtils.compareTo(QueryConstants.NULL_BYTE, QueryConstants.NULL_LONG));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value1, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value2, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, value2));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(value2, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value1, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value2, value1));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(-value1, -value2));
     }
 
     public static void test_compare_byte_float_compare() {
@@ -13141,21 +13141,21 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         final byte zero1 = 0;
         final float zero2 = 0;
 
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Float.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Float.NaN, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Double.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Double.NaN, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero1, zero2));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero2, zero1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Float.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Float.NaN, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Double.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Double.NaN, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero1, zero2));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero2, zero1));
         TestCase.assertEquals(0,
-                QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_BYTE, QueryConstants.NULL_FLOAT));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value1, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value2, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, value2));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(value2, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value1, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value2, value1));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(-value1, -value2));
+                QueryLanguageFunctionUtils.compareTo(QueryConstants.NULL_BYTE, QueryConstants.NULL_FLOAT));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value1, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value2, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, value2));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(value2, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value1, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value2, value1));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(-value1, -value2));
     }
 
     public static void test_compare_byte_char_compare() {
@@ -13164,21 +13164,21 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         final byte zero1 = 0;
         final char zero2 = 0;
 
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Float.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Float.NaN, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Double.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Double.NaN, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero1, zero2));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero2, zero1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Float.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Float.NaN, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Double.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Double.NaN, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero1, zero2));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero2, zero1));
         TestCase.assertEquals(0,
-                QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_BYTE, QueryConstants.NULL_CHAR));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value1, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value2, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, value2));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(value2, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value1, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value2, value1));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(-value1, -value2));
+                QueryLanguageFunctionUtils.compareTo(QueryConstants.NULL_BYTE, QueryConstants.NULL_CHAR));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value1, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value2, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, value2));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(value2, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value1, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value2, value1));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(-value1, -value2));
     }
 
     public static void test_compare_byte_byte_compare() {
@@ -13187,21 +13187,21 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         final byte zero1 = 0;
         final byte zero2 = 0;
 
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Float.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Float.NaN, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Double.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Double.NaN, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero1, zero2));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero2, zero1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Float.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Float.NaN, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Double.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Double.NaN, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero1, zero2));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero2, zero1));
         TestCase.assertEquals(0,
-                QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_BYTE, QueryConstants.NULL_BYTE));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value1, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value2, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, value2));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(value2, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value1, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value2, value1));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(-value1, -value2));
+                QueryLanguageFunctionUtils.compareTo(QueryConstants.NULL_BYTE, QueryConstants.NULL_BYTE));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value1, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value2, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, value2));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(value2, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value1, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value2, value1));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(-value1, -value2));
     }
 
     public static void test_compare_byte_short_compare() {
@@ -13210,21 +13210,21 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         final byte zero1 = 0;
         final short zero2 = 0;
 
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Float.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Float.NaN, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Double.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Double.NaN, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero1, zero2));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero2, zero1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Float.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Float.NaN, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Double.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Double.NaN, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero1, zero2));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero2, zero1));
         TestCase.assertEquals(0,
-                QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_BYTE, QueryConstants.NULL_SHORT));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value1, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value2, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, value2));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(value2, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value1, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value2, value1));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(-value1, -value2));
+                QueryLanguageFunctionUtils.compareTo(QueryConstants.NULL_BYTE, QueryConstants.NULL_SHORT));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value1, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value2, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, value2));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(value2, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value1, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value2, value1));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(-value1, -value2));
     }
 
     public static void test_compare_short_int_compare() {
@@ -13233,21 +13233,21 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         final short zero1 = 0;
         final int zero2 = 0;
 
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Float.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Float.NaN, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Double.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Double.NaN, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero1, zero2));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero2, zero1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Float.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Float.NaN, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Double.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Double.NaN, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero1, zero2));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero2, zero1));
         TestCase.assertEquals(0,
-                QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_SHORT, QueryConstants.NULL_INT));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value1, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value2, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, value2));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(value2, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value1, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value2, value1));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(-value1, -value2));
+                QueryLanguageFunctionUtils.compareTo(QueryConstants.NULL_SHORT, QueryConstants.NULL_INT));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value1, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value2, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, value2));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(value2, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value1, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value2, value1));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(-value1, -value2));
     }
 
     public static void test_compare_short_double_compare() {
@@ -13256,21 +13256,21 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         final short zero1 = 0;
         final double zero2 = 0;
 
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Float.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Float.NaN, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Double.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Double.NaN, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero1, zero2));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero2, zero1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Float.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Float.NaN, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Double.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Double.NaN, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero1, zero2));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero2, zero1));
         TestCase.assertEquals(0,
-                QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_SHORT, QueryConstants.NULL_DOUBLE));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value1, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value2, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, value2));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(value2, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value1, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value2, value1));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(-value1, -value2));
+                QueryLanguageFunctionUtils.compareTo(QueryConstants.NULL_SHORT, QueryConstants.NULL_DOUBLE));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value1, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value2, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, value2));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(value2, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value1, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value2, value1));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(-value1, -value2));
     }
 
     public static void test_compare_short_long_compare() {
@@ -13279,21 +13279,21 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         final short zero1 = 0;
         final long zero2 = 0;
 
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Float.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Float.NaN, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Double.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Double.NaN, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero1, zero2));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero2, zero1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Float.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Float.NaN, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Double.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Double.NaN, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero1, zero2));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero2, zero1));
         TestCase.assertEquals(0,
-                QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_SHORT, QueryConstants.NULL_LONG));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value1, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value2, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, value2));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(value2, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value1, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value2, value1));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(-value1, -value2));
+                QueryLanguageFunctionUtils.compareTo(QueryConstants.NULL_SHORT, QueryConstants.NULL_LONG));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value1, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value2, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, value2));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(value2, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value1, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value2, value1));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(-value1, -value2));
     }
 
     public static void test_compare_short_float_compare() {
@@ -13302,21 +13302,21 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         final short zero1 = 0;
         final float zero2 = 0;
 
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Float.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Float.NaN, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Double.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Double.NaN, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero1, zero2));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero2, zero1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Float.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Float.NaN, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Double.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Double.NaN, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero1, zero2));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero2, zero1));
         TestCase.assertEquals(0,
-                QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_SHORT, QueryConstants.NULL_FLOAT));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value1, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value2, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, value2));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(value2, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value1, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value2, value1));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(-value1, -value2));
+                QueryLanguageFunctionUtils.compareTo(QueryConstants.NULL_SHORT, QueryConstants.NULL_FLOAT));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value1, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value2, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, value2));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(value2, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value1, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value2, value1));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(-value1, -value2));
     }
 
     public static void test_compare_short_char_compare() {
@@ -13325,21 +13325,21 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         final short zero1 = 0;
         final char zero2 = 0;
 
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Float.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Float.NaN, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Double.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Double.NaN, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero1, zero2));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero2, zero1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Float.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Float.NaN, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Double.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Double.NaN, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero1, zero2));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero2, zero1));
         TestCase.assertEquals(0,
-                QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_SHORT, QueryConstants.NULL_CHAR));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value1, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value2, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, value2));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(value2, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value1, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value2, value1));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(-value1, -value2));
+                QueryLanguageFunctionUtils.compareTo(QueryConstants.NULL_SHORT, QueryConstants.NULL_CHAR));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value1, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value2, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, value2));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(value2, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value1, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value2, value1));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(-value1, -value2));
     }
 
     public static void test_compare_short_byte_compare() {
@@ -13348,21 +13348,21 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         final short zero1 = 0;
         final byte zero2 = 0;
 
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Float.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Float.NaN, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Double.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Double.NaN, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero1, zero2));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero2, zero1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Float.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Float.NaN, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Double.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Double.NaN, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero1, zero2));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero2, zero1));
         TestCase.assertEquals(0,
-                QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_SHORT, QueryConstants.NULL_BYTE));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value1, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value2, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, value2));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(value2, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value1, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value2, value1));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(-value1, -value2));
+                QueryLanguageFunctionUtils.compareTo(QueryConstants.NULL_SHORT, QueryConstants.NULL_BYTE));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value1, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value2, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, value2));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(value2, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value1, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value2, value1));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(-value1, -value2));
     }
 
     public static void test_compare_short_short_compare() {
@@ -13371,21 +13371,21 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         final short zero1 = 0;
         final short zero2 = 0;
 
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Float.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Float.NaN, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, Double.NaN));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Double.NaN, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero1, zero2));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero2, zero1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Float.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Float.NaN, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, Double.NaN));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Double.NaN, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero1, zero2));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero2, zero1));
         TestCase.assertEquals(0,
-                QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_SHORT, QueryConstants.NULL_SHORT));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value1, value1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value2, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, value2));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(value2, value1));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value1, value2));
-        TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(-value2, value1));
-        TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(-value1, -value2));
+                QueryLanguageFunctionUtils.compareTo(QueryConstants.NULL_SHORT, QueryConstants.NULL_SHORT));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value1, value1));
+        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value2, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, value2));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(value2, value1));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value1, value2));
+        TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(-value2, value1));
+        TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(-value1, -value2));
     }
 
 }

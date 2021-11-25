@@ -5,7 +5,7 @@
 package io.deephaven.replicators;
 
 import io.deephaven.replication.ReplicatePrimitiveCode;
-import io.deephaven.replication.ReplicateUtilities;
+import io.deephaven.replication.ReplicationUtils;
 import org.apache.commons.io.FileUtils;
 
 import java.io.File;
@@ -28,7 +28,7 @@ public class ReplicateVectors {
         final String floatPath = ReplicatePrimitiveCode.charToFloat(charVectorJavaPath, serialVersionUIDs);
         final File floatFile = new File(floatPath);
         List<String> floatLines = FileUtils.readLines(floatFile, Charset.defaultCharset());
-        floatLines = ReplicateUtilities.simpleFixup(floatLines, "elementEquals",
+        floatLines = ReplicationUtils.simpleFixup(floatLines, "elementEquals",
                 "aArray\\.get\\(ei\\) != bArray\\.get\\(ei\\)",
                 "Float.floatToIntBits(aArray.get(ei)) != Float.floatToIntBits(bArray.get(ei))");
         FileUtils.writeLines(floatFile, floatLines);
@@ -36,7 +36,7 @@ public class ReplicateVectors {
         final String doublePath = ReplicatePrimitiveCode.charToDouble(charVectorJavaPath, serialVersionUIDs);
         final File doubleFile = new File(doublePath);
         List<String> doubleLines = FileUtils.readLines(doubleFile, Charset.defaultCharset());
-        doubleLines = ReplicateUtilities.simpleFixup(doubleLines, "elementEquals",
+        doubleLines = ReplicationUtils.simpleFixup(doubleLines, "elementEquals",
                 "aArray\\.get\\(ei\\) != bArray\\.get\\(ei\\)",
                 "Double.doubleToLongBits(aArray.get(ei)) != Double.doubleToLongBits(bArray.get(ei))");
         FileUtils.writeLines(doubleFile, doubleLines);
