@@ -5,12 +5,10 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.verify.Require;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.table.ChunkSource;
-import io.deephaven.engine.table.Context;
-import io.deephaven.engine.table.SharedContext;
-import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.chunk.*;
+import io.deephaven.engine.chunk.Attributes.*;
+import io.deephaven.engine.rowset.*;
+import io.deephaven.engine.table.*;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.chunk.util.hashing.*;
 // this is ugly to have twice, but we do need it twice for replication
@@ -19,17 +17,15 @@ import io.deephaven.engine.chunk.util.hashing.LongChunkEquals;
 import io.deephaven.engine.table.impl.sort.permute.PermuteKernel;
 import io.deephaven.engine.table.impl.sort.timsort.LongIntTimsortKernel;
 import io.deephaven.engine.table.impl.sources.*;
-import io.deephaven.engine.chunk.*;
-import io.deephaven.engine.chunk.Attributes.*;
 import io.deephaven.engine.table.impl.util.*;
 
 
+import io.deephaven.util.SafeCloseableArray;
 import org.jetbrains.annotations.NotNull;
 
 // region extra imports
 import io.deephaven.util.SafeCloseableList;
 import org.jetbrains.annotations.Nullable;
-import io.deephaven.engine.table.Table;
 // endregion extra imports
 
 import static io.deephaven.util.SafeCloseable.closeArray;
