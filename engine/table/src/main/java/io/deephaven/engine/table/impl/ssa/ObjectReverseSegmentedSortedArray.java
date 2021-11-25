@@ -5,6 +5,8 @@ package io.deephaven.engine.table.impl.ssa;
 
 import java.util.Objects;
 
+import java.util.Objects;
+
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.impl.sort.timsort.TimsortUtils;

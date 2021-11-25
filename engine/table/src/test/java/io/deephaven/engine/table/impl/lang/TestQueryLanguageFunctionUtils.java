@@ -12274,7 +12274,8 @@ public final class TestQueryLanguageFunctionUtils extends TestCase {
         TestCase.assertEquals(1, QueryLanguageFunctionUtils.compareTo(Double.NaN, value1));
         TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero1, zero2));
         TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(zero2, zero1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(QueryConstants.NULL_INT, QueryConstants.NULL_INT));
+        TestCase.assertEquals(0,
+                QueryLanguageFunctionUtils.compareTo(QueryConstants.NULL_INT, QueryConstants.NULL_INT));
         TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value1, value1));
         TestCase.assertEquals(0, QueryLanguageFunctionUtils.compareTo(value2, value2));
         TestCase.assertEquals(-1, QueryLanguageFunctionUtils.compareTo(value1, value2));

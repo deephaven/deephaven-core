@@ -432,7 +432,8 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         TestCase.assertEquals(new LocalTime("12:00:00.123").getMillisOfDay() * 1000000L + 456789,
                 DateTimeUtils.convertTimeQuiet("12:00:00.123456789"));
 
-        TestCase.assertEquals(new LocalTime("2:00").getMillisOfDay() * 1000000L, DateTimeUtils.convertTimeQuiet("2:00"));
+        TestCase.assertEquals(new LocalTime("2:00").getMillisOfDay() * 1000000L,
+                DateTimeUtils.convertTimeQuiet("2:00"));
         TestCase.assertEquals(new LocalTime("2:00:00").getMillisOfDay() * 1000000L,
                 DateTimeUtils.convertTimeQuiet("2:00:00"));
         TestCase.assertEquals(new LocalTime("2:00:00.123").getMillisOfDay() * 1000000L,
@@ -470,7 +471,8 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
     }
 
     public void testConvertPeriodQuiet() throws Exception {
-        TestCase.assertEquals(new org.joda.time.Period("PT1s"), DateTimeUtils.convertPeriodQuiet("T1S").getJodaPeriod());
+        TestCase.assertEquals(new org.joda.time.Period("PT1s"),
+                DateTimeUtils.convertPeriodQuiet("T1S").getJodaPeriod());
         TestCase.assertEquals(new org.joda.time.Period("P1wT1m"),
                 DateTimeUtils.convertPeriodQuiet("1WT1M").getJodaPeriod());
         TestCase.assertEquals(new org.joda.time.Period("P1w"), DateTimeUtils.convertPeriodQuiet("1W").getJodaPeriod());
@@ -491,7 +493,8 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
     public void testTimeFormat() throws Exception {
         TestCase.assertEquals("12:00:00", DateTimeUtils.format(DateTimeUtils.convertTimeQuiet("12:00")));
         TestCase.assertEquals("12:00:00", DateTimeUtils.format(DateTimeUtils.convertTimeQuiet("12:00:00")));
-        TestCase.assertEquals("12:00:00.123000000", DateTimeUtils.format(DateTimeUtils.convertTimeQuiet("12:00:00.123")));
+        TestCase.assertEquals("12:00:00.123000000",
+                DateTimeUtils.format(DateTimeUtils.convertTimeQuiet("12:00:00.123")));
         TestCase.assertEquals("12:00:00.123400000",
                 DateTimeUtils.format(DateTimeUtils.convertTimeQuiet("12:00:00.1234")));
         TestCase.assertEquals("12:00:00.123456789",
@@ -500,7 +503,8 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
         TestCase.assertEquals("2:00:00", DateTimeUtils.format(DateTimeUtils.convertTimeQuiet("2:00")));
         TestCase.assertEquals("2:00:00", DateTimeUtils.format(DateTimeUtils.convertTimeQuiet("2:00:00")));
         TestCase.assertEquals("2:00:00.123000000", DateTimeUtils.format(DateTimeUtils.convertTimeQuiet("2:00:00.123")));
-        TestCase.assertEquals("2:00:00.123400000", DateTimeUtils.format(DateTimeUtils.convertTimeQuiet("2:00:00.1234")));
+        TestCase.assertEquals("2:00:00.123400000",
+                DateTimeUtils.format(DateTimeUtils.convertTimeQuiet("2:00:00.1234")));
         TestCase.assertEquals("2:00:00.123456789",
                 DateTimeUtils.format(DateTimeUtils.convertTimeQuiet("2:00:00.123456789")));
 
@@ -658,7 +662,8 @@ public class TestDateTimeUtils extends BaseArrayTestCase {
 
     public void testMicrosOfMilli() {
         TestCase.assertEquals(0, DateTimeUtils.microsOfMilliNy(DateTimeUtils.convertDateTime("2015-07-31T20:40 NY")));
-        TestCase.assertEquals(0, DateTimeUtils.microsOfMilliNy(DateTimeUtils.convertDateTime("2015-07-31T20:40:00 NY")));
+        TestCase.assertEquals(0,
+                DateTimeUtils.microsOfMilliNy(DateTimeUtils.convertDateTime("2015-07-31T20:40:00 NY")));
         TestCase.assertEquals(0,
                 DateTimeUtils.microsOfMilliNy(DateTimeUtils.convertDateTime("2015-07-31T20:40:00.123 NY")));
         TestCase.assertEquals(400,

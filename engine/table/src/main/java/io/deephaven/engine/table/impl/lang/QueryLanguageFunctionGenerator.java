@@ -685,7 +685,8 @@ public class QueryLanguageFunctionGenerator {
         buf.append("}\n");
         testBuf.append("}\n");
 
-        String fileName = "./engine/table/src/main/java/io/deephaven/engine/tables/lang/QueryLanguageFunctionUtils.java";
+        String fileName =
+                "./engine/table/src/main/java/io/deephaven/engine/tables/lang/QueryLanguageFunctionUtils.java";
         String testFileName =
                 "./engine/table/src/test/java/io/deephaven/engine/tables/lang/TestLanguageFunctionUtil.java";
         try {

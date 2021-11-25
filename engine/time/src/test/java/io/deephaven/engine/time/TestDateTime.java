@@ -123,12 +123,8 @@ public class TestDateTime extends BaseArrayTestCase {
         TestCase.assertEquals(dayBefore, DateTimeUtils.lastBusinessDateNy(getMillisFromDateStr(format, today)));
         today = "2013-11-27";
         dayBefore = "2013-11-26";
-        TestCase.assertEquals(dayBefore, DateTimeUtils.lastBusinessDateNy(getMillisFromDateStr(format, today) + 1)); // make
-                                                                                                                    // sure
-        // it
-        // advances
-        // just past
-        // midnight
+        // Make sure it advances just past midnight
+        TestCase.assertEquals(dayBefore, DateTimeUtils.lastBusinessDateNy(getMillisFromDateStr(format, today) + 1));
 
         // Rolling back should not work -- we have cached a later day
         today = "2013-11-26";
