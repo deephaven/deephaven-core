@@ -1,0 +1,13 @@
+{
+ "className": "io.deephaven.engine.table.impl.by.AggregationFactory$AggregationElement",
+ "methods": {
+  "forRollup": ":return: io.deephaven.engine.table.impl.by.AggregationFactory.AggregationElement",
+  "getMemoKey": ":return: io.deephaven.engine.table.impl.by.AggregationMemoKey",
+  "getResultPairs": ":return: io.deephaven.engine.table.MatchPair[]",
+  "getSourceColumns": ":return: java.lang.String[]",
+  "getSpec": ":return: io.deephaven.engine.table.impl.by.AggregationSpec",
+  "optimize": "**Incompatible overloads text - text from the first overload:**\n\nEquivalent to optimize(Collections.singleton(aggregation)).\n\n*Overload 1*  \n  :param aggregation: (io.deephaven.api.agg.Aggregation) - the aggregation\n  :return: (java.util.List<io.deephaven.engine.table.impl.by.AggregationFactory.AggregationElement>) the optimized combos\n  \n*Overload 2*  \n  :param aggregations: (java.util.Collection<? extendsio.deephaven.api.agg.Aggregation>) - the aggregations\n  :return: (java.util.List<io.deephaven.engine.table.impl.by.AggregationFactory.AggregationElement>) the optimized combos"
+ },
+ "path": "io.deephaven.engine.table.impl.by.AggregationFactory.AggregationElement",
+ "typeName": "interface"
+}

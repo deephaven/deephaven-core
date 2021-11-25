@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.qst.type.PrimitiveType$Visitor",
+ "methods": {
+  "visit": "*Overload 1*  \n  :param booleanType: io.deephaven.qst.type.BooleanType\n  \n*Overload 2*  \n  :param byteType: io.deephaven.qst.type.ByteType\n  \n*Overload 3*  \n  :param charType: io.deephaven.qst.type.CharType\n  \n*Overload 4*  \n  :param shortType: io.deephaven.qst.type.ShortType\n  \n*Overload 5*  \n  :param intType: io.deephaven.qst.type.IntType\n  \n*Overload 6*  \n  :param longType: io.deephaven.qst.type.LongType\n  \n*Overload 7*  \n  :param floatType: io.deephaven.qst.type.FloatType\n  \n*Overload 8*  \n  :param doubleType: io.deephaven.qst.type.DoubleType"
+ },
+ "path": "io.deephaven.qst.type.PrimitiveType.Visitor",
+ "typeName": "interface"
+}

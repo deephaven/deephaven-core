@@ -1,0 +1,7 @@
+{
+ "className": "io.deephaven.engine.exceptions.OutOfKeySpaceException",
+ "methods": {},
+ "path": "io.deephaven.engine.exceptions.OutOfKeySpaceException",
+ "text": "Some operations can pre-compute the necessary key-space needed to correctly maintain the intended result. If the\n key-space exceeds Long.MAX_VALUE then it may throw this exception with additional details and suggestions to\n work-around this limit.",
+ "typeName": "class"
+}

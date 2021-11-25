@@ -1,0 +1,7 @@
+{
+ "className": "io.deephaven.kafka.ingest.KafkaIngester$SinglePartition",
+ "methods": {},
+ "path": "io.deephaven.kafka.ingest.KafkaIngester.SinglePartition",
+ "text": "A predicate for handling a single partition.",
+ "typeName": "class"
+}

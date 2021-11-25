@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.table.impl.locations.TableLocation$Listener",
+ "methods": {
+  "handleUpdate": "Notify the listener that the table location has been updated. This may be called \"spuriously,\" i.e. in cases\n where there has been no substantive update since the last handleUpdate() invocation. Implementations should\n use appropriate measures to avoid reacting to spurious updates."
+ },
+ "path": "io.deephaven.engine.table.impl.locations.TableLocation.Listener",
+ "text": "ShiftObliviousListener interface for anything that wants to know about changes to a location.",
+ "typeName": "interface"
+}

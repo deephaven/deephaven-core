@@ -74,7 +74,7 @@ def addTimeWindow(table, timestampColumn, windowNanos, inWindowColumn):
      The resultant table ticks whenever the input table ticks, or modifies a row when it passes out of the window.
      
     
-    :param table: (io.deephaven.engine.table.Table) - the input table
+    :param table: (io.deephaven.engine.table.impl.QueryTable) - the input table
     :param timestampColumn: (java.lang.String) - the timestamp column to monitor in table
     :param windowNanos: (long) - how many nanoseconds in the past a timestamp can be before it is out of the window
     :param inWindowColumn: (java.lang.String) - the name of the new Boolean column.

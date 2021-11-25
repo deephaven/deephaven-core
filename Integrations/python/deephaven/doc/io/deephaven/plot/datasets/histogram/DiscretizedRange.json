@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.plot.datasets.histogram.DiscretizedRange",
+ "methods": {
+  "binMax": "Gets the max value of the bin at rowSet.\n\n:param index: (long) - rowSet\n:return: (double) max value of the bin specified by rowSet",
+  "binMin": "Gets the min value of the bin at rowSet.\n\n:param index: (long) - rowSet\n:return: (double) min value of the bin specified by rowSet",
+  "index": "Gets the rowSet of the bin the value lies in.\n\n:param value: (double) - value\n:return: (long) max value of the bin specified by rowSet"
+ },
+ "path": "io.deephaven.plot.datasets.histogram.DiscretizedRange",
+ "text": "Range which has been split into indexed bins (subranges).",
+ "typeName": "interface"
+}

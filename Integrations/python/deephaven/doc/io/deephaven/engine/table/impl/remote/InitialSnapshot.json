@@ -1,0 +1,12 @@
+{
+ "className": "io.deephaven.engine.table.impl.remote.InitialSnapshot",
+ "methods": {
+  "clone": ":return: io.deephaven.engine.table.impl.remote.InitialSnapshot",
+  "setType": ":param type: java.lang.Object\n:return: io.deephaven.engine.table.impl.remote.InitialSnapshot",
+  "setViewport": ":param viewport: io.deephaven.engine.rowset.RowSet\n:return: io.deephaven.engine.table.impl.remote.InitialSnapshot",
+  "toString": ":return: java.lang.String"
+ },
+ "path": "io.deephaven.engine.table.impl.remote.InitialSnapshot",
+ "text": "A Raw table snapshot. Users may use InitialSnapshotTable.setupInitialSnapshotTable(Table, InitialSnapshot) to\n convert this into a QueryTable",
+ "typeName": "class"
+}

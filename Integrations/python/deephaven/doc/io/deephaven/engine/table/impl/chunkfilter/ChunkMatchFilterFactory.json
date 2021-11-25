@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.engine.table.impl.chunkfilter.ChunkMatchFilterFactory",
+ "methods": {
+  "getChunkFilter": ":param type: java.lang.Class\n:param caseInsensitive: boolean\n:param invertMatch: boolean\n:param keys: java.lang.Object...\n:return: io.deephaven.engine.table.impl.chunkfilter.ChunkFilter"
+ },
+ "path": "io.deephaven.engine.table.impl.chunkfilter.ChunkMatchFilterFactory",
+ "typeName": "class"
+}

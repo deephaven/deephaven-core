@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.engine.table.iterators.ColumnIterator",
+ "methods": {
+  "hasNext": ":return: boolean",
+  "next": ":return: ColumnIterator.TYPE"
+ },
+ "path": "io.deephaven.engine.table.iterators.ColumnIterator",
+ "text": "Iteration support for objects (including boxed primitives) contained with a ColumnSource.",
+ "typeName": "class"
+}

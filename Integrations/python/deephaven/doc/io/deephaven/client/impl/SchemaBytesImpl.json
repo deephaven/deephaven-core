@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.client.impl.SchemaBytesImpl",
+ "methods": {
+  "toSchemaBytes": ":param header: io.deephaven.qst.table.TableHeader\n:return: byte[]"
+ },
+ "path": "io.deephaven.client.impl.SchemaBytesImpl",
+ "typeName": "class"
+}

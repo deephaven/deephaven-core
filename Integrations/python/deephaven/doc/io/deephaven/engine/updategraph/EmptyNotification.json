@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.engine.updategraph.EmptyNotification",
+ "methods": {
+  "append": ":param logOutput: io.deephaven.base.log.LogOutput\n:return: io.deephaven.base.log.LogOutput",
+  "canExecute": "Can this notification be executed? That is, are all of it's dependencies satisfied.\n\n:param step: (long) - The step for which we are testing satisfaction\n:return: (boolean) true if this notification can be executed, false if it has unmet dependencies",
+  "isTerminal": "Terminal notifications guarantee that they will not queue additional notifications or mutate data structures\n that should result in additional notifications. They are in turn guaranteed to be called after all\n non-terminal notifications for a given cycle through the notification queue.\n\n:return: (boolean) True iff this notification is terminal."
+ },
+ "path": "io.deephaven.engine.updategraph.EmptyNotification",
+ "text": "A NotificationQueue.Notification that does not actually notify anything.",
+ "typeName": "class"
+}

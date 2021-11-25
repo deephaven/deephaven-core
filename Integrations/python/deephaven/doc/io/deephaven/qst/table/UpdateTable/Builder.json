@@ -1,0 +1,6 @@
+{
+ "className": "io.deephaven.qst.table.UpdateTable$Builder",
+ "methods": {},
+ "path": "io.deephaven.qst.table.UpdateTable.Builder",
+ "typeName": "interface"
+}

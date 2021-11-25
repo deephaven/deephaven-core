@@ -159,7 +159,7 @@ def getParquetFileReader(parquetFile):
     Make a ParquetFileReader for the supplied File.
     
     :param parquetFile: (java.io.File) - The File to read
-    :return: (io.deephaven.parquet.ParquetFileReader) The new ParquetFileReader
+    :return: (io.deephaven.parquet.base.ParquetFileReader) The new ParquetFileReader
     """
     
     return _java_type_.getParquetFileReader(parquetFile)
@@ -182,7 +182,7 @@ def readPartitionedTable(locationKeyFinder, readInstructions, tableDefinition):
     """
     Reads in a table from files discovered with locationKeyFinder using the provided table definition.
     
-    :param locationKeyFinder: (io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder<io.deephaven.engine.table.impl.locations.parquet.local.ParquetTableLocationKey>) - The source of location keys to include
+    :param locationKeyFinder: (io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder<io.deephaven.parquet.table.location.ParquetTableLocationKey>) - The source of location keys to include
     :param readInstructions: (io.deephaven.parquet.table.ParquetInstructions) - Instructions for customizations while reading
     :param tableDefinition: (io.deephaven.engine.table.TableDefinition) - The table's definition
     :return: (io.deephaven.engine.table.Table) The table
@@ -197,7 +197,7 @@ def readPartitionedTableInferSchema(locationKeyFinder, readInstructions):
     Reads in a table from files discovered with locationKeyFinder using a definition built from the first
      location found, which must have non-null partition values for all partition keys.
     
-    :param locationKeyFinder: (io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder<io.deephaven.engine.table.impl.locations.parquet.local.ParquetTableLocationKey>) - The source of location keys to include
+    :param locationKeyFinder: (io.deephaven.engine.table.impl.locations.impl.TableLocationKeyFinder<io.deephaven.parquet.table.location.ParquetTableLocationKey>) - The source of location keys to include
     :param readInstructions: (io.deephaven.parquet.table.ParquetInstructions) - Instructions for customizations while reading
     :return: (io.deephaven.engine.table.Table) The table
     """
@@ -223,7 +223,7 @@ def readSingleFileTable(tableLocationKey, readInstructions, tableDefinition):
     """
     Reads in a table from a single parquet file using the provided table definition.
     
-    :param tableLocationKey: (io.deephaven.engine.table.impl.locations.parquet.local.ParquetTableLocationKey) - The location keys to include
+    :param tableLocationKey: (io.deephaven.parquet.table.location.ParquetTableLocationKey) - The location keys to include
     :param readInstructions: (io.deephaven.parquet.table.ParquetInstructions) - Instructions for customizations while reading
     :param tableDefinition: (io.deephaven.engine.table.TableDefinition) - The table's definition
     :return: (io.deephaven.engine.table.Table) The table

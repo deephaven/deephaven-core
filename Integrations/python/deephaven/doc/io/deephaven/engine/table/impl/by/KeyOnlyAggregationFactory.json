@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.table.impl.by.KeyOnlyAggregationFactory",
+ "methods": {
+  "makeAggregationContext": "Make an AggregationContext for this aggregation.\n\n:param table: (io.deephaven.engine.table.Table) - The source Table to aggregate\n:param groupByColumns: (java.lang.String...) - The key column names\n:return: (io.deephaven.engine.table.impl.by.AggregationContext) A new or safely reusable AggregationContext"
+ },
+ "path": "io.deephaven.engine.table.impl.by.KeyOnlyAggregationFactory",
+ "text": "Simplest factory that has no operators or results, used to implement selectDistinct.",
+ "typeName": "class"
+}

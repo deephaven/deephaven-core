@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.plot.DynamicChartTitle",
+ "methods": {
+  "getTitle": ":return: java.lang.String"
+ },
+ "path": "io.deephaven.plot.DynamicChartTitle",
+ "text": "Dynamic chart title created from table columns\n \n For each column, by default the title String takes 1 values. This is configurable either via property\n \"Plot.chartTitle.maxRowsInTitle\" or Chart.maxRowsInTitle(int)\n\n Also, the default format for the title is:\n \n ${comma separated values}        ${comma separated values},...\n \n\n In order to customize this format, (a MessageFormat instance), please refer \nChart.chartTitle(String, Table, String...) and\nChart.chartTitle(String, SelectableDataSet, String...)",
+ "typeName": "class"
+}

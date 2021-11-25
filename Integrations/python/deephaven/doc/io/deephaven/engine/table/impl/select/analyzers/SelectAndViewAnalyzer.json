@@ -1,0 +1,15 @@
+{
+ "className": "io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer",
+ "methods": {
+  "applyUpdate": "Apply this update to this SelectAndViewAnalyzer.\n\n:param upstream: (io.deephaven.engine.table.TableUpdate) - the upstream update\n:param toClear: (io.deephaven.engine.rowset.RowSet) - rows that used to exist and no longer exist\n:param helper: (io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer.UpdateHelper) - convenience class that memoizes reusable calculations for this update",
+  "calcEffects": "Our job here is to calculate the effects: a map from incoming column to a list of columns that it effects. We do\n this in two stages. In the first stage we create a map from column to (set of dependent columns). In the second\n stage we reverse that map.\n\n:return: java.util.Map<java.lang.String,java.lang.String[]>",
+  "create": ":param mode: io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer.Mode\n:param columnSources: java.util.Map<java.lang.String,io.deephaven.engine.table.ColumnSource<?>>\n:param rowSet: io.deephaven.engine.rowset.TrackingRowSet\n:param parentMcs: io.deephaven.engine.table.ModifiedColumnSet\n:param publishTheseSources: boolean\n:param selectColumns: io.deephaven.engine.table.impl.select.SelectColumn...\n:return: io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer",
+  "getAllColumnSources": ":return: java.util.Map<java.lang.String,io.deephaven.engine.table.ColumnSource<?>>",
+  "getInner": ":return: io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer",
+  "getNewColumnSources": ":return: java.util.Map<java.lang.String,io.deephaven.engine.table.ColumnSource<?>>",
+  "getPublishedColumnSources": ":return: java.util.Map<java.lang.String,io.deephaven.engine.table.ColumnSource<?>>",
+  "updateColumnDefinitionsFromTopLayer": ":param columnDefinitions: java.util.Map<java.lang.String,io.deephaven.engine.table.ColumnDefinition<?>>"
+ },
+ "path": "io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer",
+ "typeName": "class"
+}

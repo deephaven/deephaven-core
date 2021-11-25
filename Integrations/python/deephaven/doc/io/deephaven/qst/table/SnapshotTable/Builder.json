@@ -1,0 +1,13 @@
+{
+ "className": "io.deephaven.qst.table.SnapshotTable$Builder",
+ "methods": {
+  "addAllStampColumns": ":param elements: java.lang.Iterable<? extendsio.deephaven.api.ColumnName>\n:return: io.deephaven.qst.table.SnapshotTable.Builder",
+  "addStampColumns": "*Overload 1*  \n  :param element: io.deephaven.api.ColumnName\n  :return: io.deephaven.qst.table.SnapshotTable.Builder\n  \n*Overload 2*  \n  :param elements: io.deephaven.api.ColumnName...\n  :return: io.deephaven.qst.table.SnapshotTable.Builder",
+  "base": ":param base: io.deephaven.qst.table.TableSpec\n:return: io.deephaven.qst.table.SnapshotTable.Builder",
+  "build": ":return: io.deephaven.qst.table.SnapshotTable",
+  "doInitialSnapshot": ":param doInitialSnapshot: boolean\n:return: io.deephaven.qst.table.SnapshotTable.Builder",
+  "trigger": ":param trigger: io.deephaven.qst.table.TableSpec\n:return: io.deephaven.qst.table.SnapshotTable.Builder"
+ },
+ "path": "io.deephaven.qst.table.SnapshotTable.Builder",
+ "typeName": "interface"
+}

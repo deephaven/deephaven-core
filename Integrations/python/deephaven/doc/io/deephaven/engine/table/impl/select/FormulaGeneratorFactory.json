@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.engine.table.impl.select.FormulaGeneratorFactory",
+ "methods": {
+  "forFormula": ":param formulaString: java.lang.String\n:param columnName: java.lang.String\n:return: io.deephaven.engine.table.impl.select.FormulaGenerator"
+ },
+ "path": "io.deephaven.engine.table.impl.select.FormulaGeneratorFactory",
+ "typeName": "interface"
+}

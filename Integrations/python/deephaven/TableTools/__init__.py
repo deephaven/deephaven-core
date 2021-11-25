@@ -1,6 +1,7 @@
 
 """
-Tools for users to manipulate tables.
+Tools for working with tables. This includes methods to examine tables, combine them, convert them to and from CSV
+ files, and create and manipulate columns.
 """
 
 
@@ -376,17 +377,11 @@ def base64Fingerprint(source):
 @_passThrough
 def byteCol(name, *data):
     """
-    Creates a new ColumnHolder of type `byte` that can be used when creating in-memory tables.
+    Returns a ColumnHolder of type byte that can be used when creating in-memory tables.
     
-    :param name: name for the column
-    :param data: variable argument for the data
-    :return: (io.deephaven.engine.table.impl.utils.ColumnHolder) a Deephaven ColumnHolder object
-    
-    data structure:
-      * an int or list of ints
-      * a :class:`numpy.ndarray` of integer or floating point values. `NaN` values will be mapped to `NULL_BYTE`
-        constant values, and all other values simply cast.
-      * a :class:`pandas.Series` whose values are a numpy array described above
+    :param name: (java.lang.String) - name of the column
+    :param data: (byte...) - a list of values for the column
+    :return: (io.deephaven.engine.table.impl.util.ColumnHolder) a Deephaven ColumnHolder object
     """
     
     return _custom_byteCol(name, *data)
@@ -395,18 +390,11 @@ def byteCol(name, *data):
 @_passThrough
 def charCol(name, *data):
     """
-    Creates a new ColumnHolder of type `char` that can be used when creating in-memory tables.
+    Returns a ColumnHolder of type char that can be used when creating in-memory tables.
     
-    :param name: name for the column
-    :param data: variable argument for the data
-    :return: (io.deephaven.engine.table.impl.utils.ColumnHolder) a Deephaven ColumnHolder object
-    
-    `data` structure:
-      * an int
-      * a string - will be interpreted as list of characters
-      * a :class:`numpy.ndarray` of integer or one-character string type
-      * a :class:`pandas.Series` whose values are a numpy array described above
-      * an iterable of integers or strings - if string, only the first character will be used
+    :param name: (java.lang.String) - name of the column
+    :param data: (char...) - a list of values for the column
+    :return: (io.deephaven.engine.table.impl.util.ColumnHolder) a Deephaven ColumnHolder object
     """
     
     return _custom_charCol(name, *data)
@@ -417,14 +405,11 @@ def col(name, *data):
     """
     Returns a ColumnHolder that can be used when creating in-memory tables.
     
-    :param name: name for the column
-    :param data: variable argument for the data
-    :return: (io.deephaven.engine.table.impl.utils.ColumnHolder) a Deephaven ColumnHolder object
+    Note: Java generics information - <T>
     
-    data structure:
-      * an int, bool, float, datetime, date, string or iterable of (one) such
-      * :class:`numpy.ndarray` containing boolean, numerical, datetime64, object, or string data (type inferred)
-      * :class:`pandas.Series` object whose values are such a numpy array
+    :param name: (java.lang.String) - name of the column
+    :param data: (T...) - a list of values for the column
+    :return: (io.deephaven.engine.table.impl.util.ColumnHolder) a Deephaven ColumnHolder object
     """
     
     return _custom_col(name, *data)
@@ -433,15 +418,44 @@ def col(name, *data):
 @_passThrough
 def colSource(*args):
     """
-    Creates a column of appropriate type, used for creating in-memory tables.
-        
-    :param data: variable argument for the data
-    :return: (io.deephaven.engine.table.ColumnSource<T>) a Deephaven ColumnSource of inferred type
+    **Incompatible overloads text - text from the first overload:**
     
-    data structure:
-      * a java object, or list of java objects
-      * an int, bool, float, datetime, date, string or iterable of (one) such
-      * :class:`pandas.Series` object whose values are such a numpy array
+    Creates an in-memory column of the specified type for a collection of values.
+    
+    *Overload 1*  
+      Note: Java generics information - <T>
+      
+      :param clazz: (java.lang.Class<T>) - the class to use for the new column
+      :param values: (java.util.Collection<T>) - a collection of values to populate the new column
+      :return: (io.deephaven.engine.table.ColumnSource<T>) a Deephaven ColumnSource object
+      
+    *Overload 2*  
+      :param values: (long...) - a collection of values to populate the new column
+      :return: (io.deephaven.engine.table.ColumnSource<java.lang.Long>) a Deephaven ColumnSource object
+      
+    *Overload 3*  
+      :param values: (int...) - a collection of values to populate the new column
+      :return: (io.deephaven.engine.table.ColumnSource<java.lang.Integer>) a Deephaven ColumnSource object
+      
+    *Overload 4*  
+      :param values: (short...) - a collection of values to populate the new column
+      :return: (io.deephaven.engine.table.ColumnSource<java.lang.Short>) a Deephaven ColumnSource object
+      
+    *Overload 5*  
+      :param values: (byte...) - a collection of values to populate the new column
+      :return: (io.deephaven.engine.table.ColumnSource<java.lang.Byte>) a Deephaven ColumnSource object
+      
+    *Overload 6*  
+      :param values: (char...) - a collection of values to populate the new column
+      :return: (io.deephaven.engine.table.ColumnSource<java.lang.Character>) a Deephaven ColumnSource object
+      
+    *Overload 7*  
+      :param values: (double...) - a collection of values to populate the new column
+      :return: (io.deephaven.engine.table.ColumnSource<java.lang.Double>) a Deephaven ColumnSource object
+      
+    *Overload 8*  
+      :param values: (float...) - a collection of values to populate the new column
+      :return: (io.deephaven.engine.table.ColumnSource<java.lang.Float>) a Deephaven ColumnSource object
     """
     
     return _custom_colSource(*args)
@@ -471,7 +485,7 @@ def dateTimeCol(name, *data):
     
     :param name: (java.lang.String) - name of the column
     :param data: (io.deephaven.engine.time.DateTime...) - a list of values for the column
-    :return: (io.deephaven.engine.table.impl.utils.ColumnHolder) a Deephaven ColumnHolder object
+    :return: (io.deephaven.engine.table.impl.util.ColumnHolder) a Deephaven ColumnHolder object
     """
     
     return _java_type_.dateTimeCol(name, *data)
@@ -520,17 +534,11 @@ def diffPair(actualResult, expectedResult, maxDiffLines, itemsToSkip):
 @_passThrough
 def doubleCol(name, *data):
     """
-    Creates a new ColumnHolder of type `double` that can be used when creating in-memory tables.
+    Returns a ColumnHolder of type double that can be used when creating in-memory tables.
     
-    :param name: name for the column
-    :param data: variable argument for the data
-    :return: (io.deephaven.engine.table.impl.utils.ColumnHolder) a Deephaven ColumnHolder object
-    
-    data structure:
-      * an int or float or list of ints or floats
-      * a :class:`numpy.ndarray` of integer or floating point values. `NaN` values will be mapped to `NULL_DOUBLE`
-         constant values, and all other values simply cast.
-      * a :class:`pandas.Series` whose values are a numpy array described above
+    :param name: (java.lang.String) - name of the column
+    :param data: (double...) - a list of values for the column
+    :return: (io.deephaven.engine.table.impl.util.ColumnHolder) a Deephaven ColumnHolder object
     """
     
     return _custom_doubleCol(name, *data)
@@ -551,17 +559,11 @@ def emptyTable(size):
 @_passThrough
 def floatCol(name, *data):
     """
-    Creates a new ColumnHolder of type `float` that can be used when creating in-memory tables.
+    Returns a ColumnHolder of type float that can be used when creating in-memory tables.
     
-    :param name: name for the column
-    :param data: variable argument for the data
-    :return: (io.deephaven.engine.table.impl.utils.ColumnHolder) a Deephaven ColumnHolder object
-    
-    data structure:
-      * a int or float or list of ints or floats
-      * a :class:`numpy.ndarray` of integer or floating point values. `NaN` values will be mapped to `NULL_FLOAT`
-        constant values, and all other values simply cast.
-      * a :class:`pandas.Series` whose values are a numpy array described above
+    :param name: (java.lang.String) - name of the column
+    :param data: (float...) - a list of values for the column
+    :return: (io.deephaven.engine.table.impl.util.ColumnHolder) a Deephaven ColumnHolder object
     """
     
     return _custom_floatCol(name, *data)
@@ -608,17 +610,11 @@ def html(source):
 @_passThrough
 def intCol(name, *data):
     """
-    Creates a new ColumnHolder of type `int` that can be used when creating in-memory tables.
+    Returns a ColumnHolder of type int that can be used when creating in-memory tables.
     
-    :param name: name for the column
-    :param data: variable argument for the data
-    :return: (io.deephaven.engine.table.impl.utils.ColumnHolder) a Deephaven ColumnHolder object
-    
-    data structure:
-      * an int or list of ints
-      * a :class:`numpy.ndarray` of integer or floating point values. `NaN` values will be mapped to `NULL_INT`
-        constant values, and all other values simply cast.
-      * a :class:`pandas.Series` whose values are a numpy array described above
+    :param name: (java.lang.String) - name of the column
+    :param data: (int...) - a list of values for the column
+    :return: (io.deephaven.engine.table.impl.util.ColumnHolder) a Deephaven ColumnHolder object
     """
     
     return _custom_intCol(name, *data)
@@ -627,17 +623,11 @@ def intCol(name, *data):
 @_passThrough
 def longCol(name, *data):
     """
-    Creates a new ColumnHolder of type `long` that can be used when creating in-memory tables.
+    Returns a ColumnHolder of type long that can be used when creating in-memory tables.
     
-    :param name: name for the column
-    :param data: variable argument for the data
-    :return: (io.deephaven.engine.table.impl.utils.ColumnHolder) a Deephaven ColumnHolder object
-    
-    data structure:
-      * an int or list of ints
-      * a :class:`numpy.ndarray` of integer or floating point values. `NaN` values will be mapped to `NULL_LONG`
-        constant values, and all other values simply cast.
-      * a :class:`pandas.Series` whose values are a numpy array described above
+    :param name: (java.lang.String) - name of the column
+    :param data: (long...) - a list of values for the column
+    :return: (io.deephaven.engine.table.impl.util.ColumnHolder) a Deephaven ColumnHolder object
     """
     
     return _custom_longCol(name, *data)
@@ -716,16 +706,26 @@ def newTable(*args):
       :return: (io.deephaven.engine.table.Table) an empty Deephaven Table
       
     *Overload 4*  
-      :param columnHolders: (io.deephaven.engine.table.impl.utils.ColumnHolder...) - a list of ColumnHolders from which to create the table
+      :param columnHolders: (io.deephaven.engine.table.impl.util.ColumnHolder...) - a list of ColumnHolders from which to create the table
       :return: (io.deephaven.engine.table.Table) a Deephaven Table
       
     *Overload 5*  
       :param definition: io.deephaven.engine.table.TableDefinition
-      :param columnHolders: io.deephaven.engine.table.impl.utils.ColumnHolder...
+      :param columnHolders: io.deephaven.engine.table.impl.util.ColumnHolder...
       :return: io.deephaven.engine.table.Table
     """
     
     return _custom_newTable(*args)
+
+
+@_passThrough
+def nullToNullString(obj):
+    """
+    :param obj: java.lang.Object
+    :return: java.lang.String
+    """
+    
+    return _java_type_.nullToNullString(obj)
 
 
 @_passThrough
@@ -741,74 +741,15 @@ def nullTypeAsString(dataType):
 @_passThrough
 def objColSource(*values):
     """
-    Creates a column of appropriate object type, used for creating in-memory tables.
+    Creates an in-memory column of the specified type for a collection of values
     
-    :param data: variable argument for the data
-    :return: (io.deephaven.engine.table.ColumnSource) a Deephaven ColumnSource of inferred type
-    data structure:
-        * a java object, or list of java objects
-        * an int, bool, float, datetime, date, string or iterable of (one) such
-    * :class:`numpy.ndarray` containing boolean, numerical, datetime64, object, or string data (type inferred)
-    * :class:`pandas.Series` object whose values are such a numpy array
+    Note: Java generics information - <T>
+    
+    :param values: (T...) - a collection of values to populate the new column
+    :return: (io.deephaven.engine.table.ColumnSource<T>) a Deephaven ColumnSource object
     """
     
     return _custom_objColSource(*values)
-
-
-@_passThrough
-def readCsv(*args):
-    """
-    Returns a memory table created from importing CSV data. The first row must be column names. Column data types are
-     inferred from the data.
-    
-    *Overload 1*  
-      :param is: (java.io.InputStream) - an InputStream providing access to the CSV data.
-      :return: (io.deephaven.engine.table.Table) a Deephaven Table
-      
-    *Overload 2*  
-      :param is: (java.io.InputStream) - an InputStream providing access to the CSV data.
-      :param separator: (char) - a char to use as the delimiter value when parsing the file.
-      :return: (io.deephaven.engine.table.Table) a Deephaven Table
-      
-    *Overload 3*  
-      :param filePath: (java.lang.String) - the fully-qualified path to a CSV file to be read.
-      :return: (io.deephaven.engine.table.Table) a Deephaven Table object
-      
-    *Overload 4*  
-      :param filePath: (java.lang.String) - the fully-qualified path to a CSV file to be read.
-      :param format: (java.lang.String) - an Apache Commons CSV format name to be used to parse the CSV, or a single non-newline character to
-              use as a delimiter.
-      :return: (io.deephaven.engine.table.Table) a Deephaven Table object
-      
-    *Overload 5*  
-      :param file: (java.io.File) - a file object providing access to the CSV file to be read.
-      :return: (io.deephaven.engine.table.Table) a Deephaven Table object
-    """
-    
-    return _java_type_.readCsv(*args)
-
-
-@_passThrough
-def readHeaderlessCsv(*args):
-    """
-    Returns a memory table created from importing CSV data. Column data types are inferred from the data.
-    
-    *Overload 1*  
-      :param filePath: (java.lang.String) - the fully-qualified path to a CSV file to be read.
-      :return: (io.deephaven.engine.table.Table) a Deephaven Table object
-      
-    *Overload 2*  
-      :param filePath: (java.lang.String) - the fully-qualified path to a CSV file to be read.
-      :param header: (java.util.Collection<java.lang.String>) - Column names to use for the resultant table.
-      :return: (io.deephaven.engine.table.Table) a Deephaven Table object
-      
-    *Overload 3*  
-      :param filePath: (java.lang.String) - the fully-qualified path to a CSV file to be read.
-      :param header: (java.lang.String...) - Column names to use for the resultant table.
-      :return: (io.deephaven.engine.table.Table) a Deephaven Table object
-    """
-    
-    return _java_type_.readHeaderlessCsv(*args)
 
 
 @_passThrough
@@ -848,17 +789,11 @@ def roundDecimalColumnsExcept(table, *columnsNotToRound):
 @_passThrough
 def shortCol(name, *data):
     """
-    Creates a new ColumnHolder of type `short` that can be used when creating in-memory tables.
-        
-    :param name: name for the column
-    :param data: variable argument for the data
-    :return: (io.deephaven.engine.table.impl.utils.ColumnHolder) a Deephaven ColumnHolder object
+    Returns a ColumnHolder of type short that can be used when creating in-memory tables.
     
-    data structure:
-      * an int or list of ints
-      * a :class:`numpy.ndarray` of integer or floating point values. `NaN` values will be mapped to `NULL_SHORT`
-        constant values, and all other values simply cast.
-      * a :class:`pandas.Series` whose values are a numpy array described above
+    :param name: (java.lang.String) - name of the column
+    :param data: (short...) - a list of values for the column
+    :return: (io.deephaven.engine.table.impl.util.ColumnHolder) a Deephaven ColumnHolder object
     """
     
     return _custom_shortCol(name, *data)
@@ -1006,7 +941,7 @@ def stringCol(name, *data):
     
     :param name: (java.lang.String) - name of the column
     :param data: (java.lang.String...) - a list of values for the column
-    :return: (io.deephaven.engine.table.impl.utils.ColumnHolder) a Deephaven ColumnHolder object
+    :return: (io.deephaven.engine.table.impl.util.ColumnHolder) a Deephaven ColumnHolder object
     """
     
     return _java_type_.stringCol(name, *data)
@@ -1097,98 +1032,3 @@ def typeFromName(dataTypeStr):
     """
     
     return _java_type_.typeFromName(dataTypeStr)
-
-
-@_passThrough
-def writeCsv(*args):
-    """
-    Writes a table out as a CSV.
-    
-    *Overload 1*  
-      :param source: (io.deephaven.engine.table.Table) - a Deephaven table object to be exported
-      :param compressed: (boolean) - whether to compress (bz2) the file being written
-      :param destPath: (java.lang.String) - path to the CSV file to be written
-      :param columns: (java.lang.String...) - a list of columns to include in the export
-      
-    *Overload 2*  
-      :param source: (io.deephaven.engine.table.Table) - a Deephaven table object to be exported
-      :param compressed: (boolean) - whether to compress (bz2) the file being written
-      :param destPath: (java.lang.String) - path to the CSV file to be written
-      :param nullsAsEmpty: (boolean) - if nulls should be written as blank instead of '(null)'
-      :param columns: (java.lang.String...) - a list of columns to include in the export
-      
-    *Overload 3*  
-      :param source: (io.deephaven.engine.table.Table) - a Deephaven table object to be exported
-      :param destPath: (java.lang.String) - path to the CSV file to be written
-      :param columns: (java.lang.String...) - a list of columns to include in the export
-      
-    *Overload 4*  
-      :param source: (io.deephaven.engine.table.Table) - a Deephaven table object to be exported
-      :param destPath: (java.lang.String) - path to the CSV file to be written
-      :param nullsAsEmpty: (boolean) - if nulls should be written as blank instead of '(null)'
-      :param columns: (java.lang.String...) - a list of columns to include in the export
-      
-    *Overload 5*  
-      :param source: (io.deephaven.engine.table.Table) - a Deephaven table object to be exported
-      :param out: (java.io.PrintStream) - the stream to write to
-      :param columns: (java.lang.String...) - a list of columns to include in the export
-      
-    *Overload 6*  
-      :param source: (io.deephaven.engine.table.Table) - a Deephaven table object to be exported
-      :param out: (java.io.PrintStream) - the stream to write to
-      :param nullsAsEmpty: (boolean) - if nulls should be written as blank instead of '(null)'
-      :param columns: (java.lang.String...) - a list of columns to include in the export
-      
-    *Overload 7*  
-      :param source: (io.deephaven.engine.table.Table) - a Deephaven table object to be exported
-      :param destPath: (java.lang.String) - path to the CSV file to be written
-      :param compressed: (boolean) - whether to zip the file being written
-      :param timeZone: (io.deephaven.engine.time.TimeZone) - a TimeZone constant relative to which DateTime data should be adjusted
-      :param columns: (java.lang.String...) - a list of columns to include in the export
-      
-    *Overload 8*  
-      :param source: (io.deephaven.engine.table.Table) - a Deephaven table object to be exported
-      :param destPath: (java.lang.String) - path to the CSV file to be written
-      :param compressed: (boolean) - whether to zip the file being written
-      :param timeZone: (io.deephaven.engine.time.TimeZone) - a TimeZone constant relative to which DateTime data should be adjusted
-      :param nullsAsEmpty: (boolean) - if nulls should be written as blank instead of '(null)'
-      :param columns: (java.lang.String...) - a list of columns to include in the export
-      
-    *Overload 9*  
-      :param source: (io.deephaven.engine.table.Table) - a Deephaven table object to be exported
-      :param destPath: (java.lang.String) - path to the CSV file to be written
-      :param compressed: (boolean) - whether to zip the file being written
-      :param timeZone: (io.deephaven.engine.time.TimeZone) - a TimeZone constant relative to which DateTime data should be adjusted
-      :param nullsAsEmpty: (boolean) - if nulls should be written as blank instead of '(null)'
-      :param separator: (char) - the delimiter for the CSV
-      :param columns: (java.lang.String...) - a list of columns to include in the export
-      
-    *Overload 10*  
-      :param sources: (io.deephaven.engine.table.Table[]) - an array of Deephaven table objects to be exported
-      :param destPath: (java.lang.String) - path to the CSV file to be written
-      :param compressed: (boolean) - whether to compress (bz2) the file being written
-      :param timeZone: (io.deephaven.engine.time.TimeZone) - a TimeZone constant relative to which DateTime data should be adjusted
-      :param tableSeparator: (java.lang.String) - a String (normally a single character) to be used as the table delimiter
-      :param columns: (java.lang.String...) - a list of columns to include in the export
-      
-    *Overload 11*  
-      :param sources: (io.deephaven.engine.table.Table[]) - an array of Deephaven table objects to be exported
-      :param destPath: (java.lang.String) - path to the CSV file to be written
-      :param compressed: (boolean) - whether to compress (bz2) the file being written
-      :param timeZone: (io.deephaven.engine.time.TimeZone) - a TimeZone constant relative to which DateTime data should be adjusted
-      :param tableSeparator: (java.lang.String) - a String (normally a single character) to be used as the table delimiter
-      :param nullsAsEmpty: boolean
-      :param columns: (java.lang.String...) - a list of columns to include in the export
-      
-    *Overload 12*  
-      :param sources: (io.deephaven.engine.table.Table[]) - an array of Deephaven table objects to be exported
-      :param destPath: (java.lang.String) - path to the CSV file to be written
-      :param compressed: (boolean) - whether to compress (bz2) the file being written
-      :param timeZone: (io.deephaven.engine.time.TimeZone) - a TimeZone constant relative to which DateTime data should be adjusted
-      :param tableSeparator: (java.lang.String) - a String (normally a single character) to be used as the table delimiter
-      :param fieldSeparator: (char) - the delimiter for the CSV files
-      :param nullsAsEmpty: (boolean) - if nulls should be written as blank instead of '(null)'
-      :param columns: (java.lang.String...) - a list of columns to include in the export
-    """
-    
-    return _java_type_.writeCsv(*args)

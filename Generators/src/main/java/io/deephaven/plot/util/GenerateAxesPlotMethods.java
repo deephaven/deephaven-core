@@ -898,8 +898,8 @@ public class GenerateAxesPlotMethods {
         log.setLevel(Level.WARNING);
         log.warning("Running GenerateAxesPlotMethods assertNoChange=" + assertNoChange);
 
-        final String fileIface = devroot + "/Plot/src/main/java/io/deephaven/engine/plot/Axes.java";
-        final String fileImpl = devroot + "/Plot/src/main/java/io/deephaven/engine/plot/AxesImpl.java";
+        final String fileIface = devroot + "/Plot/src/main/java/io/deephaven/plot/Axes.java";
+        final String fileImpl = devroot + "/Plot/src/main/java/io/deephaven/plot/AxesImpl.java";
 
         generate(assertNoChange, fileIface, true);
         generate(assertNoChange, fileImpl, false);

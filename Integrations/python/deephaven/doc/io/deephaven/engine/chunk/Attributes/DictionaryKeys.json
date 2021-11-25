@@ -1,0 +1,6 @@
+{
+ "className": "io.deephaven.engine.chunk.Attributes$DictionaryKeys",
+ "methods": {},
+ "path": "io.deephaven.engine.chunk.Attributes.DictionaryKeys",
+ "typeName": "interface"
+}

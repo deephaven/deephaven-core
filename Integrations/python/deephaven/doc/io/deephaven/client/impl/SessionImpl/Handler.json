@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.client.impl.SessionImpl$Handler",
+ "methods": {
+  "onCloseSessionError": ":param t: java.lang.Throwable",
+  "onRefreshTokenError": ":param t: java.lang.Throwable\n:param invokeForRetry: java.lang.Runnable"
+ },
+ "path": "io.deephaven.client.impl.SessionImpl.Handler",
+ "typeName": "interface"
+}

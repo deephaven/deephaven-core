@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.engine.updategraph.NotificationQueue$Notification",
+ "methods": {
+  "canExecute": "Can this notification be executed? That is, are all of it's dependencies satisfied.\n\n:param step: (long) - The step for which we are testing satisfaction\n:return: (boolean) true if this notification can be executed, false if it has unmet dependencies",
+  "isTerminal": "Terminal notifications guarantee that they will not queue additional notifications or mutate data structures\n that should result in additional notifications. They are in turn guaranteed to be called after all\n non-terminal notifications for a given cycle through the notification queue.\n\n:return: (boolean) True iff this notification is terminal.",
+  "mustExecuteWithUgpLock": "If a terminal notification must be executed on the main UGP thread, it must override this method, so that the\n notification is not executed on the run pool.\n\n It is an error to return true if this notification is not terminal\n\n:return: (boolean) true if this notification must be executed directly under the protection of the UGP lock"
+ },
+ "path": "io.deephaven.engine.updategraph.NotificationQueue.Notification",
+ "text": "A notification that may be enqueued.",
+ "typeName": "interface"
+}

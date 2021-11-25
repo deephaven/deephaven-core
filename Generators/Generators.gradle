@@ -12,7 +12,9 @@ configurations {
 dependencies {
     compile project(':engine-table'),
             project(':Plot'),
-            project(':extensions-kafka')
+            project(':extensions-csv'),
+            project(':extensions-kafka'),
+            project(':extensions-parquet-table')
 
     runtime project(path: ':configs'),
             project(path: ':test-configs'),
@@ -213,24 +215,24 @@ tasks.register("generatePyDocAssert") {
 
 def pythonStaticMethodsArgs = ['io.deephaven.engine.time.calendar.Calendars',
                                     '/Integrations/python/deephaven/Calendars/__init__.py',
-                               'io.deephaven.engine.tables.utils.DateTimeUtils',
-                                    '/Generators/src/main/java/io/deephaven/pythonPreambles/DateTimeUtilPreamble.txt',
+                               'io.deephaven.engine.time.DateTimeUtils',
+                                    '/Generators/src/main/java/io/deephaven/pythonPreambles/DateTimeUtilsPreamble.txt',
                                     '/Integrations/python/deephaven/DateTimeUtils/__init__.py',
-                               'io.deephaven.engine.tables.utils.ParquetTools',
+                               'io.deephaven.parquet.table.ParquetTools',
                                     '/Generators/src/main/java/io/deephaven/pythonPreambles/ParquetToolsPreamble.txt',
                                     '/Integrations/python/deephaven/ParquetTools/__init__.py',
-                               'io.deephaven.engine.tables.utils.TableTools',
+                               'io.deephaven.engine.util.TableTools',
                                     '/Generators/src/main/java/io/deephaven/pythonPreambles/TableToolsPreamble.txt',
                                     '/Integrations/python/deephaven/TableTools/__init__.py',
-                               'io.deephaven.engine.table.impl.by.ComboAggregateFactory',
-                                    '/Integrations/python/deephaven/ComboAggregateFactory/__init__.py',
+                               'io.deephaven.engine.table.impl.by.AggregationFactory',
+                                    '/Integrations/python/deephaven/AggregationFactory/__init__.py',
                                'io.deephaven.plot.colors.ColorMaps',
                                    '/Integrations/python/deephaven/Plot/ColorMaps/__init__.py',
-                               'io.deephaven.engine.tables.utils.WindowCheck',
+                               'io.deephaven.engine.util.WindowCheck',
                                     '/Integrations/python/deephaven/TableManipulation/WindowCheck.py',
-                               'io.deephaven.engine.table.impl.utils.TableLoggers',
+                               'io.deephaven.engine.table.impl.util.TableLoggers',
                                     '/Integrations/python/deephaven/TableLoggers/__init__.py',
-                               'io.deephaven.engine.table.impl.utils.PerformanceQueries',
+                               'io.deephaven.engine.table.impl.util.PerformanceQueries',
                                     '/Integrations/python/deephaven/PerformanceQueries/__init__.py']
 
 task generatePythonIntegrationStaticMethods(type: JavaExec, dependsOn: 'classes') {

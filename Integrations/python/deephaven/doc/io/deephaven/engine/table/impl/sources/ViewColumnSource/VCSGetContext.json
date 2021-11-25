@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.engine.table.impl.sources.ViewColumnSource$VCSGetContext",
+ "methods": {
+  "close": "Release any resources associated with this context. The context should not be used afterwards."
+ },
+ "path": "io.deephaven.engine.table.impl.sources.ViewColumnSource.VCSGetContext",
+ "typeName": "class"
+}

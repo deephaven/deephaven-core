@@ -228,8 +228,7 @@ class FigureWrapper(object):
     @_convertArguments
     def axis(self, dim):
         """
-        Gets the Axis at dimension dim.
-         The x-axis is dimension 0, y-axis dimension 1.
+        Gets the Axis at dimension dim. The x-axis is dimension 0, y-axis dimension 1.
         
         :param dim: (int) - dimension of the Axis
         :return: (io.deephaven.plot.Figure) Axis at dimension dim
@@ -485,20 +484,20 @@ class FigureWrapper(object):
           
         *Overload 17*  
           :param seriesName: (java.lang.Comparable) - name of the created dataset
-          :param sds: (io.deephaven.plot.filters.SelectableDataSet) - selectable dataset (e.g. OneClick filterable table).
-          :param categories: (java.lang.String) - column in sds that holds the discrete data
-          :param values: (java.lang.String) - column in sds that holds the numeric data
-          :param yLow: (java.lang.String) - column in sds that holds the low value in the y dimension
-          :param yHigh: (java.lang.String) - column in sds that holds the high value in the y dimension
-          :return: (io.deephaven.plot.Figure) dataset created for plot
-          
-        *Overload 18*  
-          :param seriesName: (java.lang.Comparable) - name of the created dataset
           :param t: (io.deephaven.engine.table.Table) - table
           :param categories: (java.lang.String) - column in t that holds the discrete data
           :param values: (java.lang.String) - column in t that holds the numeric data
           :param yLow: (java.lang.String) - column in t that holds the low value in the y dimension
           :param yHigh: (java.lang.String) - column in t that holds the high value in the y dimension
+          :return: (io.deephaven.plot.Figure) dataset created for plot
+          
+        *Overload 18*  
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param sds: (io.deephaven.plot.filters.SelectableDataSet) - selectable dataset (e.g. OneClick filterable table).
+          :param categories: (java.lang.String) - column in sds that holds the discrete data
+          :param values: (java.lang.String) - column in sds that holds the numeric data
+          :param yLow: (java.lang.String) - column in sds that holds the low value in the y dimension
+          :param yHigh: (java.lang.String) - column in sds that holds the high value in the y dimension
           :return: (io.deephaven.plot.Figure) dataset created for plot
         """
         
@@ -511,22 +510,22 @@ class FigureWrapper(object):
         
         *Overload 1*  
           :param seriesName: (java.lang.Comparable) - name of the created dataset
-          :param sds: (io.deephaven.plot.filters.SelectableDataSet) - selectable dataset (e.g. OneClick filterable table).
-          :param categories: (java.lang.String) - column in sds that holds the discrete data
-          :param values: (java.lang.String) - column in sds that holds the numeric data
-          :param yLow: (java.lang.String) - column in sds that holds the low value in the y dimension
-          :param yHigh: (java.lang.String) - column in sds that holds the high value in the y dimension
-          :param byColumns: (java.lang.String...) - column(s) in sds that holds the grouping data
-          :return: (io.deephaven.plot.Figure) dataset created for plot
-          
-        *Overload 2*  
-          :param seriesName: (java.lang.Comparable) - name of the created dataset
           :param t: (io.deephaven.engine.table.Table) - table
           :param categories: (java.lang.String) - column in t that holds the discrete data
           :param values: (java.lang.String) - column in t that holds the numeric data
           :param yLow: (java.lang.String) - column in t that holds the low value in the y dimension
           :param yHigh: (java.lang.String) - column in t that holds the high value in the y dimension
           :param byColumns: (java.lang.String...) - column(s) in t that holds the grouping data
+          :return: (io.deephaven.plot.Figure) dataset created for plot
+          
+        *Overload 2*  
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param sds: (io.deephaven.plot.filters.SelectableDataSet) - selectable dataset (e.g. OneClick filterable table).
+          :param categories: (java.lang.String) - column in sds that holds the discrete data
+          :param values: (java.lang.String) - column in sds that holds the numeric data
+          :param yLow: (java.lang.String) - column in sds that holds the low value in the y dimension
+          :param yHigh: (java.lang.String) - column in sds that holds the high value in the y dimension
+          :param byColumns: (java.lang.String...) - column(s) in sds that holds the grouping data
           :return: (io.deephaven.plot.Figure) dataset created for plot
         """
         
@@ -535,7 +534,7 @@ class FigureWrapper(object):
     @_convertArguments
     def catHistPlot(self, *args):
         """
-        Creates a histogram with discrete axis.  Charts the frequency of each unique element in the input data.
+        Creates a histogram with discrete axis. Charts the frequency of each unique element in the input data.
         
         *Overload 1*  
           Note: Java generics information - <T extends java.lang.Comparable>
@@ -573,14 +572,14 @@ class FigureWrapper(object):
           
         *Overload 7*  
           :param seriesName: (java.lang.Comparable) - name of the created dataset
-          :param sds: (io.deephaven.plot.filters.SelectableDataSet) - selectable data set (e.g. OneClick filterable table)
-          :param columnName: (java.lang.String) - column in sds
+          :param t: (io.deephaven.engine.table.Table) - table
+          :param columnName: (java.lang.String) - column in t
           :return: (io.deephaven.plot.Figure) dataset created for plot
           
         *Overload 8*  
           :param seriesName: (java.lang.Comparable) - name of the created dataset
-          :param t: (io.deephaven.engine.table.Table) - table
-          :param columnName: (java.lang.String) - column in t
+          :param sds: (io.deephaven.plot.filters.SelectableDataSet) - selectable data set (e.g. OneClick filterable table)
+          :param columnName: (java.lang.String) - column in sds
           :return: (io.deephaven.plot.Figure) dataset created for plot
         """
         
@@ -589,6 +588,8 @@ class FigureWrapper(object):
     @_convertCatPlotArguments
     def catPlot(self, *args):
         """
+        **Incompatible overloads text - text from the first overload:**
+        
         Creates a plot with discrete axis.
          Discrete data must not have duplicates.
         
@@ -750,16 +751,16 @@ class FigureWrapper(object):
           
         *Overload 20*  
           :param seriesName: (java.lang.Comparable) - name of the created dataset
-          :param sds: (io.deephaven.plot.filters.SelectableDataSet) - selectable data set (e.g. OneClick filterable table)
-          :param categories: (java.lang.String) - column in sds holding discrete data
-          :param values: (java.lang.String) - column in sds holding numeric data
+          :param t: (io.deephaven.engine.table.Table) - table
+          :param categories: (java.lang.String) - column in t holding discrete data
+          :param values: (java.lang.String) - column in t holding numeric data
           :return: (io.deephaven.plot.Figure) dataset created for plot
           
         *Overload 21*  
           :param seriesName: (java.lang.Comparable) - name of the created dataset
-          :param t: (io.deephaven.engine.table.Table) - table
-          :param categories: (java.lang.String) - column in t holding discrete data
-          :param values: (java.lang.String) - column in t holding numeric data
+          :param sds: (io.deephaven.plot.filters.SelectableDataSet) - selectable data set (e.g. OneClick filterable table)
+          :param categories: (java.lang.String) - column in sds holding discrete data
+          :param values: (java.lang.String) - column in sds holding numeric data
           :return: (io.deephaven.plot.Figure) dataset created for plot
         """
         
@@ -772,18 +773,18 @@ class FigureWrapper(object):
         
         *Overload 1*  
           :param seriesName: (java.lang.Comparable) - name of the created dataset
-          :param sds: (io.deephaven.plot.filters.SelectableDataSet) - selectable data set (e.g. OneClick filterable table)
-          :param categories: (java.lang.String) - column in sds holding discrete data
-          :param values: (java.lang.String) - column in sds holding numeric data
-          :param byColumns: (java.lang.String...) - column(s) in sds that holds the grouping data
-          :return: (io.deephaven.plot.Figure) dataset created for plot
-          
-        *Overload 2*  
-          :param seriesName: (java.lang.Comparable) - name of the created dataset
           :param t: (io.deephaven.engine.table.Table) - table
           :param categories: (java.lang.String) - column in t holding discrete data
           :param values: (java.lang.String) - column in t holding numeric data
           :param byColumns: (java.lang.String...) - column(s) in t that holds the grouping data
+          :return: (io.deephaven.plot.Figure) dataset created for plot
+          
+        *Overload 2*  
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param sds: (io.deephaven.plot.filters.SelectableDataSet) - selectable data set (e.g. OneClick filterable table)
+          :param categories: (java.lang.String) - column in sds holding discrete data
+          :param values: (java.lang.String) - column in sds holding numeric data
+          :param byColumns: (java.lang.String...) - column(s) in sds that holds the grouping data
           :return: (io.deephaven.plot.Figure) dataset created for plot
         """
         
@@ -829,12 +830,12 @@ class FigureWrapper(object):
           :return: (io.deephaven.plot.Figure) this Chart
           
         *Overload 2*  
-          :param sds: (io.deephaven.plot.filters.SelectableDataSet) - selectable data set (e.g. OneClick table)
+          :param t: (io.deephaven.engine.table.Table) - table
           :param titleColumns: (java.lang.String...) - columns to include in the chart title
           :return: (io.deephaven.plot.Figure) this Chart with the title set to display comma-separated values from the table
           
         *Overload 3*  
-          :param t: (io.deephaven.engine.table.Table) - table
+          :param sds: (io.deephaven.plot.filters.SelectableDataSet) - selectable data set (e.g. OneClick table)
           :param titleColumns: (java.lang.String...) - columns to include in the chart title
           :return: (io.deephaven.plot.Figure) this Chart with the title set to display comma-separated values from the table
           
@@ -842,7 +843,7 @@ class FigureWrapper(object):
           :param showColumnNamesInTitle: (boolean) - Whether to show column names in title. If this is true, the title format will
                   include the column name before the comma separated values; otherwise only the comma separated values will
                   be included.
-          :param sds: (io.deephaven.plot.filters.SelectableDataSet) - selectable data set (e.g. OneClick table)
+          :param t: (io.deephaven.engine.table.Table) - table
           :param titleColumns: (java.lang.String...) - columns to include in the chart title
           :return: (io.deephaven.plot.Figure) this Chart with the title set to display comma-separated values from the table
           
@@ -850,19 +851,19 @@ class FigureWrapper(object):
           :param showColumnNamesInTitle: (boolean) - Whether to show column names in title. If this is true, the title format will
                   include the column name before the comma separated values; otherwise only the comma separated values will
                   be included.
-          :param t: (io.deephaven.engine.table.Table) - table
+          :param sds: (io.deephaven.plot.filters.SelectableDataSet) - selectable data set (e.g. OneClick table)
           :param titleColumns: (java.lang.String...) - columns to include in the chart title
           :return: (io.deephaven.plot.Figure) this Chart with the title set to display comma-separated values from the table
           
         *Overload 6*  
           :param titleFormat: (java.lang.String) - a MessageFormat format string for the chart title
-          :param sds: (io.deephaven.plot.filters.SelectableDataSet) - selectable data set (e.g. OneClick table)
+          :param t: (io.deephaven.engine.table.Table) - table
           :param titleColumns: (java.lang.String...) - columns to include in the chart title
           :return: (io.deephaven.plot.Figure) this Chart with the title set to display values from the table
           
         *Overload 7*  
           :param titleFormat: (java.lang.String) - a MessageFormat format string for the chart title
-          :param t: (io.deephaven.engine.table.Table) - table
+          :param sds: (io.deephaven.plot.filters.SelectableDataSet) - selectable data set (e.g. OneClick table)
           :param titleColumns: (java.lang.String...) - columns to include in the chart title
           :return: (io.deephaven.plot.Figure) this Chart with the title set to display values from the table
         """
@@ -1260,20 +1261,20 @@ class FigureWrapper(object):
           
         *Overload 38*  
           :param seriesName: (java.lang.Comparable) - name of the created dataset
-          :param sds: (io.deephaven.plot.filters.SelectableDataSet) - selectable dataset (e.g. OneClick filterable table)
-          :param x: (java.lang.String) - column in sds that holds the x-variable data
-          :param xLow: (java.lang.String) - column in sds that holds the low value in the x dimension
-          :param xHigh: (java.lang.String) - column in sds that holds the high value in the x dimension
-          :param y: (java.lang.String) - column in sds that holds the y-variable data
-          :return: (io.deephaven.plot.Figure) dataset created for plot
-          
-        *Overload 39*  
-          :param seriesName: (java.lang.Comparable) - name of the created dataset
           :param t: (io.deephaven.engine.table.Table) - table
           :param x: (java.lang.String) - column in t that holds the x-variable data
           :param xLow: (java.lang.String) - column in t that holds the low value in the x dimension
           :param xHigh: (java.lang.String) - column in t that holds the high value in the x dimension
           :param y: (java.lang.String) - column in t that holds the y-variable data
+          :return: (io.deephaven.plot.Figure) dataset created for plot
+          
+        *Overload 39*  
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param sds: (io.deephaven.plot.filters.SelectableDataSet) - selectable dataset (e.g. OneClick filterable table)
+          :param x: (java.lang.String) - column in sds that holds the x-variable data
+          :param xLow: (java.lang.String) - column in sds that holds the low value in the x dimension
+          :param xHigh: (java.lang.String) - column in sds that holds the high value in the x dimension
+          :param y: (java.lang.String) - column in sds that holds the y-variable data
           :return: (io.deephaven.plot.Figure) dataset created for plot
         """
         
@@ -1286,22 +1287,22 @@ class FigureWrapper(object):
         
         *Overload 1*  
           :param seriesName: (java.lang.Comparable) - name of the created dataset
-          :param sds: (io.deephaven.plot.filters.SelectableDataSet) - selectable dataset (e.g. OneClick filterable table)
-          :param x: (java.lang.String) - column in sds that holds the x-variable data
-          :param xLow: (java.lang.String) - column in sds that holds the low value in the x dimension
-          :param xHigh: (java.lang.String) - column in sds that holds the high value in the x dimension
-          :param y: (java.lang.String) - column in sds that holds the y-variable data
-          :param byColumns: (java.lang.String...) - column(s) in sds that holds the grouping data
-          :return: (io.deephaven.plot.Figure) dataset created for plot
-          
-        *Overload 2*  
-          :param seriesName: (java.lang.Comparable) - name of the created dataset
           :param t: (io.deephaven.engine.table.Table) - table
           :param x: (java.lang.String) - column in t that holds the x-variable data
           :param xLow: (java.lang.String) - column in t that holds the low value in the x dimension
           :param xHigh: (java.lang.String) - column in t that holds the high value in the x dimension
           :param y: (java.lang.String) - column in t that holds the y-variable data
           :param byColumns: (java.lang.String...) - column(s) in t that holds the grouping data
+          :return: (io.deephaven.plot.Figure) dataset created for plot
+          
+        *Overload 2*  
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param sds: (io.deephaven.plot.filters.SelectableDataSet) - selectable dataset (e.g. OneClick filterable table)
+          :param x: (java.lang.String) - column in sds that holds the x-variable data
+          :param xLow: (java.lang.String) - column in sds that holds the low value in the x dimension
+          :param xHigh: (java.lang.String) - column in sds that holds the high value in the x dimension
+          :param y: (java.lang.String) - column in sds that holds the y-variable data
+          :param byColumns: (java.lang.String...) - column(s) in sds that holds the grouping data
           :return: (io.deephaven.plot.Figure) dataset created for plot
         """
         
@@ -1684,17 +1685,6 @@ class FigureWrapper(object):
           
         *Overload 38*  
           :param seriesName: (java.lang.Comparable) - name of the created dataset
-          :param sds: (io.deephaven.plot.filters.SelectableDataSet) - selectable dataset (e.g. OneClick filterable table)
-          :param x: (java.lang.String) - column in sds that holds the x-variable data
-          :param xLow: (java.lang.String) - column in sds that holds the low value in the x dimension
-          :param xHigh: (java.lang.String) - column in sds that holds the high value in the x dimension
-          :param y: (java.lang.String) - column in sds that holds the y-variable data
-          :param yLow: (java.lang.String) - column in sds that holds the low value in the y dimension
-          :param yHigh: (java.lang.String) - column in sds that holds the high value in the y dimension
-          :return: (io.deephaven.plot.Figure) dataset created for plot
-          
-        *Overload 39*  
-          :param seriesName: (java.lang.Comparable) - name of the created dataset
           :param t: (io.deephaven.engine.table.Table) - table
           :param x: (java.lang.String) - column in t that holds the x-variable data
           :param xLow: (java.lang.String) - column in t that holds the low value in the x dimension
@@ -1702,6 +1692,17 @@ class FigureWrapper(object):
           :param y: (java.lang.String) - column in t that holds the y-variable data
           :param yLow: (java.lang.String) - column in t that holds the low value in the y dimension
           :param yHigh: (java.lang.String) - column in t that holds the high value in the y dimension
+          :return: (io.deephaven.plot.Figure) dataset created for plot
+          
+        *Overload 39*  
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param sds: (io.deephaven.plot.filters.SelectableDataSet) - selectable dataset (e.g. OneClick filterable table)
+          :param x: (java.lang.String) - column in sds that holds the x-variable data
+          :param xLow: (java.lang.String) - column in sds that holds the low value in the x dimension
+          :param xHigh: (java.lang.String) - column in sds that holds the high value in the x dimension
+          :param y: (java.lang.String) - column in sds that holds the y-variable data
+          :param yLow: (java.lang.String) - column in sds that holds the low value in the y dimension
+          :param yHigh: (java.lang.String) - column in sds that holds the high value in the y dimension
           :return: (io.deephaven.plot.Figure) dataset created for plot
         """
         
@@ -1714,18 +1715,6 @@ class FigureWrapper(object):
         
         *Overload 1*  
           :param seriesName: (java.lang.Comparable) - name of the created dataset
-          :param sds: (io.deephaven.plot.filters.SelectableDataSet) - selectable dataset (e.g. OneClick filterable table)
-          :param x: (java.lang.String) - column in sds that holds the x-variable data
-          :param xLow: (java.lang.String) - column in sds that holds the low value in the x dimension
-          :param xHigh: (java.lang.String) - column in sds that holds the high value in the x dimension
-          :param y: (java.lang.String) - column in sds that holds the y-variable data
-          :param yLow: (java.lang.String) - column in sds that holds the low value in the y dimension
-          :param yHigh: (java.lang.String) - column in sds that holds the high value in the y dimension
-          :param byColumns: (java.lang.String...) - column(s) in sds that holds the grouping data
-          :return: (io.deephaven.plot.Figure) dataset created for plot
-          
-        *Overload 2*  
-          :param seriesName: (java.lang.Comparable) - name of the created dataset
           :param t: (io.deephaven.engine.table.Table) - table
           :param x: (java.lang.String) - column in t that holds the x-variable data
           :param xLow: (java.lang.String) - column in t that holds the low value in the x dimension
@@ -1734,6 +1723,18 @@ class FigureWrapper(object):
           :param yLow: (java.lang.String) - column in t that holds the low value in the y dimension
           :param yHigh: (java.lang.String) - column in t that holds the high value in the y dimension
           :param byColumns: (java.lang.String...) - column(s) in t that holds the grouping data
+          :return: (io.deephaven.plot.Figure) dataset created for plot
+          
+        *Overload 2*  
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param sds: (io.deephaven.plot.filters.SelectableDataSet) - selectable dataset (e.g. OneClick filterable table)
+          :param x: (java.lang.String) - column in sds that holds the x-variable data
+          :param xLow: (java.lang.String) - column in sds that holds the low value in the x dimension
+          :param xHigh: (java.lang.String) - column in sds that holds the high value in the x dimension
+          :param y: (java.lang.String) - column in sds that holds the y-variable data
+          :param yLow: (java.lang.String) - column in sds that holds the low value in the y dimension
+          :param yHigh: (java.lang.String) - column in sds that holds the high value in the y dimension
+          :param byColumns: (java.lang.String...) - column(s) in sds that holds the grouping data
           :return: (io.deephaven.plot.Figure) dataset created for plot
         """
         
@@ -2050,20 +2051,20 @@ class FigureWrapper(object):
           
         *Overload 38*  
           :param seriesName: (java.lang.Comparable) - name of the created dataset
-          :param sds: (io.deephaven.plot.filters.SelectableDataSet) - selectable dataset (e.g. OneClick filterable table)
-          :param x: (java.lang.String) - column in sds that holds the x-variable data
-          :param y: (java.lang.String) - column in sds that holds the y-variable data
-          :param yLow: (java.lang.String) - column in sds that holds the low value in the y dimension
-          :param yHigh: (java.lang.String) - column in sds that holds the high value in the y dimension
-          :return: (io.deephaven.plot.Figure) dataset created for plot
-          
-        *Overload 39*  
-          :param seriesName: (java.lang.Comparable) - name of the created dataset
           :param t: (io.deephaven.engine.table.Table) - table
           :param x: (java.lang.String) - column in t that holds the x-variable data
           :param y: (java.lang.String) - column in t that holds the y-variable data
           :param yLow: (java.lang.String) - column in t that holds the low value in the y dimension
           :param yHigh: (java.lang.String) - column in t that holds the high value in the y dimension
+          :return: (io.deephaven.plot.Figure) dataset created for plot
+          
+        *Overload 39*  
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param sds: (io.deephaven.plot.filters.SelectableDataSet) - selectable dataset (e.g. OneClick filterable table)
+          :param x: (java.lang.String) - column in sds that holds the x-variable data
+          :param y: (java.lang.String) - column in sds that holds the y-variable data
+          :param yLow: (java.lang.String) - column in sds that holds the low value in the y dimension
+          :param yHigh: (java.lang.String) - column in sds that holds the high value in the y dimension
           :return: (io.deephaven.plot.Figure) dataset created for plot
         """
         
@@ -2076,22 +2077,22 @@ class FigureWrapper(object):
         
         *Overload 1*  
           :param seriesName: (java.lang.Comparable) - name of the created dataset
-          :param sds: (io.deephaven.plot.filters.SelectableDataSet) - selectable dataset (e.g. OneClick filterable table)
-          :param x: (java.lang.String) - column in sds that holds the x-variable data
-          :param y: (java.lang.String) - column in sds that holds the y-variable data
-          :param yLow: (java.lang.String) - column in sds that holds the low value in the y dimension
-          :param yHigh: (java.lang.String) - column in sds that holds the high value in the y dimension
-          :param byColumns: (java.lang.String...) - column(s) in sds that holds the grouping data
-          :return: (io.deephaven.plot.Figure) dataset created for plot
-          
-        *Overload 2*  
-          :param seriesName: (java.lang.Comparable) - name of the created dataset
           :param t: (io.deephaven.engine.table.Table) - table
           :param x: (java.lang.String) - column in t that holds the x-variable data
           :param y: (java.lang.String) - column in t that holds the y-variable data
           :param yLow: (java.lang.String) - column in t that holds the low value in the y dimension
           :param yHigh: (java.lang.String) - column in t that holds the high value in the y dimension
           :param byColumns: (java.lang.String...) - column(s) in t that holds the grouping data
+          :return: (io.deephaven.plot.Figure) dataset created for plot
+          
+        *Overload 2*  
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param sds: (io.deephaven.plot.filters.SelectableDataSet) - selectable dataset (e.g. OneClick filterable table)
+          :param x: (java.lang.String) - column in sds that holds the x-variable data
+          :param y: (java.lang.String) - column in sds that holds the y-variable data
+          :param yLow: (java.lang.String) - column in sds that holds the low value in the y dimension
+          :param yHigh: (java.lang.String) - column in sds that holds the high value in the y dimension
+          :param byColumns: (java.lang.String...) - column(s) in sds that holds the grouping data
           :return: (io.deephaven.plot.Figure) dataset created for plot
         """
         
@@ -2286,15 +2287,15 @@ class FigureWrapper(object):
           
         *Overload 9*  
           :param seriesName: (java.lang.Comparable) - name of the created dataset
-          :param sds: (io.deephaven.plot.filters.SelectableDataSet) - selectable data set (e.g. OneClick filterable table)
-          :param columnName: (java.lang.String) - column in sds
+          :param t: (io.deephaven.engine.table.Table) - table
+          :param columnName: (java.lang.String) - column in t
           :param nbins: (int) - number of bins in the resulting histogram
           :return: (io.deephaven.plot.Figure) dataset created for plot
           
         *Overload 10*  
           :param seriesName: (java.lang.Comparable) - name of the created dataset
-          :param t: (io.deephaven.engine.table.Table) - table
-          :param columnName: (java.lang.String) - column in t
+          :param sds: (io.deephaven.plot.filters.SelectableDataSet) - selectable data set (e.g. OneClick filterable table)
+          :param columnName: (java.lang.String) - column in sds
           :param nbins: (int) - number of bins in the resulting histogram
           :return: (io.deephaven.plot.Figure) dataset created for plot
           
@@ -2360,8 +2361,8 @@ class FigureWrapper(object):
           
         *Overload 18*  
           :param seriesName: (java.lang.Comparable) - name of the created dataset
-          :param sds: (io.deephaven.plot.filters.SelectableDataSet) - selectable data set (e.g. OneClick filterable table)
-          :param columnName: (java.lang.String) - column in sds
+          :param t: (io.deephaven.engine.table.Table) - table
+          :param columnName: (java.lang.String) - column in t
           :param rangeMin: (double) - minimum of the range
           :param rangeMax: (double) - maximum of the range
           :param nbins: (int) - number of bins in the resulting histogram
@@ -2369,8 +2370,8 @@ class FigureWrapper(object):
           
         *Overload 19*  
           :param seriesName: (java.lang.Comparable) - name of the created dataset
-          :param t: (io.deephaven.engine.table.Table) - table
-          :param columnName: (java.lang.String) - column in t
+          :param sds: (io.deephaven.plot.filters.SelectableDataSet) - selectable data set (e.g. OneClick filterable table)
+          :param columnName: (java.lang.String) - column in sds
           :param rangeMin: (double) - minimum of the range
           :param rangeMax: (double) - maximum of the range
           :param nbins: (int) - number of bins in the resulting histogram
@@ -2786,22 +2787,22 @@ class FigureWrapper(object):
           
         *Overload 16*  
           :param seriesName: (java.lang.Comparable) - name of the created dataset
-          :param sds: (io.deephaven.plot.filters.SelectableDataSet) - selectable data set (e.g. OneClick filterable table)
-          :param timeCol: (java.lang.String) - column in sds that holds the time data
-          :param openCol: (java.lang.String) - column in sds that holds the open data
-          :param highCol: (java.lang.String) - column in sds that holds the high data
-          :param lowCol: (java.lang.String) - column in sds that holds the low data
-          :param closeCol: (java.lang.String) - column in sds that holds the close data
-          :return: (io.deephaven.plot.Figure) dataset created for plot
-          
-        *Overload 17*  
-          :param seriesName: (java.lang.Comparable) - name of the created dataset
           :param t: (io.deephaven.engine.table.Table) - table
           :param timeCol: (java.lang.String) - column in t that holds the time data
           :param openCol: (java.lang.String) - column in t that holds the open data
           :param highCol: (java.lang.String) - column in t that holds the high data
           :param lowCol: (java.lang.String) - column in t that holds the low data
           :param closeCol: (java.lang.String) - column in t that holds the close data
+          :return: (io.deephaven.plot.Figure) dataset created for plot
+          
+        *Overload 17*  
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param sds: (io.deephaven.plot.filters.SelectableDataSet) - selectable data set (e.g. OneClick filterable table)
+          :param timeCol: (java.lang.String) - column in sds that holds the time data
+          :param openCol: (java.lang.String) - column in sds that holds the open data
+          :param highCol: (java.lang.String) - column in sds that holds the high data
+          :param lowCol: (java.lang.String) - column in sds that holds the low data
+          :param closeCol: (java.lang.String) - column in sds that holds the close data
           :return: (io.deephaven.plot.Figure) dataset created for plot
         """
         
@@ -2814,17 +2815,6 @@ class FigureWrapper(object):
         
         *Overload 1*  
           :param seriesName: (java.lang.Comparable) - name of the created dataset
-          :param sds: (io.deephaven.plot.filters.SelectableDataSet) - selectable data set (e.g. OneClick filterable table)
-          :param timeCol: (java.lang.String) - column in sds that holds the time data
-          :param openCol: (java.lang.String) - column in sds that holds the open data
-          :param highCol: (java.lang.String) - column in sds that holds the high data
-          :param lowCol: (java.lang.String) - column in sds that holds the low data
-          :param closeCol: (java.lang.String) - column in sds that holds the close data
-          :param byColumns: (java.lang.String...) - column(s) in sds that holds the grouping data
-          :return: (io.deephaven.plot.Figure) dataset created for plot
-          
-        *Overload 2*  
-          :param seriesName: (java.lang.Comparable) - name of the created dataset
           :param t: (io.deephaven.engine.table.Table) - table
           :param timeCol: (java.lang.String) - column in t that holds the time data
           :param openCol: (java.lang.String) - column in t that holds the open data
@@ -2832,6 +2822,17 @@ class FigureWrapper(object):
           :param lowCol: (java.lang.String) - column in t that holds the low data
           :param closeCol: (java.lang.String) - column in t that holds the close data
           :param byColumns: (java.lang.String...) - column(s) in t that holds the grouping data
+          :return: (io.deephaven.plot.Figure) dataset created for plot
+          
+        *Overload 2*  
+          :param seriesName: (java.lang.Comparable) - name of the created dataset
+          :param sds: (io.deephaven.plot.filters.SelectableDataSet) - selectable data set (e.g. OneClick filterable table)
+          :param timeCol: (java.lang.String) - column in sds that holds the time data
+          :param openCol: (java.lang.String) - column in sds that holds the open data
+          :param highCol: (java.lang.String) - column in sds that holds the high data
+          :param lowCol: (java.lang.String) - column in sds that holds the low data
+          :param closeCol: (java.lang.String) - column in sds that holds the close data
+          :param byColumns: (java.lang.String...) - column(s) in sds that holds the grouping data
           :return: (io.deephaven.plot.Figure) dataset created for plot
         """
         
@@ -2857,6 +2858,8 @@ class FigureWrapper(object):
     @_convertCatPlotArguments
     def piePlot(self, *args):
         """
+        **Incompatible overloads text - text from the first overload:**
+        
         Creates a pie plot.
          Categorical data must not have duplicates.
         
@@ -2986,16 +2989,16 @@ class FigureWrapper(object):
           
         *Overload 16*  
           :param seriesName: (java.lang.Comparable) - name of the created dataset
-          :param sds: (io.deephaven.plot.filters.SelectableDataSet) - selectable data set (e.g. OneClick filterable table)
-          :param categories: (java.lang.String) - column in sds with categorical data
-          :param values: (java.lang.String) - column in sds with numerical data
+          :param t: (io.deephaven.engine.table.Table) - table
+          :param categories: (java.lang.String) - column in t with categorical data
+          :param values: (java.lang.String) - column in t with numerical data
           :return: (io.deephaven.plot.Figure) dataset created for plot
           
         *Overload 17*  
           :param seriesName: (java.lang.Comparable) - name of the created dataset
-          :param t: (io.deephaven.engine.table.Table) - table
-          :param categories: (java.lang.String) - column in t with categorical data
-          :param values: (java.lang.String) - column in t with numerical data
+          :param sds: (io.deephaven.plot.filters.SelectableDataSet) - selectable data set (e.g. OneClick filterable table)
+          :param categories: (java.lang.String) - column in sds with categorical data
+          :param values: (java.lang.String) - column in sds with numerical data
           :return: (io.deephaven.plot.Figure) dataset created for plot
         """
         
@@ -3574,16 +3577,16 @@ class FigureWrapper(object):
           
         *Overload 84*  
           :param seriesName: (java.lang.Comparable) - name of the created dataset
-          :param sds: (io.deephaven.plot.filters.SelectableDataSet) - selectable data set (e.g. OneClick filterable table)
-          :param x: (java.lang.String) - column in sds that holds the x-variable data
-          :param y: (java.lang.String) - column in sds that holds the y-variable data
+          :param t: (io.deephaven.engine.table.Table) - table
+          :param x: (java.lang.String) - column in t that holds the x-variable data
+          :param y: (java.lang.String) - column in t that holds the y-variable data
           :return: (io.deephaven.plot.Figure) dataset created for plot
           
         *Overload 85*  
           :param seriesName: (java.lang.Comparable) - name of the created dataset
-          :param t: (io.deephaven.engine.table.Table) - table
-          :param x: (java.lang.String) - column in t that holds the x-variable data
-          :param y: (java.lang.String) - column in t that holds the y-variable data
+          :param sds: (io.deephaven.plot.filters.SelectableDataSet) - selectable data set (e.g. OneClick filterable table)
+          :param x: (java.lang.String) - column in sds that holds the x-variable data
+          :param y: (java.lang.String) - column in sds that holds the y-variable data
           :return: (io.deephaven.plot.Figure) dataset created for plot
           
         *Overload 86*  
@@ -3604,17 +3607,17 @@ class FigureWrapper(object):
         
         *Overload 1*  
           :param seriesName: (java.lang.Comparable) - name of the created dataset
-          :param sds: (io.deephaven.plot.filters.SelectableDataSet) - selectable data set (e.g. OneClick filterable table)
-          :param x: (java.lang.String) - column in sds that holds the x-variable data
-          :param y: (java.lang.String) - column in sds that holds the y-variable data
+          :param t: (io.deephaven.engine.table.Table) - table
+          :param x: (java.lang.String) - column in t that holds the x-variable data
+          :param y: (java.lang.String) - column in t that holds the y-variable data
           :param byColumns: (java.lang.String...) - column(s) in t that holds the grouping data
           :return: (io.deephaven.plot.Figure) dataset created for plot
           
         *Overload 2*  
           :param seriesName: (java.lang.Comparable) - name of the created dataset
-          :param t: (io.deephaven.engine.table.Table) - table
-          :param x: (java.lang.String) - column in t that holds the x-variable data
-          :param y: (java.lang.String) - column in t that holds the y-variable data
+          :param sds: (io.deephaven.plot.filters.SelectableDataSet) - selectable data set (e.g. OneClick filterable table)
+          :param x: (java.lang.String) - column in sds that holds the x-variable data
+          :param y: (java.lang.String) - column in sds that holds the y-variable data
           :param byColumns: (java.lang.String...) - column(s) in t that holds the grouping data
           :return: (io.deephaven.plot.Figure) dataset created for plot
         """
@@ -3673,70 +3676,70 @@ class FigureWrapper(object):
           :return: io.deephaven.plot.Figure
           
         *Overload 5*  
-          :param sds: (io.deephaven.plot.filters.SelectableDataSet) - selectable data set (e.g. OneClick filterable table) containing colors
-          :param columnName: (java.lang.String) - column in sds containing colors. The color data for point i comes from row i.
-          :return: (io.deephaven.plot.Figure) this XYDataSeries
-          
-        *Overload 6*  
-          :param sds: io.deephaven.plot.filters.SelectableDataSet
-          :param columnName: java.lang.String
-          :param keys: java.lang.Object...
-          :return: io.deephaven.plot.Figure
-          
-        *Overload 7*  
-          :param sds: (io.deephaven.plot.filters.SelectableDataSet) - selectable data set (e.g. OneClick filterable table)
-          :param keyColumn: (java.lang.String) - column in sds, specifying category values
-          :param valueColumn: (java.lang.String) - column in sds, specifying Paints or ints/Integers representing color palette
-                  values.
-          :return: (io.deephaven.plot.Figure) this CategoryDataSeries
-          
-        *Overload 8*  
-          :param sds: io.deephaven.plot.filters.SelectableDataSet
-          :param keyColumn: java.lang.String
-          :param valueColumn: java.lang.String
-          :param keys: java.lang.Object...
-          :return: io.deephaven.plot.Figure
-          
-        *Overload 9*  
           :param t: (io.deephaven.engine.table.Table) - table containing colors
           :param columnName: (java.lang.String) - column in t containing colors. The color data for point i comes from row i.
           :return: (io.deephaven.plot.Figure) this XYDataSeries
           
-        *Overload 10*  
+        *Overload 6*  
           :param t: io.deephaven.engine.table.Table
           :param columnName: java.lang.String
           :param keys: java.lang.Object...
           :return: io.deephaven.plot.Figure
           
-        *Overload 11*  
+        *Overload 7*  
           :param t: (io.deephaven.engine.table.Table) - table
           :param keyColumn: (java.lang.String) - column in t, specifying category values
           :param valueColumn: (java.lang.String) - column in t, specifying Paints or ints/Integers representing color palette
                   values.
           :return: (io.deephaven.plot.Figure) this CategoryDataSeries
           
-        *Overload 12*  
+        *Overload 8*  
           :param t: io.deephaven.engine.table.Table
           :param keyColumn: java.lang.String
           :param valueColumn: java.lang.String
           :param keys: java.lang.Object...
           :return: io.deephaven.plot.Figure
           
-        *Overload 13*  
+        *Overload 9*  
           :param color: (io.deephaven.gui.color.Paint) - color
           :return: (io.deephaven.plot.Figure) this data series.
           
-        *Overload 14*  
+        *Overload 10*  
           :param color: io.deephaven.gui.color.Paint
           :param keys: java.lang.Object...
           :return: io.deephaven.plot.Figure
           
-        *Overload 15*  
+        *Overload 11*  
           :param colors: (io.deephaven.gui.color.Paint...) - colors. The color for data point i comes from rowSet i.
           :return: (io.deephaven.plot.Figure) this XYDataSeries
           
-        *Overload 16*  
+        *Overload 12*  
           :param colors: io.deephaven.gui.color.Paint[]
+          :param keys: java.lang.Object...
+          :return: io.deephaven.plot.Figure
+          
+        *Overload 13*  
+          :param sds: (io.deephaven.plot.filters.SelectableDataSet) - selectable data set (e.g. OneClick filterable table) containing colors
+          :param columnName: (java.lang.String) - column in sds containing colors. The color data for point i comes from row i.
+          :return: (io.deephaven.plot.Figure) this XYDataSeries
+          
+        *Overload 14*  
+          :param sds: io.deephaven.plot.filters.SelectableDataSet
+          :param columnName: java.lang.String
+          :param keys: java.lang.Object...
+          :return: io.deephaven.plot.Figure
+          
+        *Overload 15*  
+          :param sds: (io.deephaven.plot.filters.SelectableDataSet) - selectable data set (e.g. OneClick filterable table)
+          :param keyColumn: (java.lang.String) - column in sds, specifying category values
+          :param valueColumn: (java.lang.String) - column in sds, specifying Paints or ints/Integers representing color palette
+                  values.
+          :return: (io.deephaven.plot.Figure) this CategoryDataSeries
+          
+        *Overload 16*  
+          :param sds: io.deephaven.plot.filters.SelectableDataSet
+          :param keyColumn: java.lang.String
+          :param valueColumn: java.lang.String
           :param keys: java.lang.Object...
           :return: io.deephaven.plot.Figure
           
@@ -3964,57 +3967,57 @@ class FigureWrapper(object):
          unlabeled.
         
         *Overload 1*  
-          :param labels: (io.deephaven.plot.datasets.data.IndexableData<?>) - labels
-          :return: (io.deephaven.plot.Figure) this XYDataSeries
-          
-        *Overload 2*  
-          :param labels: io.deephaven.plot.datasets.data.IndexableData<?>
-          :param keys: java.lang.Object...
-          :return: io.deephaven.plot.Figure
-          
-        *Overload 3*  
-          :param sds: (io.deephaven.plot.filters.SelectableDataSet) - selectable data set (e.g. OneClick filterable table) containing labels
-          :param columnName: (java.lang.String) - column in sds containing labels. The color data for point i comes from row i.
-          :return: (io.deephaven.plot.Figure) this XYDataSeries
-          
-        *Overload 4*  
-          :param sds: io.deephaven.plot.filters.SelectableDataSet
-          :param columnName: java.lang.String
-          :param keys: java.lang.Object...
-          :return: io.deephaven.plot.Figure
-          
-        *Overload 5*  
-          :param sds: (io.deephaven.plot.filters.SelectableDataSet) - selectable data set (e.g. OneClick filterable table)
-          :param keyColumn: (java.lang.String) - column in sds, specifying category values
-          :param valueColumn: (java.lang.String) - column in sds, specifying labels
-          :return: (io.deephaven.plot.Figure) this CategoryDataSeries
-          
-        *Overload 6*  
-          :param sds: io.deephaven.plot.filters.SelectableDataSet
-          :param keyColumn: java.lang.String
-          :param valueColumn: java.lang.String
-          :param keys: java.lang.Object...
-          :return: io.deephaven.plot.Figure
-          
-        *Overload 7*  
           :param t: (io.deephaven.engine.table.Table) - table containing labels
           :param columnName: (java.lang.String) - column in t containing labels. The label data for point i comes from row i.
           :return: (io.deephaven.plot.Figure) this XYDataSeries
           
-        *Overload 8*  
+        *Overload 2*  
           :param t: io.deephaven.engine.table.Table
           :param columnName: java.lang.String
           :param keys: java.lang.Object...
           :return: io.deephaven.plot.Figure
           
-        *Overload 9*  
+        *Overload 3*  
           :param t: (io.deephaven.engine.table.Table) - table
           :param keyColumn: (java.lang.String) - column in t, specifying category values
           :param valueColumn: (java.lang.String) - column in t, specifying labels
           :return: (io.deephaven.plot.Figure) this CategoryDataSeries
           
-        *Overload 10*  
+        *Overload 4*  
           :param t: io.deephaven.engine.table.Table
+          :param keyColumn: java.lang.String
+          :param valueColumn: java.lang.String
+          :param keys: java.lang.Object...
+          :return: io.deephaven.plot.Figure
+          
+        *Overload 5*  
+          :param labels: (io.deephaven.plot.datasets.data.IndexableData<?>) - labels
+          :return: (io.deephaven.plot.Figure) this XYDataSeries
+          
+        *Overload 6*  
+          :param labels: io.deephaven.plot.datasets.data.IndexableData<?>
+          :param keys: java.lang.Object...
+          :return: io.deephaven.plot.Figure
+          
+        *Overload 7*  
+          :param sds: (io.deephaven.plot.filters.SelectableDataSet) - selectable data set (e.g. OneClick filterable table) containing labels
+          :param columnName: (java.lang.String) - column in sds containing labels. The color data for point i comes from row i.
+          :return: (io.deephaven.plot.Figure) this XYDataSeries
+          
+        *Overload 8*  
+          :param sds: io.deephaven.plot.filters.SelectableDataSet
+          :param columnName: java.lang.String
+          :param keys: java.lang.Object...
+          :return: io.deephaven.plot.Figure
+          
+        *Overload 9*  
+          :param sds: (io.deephaven.plot.filters.SelectableDataSet) - selectable data set (e.g. OneClick filterable table)
+          :param keyColumn: (java.lang.String) - column in sds, specifying category values
+          :param valueColumn: (java.lang.String) - column in sds, specifying labels
+          :return: (io.deephaven.plot.Figure) this CategoryDataSeries
+          
+        *Overload 10*  
+          :param sds: io.deephaven.plot.filters.SelectableDataSet
           :param keyColumn: java.lang.String
           :param valueColumn: java.lang.String
           :param keys: java.lang.Object...
@@ -4129,77 +4132,77 @@ class FigureWrapper(object):
           :return: io.deephaven.plot.Figure
           
         *Overload 3*  
-          :param shapes: (io.deephaven.plot.datasets.data.IndexableData<java.lang.String>) - shapes
-          :return: (io.deephaven.plot.Figure) this XYDataSeries
-          
-        *Overload 4*  
-          :param shapes: io.deephaven.plot.datasets.data.IndexableData<java.lang.String>
-          :param keys: java.lang.Object...
-          :return: io.deephaven.plot.Figure
-          
-        *Overload 5*  
-          :param sds: (io.deephaven.plot.filters.SelectableDataSet) - selectable data set (e.g. OneClick filterable table) containing shapes
-          :param columnName: (java.lang.String) - column in sds containing shapes. The color data for point i comes from row i.
-          :return: (io.deephaven.plot.Figure) this XYDataSeries
-          
-        *Overload 6*  
-          :param sds: io.deephaven.plot.filters.SelectableDataSet
-          :param columnName: java.lang.String
-          :param keys: java.lang.Object...
-          :return: io.deephaven.plot.Figure
-          
-        *Overload 7*  
-          :param sds: (io.deephaven.plot.filters.SelectableDataSet) - selectable data set (e.g. OneClick filterable table)
-          :param keyColumn: (java.lang.String) - column in sds, specifying category values
-          :param valueColumn: (java.lang.String) - column in sds, specifying shapes
-          :return: (io.deephaven.plot.Figure) this CategoryDataSeries
-          
-        *Overload 8*  
-          :param sds: io.deephaven.plot.filters.SelectableDataSet
-          :param keyColumn: java.lang.String
-          :param valueColumn: java.lang.String
-          :param keys: java.lang.Object...
-          :return: io.deephaven.plot.Figure
-          
-        *Overload 9*  
           :param t: (io.deephaven.engine.table.Table) - table containing shapes
           :param columnName: (java.lang.String) - column in t containing shapes. The shape data for point i comes from row i.
           :return: (io.deephaven.plot.Figure) this XYDataSeries
           
-        *Overload 10*  
+        *Overload 4*  
           :param t: io.deephaven.engine.table.Table
           :param columnName: java.lang.String
           :param keys: java.lang.Object...
           :return: io.deephaven.plot.Figure
           
-        *Overload 11*  
+        *Overload 5*  
           :param t: (io.deephaven.engine.table.Table) - table
           :param keyColumn: (java.lang.String) - column in t, specifying category values
           :param valueColumn: (java.lang.String) - column in t, specifying shapes
           :return: (io.deephaven.plot.Figure) this CategoryDataSeries
           
-        *Overload 12*  
+        *Overload 6*  
           :param t: io.deephaven.engine.table.Table
           :param keyColumn: java.lang.String
           :param valueColumn: java.lang.String
           :param keys: java.lang.Object...
           :return: io.deephaven.plot.Figure
           
-        *Overload 13*  
+        *Overload 7*  
           :param shape: (io.deephaven.gui.shape.Shape) - shape
           :return: (io.deephaven.plot.Figure) this DataSeries
           
-        *Overload 14*  
+        *Overload 8*  
           :param shape: io.deephaven.gui.shape.Shape
           :param keys: java.lang.Object...
           :return: io.deephaven.plot.Figure
           
-        *Overload 15*  
+        *Overload 9*  
           :param shapes: (io.deephaven.gui.shape.Shape...) - shapes
           :return: (io.deephaven.plot.Figure) this XYDataSeries
           
-        *Overload 16*  
+        *Overload 10*  
           :param shapes: io.deephaven.gui.shape.Shape[]
+          :param keys: java.lang.Object...
+          :return: io.deephaven.plot.Figure
+          
+        *Overload 11*  
+          :param shapes: (io.deephaven.plot.datasets.data.IndexableData<java.lang.String>) - shapes
+          :return: (io.deephaven.plot.Figure) this XYDataSeries
+          
+        *Overload 12*  
+          :param shapes: io.deephaven.plot.datasets.data.IndexableData<java.lang.String>
+          :param keys: java.lang.Object...
+          :return: io.deephaven.plot.Figure
+          
+        *Overload 13*  
+          :param sds: (io.deephaven.plot.filters.SelectableDataSet) - selectable data set (e.g. OneClick filterable table) containing shapes
+          :param columnName: (java.lang.String) - column in sds containing shapes. The color data for point i comes from row i.
+          :return: (io.deephaven.plot.Figure) this XYDataSeries
+          
+        *Overload 14*  
+          :param sds: io.deephaven.plot.filters.SelectableDataSet
+          :param columnName: java.lang.String
+          :param keys: java.lang.Object...
+          :return: io.deephaven.plot.Figure
+          
+        *Overload 15*  
+          :param sds: (io.deephaven.plot.filters.SelectableDataSet) - selectable data set (e.g. OneClick filterable table)
+          :param keyColumn: (java.lang.String) - column in sds, specifying category values
+          :param valueColumn: (java.lang.String) - column in sds, specifying shapes
+          :return: (io.deephaven.plot.Figure) this CategoryDataSeries
+          
+        *Overload 16*  
+          :param sds: io.deephaven.plot.filters.SelectableDataSet
+          :param keyColumn: java.lang.String
+          :param valueColumn: java.lang.String
           :param keys: java.lang.Object...
           :return: io.deephaven.plot.Figure
           
@@ -4301,60 +4304,60 @@ class FigureWrapper(object):
           :return: io.deephaven.plot.Figure
           
         *Overload 7*  
-          :param factors: (io.deephaven.plot.datasets.data.IndexableData<java.lang.Double>) - factors to multiply the default size (1) by
+          :param t: (io.deephaven.engine.table.Table) - table containing factors to multiply the default size (1) by
+          :param columnName: (java.lang.String) - column in t containing size scaling factors. The size data for point i comes from row
+                  i.
           :return: (io.deephaven.plot.Figure) this XYDataSeries
           
         *Overload 8*  
-          :param factors: io.deephaven.plot.datasets.data.IndexableData<java.lang.Double>
+          :param t: io.deephaven.engine.table.Table
+          :param columnName: java.lang.String
           :param keys: java.lang.Object...
           :return: io.deephaven.plot.Figure
           
         *Overload 9*  
+          :param t: (io.deephaven.engine.table.Table) - table
+          :param keyColumn: (java.lang.String) - column in t, specifying category values
+          :param valueColumn: (java.lang.String) - column in t, specifying point sizes
+          :return: (io.deephaven.plot.Figure) this CategoryDataSeries
+          
+        *Overload 10*  
+          :param t: io.deephaven.engine.table.Table
+          :param keyColumn: java.lang.String
+          :param valueColumn: java.lang.String
+          :param keys: java.lang.Object...
+          :return: io.deephaven.plot.Figure
+          
+        *Overload 11*  
+          :param factors: (io.deephaven.plot.datasets.data.IndexableData<java.lang.Double>) - factors to multiply the default size (1) by
+          :return: (io.deephaven.plot.Figure) this XYDataSeries
+          
+        *Overload 12*  
+          :param factors: io.deephaven.plot.datasets.data.IndexableData<java.lang.Double>
+          :param keys: java.lang.Object...
+          :return: io.deephaven.plot.Figure
+          
+        *Overload 13*  
           :param sds: (io.deephaven.plot.filters.SelectableDataSet) - selectable data set (e.g. OneClick filterable table) containing factors to multiply the default size
                   (1) by
           :param columnName: (java.lang.String) - column in sds containing size scaling factors. The size data for point i comes from row
                   i.
           :return: (io.deephaven.plot.Figure) this XYDataSeries
           
-        *Overload 10*  
-          :param sds: io.deephaven.plot.filters.SelectableDataSet
-          :param columnName: java.lang.String
-          :param keys: java.lang.Object...
-          :return: io.deephaven.plot.Figure
-          
-        *Overload 11*  
-          :param sds: (io.deephaven.plot.filters.SelectableDataSet) - selectable data set (e.g. OneClick filterable table)
-          :param keyColumn: (java.lang.String) - column in sds, specifying category values
-          :param valueColumn: (java.lang.String) - column in sds, specifying point sizes
-          :return: (io.deephaven.plot.Figure) this CategoryDataSeries
-          
-        *Overload 12*  
-          :param sds: io.deephaven.plot.filters.SelectableDataSet
-          :param keyColumn: java.lang.String
-          :param valueColumn: java.lang.String
-          :param keys: java.lang.Object...
-          :return: io.deephaven.plot.Figure
-          
-        *Overload 13*  
-          :param t: (io.deephaven.engine.table.Table) - table containing factors to multiply the default size (1) by
-          :param columnName: (java.lang.String) - column in t containing size scaling factors. The size data for point i comes from row
-                  i.
-          :return: (io.deephaven.plot.Figure) this XYDataSeries
-          
         *Overload 14*  
-          :param t: io.deephaven.engine.table.Table
+          :param sds: io.deephaven.plot.filters.SelectableDataSet
           :param columnName: java.lang.String
           :param keys: java.lang.Object...
           :return: io.deephaven.plot.Figure
           
         *Overload 15*  
-          :param t: (io.deephaven.engine.table.Table) - table
-          :param keyColumn: (java.lang.String) - column in t, specifying category values
-          :param valueColumn: (java.lang.String) - column in t, specifying point sizes
+          :param sds: (io.deephaven.plot.filters.SelectableDataSet) - selectable data set (e.g. OneClick filterable table)
+          :param keyColumn: (java.lang.String) - column in sds, specifying category values
+          :param valueColumn: (java.lang.String) - column in sds, specifying point sizes
           :return: (io.deephaven.plot.Figure) this CategoryDataSeries
           
         *Overload 16*  
-          :param t: io.deephaven.engine.table.Table
+          :param sds: io.deephaven.plot.filters.SelectableDataSet
           :param keyColumn: java.lang.String
           :param valueColumn: java.lang.String
           :param keys: java.lang.Object...
@@ -4418,7 +4421,7 @@ class FigureWrapper(object):
           :return: (io.deephaven.plot.Figure) this data series.
           
         *Overload 28*  
-          :param factors: (long...) - factors to multiply the default size (1) groupBy
+          :param factors: (long...) - factors to multiply the default size (1) by
           :return: (io.deephaven.plot.Figure) this XYDataSeries
           
         *Overload 29*  
@@ -4428,7 +4431,7 @@ class FigureWrapper(object):
           
         *Overload 30*  
           :param categories: (CATEGORY[]) - data points
-          :param factors: (NUMBER[]) - factors to multiply the default size (1) groupBy
+          :param factors: (NUMBER[]) - factors to multiply the default size (1) by
           :return: (io.deephaven.plot.Figure) this CategoryDataSeries
           
         *Overload 31*  
@@ -4450,7 +4453,7 @@ class FigureWrapper(object):
           Note: Java generics information - <CATEGORY extends java.lang.Comparable>
           
           :param categories: (CATEGORY[]) - data points
-          :param factors: (double[]) - factors to multiply the default size (1) groupBy
+          :param factors: (double[]) - factors to multiply the default size (1) by
           :return: (io.deephaven.plot.Figure) this CategoryDataSeries
           
         *Overload 35*  
@@ -4465,7 +4468,7 @@ class FigureWrapper(object):
           Note: Java generics information - <CATEGORY extends java.lang.Comparable>
           
           :param categories: (CATEGORY[]) - data points
-          :param factors: (int[]) - factors to multiply the default size (1) groupBy
+          :param factors: (int[]) - factors to multiply the default size (1) by
           :return: (io.deephaven.plot.Figure) this CategoryDataSeries
           
         *Overload 37*  
@@ -4480,7 +4483,7 @@ class FigureWrapper(object):
           Note: Java generics information - <CATEGORY extends java.lang.Comparable>
           
           :param categories: (CATEGORY[]) - data points
-          :param factors: (long[]) - factors to multiply the default size (1) groupBy
+          :param factors: (long[]) - factors to multiply the default size (1) by
           :return: (io.deephaven.plot.Figure) this CategoryDataSeries
           
         *Overload 39*  
@@ -4520,7 +4523,7 @@ class FigureWrapper(object):
         *Overload 44*  
           Note: Java generics information - <T extends java.lang.Number>
           
-          :param factors: (T[]) - factors to multiply the default size (1) groupBy
+          :param factors: (T[]) - factors to multiply the default size (1) by
           :return: (io.deephaven.plot.Figure) this XYDataSeries
           
         *Overload 45*  
@@ -4678,9 +4681,8 @@ class FigureWrapper(object):
     @_convertArguments
     def seriesNamingFunction(self, namingFunction):
         """
-        Defines the procedure to name a generated series.
-         The input of the naming function is the table map key corresponding
-         to the new series.
+        Defines the procedure to name a generated series. The input of the naming function is the table map key
+         corresponding to the new series.
         
         *Overload 1*  
           :param namingFunction: (groovy.lang.Closure<java.lang.String>) - series naming closure
@@ -4793,26 +4795,24 @@ class FigureWrapper(object):
     @_convertArguments
     def twin(self, *args):
         """
-        Creates a new Axes instance which shares the same Axis
-         objects as this Axes.
-         The resultant Axes has the same range, ticks, etc. as this Axes
-         (as these are fields of the Axis) but may have,
-         for example, a different PlotStyle.
+        Creates a new Axes instance which shares the same Axis objects as this Axes. The resultant Axes has the
+         same range, ticks, etc. as this Axes (as these are fields of the Axis) but may have, for example, a
+         different PlotStyle.
         
         *Overload 1*  
-          :return: (io.deephaven.plot.Figure) the new Axes instance.  The axes name will be equal to the string representation of the axes id.
+          :return: (io.deephaven.plot.Figure) the new Axes instance. The axes name will be equal to the string representation of the axes id.
           
         *Overload 2*  
           :param name: (java.lang.String) - Name for the axes
           :return: (io.deephaven.plot.Figure) the new Axes instance
           
         *Overload 3*  
-          :param dim: (int) - Axis dimension to share.  The x-axis is dimension 0, y-axis is dimension 1.
-          :return: (io.deephaven.plot.Figure) the new Axes instance.  The axes name will be equal to the string representation of the axes id.
+          :param dim: (int) - Axis dimension to share. The x-axis is dimension 0, y-axis is dimension 1.
+          :return: (io.deephaven.plot.Figure) the new Axes instance. The axes name will be equal to the string representation of the axes id.
           
         *Overload 4*  
           :param name: (java.lang.String) - name for the axes
-          :param dim: (int) - Axis dimension to share.  The x-axis is dimension 0, y-axis is dimension 1.
+          :param dim: (int) - Axis dimension to share. The x-axis is dimension 0, y-axis is dimension 1.
           :return: (io.deephaven.plot.Figure) the new Axes instance
         """
         
@@ -4821,15 +4821,13 @@ class FigureWrapper(object):
     @_convertArguments
     def twinX(self, *args):
         """
-        Creates a new Axes instance which shares the same x-Axis
-         as this Axes.
+        Creates a new Axes instance which shares the same x-Axis as this Axes.
          
-         The resultant Axes has the same x-axis range, ticks, etc. as this Axes
-         (as these are properties of the Axis)
-         but may have, for example, a different PlotStyle.
+         The resultant Axes has the same x-axis range, ticks, etc. as this Axes (as these are properties of the
+         Axis) but may have, for example, a different PlotStyle.
         
         *Overload 1*  
-          :return: (io.deephaven.plot.Figure) the new Axes instance.  The axes name will be equal to the string representation of the axes id.
+          :return: (io.deephaven.plot.Figure) the new Axes instance. The axes name will be equal to the string representation of the axes id.
           
         *Overload 2*  
           :param name: (java.lang.String) - Name for the axes
@@ -4841,15 +4839,13 @@ class FigureWrapper(object):
     @_convertArguments
     def twinY(self, *args):
         """
-        Creates a new Axes instance which shares the same y-Axis
-         as this Axes.
+        Creates a new Axes instance which shares the same y-Axis as this Axes.
          
-         The resultant Axes has the same y-axis range, ticks, etc. as this Axes
-         (as these are properties of the Axis)
-         but may have, for example, a different PlotStyle.
+         The resultant Axes has the same y-axis range, ticks, etc. as this Axes (as these are properties of the
+         Axis) but may have, for example, a different PlotStyle.
         
         *Overload 1*  
-          :return: (io.deephaven.plot.Figure) the new Axes instance.  The axes name will be equal to the string representation of the axes id.
+          :return: (io.deephaven.plot.Figure) the new Axes instance. The axes name will be equal to the string representation of the axes id.
           
         *Overload 2*  
           :param name: (java.lang.String) - Name for the axes
@@ -4882,8 +4878,7 @@ class FigureWrapper(object):
     @_convertArguments
     def xBusinessTime(self, *args):
         """
-        Sets the AxisTransform of the x-Axis
-         as an AxisTransformBusinessCalendar.
+        Sets the AxisTransform of the x-Axis as an AxisTransformBusinessCalendar.
         
         *Overload 1*  
           :return: (io.deephaven.plot.Figure) this Axes using the default BusinessCalendar for the x-Axis.
@@ -4894,8 +4889,10 @@ class FigureWrapper(object):
           
         *Overload 3*  
           :param sds: (io.deephaven.plot.filters.SelectableDataSet) - selectable data set (e.g. OneClick filterable table) containing the business calendar.
-          :param valueColumn: (java.lang.String) - name of a column containing String values, where each value is the name of a BusinessCalendar.
-          :return: (io.deephaven.plot.Figure) this Axes using the business calendar from row 0 of the filtered sds for the x-Axis business calendar.  If no value is found, no transform will be applied.
+          :param valueColumn: (java.lang.String) - name of a column containing String values, where each value is the name of a
+                  BusinessCalendar.
+          :return: (io.deephaven.plot.Figure) this Axes using the business calendar from row 0 of the filtered sds for the x-Axis
+                   business calendar. If no value is found, no transform will be applied.
         """
         
         return FigureWrapper(figure=self.figure.xBusinessTime(*args))
@@ -5014,7 +5011,7 @@ class FigureWrapper(object):
           
         *Overload 2*  
           :param sds: (io.deephaven.plot.filters.SelectableDataSet) - selectable data set (e.g. OneClick filterable table)
-          :param valueColumn: (java.lang.String) - column in sds.  The value in row 0 is used for the maximum.
+          :param valueColumn: (java.lang.String) - column in sds. The value in row 0 is used for the maximum.
           :return: (io.deephaven.plot.Figure) this Axes
         """
         
@@ -5031,7 +5028,7 @@ class FigureWrapper(object):
           
         *Overload 2*  
           :param sds: (io.deephaven.plot.filters.SelectableDataSet) - selectable data set (e.g. OneClick filterable table)
-          :param valueColumn: (java.lang.String) - column in sds.  The value in row 0 is used for the minimum.
+          :param valueColumn: (java.lang.String) - column in sds. The value in row 0 is used for the minimum.
           :return: (io.deephaven.plot.Figure) this Axes
         """
         
@@ -5040,9 +5037,8 @@ class FigureWrapper(object):
     @_convertArguments
     def xMinorTicks(self, count):
         """
-        Sets the number of minor ticks between consecutive major ticks
-         in the x-Axis.
-         These minor ticks are equally spaced.
+        Sets the number of minor ticks between consecutive major ticks in the x-Axis. These minor ticks are
+         equally spaced.
         
         :param count: (int) - number of minor ticks between consecutive major ticks.
         :return: (io.deephaven.plot.Figure) this Axes
@@ -5170,8 +5166,7 @@ class FigureWrapper(object):
     @_convertArguments
     def yBusinessTime(self, *args):
         """
-        Sets the AxisTransform of the y-Axis
-         as an AxisTransformBusinessCalendar.
+        Sets the AxisTransform of the y-Axis as an AxisTransformBusinessCalendar.
         
         *Overload 1*  
           :return: (io.deephaven.plot.Figure) this Axes using the default BusinessCalendar for the y-Axis.
@@ -5182,8 +5177,10 @@ class FigureWrapper(object):
           
         *Overload 3*  
           :param sds: (io.deephaven.plot.filters.SelectableDataSet) - selectable data set (e.g. OneClick filterable table) containing the business calendar.
-          :param valueColumn: (java.lang.String) - name of a column containing String values, where each value is the name of a BusinessCalendar.
-          :return: (io.deephaven.plot.Figure) this Axes using the business calendar from row 0 of the filtered sds for the y-Axis business calendar.  If no value is found, no transform will be applied.
+          :param valueColumn: (java.lang.String) - name of a column containing String values, where each value is the name of a
+                  BusinessCalendar.
+          :return: (io.deephaven.plot.Figure) this Axes using the business calendar from row 0 of the filtered sds for the y-Axis
+                   business calendar. If no value is found, no transform will be applied.
         """
         
         return FigureWrapper(figure=self.figure.yBusinessTime(*args))
@@ -5302,7 +5299,7 @@ class FigureWrapper(object):
           
         *Overload 2*  
           :param sds: (io.deephaven.plot.filters.SelectableDataSet) - selectable data set (e.g. OneClick filterable table)
-          :param valueColumn: (java.lang.String) - column in sds.  The value in row 0 is used for the maximum.
+          :param valueColumn: (java.lang.String) - column in sds. The value in row 0 is used for the maximum.
           :return: (io.deephaven.plot.Figure) this Axes
         """
         
@@ -5319,7 +5316,7 @@ class FigureWrapper(object):
           
         *Overload 2*  
           :param sds: (io.deephaven.plot.filters.SelectableDataSet) - selectable data set (e.g. OneClick filterable table)
-          :param valueColumn: (java.lang.String) - column in sds.  The value in row 0 is used for the minimum.
+          :param valueColumn: (java.lang.String) - column in sds. The value in row 0 is used for the minimum.
           :return: (io.deephaven.plot.Figure) this Axes
         """
         
@@ -5328,9 +5325,8 @@ class FigureWrapper(object):
     @_convertArguments
     def yMinorTicks(self, count):
         """
-        Sets the number of minor ticks between consecutive major ticks
-         in the y-Axis.
-         These minor ticks are equally spaced.
+        Sets the number of minor ticks between consecutive major ticks in the y-Axis. These minor ticks are
+         equally spaced.
         
         :param count: (int) - number of minor ticks between consecutive major ticks.
         :return: (io.deephaven.plot.Figure) this Axes

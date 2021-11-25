@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.table.impl.lang.JavaExpressionParser",
+ "methods": {
+  "parseExpression": ":param expression: java.lang.String\n:return: com.github.javaparser.ast.expr.Expression"
+ },
+ "path": "io.deephaven.engine.table.impl.lang.JavaExpressionParser",
+ "text": "Helpful class which parses expressions and performs extra \"this is exactly one expression\" validation",
+ "typeName": "class"
+}

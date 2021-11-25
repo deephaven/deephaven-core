@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.parquet.table.pagestore.PageCache$IntrusivePage",
+ "methods": {
+  "getPage": ":return: io.deephaven.engine.page.ChunkPage<PageCache.IntrusivePage.ATTR>"
+ },
+ "path": "io.deephaven.parquet.table.pagestore.PageCache.IntrusivePage",
+ "text": "Intrusive data structure for page caching.",
+ "typeName": "class"
+}

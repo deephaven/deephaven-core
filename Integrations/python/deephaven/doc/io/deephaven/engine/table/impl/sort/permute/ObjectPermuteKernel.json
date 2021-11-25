@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.table.impl.sort.permute.ObjectPermuteKernel",
+ "methods": {
+  "permute": "*Overload 1*  \n  Note: Java generics information - <TYPE_T,\n  T extends io.deephaven.engine.chunk.Attributes.Any>\n  \n  :param extend: io.deephaven.engine.chunk.ObjectChunk<TYPE_T,?\n  :param outputPositions: io.deephaven.engine.chunk.IntChunk<io.deephaven.engine.chunk.Attributes.ChunkPositions>\n  :param supe: io.deephaven.engine.chunk.WritableObjectChunk<TYPE_T,?\n  \n*Overload 2*  \n  Note: Java generics information - <TYPE_T,\n  T extends io.deephaven.engine.chunk.Attributes.Any>\n  \n  :param inputPositions: io.deephaven.engine.chunk.IntChunk<io.deephaven.engine.chunk.Attributes.ChunkPositions>\n  :param extend: io.deephaven.engine.chunk.ObjectChunk<TYPE_T,?\n  :param outputPositions: io.deephaven.engine.chunk.IntChunk<io.deephaven.engine.chunk.Attributes.ChunkPositions>\n  :param supe: io.deephaven.engine.chunk.WritableObjectChunk<TYPE_T,?",
+  "permuteInput": "Note: Java generics information - <TYPE_T,\nT extends io.deephaven.engine.chunk.Attributes.Any>\n\n:param extend: io.deephaven.engine.chunk.ObjectChunk<TYPE_T,?\n:param inputPositions: io.deephaven.engine.chunk.IntChunk<io.deephaven.engine.chunk.Attributes.ChunkPositions>\n:param supe: io.deephaven.engine.chunk.WritableObjectChunk<TYPE_T,?"
+ },
+ "path": "io.deephaven.engine.table.impl.sort.permute.ObjectPermuteKernel",
+ "typeName": "class"
+}

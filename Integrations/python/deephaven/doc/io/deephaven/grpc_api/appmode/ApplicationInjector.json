@@ -1,0 +1,6 @@
+{
+ "className": "io.deephaven.grpc_api.appmode.ApplicationInjector",
+ "methods": {},
+ "path": "io.deephaven.grpc_api.appmode.ApplicationInjector",
+ "typeName": "class"
+}

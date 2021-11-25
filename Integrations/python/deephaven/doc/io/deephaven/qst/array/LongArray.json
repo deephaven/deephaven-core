@@ -1,0 +1,18 @@
+{
+ "className": "io.deephaven.qst.array.LongArray",
+ "methods": {
+  "builder": ":param initialSize: int\n:return: io.deephaven.qst.array.LongArray.Builder",
+  "componentType": ":return: io.deephaven.qst.type.LongType",
+  "empty": ":return: io.deephaven.qst.array.LongArray",
+  "equals": ":param o: java.lang.Object\n:return: boolean",
+  "hashCode": ":return: int",
+  "of": "*Overload 1*  \n  :param values: long...\n  :return: io.deephaven.qst.array.LongArray\n  \n*Overload 2*  \n  :param values: java.lang.Long...\n  :return: io.deephaven.qst.array.LongArray\n  \n*Overload 3*  \n  :param values: java.lang.Iterable<java.lang.Long>\n  :return: io.deephaven.qst.array.LongArray\n  \n*Overload 4*  \n  :param values: java.util.Collection<java.lang.Long>\n  :return: io.deephaven.qst.array.LongArray",
+  "ofUnsafe": ":param values: long...\n:return: io.deephaven.qst.array.LongArray",
+  "size": ":return: int",
+  "values": "The raw longs. Must not be modified.\n\n:return: (long[]) the longs, do not modify",
+  "walk": "Note: Java generics information - <V extends io.deephaven.qst.array.PrimitiveArray.Visitor>\n\n:param visitor: V\n:return: V"
+ },
+ "path": "io.deephaven.qst.array.LongArray",
+ "text": "A LongType array.",
+ "typeName": "class"
+}

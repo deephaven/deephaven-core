@@ -1,0 +1,16 @@
+{
+ "className": "io.deephaven.engine.updategraph.AbstractNotification",
+ "methods": {
+  "append": ":param output: io.deephaven.base.log.LogOutput\n:return: io.deephaven.base.log.LogOutput",
+  "getNext": "Get the next node after this node.\n\n:return: (io.deephaven.engine.updategraph.NotificationQueue.Notification) This node's next node",
+  "getPrev": "Get the previous node before this node.\n\n:return: (io.deephaven.engine.updategraph.NotificationQueue.Notification) This node's previous node",
+  "isTerminal": "Terminal notifications guarantee that they will not queue additional notifications or mutate data structures\n that should result in additional notifications. They are in turn guaranteed to be called after all\n non-terminal notifications for a given cycle through the notification queue.\n\n:return: (boolean) True iff this notification is terminal.",
+  "mustExecuteWithUgpLock": "If a terminal notification must be executed on the main UGP thread, it must override this method, so that the\n notification is not executed on the run pool.\n\n It is an error to return true if this notification is not terminal\n\n:return: (boolean) true if this notification must be executed directly under the protection of the UGP lock",
+  "setNext": "Set this node's next node.\n\n:param other: (io.deephaven.engine.updategraph.NotificationQueue.Notification) - This node's new next node",
+  "setPrev": "Set this node's previous node.\n\n:param other: (io.deephaven.engine.updategraph.NotificationQueue.Notification) - This node's new previous node",
+  "toString": ":return: java.lang.String"
+ },
+ "path": "io.deephaven.engine.updategraph.AbstractNotification",
+ "text": "Common base class for notifications.",
+ "typeName": "class"
+}

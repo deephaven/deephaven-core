@@ -1,0 +1,12 @@
+{
+ "className": "io.deephaven.engine.rowset.RowSetShiftData$Iterator",
+ "methods": {
+  "beginRange": ":return: long",
+  "endRange": ":return: long",
+  "hasNext": ":return: boolean",
+  "polarityReversed": ":return: boolean",
+  "shiftDelta": ":return: long"
+ },
+ "path": "io.deephaven.engine.rowset.RowSetShiftData.Iterator",
+ "typeName": "interface"
+}

@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.grpc_api.browserstreaming.BrowserStream$Factory",
+ "methods": {
+  "create": ":param sessionState: io.deephaven.grpc_api.session.SessionState\n:param responseObserver: io.grpc.stub.StreamObserver<BrowserStream.Factory.RespT>\n:return: io.deephaven.grpc_api.browserstreaming.BrowserStream<BrowserStream.Factory.ReqT>"
+ },
+ "path": "io.deephaven.grpc_api.browserstreaming.BrowserStream.Factory",
+ "text": "Creates a BrowserStream based on the current session and the observed passed in to the open stream call.",
+ "typeName": "interface"
+}

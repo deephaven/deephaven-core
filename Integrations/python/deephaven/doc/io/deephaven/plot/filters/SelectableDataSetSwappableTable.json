@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.plot.filters.SelectableDataSetSwappableTable",
+ "methods": {
+  "getSwappableTable": "Gets the view of the Table with the selected subset.\n\n:param seriesName: java.lang.Comparable\n:param chart: io.deephaven.plot.ChartImpl\n:param tableTransform: java.util.function.Function<io.deephaven.engine.table.Table,io.deephaven.engine.table.Table>\n:param col: java.lang.String...\n:return: (io.deephaven.plot.util.tables.SwappableTable) table view on selected subset",
+  "getTableDefinition": ":return: (io.deephaven.engine.table.TableDefinition) underlying table definition.",
+  "transform": "Produces a derivative SelectableDataSet with the specified transformation applied to all internal tables.\n\n:param memoKey: (java.lang.Object) - An Object that uniquely identifies the actions taken by the transformation so it can be cached.\n:param transformation: java.util.function.Function<io.deephaven.engine.table.Table,io.deephaven.engine.table.Table>\n:return: (io.deephaven.plot.filters.SelectableDataSet<SelectableDataSetSwappableTable.KEY_TYPE,SelectableDataSetSwappableTable.VALUE_TYPE>) a new SelectableDataSet with the transformation applied"
+ },
+ "path": "io.deephaven.plot.filters.SelectableDataSetSwappableTable",
+ "typeName": "class"
+}

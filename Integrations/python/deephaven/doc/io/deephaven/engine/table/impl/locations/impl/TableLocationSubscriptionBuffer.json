@@ -1,0 +1,12 @@
+{
+ "className": "io.deephaven.engine.table.impl.locations.impl.TableLocationSubscriptionBuffer",
+ "methods": {
+  "handleException": "Notify the listener that an exception was encountered while initiating or maintaining the subscription. Delivery\n of an exception implies that the subscription is no longer valid. This might happen during subscription\n establishment, and consequently should be checked for after subscribe completes.\n\n:param exception: (io.deephaven.engine.table.impl.locations.TableDataException) - The exception",
+  "handleTableLocationKey": "Notify the listener of a TableLocationKey encountered while initiating or maintaining the location\n subscription. This should occur at most once per location, but the order of delivery is not\n guaranteed.\n\n:param tableLocationKey: (io.deephaven.engine.table.impl.locations.ImmutableTableLocationKey) - The new table location key",
+  "processPending": "Subscribe if needed, and return any pending location keys (or throw a pending exception) from the table location\n provider. A given location key will only be returned by a single call to processPending() (unless state is\n reset). No order is maintained internally. If a pending exception is thrown, this signals that the subscription\n is no longer valid and no subsequent location keys will be returned.\n\n:return: (java.util.Collection<io.deephaven.engine.table.impl.locations.ImmutableTableLocationKey>) The collection of pending location keys",
+  "reset": "Unsubscribe and clear any state pending processing."
+ },
+ "path": "io.deephaven.engine.table.impl.locations.impl.TableLocationSubscriptionBuffer",
+ "text": "Intermediates between push-based subscription to a TableLocationProvider and polling on update source refresh.",
+ "typeName": "class"
+}

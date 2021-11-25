@@ -1347,7 +1347,7 @@ public interface Axes extends Serializable {
      * @param y y-values
      * @return dataset created for plot
      */
-    XYDataSeries plot(final Comparable seriesName, final Date[] x, final Date[] y);
+     XYDataSeries plot(final Comparable seriesName, final Date[] x, final Date[] y);
 
     /**
      * Creates an XY plot.
@@ -1357,7 +1357,7 @@ public interface Axes extends Serializable {
      * @param y y-values
      * @return dataset created for plot
      */
-    XYDataSeries plot(final Comparable seriesName, final Date[] x, final DateTime[] y);
+     XYDataSeries plot(final Comparable seriesName, final Date[] x, final DateTime[] y);
 
     /**
      * Creates an XY plot.
@@ -1367,7 +1367,7 @@ public interface Axes extends Serializable {
      * @param y y-values
      * @return dataset created for plot
      */
-    XYDataSeries plot(final Comparable seriesName, final Date[] x, final short[] y);
+     XYDataSeries plot(final Comparable seriesName, final Date[] x, final short[] y);
 
     /**
      * Creates an XY plot.
@@ -1377,7 +1377,7 @@ public interface Axes extends Serializable {
      * @param y y-values
      * @return dataset created for plot
      */
-    XYDataSeries plot(final Comparable seriesName, final Date[] x, final int[] y);
+     XYDataSeries plot(final Comparable seriesName, final Date[] x, final int[] y);
 
     /**
      * Creates an XY plot.
@@ -1387,7 +1387,7 @@ public interface Axes extends Serializable {
      * @param y y-values
      * @return dataset created for plot
      */
-    XYDataSeries plot(final Comparable seriesName, final Date[] x, final long[] y);
+     XYDataSeries plot(final Comparable seriesName, final Date[] x, final long[] y);
 
     /**
      * Creates an XY plot.
@@ -1397,7 +1397,7 @@ public interface Axes extends Serializable {
      * @param y y-values
      * @return dataset created for plot
      */
-    XYDataSeries plot(final Comparable seriesName, final Date[] x, final float[] y);
+     XYDataSeries plot(final Comparable seriesName, final Date[] x, final float[] y);
 
     /**
      * Creates an XY plot.
@@ -1407,7 +1407,7 @@ public interface Axes extends Serializable {
      * @param y y-values
      * @return dataset created for plot
      */
-    XYDataSeries plot(final Comparable seriesName, final Date[] x, final double[] y);
+     XYDataSeries plot(final Comparable seriesName, final Date[] x, final double[] y);
 
     /**
      * Creates an XY plot.
@@ -1439,7 +1439,7 @@ public interface Axes extends Serializable {
      * @param y y-values
      * @return dataset created for plot
      */
-    XYDataSeries plot(final Comparable seriesName, final DateTime[] x, final Date[] y);
+     XYDataSeries plot(final Comparable seriesName, final DateTime[] x, final Date[] y);
 
     /**
      * Creates an XY plot.
@@ -1449,7 +1449,7 @@ public interface Axes extends Serializable {
      * @param y y-values
      * @return dataset created for plot
      */
-    XYDataSeries plot(final Comparable seriesName, final DateTime[] x, final DateTime[] y);
+     XYDataSeries plot(final Comparable seriesName, final DateTime[] x, final DateTime[] y);
 
     /**
      * Creates an XY plot.
@@ -1459,7 +1459,7 @@ public interface Axes extends Serializable {
      * @param y y-values
      * @return dataset created for plot
      */
-    XYDataSeries plot(final Comparable seriesName, final DateTime[] x, final short[] y);
+     XYDataSeries plot(final Comparable seriesName, final DateTime[] x, final short[] y);
 
     /**
      * Creates an XY plot.
@@ -1469,7 +1469,7 @@ public interface Axes extends Serializable {
      * @param y y-values
      * @return dataset created for plot
      */
-    XYDataSeries plot(final Comparable seriesName, final DateTime[] x, final int[] y);
+     XYDataSeries plot(final Comparable seriesName, final DateTime[] x, final int[] y);
 
     /**
      * Creates an XY plot.
@@ -1479,7 +1479,7 @@ public interface Axes extends Serializable {
      * @param y y-values
      * @return dataset created for plot
      */
-    XYDataSeries plot(final Comparable seriesName, final DateTime[] x, final long[] y);
+     XYDataSeries plot(final Comparable seriesName, final DateTime[] x, final long[] y);
 
     /**
      * Creates an XY plot.
@@ -1489,7 +1489,7 @@ public interface Axes extends Serializable {
      * @param y y-values
      * @return dataset created for plot
      */
-    XYDataSeries plot(final Comparable seriesName, final DateTime[] x, final float[] y);
+     XYDataSeries plot(final Comparable seriesName, final DateTime[] x, final float[] y);
 
     /**
      * Creates an XY plot.
@@ -1499,7 +1499,7 @@ public interface Axes extends Serializable {
      * @param y y-values
      * @return dataset created for plot
      */
-    XYDataSeries plot(final Comparable seriesName, final DateTime[] x, final double[] y);
+     XYDataSeries plot(final Comparable seriesName, final DateTime[] x, final double[] y);
 
     /**
      * Creates an XY plot.
@@ -1531,7 +1531,7 @@ public interface Axes extends Serializable {
      * @param y y-values
      * @return dataset created for plot
      */
-    XYDataSeries plot(final Comparable seriesName, final short[] x, final Date[] y);
+     XYDataSeries plot(final Comparable seriesName, final short[] x, final Date[] y);
 
     /**
      * Creates an XY plot.
@@ -1541,7 +1541,7 @@ public interface Axes extends Serializable {
      * @param y y-values
      * @return dataset created for plot
      */
-    XYDataSeries plot(final Comparable seriesName, final short[] x, final DateTime[] y);
+     XYDataSeries plot(final Comparable seriesName, final short[] x, final DateTime[] y);
 
     /**
      * Creates an XY plot.
@@ -1551,7 +1551,7 @@ public interface Axes extends Serializable {
      * @param y y-values
      * @return dataset created for plot
      */
-    XYDataSeries plot(final Comparable seriesName, final short[] x, final short[] y);
+     XYDataSeries plot(final Comparable seriesName, final short[] x, final short[] y);
 
     /**
      * Creates an XY plot.
@@ -1561,7 +1561,7 @@ public interface Axes extends Serializable {
      * @param y y-values
      * @return dataset created for plot
      */
-    XYDataSeries plot(final Comparable seriesName, final short[] x, final int[] y);
+     XYDataSeries plot(final Comparable seriesName, final short[] x, final int[] y);
 
     /**
      * Creates an XY plot.
@@ -1571,7 +1571,7 @@ public interface Axes extends Serializable {
      * @param y y-values
      * @return dataset created for plot
      */
-    XYDataSeries plot(final Comparable seriesName, final short[] x, final long[] y);
+     XYDataSeries plot(final Comparable seriesName, final short[] x, final long[] y);
 
     /**
      * Creates an XY plot.
@@ -1581,7 +1581,7 @@ public interface Axes extends Serializable {
      * @param y y-values
      * @return dataset created for plot
      */
-    XYDataSeries plot(final Comparable seriesName, final short[] x, final float[] y);
+     XYDataSeries plot(final Comparable seriesName, final short[] x, final float[] y);
 
     /**
      * Creates an XY plot.
@@ -1591,7 +1591,7 @@ public interface Axes extends Serializable {
      * @param y y-values
      * @return dataset created for plot
      */
-    XYDataSeries plot(final Comparable seriesName, final short[] x, final double[] y);
+     XYDataSeries plot(final Comparable seriesName, final short[] x, final double[] y);
 
     /**
      * Creates an XY plot.
@@ -1623,7 +1623,7 @@ public interface Axes extends Serializable {
      * @param y y-values
      * @return dataset created for plot
      */
-    XYDataSeries plot(final Comparable seriesName, final int[] x, final Date[] y);
+     XYDataSeries plot(final Comparable seriesName, final int[] x, final Date[] y);
 
     /**
      * Creates an XY plot.
@@ -1633,7 +1633,7 @@ public interface Axes extends Serializable {
      * @param y y-values
      * @return dataset created for plot
      */
-    XYDataSeries plot(final Comparable seriesName, final int[] x, final DateTime[] y);
+     XYDataSeries plot(final Comparable seriesName, final int[] x, final DateTime[] y);
 
     /**
      * Creates an XY plot.
@@ -1643,7 +1643,7 @@ public interface Axes extends Serializable {
      * @param y y-values
      * @return dataset created for plot
      */
-    XYDataSeries plot(final Comparable seriesName, final int[] x, final short[] y);
+     XYDataSeries plot(final Comparable seriesName, final int[] x, final short[] y);
 
     /**
      * Creates an XY plot.
@@ -1653,7 +1653,7 @@ public interface Axes extends Serializable {
      * @param y y-values
      * @return dataset created for plot
      */
-    XYDataSeries plot(final Comparable seriesName, final int[] x, final int[] y);
+     XYDataSeries plot(final Comparable seriesName, final int[] x, final int[] y);
 
     /**
      * Creates an XY plot.
@@ -1663,7 +1663,7 @@ public interface Axes extends Serializable {
      * @param y y-values
      * @return dataset created for plot
      */
-    XYDataSeries plot(final Comparable seriesName, final int[] x, final long[] y);
+     XYDataSeries plot(final Comparable seriesName, final int[] x, final long[] y);
 
     /**
      * Creates an XY plot.
@@ -1673,7 +1673,7 @@ public interface Axes extends Serializable {
      * @param y y-values
      * @return dataset created for plot
      */
-    XYDataSeries plot(final Comparable seriesName, final int[] x, final float[] y);
+     XYDataSeries plot(final Comparable seriesName, final int[] x, final float[] y);
 
     /**
      * Creates an XY plot.
@@ -1683,7 +1683,7 @@ public interface Axes extends Serializable {
      * @param y y-values
      * @return dataset created for plot
      */
-    XYDataSeries plot(final Comparable seriesName, final int[] x, final double[] y);
+     XYDataSeries plot(final Comparable seriesName, final int[] x, final double[] y);
 
     /**
      * Creates an XY plot.
@@ -1715,7 +1715,7 @@ public interface Axes extends Serializable {
      * @param y y-values
      * @return dataset created for plot
      */
-    XYDataSeries plot(final Comparable seriesName, final long[] x, final Date[] y);
+     XYDataSeries plot(final Comparable seriesName, final long[] x, final Date[] y);
 
     /**
      * Creates an XY plot.
@@ -1725,7 +1725,7 @@ public interface Axes extends Serializable {
      * @param y y-values
      * @return dataset created for plot
      */
-    XYDataSeries plot(final Comparable seriesName, final long[] x, final DateTime[] y);
+     XYDataSeries plot(final Comparable seriesName, final long[] x, final DateTime[] y);
 
     /**
      * Creates an XY plot.
@@ -1735,7 +1735,7 @@ public interface Axes extends Serializable {
      * @param y y-values
      * @return dataset created for plot
      */
-    XYDataSeries plot(final Comparable seriesName, final long[] x, final short[] y);
+     XYDataSeries plot(final Comparable seriesName, final long[] x, final short[] y);
 
     /**
      * Creates an XY plot.
@@ -1745,7 +1745,7 @@ public interface Axes extends Serializable {
      * @param y y-values
      * @return dataset created for plot
      */
-    XYDataSeries plot(final Comparable seriesName, final long[] x, final int[] y);
+     XYDataSeries plot(final Comparable seriesName, final long[] x, final int[] y);
 
     /**
      * Creates an XY plot.
@@ -1755,7 +1755,7 @@ public interface Axes extends Serializable {
      * @param y y-values
      * @return dataset created for plot
      */
-    XYDataSeries plot(final Comparable seriesName, final long[] x, final long[] y);
+     XYDataSeries plot(final Comparable seriesName, final long[] x, final long[] y);
 
     /**
      * Creates an XY plot.
@@ -1765,7 +1765,7 @@ public interface Axes extends Serializable {
      * @param y y-values
      * @return dataset created for plot
      */
-    XYDataSeries plot(final Comparable seriesName, final long[] x, final float[] y);
+     XYDataSeries plot(final Comparable seriesName, final long[] x, final float[] y);
 
     /**
      * Creates an XY plot.
@@ -1775,7 +1775,7 @@ public interface Axes extends Serializable {
      * @param y y-values
      * @return dataset created for plot
      */
-    XYDataSeries plot(final Comparable seriesName, final long[] x, final double[] y);
+     XYDataSeries plot(final Comparable seriesName, final long[] x, final double[] y);
 
     /**
      * Creates an XY plot.
@@ -1807,7 +1807,7 @@ public interface Axes extends Serializable {
      * @param y y-values
      * @return dataset created for plot
      */
-    XYDataSeries plot(final Comparable seriesName, final float[] x, final Date[] y);
+     XYDataSeries plot(final Comparable seriesName, final float[] x, final Date[] y);
 
     /**
      * Creates an XY plot.
@@ -1817,7 +1817,7 @@ public interface Axes extends Serializable {
      * @param y y-values
      * @return dataset created for plot
      */
-    XYDataSeries plot(final Comparable seriesName, final float[] x, final DateTime[] y);
+     XYDataSeries plot(final Comparable seriesName, final float[] x, final DateTime[] y);
 
     /**
      * Creates an XY plot.
@@ -1827,7 +1827,7 @@ public interface Axes extends Serializable {
      * @param y y-values
      * @return dataset created for plot
      */
-    XYDataSeries plot(final Comparable seriesName, final float[] x, final short[] y);
+     XYDataSeries plot(final Comparable seriesName, final float[] x, final short[] y);
 
     /**
      * Creates an XY plot.
@@ -1837,7 +1837,7 @@ public interface Axes extends Serializable {
      * @param y y-values
      * @return dataset created for plot
      */
-    XYDataSeries plot(final Comparable seriesName, final float[] x, final int[] y);
+     XYDataSeries plot(final Comparable seriesName, final float[] x, final int[] y);
 
     /**
      * Creates an XY plot.
@@ -1847,7 +1847,7 @@ public interface Axes extends Serializable {
      * @param y y-values
      * @return dataset created for plot
      */
-    XYDataSeries plot(final Comparable seriesName, final float[] x, final long[] y);
+     XYDataSeries plot(final Comparable seriesName, final float[] x, final long[] y);
 
     /**
      * Creates an XY plot.
@@ -1857,7 +1857,7 @@ public interface Axes extends Serializable {
      * @param y y-values
      * @return dataset created for plot
      */
-    XYDataSeries plot(final Comparable seriesName, final float[] x, final float[] y);
+     XYDataSeries plot(final Comparable seriesName, final float[] x, final float[] y);
 
     /**
      * Creates an XY plot.
@@ -1867,7 +1867,7 @@ public interface Axes extends Serializable {
      * @param y y-values
      * @return dataset created for plot
      */
-    XYDataSeries plot(final Comparable seriesName, final float[] x, final double[] y);
+     XYDataSeries plot(final Comparable seriesName, final float[] x, final double[] y);
 
     /**
      * Creates an XY plot.
@@ -1899,7 +1899,7 @@ public interface Axes extends Serializable {
      * @param y y-values
      * @return dataset created for plot
      */
-    XYDataSeries plot(final Comparable seriesName, final double[] x, final Date[] y);
+     XYDataSeries plot(final Comparable seriesName, final double[] x, final Date[] y);
 
     /**
      * Creates an XY plot.
@@ -1909,7 +1909,7 @@ public interface Axes extends Serializable {
      * @param y y-values
      * @return dataset created for plot
      */
-    XYDataSeries plot(final Comparable seriesName, final double[] x, final DateTime[] y);
+     XYDataSeries plot(final Comparable seriesName, final double[] x, final DateTime[] y);
 
     /**
      * Creates an XY plot.
@@ -1919,7 +1919,7 @@ public interface Axes extends Serializable {
      * @param y y-values
      * @return dataset created for plot
      */
-    XYDataSeries plot(final Comparable seriesName, final double[] x, final short[] y);
+     XYDataSeries plot(final Comparable seriesName, final double[] x, final short[] y);
 
     /**
      * Creates an XY plot.
@@ -1929,7 +1929,7 @@ public interface Axes extends Serializable {
      * @param y y-values
      * @return dataset created for plot
      */
-    XYDataSeries plot(final Comparable seriesName, final double[] x, final int[] y);
+     XYDataSeries plot(final Comparable seriesName, final double[] x, final int[] y);
 
     /**
      * Creates an XY plot.
@@ -1939,7 +1939,7 @@ public interface Axes extends Serializable {
      * @param y y-values
      * @return dataset created for plot
      */
-    XYDataSeries plot(final Comparable seriesName, final double[] x, final long[] y);
+     XYDataSeries plot(final Comparable seriesName, final double[] x, final long[] y);
 
     /**
      * Creates an XY plot.
@@ -1949,7 +1949,7 @@ public interface Axes extends Serializable {
      * @param y y-values
      * @return dataset created for plot
      */
-    XYDataSeries plot(final Comparable seriesName, final double[] x, final float[] y);
+     XYDataSeries plot(final Comparable seriesName, final double[] x, final float[] y);
 
     /**
      * Creates an XY plot.
@@ -1959,7 +1959,7 @@ public interface Axes extends Serializable {
      * @param y y-values
      * @return dataset created for plot
      */
-    XYDataSeries plot(final Comparable seriesName, final double[] x, final double[] y);
+     XYDataSeries plot(final Comparable seriesName, final double[] x, final double[] y);
 
     /**
      * Creates an XY plot.
@@ -2070,7 +2070,7 @@ public interface Axes extends Serializable {
      * @param <T1> data type
      * @return dataset created for plot
      */
-    <T0 extends Number, T1 extends Number> XYDataSeries plot(final Comparable seriesName, final T0[] x, final T1[] y);
+    <T0 extends Number,T1 extends Number> XYDataSeries plot(final Comparable seriesName, final T0[] x, final T1[] y);
 
     /**
      * Creates an XY plot.
@@ -2082,8 +2082,7 @@ public interface Axes extends Serializable {
      * @param <T1> data type
      * @return dataset created for plot
      */
-    <T0 extends Number, T1 extends Number> XYDataSeries plot(final Comparable seriesName, final T0[] x,
-            final List<T1> y);
+    <T0 extends Number,T1 extends Number> XYDataSeries plot(final Comparable seriesName, final T0[] x, final List<T1> y);
 
     /**
      * Creates an XY plot.
@@ -2172,8 +2171,7 @@ public interface Axes extends Serializable {
      * @param <T1> data type
      * @return dataset created for plot
      */
-    <T0 extends Number, T1 extends Number> XYDataSeries plot(final Comparable seriesName, final List<T0> x,
-            final T1[] y);
+    <T0 extends Number,T1 extends Number> XYDataSeries plot(final Comparable seriesName, final List<T0> x, final T1[] y);
 
     /**
      * Creates an XY plot.
@@ -2185,8 +2183,7 @@ public interface Axes extends Serializable {
      * @param <T1> data type
      * @return dataset created for plot
      */
-    <T0 extends Number, T1 extends Number> XYDataSeries plot(final Comparable seriesName, final List<T0> x,
-            final List<T1> y);
+    <T0 extends Number,T1 extends Number> XYDataSeries plot(final Comparable seriesName, final List<T0> x, final List<T1> y);
 
     /**
      * Creates an open-high-low-close plot.
@@ -2199,8 +2196,7 @@ public interface Axes extends Serializable {
      * @param close close data
      * @return dataset created by the plot
      */
-    OHLCDataSeries ohlcPlot(final Comparable seriesName, final Date[] time, final short[] open, final short[] high,
-            final short[] low, final short[] close);
+     OHLCDataSeries ohlcPlot(final Comparable seriesName, final Date[] time, final short[] open, final short[] high, final short[] low, final short[] close);
 
     /**
      * Creates an open-high-low-close plot.
@@ -2213,8 +2209,7 @@ public interface Axes extends Serializable {
      * @param close close data
      * @return dataset created by the plot
      */
-    OHLCDataSeries ohlcPlot(final Comparable seriesName, final DateTime[] time, final short[] open, final short[] high,
-            final short[] low, final short[] close);
+     OHLCDataSeries ohlcPlot(final Comparable seriesName, final DateTime[] time, final short[] open, final short[] high, final short[] low, final short[] close);
 
     /**
      * Creates an open-high-low-close plot.
@@ -2227,8 +2222,7 @@ public interface Axes extends Serializable {
      * @param close close data
      * @return dataset created by the plot
      */
-    OHLCDataSeries ohlcPlot(final Comparable seriesName, final Date[] time, final int[] open, final int[] high,
-            final int[] low, final int[] close);
+     OHLCDataSeries ohlcPlot(final Comparable seriesName, final Date[] time, final int[] open, final int[] high, final int[] low, final int[] close);
 
     /**
      * Creates an open-high-low-close plot.
@@ -2241,8 +2235,7 @@ public interface Axes extends Serializable {
      * @param close close data
      * @return dataset created by the plot
      */
-    OHLCDataSeries ohlcPlot(final Comparable seriesName, final DateTime[] time, final int[] open, final int[] high,
-            final int[] low, final int[] close);
+     OHLCDataSeries ohlcPlot(final Comparable seriesName, final DateTime[] time, final int[] open, final int[] high, final int[] low, final int[] close);
 
     /**
      * Creates an open-high-low-close plot.
@@ -2255,8 +2248,7 @@ public interface Axes extends Serializable {
      * @param close close data
      * @return dataset created by the plot
      */
-    OHLCDataSeries ohlcPlot(final Comparable seriesName, final Date[] time, final long[] open, final long[] high,
-            final long[] low, final long[] close);
+     OHLCDataSeries ohlcPlot(final Comparable seriesName, final Date[] time, final long[] open, final long[] high, final long[] low, final long[] close);
 
     /**
      * Creates an open-high-low-close plot.
@@ -2269,8 +2261,7 @@ public interface Axes extends Serializable {
      * @param close close data
      * @return dataset created by the plot
      */
-    OHLCDataSeries ohlcPlot(final Comparable seriesName, final DateTime[] time, final long[] open, final long[] high,
-            final long[] low, final long[] close);
+     OHLCDataSeries ohlcPlot(final Comparable seriesName, final DateTime[] time, final long[] open, final long[] high, final long[] low, final long[] close);
 
     /**
      * Creates an open-high-low-close plot.
@@ -2283,8 +2274,7 @@ public interface Axes extends Serializable {
      * @param close close data
      * @return dataset created by the plot
      */
-    OHLCDataSeries ohlcPlot(final Comparable seriesName, final Date[] time, final float[] open, final float[] high,
-            final float[] low, final float[] close);
+     OHLCDataSeries ohlcPlot(final Comparable seriesName, final Date[] time, final float[] open, final float[] high, final float[] low, final float[] close);
 
     /**
      * Creates an open-high-low-close plot.
@@ -2297,8 +2287,7 @@ public interface Axes extends Serializable {
      * @param close close data
      * @return dataset created by the plot
      */
-    OHLCDataSeries ohlcPlot(final Comparable seriesName, final DateTime[] time, final float[] open, final float[] high,
-            final float[] low, final float[] close);
+     OHLCDataSeries ohlcPlot(final Comparable seriesName, final DateTime[] time, final float[] open, final float[] high, final float[] low, final float[] close);
 
     /**
      * Creates an open-high-low-close plot.
@@ -2311,8 +2300,7 @@ public interface Axes extends Serializable {
      * @param close close data
      * @return dataset created by the plot
      */
-    OHLCDataSeries ohlcPlot(final Comparable seriesName, final Date[] time, final double[] open, final double[] high,
-            final double[] low, final double[] close);
+     OHLCDataSeries ohlcPlot(final Comparable seriesName, final Date[] time, final double[] open, final double[] high, final double[] low, final double[] close);
 
     /**
      * Creates an open-high-low-close plot.
@@ -2325,8 +2313,7 @@ public interface Axes extends Serializable {
      * @param close close data
      * @return dataset created by the plot
      */
-    OHLCDataSeries ohlcPlot(final Comparable seriesName, final DateTime[] time, final double[] open,
-            final double[] high, final double[] low, final double[] close);
+     OHLCDataSeries ohlcPlot(final Comparable seriesName, final DateTime[] time, final double[] open, final double[] high, final double[] low, final double[] close);
 
     /**
      * Creates an open-high-low-close plot.
@@ -2343,9 +2330,7 @@ public interface Axes extends Serializable {
      * @param <T4> close data type
      * @return dataset created by the plot
      */
-    <T1 extends Number, T2 extends Number, T3 extends Number, T4 extends Number> OHLCDataSeries ohlcPlot(
-            final Comparable seriesName, final Date[] time, final T1[] open, final T2[] high, final T3[] low,
-            final T4[] close);
+    <T1 extends Number,T2 extends Number,T3 extends Number,T4 extends Number> OHLCDataSeries ohlcPlot(final Comparable seriesName, final Date[] time, final T1[] open, final T2[] high, final T3[] low, final T4[] close);
 
     /**
      * Creates an open-high-low-close plot.
@@ -2362,9 +2347,7 @@ public interface Axes extends Serializable {
      * @param <T4> close data type
      * @return dataset created by the plot
      */
-    <T1 extends Number, T2 extends Number, T3 extends Number, T4 extends Number> OHLCDataSeries ohlcPlot(
-            final Comparable seriesName, final DateTime[] time, final T1[] open, final T2[] high, final T3[] low,
-            final T4[] close);
+    <T1 extends Number,T2 extends Number,T3 extends Number,T4 extends Number> OHLCDataSeries ohlcPlot(final Comparable seriesName, final DateTime[] time, final T1[] open, final T2[] high, final T3[] low, final T4[] close);
 
     /**
      * Creates an open-high-low-close plot.
@@ -2381,9 +2364,7 @@ public interface Axes extends Serializable {
      * @param <T4> close data type
      * @return dataset created by the plot
      */
-    <T1 extends Number, T2 extends Number, T3 extends Number, T4 extends Number> OHLCDataSeries ohlcPlot(
-            final Comparable seriesName, final Date[] time, final List<T1> open, final List<T2> high,
-            final List<T3> low, final List<T4> close);
+    <T1 extends Number,T2 extends Number,T3 extends Number,T4 extends Number> OHLCDataSeries ohlcPlot(final Comparable seriesName, final Date[] time, final List<T1> open, final List<T2> high, final List<T3> low, final List<T4> close);
 
     /**
      * Creates an open-high-low-close plot.
@@ -2400,9 +2381,7 @@ public interface Axes extends Serializable {
      * @param <T4> close data type
      * @return dataset created by the plot
      */
-    <T1 extends Number, T2 extends Number, T3 extends Number, T4 extends Number> OHLCDataSeries ohlcPlot(
-            final Comparable seriesName, final DateTime[] time, final List<T1> open, final List<T2> high,
-            final List<T3> low, final List<T4> close);
+    <T1 extends Number,T2 extends Number,T3 extends Number,T4 extends Number> OHLCDataSeries ohlcPlot(final Comparable seriesName, final DateTime[] time, final List<T1> open, final List<T2> high, final List<T3> low, final List<T4> close);
 
     /**
      * Creates a histogram.
@@ -2412,7 +2391,7 @@ public interface Axes extends Serializable {
      * @param nbins number of bins
      * @return dataset created by the plot
      */
-    IntervalXYDataSeries histPlot(final Comparable seriesName, final short[] x, final int nbins);
+     IntervalXYDataSeries histPlot(final Comparable seriesName, final short[] x, final int nbins);
 
     /**
      * Creates a histogram.
@@ -2422,7 +2401,7 @@ public interface Axes extends Serializable {
      * @param nbins number of bins
      * @return dataset created by the plot
      */
-    IntervalXYDataSeries histPlot(final Comparable seriesName, final int[] x, final int nbins);
+     IntervalXYDataSeries histPlot(final Comparable seriesName, final int[] x, final int nbins);
 
     /**
      * Creates a histogram.
@@ -2432,7 +2411,7 @@ public interface Axes extends Serializable {
      * @param nbins number of bins
      * @return dataset created by the plot
      */
-    IntervalXYDataSeries histPlot(final Comparable seriesName, final long[] x, final int nbins);
+     IntervalXYDataSeries histPlot(final Comparable seriesName, final long[] x, final int nbins);
 
     /**
      * Creates a histogram.
@@ -2442,7 +2421,7 @@ public interface Axes extends Serializable {
      * @param nbins number of bins
      * @return dataset created by the plot
      */
-    IntervalXYDataSeries histPlot(final Comparable seriesName, final float[] x, final int nbins);
+     IntervalXYDataSeries histPlot(final Comparable seriesName, final float[] x, final int nbins);
 
     /**
      * Creates a histogram.
@@ -2452,7 +2431,7 @@ public interface Axes extends Serializable {
      * @param nbins number of bins
      * @return dataset created by the plot
      */
-    IntervalXYDataSeries histPlot(final Comparable seriesName, final double[] x, final int nbins);
+     IntervalXYDataSeries histPlot(final Comparable seriesName, final double[] x, final int nbins);
 
     /**
      * Creates a histogram.
@@ -2486,8 +2465,7 @@ public interface Axes extends Serializable {
      * @param nbins number of bins
      * @return dataset created by the plot
      */
-    IntervalXYDataSeries histPlot(final Comparable seriesName, final short[] x, final double rangeMin,
-            final double rangeMax, final int nbins);
+     IntervalXYDataSeries histPlot(final Comparable seriesName, final short[] x, final double rangeMin, final double rangeMax, final int nbins);
 
     /**
      * Creates a histogram.
@@ -2499,8 +2477,7 @@ public interface Axes extends Serializable {
      * @param nbins number of bins
      * @return dataset created by the plot
      */
-    IntervalXYDataSeries histPlot(final Comparable seriesName, final int[] x, final double rangeMin,
-            final double rangeMax, final int nbins);
+     IntervalXYDataSeries histPlot(final Comparable seriesName, final int[] x, final double rangeMin, final double rangeMax, final int nbins);
 
     /**
      * Creates a histogram.
@@ -2512,8 +2489,7 @@ public interface Axes extends Serializable {
      * @param nbins number of bins
      * @return dataset created by the plot
      */
-    IntervalXYDataSeries histPlot(final Comparable seriesName, final long[] x, final double rangeMin,
-            final double rangeMax, final int nbins);
+     IntervalXYDataSeries histPlot(final Comparable seriesName, final long[] x, final double rangeMin, final double rangeMax, final int nbins);
 
     /**
      * Creates a histogram.
@@ -2525,8 +2501,7 @@ public interface Axes extends Serializable {
      * @param nbins number of bins
      * @return dataset created by the plot
      */
-    IntervalXYDataSeries histPlot(final Comparable seriesName, final float[] x, final double rangeMin,
-            final double rangeMax, final int nbins);
+     IntervalXYDataSeries histPlot(final Comparable seriesName, final float[] x, final double rangeMin, final double rangeMax, final int nbins);
 
     /**
      * Creates a histogram.
@@ -2538,22 +2513,7 @@ public interface Axes extends Serializable {
      * @param nbins number of bins
      * @return dataset created by the plot
      */
-    IntervalXYDataSeries histPlot(final Comparable seriesName, final double[] x, final double rangeMin,
-            final double rangeMax, final int nbins);
-
-    /**
-     * Creates a histogram.
-     *
-     * @param seriesName name of the created dataset
-     * @param x data
-     * @param rangeMin minimum of the range
-     * @param rangeMax maximum of the range
-     * @param nbins number of bins
-     * @param <T0> data type
-     * @return dataset created by the plot
-     */
-    <T0 extends Number> IntervalXYDataSeries histPlot(final Comparable seriesName, final T0[] x, final double rangeMin,
-            final double rangeMax, final int nbins);
+     IntervalXYDataSeries histPlot(final Comparable seriesName, final double[] x, final double rangeMin, final double rangeMax, final int nbins);
 
     /**
      * Creates a histogram.
@@ -2566,8 +2526,20 @@ public interface Axes extends Serializable {
      * @param <T0> data type
      * @return dataset created by the plot
      */
-    <T0 extends Number> IntervalXYDataSeries histPlot(final Comparable seriesName, final List<T0> x,
-            final double rangeMin, final double rangeMax, final int nbins);
+    <T0 extends Number> IntervalXYDataSeries histPlot(final Comparable seriesName, final T0[] x, final double rangeMin, final double rangeMax, final int nbins);
+
+    /**
+     * Creates a histogram.
+     *
+     * @param seriesName name of the created dataset
+     * @param x data
+     * @param rangeMin minimum of the range
+     * @param rangeMax maximum of the range
+     * @param nbins number of bins
+     * @param <T0> data type
+     * @return dataset created by the plot
+     */
+    <T0 extends Number> IntervalXYDataSeries histPlot(final Comparable seriesName, final List<T0> x, final double rangeMin, final double rangeMax, final int nbins);
 
     /**
      * Creates an XY plot with error bars in both the x and y directions.
@@ -2581,8 +2553,7 @@ public interface Axes extends Serializable {
      * @param yHigh high value in y dimension
      * @return dataset created by the plot
      */
-    XYErrorBarDataSeries errorBarXY(final Comparable seriesName, final short[] x, final short[] xLow,
-            final short[] xHigh, final short[] y, final short[] yLow, final short[] yHigh);
+     XYErrorBarDataSeries errorBarXY(final Comparable seriesName, final short[] x, final short[] xLow, final short[] xHigh, final short[] y, final short[] yLow, final short[] yHigh);
 
     /**
      * Creates an XY plot with error bars in both the x and y directions.
@@ -2596,8 +2567,7 @@ public interface Axes extends Serializable {
      * @param yHigh high value in y dimension
      * @return dataset created by the plot
      */
-    XYErrorBarDataSeries errorBarXY(final Comparable seriesName, final int[] x, final int[] xLow, final int[] xHigh,
-            final int[] y, final int[] yLow, final int[] yHigh);
+     XYErrorBarDataSeries errorBarXY(final Comparable seriesName, final int[] x, final int[] xLow, final int[] xHigh, final int[] y, final int[] yLow, final int[] yHigh);
 
     /**
      * Creates an XY plot with error bars in both the x and y directions.
@@ -2611,8 +2581,7 @@ public interface Axes extends Serializable {
      * @param yHigh high value in y dimension
      * @return dataset created by the plot
      */
-    XYErrorBarDataSeries errorBarXY(final Comparable seriesName, final long[] x, final long[] xLow, final long[] xHigh,
-            final long[] y, final long[] yLow, final long[] yHigh);
+     XYErrorBarDataSeries errorBarXY(final Comparable seriesName, final long[] x, final long[] xLow, final long[] xHigh, final long[] y, final long[] yLow, final long[] yHigh);
 
     /**
      * Creates an XY plot with error bars in both the x and y directions.
@@ -2626,8 +2595,7 @@ public interface Axes extends Serializable {
      * @param yHigh high value in y dimension
      * @return dataset created by the plot
      */
-    XYErrorBarDataSeries errorBarXY(final Comparable seriesName, final float[] x, final float[] xLow,
-            final float[] xHigh, final float[] y, final float[] yLow, final float[] yHigh);
+     XYErrorBarDataSeries errorBarXY(final Comparable seriesName, final float[] x, final float[] xLow, final float[] xHigh, final float[] y, final float[] yLow, final float[] yHigh);
 
     /**
      * Creates an XY plot with error bars in both the x and y directions.
@@ -2641,8 +2609,7 @@ public interface Axes extends Serializable {
      * @param yHigh high value in y dimension
      * @return dataset created by the plot
      */
-    XYErrorBarDataSeries errorBarXY(final Comparable seriesName, final double[] x, final double[] xLow,
-            final double[] xHigh, final double[] y, final double[] yLow, final double[] yHigh);
+     XYErrorBarDataSeries errorBarXY(final Comparable seriesName, final double[] x, final double[] xLow, final double[] xHigh, final double[] y, final double[] yLow, final double[] yHigh);
 
     /**
      * Creates an XY plot with error bars in both the x and y directions.
@@ -2662,9 +2629,7 @@ public interface Axes extends Serializable {
      * @param <T5> data type
      * @return dataset created by the plot
      */
-    <T0 extends Number, T1 extends Number, T2 extends Number, T3 extends Number, T4 extends Number, T5 extends Number> XYErrorBarDataSeries errorBarXY(
-            final Comparable seriesName, final T0[] x, final T1[] xLow, final T2[] xHigh, final T3[] y, final T4[] yLow,
-            final T5[] yHigh);
+    <T0 extends Number,T1 extends Number,T2 extends Number,T3 extends Number,T4 extends Number,T5 extends Number> XYErrorBarDataSeries errorBarXY(final Comparable seriesName, final T0[] x, final T1[] xLow, final T2[] xHigh, final T3[] y, final T4[] yLow, final T5[] yHigh);
 
     /**
      * Creates an XY plot with error bars in both the x and y directions.
@@ -2684,9 +2649,7 @@ public interface Axes extends Serializable {
      * @param <T5> data type
      * @return dataset created by the plot
      */
-    <T0 extends Number, T1 extends Number, T2 extends Number, T3 extends Number, T4 extends Number, T5 extends Number> XYErrorBarDataSeries errorBarXY(
-            final Comparable seriesName, final List<T0> x, final List<T1> xLow, final List<T2> xHigh, final List<T3> y,
-            final List<T4> yLow, final List<T5> yHigh);
+    <T0 extends Number,T1 extends Number,T2 extends Number,T3 extends Number,T4 extends Number,T5 extends Number> XYErrorBarDataSeries errorBarXY(final Comparable seriesName, final List<T0> x, final List<T1> xLow, final List<T2> xHigh, final List<T3> y, final List<T4> yLow, final List<T5> yHigh);
 
     /**
      * Creates an XY plot with error bars in both the x and y directions.
@@ -2700,8 +2663,7 @@ public interface Axes extends Serializable {
      * @param yHigh high value in y dimension
      * @return dataset created by the plot
      */
-    XYErrorBarDataSeries errorBarXY(final Comparable seriesName, final Date[] x, final Date[] xLow, final Date[] xHigh,
-            final Date[] y, final Date[] yLow, final Date[] yHigh);
+     XYErrorBarDataSeries errorBarXY(final Comparable seriesName, final Date[] x, final Date[] xLow, final Date[] xHigh, final Date[] y, final Date[] yLow, final Date[] yHigh);
 
     /**
      * Creates an XY plot with error bars in both the x and y directions.
@@ -2715,8 +2677,7 @@ public interface Axes extends Serializable {
      * @param yHigh high value in y dimension
      * @return dataset created by the plot
      */
-    XYErrorBarDataSeries errorBarXY(final Comparable seriesName, final DateTime[] x, final DateTime[] xLow,
-            final DateTime[] xHigh, final DateTime[] y, final DateTime[] yLow, final DateTime[] yHigh);
+     XYErrorBarDataSeries errorBarXY(final Comparable seriesName, final DateTime[] x, final DateTime[] xLow, final DateTime[] xHigh, final DateTime[] y, final DateTime[] yLow, final DateTime[] yHigh);
 
     /**
      * Creates an XY plot with error bars in both the x and y directions.
@@ -2730,8 +2691,7 @@ public interface Axes extends Serializable {
      * @param yHigh high value in y dimension
      * @return dataset created by the plot
      */
-    XYErrorBarDataSeries errorBarXY(final Comparable seriesName, final Date[] x, final Date[] xLow, final Date[] xHigh,
-            final short[] y, final short[] yLow, final short[] yHigh);
+     XYErrorBarDataSeries errorBarXY(final Comparable seriesName, final Date[] x, final Date[] xLow, final Date[] xHigh, final short[] y, final short[] yLow, final short[] yHigh);
 
     /**
      * Creates an XY plot with error bars in both the x and y directions.
@@ -2745,8 +2705,7 @@ public interface Axes extends Serializable {
      * @param yHigh high value in y dimension
      * @return dataset created by the plot
      */
-    XYErrorBarDataSeries errorBarXY(final Comparable seriesName, final short[] x, final short[] xLow,
-            final short[] xHigh, final Date[] y, final Date[] yLow, final Date[] yHigh);
+     XYErrorBarDataSeries errorBarXY(final Comparable seriesName, final short[] x, final short[] xLow, final short[] xHigh, final Date[] y, final Date[] yLow, final Date[] yHigh);
 
     /**
      * Creates an XY plot with error bars in both the x and y directions.
@@ -2760,8 +2719,7 @@ public interface Axes extends Serializable {
      * @param yHigh high value in y dimension
      * @return dataset created by the plot
      */
-    XYErrorBarDataSeries errorBarXY(final Comparable seriesName, final Date[] x, final Date[] xLow, final Date[] xHigh,
-            final int[] y, final int[] yLow, final int[] yHigh);
+     XYErrorBarDataSeries errorBarXY(final Comparable seriesName, final Date[] x, final Date[] xLow, final Date[] xHigh, final int[] y, final int[] yLow, final int[] yHigh);
 
     /**
      * Creates an XY plot with error bars in both the x and y directions.
@@ -2775,8 +2733,7 @@ public interface Axes extends Serializable {
      * @param yHigh high value in y dimension
      * @return dataset created by the plot
      */
-    XYErrorBarDataSeries errorBarXY(final Comparable seriesName, final int[] x, final int[] xLow, final int[] xHigh,
-            final Date[] y, final Date[] yLow, final Date[] yHigh);
+     XYErrorBarDataSeries errorBarXY(final Comparable seriesName, final int[] x, final int[] xLow, final int[] xHigh, final Date[] y, final Date[] yLow, final Date[] yHigh);
 
     /**
      * Creates an XY plot with error bars in both the x and y directions.
@@ -2790,8 +2747,7 @@ public interface Axes extends Serializable {
      * @param yHigh high value in y dimension
      * @return dataset created by the plot
      */
-    XYErrorBarDataSeries errorBarXY(final Comparable seriesName, final Date[] x, final Date[] xLow, final Date[] xHigh,
-            final long[] y, final long[] yLow, final long[] yHigh);
+     XYErrorBarDataSeries errorBarXY(final Comparable seriesName, final Date[] x, final Date[] xLow, final Date[] xHigh, final long[] y, final long[] yLow, final long[] yHigh);
 
     /**
      * Creates an XY plot with error bars in both the x and y directions.
@@ -2805,8 +2761,7 @@ public interface Axes extends Serializable {
      * @param yHigh high value in y dimension
      * @return dataset created by the plot
      */
-    XYErrorBarDataSeries errorBarXY(final Comparable seriesName, final long[] x, final long[] xLow, final long[] xHigh,
-            final Date[] y, final Date[] yLow, final Date[] yHigh);
+     XYErrorBarDataSeries errorBarXY(final Comparable seriesName, final long[] x, final long[] xLow, final long[] xHigh, final Date[] y, final Date[] yLow, final Date[] yHigh);
 
     /**
      * Creates an XY plot with error bars in both the x and y directions.
@@ -2820,8 +2775,7 @@ public interface Axes extends Serializable {
      * @param yHigh high value in y dimension
      * @return dataset created by the plot
      */
-    XYErrorBarDataSeries errorBarXY(final Comparable seriesName, final Date[] x, final Date[] xLow, final Date[] xHigh,
-            final float[] y, final float[] yLow, final float[] yHigh);
+     XYErrorBarDataSeries errorBarXY(final Comparable seriesName, final Date[] x, final Date[] xLow, final Date[] xHigh, final float[] y, final float[] yLow, final float[] yHigh);
 
     /**
      * Creates an XY plot with error bars in both the x and y directions.
@@ -2835,8 +2789,7 @@ public interface Axes extends Serializable {
      * @param yHigh high value in y dimension
      * @return dataset created by the plot
      */
-    XYErrorBarDataSeries errorBarXY(final Comparable seriesName, final float[] x, final float[] xLow,
-            final float[] xHigh, final Date[] y, final Date[] yLow, final Date[] yHigh);
+     XYErrorBarDataSeries errorBarXY(final Comparable seriesName, final float[] x, final float[] xLow, final float[] xHigh, final Date[] y, final Date[] yLow, final Date[] yHigh);
 
     /**
      * Creates an XY plot with error bars in both the x and y directions.
@@ -2850,8 +2803,7 @@ public interface Axes extends Serializable {
      * @param yHigh high value in y dimension
      * @return dataset created by the plot
      */
-    XYErrorBarDataSeries errorBarXY(final Comparable seriesName, final Date[] x, final Date[] xLow, final Date[] xHigh,
-            final double[] y, final double[] yLow, final double[] yHigh);
+     XYErrorBarDataSeries errorBarXY(final Comparable seriesName, final Date[] x, final Date[] xLow, final Date[] xHigh, final double[] y, final double[] yLow, final double[] yHigh);
 
     /**
      * Creates an XY plot with error bars in both the x and y directions.
@@ -2865,8 +2817,7 @@ public interface Axes extends Serializable {
      * @param yHigh high value in y dimension
      * @return dataset created by the plot
      */
-    XYErrorBarDataSeries errorBarXY(final Comparable seriesName, final double[] x, final double[] xLow,
-            final double[] xHigh, final Date[] y, final Date[] yLow, final Date[] yHigh);
+     XYErrorBarDataSeries errorBarXY(final Comparable seriesName, final double[] x, final double[] xLow, final double[] xHigh, final Date[] y, final Date[] yLow, final Date[] yHigh);
 
     /**
      * Creates an XY plot with error bars in both the x and y directions.
@@ -2883,9 +2834,7 @@ public interface Axes extends Serializable {
      * @param <T5> data type
      * @return dataset created by the plot
      */
-    <T3 extends Number, T4 extends Number, T5 extends Number> XYErrorBarDataSeries errorBarXY(
-            final Comparable seriesName, final Date[] x, final Date[] xLow, final Date[] xHigh, final T3[] y,
-            final T4[] yLow, final T5[] yHigh);
+    <T3 extends Number,T4 extends Number,T5 extends Number> XYErrorBarDataSeries errorBarXY(final Comparable seriesName, final Date[] x, final Date[] xLow, final Date[] xHigh, final T3[] y, final T4[] yLow, final T5[] yHigh);
 
     /**
      * Creates an XY plot with error bars in both the x and y directions.
@@ -2902,9 +2851,7 @@ public interface Axes extends Serializable {
      * @param <T2> data type
      * @return dataset created by the plot
      */
-    <T0 extends Number, T1 extends Number, T2 extends Number> XYErrorBarDataSeries errorBarXY(
-            final Comparable seriesName, final T0[] x, final T1[] xLow, final T2[] xHigh, final Date[] y,
-            final Date[] yLow, final Date[] yHigh);
+    <T0 extends Number,T1 extends Number,T2 extends Number> XYErrorBarDataSeries errorBarXY(final Comparable seriesName, final T0[] x, final T1[] xLow, final T2[] xHigh, final Date[] y, final Date[] yLow, final Date[] yHigh);
 
     /**
      * Creates an XY plot with error bars in both the x and y directions.
@@ -2921,9 +2868,7 @@ public interface Axes extends Serializable {
      * @param <T5> data type
      * @return dataset created by the plot
      */
-    <T3 extends Number, T4 extends Number, T5 extends Number> XYErrorBarDataSeries errorBarXY(
-            final Comparable seriesName, final Date[] x, final Date[] xLow, final Date[] xHigh, final List<T3> y,
-            final List<T4> yLow, final List<T5> yHigh);
+    <T3 extends Number,T4 extends Number,T5 extends Number> XYErrorBarDataSeries errorBarXY(final Comparable seriesName, final Date[] x, final Date[] xLow, final Date[] xHigh, final List<T3> y, final List<T4> yLow, final List<T5> yHigh);
 
     /**
      * Creates an XY plot with error bars in both the x and y directions.
@@ -2940,9 +2885,7 @@ public interface Axes extends Serializable {
      * @param <T2> data type
      * @return dataset created by the plot
      */
-    <T0 extends Number, T1 extends Number, T2 extends Number> XYErrorBarDataSeries errorBarXY(
-            final Comparable seriesName, final List<T0> x, final List<T1> xLow, final List<T2> xHigh, final Date[] y,
-            final Date[] yLow, final Date[] yHigh);
+    <T0 extends Number,T1 extends Number,T2 extends Number> XYErrorBarDataSeries errorBarXY(final Comparable seriesName, final List<T0> x, final List<T1> xLow, final List<T2> xHigh, final Date[] y, final Date[] yLow, final Date[] yHigh);
 
     /**
      * Creates an XY plot with error bars in both the x and y directions.
@@ -2956,8 +2899,7 @@ public interface Axes extends Serializable {
      * @param yHigh high value in y dimension
      * @return dataset created by the plot
      */
-    XYErrorBarDataSeries errorBarXY(final Comparable seriesName, final DateTime[] x, final DateTime[] xLow,
-            final DateTime[] xHigh, final short[] y, final short[] yLow, final short[] yHigh);
+     XYErrorBarDataSeries errorBarXY(final Comparable seriesName, final DateTime[] x, final DateTime[] xLow, final DateTime[] xHigh, final short[] y, final short[] yLow, final short[] yHigh);
 
     /**
      * Creates an XY plot with error bars in both the x and y directions.
@@ -2971,8 +2913,7 @@ public interface Axes extends Serializable {
      * @param yHigh high value in y dimension
      * @return dataset created by the plot
      */
-    XYErrorBarDataSeries errorBarXY(final Comparable seriesName, final short[] x, final short[] xLow,
-            final short[] xHigh, final DateTime[] y, final DateTime[] yLow, final DateTime[] yHigh);
+     XYErrorBarDataSeries errorBarXY(final Comparable seriesName, final short[] x, final short[] xLow, final short[] xHigh, final DateTime[] y, final DateTime[] yLow, final DateTime[] yHigh);
 
     /**
      * Creates an XY plot with error bars in both the x and y directions.
@@ -2986,8 +2927,7 @@ public interface Axes extends Serializable {
      * @param yHigh high value in y dimension
      * @return dataset created by the plot
      */
-    XYErrorBarDataSeries errorBarXY(final Comparable seriesName, final DateTime[] x, final DateTime[] xLow,
-            final DateTime[] xHigh, final int[] y, final int[] yLow, final int[] yHigh);
+     XYErrorBarDataSeries errorBarXY(final Comparable seriesName, final DateTime[] x, final DateTime[] xLow, final DateTime[] xHigh, final int[] y, final int[] yLow, final int[] yHigh);
 
     /**
      * Creates an XY plot with error bars in both the x and y directions.
@@ -3001,8 +2941,7 @@ public interface Axes extends Serializable {
      * @param yHigh high value in y dimension
      * @return dataset created by the plot
      */
-    XYErrorBarDataSeries errorBarXY(final Comparable seriesName, final int[] x, final int[] xLow, final int[] xHigh,
-            final DateTime[] y, final DateTime[] yLow, final DateTime[] yHigh);
+     XYErrorBarDataSeries errorBarXY(final Comparable seriesName, final int[] x, final int[] xLow, final int[] xHigh, final DateTime[] y, final DateTime[] yLow, final DateTime[] yHigh);
 
     /**
      * Creates an XY plot with error bars in both the x and y directions.
@@ -3016,8 +2955,7 @@ public interface Axes extends Serializable {
      * @param yHigh high value in y dimension
      * @return dataset created by the plot
      */
-    XYErrorBarDataSeries errorBarXY(final Comparable seriesName, final DateTime[] x, final DateTime[] xLow,
-            final DateTime[] xHigh, final long[] y, final long[] yLow, final long[] yHigh);
+     XYErrorBarDataSeries errorBarXY(final Comparable seriesName, final DateTime[] x, final DateTime[] xLow, final DateTime[] xHigh, final long[] y, final long[] yLow, final long[] yHigh);
 
     /**
      * Creates an XY plot with error bars in both the x and y directions.
@@ -3031,8 +2969,7 @@ public interface Axes extends Serializable {
      * @param yHigh high value in y dimension
      * @return dataset created by the plot
      */
-    XYErrorBarDataSeries errorBarXY(final Comparable seriesName, final long[] x, final long[] xLow, final long[] xHigh,
-            final DateTime[] y, final DateTime[] yLow, final DateTime[] yHigh);
+     XYErrorBarDataSeries errorBarXY(final Comparable seriesName, final long[] x, final long[] xLow, final long[] xHigh, final DateTime[] y, final DateTime[] yLow, final DateTime[] yHigh);
 
     /**
      * Creates an XY plot with error bars in both the x and y directions.
@@ -3046,8 +2983,7 @@ public interface Axes extends Serializable {
      * @param yHigh high value in y dimension
      * @return dataset created by the plot
      */
-    XYErrorBarDataSeries errorBarXY(final Comparable seriesName, final DateTime[] x, final DateTime[] xLow,
-            final DateTime[] xHigh, final float[] y, final float[] yLow, final float[] yHigh);
+     XYErrorBarDataSeries errorBarXY(final Comparable seriesName, final DateTime[] x, final DateTime[] xLow, final DateTime[] xHigh, final float[] y, final float[] yLow, final float[] yHigh);
 
     /**
      * Creates an XY plot with error bars in both the x and y directions.
@@ -3061,8 +2997,7 @@ public interface Axes extends Serializable {
      * @param yHigh high value in y dimension
      * @return dataset created by the plot
      */
-    XYErrorBarDataSeries errorBarXY(final Comparable seriesName, final float[] x, final float[] xLow,
-            final float[] xHigh, final DateTime[] y, final DateTime[] yLow, final DateTime[] yHigh);
+     XYErrorBarDataSeries errorBarXY(final Comparable seriesName, final float[] x, final float[] xLow, final float[] xHigh, final DateTime[] y, final DateTime[] yLow, final DateTime[] yHigh);
 
     /**
      * Creates an XY plot with error bars in both the x and y directions.
@@ -3076,8 +3011,7 @@ public interface Axes extends Serializable {
      * @param yHigh high value in y dimension
      * @return dataset created by the plot
      */
-    XYErrorBarDataSeries errorBarXY(final Comparable seriesName, final DateTime[] x, final DateTime[] xLow,
-            final DateTime[] xHigh, final double[] y, final double[] yLow, final double[] yHigh);
+     XYErrorBarDataSeries errorBarXY(final Comparable seriesName, final DateTime[] x, final DateTime[] xLow, final DateTime[] xHigh, final double[] y, final double[] yLow, final double[] yHigh);
 
     /**
      * Creates an XY plot with error bars in both the x and y directions.
@@ -3091,8 +3025,7 @@ public interface Axes extends Serializable {
      * @param yHigh high value in y dimension
      * @return dataset created by the plot
      */
-    XYErrorBarDataSeries errorBarXY(final Comparable seriesName, final double[] x, final double[] xLow,
-            final double[] xHigh, final DateTime[] y, final DateTime[] yLow, final DateTime[] yHigh);
+     XYErrorBarDataSeries errorBarXY(final Comparable seriesName, final double[] x, final double[] xLow, final double[] xHigh, final DateTime[] y, final DateTime[] yLow, final DateTime[] yHigh);
 
     /**
      * Creates an XY plot with error bars in both the x and y directions.
@@ -3109,9 +3042,7 @@ public interface Axes extends Serializable {
      * @param <T5> data type
      * @return dataset created by the plot
      */
-    <T3 extends Number, T4 extends Number, T5 extends Number> XYErrorBarDataSeries errorBarXY(
-            final Comparable seriesName, final DateTime[] x, final DateTime[] xLow, final DateTime[] xHigh,
-            final T3[] y, final T4[] yLow, final T5[] yHigh);
+    <T3 extends Number,T4 extends Number,T5 extends Number> XYErrorBarDataSeries errorBarXY(final Comparable seriesName, final DateTime[] x, final DateTime[] xLow, final DateTime[] xHigh, final T3[] y, final T4[] yLow, final T5[] yHigh);
 
     /**
      * Creates an XY plot with error bars in both the x and y directions.
@@ -3128,9 +3059,7 @@ public interface Axes extends Serializable {
      * @param <T2> data type
      * @return dataset created by the plot
      */
-    <T0 extends Number, T1 extends Number, T2 extends Number> XYErrorBarDataSeries errorBarXY(
-            final Comparable seriesName, final T0[] x, final T1[] xLow, final T2[] xHigh, final DateTime[] y,
-            final DateTime[] yLow, final DateTime[] yHigh);
+    <T0 extends Number,T1 extends Number,T2 extends Number> XYErrorBarDataSeries errorBarXY(final Comparable seriesName, final T0[] x, final T1[] xLow, final T2[] xHigh, final DateTime[] y, final DateTime[] yLow, final DateTime[] yHigh);
 
     /**
      * Creates an XY plot with error bars in both the x and y directions.
@@ -3147,9 +3076,7 @@ public interface Axes extends Serializable {
      * @param <T5> data type
      * @return dataset created by the plot
      */
-    <T3 extends Number, T4 extends Number, T5 extends Number> XYErrorBarDataSeries errorBarXY(
-            final Comparable seriesName, final DateTime[] x, final DateTime[] xLow, final DateTime[] xHigh,
-            final List<T3> y, final List<T4> yLow, final List<T5> yHigh);
+    <T3 extends Number,T4 extends Number,T5 extends Number> XYErrorBarDataSeries errorBarXY(final Comparable seriesName, final DateTime[] x, final DateTime[] xLow, final DateTime[] xHigh, final List<T3> y, final List<T4> yLow, final List<T5> yHigh);
 
     /**
      * Creates an XY plot with error bars in both the x and y directions.
@@ -3166,9 +3093,7 @@ public interface Axes extends Serializable {
      * @param <T2> data type
      * @return dataset created by the plot
      */
-    <T0 extends Number, T1 extends Number, T2 extends Number> XYErrorBarDataSeries errorBarXY(
-            final Comparable seriesName, final List<T0> x, final List<T1> xLow, final List<T2> xHigh,
-            final DateTime[] y, final DateTime[] yLow, final DateTime[] yHigh);
+    <T0 extends Number,T1 extends Number,T2 extends Number> XYErrorBarDataSeries errorBarXY(final Comparable seriesName, final List<T0> x, final List<T1> xLow, final List<T2> xHigh, final DateTime[] y, final DateTime[] yLow, final DateTime[] yHigh);
 
     /**
      * Creates an XY plot with error bars in the x direction.
@@ -3180,8 +3105,7 @@ public interface Axes extends Serializable {
      * @param y y-values
      * @return dataset created by the plot
      */
-    XYErrorBarDataSeries errorBarX(final Comparable seriesName, final short[] x, final short[] xLow,
-            final short[] xHigh, final short[] y);
+     XYErrorBarDataSeries errorBarX(final Comparable seriesName, final short[] x, final short[] xLow, final short[] xHigh, final short[] y);
 
     /**
      * Creates an XY plot with error bars in the x direction.
@@ -3193,8 +3117,7 @@ public interface Axes extends Serializable {
      * @param y y-values
      * @return dataset created by the plot
      */
-    XYErrorBarDataSeries errorBarX(final Comparable seriesName, final int[] x, final int[] xLow, final int[] xHigh,
-            final int[] y);
+     XYErrorBarDataSeries errorBarX(final Comparable seriesName, final int[] x, final int[] xLow, final int[] xHigh, final int[] y);
 
     /**
      * Creates an XY plot with error bars in the x direction.
@@ -3206,8 +3129,7 @@ public interface Axes extends Serializable {
      * @param y y-values
      * @return dataset created by the plot
      */
-    XYErrorBarDataSeries errorBarX(final Comparable seriesName, final long[] x, final long[] xLow, final long[] xHigh,
-            final long[] y);
+     XYErrorBarDataSeries errorBarX(final Comparable seriesName, final long[] x, final long[] xLow, final long[] xHigh, final long[] y);
 
     /**
      * Creates an XY plot with error bars in the x direction.
@@ -3219,8 +3141,7 @@ public interface Axes extends Serializable {
      * @param y y-values
      * @return dataset created by the plot
      */
-    XYErrorBarDataSeries errorBarX(final Comparable seriesName, final float[] x, final float[] xLow,
-            final float[] xHigh, final float[] y);
+     XYErrorBarDataSeries errorBarX(final Comparable seriesName, final float[] x, final float[] xLow, final float[] xHigh, final float[] y);
 
     /**
      * Creates an XY plot with error bars in the x direction.
@@ -3232,25 +3153,7 @@ public interface Axes extends Serializable {
      * @param y y-values
      * @return dataset created by the plot
      */
-    XYErrorBarDataSeries errorBarX(final Comparable seriesName, final double[] x, final double[] xLow,
-            final double[] xHigh, final double[] y);
-
-    /**
-     * Creates an XY plot with error bars in the x direction.
-     *
-     * @param seriesName name of the created dataset
-     * @param x x-values
-     * @param xLow low value in x dimension
-     * @param xHigh high value in x dimension
-     * @param y y-values
-     * @param <T0> data type
-     * @param <T1> data type
-     * @param <T2> data type
-     * @param <T3> data type
-     * @return dataset created by the plot
-     */
-    <T0 extends Number, T1 extends Number, T2 extends Number, T3 extends Number> XYErrorBarDataSeries errorBarX(
-            final Comparable seriesName, final T0[] x, final T1[] xLow, final T2[] xHigh, final T3[] y);
+     XYErrorBarDataSeries errorBarX(final Comparable seriesName, final double[] x, final double[] xLow, final double[] xHigh, final double[] y);
 
     /**
      * Creates an XY plot with error bars in the x direction.
@@ -3266,8 +3169,23 @@ public interface Axes extends Serializable {
      * @param <T3> data type
      * @return dataset created by the plot
      */
-    <T0 extends Number, T1 extends Number, T2 extends Number, T3 extends Number> XYErrorBarDataSeries errorBarX(
-            final Comparable seriesName, final List<T0> x, final List<T1> xLow, final List<T2> xHigh, final List<T3> y);
+    <T0 extends Number,T1 extends Number,T2 extends Number,T3 extends Number> XYErrorBarDataSeries errorBarX(final Comparable seriesName, final T0[] x, final T1[] xLow, final T2[] xHigh, final T3[] y);
+
+    /**
+     * Creates an XY plot with error bars in the x direction.
+     *
+     * @param seriesName name of the created dataset
+     * @param x x-values
+     * @param xLow low value in x dimension
+     * @param xHigh high value in x dimension
+     * @param y y-values
+     * @param <T0> data type
+     * @param <T1> data type
+     * @param <T2> data type
+     * @param <T3> data type
+     * @return dataset created by the plot
+     */
+    <T0 extends Number,T1 extends Number,T2 extends Number,T3 extends Number> XYErrorBarDataSeries errorBarX(final Comparable seriesName, final List<T0> x, final List<T1> xLow, final List<T2> xHigh, final List<T3> y);
 
     /**
      * Creates an XY plot with error bars in the x direction.
@@ -3279,8 +3197,7 @@ public interface Axes extends Serializable {
      * @param y y-values
      * @return dataset created by the plot
      */
-    XYErrorBarDataSeries errorBarX(final Comparable seriesName, final Date[] x, final Date[] xLow, final Date[] xHigh,
-            final Date[] y);
+     XYErrorBarDataSeries errorBarX(final Comparable seriesName, final Date[] x, final Date[] xLow, final Date[] xHigh, final Date[] y);
 
     /**
      * Creates an XY plot with error bars in the x direction.
@@ -3292,8 +3209,7 @@ public interface Axes extends Serializable {
      * @param y y-values
      * @return dataset created by the plot
      */
-    XYErrorBarDataSeries errorBarX(final Comparable seriesName, final DateTime[] x, final DateTime[] xLow,
-            final DateTime[] xHigh, final DateTime[] y);
+     XYErrorBarDataSeries errorBarX(final Comparable seriesName, final DateTime[] x, final DateTime[] xLow, final DateTime[] xHigh, final DateTime[] y);
 
     /**
      * Creates an XY plot with error bars in the x direction.
@@ -3305,8 +3221,7 @@ public interface Axes extends Serializable {
      * @param y y-values
      * @return dataset created by the plot
      */
-    XYErrorBarDataSeries errorBarX(final Comparable seriesName, final Date[] x, final Date[] xLow, final Date[] xHigh,
-            final short[] y);
+     XYErrorBarDataSeries errorBarX(final Comparable seriesName, final Date[] x, final Date[] xLow, final Date[] xHigh, final short[] y);
 
     /**
      * Creates an XY plot with error bars in the x direction.
@@ -3318,8 +3233,7 @@ public interface Axes extends Serializable {
      * @param y y-values
      * @return dataset created by the plot
      */
-    XYErrorBarDataSeries errorBarX(final Comparable seriesName, final short[] x, final short[] xLow,
-            final short[] xHigh, final Date[] y);
+     XYErrorBarDataSeries errorBarX(final Comparable seriesName, final short[] x, final short[] xLow, final short[] xHigh, final Date[] y);
 
     /**
      * Creates an XY plot with error bars in the x direction.
@@ -3331,8 +3245,7 @@ public interface Axes extends Serializable {
      * @param y y-values
      * @return dataset created by the plot
      */
-    XYErrorBarDataSeries errorBarX(final Comparable seriesName, final Date[] x, final Date[] xLow, final Date[] xHigh,
-            final int[] y);
+     XYErrorBarDataSeries errorBarX(final Comparable seriesName, final Date[] x, final Date[] xLow, final Date[] xHigh, final int[] y);
 
     /**
      * Creates an XY plot with error bars in the x direction.
@@ -3344,8 +3257,7 @@ public interface Axes extends Serializable {
      * @param y y-values
      * @return dataset created by the plot
      */
-    XYErrorBarDataSeries errorBarX(final Comparable seriesName, final int[] x, final int[] xLow, final int[] xHigh,
-            final Date[] y);
+     XYErrorBarDataSeries errorBarX(final Comparable seriesName, final int[] x, final int[] xLow, final int[] xHigh, final Date[] y);
 
     /**
      * Creates an XY plot with error bars in the x direction.
@@ -3357,8 +3269,7 @@ public interface Axes extends Serializable {
      * @param y y-values
      * @return dataset created by the plot
      */
-    XYErrorBarDataSeries errorBarX(final Comparable seriesName, final Date[] x, final Date[] xLow, final Date[] xHigh,
-            final long[] y);
+     XYErrorBarDataSeries errorBarX(final Comparable seriesName, final Date[] x, final Date[] xLow, final Date[] xHigh, final long[] y);
 
     /**
      * Creates an XY plot with error bars in the x direction.
@@ -3370,8 +3281,7 @@ public interface Axes extends Serializable {
      * @param y y-values
      * @return dataset created by the plot
      */
-    XYErrorBarDataSeries errorBarX(final Comparable seriesName, final long[] x, final long[] xLow, final long[] xHigh,
-            final Date[] y);
+     XYErrorBarDataSeries errorBarX(final Comparable seriesName, final long[] x, final long[] xLow, final long[] xHigh, final Date[] y);
 
     /**
      * Creates an XY plot with error bars in the x direction.
@@ -3383,8 +3293,7 @@ public interface Axes extends Serializable {
      * @param y y-values
      * @return dataset created by the plot
      */
-    XYErrorBarDataSeries errorBarX(final Comparable seriesName, final Date[] x, final Date[] xLow, final Date[] xHigh,
-            final float[] y);
+     XYErrorBarDataSeries errorBarX(final Comparable seriesName, final Date[] x, final Date[] xLow, final Date[] xHigh, final float[] y);
 
     /**
      * Creates an XY plot with error bars in the x direction.
@@ -3396,8 +3305,7 @@ public interface Axes extends Serializable {
      * @param y y-values
      * @return dataset created by the plot
      */
-    XYErrorBarDataSeries errorBarX(final Comparable seriesName, final float[] x, final float[] xLow,
-            final float[] xHigh, final Date[] y);
+     XYErrorBarDataSeries errorBarX(final Comparable seriesName, final float[] x, final float[] xLow, final float[] xHigh, final Date[] y);
 
     /**
      * Creates an XY plot with error bars in the x direction.
@@ -3409,8 +3317,7 @@ public interface Axes extends Serializable {
      * @param y y-values
      * @return dataset created by the plot
      */
-    XYErrorBarDataSeries errorBarX(final Comparable seriesName, final Date[] x, final Date[] xLow, final Date[] xHigh,
-            final double[] y);
+     XYErrorBarDataSeries errorBarX(final Comparable seriesName, final Date[] x, final Date[] xLow, final Date[] xHigh, final double[] y);
 
     /**
      * Creates an XY plot with error bars in the x direction.
@@ -3422,8 +3329,7 @@ public interface Axes extends Serializable {
      * @param y y-values
      * @return dataset created by the plot
      */
-    XYErrorBarDataSeries errorBarX(final Comparable seriesName, final double[] x, final double[] xLow,
-            final double[] xHigh, final Date[] y);
+     XYErrorBarDataSeries errorBarX(final Comparable seriesName, final double[] x, final double[] xLow, final double[] xHigh, final Date[] y);
 
     /**
      * Creates an XY plot with error bars in the x direction.
@@ -3436,8 +3342,7 @@ public interface Axes extends Serializable {
      * @param <T3> data type
      * @return dataset created by the plot
      */
-    <T3 extends Number> XYErrorBarDataSeries errorBarX(final Comparable seriesName, final Date[] x, final Date[] xLow,
-            final Date[] xHigh, final T3[] y);
+    <T3 extends Number> XYErrorBarDataSeries errorBarX(final Comparable seriesName, final Date[] x, final Date[] xLow, final Date[] xHigh, final T3[] y);
 
     /**
      * Creates an XY plot with error bars in the x direction.
@@ -3452,8 +3357,7 @@ public interface Axes extends Serializable {
      * @param <T2> data type
      * @return dataset created by the plot
      */
-    <T0 extends Number, T1 extends Number, T2 extends Number> XYErrorBarDataSeries errorBarX(
-            final Comparable seriesName, final T0[] x, final T1[] xLow, final T2[] xHigh, final Date[] y);
+    <T0 extends Number,T1 extends Number,T2 extends Number> XYErrorBarDataSeries errorBarX(final Comparable seriesName, final T0[] x, final T1[] xLow, final T2[] xHigh, final Date[] y);
 
     /**
      * Creates an XY plot with error bars in the x direction.
@@ -3466,8 +3370,7 @@ public interface Axes extends Serializable {
      * @param <T3> data type
      * @return dataset created by the plot
      */
-    <T3 extends Number> XYErrorBarDataSeries errorBarX(final Comparable seriesName, final Date[] x, final Date[] xLow,
-            final Date[] xHigh, final List<T3> y);
+    <T3 extends Number> XYErrorBarDataSeries errorBarX(final Comparable seriesName, final Date[] x, final Date[] xLow, final Date[] xHigh, final List<T3> y);
 
     /**
      * Creates an XY plot with error bars in the x direction.
@@ -3482,8 +3385,7 @@ public interface Axes extends Serializable {
      * @param <T2> data type
      * @return dataset created by the plot
      */
-    <T0 extends Number, T1 extends Number, T2 extends Number> XYErrorBarDataSeries errorBarX(
-            final Comparable seriesName, final List<T0> x, final List<T1> xLow, final List<T2> xHigh, final Date[] y);
+    <T0 extends Number,T1 extends Number,T2 extends Number> XYErrorBarDataSeries errorBarX(final Comparable seriesName, final List<T0> x, final List<T1> xLow, final List<T2> xHigh, final Date[] y);
 
     /**
      * Creates an XY plot with error bars in the x direction.
@@ -3495,8 +3397,7 @@ public interface Axes extends Serializable {
      * @param y y-values
      * @return dataset created by the plot
      */
-    XYErrorBarDataSeries errorBarX(final Comparable seriesName, final DateTime[] x, final DateTime[] xLow,
-            final DateTime[] xHigh, final short[] y);
+     XYErrorBarDataSeries errorBarX(final Comparable seriesName, final DateTime[] x, final DateTime[] xLow, final DateTime[] xHigh, final short[] y);
 
     /**
      * Creates an XY plot with error bars in the x direction.
@@ -3508,8 +3409,7 @@ public interface Axes extends Serializable {
      * @param y y-values
      * @return dataset created by the plot
      */
-    XYErrorBarDataSeries errorBarX(final Comparable seriesName, final short[] x, final short[] xLow,
-            final short[] xHigh, final DateTime[] y);
+     XYErrorBarDataSeries errorBarX(final Comparable seriesName, final short[] x, final short[] xLow, final short[] xHigh, final DateTime[] y);
 
     /**
      * Creates an XY plot with error bars in the x direction.
@@ -3521,8 +3421,7 @@ public interface Axes extends Serializable {
      * @param y y-values
      * @return dataset created by the plot
      */
-    XYErrorBarDataSeries errorBarX(final Comparable seriesName, final DateTime[] x, final DateTime[] xLow,
-            final DateTime[] xHigh, final int[] y);
+     XYErrorBarDataSeries errorBarX(final Comparable seriesName, final DateTime[] x, final DateTime[] xLow, final DateTime[] xHigh, final int[] y);
 
     /**
      * Creates an XY plot with error bars in the x direction.
@@ -3534,8 +3433,7 @@ public interface Axes extends Serializable {
      * @param y y-values
      * @return dataset created by the plot
      */
-    XYErrorBarDataSeries errorBarX(final Comparable seriesName, final int[] x, final int[] xLow, final int[] xHigh,
-            final DateTime[] y);
+     XYErrorBarDataSeries errorBarX(final Comparable seriesName, final int[] x, final int[] xLow, final int[] xHigh, final DateTime[] y);
 
     /**
      * Creates an XY plot with error bars in the x direction.
@@ -3547,8 +3445,7 @@ public interface Axes extends Serializable {
      * @param y y-values
      * @return dataset created by the plot
      */
-    XYErrorBarDataSeries errorBarX(final Comparable seriesName, final DateTime[] x, final DateTime[] xLow,
-            final DateTime[] xHigh, final long[] y);
+     XYErrorBarDataSeries errorBarX(final Comparable seriesName, final DateTime[] x, final DateTime[] xLow, final DateTime[] xHigh, final long[] y);
 
     /**
      * Creates an XY plot with error bars in the x direction.
@@ -3560,8 +3457,7 @@ public interface Axes extends Serializable {
      * @param y y-values
      * @return dataset created by the plot
      */
-    XYErrorBarDataSeries errorBarX(final Comparable seriesName, final long[] x, final long[] xLow, final long[] xHigh,
-            final DateTime[] y);
+     XYErrorBarDataSeries errorBarX(final Comparable seriesName, final long[] x, final long[] xLow, final long[] xHigh, final DateTime[] y);
 
     /**
      * Creates an XY plot with error bars in the x direction.
@@ -3573,8 +3469,7 @@ public interface Axes extends Serializable {
      * @param y y-values
      * @return dataset created by the plot
      */
-    XYErrorBarDataSeries errorBarX(final Comparable seriesName, final DateTime[] x, final DateTime[] xLow,
-            final DateTime[] xHigh, final float[] y);
+     XYErrorBarDataSeries errorBarX(final Comparable seriesName, final DateTime[] x, final DateTime[] xLow, final DateTime[] xHigh, final float[] y);
 
     /**
      * Creates an XY plot with error bars in the x direction.
@@ -3586,8 +3481,7 @@ public interface Axes extends Serializable {
      * @param y y-values
      * @return dataset created by the plot
      */
-    XYErrorBarDataSeries errorBarX(final Comparable seriesName, final float[] x, final float[] xLow,
-            final float[] xHigh, final DateTime[] y);
+     XYErrorBarDataSeries errorBarX(final Comparable seriesName, final float[] x, final float[] xLow, final float[] xHigh, final DateTime[] y);
 
     /**
      * Creates an XY plot with error bars in the x direction.
@@ -3599,8 +3493,7 @@ public interface Axes extends Serializable {
      * @param y y-values
      * @return dataset created by the plot
      */
-    XYErrorBarDataSeries errorBarX(final Comparable seriesName, final DateTime[] x, final DateTime[] xLow,
-            final DateTime[] xHigh, final double[] y);
+     XYErrorBarDataSeries errorBarX(final Comparable seriesName, final DateTime[] x, final DateTime[] xLow, final DateTime[] xHigh, final double[] y);
 
     /**
      * Creates an XY plot with error bars in the x direction.
@@ -3612,8 +3505,7 @@ public interface Axes extends Serializable {
      * @param y y-values
      * @return dataset created by the plot
      */
-    XYErrorBarDataSeries errorBarX(final Comparable seriesName, final double[] x, final double[] xLow,
-            final double[] xHigh, final DateTime[] y);
+     XYErrorBarDataSeries errorBarX(final Comparable seriesName, final double[] x, final double[] xLow, final double[] xHigh, final DateTime[] y);
 
     /**
      * Creates an XY plot with error bars in the x direction.
@@ -3626,8 +3518,7 @@ public interface Axes extends Serializable {
      * @param <T3> data type
      * @return dataset created by the plot
      */
-    <T3 extends Number> XYErrorBarDataSeries errorBarX(final Comparable seriesName, final DateTime[] x,
-            final DateTime[] xLow, final DateTime[] xHigh, final T3[] y);
+    <T3 extends Number> XYErrorBarDataSeries errorBarX(final Comparable seriesName, final DateTime[] x, final DateTime[] xLow, final DateTime[] xHigh, final T3[] y);
 
     /**
      * Creates an XY plot with error bars in the x direction.
@@ -3642,8 +3533,7 @@ public interface Axes extends Serializable {
      * @param <T2> data type
      * @return dataset created by the plot
      */
-    <T0 extends Number, T1 extends Number, T2 extends Number> XYErrorBarDataSeries errorBarX(
-            final Comparable seriesName, final T0[] x, final T1[] xLow, final T2[] xHigh, final DateTime[] y);
+    <T0 extends Number,T1 extends Number,T2 extends Number> XYErrorBarDataSeries errorBarX(final Comparable seriesName, final T0[] x, final T1[] xLow, final T2[] xHigh, final DateTime[] y);
 
     /**
      * Creates an XY plot with error bars in the x direction.
@@ -3656,8 +3546,7 @@ public interface Axes extends Serializable {
      * @param <T3> data type
      * @return dataset created by the plot
      */
-    <T3 extends Number> XYErrorBarDataSeries errorBarX(final Comparable seriesName, final DateTime[] x,
-            final DateTime[] xLow, final DateTime[] xHigh, final List<T3> y);
+    <T3 extends Number> XYErrorBarDataSeries errorBarX(final Comparable seriesName, final DateTime[] x, final DateTime[] xLow, final DateTime[] xHigh, final List<T3> y);
 
     /**
      * Creates an XY plot with error bars in the x direction.
@@ -3672,9 +3561,7 @@ public interface Axes extends Serializable {
      * @param <T2> data type
      * @return dataset created by the plot
      */
-    <T0 extends Number, T1 extends Number, T2 extends Number> XYErrorBarDataSeries errorBarX(
-            final Comparable seriesName, final List<T0> x, final List<T1> xLow, final List<T2> xHigh,
-            final DateTime[] y);
+    <T0 extends Number,T1 extends Number,T2 extends Number> XYErrorBarDataSeries errorBarX(final Comparable seriesName, final List<T0> x, final List<T1> xLow, final List<T2> xHigh, final DateTime[] y);
 
     /**
      * Creates an XY plot with error bars in the y direction.
@@ -3686,8 +3573,7 @@ public interface Axes extends Serializable {
      * @param yHigh high value in y dimension
      * @return dataset created by the plot
      */
-    XYErrorBarDataSeries errorBarY(final Comparable seriesName, final short[] x, final short[] y, final short[] yLow,
-            final short[] yHigh);
+     XYErrorBarDataSeries errorBarY(final Comparable seriesName, final short[] x, final short[] y, final short[] yLow, final short[] yHigh);
 
     /**
      * Creates an XY plot with error bars in the y direction.
@@ -3699,8 +3585,7 @@ public interface Axes extends Serializable {
      * @param yHigh high value in y dimension
      * @return dataset created by the plot
      */
-    XYErrorBarDataSeries errorBarY(final Comparable seriesName, final int[] x, final int[] y, final int[] yLow,
-            final int[] yHigh);
+     XYErrorBarDataSeries errorBarY(final Comparable seriesName, final int[] x, final int[] y, final int[] yLow, final int[] yHigh);
 
     /**
      * Creates an XY plot with error bars in the y direction.
@@ -3712,8 +3597,7 @@ public interface Axes extends Serializable {
      * @param yHigh high value in y dimension
      * @return dataset created by the plot
      */
-    XYErrorBarDataSeries errorBarY(final Comparable seriesName, final long[] x, final long[] y, final long[] yLow,
-            final long[] yHigh);
+     XYErrorBarDataSeries errorBarY(final Comparable seriesName, final long[] x, final long[] y, final long[] yLow, final long[] yHigh);
 
     /**
      * Creates an XY plot with error bars in the y direction.
@@ -3725,8 +3609,7 @@ public interface Axes extends Serializable {
      * @param yHigh high value in y dimension
      * @return dataset created by the plot
      */
-    XYErrorBarDataSeries errorBarY(final Comparable seriesName, final float[] x, final float[] y, final float[] yLow,
-            final float[] yHigh);
+     XYErrorBarDataSeries errorBarY(final Comparable seriesName, final float[] x, final float[] y, final float[] yLow, final float[] yHigh);
 
     /**
      * Creates an XY plot with error bars in the y direction.
@@ -3738,8 +3621,7 @@ public interface Axes extends Serializable {
      * @param yHigh high value in y dimension
      * @return dataset created by the plot
      */
-    XYErrorBarDataSeries errorBarY(final Comparable seriesName, final double[] x, final double[] y, final double[] yLow,
-            final double[] yHigh);
+     XYErrorBarDataSeries errorBarY(final Comparable seriesName, final double[] x, final double[] y, final double[] yLow, final double[] yHigh);
 
     /**
      * Creates an XY plot with error bars in the y direction.
@@ -3755,8 +3637,7 @@ public interface Axes extends Serializable {
      * @param <T3> data type
      * @return dataset created by the plot
      */
-    <T0 extends Number, T1 extends Number, T2 extends Number, T3 extends Number> XYErrorBarDataSeries errorBarY(
-            final Comparable seriesName, final T0[] x, final T1[] y, final T2[] yLow, final T3[] yHigh);
+    <T0 extends Number,T1 extends Number,T2 extends Number,T3 extends Number> XYErrorBarDataSeries errorBarY(final Comparable seriesName, final T0[] x, final T1[] y, final T2[] yLow, final T3[] yHigh);
 
     /**
      * Creates an XY plot with error bars in the y direction.
@@ -3772,8 +3653,7 @@ public interface Axes extends Serializable {
      * @param <T3> data type
      * @return dataset created by the plot
      */
-    <T0 extends Number, T1 extends Number, T2 extends Number, T3 extends Number> XYErrorBarDataSeries errorBarY(
-            final Comparable seriesName, final List<T0> x, final List<T1> y, final List<T2> yLow, final List<T3> yHigh);
+    <T0 extends Number,T1 extends Number,T2 extends Number,T3 extends Number> XYErrorBarDataSeries errorBarY(final Comparable seriesName, final List<T0> x, final List<T1> y, final List<T2> yLow, final List<T3> yHigh);
 
     /**
      * Creates an XY plot with error bars in the y direction.
@@ -3785,8 +3665,7 @@ public interface Axes extends Serializable {
      * @param yHigh high value in y dimension
      * @return dataset created by the plot
      */
-    XYErrorBarDataSeries errorBarY(final Comparable seriesName, final Date[] x, final Date[] y, final Date[] yLow,
-            final Date[] yHigh);
+     XYErrorBarDataSeries errorBarY(final Comparable seriesName, final Date[] x, final Date[] y, final Date[] yLow, final Date[] yHigh);
 
     /**
      * Creates an XY plot with error bars in the y direction.
@@ -3798,8 +3677,7 @@ public interface Axes extends Serializable {
      * @param yHigh high value in y dimension
      * @return dataset created by the plot
      */
-    XYErrorBarDataSeries errorBarY(final Comparable seriesName, final DateTime[] x, final DateTime[] y,
-            final DateTime[] yLow, final DateTime[] yHigh);
+     XYErrorBarDataSeries errorBarY(final Comparable seriesName, final DateTime[] x, final DateTime[] y, final DateTime[] yLow, final DateTime[] yHigh);
 
     /**
      * Creates an XY plot with error bars in the y direction.
@@ -3811,8 +3689,7 @@ public interface Axes extends Serializable {
      * @param yHigh high value in y dimension
      * @return dataset created by the plot
      */
-    XYErrorBarDataSeries errorBarY(final Comparable seriesName, final Date[] x, final short[] y, final short[] yLow,
-            final short[] yHigh);
+     XYErrorBarDataSeries errorBarY(final Comparable seriesName, final Date[] x, final short[] y, final short[] yLow, final short[] yHigh);
 
     /**
      * Creates an XY plot with error bars in the y direction.
@@ -3824,8 +3701,7 @@ public interface Axes extends Serializable {
      * @param yHigh high value in y dimension
      * @return dataset created by the plot
      */
-    XYErrorBarDataSeries errorBarY(final Comparable seriesName, final short[] x, final Date[] y, final Date[] yLow,
-            final Date[] yHigh);
+     XYErrorBarDataSeries errorBarY(final Comparable seriesName, final short[] x, final Date[] y, final Date[] yLow, final Date[] yHigh);
 
     /**
      * Creates an XY plot with error bars in the y direction.
@@ -3837,8 +3713,7 @@ public interface Axes extends Serializable {
      * @param yHigh high value in y dimension
      * @return dataset created by the plot
      */
-    XYErrorBarDataSeries errorBarY(final Comparable seriesName, final Date[] x, final int[] y, final int[] yLow,
-            final int[] yHigh);
+     XYErrorBarDataSeries errorBarY(final Comparable seriesName, final Date[] x, final int[] y, final int[] yLow, final int[] yHigh);
 
     /**
      * Creates an XY plot with error bars in the y direction.
@@ -3850,8 +3725,7 @@ public interface Axes extends Serializable {
      * @param yHigh high value in y dimension
      * @return dataset created by the plot
      */
-    XYErrorBarDataSeries errorBarY(final Comparable seriesName, final int[] x, final Date[] y, final Date[] yLow,
-            final Date[] yHigh);
+     XYErrorBarDataSeries errorBarY(final Comparable seriesName, final int[] x, final Date[] y, final Date[] yLow, final Date[] yHigh);
 
     /**
      * Creates an XY plot with error bars in the y direction.
@@ -3863,8 +3737,7 @@ public interface Axes extends Serializable {
      * @param yHigh high value in y dimension
      * @return dataset created by the plot
      */
-    XYErrorBarDataSeries errorBarY(final Comparable seriesName, final Date[] x, final long[] y, final long[] yLow,
-            final long[] yHigh);
+     XYErrorBarDataSeries errorBarY(final Comparable seriesName, final Date[] x, final long[] y, final long[] yLow, final long[] yHigh);
 
     /**
      * Creates an XY plot with error bars in the y direction.
@@ -3876,8 +3749,7 @@ public interface Axes extends Serializable {
      * @param yHigh high value in y dimension
      * @return dataset created by the plot
      */
-    XYErrorBarDataSeries errorBarY(final Comparable seriesName, final long[] x, final Date[] y, final Date[] yLow,
-            final Date[] yHigh);
+     XYErrorBarDataSeries errorBarY(final Comparable seriesName, final long[] x, final Date[] y, final Date[] yLow, final Date[] yHigh);
 
     /**
      * Creates an XY plot with error bars in the y direction.
@@ -3889,8 +3761,7 @@ public interface Axes extends Serializable {
      * @param yHigh high value in y dimension
      * @return dataset created by the plot
      */
-    XYErrorBarDataSeries errorBarY(final Comparable seriesName, final Date[] x, final float[] y, final float[] yLow,
-            final float[] yHigh);
+     XYErrorBarDataSeries errorBarY(final Comparable seriesName, final Date[] x, final float[] y, final float[] yLow, final float[] yHigh);
 
     /**
      * Creates an XY plot with error bars in the y direction.
@@ -3902,8 +3773,7 @@ public interface Axes extends Serializable {
      * @param yHigh high value in y dimension
      * @return dataset created by the plot
      */
-    XYErrorBarDataSeries errorBarY(final Comparable seriesName, final float[] x, final Date[] y, final Date[] yLow,
-            final Date[] yHigh);
+     XYErrorBarDataSeries errorBarY(final Comparable seriesName, final float[] x, final Date[] y, final Date[] yLow, final Date[] yHigh);
 
     /**
      * Creates an XY plot with error bars in the y direction.
@@ -3915,8 +3785,7 @@ public interface Axes extends Serializable {
      * @param yHigh high value in y dimension
      * @return dataset created by the plot
      */
-    XYErrorBarDataSeries errorBarY(final Comparable seriesName, final Date[] x, final double[] y, final double[] yLow,
-            final double[] yHigh);
+     XYErrorBarDataSeries errorBarY(final Comparable seriesName, final Date[] x, final double[] y, final double[] yLow, final double[] yHigh);
 
     /**
      * Creates an XY plot with error bars in the y direction.
@@ -3928,8 +3797,7 @@ public interface Axes extends Serializable {
      * @param yHigh high value in y dimension
      * @return dataset created by the plot
      */
-    XYErrorBarDataSeries errorBarY(final Comparable seriesName, final double[] x, final Date[] y, final Date[] yLow,
-            final Date[] yHigh);
+     XYErrorBarDataSeries errorBarY(final Comparable seriesName, final double[] x, final Date[] y, final Date[] yLow, final Date[] yHigh);
 
     /**
      * Creates an XY plot with error bars in the y direction.
@@ -3944,8 +3812,7 @@ public interface Axes extends Serializable {
      * @param <T3> data type
      * @return dataset created by the plot
      */
-    <T1 extends Number, T2 extends Number, T3 extends Number> XYErrorBarDataSeries errorBarY(
-            final Comparable seriesName, final Date[] x, final T1[] y, final T2[] yLow, final T3[] yHigh);
+    <T1 extends Number,T2 extends Number,T3 extends Number> XYErrorBarDataSeries errorBarY(final Comparable seriesName, final Date[] x, final T1[] y, final T2[] yLow, final T3[] yHigh);
 
     /**
      * Creates an XY plot with error bars in the y direction.
@@ -3958,8 +3825,7 @@ public interface Axes extends Serializable {
      * @param <T0> data type
      * @return dataset created by the plot
      */
-    <T0 extends Number> XYErrorBarDataSeries errorBarY(final Comparable seriesName, final T0[] x, final Date[] y,
-            final Date[] yLow, final Date[] yHigh);
+    <T0 extends Number> XYErrorBarDataSeries errorBarY(final Comparable seriesName, final T0[] x, final Date[] y, final Date[] yLow, final Date[] yHigh);
 
     /**
      * Creates an XY plot with error bars in the y direction.
@@ -3974,8 +3840,7 @@ public interface Axes extends Serializable {
      * @param <T3> data type
      * @return dataset created by the plot
      */
-    <T1 extends Number, T2 extends Number, T3 extends Number> XYErrorBarDataSeries errorBarY(
-            final Comparable seriesName, final Date[] x, final List<T1> y, final List<T2> yLow, final List<T3> yHigh);
+    <T1 extends Number,T2 extends Number,T3 extends Number> XYErrorBarDataSeries errorBarY(final Comparable seriesName, final Date[] x, final List<T1> y, final List<T2> yLow, final List<T3> yHigh);
 
     /**
      * Creates an XY plot with error bars in the y direction.
@@ -3988,8 +3853,7 @@ public interface Axes extends Serializable {
      * @param <T0> data type
      * @return dataset created by the plot
      */
-    <T0 extends Number> XYErrorBarDataSeries errorBarY(final Comparable seriesName, final List<T0> x, final Date[] y,
-            final Date[] yLow, final Date[] yHigh);
+    <T0 extends Number> XYErrorBarDataSeries errorBarY(final Comparable seriesName, final List<T0> x, final Date[] y, final Date[] yLow, final Date[] yHigh);
 
     /**
      * Creates an XY plot with error bars in the y direction.
@@ -4001,8 +3865,7 @@ public interface Axes extends Serializable {
      * @param yHigh high value in y dimension
      * @return dataset created by the plot
      */
-    XYErrorBarDataSeries errorBarY(final Comparable seriesName, final DateTime[] x, final short[] y, final short[] yLow,
-            final short[] yHigh);
+     XYErrorBarDataSeries errorBarY(final Comparable seriesName, final DateTime[] x, final short[] y, final short[] yLow, final short[] yHigh);
 
     /**
      * Creates an XY plot with error bars in the y direction.
@@ -4014,8 +3877,7 @@ public interface Axes extends Serializable {
      * @param yHigh high value in y dimension
      * @return dataset created by the plot
      */
-    XYErrorBarDataSeries errorBarY(final Comparable seriesName, final short[] x, final DateTime[] y,
-            final DateTime[] yLow, final DateTime[] yHigh);
+     XYErrorBarDataSeries errorBarY(final Comparable seriesName, final short[] x, final DateTime[] y, final DateTime[] yLow, final DateTime[] yHigh);
 
     /**
      * Creates an XY plot with error bars in the y direction.
@@ -4027,8 +3889,7 @@ public interface Axes extends Serializable {
      * @param yHigh high value in y dimension
      * @return dataset created by the plot
      */
-    XYErrorBarDataSeries errorBarY(final Comparable seriesName, final DateTime[] x, final int[] y, final int[] yLow,
-            final int[] yHigh);
+     XYErrorBarDataSeries errorBarY(final Comparable seriesName, final DateTime[] x, final int[] y, final int[] yLow, final int[] yHigh);
 
     /**
      * Creates an XY plot with error bars in the y direction.
@@ -4040,8 +3901,7 @@ public interface Axes extends Serializable {
      * @param yHigh high value in y dimension
      * @return dataset created by the plot
      */
-    XYErrorBarDataSeries errorBarY(final Comparable seriesName, final int[] x, final DateTime[] y,
-            final DateTime[] yLow, final DateTime[] yHigh);
+     XYErrorBarDataSeries errorBarY(final Comparable seriesName, final int[] x, final DateTime[] y, final DateTime[] yLow, final DateTime[] yHigh);
 
     /**
      * Creates an XY plot with error bars in the y direction.
@@ -4053,8 +3913,7 @@ public interface Axes extends Serializable {
      * @param yHigh high value in y dimension
      * @return dataset created by the plot
      */
-    XYErrorBarDataSeries errorBarY(final Comparable seriesName, final DateTime[] x, final long[] y, final long[] yLow,
-            final long[] yHigh);
+     XYErrorBarDataSeries errorBarY(final Comparable seriesName, final DateTime[] x, final long[] y, final long[] yLow, final long[] yHigh);
 
     /**
      * Creates an XY plot with error bars in the y direction.
@@ -4066,8 +3925,7 @@ public interface Axes extends Serializable {
      * @param yHigh high value in y dimension
      * @return dataset created by the plot
      */
-    XYErrorBarDataSeries errorBarY(final Comparable seriesName, final long[] x, final DateTime[] y,
-            final DateTime[] yLow, final DateTime[] yHigh);
+     XYErrorBarDataSeries errorBarY(final Comparable seriesName, final long[] x, final DateTime[] y, final DateTime[] yLow, final DateTime[] yHigh);
 
     /**
      * Creates an XY plot with error bars in the y direction.
@@ -4079,8 +3937,7 @@ public interface Axes extends Serializable {
      * @param yHigh high value in y dimension
      * @return dataset created by the plot
      */
-    XYErrorBarDataSeries errorBarY(final Comparable seriesName, final DateTime[] x, final float[] y, final float[] yLow,
-            final float[] yHigh);
+     XYErrorBarDataSeries errorBarY(final Comparable seriesName, final DateTime[] x, final float[] y, final float[] yLow, final float[] yHigh);
 
     /**
      * Creates an XY plot with error bars in the y direction.
@@ -4092,8 +3949,7 @@ public interface Axes extends Serializable {
      * @param yHigh high value in y dimension
      * @return dataset created by the plot
      */
-    XYErrorBarDataSeries errorBarY(final Comparable seriesName, final float[] x, final DateTime[] y,
-            final DateTime[] yLow, final DateTime[] yHigh);
+     XYErrorBarDataSeries errorBarY(final Comparable seriesName, final float[] x, final DateTime[] y, final DateTime[] yLow, final DateTime[] yHigh);
 
     /**
      * Creates an XY plot with error bars in the y direction.
@@ -4105,8 +3961,7 @@ public interface Axes extends Serializable {
      * @param yHigh high value in y dimension
      * @return dataset created by the plot
      */
-    XYErrorBarDataSeries errorBarY(final Comparable seriesName, final DateTime[] x, final double[] y,
-            final double[] yLow, final double[] yHigh);
+     XYErrorBarDataSeries errorBarY(final Comparable seriesName, final DateTime[] x, final double[] y, final double[] yLow, final double[] yHigh);
 
     /**
      * Creates an XY plot with error bars in the y direction.
@@ -4118,8 +3973,7 @@ public interface Axes extends Serializable {
      * @param yHigh high value in y dimension
      * @return dataset created by the plot
      */
-    XYErrorBarDataSeries errorBarY(final Comparable seriesName, final double[] x, final DateTime[] y,
-            final DateTime[] yLow, final DateTime[] yHigh);
+     XYErrorBarDataSeries errorBarY(final Comparable seriesName, final double[] x, final DateTime[] y, final DateTime[] yLow, final DateTime[] yHigh);
 
     /**
      * Creates an XY plot with error bars in the y direction.
@@ -4134,8 +3988,7 @@ public interface Axes extends Serializable {
      * @param <T3> data type
      * @return dataset created by the plot
      */
-    <T1 extends Number, T2 extends Number, T3 extends Number> XYErrorBarDataSeries errorBarY(
-            final Comparable seriesName, final DateTime[] x, final T1[] y, final T2[] yLow, final T3[] yHigh);
+    <T1 extends Number,T2 extends Number,T3 extends Number> XYErrorBarDataSeries errorBarY(final Comparable seriesName, final DateTime[] x, final T1[] y, final T2[] yLow, final T3[] yHigh);
 
     /**
      * Creates an XY plot with error bars in the y direction.
@@ -4148,8 +4001,7 @@ public interface Axes extends Serializable {
      * @param <T0> data type
      * @return dataset created by the plot
      */
-    <T0 extends Number> XYErrorBarDataSeries errorBarY(final Comparable seriesName, final T0[] x, final DateTime[] y,
-            final DateTime[] yLow, final DateTime[] yHigh);
+    <T0 extends Number> XYErrorBarDataSeries errorBarY(final Comparable seriesName, final T0[] x, final DateTime[] y, final DateTime[] yLow, final DateTime[] yHigh);
 
     /**
      * Creates an XY plot with error bars in the y direction.
@@ -4164,9 +4016,7 @@ public interface Axes extends Serializable {
      * @param <T3> data type
      * @return dataset created by the plot
      */
-    <T1 extends Number, T2 extends Number, T3 extends Number> XYErrorBarDataSeries errorBarY(
-            final Comparable seriesName, final DateTime[] x, final List<T1> y, final List<T2> yLow,
-            final List<T3> yHigh);
+    <T1 extends Number,T2 extends Number,T3 extends Number> XYErrorBarDataSeries errorBarY(final Comparable seriesName, final DateTime[] x, final List<T1> y, final List<T2> yLow, final List<T3> yHigh);
 
     /**
      * Creates an XY plot with error bars in the y direction.
@@ -4179,8 +4029,7 @@ public interface Axes extends Serializable {
      * @param <T0> data type
      * @return dataset created by the plot
      */
-    <T0 extends Number> XYErrorBarDataSeries errorBarY(final Comparable seriesName, final List<T0> x,
-            final DateTime[] y, final DateTime[] yLow, final DateTime[] yHigh);
+    <T0 extends Number> XYErrorBarDataSeries errorBarY(final Comparable seriesName, final List<T0> x, final DateTime[] y, final DateTime[] yLow, final DateTime[] yHigh);
 
     /**
      * Creates a category error bar plot with whiskers in the y direction.
@@ -4193,8 +4042,7 @@ public interface Axes extends Serializable {
      * @param <T0> type of the categorical data
      * @return dataset created by the plot
      */
-    <T0 extends Comparable> CategoryDataSeries catErrorBar(final Comparable seriesName, final T0[] categories,
-            final short[] values, final short[] yLow, final short[] yHigh);
+    <T0 extends Comparable> CategoryDataSeries catErrorBar(final Comparable seriesName, final T0[] categories, final short[] values, final short[] yLow, final short[] yHigh);
 
     /**
      * Creates a category error bar plot with whiskers in the y direction.
@@ -4207,8 +4055,7 @@ public interface Axes extends Serializable {
      * @param <T0> type of the categorical data
      * @return dataset created by the plot
      */
-    <T0 extends Comparable> CategoryDataSeries catErrorBar(final Comparable seriesName, final T0[] categories,
-            final int[] values, final int[] yLow, final int[] yHigh);
+    <T0 extends Comparable> CategoryDataSeries catErrorBar(final Comparable seriesName, final T0[] categories, final int[] values, final int[] yLow, final int[] yHigh);
 
     /**
      * Creates a category error bar plot with whiskers in the y direction.
@@ -4221,8 +4068,7 @@ public interface Axes extends Serializable {
      * @param <T0> type of the categorical data
      * @return dataset created by the plot
      */
-    <T0 extends Comparable> CategoryDataSeries catErrorBar(final Comparable seriesName, final T0[] categories,
-            final long[] values, final long[] yLow, final long[] yHigh);
+    <T0 extends Comparable> CategoryDataSeries catErrorBar(final Comparable seriesName, final T0[] categories, final long[] values, final long[] yLow, final long[] yHigh);
 
     /**
      * Creates a category error bar plot with whiskers in the y direction.
@@ -4235,8 +4081,7 @@ public interface Axes extends Serializable {
      * @param <T0> type of the categorical data
      * @return dataset created by the plot
      */
-    <T0 extends Comparable> CategoryDataSeries catErrorBar(final Comparable seriesName, final T0[] categories,
-            final float[] values, final float[] yLow, final float[] yHigh);
+    <T0 extends Comparable> CategoryDataSeries catErrorBar(final Comparable seriesName, final T0[] categories, final float[] values, final float[] yLow, final float[] yHigh);
 
     /**
      * Creates a category error bar plot with whiskers in the y direction.
@@ -4249,8 +4094,7 @@ public interface Axes extends Serializable {
      * @param <T0> type of the categorical data
      * @return dataset created by the plot
      */
-    <T0 extends Comparable> CategoryDataSeries catErrorBar(final Comparable seriesName, final T0[] categories,
-            final double[] values, final double[] yLow, final double[] yHigh);
+    <T0 extends Comparable> CategoryDataSeries catErrorBar(final Comparable seriesName, final T0[] categories, final double[] values, final double[] yLow, final double[] yHigh);
 
     /**
      * Creates a category error bar plot with whiskers in the y direction.
@@ -4266,8 +4110,7 @@ public interface Axes extends Serializable {
      * @param <T3> type of the numeric data
      * @return dataset created by the plot
      */
-    <T0 extends Comparable, T1 extends Number, T2 extends Number, T3 extends Number> CategoryDataSeries catErrorBar(
-            final Comparable seriesName, final T0[] categories, final T1[] values, final T2[] yLow, final T3[] yHigh);
+    <T0 extends Comparable,T1 extends Number,T2 extends Number,T3 extends Number> CategoryDataSeries catErrorBar(final Comparable seriesName, final T0[] categories, final T1[] values, final T2[] yLow, final T3[] yHigh);
 
     /**
      * Creates a category error bar plot with whiskers in the y direction.
@@ -4283,9 +4126,7 @@ public interface Axes extends Serializable {
      * @param <T3> type of the numeric data
      * @return dataset created by the plot
      */
-    <T0 extends Comparable, T1 extends Number, T2 extends Number, T3 extends Number> CategoryDataSeries catErrorBar(
-            final Comparable seriesName, final T0[] categories, final List<T1> values, final List<T2> yLow,
-            final List<T3> yHigh);
+    <T0 extends Comparable,T1 extends Number,T2 extends Number,T3 extends Number> CategoryDataSeries catErrorBar(final Comparable seriesName, final T0[] categories, final List<T1> values, final List<T2> yLow, final List<T3> yHigh);
 
     /**
      * Creates a category error bar plot with whiskers in the y direction.
@@ -4298,8 +4139,7 @@ public interface Axes extends Serializable {
      * @param <T0> type of the categorical data
      * @return dataset created by the plot
      */
-    <T0 extends Comparable> CategoryDataSeries catErrorBar(final Comparable seriesName, final List<T0> categories,
-            final short[] values, final short[] yLow, final short[] yHigh);
+    <T0 extends Comparable> CategoryDataSeries catErrorBar(final Comparable seriesName, final List<T0> categories, final short[] values, final short[] yLow, final short[] yHigh);
 
     /**
      * Creates a category error bar plot with whiskers in the y direction.
@@ -4312,8 +4152,7 @@ public interface Axes extends Serializable {
      * @param <T0> type of the categorical data
      * @return dataset created by the plot
      */
-    <T0 extends Comparable> CategoryDataSeries catErrorBar(final Comparable seriesName, final List<T0> categories,
-            final int[] values, final int[] yLow, final int[] yHigh);
+    <T0 extends Comparable> CategoryDataSeries catErrorBar(final Comparable seriesName, final List<T0> categories, final int[] values, final int[] yLow, final int[] yHigh);
 
     /**
      * Creates a category error bar plot with whiskers in the y direction.
@@ -4326,8 +4165,7 @@ public interface Axes extends Serializable {
      * @param <T0> type of the categorical data
      * @return dataset created by the plot
      */
-    <T0 extends Comparable> CategoryDataSeries catErrorBar(final Comparable seriesName, final List<T0> categories,
-            final long[] values, final long[] yLow, final long[] yHigh);
+    <T0 extends Comparable> CategoryDataSeries catErrorBar(final Comparable seriesName, final List<T0> categories, final long[] values, final long[] yLow, final long[] yHigh);
 
     /**
      * Creates a category error bar plot with whiskers in the y direction.
@@ -4340,8 +4178,7 @@ public interface Axes extends Serializable {
      * @param <T0> type of the categorical data
      * @return dataset created by the plot
      */
-    <T0 extends Comparable> CategoryDataSeries catErrorBar(final Comparable seriesName, final List<T0> categories,
-            final float[] values, final float[] yLow, final float[] yHigh);
+    <T0 extends Comparable> CategoryDataSeries catErrorBar(final Comparable seriesName, final List<T0> categories, final float[] values, final float[] yLow, final float[] yHigh);
 
     /**
      * Creates a category error bar plot with whiskers in the y direction.
@@ -4354,26 +4191,7 @@ public interface Axes extends Serializable {
      * @param <T0> type of the categorical data
      * @return dataset created by the plot
      */
-    <T0 extends Comparable> CategoryDataSeries catErrorBar(final Comparable seriesName, final List<T0> categories,
-            final double[] values, final double[] yLow, final double[] yHigh);
-
-    /**
-     * Creates a category error bar plot with whiskers in the y direction.
-     *
-     * @param seriesName name of the created dataset
-     * @param categories discrete data
-     * @param values numeric data
-     * @param yLow low value in y dimension
-     * @param yHigh high value in y dimension
-     * @param <T0> type of the categorical data
-     * @param <T1> type of the numeric data
-     * @param <T2> type of the numeric data
-     * @param <T3> type of the numeric data
-     * @return dataset created by the plot
-     */
-    <T0 extends Comparable, T1 extends Number, T2 extends Number, T3 extends Number> CategoryDataSeries catErrorBar(
-            final Comparable seriesName, final List<T0> categories, final T1[] values, final T2[] yLow,
-            final T3[] yHigh);
+    <T0 extends Comparable> CategoryDataSeries catErrorBar(final Comparable seriesName, final List<T0> categories, final double[] values, final double[] yLow, final double[] yHigh);
 
     /**
      * Creates a category error bar plot with whiskers in the y direction.
@@ -4389,9 +4207,23 @@ public interface Axes extends Serializable {
      * @param <T3> type of the numeric data
      * @return dataset created by the plot
      */
-    <T0 extends Comparable, T1 extends Number, T2 extends Number, T3 extends Number> CategoryDataSeries catErrorBar(
-            final Comparable seriesName, final List<T0> categories, final List<T1> values, final List<T2> yLow,
-            final List<T3> yHigh);
+    <T0 extends Comparable,T1 extends Number,T2 extends Number,T3 extends Number> CategoryDataSeries catErrorBar(final Comparable seriesName, final List<T0> categories, final T1[] values, final T2[] yLow, final T3[] yHigh);
+
+    /**
+     * Creates a category error bar plot with whiskers in the y direction.
+     *
+     * @param seriesName name of the created dataset
+     * @param categories discrete data
+     * @param values numeric data
+     * @param yLow low value in y dimension
+     * @param yHigh high value in y dimension
+     * @param <T0> type of the categorical data
+     * @param <T1> type of the numeric data
+     * @param <T2> type of the numeric data
+     * @param <T3> type of the numeric data
+     * @return dataset created by the plot
+     */
+    <T0 extends Comparable,T1 extends Number,T2 extends Number,T3 extends Number> CategoryDataSeries catErrorBar(final Comparable seriesName, final List<T0> categories, final List<T1> values, final List<T2> yLow, final List<T3> yHigh);
 
     /**
      * Creates a category error bar plot with whiskers in the y direction.
@@ -4404,8 +4236,7 @@ public interface Axes extends Serializable {
      * @param <T0> type of the categorical data
      * @return dataset created by the plot
      */
-    <T0 extends Comparable> CategoryDataSeries catErrorBar(final Comparable seriesName, final T0[] categories,
-            final Date[] values, final Date[] yLow, final Date[] yHigh);
+    <T0 extends Comparable> CategoryDataSeries catErrorBar(final Comparable seriesName, final T0[] categories, final Date[] values, final Date[] yLow, final Date[] yHigh);
 
     /**
      * Creates a category error bar plot with whiskers in the y direction.
@@ -4418,11 +4249,11 @@ public interface Axes extends Serializable {
      * @param <T0> type of the categorical data
      * @return dataset created by the plot
      */
-    <T0 extends Comparable> CategoryDataSeries catErrorBar(final Comparable seriesName, final T0[] categories,
-            final DateTime[] values, final DateTime[] yLow, final DateTime[] yHigh);
+    <T0 extends Comparable> CategoryDataSeries catErrorBar(final Comparable seriesName, final T0[] categories, final DateTime[] values, final DateTime[] yLow, final DateTime[] yHigh);
 
     /**
-     * Creates a plot with discrete axis. Discrete data must not have duplicates.
+     * Creates a plot with discrete axis.
+     * Discrete data must not have duplicates.
      *
      * @param seriesName name of the created dataset
      * @param categories discrete data
@@ -4430,11 +4261,11 @@ public interface Axes extends Serializable {
      * @param <T0> type of the categorical data
      * @return dataset created for plot
      */
-    <T0 extends Comparable> CategoryDataSeries catPlot(final Comparable seriesName, final T0[] categories,
-            final Date[] values);
+    <T0 extends Comparable> CategoryDataSeries catPlot(final Comparable seriesName, final T0[] categories, final Date[] values);
 
     /**
-     * Creates a plot with discrete axis. Discrete data must not have duplicates.
+     * Creates a plot with discrete axis.
+     * Discrete data must not have duplicates.
      *
      * @param seriesName name of the created dataset
      * @param categories discrete data
@@ -4442,11 +4273,11 @@ public interface Axes extends Serializable {
      * @param <T0> type of the categorical data
      * @return dataset created for plot
      */
-    <T0 extends Comparable> CategoryDataSeries catPlot(final Comparable seriesName, final T0[] categories,
-            final DateTime[] values);
+    <T0 extends Comparable> CategoryDataSeries catPlot(final Comparable seriesName, final T0[] categories, final DateTime[] values);
 
     /**
-     * Creates a plot with discrete axis. Discrete data must not have duplicates.
+     * Creates a plot with discrete axis.
+     * Discrete data must not have duplicates.
      *
      * @param seriesName name of the created dataset
      * @param categories discrete data
@@ -4454,11 +4285,11 @@ public interface Axes extends Serializable {
      * @param <T0> type of the categorical data
      * @return dataset created for plot
      */
-    <T0 extends Comparable> CategoryDataSeries catPlot(final Comparable seriesName, final T0[] categories,
-            final short[] values);
+    <T0 extends Comparable> CategoryDataSeries catPlot(final Comparable seriesName, final T0[] categories, final short[] values);
 
     /**
-     * Creates a plot with discrete axis. Discrete data must not have duplicates.
+     * Creates a plot with discrete axis.
+     * Discrete data must not have duplicates.
      *
      * @param seriesName name of the created dataset
      * @param categories discrete data
@@ -4466,11 +4297,11 @@ public interface Axes extends Serializable {
      * @param <T0> type of the categorical data
      * @return dataset created for plot
      */
-    <T0 extends Comparable> CategoryDataSeries catPlot(final Comparable seriesName, final T0[] categories,
-            final int[] values);
+    <T0 extends Comparable> CategoryDataSeries catPlot(final Comparable seriesName, final T0[] categories, final int[] values);
 
     /**
-     * Creates a plot with discrete axis. Discrete data must not have duplicates.
+     * Creates a plot with discrete axis.
+     * Discrete data must not have duplicates.
      *
      * @param seriesName name of the created dataset
      * @param categories discrete data
@@ -4478,11 +4309,11 @@ public interface Axes extends Serializable {
      * @param <T0> type of the categorical data
      * @return dataset created for plot
      */
-    <T0 extends Comparable> CategoryDataSeries catPlot(final Comparable seriesName, final T0[] categories,
-            final long[] values);
+    <T0 extends Comparable> CategoryDataSeries catPlot(final Comparable seriesName, final T0[] categories, final long[] values);
 
     /**
-     * Creates a plot with discrete axis. Discrete data must not have duplicates.
+     * Creates a plot with discrete axis.
+     * Discrete data must not have duplicates.
      *
      * @param seriesName name of the created dataset
      * @param categories discrete data
@@ -4490,11 +4321,11 @@ public interface Axes extends Serializable {
      * @param <T0> type of the categorical data
      * @return dataset created for plot
      */
-    <T0 extends Comparable> CategoryDataSeries catPlot(final Comparable seriesName, final T0[] categories,
-            final float[] values);
+    <T0 extends Comparable> CategoryDataSeries catPlot(final Comparable seriesName, final T0[] categories, final float[] values);
 
     /**
-     * Creates a plot with discrete axis. Discrete data must not have duplicates.
+     * Creates a plot with discrete axis.
+     * Discrete data must not have duplicates.
      *
      * @param seriesName name of the created dataset
      * @param categories discrete data
@@ -4502,24 +4333,11 @@ public interface Axes extends Serializable {
      * @param <T0> type of the categorical data
      * @return dataset created for plot
      */
-    <T0 extends Comparable> CategoryDataSeries catPlot(final Comparable seriesName, final T0[] categories,
-            final double[] values);
+    <T0 extends Comparable> CategoryDataSeries catPlot(final Comparable seriesName, final T0[] categories, final double[] values);
 
     /**
-     * Creates a plot with discrete axis. Discrete data must not have duplicates.
-     *
-     * @param seriesName name of the created dataset
-     * @param categories discrete data
-     * @param values numeric data
-     * @param <T0> type of the categorical data
-     * @param <T1> type of the numeric data
-     * @return dataset created for plot
-     */
-    <T0 extends Comparable, T1 extends Number> CategoryDataSeries catPlot(final Comparable seriesName,
-            final T0[] categories, final T1[] values);
-
-    /**
-     * Creates a plot with discrete axis. Discrete data must not have duplicates.
+     * Creates a plot with discrete axis.
+     * Discrete data must not have duplicates.
      *
      * @param seriesName name of the created dataset
      * @param categories discrete data
@@ -4528,95 +4346,11 @@ public interface Axes extends Serializable {
      * @param <T1> type of the numeric data
      * @return dataset created for plot
      */
-    <T0 extends Comparable, T1 extends Number> CategoryDataSeries catPlot(final Comparable seriesName,
-            final T0[] categories, final List<T1> values);
+    <T0 extends Comparable,T1 extends Number> CategoryDataSeries catPlot(final Comparable seriesName, final T0[] categories, final T1[] values);
 
     /**
-     * Creates a plot with discrete axis. Discrete data must not have duplicates.
-     *
-     * @param seriesName name of the created dataset
-     * @param categories discrete data
-     * @param values numeric data
-     * @param <T0> type of the categorical data
-     * @return dataset created for plot
-     */
-    <T0 extends Comparable> CategoryDataSeries catPlot(final Comparable seriesName, final List<T0> categories,
-            final Date[] values);
-
-    /**
-     * Creates a plot with discrete axis. Discrete data must not have duplicates.
-     *
-     * @param seriesName name of the created dataset
-     * @param categories discrete data
-     * @param values numeric data
-     * @param <T0> type of the categorical data
-     * @return dataset created for plot
-     */
-    <T0 extends Comparable> CategoryDataSeries catPlot(final Comparable seriesName, final List<T0> categories,
-            final DateTime[] values);
-
-    /**
-     * Creates a plot with discrete axis. Discrete data must not have duplicates.
-     *
-     * @param seriesName name of the created dataset
-     * @param categories discrete data
-     * @param values numeric data
-     * @param <T0> type of the categorical data
-     * @return dataset created for plot
-     */
-    <T0 extends Comparable> CategoryDataSeries catPlot(final Comparable seriesName, final List<T0> categories,
-            final short[] values);
-
-    /**
-     * Creates a plot with discrete axis. Discrete data must not have duplicates.
-     *
-     * @param seriesName name of the created dataset
-     * @param categories discrete data
-     * @param values numeric data
-     * @param <T0> type of the categorical data
-     * @return dataset created for plot
-     */
-    <T0 extends Comparable> CategoryDataSeries catPlot(final Comparable seriesName, final List<T0> categories,
-            final int[] values);
-
-    /**
-     * Creates a plot with discrete axis. Discrete data must not have duplicates.
-     *
-     * @param seriesName name of the created dataset
-     * @param categories discrete data
-     * @param values numeric data
-     * @param <T0> type of the categorical data
-     * @return dataset created for plot
-     */
-    <T0 extends Comparable> CategoryDataSeries catPlot(final Comparable seriesName, final List<T0> categories,
-            final long[] values);
-
-    /**
-     * Creates a plot with discrete axis. Discrete data must not have duplicates.
-     *
-     * @param seriesName name of the created dataset
-     * @param categories discrete data
-     * @param values numeric data
-     * @param <T0> type of the categorical data
-     * @return dataset created for plot
-     */
-    <T0 extends Comparable> CategoryDataSeries catPlot(final Comparable seriesName, final List<T0> categories,
-            final float[] values);
-
-    /**
-     * Creates a plot with discrete axis. Discrete data must not have duplicates.
-     *
-     * @param seriesName name of the created dataset
-     * @param categories discrete data
-     * @param values numeric data
-     * @param <T0> type of the categorical data
-     * @return dataset created for plot
-     */
-    <T0 extends Comparable> CategoryDataSeries catPlot(final Comparable seriesName, final List<T0> categories,
-            final double[] values);
-
-    /**
-     * Creates a plot with discrete axis. Discrete data must not have duplicates.
+     * Creates a plot with discrete axis.
+     * Discrete data must not have duplicates.
      *
      * @param seriesName name of the created dataset
      * @param categories discrete data
@@ -4625,11 +4359,95 @@ public interface Axes extends Serializable {
      * @param <T1> type of the numeric data
      * @return dataset created for plot
      */
-    <T0 extends Comparable, T1 extends Number> CategoryDataSeries catPlot(final Comparable seriesName,
-            final List<T0> categories, final T1[] values);
+    <T0 extends Comparable,T1 extends Number> CategoryDataSeries catPlot(final Comparable seriesName, final T0[] categories, final List<T1> values);
 
     /**
-     * Creates a plot with discrete axis. Discrete data must not have duplicates.
+     * Creates a plot with discrete axis.
+     * Discrete data must not have duplicates.
+     *
+     * @param seriesName name of the created dataset
+     * @param categories discrete data
+     * @param values numeric data
+     * @param <T0> type of the categorical data
+     * @return dataset created for plot
+     */
+    <T0 extends Comparable> CategoryDataSeries catPlot(final Comparable seriesName, final List<T0> categories, final Date[] values);
+
+    /**
+     * Creates a plot with discrete axis.
+     * Discrete data must not have duplicates.
+     *
+     * @param seriesName name of the created dataset
+     * @param categories discrete data
+     * @param values numeric data
+     * @param <T0> type of the categorical data
+     * @return dataset created for plot
+     */
+    <T0 extends Comparable> CategoryDataSeries catPlot(final Comparable seriesName, final List<T0> categories, final DateTime[] values);
+
+    /**
+     * Creates a plot with discrete axis.
+     * Discrete data must not have duplicates.
+     *
+     * @param seriesName name of the created dataset
+     * @param categories discrete data
+     * @param values numeric data
+     * @param <T0> type of the categorical data
+     * @return dataset created for plot
+     */
+    <T0 extends Comparable> CategoryDataSeries catPlot(final Comparable seriesName, final List<T0> categories, final short[] values);
+
+    /**
+     * Creates a plot with discrete axis.
+     * Discrete data must not have duplicates.
+     *
+     * @param seriesName name of the created dataset
+     * @param categories discrete data
+     * @param values numeric data
+     * @param <T0> type of the categorical data
+     * @return dataset created for plot
+     */
+    <T0 extends Comparable> CategoryDataSeries catPlot(final Comparable seriesName, final List<T0> categories, final int[] values);
+
+    /**
+     * Creates a plot with discrete axis.
+     * Discrete data must not have duplicates.
+     *
+     * @param seriesName name of the created dataset
+     * @param categories discrete data
+     * @param values numeric data
+     * @param <T0> type of the categorical data
+     * @return dataset created for plot
+     */
+    <T0 extends Comparable> CategoryDataSeries catPlot(final Comparable seriesName, final List<T0> categories, final long[] values);
+
+    /**
+     * Creates a plot with discrete axis.
+     * Discrete data must not have duplicates.
+     *
+     * @param seriesName name of the created dataset
+     * @param categories discrete data
+     * @param values numeric data
+     * @param <T0> type of the categorical data
+     * @return dataset created for plot
+     */
+    <T0 extends Comparable> CategoryDataSeries catPlot(final Comparable seriesName, final List<T0> categories, final float[] values);
+
+    /**
+     * Creates a plot with discrete axis.
+     * Discrete data must not have duplicates.
+     *
+     * @param seriesName name of the created dataset
+     * @param categories discrete data
+     * @param values numeric data
+     * @param <T0> type of the categorical data
+     * @return dataset created for plot
+     */
+    <T0 extends Comparable> CategoryDataSeries catPlot(final Comparable seriesName, final List<T0> categories, final double[] values);
+
+    /**
+     * Creates a plot with discrete axis.
+     * Discrete data must not have duplicates.
      *
      * @param seriesName name of the created dataset
      * @param categories discrete data
@@ -4638,11 +4456,24 @@ public interface Axes extends Serializable {
      * @param <T1> type of the numeric data
      * @return dataset created for plot
      */
-    <T0 extends Comparable, T1 extends Number> CategoryDataSeries catPlot(final Comparable seriesName,
-            final List<T0> categories, final List<T1> values);
+    <T0 extends Comparable,T1 extends Number> CategoryDataSeries catPlot(final Comparable seriesName, final List<T0> categories, final T1[] values);
 
     /**
-     * Creates a pie plot. Categorical data must not have duplicates.
+     * Creates a plot with discrete axis.
+     * Discrete data must not have duplicates.
+     *
+     * @param seriesName name of the created dataset
+     * @param categories discrete data
+     * @param values numeric data
+     * @param <T0> type of the categorical data
+     * @param <T1> type of the numeric data
+     * @return dataset created for plot
+     */
+    <T0 extends Comparable,T1 extends Number> CategoryDataSeries catPlot(final Comparable seriesName, final List<T0> categories, final List<T1> values);
+
+    /**
+     * Creates a pie plot.
+     * Categorical data must not have duplicates.
      *
      * @param seriesName name of the created dataset
      * @param categories categories
@@ -4650,11 +4481,11 @@ public interface Axes extends Serializable {
      * @param <T0> type of the categorical data
      * @return dataset created for plot
      */
-    <T0 extends Comparable> CategoryDataSeries piePlot(final Comparable seriesName, final T0[] categories,
-            final short[] values);
+    <T0 extends Comparable> CategoryDataSeries piePlot(final Comparable seriesName, final T0[] categories, final short[] values);
 
     /**
-     * Creates a pie plot. Categorical data must not have duplicates.
+     * Creates a pie plot.
+     * Categorical data must not have duplicates.
      *
      * @param seriesName name of the created dataset
      * @param categories categories
@@ -4662,11 +4493,11 @@ public interface Axes extends Serializable {
      * @param <T0> type of the categorical data
      * @return dataset created for plot
      */
-    <T0 extends Comparable> CategoryDataSeries piePlot(final Comparable seriesName, final T0[] categories,
-            final int[] values);
+    <T0 extends Comparable> CategoryDataSeries piePlot(final Comparable seriesName, final T0[] categories, final int[] values);
 
     /**
-     * Creates a pie plot. Categorical data must not have duplicates.
+     * Creates a pie plot.
+     * Categorical data must not have duplicates.
      *
      * @param seriesName name of the created dataset
      * @param categories categories
@@ -4674,11 +4505,11 @@ public interface Axes extends Serializable {
      * @param <T0> type of the categorical data
      * @return dataset created for plot
      */
-    <T0 extends Comparable> CategoryDataSeries piePlot(final Comparable seriesName, final T0[] categories,
-            final long[] values);
+    <T0 extends Comparable> CategoryDataSeries piePlot(final Comparable seriesName, final T0[] categories, final long[] values);
 
     /**
-     * Creates a pie plot. Categorical data must not have duplicates.
+     * Creates a pie plot.
+     * Categorical data must not have duplicates.
      *
      * @param seriesName name of the created dataset
      * @param categories categories
@@ -4686,11 +4517,11 @@ public interface Axes extends Serializable {
      * @param <T0> type of the categorical data
      * @return dataset created for plot
      */
-    <T0 extends Comparable> CategoryDataSeries piePlot(final Comparable seriesName, final T0[] categories,
-            final float[] values);
+    <T0 extends Comparable> CategoryDataSeries piePlot(final Comparable seriesName, final T0[] categories, final float[] values);
 
     /**
-     * Creates a pie plot. Categorical data must not have duplicates.
+     * Creates a pie plot.
+     * Categorical data must not have duplicates.
      *
      * @param seriesName name of the created dataset
      * @param categories categories
@@ -4698,11 +4529,11 @@ public interface Axes extends Serializable {
      * @param <T0> type of the categorical data
      * @return dataset created for plot
      */
-    <T0 extends Comparable> CategoryDataSeries piePlot(final Comparable seriesName, final T0[] categories,
-            final double[] values);
+    <T0 extends Comparable> CategoryDataSeries piePlot(final Comparable seriesName, final T0[] categories, final double[] values);
 
     /**
-     * Creates a pie plot. Categorical data must not have duplicates.
+     * Creates a pie plot.
+     * Categorical data must not have duplicates.
      *
      * @param seriesName name of the created dataset
      * @param categories categories
@@ -4711,11 +4542,11 @@ public interface Axes extends Serializable {
      * @param <T1> type of the numeric data
      * @return dataset created for plot
      */
-    <T0 extends Comparable, T1 extends Number> CategoryDataSeries piePlot(final Comparable seriesName,
-            final T0[] categories, final T1[] values);
+    <T0 extends Comparable,T1 extends Number> CategoryDataSeries piePlot(final Comparable seriesName, final T0[] categories, final T1[] values);
 
     /**
-     * Creates a pie plot. Categorical data must not have duplicates.
+     * Creates a pie plot.
+     * Categorical data must not have duplicates.
      *
      * @param seriesName name of the created dataset
      * @param categories categories
@@ -4724,11 +4555,11 @@ public interface Axes extends Serializable {
      * @param <T1> type of the numeric data
      * @return dataset created for plot
      */
-    <T0 extends Comparable, T1 extends Number> CategoryDataSeries piePlot(final Comparable seriesName,
-            final T0[] categories, final List<T1> values);
+    <T0 extends Comparable,T1 extends Number> CategoryDataSeries piePlot(final Comparable seriesName, final T0[] categories, final List<T1> values);
 
     /**
-     * Creates a pie plot. Categorical data must not have duplicates.
+     * Creates a pie plot.
+     * Categorical data must not have duplicates.
      *
      * @param seriesName name of the created dataset
      * @param categories categories
@@ -4736,11 +4567,11 @@ public interface Axes extends Serializable {
      * @param <T0> type of the categorical data
      * @return dataset created for plot
      */
-    <T0 extends Comparable> CategoryDataSeries piePlot(final Comparable seriesName, final List<T0> categories,
-            final short[] values);
+    <T0 extends Comparable> CategoryDataSeries piePlot(final Comparable seriesName, final List<T0> categories, final short[] values);
 
     /**
-     * Creates a pie plot. Categorical data must not have duplicates.
+     * Creates a pie plot.
+     * Categorical data must not have duplicates.
      *
      * @param seriesName name of the created dataset
      * @param categories categories
@@ -4748,11 +4579,11 @@ public interface Axes extends Serializable {
      * @param <T0> type of the categorical data
      * @return dataset created for plot
      */
-    <T0 extends Comparable> CategoryDataSeries piePlot(final Comparable seriesName, final List<T0> categories,
-            final int[] values);
+    <T0 extends Comparable> CategoryDataSeries piePlot(final Comparable seriesName, final List<T0> categories, final int[] values);
 
     /**
-     * Creates a pie plot. Categorical data must not have duplicates.
+     * Creates a pie plot.
+     * Categorical data must not have duplicates.
      *
      * @param seriesName name of the created dataset
      * @param categories categories
@@ -4760,11 +4591,11 @@ public interface Axes extends Serializable {
      * @param <T0> type of the categorical data
      * @return dataset created for plot
      */
-    <T0 extends Comparable> CategoryDataSeries piePlot(final Comparable seriesName, final List<T0> categories,
-            final long[] values);
+    <T0 extends Comparable> CategoryDataSeries piePlot(final Comparable seriesName, final List<T0> categories, final long[] values);
 
     /**
-     * Creates a pie plot. Categorical data must not have duplicates.
+     * Creates a pie plot.
+     * Categorical data must not have duplicates.
      *
      * @param seriesName name of the created dataset
      * @param categories categories
@@ -4772,11 +4603,11 @@ public interface Axes extends Serializable {
      * @param <T0> type of the categorical data
      * @return dataset created for plot
      */
-    <T0 extends Comparable> CategoryDataSeries piePlot(final Comparable seriesName, final List<T0> categories,
-            final float[] values);
+    <T0 extends Comparable> CategoryDataSeries piePlot(final Comparable seriesName, final List<T0> categories, final float[] values);
 
     /**
-     * Creates a pie plot. Categorical data must not have duplicates.
+     * Creates a pie plot.
+     * Categorical data must not have duplicates.
      *
      * @param seriesName name of the created dataset
      * @param categories categories
@@ -4784,24 +4615,11 @@ public interface Axes extends Serializable {
      * @param <T0> type of the categorical data
      * @return dataset created for plot
      */
-    <T0 extends Comparable> CategoryDataSeries piePlot(final Comparable seriesName, final List<T0> categories,
-            final double[] values);
+    <T0 extends Comparable> CategoryDataSeries piePlot(final Comparable seriesName, final List<T0> categories, final double[] values);
 
     /**
-     * Creates a pie plot. Categorical data must not have duplicates.
-     *
-     * @param seriesName name of the created dataset
-     * @param categories categories
-     * @param values data values
-     * @param <T0> type of the categorical data
-     * @param <T1> type of the numeric data
-     * @return dataset created for plot
-     */
-    <T0 extends Comparable, T1 extends Number> CategoryDataSeries piePlot(final Comparable seriesName,
-            final List<T0> categories, final T1[] values);
-
-    /**
-     * Creates a pie plot. Categorical data must not have duplicates.
+     * Creates a pie plot.
+     * Categorical data must not have duplicates.
      *
      * @param seriesName name of the created dataset
      * @param categories categories
@@ -4810,7 +4628,19 @@ public interface Axes extends Serializable {
      * @param <T1> type of the numeric data
      * @return dataset created for plot
      */
-    <T0 extends Comparable, T1 extends Number> CategoryDataSeries piePlot(final Comparable seriesName,
-            final List<T0> categories, final List<T1> values);
+    <T0 extends Comparable,T1 extends Number> CategoryDataSeries piePlot(final Comparable seriesName, final List<T0> categories, final T1[] values);
+
+    /**
+     * Creates a pie plot.
+     * Categorical data must not have duplicates.
+     *
+     * @param seriesName name of the created dataset
+     * @param categories categories
+     * @param values data values
+     * @param <T0> type of the categorical data
+     * @param <T1> type of the numeric data
+     * @return dataset created for plot
+     */
+    <T0 extends Comparable,T1 extends Number> CategoryDataSeries piePlot(final Comparable seriesName, final List<T0> categories, final List<T1> values);
 
 }

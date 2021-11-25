@@ -1,0 +1,13 @@
+{
+ "className": "io.deephaven.qst.array.PrimitiveArray",
+ "methods": {
+  "builder": "*Overload 1*  \n  Note: Java generics information - <T>\n  \n  :param type: io.deephaven.qst.type.PrimitiveType<T>\n  :return: io.deephaven.qst.array.ArrayBuilder<T,? extends io.deephaven.qst.array.PrimitiveArray<T>,?>\n  \n*Overload 2*  \n  Note: Java generics information - <T>\n  \n  :param type: io.deephaven.qst.type.PrimitiveType<T>\n  :param initialCapacity: int\n  :return: io.deephaven.qst.array.ArrayBuilder<T,? extends io.deephaven.qst.array.PrimitiveArray<T>,?>",
+  "componentType": ":return: io.deephaven.qst.type.PrimitiveType<PrimitiveArray.T>",
+  "empty": "Note: Java generics information - <T>\n\n:param type: io.deephaven.qst.type.PrimitiveType<T>\n:return: io.deephaven.qst.array.PrimitiveArray<T>",
+  "of": "*Overload 1*  \n  Note: Java generics information - <T>\n  \n  :param type: io.deephaven.qst.type.PrimitiveType<T>\n  :param data: T...\n  :return: io.deephaven.qst.array.PrimitiveArray<T>\n  \n*Overload 2*  \n  Note: Java generics information - <T>\n  \n  :param type: io.deephaven.qst.type.PrimitiveType<T>\n  :param data: java.lang.Iterable<T>\n  :return: io.deephaven.qst.array.PrimitiveArray<T>\n  \n*Overload 3*  \n  Note: Java generics information - <T>\n  \n  :param type: io.deephaven.qst.type.PrimitiveType<T>\n  :param data: java.util.Collection<T>\n  :return: io.deephaven.qst.array.PrimitiveArray<T>",
+  "walk": "Note: Java generics information - <V extends io.deephaven.qst.array.PrimitiveArray.Visitor>\n\n:param visitor: V\n:return: V"
+ },
+ "path": "io.deephaven.qst.array.PrimitiveArray",
+ "text": "A primitive array-like object.",
+ "typeName": "interface"
+}

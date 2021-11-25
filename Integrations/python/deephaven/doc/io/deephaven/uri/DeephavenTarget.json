@@ -1,0 +1,18 @@
+{
+ "className": "io.deephaven.uri.DeephavenTarget",
+ "methods": {
+  "builder": ":return: io.deephaven.uri.DeephavenTarget.Builder",
+  "from": "Parses the uri into a Deephaven target, without strict URI checks. Useful when parsing a Deephaven target\n as part of a structured URI.\n\n:param uri: (java.net.URI) - the URI\n:return: (io.deephaven.uri.DeephavenTarget) the Deephaven target",
+  "host": "The host or IP address.\n\n:return: (java.lang.String) the host",
+  "isSecure": "The secure flag, typically representing Transport Layer Security (TLS).\n\n:return: (boolean) true if secure",
+  "isValidScheme": "Returns true if the scheme is valid for a Deephaven target.\n\n \n The valid schemes are \"dh\" and \"dh+plain\".\n\n:param scheme: (java.lang.String) - the scheme\n:return: (boolean) true iff scheme is valid for Deephaven target",
+  "isWellFormed": ":param uri: java.net.URI\n:return: boolean",
+  "of": "Parses the targetUri into a Deephaven target.\n\n \n The valid formats include dh://host, dh://host:port, dh+plain://host, and\n dh+plain://host:port.\n\n:param targetUri: (java.net.URI) - the target URI\n:return: (io.deephaven.uri.DeephavenTarget) the Deephaven target",
+  "port": "The optional port.\n\n:return: (java.util.OptionalInt) the port",
+  "toString": ":return: java.lang.String",
+  "toURI": "The target as a URI.\n\n:return: (java.net.URI) the URI"
+ },
+ "path": "io.deephaven.uri.DeephavenTarget",
+ "text": "A Deephaven target represents the information necessary to establish a connection to a remote Deephaven service.\n\n \n A Deephaven target has a secure flag, host, and optional port.\n When the port is not specified, it's up to the client to determine the appropriate port (possibly by using a default\n port or discovering the appropriate port to use).",
+ "typeName": "class"
+}
