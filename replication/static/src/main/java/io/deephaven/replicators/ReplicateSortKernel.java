@@ -1,8 +1,8 @@
 package io.deephaven.replicators;
 
 import io.deephaven.replication.ReplicateUtilities;
-import io.deephaven.util.compare.CharComparisons;
 import io.deephaven.util.QueryConstants;
+import io.deephaven.util.compare.CharComparisons;
 import org.apache.commons.io.FileUtils;
 import org.jetbrains.annotations.NotNull;
 
@@ -12,7 +12,6 @@ import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static io.deephaven.replication.ReplicatePrimitiveCode.*;
@@ -21,24 +20,29 @@ import static io.deephaven.replication.ReplicateUtilities.*;
 public class ReplicateSortKernel {
     public static void main(String[] args) throws IOException {
         replicateLongToInt();
-        doCharReplication("engine/table/src/main/java/io/deephaven/engine/table/impl/sort/timsort/CharLongTimsortKernel.java");
-        doCharReplication("engine/table/src/main/java/io/deephaven/engine/table/impl/sort/timsort/CharIntTimsortKernel.java");
-
+        doCharReplication(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/timsort/CharLongTimsortKernel.java");
+        doCharReplication(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/timsort/CharIntTimsortKernel.java");
 
         doCharMegaMergeReplication(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/megamerge/CharLongMegaMergeKernel.java");
-        charToAllButBoolean("engine/table/src/main/java/io/deephaven/engine/table/impl/sort/findruns/CharFindRunsKernel.java");
-        final String objectRunPath =
-                charToObject("engine/table/src/main/java/io/deephaven/engine/table/impl/sort/findruns/CharFindRunsKernel.java");
+        charToAllButBoolean(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/findruns/CharFindRunsKernel.java");
+        final String objectRunPath = charToObject(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/findruns/CharFindRunsKernel.java");
         fixupObjectRuns(objectRunPath);
 
-        charToAllButBoolean("engine/table/src/main/java/io/deephaven/engine/table/impl/sort/partition/CharPartitionKernel.java");
-        final String objectPartitionPath =
-                charToObject("engine/table/src/main/java/io/deephaven/engine/table/impl/sort/partition/CharPartitionKernel.java");
+        charToAllButBoolean(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/partition/CharPartitionKernel.java");
+        final String objectPartitionPath = charToObject(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/partition/CharPartitionKernel.java");
         fixupObjectPartition(objectPartitionPath);
 
-        charToAllButBoolean("engine/table/src/main/java/io/deephaven/engine/table/impl/sort/permute/CharPermuteKernel.java");
-        fixupObjectPermute(charToObject("engine/table/src/main/java/io/deephaven/engine/table/impl/sort/permute/CharPermuteKernel.java"));
+        charToAllButBoolean(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/permute/CharPermuteKernel.java");
+        fixupObjectPermute(charToObject(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/sort/permute/CharPermuteKernel.java"));
     }
 
     private static void doCharReplication(@NotNull final String sourceClassJavaPath) throws IOException {
@@ -236,7 +240,7 @@ public class ReplicateSortKernel {
         final File objectFile = new File(objectPath);
         List<String> lines = FileUtils.readLines(objectFile, Charset.defaultCharset());
 
-        lines = fixupNeq(addImport(lines, java.util.Objects.class));
+        lines = fixupNeq(addImport(lines, "import java.util.Objects;"));
 
         FileUtils.writeLines(objectFile, lines);
     }
@@ -294,11 +298,11 @@ public class ReplicateSortKernel {
     public static List<String> fixupNanComparisons(List<String> lines, String type, boolean ascending) {
         final String lcType = type.toLowerCase();
 
-        lines = ReplicateUtilities.addImport(lines, "import io.deephaven.engine.util.Dh" + type + "Comparisons;");
+        lines = ReplicateUtilities.addImport(lines, "import io.deephaven.util.compare." + type + "Comparisons;");
 
         lines = replaceRegion(lines, "comparison functions",
                 Arrays.asList("    private static int doComparison(" + lcType + " lhs, " + lcType + " rhs) {",
-                        "        return " + (ascending ? "" : "-1 * ") + "Dh" + type + "Comparisons.compare(lhs, rhs);",
+                        "        return " + (ascending ? "" : "-1 * ") + type + "Comparisons.compare(lhs, rhs);",
                         "    }"));
         return lines;
     }
@@ -371,7 +375,7 @@ public class ReplicateSortKernel {
 
         return addImport(simpleFixup(
                 replaceRegion(lines, "comparison functions", ascending ? ascendingComparision : descendingComparision),
-                "equality function", "lhs == rhs", "Objects.equals(lhs, rhs)"), Objects.class);
+                "equality function", "lhs == rhs", "Objects.equals(lhs, rhs)"), "import java.util.Objects;");
     }
 
     public static List<String> invertComparisons(List<String> lines) {

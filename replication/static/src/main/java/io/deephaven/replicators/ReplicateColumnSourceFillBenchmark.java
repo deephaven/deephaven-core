@@ -6,7 +6,7 @@ import java.io.IOException;
 
 public class ReplicateColumnSourceFillBenchmark {
     public static void main(String[] args) throws IOException {
-        ReplicatePrimitiveCode
-                .charToAllButBoolean("engine/table/src/benchmark/java/io/deephaven/engine/table/impl/sources/CharHelper.java");
+        ReplicatePrimitiveCode.charToAllButBoolean(
+                "engine/benchmark/src/benchmark/java/io/deephaven/benchmark/engine/sources/CharHelper.java");
     }
 }

@@ -10,6 +10,7 @@ import java.util.Objects;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.vector.ObjectVector;
 import io.deephaven.engine.vector.ObjectVectorDirect;
+import io.deephaven.engine.vector.ObjectVector;
 import io.deephaven.util.compare.ObjectComparisons;
 import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.engine.table.impl.by.SumIntChunk;
@@ -21,6 +22,7 @@ import io.deephaven.util.annotations.VisibleForTesting;
 import org.apache.commons.lang3.mutable.MutableInt;
 
 import java.util.Arrays;
+import java.util.Objects;
 
 
 public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMultiSet<Object>, ObjectVector {

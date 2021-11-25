@@ -4,7 +4,6 @@
 package io.deephaven.engine.chunk;
 import io.deephaven.engine.chunk.Attributes.Any;
 
-
 public class ResettableObjectChunkChunk<T, ATTR extends Any> extends ObjectChunkChunk<T, ATTR> implements ResettableChunkChunk<ATTR> {
 
     public static <T, ATTR extends Any> ResettableObjectChunkChunk<T, ATTR> makeResettableChunk() {

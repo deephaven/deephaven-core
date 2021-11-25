@@ -19,22 +19,24 @@ public class ReplicateSourceAndChunkTests {
     public static void main(String[] args) throws IOException {
         ReplicateSourcesAndChunks.main(args);
 
-        charToAllButBoolean("engine/table/src/test/java/io/deephaven/engine/table/impl/sources/TestCharacterArraySource.java");
-        fixupBooleanColumnSourceTest(
-                charToBooleanAsByte("engine/table/src/test/java/io/deephaven/engine/table/impl/sources/TestCharacterArraySource.java",
-                        Collections.emptyMap()));
-        fixupObjectColumnSourceTest(
-                charToObject("engine/table/src/test/java/io/deephaven/engine/table/impl/sources/TestCharacterArraySource.java"));
+        charToAllButBoolean(
+                "engine/table/src/test/java/io/deephaven/engine/table/impl/sources/TestCharacterArraySource.java");
+        fixupBooleanColumnSourceTest(charToBooleanAsByte(
+                "engine/table/src/test/java/io/deephaven/engine/table/impl/sources/TestCharacterArraySource.java",
+                Collections.emptyMap()));
+        fixupObjectColumnSourceTest(charToObject(
+                "engine/table/src/test/java/io/deephaven/engine/table/impl/sources/TestCharacterArraySource.java"));
 
-        charToAllButBoolean("engine/table/src/test/java/io/deephaven/engine/table/impl/sources/TestCharacterSparseArraySource.java");
+        charToAllButBoolean(
+                "engine/table/src/test/java/io/deephaven/engine/table/impl/sources/TestCharacterSparseArraySource.java");
         fixupBooleanColumnSourceTest(charToBooleanAsByte(
                 "engine/table/src/test/java/io/deephaven/engine/table/impl/sources/TestCharacterSparseArraySource.java",
                 Collections.emptyMap()));
-        fixupObjectColumnSourceTest(
-                charToObject("engine/table/src/test/java/io/deephaven/engine/table/impl/sources/TestCharacterSparseArraySource.java"));
+        fixupObjectColumnSourceTest(charToObject(
+                "engine/table/src/test/java/io/deephaven/engine/table/impl/sources/TestCharacterSparseArraySource.java"));
 
-        charToAll("engine/table/src/test/java/io/deephaven/engine/table/impl/sources/chunk/TestCharChunk.java");
-        fixupChunkTest(charToObject("engine/table/src/test/java/io/deephaven/engine/table/impl/sources/chunk/TestCharChunk.java"));
+        charToAll("engine/chunk/src/test/java/io/deephaven/engine/chunk/TestCharChunk.java");
+        fixupChunkTest(charToObject("engine/chunk/src/test/java/io/deephaven/engine/chunk/TestCharChunk.java"));
 
         charToAllButBoolean(
                 "engine/table/src/test/java/io/deephaven/engine/table/impl/sources/deltaaware/TestCharacterDeltaAwareColumnSource.java");
@@ -95,9 +97,9 @@ public class ReplicateSourceAndChunkTests {
                 .group(1)
                 + "fromValues == BooleanUtils.NULL_BOOLEAN_AS_BYTE ? null : fromValues == BooleanUtils.TRUE_BOOLEAN_AS_BYTE, fromChunk);"));
         lines = removeRegion(lines, "samecheck");
-        lines = addImport(lines, "io.deephaven.util.BooleanUtils");
-        lines = addImport(lines, "io.deephaven.engine.chunk.WritableObjectChunk");
-        lines = addImport(lines, "io.deephaven.engine.chunk.ObjectChunk");
+        lines = addImport(lines, "import io.deephaven.util.BooleanUtils;");
+        lines = addImport(lines, "import io.deephaven.engine.chunk.WritableObjectChunk;");
+        lines = addImport(lines, "import io.deephaven.engine.chunk.ObjectChunk;");
         if (!booleanPath.contains("Sparse")) {
             lines = removeImport(lines, "import io.deephaven.engine.chunk.Attributes.OrderedRowKeyRanges;");
         }
@@ -135,8 +137,8 @@ public class ReplicateSourceAndChunkTests {
                 "BooleanChunk<[?] extends Values>", "ObjectChunk<Boolean, ? extends Values>",
                 "asBooleanChunk", "asObjectChunk",
                 "values.get\\((.*)\\)", "io.deephaven.util.BooleanUtils.booleanAsByte(values.get($1))");
-        lines = addImport(lines, "io.deephaven.util.BooleanUtils");
-        lines = addImport(lines, "io.deephaven.engine.chunk.ObjectChunk");
+        lines = addImport(lines, "import io.deephaven.util.BooleanUtils;");
+        lines = addImport(lines, "import io.deephaven.engine.chunk.ObjectChunk;");
         FileUtils.writeLines(booleanFile, lines);
     }
 }

@@ -9,6 +9,6 @@ dependencies {
             project(':engine-table')
 }
 
-task all {
+task replicateAll {
     dependsOn Tasks.registerMainExecTask(project, 'replicateHashTable', 'io.deephaven.replicators.ReplicateHashTable')
 }

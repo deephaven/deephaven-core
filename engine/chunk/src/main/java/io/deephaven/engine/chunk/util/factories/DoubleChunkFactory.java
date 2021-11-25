@@ -62,8 +62,6 @@ public class DoubleChunkFactory implements ChunkFactory {
         return DoubleChunkChunk.chunkWrap(typedArray, offset, capacity);
     }
 
-    // endregion vectorWrap
-
 
     @NotNull
     @Override

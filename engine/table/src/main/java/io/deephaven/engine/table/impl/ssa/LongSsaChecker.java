@@ -5,11 +5,13 @@ package io.deephaven.engine.table.impl.ssa;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.chunk.util.hashing.LongChunkEquals;
+import io.deephaven.engine.chunk.util.hashing.LongChunkEquals;
 import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.chunk.Attributes.RowKeys;
 import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.chunk.LongChunk;
 import io.deephaven.engine.chunk.Chunk;
+import io.deephaven.engine.chunk.LongChunk;
 import io.deephaven.engine.table.impl.util.ChunkUtils;
 
 public class LongSsaChecker implements SsaChecker {

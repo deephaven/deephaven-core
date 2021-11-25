@@ -16,7 +16,7 @@ import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.chunk.ChunkType;
 import io.deephaven.engine.chunk.WritableChunk;
-import io.deephaven.engine.chunkcolumnsource.ChunkColumnSource;
+import io.deephaven.engine.table.impl.sources.chunkcolumnsource.ChunkColumnSource;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;

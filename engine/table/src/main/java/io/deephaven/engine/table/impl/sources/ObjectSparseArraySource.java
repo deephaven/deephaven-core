@@ -7,7 +7,14 @@
 
 package io.deephaven.engine.table.impl.sources;
 
+import io.deephaven.engine.vector.Vector;
+
 import io.deephaven.engine.table.impl.DefaultGetContext;
+import io.deephaven.engine.chunk.*;
+import io.deephaven.engine.chunk.Attributes.OrderedRowKeyRanges;
+import io.deephaven.engine.chunk.Attributes.RowKeys;
+import io.deephaven.engine.chunk.Attributes.Values;
+import io.deephaven.engine.chunk.Attributes.OrderedRowKeys;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -15,13 +22,6 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
 import io.deephaven.engine.updategraph.UpdateCommitter;
-import io.deephaven.engine.vector.Vector;
-
-import io.deephaven.engine.chunk.*;
-import io.deephaven.engine.chunk.Attributes.OrderedRowKeyRanges;
-import io.deephaven.engine.chunk.Attributes.RowKeys;
-import io.deephaven.engine.chunk.Attributes.Values;
-import io.deephaven.engine.chunk.Attributes.OrderedRowKeys;
 import io.deephaven.engine.table.impl.sources.sparse.ObjectOneOrN;
 import io.deephaven.engine.table.impl.sources.sparse.LongOneOrN;
 import io.deephaven.engine.rowset.RowSequence;
@@ -118,7 +118,7 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T> imple
         final T [] data = (T [])in.readObject();
         final ObjectChunk<T, Values> srcChunk = ObjectChunk.chunkWrap(data);
         // noinspection unchecked
-        final WritableColumnSource<Object> reinterpreted = (WritableColumnSource<Object>) reinterpretForSerialization();
+        final WritableColumnSource<T> reinterpreted = (WritableColumnSource<T>) reinterpretForSerialization();
         try (final FillFromContext context = reinterpreted.makeFillFromContext(rowSet.intSize())) {
             reinterpreted.fillFromChunk(context, srcChunk, rowSet);
         }

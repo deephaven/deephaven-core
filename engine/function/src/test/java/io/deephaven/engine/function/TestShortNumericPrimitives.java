@@ -248,13 +248,13 @@ public class TestShortNumericPrimitives extends BaseArrayTestCase {
         short[] v = {0, 40, NULL_SHORT, 50, 60, (short) -1, 0};
         Short[] V = {(short)0, (short)40, NULL_SHORT, (short)50, (short)60, (short) -1, (short)0};
 
-        assertEquals(ShortNumericPrimitives.std(new ShortVectorDirect(v)) / Math.sqrt(ShortPrimitives.count(new ShortVectorDirect(v))), ShortNumericPrimitives.ste(v));
+        assertEquals(ShortNumericPrimitives.std(new ShortVectorDirect(v)) / Math.sqrt(count(new ShortVectorDirect(v))), ShortNumericPrimitives.ste(v));
         assertEquals(QueryConstants.NULL_DOUBLE, ShortNumericPrimitives.ste((short[])null));
 
-        assertEquals(ShortNumericPrimitives.std(new ShortVectorDirect(v)) / Math.sqrt(ShortPrimitives.count(new ShortVectorDirect(v))), ShortNumericPrimitives.ste(V));
+        assertEquals(ShortNumericPrimitives.std(new ShortVectorDirect(v)) / Math.sqrt(count(new ShortVectorDirect(v))), ShortNumericPrimitives.ste(V));
         assertEquals(QueryConstants.NULL_DOUBLE, ShortNumericPrimitives.ste((Short[])null));
 
-        assertEquals(ShortNumericPrimitives.std(new ShortVectorDirect(v)) / Math.sqrt(ShortPrimitives.count(new ShortVectorDirect(v))), ShortNumericPrimitives.ste(new ShortVectorDirect(v)));
+        assertEquals(ShortNumericPrimitives.std(new ShortVectorDirect(v)) / Math.sqrt(count(new ShortVectorDirect(v))), ShortNumericPrimitives.ste(new ShortVectorDirect(v)));
         assertEquals(QueryConstants.NULL_DOUBLE, ShortNumericPrimitives.ste((ShortVectorDirect)null));
     }
 

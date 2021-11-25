@@ -10,12 +10,10 @@ dependencies {
             'commons-io:commons-io:2.5'
 }
 
-task all {
+// These replicators do not require any manual fix-up and may be run without supervision
+task replicateAllSafe {
     dependsOn Tasks.registerMainExecTask(project, 'replicateVectors', 'io.deephaven.replicators.ReplicateVectors')
     dependsOn Tasks.registerMainExecTask(project, 'replicateVectorTests', 'io.deephaven.replicators.ReplicateVectorTests')
-
-    dependsOn Tasks.registerMainExecTask(project, 'replicatePrimitiveLibs', 'io.deephaven.replicators.ReplicatePrimitiveLibs')
-    dependsOn Tasks.registerMainExecTask(project, 'replicatePrimitiveLibTests', 'io.deephaven.replicators.ReplicatePrimitiveLibTests')
 
     dependsOn Tasks.registerMainExecTask(project, 'replicateSourcesAndChunks', 'io.deephaven.replicators.ReplicateSourcesAndChunks')
     dependsOn Tasks.registerMainExecTask(project, 'replicateSourceAndChunkTests', 'io.deephaven.replicators.ReplicateSourceAndChunkTests')
@@ -60,12 +58,9 @@ task all {
 
     dependsOn Tasks.registerMainExecTask(project, 'replicateColumnSourceFillBenchmark', 'io.deephaven.replicators.ReplicateColumnSourceFillBenchmark')
 
-    dependsOn Tasks.registerMainExecTask(project, 'replicateParquetChunkedWriters', 'io.deephaven.replicators.ReplicateParquetChunkedWriters')
-
     dependsOn Tasks.registerMainExecTask(project, 'replicateRegionsAndRegionedSources', 'io.deephaven.replicators.ReplicateRegionsAndRegionedSources')
     dependsOn Tasks.registerMainExecTask(project, 'replicateRegionAndRegionedSourceTests', 'io.deephaven.replicators.ReplicateRegionAndRegionedSourceTests')
 
-    dependsOn Tasks.registerMainExecTask(project, 'replicateColumnChunkPageStores', 'io.deephaven.replicators.ReplicateColumnChunkPageStores')
     dependsOn Tasks.registerMainExecTask(project, 'replicateToPage', 'io.deephaven.replicators.ReplicateToPage')
 
     dependsOn Tasks.registerMainExecTask(project, 'replicateDownsamplingValueTrackers', 'io.deephaven.replicators.ReplicateDownsamplingValueTrackers')
@@ -73,4 +68,12 @@ task all {
     dependsOn Tasks.registerMainExecTask(project, 'replicateBarrageUtils', 'io.deephaven.replicators.ReplicateBarrageUtils')
 
     dependsOn Tasks.registerMainExecTask(project, 'replicateKafka', 'io.deephaven.replicators.ReplicateKafka')
+}
+
+// These replicators need manual fix-up post replication and should not be run without supervision
+task replicateAllUnsafe {
+    dependsOn Tasks.registerMainExecTask(project, 'replicatePrimitiveLibs', 'io.deephaven.replicators.ReplicatePrimitiveLibs')
+    dependsOn Tasks.registerMainExecTask(project, 'replicatePrimitiveLibTests', 'io.deephaven.replicators.ReplicatePrimitiveLibTests')
+
+    dependsOn Tasks.registerMainExecTask(project, 'replicateParquetChunkedWriters', 'io.deephaven.replicators.ReplicateParquetChunkedWriters')
 }

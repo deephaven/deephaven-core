@@ -5,6 +5,8 @@ package io.deephaven.engine.table.impl.join.stamp;
 
 import java.util.Objects;
 
+import java.util.Objects;
+
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.Attributes.RowKeys;
 import io.deephaven.engine.chunk.Attributes.Values;

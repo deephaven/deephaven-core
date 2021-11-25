@@ -5,7 +5,6 @@ package io.deephaven.engine.chunk;
 
 import io.deephaven.engine.chunk.Attributes.Any;
 
-
 public class LongChunkChunk<ATTR extends Any> extends ChunkChunkBase<ATTR> implements ChunkChunk<ATTR> {
     @SuppressWarnings("unchecked")
     private static final LongChunkChunk EMPTY = new LongChunkChunk<>(new LongChunk[0], 0, 0);

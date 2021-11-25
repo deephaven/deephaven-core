@@ -3,7 +3,6 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.table.impl.chunkfilter;
 
-import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.Attributes.OrderedRowKeys;
 import io.deephaven.engine.chunk.Attributes.Values;

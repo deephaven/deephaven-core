@@ -14,6 +14,7 @@ import io.deephaven.util.QueryConstants;
 import org.apache.commons.lang3.ArrayUtils;
 
 import static io.deephaven.util.QueryConstants.NULL_INT;
+import static io.deephaven.util.QueryConstants.NULL_INT;
 import static io.deephaven.engine.function.IntegerPrimitives.count;
 import static io.deephaven.util.QueryConstants.*;
 
@@ -250,13 +251,13 @@ public class TestIntegerNumericPrimitives extends BaseArrayTestCase {
         int[] v = {0, 40, NULL_INT, 50, 60, (int) -1, 0};
         Integer[] V = {(int)0, (int)40, NULL_INT, (int)50, (int)60, (int) -1, (int)0};
 
-        assertEquals(IntegerNumericPrimitives.std(new IntVectorDirect(v)) / Math.sqrt(IntegerPrimitives.count(new IntVectorDirect(v))), IntegerNumericPrimitives.ste(v));
+        assertEquals(IntegerNumericPrimitives.std(new IntVectorDirect(v)) / Math.sqrt(count(new IntVectorDirect(v))), IntegerNumericPrimitives.ste(v));
         assertEquals(QueryConstants.NULL_DOUBLE, IntegerNumericPrimitives.ste((int[])null));
 
-        assertEquals(IntegerNumericPrimitives.std(new IntVectorDirect(v)) / Math.sqrt(IntegerPrimitives.count(new IntVectorDirect(v))), IntegerNumericPrimitives.ste(V));
+        assertEquals(IntegerNumericPrimitives.std(new IntVectorDirect(v)) / Math.sqrt(count(new IntVectorDirect(v))), IntegerNumericPrimitives.ste(V));
         assertEquals(QueryConstants.NULL_DOUBLE, IntegerNumericPrimitives.ste((Integer[])null));
 
-        assertEquals(IntegerNumericPrimitives.std(new IntVectorDirect(v)) / Math.sqrt(IntegerPrimitives.count(new IntVectorDirect(v))), IntegerNumericPrimitives.ste(new IntVectorDirect(v)));
+        assertEquals(IntegerNumericPrimitives.std(new IntVectorDirect(v)) / Math.sqrt(count(new IntVectorDirect(v))), IntegerNumericPrimitives.ste(new IntVectorDirect(v)));
         assertEquals(QueryConstants.NULL_DOUBLE, IntegerNumericPrimitives.ste((IntVectorDirect)null));
     }
 
@@ -787,8 +788,8 @@ public class TestIntegerNumericPrimitives extends BaseArrayTestCase {
     }
 
     public void testSortsExceptions() {
-        IntVector dbIntegerArray = null;
-        IntVector sort = IntegerNumericPrimitives.sort(dbIntegerArray);
+        IntVector intVector = null;
+        IntVector sort = IntegerNumericPrimitives.sort(intVector);
         assertNull(sort);
 
         int[] ints = null;
@@ -804,8 +805,8 @@ public class TestIntegerNumericPrimitives extends BaseArrayTestCase {
     }
 
     public void testSortDescendingExceptions() {
-        IntVector dbIntegerArray = null;
-        IntVector sort = IntegerNumericPrimitives.sortDescending(dbIntegerArray);
+        IntVector intVector = null;
+        IntVector sort = IntegerNumericPrimitives.sortDescending(intVector);
         assertNull(sort);
 
         int[] ints = null;

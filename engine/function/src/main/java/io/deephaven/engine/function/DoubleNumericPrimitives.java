@@ -13,8 +13,8 @@ import org.apache.commons.lang3.ArrayUtils;
 
 import java.util.Arrays;
 
-import static io.deephaven.util.QueryConstants.*;
 import static io.deephaven.engine.function.DoublePrimitives.unbox;
+import static io.deephaven.util.QueryConstants.*;
 
 /**
  * A set of commonly used numeric functions that can be applied to Double types.

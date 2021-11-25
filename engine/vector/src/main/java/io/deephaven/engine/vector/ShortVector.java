@@ -14,7 +14,6 @@ import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import javax.management.Query;
 import java.util.Arrays;
 
 public interface ShortVector extends Vector<ShortVector> {

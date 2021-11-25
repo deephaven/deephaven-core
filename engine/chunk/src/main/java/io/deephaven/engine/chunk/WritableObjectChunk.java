@@ -3,13 +3,18 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.chunk;
 
+import io.deephaven.util.compare.ObjectComparisons;
+import java.util.Comparator;
+
 // @formatter:off
 
 import io.deephaven.engine.chunk.Attributes.Any;
 import io.deephaven.engine.chunk.util.pools.MultiChunkPool;
 
+import io.deephaven.util.type.TypeUtils;
+import org.jetbrains.annotations.NotNull;
 
-import java.util.Arrays;import java.util.Comparator;
+import java.util.Arrays;
 // region FillWithNullValueImports
 // endregion FillWithNullValueImports
 

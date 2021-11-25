@@ -51,7 +51,7 @@ public class ReplicateSourcesAndChunks {
 
         replicateChunkFillers();
 
-        charToAll("engine/table/src/main/java/io/deephaven/engine/table/impl/sources/chunk/page/CharChunkPage.java");
+        charToAll("engine/table/src/main/java/io/deephaven/engine/table/impl/chunkfillers/CharChunkFiller.java");
 
         replicateChunkColumnSource();
     }
@@ -135,7 +135,7 @@ public class ReplicateSourcesAndChunks {
     }
 
     private static void replicateChunks() throws IOException {
-        charToAllButBooleanAndByte("engine/chunk/src/main/java/io/deephaven/engine/chunkCharChunk.java");
+        charToAllButBooleanAndByte("engine/chunk/src/main/java/io/deephaven/engine/chunk/CharChunk.java");
         replicateByteChunks();
         replicateBooleanChunks();
         replicateObjectChunks();
@@ -279,7 +279,9 @@ public class ReplicateSourcesAndChunks {
                         "    public final void fillWithBoxedValue(int offset, int size, Object value) {\n" +
                         "        fillWithValue(offset,size, (T)value);\n" +
                         "    }"));
-        lines = ReplicateUtilities.addImport(lines, "io.deephaven.engine.util.ObjectComparisons");
+        lines = ReplicateUtilities.addImport(lines,
+                "import io.deephaven.util.compare.ObjectComparisons;",
+                "import java.util.Comparator;");
         lines = ReplicateUtilities.replaceRegion(lines, "sort", Arrays.asList(
                 "    private static final Comparator<Comparable<Object>> COMPARATOR = Comparator.nullsFirst(Comparator.naturalOrder());",
                 "",
@@ -438,13 +440,13 @@ public class ReplicateSourcesAndChunks {
     }
 
     private static void replicateChunkFillers() throws IOException {
-        charToAll("engine/table/src/main/java/io/deephaven/engine/table/impl/sources/chunk/util/chunkfillers/CharChunkFiller.java");
+        charToAll("engine/table/src/main/java/io/deephaven/engine/table/impl/chunkfillers/CharChunkFiller.java");
         replicateObjectChunkFiller();
     }
 
     private static void replicateObjectChunkFiller() throws IOException {
         final String className = charToObject(
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/chunk/util/chunkfillers/CharChunkFiller.java");
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/chunkfillers/CharChunkFiller.java");
         final File classFile = new File(className);
         List<String> lines = FileUtils.readLines(classFile, Charset.defaultCharset());
         lines = globalReplacements(lines,
@@ -496,8 +498,10 @@ public class ReplicateSourcesAndChunks {
         final File booleanFile = new File(booleanPath);
         List<String> lines = FileUtils.readLines(booleanFile, Charset.defaultCharset());
 
-        lines = addImport(lines, "import static io.deephaven.util.BooleanUtils.NULL_BOOLEAN_AS_BYTE;\n");
-        lines = addImport(lines, "io.deephaven.util.BooleanUtils");
+        lines = addImport(lines,
+                "import io.deephaven.engine.table.impl.AbstractColumnSource;",
+                "import io.deephaven.util.BooleanUtils;",
+                "import static io.deephaven.util.BooleanUtils.NULL_BOOLEAN_AS_BYTE;");
         lines = globalReplacements(lines, "BooleanOneOrN", "ByteOneOrN");
         lines = globalReplacements(lines, "WritableBooleanChunk", "WritableObjectChunk",
                 "asBooleanChunk", "asObjectChunk",
@@ -562,13 +566,13 @@ public class ReplicateSourcesAndChunks {
                 "<Boolean, Values>", "<Values>");
 
         lines = insertRegion(lines, "serialization", Arrays.asList(
-                "    WritableSource reinterpretForSerialization() {",
-                "        return (WritableSource)reinterpret(byte.class);",
+                "    WritableColumnSource reinterpretForSerialization() {",
+                "        return (WritableColumnSource)reinterpret(byte.class);",
                 "    }",
                 ""));
 
         lines = simpleFixup(lines, "reinterpretForSerialization",
-                "return this;", "return (WritableSource)reinterpret(byte.class);");
+                "return this;", "return (WritableColumnSource)reinterpret(byte.class);");
 
         // AND SO IT BEGINS
         lines = replaceRegion(lines, "reinterpretation", Arrays.asList(
@@ -583,7 +587,7 @@ public class ReplicateSourcesAndChunks {
                 "        return (ColumnSource<ALTERNATE_DATA_TYPE>) new BooleanSparseArraySource.ReinterpretedAsByte(this);",
                 "    }",
                 "",
-                "    private static class ReinterpretedAsByte extends AbstractColumnSource<Byte> implements MutableColumnSourceGetDefaults.ForByte, FillUnordered, WritableSource<Byte> {",
+                "    private static class ReinterpretedAsByte extends AbstractColumnSource<Byte> implements MutableColumnSourceGetDefaults.ForByte, FillUnordered, WritableColumnSource<Byte> {",
                 "        private final BooleanSparseArraySource wrapped;",
                 "",
                 "        private ReinterpretedAsByte(BooleanSparseArraySource wrapped) {",
@@ -910,7 +914,7 @@ public class ReplicateSourcesAndChunks {
                 "        }",
                 "    }"));
 
-        lines = addImport(lines, "io.deephaven.engine.vector.Vector");
+        lines = addImport(lines, "import io.deephaven.engine.vector.Vector;");
 
         FileUtils.writeLines(objectFile, lines);
     }

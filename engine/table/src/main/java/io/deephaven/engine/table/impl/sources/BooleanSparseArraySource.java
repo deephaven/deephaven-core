@@ -7,24 +7,23 @@
 
 package io.deephaven.engine.table.impl.sources;
 
-import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetBuilderSequential;
-import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
-import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
-import io.deephaven.engine.updategraph.UpdateCommitter;
 import io.deephaven.util.BooleanUtils;
-
 import static io.deephaven.util.BooleanUtils.NULL_BOOLEAN_AS_BYTE;
 
-
+import io.deephaven.engine.table.impl.DefaultGetContext;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.Attributes.OrderedRowKeyRanges;
 import io.deephaven.engine.chunk.Attributes.RowKeys;
 import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.chunk.Attributes.OrderedRowKeys;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetBuilderSequential;
+import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.WritableColumnSource;
+import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
+import io.deephaven.engine.updategraph.UpdateCommitter;
 import io.deephaven.engine.table.impl.sources.sparse.ByteOneOrN;
 import io.deephaven.engine.table.impl.sources.sparse.LongOneOrN;
 import io.deephaven.engine.rowset.RowSequence;
@@ -934,7 +933,7 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
             // This implementation is in "key" style (rather than range style).
             for (int ii = 0; ii < indices.size(); ) {
                 final long firstRowKey = indices.get(ii);
-                if (firstRowKey == RowSequence.NULL_ROW_KEY) {
+                if (firstRowKey == RowSet.NULL_ROW_KEY) {
                     chunk.set(ii++, NULL_BOOLEAN_AS_BYTE);
                     continue;
                 }
@@ -967,7 +966,7 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
             final WritableByteChunk<? super Values> booleanObjectChunk = destGeneric.asWritableByteChunk();
             for (int ii = 0; ii < indices.size(); ) {
                 final long firstRowKey = indices.get(ii);
-                if (firstRowKey == RowSequence.NULL_ROW_KEY) {
+                if (firstRowKey == RowSet.NULL_ROW_KEY) {
                     booleanObjectChunk.set(ii++, NULL_BOOLEAN_AS_BYTE);
                     continue;
                 }

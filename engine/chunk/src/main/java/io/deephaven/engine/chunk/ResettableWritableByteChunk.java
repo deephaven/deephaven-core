@@ -2,10 +2,10 @@
  * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit ResettableWritableCharChunk and regenerate
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.chunk;
-import io.deephaven.util.type.ArrayTypeUtils;
+
 import io.deephaven.engine.chunk.Attributes.Any;
 import io.deephaven.engine.chunk.util.pools.MultiChunkPool;
-
+import io.deephaven.util.type.ArrayTypeUtils;
 
 /**
  * {@link ResettableWritableChunk} implementation for byte data.

@@ -3,13 +3,13 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.table.impl.select;
 
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 import io.deephaven.util.compare.LongComparisons;
 import io.deephaven.engine.table.impl.chunkfilter.LongRangeComparator;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.gui.table.filters.Condition;
 import io.deephaven.util.QueryConstants;
@@ -38,9 +38,9 @@ public class LongRangeFilter extends AbstractRangeFilter {
             case LESS_THAN_OR_EQUAL:
                 return new LongRangeFilter(columnName, RangeConditionFilter.parseLongFilter(value), QueryConstants.NULL_LONG, true, true);
             case GREATER_THAN:
-                return new LongRangeFilter(columnName, RangeConditionFilter.parseLongFilter(value), Long.MAX_VALUE, false, true);
+                return new LongRangeFilter(columnName, RangeConditionFilter.parseLongFilter(value), QueryConstants.MAX_LONG, false, true);
             case GREATER_THAN_OR_EQUAL:
-                return new LongRangeFilter(columnName, RangeConditionFilter.parseLongFilter(value), Long.MAX_VALUE, true, true);
+                return new LongRangeFilter(columnName, RangeConditionFilter.parseLongFilter(value), QueryConstants.MAX_LONG, true, true);
             default:
                 throw new IllegalArgumentException("RangeConditionFilter does not support condition " + condition);
         }

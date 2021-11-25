@@ -10,6 +10,7 @@ import io.deephaven.util.BooleanUtils;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.chunk.ArrayGenerator;
 import io.deephaven.engine.table.ChunkSource;
+import io.deephaven.engine.chunk.BooleanChunk;
 import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
@@ -23,6 +24,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
+import static io.deephaven.util.QueryConstants.*;
 import static junit.framework.TestCase.*;
 
 public class TestBooleanDeltaAwareColumnSource {

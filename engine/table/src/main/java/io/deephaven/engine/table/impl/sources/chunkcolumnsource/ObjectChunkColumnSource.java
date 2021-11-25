@@ -1,7 +1,7 @@
 /* ---------------------------------------------------------------------------------------------------------------------
  * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharChunkColumnSource and regenerate
  * ------------------------------------------------------------------------------------------------------------------ */
-package io.deephaven.engine.chunkcolumnsource;
+package io.deephaven.engine.table.impl.sources.chunkcolumnsource;
 
 import gnu.trove.list.array.TLongArrayList;
 import io.deephaven.base.verify.Assert;
@@ -12,6 +12,7 @@ import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.ImmutableColumnSourceGetDefaults;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;

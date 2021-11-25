@@ -4,6 +4,7 @@
 package io.deephaven.engine.chunk;
 
 import io.deephaven.engine.chunk.util.hashing.FloatChunkEquals;
+import io.deephaven.engine.chunk.ReplicatorHelpers;
 import io.deephaven.engine.chunk.Attributes.Values;
 import junit.framework.TestCase;
 import org.junit.Test;

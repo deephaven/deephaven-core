@@ -133,8 +133,8 @@ project(':replication-util').projectDir = file('replication/util')
 include(':replication-static')
 project(':replication-static').projectDir = file('replication/static')
 
-include(':replicators-reflective')
-project(':replicators-reflective').projectDir = file('replicators/reflective')
+include(':replication-reflective')
+project(':replication-reflective').projectDir = file('replication/reflective')
 
 include(':engine-chunk')
 project(':engine-chunk').projectDir = file('engine/chunk')

@@ -13,9 +13,9 @@ import static io.deephaven.replication.ReplicatePrimitiveCode.floatToAllFloating
 
 public class ReplicatePrimitiveLibTests {
     public static void main(String[] args) throws IOException {
-        charToAllButBoolean("engine/table/src/test/java/io/deephaven/libs/primitives/TestCharPrimitives.java");
-        shortToAllIntegralTypes("engine/table/src/main/test/io/deephaven/libs/primitives/TestShortNumericPrimitives.java");
-        floatToAllFloatingPoints("engine/table/src/main/test/io/deephaven/libs/primitives/TestFloatNumericPrimitives.java");
-        floatToAllFloatingPoints("engine/table/src/main/test/io/deephaven/libs/primitives/TestFloatFpPrimitives.java");
+        charToAllButBoolean("engine/function/src/test/java/io/deephaven/engine/function/TestCharPrimitives.java");
+        shortToAllIntegralTypes("engine/function/src/test/java/io/deephaven/engine/function/TestShortNumericPrimitives.java");
+        floatToAllFloatingPoints("engine/function/src/test/java/io/deephaven/engine/function/TestFloatNumericPrimitives.java");
+        floatToAllFloatingPoints("engine/function/src/test/java/io/deephaven/engine/function/TestFloatFpPrimitives.java");
     }
 }

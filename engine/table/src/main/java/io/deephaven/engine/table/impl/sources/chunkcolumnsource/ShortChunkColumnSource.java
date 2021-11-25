@@ -1,7 +1,7 @@
 /* ---------------------------------------------------------------------------------------------------------------------
  * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharChunkColumnSource and regenerate
  * ------------------------------------------------------------------------------------------------------------------ */
-package io.deephaven.engine.chunkcolumnsource;
+package io.deephaven.engine.table.impl.sources.chunkcolumnsource;
 
 import gnu.trove.list.array.TLongArrayList;
 import io.deephaven.base.verify.Assert;

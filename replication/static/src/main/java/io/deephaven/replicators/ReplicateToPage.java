@@ -11,8 +11,10 @@ import static io.deephaven.replication.ReplicatePrimitiveCode.intToLongAndFloati
 public class ReplicateToPage {
 
     public static void main(String... args) throws IOException {
-        intToLongAndFloatingPoints("engine/table/src/main/java/io/deephaven/engine/table/impl/locations/parquet/topage/ToIntPage.java",
+        intToLongAndFloatingPoints(
+                "extensions/parquet/table/src/main/java/io/deephaven/parquet/table/pagestore/topage/ToIntPage.java",
                 "interface");
-        charToShortAndByte("engine/table/src/main/java/io/deephaven/engine/table/impl/locations/parquet/topage/ToCharPageFromInt.java");
+        charToShortAndByte(
+                "extensions/parquet/table/src/main/java/io/deephaven/parquet/table/pagestore/topage/ToCharPageFromInt.java");
     }
 }

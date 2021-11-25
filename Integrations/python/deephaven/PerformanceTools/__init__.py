@@ -16,7 +16,7 @@ import wrapt
 
 _java_type_MetricsManager = None        # None until the first _defineSymbols() call
 _java_type_PerformanceQueries = None    # None until the first _defineSymbols() call
-_java_type_DateTimeUtils = None           # None until the first _defineSymbols() call
+_java_type_DateTimeUtil = None           # None until the first _defineSymbols() call
 
 
 def _defineSymbols():
@@ -39,10 +39,10 @@ def _defineSymbols():
         # This will raise an exception if the desired object is not the classpath
         _java_type_PerformanceQueries = jpy.get_type("io.deephaven.engine.util.PerformanceQueries")
 
-    global _java_type_DateTimeUtils
-    if _java_type_DateTimeUtils is None:
+    global _java_type_DateTimeUtil
+    if _java_type_DateTimeUtil is None:
         # This will raise an exception if the desired object is not the classpath
-        _java_type_DateTimeUtils = jpy.get_type("io.deephaven.engine.time.DateTimeUtil")
+        _java_type_DateTimeUtil = jpy.get_type("io.deephaven.engine.time.DateTimeUtil")
 
 
 # every module method should be decorated with @_passThrough

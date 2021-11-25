@@ -3,11 +3,11 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.table.impl.sources;
 
+import io.deephaven.engine.table.ChunkSink;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.impl.DefaultGetContext;
 import io.deephaven.engine.table.impl.TestSourceSink;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.ChunkSink;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.Attributes.Values;

@@ -62,8 +62,6 @@ public class ShortChunkFactory implements ChunkFactory {
         return ShortChunkChunk.chunkWrap(typedArray, offset, capacity);
     }
 
-    // endregion vectorWrap
-
 
     @NotNull
     @Override

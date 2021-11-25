@@ -62,8 +62,6 @@ public class IntChunkFactory implements ChunkFactory {
         return IntChunkChunk.chunkWrap(typedArray, offset, capacity);
     }
 
-    // endregion vectorWrap
-
 
     @NotNull
     @Override

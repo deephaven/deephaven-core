@@ -18,15 +18,17 @@ import static io.deephaven.replication.ReplicatePrimitiveCode.*;
  * Autogenerates primitives from template java files (e.g. CharacterPrimitives, ShortNumericPrimitives,
  * FloatNumericPrimitives, and FlotFpPrimitives).
  */
-public class ReplicatePrimtiiveLibs {
+public class ReplicatePrimitiveLibs {
     public static void main(String[] args) throws IOException {
-        List<String> files =
-                charToAllButBoolean("engine/table/src/main/java/io/deephaven/libs/primitives/CharacterPrimitives.java");
+        List<String> files = charToAllButBoolean(
+                "engine/function/src/main/java/io/deephaven/engine/function/CharacterPrimitives.java");
         fixup(files);
 
-        shortToAllIntegralTypes("engine/table/src/main/java/io/deephaven/libs/primitives/ShortNumericPrimitives.java");
-        floatToAllFloatingPoints("engine/table/src/main/java/io/deephaven/libs/primitives/FloatNumericPrimitives.java");
-        floatToAllFloatingPoints("engine/table/src/main/java/io/deephaven/libs/primitives/FloatFpPrimitives.java");
+        shortToAllIntegralTypes(
+                "engine/function/src/main/java/io/deephaven/engine/function/ShortNumericPrimitives.java");
+        floatToAllFloatingPoints(
+                "engine/function/src/main/java/io/deephaven/engine/function/FloatNumericPrimitives.java");
+        floatToAllFloatingPoints("engine/function/src/main/java/io/deephaven/engine/function/FloatFpPrimitives.java");
     }
 
     private static void fixup(List<String> files) throws IOException {

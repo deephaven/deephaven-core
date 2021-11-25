@@ -1,5 +1,5 @@
 {
- "className": "io.deephaven.engine.chunkcolumnsource.ByteChunkColumnSource",
+ "className": "io.deephaven.engine.table.impl.sources.chunkcolumnsource.ByteChunkColumnSource",
  "methods": {
   "addChunk": "Append a chunk of data to this column source.\n\n The chunk must not be empty (i.e., the size must be greater than zero).\n\n*Overload 1*  \n  :param chunk: (io.deephaven.engine.chunk.WritableByteChunk<? extendsio.deephaven.engine.chunk.Attributes.Values>) - the chunk of data to add\n  \n*Overload 2*  \n  :param chunk: (io.deephaven.engine.chunk.WritableChunk<? extendsio.deephaven.engine.chunk.Attributes.Values>) - the chunk of data to add",
   "clear": "Reset the column source to be ready for reuse.\n \n Clear will discard the currently held chunks. This should not be called if a table will continue to reference the\n column source; as it violates the immutability contract.",
@@ -10,7 +10,7 @@
   "getSize": "Get the size of this column source (one more than the last valid rowSet).\n\n:return: (long) the size of this column source",
   "makeGetContext": "Allocate a new ChunkSource.GetContext for retrieving chunks from this GetContextMaker, typically\n a ChunkSource.\n\n:param chunkCapacity: (int) - The maximum size required for any WritableChunk allocated as part of the result.\n:param sharedContext: (io.deephaven.engine.chunk.SharedContext) - Shared store of intermediate results.\n:return: (io.deephaven.engine.chunk.ChunkSource.GetContext) A context for use with get operations"
  },
- "path": "io.deephaven.engine.chunkcolumnsource.ByteChunkColumnSource",
+ "path": "io.deephaven.engine.table.impl.sources.chunkcolumnsource.ByteChunkColumnSource",
  "text": "A column source backed by ByteChunks.\n \n The address space of the column source is dense, with each chunk backing a contiguous set of indices.  The\n getChunk(GetContext, RowSequence)\n call will return the backing chunk or a slice of the backing chunk if possible.",
  "typeName": "class"
 }

@@ -7,8 +7,9 @@ import static io.deephaven.replication.ReplicatePrimitiveCode.*;
 
 public class ReplicateChunkFilters {
     public static void main(String[] args) throws IOException {
-        charToShortAndByte("engine/base/src/main/java/io/deephaven/engine/table/impl/chunkfilter/CharRangeComparator.java");
-        charToInteger("engine/base/src/main/java/io/deephaven/engine/table/impl/chunkfilter/CharRangeComparator.java",
+        charToShortAndByte(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/chunkfilter/CharRangeComparator.java");
+        charToInteger("engine/table/src/main/java/io/deephaven/engine/table/impl/chunkfilter/CharRangeComparator.java",
                 Collections.emptyMap());
 
         charToShortAndByte("engine/table/src/main/java/io/deephaven/engine/table/impl/select/CharRangeFilter.java");
@@ -17,10 +18,11 @@ public class ReplicateChunkFilters {
         charToLong("engine/table/src/main/java/io/deephaven/engine/table/impl/select/CharRangeFilter.java");
 
         floatToAllFloatingPoints(
-                "engine/base/src/main/java/io/deephaven/engine/table/impl/chunkfilter/FloatRangeComparator.java");
-        floatToAllFloatingPoints("engine/table/src/main/java/io/deephaven/engine/table/impl/select/FloatRangeFilter.java");
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/chunkfilter/FloatRangeComparator.java");
+        floatToAllFloatingPoints(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/select/FloatRangeFilter.java");
 
         charToAllButBoolean(
-                "engine/base/src/main/java/io/deephaven/engine/table/impl/chunkfilter/CharChunkMatchFilterFactory.java");
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/chunkfilter/CharChunkMatchFilterFactory.java");
     }
 }

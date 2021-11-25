@@ -16,7 +16,7 @@ public class ObjectSortCheck implements SortCheck {
         return sortCheck(valuesToCheck.asObjectChunk());
     }
 
-    private int sortCheck(ObjectChunk<?, ? extends Attributes.Values> valuesToCheck) {
+    private int sortCheck(ObjectChunk<Object, ? extends Attributes.Values> valuesToCheck) {
         if (valuesToCheck.size() == 0) {
             return -1;
         }

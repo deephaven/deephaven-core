@@ -22,7 +22,6 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.liveness.ReferenceCountedLivenessNode;
 import io.deephaven.engine.chunk.ChunkType;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
-import io.deephaven.grpc_api.util.ExportTicketHelper;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.grpc.CallOptions;

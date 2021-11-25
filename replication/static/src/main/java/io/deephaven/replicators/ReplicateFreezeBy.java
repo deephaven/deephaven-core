@@ -14,18 +14,18 @@ import static io.deephaven.replication.ReplicatePrimitiveCode.*;
 
 public class ReplicateFreezeBy {
     public static void main(String[] args) throws IOException {
-        final List<String> results =
-                charToAllButBoolean("engine/table/src/main/java/io/deephaven/engine/table/impl/utils/freezeby/CharFreezeByHelper.java");
+        final List<String> results = charToAllButBoolean(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/util/freezeby/CharFreezeByHelper.java");
 
         final Optional<String> longResult = results.stream().filter(s -> s.contains("Long")).findFirst();
         // noinspection OptionalGetWithoutIsPresent
         fixupLong(longResult.get());
-        final String objectResult =
-                charToObject("engine/table/src/main/java/io/deephaven/engine/table/impl/utils/freezeby/CharFreezeByHelper.java");
+        final String objectResult = charToObject(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/util/freezeby/CharFreezeByHelper.java");
         fixupObject(objectResult);
 
-        final String booleanResult =
-                charToBoolean("engine/table/src/main/java/io/deephaven/engine/table/impl/utils/freezeby/CharFreezeByHelper.java");
+        final String booleanResult = charToBoolean(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/util/freezeby/CharFreezeByHelper.java");
         fixupBoolean(booleanResult);
     }
 

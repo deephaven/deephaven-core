@@ -62,8 +62,6 @@ public class LongChunkFactory implements ChunkFactory {
         return LongChunkChunk.chunkWrap(typedArray, offset, capacity);
     }
 
-    // endregion vectorWrap
-
 
     @NotNull
     @Override

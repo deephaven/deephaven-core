@@ -7,37 +7,38 @@
 
 package io.deephaven.engine.function;
 
+import static io.deephaven.engine.function.DoubleFpPrimitives.*;
 import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 import junit.framework.TestCase;
 
 public class TestDoubleFpPrimitives extends TestCase {
     public void testIsNan(){
-        assertTrue(DoubleFpPrimitives.isNaN(Double.NaN));
-        assertFalse(DoubleFpPrimitives.isNaN((double)3.0));
+        assertTrue(isNaN(Double.NaN));
+        assertFalse(isNaN((double)3.0));
     }
 
     public void testIsInf(){
-        assertTrue(DoubleFpPrimitives.isInf(Double.POSITIVE_INFINITY));
-        assertTrue(DoubleFpPrimitives.isInf(Double.NEGATIVE_INFINITY));
-        assertFalse(DoubleFpPrimitives.isInf((double)3.0));
+        assertTrue(isInf(Double.POSITIVE_INFINITY));
+        assertTrue(isInf(Double.NEGATIVE_INFINITY));
+        assertFalse(isInf((double)3.0));
     }
 
     public void testIsNormal() {
-        assertTrue(DoubleFpPrimitives.isNormal(0));
-        assertTrue(DoubleFpPrimitives.isNormal(1));
-        assertTrue(DoubleFpPrimitives.isNormal(-1));
-        assertFalse(DoubleFpPrimitives.isNormal(Double.POSITIVE_INFINITY));
-        assertFalse(DoubleFpPrimitives.isNormal(Double.NEGATIVE_INFINITY));
-        assertFalse(DoubleFpPrimitives.isNormal(Double.NaN));
-        assertFalse(DoubleFpPrimitives.isNormal(NULL_DOUBLE));
+        assertTrue(isNormal(0));
+        assertTrue(isNormal(1));
+        assertTrue(isNormal(-1));
+        assertFalse(isNormal(Double.POSITIVE_INFINITY));
+        assertFalse(isNormal(Double.NEGATIVE_INFINITY));
+        assertFalse(isNormal(Double.NaN));
+        assertFalse(isNormal(NULL_DOUBLE));
     }
 
     public void testContainsNonNormal() {
-        assertFalse(DoubleFpPrimitives.containsNonNormal((double)0, (double)0, (double)0));
-        assertFalse(DoubleFpPrimitives.containsNonNormal((double)-1, (double)0, (double)1));
-        assertTrue(DoubleFpPrimitives.containsNonNormal((double)0, (double)0, Double.NEGATIVE_INFINITY));
-        assertTrue(DoubleFpPrimitives.containsNonNormal((double)0, (double)0, Double.POSITIVE_INFINITY));
-        assertTrue(DoubleFpPrimitives.containsNonNormal((double)0, (double)0, Double.NaN));
-        assertTrue(DoubleFpPrimitives.containsNonNormal((double)0, (double)0, NULL_DOUBLE));
+        assertFalse(containsNonNormal((double)0, (double)0, (double)0));
+        assertFalse(containsNonNormal((double)-1, (double)0, (double)1));
+        assertTrue(containsNonNormal((double)0, (double)0, Double.NEGATIVE_INFINITY));
+        assertTrue(containsNonNormal((double)0, (double)0, Double.POSITIVE_INFINITY));
+        assertTrue(containsNonNormal((double)0, (double)0, Double.NaN));
+        assertTrue(containsNonNormal((double)0, (double)0, NULL_DOUBLE));
     }
 }

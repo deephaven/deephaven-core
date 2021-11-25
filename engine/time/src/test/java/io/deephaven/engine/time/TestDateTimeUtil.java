@@ -206,7 +206,7 @@ public class TestDateTimeUtil extends BaseArrayTestCase {
 
     /*
      * public void testMillisToNanosWithHack() throws Exception { // For this to pass, ENABLE_MICROTIME_HACK in
-     * DateTimeUtil must be true (i.e. you have // to run the tests with -DDateTimeUtils.enableMicrotimeHack=true)
+     * DateTimeUtil must be true (i.e. you have // to run the tests with -DDateTimeUtil.enableMicrotimeHack=true)
      * assertEquals(1_000_000, DateTimeUtil.millisToNanos(1)); assertEquals(1_000_000_000,
      * DateTimeUtil.millisToNanos(1_000)); assertEquals(1531315655_000_000_000L,
      * DateTimeUtil.millisToNanos(1531315655_000L)); assertEquals(1531315655_000_000_000L,

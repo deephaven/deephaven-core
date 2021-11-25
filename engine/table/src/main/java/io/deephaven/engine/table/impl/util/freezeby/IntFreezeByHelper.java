@@ -7,8 +7,8 @@
 
 package io.deephaven.engine.table.impl.util.freezeby;
 
-import io.deephaven.engine.table.impl.sources.IntegerArraySource;
 import io.deephaven.engine.table.WritableColumnSource;
+import io.deephaven.engine.table.impl.sources.IntegerArraySource;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.rowset.RowSequence;
 

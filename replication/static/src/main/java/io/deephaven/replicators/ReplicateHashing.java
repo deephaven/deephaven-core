@@ -47,10 +47,10 @@ public class ReplicateHashing {
                 charToObject("engine/chunk/src/main/java/io/deephaven/engine/chunk/util/hashing/CharChunkEquals.java");
         fixupObjectChunkEquals(objectEquals);
 
-        final List<String> compactKernels =
-                charToAll("engine/table/src/main/java/io/deephaven/engine/table/impl/utils/compact/CharCompactKernel.java");
-        final String objectCompact =
-                charToObject("engine/table/src/main/java/io/deephaven/engine/table/impl/utils/compact/CharCompactKernel.java");
+        final List<String> compactKernels = charToAll(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/util/compact/CharCompactKernel.java");
+        final String objectCompact = charToObject(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/util/compact/CharCompactKernel.java");
         fixupObjectCompact(objectCompact);
         // noinspection OptionalGetWithoutIsPresent
         fixupBooleanCompact(compactKernels.stream().filter(x -> x.contains("Boolean")).findFirst().get());
@@ -102,7 +102,7 @@ public class ReplicateHashing {
 
         lines = replaceRegion(lines, "shouldIgnore", Collections.singletonList("        return false;"));
 
-        lines = removeImport(lines, "\\s*import io.deephaven.engine.util.DhBooleanComparisons;");
+        lines = removeImport(lines, "\\s*import io.deephaven.util.compare.BooleanComparisons;");
         lines = removeImport(lines, "\\s*import static.*QueryConstants.*;");
 
         FileUtils.writeLines(objectFile, lines);

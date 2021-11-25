@@ -10,6 +10,7 @@ import org.apache.commons.lang3.ArrayUtils;
 
 import java.util.Arrays;
 
+import static io.deephaven.engine.function.FloatPrimitives.unbox;
 import static io.deephaven.util.QueryConstants.*;
 
 /**
@@ -24,7 +25,7 @@ public class FloatNumericPrimitives {
      * @return number of positive values.
      */
     public static int countPos(Float... values) {
-        return countPos(FloatPrimitives.unbox(values));
+        return countPos(unbox(values));
     }
 
     /**
@@ -69,7 +70,7 @@ public class FloatNumericPrimitives {
      * @return number of negative values.
      */
     public static int countNeg(Float... values) {
-        return countNeg(FloatPrimitives.unbox(values));
+        return countNeg(unbox(values));
     }
 
     /**
@@ -114,7 +115,7 @@ public class FloatNumericPrimitives {
      * @return number of zero values.
      */
     public static int countZero(Float... values) {
-        return countZero(FloatPrimitives.unbox(values));
+        return countZero(unbox(values));
     }
 
     /**
@@ -159,7 +160,7 @@ public class FloatNumericPrimitives {
      * @return mean of non-null values.
      */
     public static double avg(Float... values) {
-        return avg(FloatPrimitives.unbox(values));
+        return avg(unbox(values));
     }
 
     /**
@@ -206,7 +207,7 @@ public class FloatNumericPrimitives {
      * @return mean of the absolute value of non-null values.
      */
     public static double absAvg(Float... values) {
-        return absAvg(FloatPrimitives.unbox(values));
+        return absAvg(unbox(values));
     }
 
     /**
@@ -253,7 +254,7 @@ public class FloatNumericPrimitives {
      * @return variance of non-null values.
      */
     public static double var(Float... values) {
-        return var(FloatPrimitives.unbox(values));
+        return var(unbox(values));
     }
 
     /**
@@ -680,7 +681,7 @@ public class FloatNumericPrimitives {
      * @return standard deviation of non-null values.
      */
     public static double std(Float... values) {
-        return std(FloatPrimitives.unbox(values));
+        return std(unbox(values));
     }
 
     /**
@@ -1024,7 +1025,7 @@ public class FloatNumericPrimitives {
      * @return standard error of non-null values.
      */
     public static double ste(Float... values) {
-        return ste(FloatPrimitives.unbox(values));
+        return ste(unbox(values));
     }
 
     /**
@@ -1459,7 +1460,7 @@ public class FloatNumericPrimitives {
      * @return t-statistic of non-null values.
      */
     public static double tstat(Float... values) {
-        return tstat(FloatPrimitives.unbox(values));
+        return tstat(unbox(values));
     }
 
     /**
@@ -1949,7 +1950,7 @@ public class FloatNumericPrimitives {
      * @return median.
      */
     public static double median(Float... values) {
-        return median(FloatPrimitives.unbox(values));
+        return median(unbox(values));
     }
 
     /**
@@ -2070,7 +2071,7 @@ public class FloatNumericPrimitives {
      * @return rowSet of the maximum value.
      */
     public static int indexOfMax(Float... values) {
-        return indexOfMax(FloatPrimitives.unbox(values));
+        return indexOfMax(unbox(values));
     }
 
     /**
@@ -2120,7 +2121,7 @@ public class FloatNumericPrimitives {
      * @return rowSet of the minimum value.
      */
     public static int indexOfMin(Float... values) {
-        return indexOfMin(FloatPrimitives.unbox(values));
+        return indexOfMin(unbox(values));
     }
 
     /**
@@ -2692,7 +2693,7 @@ public class FloatNumericPrimitives {
      * @return cumulative sum of non-null values.
      */
     public static float[] cumsum(Float... values) {
-        return cumsum(FloatPrimitives.unbox(values));
+        return cumsum(unbox(values));
     }
 
     /**
@@ -2764,7 +2765,7 @@ public class FloatNumericPrimitives {
      * @return cumulative product of non-null values.
      */
     public static float[] cumprod(Float... values) {
-        return cumprod(FloatPrimitives.unbox(values));
+        return cumprod(unbox(values));
     }
 
     /**

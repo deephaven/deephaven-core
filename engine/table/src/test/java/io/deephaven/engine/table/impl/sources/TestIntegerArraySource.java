@@ -4,12 +4,12 @@
 package io.deephaven.engine.table.impl.sources;
 
 import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.table.ChunkSink;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.impl.DefaultGetContext;
 import io.deephaven.engine.table.impl.TestSourceSink;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.ChunkSink;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.impl.select.FormulaColumn;
 import io.deephaven.engine.chunk.*;

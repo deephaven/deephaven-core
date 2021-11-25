@@ -4,8 +4,8 @@
 package io.deephaven.engine.table.impl.ssms;
 
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.time.DateTimeUtil;
 import io.deephaven.engine.vector.ObjectVectorDirect;
+import io.deephaven.engine.time.DateTimeUtil;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.vector.LongVector;
@@ -2572,7 +2572,7 @@ public final class LongSegmentedSortedMultiset implements SegmentedSortedMultiSe
      */
     private DateTime[] keyArrayAsDate(long first, long last) {
         if(isEmpty()) {
-            return DateTimeUtil.EMPTY_DATETIME_ARRAY;
+            return DateTimeUtil.ZERO_LENGTH_DATETIME_ARRAY;
         }
 
         final int totalSize = (int)(last - first + 1);

@@ -17,6 +17,7 @@ import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.chunk.LongChunk;
 import io.deephaven.engine.chunk.Chunk;
 import io.deephaven.engine.chunk.WritableLongChunk;
+import io.deephaven.engine.chunk.WritableLongChunk;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.DataInput;

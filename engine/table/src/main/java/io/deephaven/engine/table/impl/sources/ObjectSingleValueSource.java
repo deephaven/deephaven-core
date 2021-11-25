@@ -7,14 +7,15 @@
 
 package io.deephaven.engine.table.impl.sources;
 
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
+import io.deephaven.engine.updategraph.LogicalClock;
+import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.chunk.ObjectChunk;
 import io.deephaven.engine.chunk.Chunk;
 import io.deephaven.engine.chunk.LongChunk;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
-import io.deephaven.engine.updategraph.LogicalClock;
 import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.util.type.TypeUtils.unbox;

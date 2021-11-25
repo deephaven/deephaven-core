@@ -109,7 +109,7 @@ abstract public class AbstractSparseLongArraySource<T> extends SparseArrayColumn
         final long[] data = (long[])in.readObject();
         final LongChunk<Values> srcChunk = LongChunk.chunkWrap(data);
         // noinspection unchecked
-        final WritableColumnSource<Long> reinterpreted = (WritableColumnSource<Long>) reinterpretForSerialization();
+        final WritableColumnSource<T> reinterpreted = (WritableColumnSource<T>) reinterpretForSerialization();
         try (final FillFromContext context = reinterpreted.makeFillFromContext(rowSet.intSize())) {
             reinterpreted.fillFromChunk(context, srcChunk, rowSet);
         }

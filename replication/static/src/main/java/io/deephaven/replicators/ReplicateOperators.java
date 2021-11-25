@@ -19,16 +19,25 @@ import static io.deephaven.replication.ReplicatePrimitiveCode.*;
 public class ReplicateOperators {
     public static void main(String[] args) throws IOException {
         charToAllButBooleanAndFloats("engine/table/src/main/java/io/deephaven/engine/table/impl/by/SumCharChunk.java");
-        charToAllButBooleanAndFloats("engine/table/src/main/java/io/deephaven/engine/table/impl/by/CharChunkedSumOperator.java");
-        charToAllButBooleanAndFloats("engine/table/src/main/java/io/deephaven/engine/table/impl/by/CharChunkedAvgOperator.java");
-        charToAllButBooleanAndFloats("engine/table/src/main/java/io/deephaven/engine/table/impl/by/CharChunkedVarOperator.java");
+        charToAllButBooleanAndFloats(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/by/CharChunkedSumOperator.java");
+        charToAllButBooleanAndFloats(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/by/CharChunkedAvgOperator.java");
+        charToAllButBooleanAndFloats(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/by/CharChunkedVarOperator.java");
         floatToAllFloatingPoints("engine/table/src/main/java/io/deephaven/engine/table/impl/by/SumFloatChunk.java");
-        floatToAllFloatingPoints("engine/table/src/main/java/io/deephaven/engine/table/impl/by/FloatChunkedSumOperator.java");
-        floatToAllFloatingPoints("engine/table/src/main/java/io/deephaven/engine/table/impl/by/FloatChunkedAvgOperator.java");
-        floatToAllFloatingPoints("engine/table/src/main/java/io/deephaven/engine/table/impl/by/FloatChunkedReAvgOperator.java");
-        floatToAllFloatingPoints("engine/table/src/main/java/io/deephaven/engine/table/impl/by/FloatChunkedVarOperator.java");
-        charToAllButBoolean("engine/table/src/main/java/io/deephaven/engine/table/impl/by/CharChunkedAddOnlyMinMaxOperator.java");
-        charToAllButBoolean("engine/table/src/main/java/io/deephaven/engine/table/impl/utils/cast/CharToDoubleCast.java");
+        floatToAllFloatingPoints(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/by/FloatChunkedSumOperator.java");
+        floatToAllFloatingPoints(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/by/FloatChunkedAvgOperator.java");
+        floatToAllFloatingPoints(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/by/FloatChunkedReAvgOperator.java");
+        floatToAllFloatingPoints(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/by/FloatChunkedVarOperator.java");
+        charToAllButBoolean(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/by/CharChunkedAddOnlyMinMaxOperator.java");
+        charToAllButBoolean(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/util/cast/CharToDoubleCast.java");
         replicateObjectAddOnlyMinMax();
         fixupLongAddOnlyMinMax();
         charToAllButBoolean(
@@ -55,7 +64,8 @@ public class ReplicateOperators {
 
     private static void fixupLongAddOnlyMinMax() throws IOException {
         final File longAddOnlyMinMaxFile =
-                new File("engine/table/src/main/java/io/deephaven/engine/table/impl/by/LongChunkedAddOnlyMinMaxOperator.java");
+                new File(
+                        "engine/table/src/main/java/io/deephaven/engine/table/impl/by/LongChunkedAddOnlyMinMaxOperator.java");
         List<String> lines = ReplicateUtilities
                 .fixupChunkAttributes(FileUtils.readLines(longAddOnlyMinMaxFile, Charset.defaultCharset()));
         lines = ReplicateUtilities.globalReplacements(lines, "LongArraySource", "AbstractLongArraySource");
@@ -64,9 +74,9 @@ public class ReplicateOperators {
         lines = ReplicateUtilities.replaceRegion(lines, "resultColumn initialization", Collections.singletonList(
                 "        resultColumn = type == DateTime.class ? new DateTimeArraySource() : new LongArraySource();"));
         lines = ReplicateUtilities.addImport(lines,
-                "io.deephaven.engine.time.DateTime",
-                "io.deephaven.engine.table.impl.sources.DateTimeArraySource",
-                "io.deephaven.engine.table.impl.sources.LongArraySource");
+                "import io.deephaven.engine.time.DateTime;",
+                "import io.deephaven.engine.table.impl.sources.DateTimeArraySource;",
+                "import io.deephaven.engine.table.impl.sources.LongArraySource;");
         FileUtils.writeLines(longAddOnlyMinMaxFile, lines);
     }
 

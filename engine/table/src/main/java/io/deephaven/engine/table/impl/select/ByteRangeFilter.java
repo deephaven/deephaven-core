@@ -3,13 +3,13 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.table.impl.select;
 
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 import io.deephaven.util.compare.ByteComparisons;
 import io.deephaven.engine.table.impl.chunkfilter.ByteRangeComparator;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.gui.table.filters.Condition;
 import io.deephaven.util.QueryConstants;
@@ -38,9 +38,9 @@ public class ByteRangeFilter extends AbstractRangeFilter {
             case LESS_THAN_OR_EQUAL:
                 return new ByteRangeFilter(columnName, RangeConditionFilter.parseByteFilter(value), QueryConstants.NULL_BYTE, true, true);
             case GREATER_THAN:
-                return new ByteRangeFilter(columnName, RangeConditionFilter.parseByteFilter(value), Byte.MAX_VALUE, false, true);
+                return new ByteRangeFilter(columnName, RangeConditionFilter.parseByteFilter(value), QueryConstants.MAX_BYTE, false, true);
             case GREATER_THAN_OR_EQUAL:
-                return new ByteRangeFilter(columnName, RangeConditionFilter.parseByteFilter(value), Byte.MAX_VALUE, true, true);
+                return new ByteRangeFilter(columnName, RangeConditionFilter.parseByteFilter(value), QueryConstants.MAX_BYTE, true, true);
             default:
                 throw new IllegalArgumentException("RangeConditionFilter does not support condition " + condition);
         }

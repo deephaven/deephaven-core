@@ -62,9 +62,6 @@ public class BooleanChunkFactory implements ChunkFactory {
         return BooleanChunkChunk.chunkWrap(typedArray, offset, capacity);
     }
 
-    // endregion vectorWrap
-
-
 
     @NotNull
     @Override

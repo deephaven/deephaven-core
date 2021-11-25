@@ -38,9 +38,9 @@ public class IntRangeFilter extends AbstractRangeFilter {
             case LESS_THAN_OR_EQUAL:
                 return new IntRangeFilter(columnName, RangeConditionFilter.parseIntFilter(value), QueryConstants.NULL_INT, true, true);
             case GREATER_THAN:
-                return new IntRangeFilter(columnName, RangeConditionFilter.parseIntFilter(value), Integer.MAX_VALUE, false, true);
+                return new IntRangeFilter(columnName, RangeConditionFilter.parseIntFilter(value), QueryConstants.MAX_INT, false, true);
             case GREATER_THAN_OR_EQUAL:
-                return new IntRangeFilter(columnName, RangeConditionFilter.parseIntFilter(value), Integer.MAX_VALUE, true, true);
+                return new IntRangeFilter(columnName, RangeConditionFilter.parseIntFilter(value), QueryConstants.MAX_INT, true, true);
             default:
                 throw new IllegalArgumentException("RangeConditionFilter does not support condition " + condition);
         }
