@@ -5,7 +5,7 @@
 package io.deephaven.integrations.common;
 
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.time.DateTimeUtil;
+import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.util.BooleanUtils;
 
 /**
@@ -46,7 +46,7 @@ public class PrimitiveArrayConversionUtility {
 
     /**
      * Translates a DateTime array to a long array. The mapping will be performed according to
-     * {@link DateTimeUtil#nanos(DateTime)}. This is the (psuedo)inverse of `translateArrayLongToDateTime`.
+     * {@link DateTimeUtils#nanos(DateTime)}. This is the (psuedo)inverse of `translateArrayLongToDateTime`.
      *
      * @param array - the DateTime array
      * @return the corresponding long array
@@ -54,14 +54,14 @@ public class PrimitiveArrayConversionUtility {
     public static long[] translateArrayDateTimeToLong(final DateTime[] array) {
         final long[] out = new long[array.length];
         for (int ai = 0; ai < array.length; ai++) {
-            out[ai] = DateTimeUtil.nanos(array[ai]);
+            out[ai] = DateTimeUtils.nanos(array[ai]);
         }
         return out;
     }
 
     /**
      * Translates a long array to a DateTime array. The mapping will be performed according to
-     * {@link DateTimeUtil#nanosToTime(long)}. This is the (psuedo)inverse of `translateArrayLongToDateTime`.
+     * {@link DateTimeUtils#nanosToTime(long)}. This is the (psuedo)inverse of `translateArrayLongToDateTime`.
      *
      * @param array - the long array
      * @return the corresponding DateTime array
@@ -69,7 +69,7 @@ public class PrimitiveArrayConversionUtility {
     public static DateTime[] translateArrayLongToDateTime(final long[] array) {
         final DateTime[] out = new DateTime[array.length];
         for (int ai = 0; ai < array.length; ai++) {
-            out[ai] = DateTimeUtil.nanosToTime(array[ai]);
+            out[ai] = DateTimeUtils.nanosToTime(array[ai]);
         }
         return out;
     }

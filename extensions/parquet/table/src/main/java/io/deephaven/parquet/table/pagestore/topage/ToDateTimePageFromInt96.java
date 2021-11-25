@@ -1,6 +1,6 @@
 package io.deephaven.parquet.table.pagestore.topage;
 
-import io.deephaven.engine.time.DateTimeUtil;
+import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.vector.ObjectVector;
 import io.deephaven.engine.vector.ObjectVectorDirect;
 import io.deephaven.engine.time.DateTime;
@@ -54,7 +54,7 @@ public class ToDateTimePageFromInt96<ATTR extends Attributes.Any> implements ToP
      * @param timeZone
      */
     public static void setReferenceTimeZone(@NotNull final String timeZone) {
-        offset = DateTimeUtil.nanosOfDay(DateTimeUtil.convertDateTime("1970-01-01T00:00:00 " + timeZone), TimeZone.TZ_UTC);
+        offset = DateTimeUtils.nanosOfDay(DateTimeUtils.convertDateTime("1970-01-01T00:00:00 " + timeZone), TimeZone.TZ_UTC);
     }
 
     @Override
@@ -102,7 +102,7 @@ public class ToDateTimePageFromInt96<ATTR extends Attributes.Any> implements ToP
 
         final int resultLength = result.length;
         for (int ri = 0; ri < resultLength; ++ri) {
-            to[ri] = DateTimeUtil.nanosToTime(result[ri]);
+            to[ri] = DateTimeUtils.nanosToTime(result[ri]);
         }
 
         return new ObjectVectorDirect<>(to);

@@ -17,7 +17,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.time.DateTimeUtil;
+import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.time.TimeProvider;
 import io.deephaven.engine.time.TimeZone;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
@@ -801,7 +801,7 @@ public class TableTools {
      * @return time table
      */
     public static Table timeTable(String period, ReplayerInterface replayer) {
-        final long periodValue = DateTimeUtil.expressionToNanos(period);
+        final long periodValue = DateTimeUtils.expressionToNanos(period);
         return timeTable(periodValue, replayer);
     }
 
@@ -813,7 +813,7 @@ public class TableTools {
      * @return time table
      */
     public static Table timeTable(DateTime startTime, String period) {
-        final long periodValue = DateTimeUtil.expressionToNanos(period);
+        final long periodValue = DateTimeUtils.expressionToNanos(period);
         return timeTable(startTime, periodValue);
     }
 
@@ -826,7 +826,7 @@ public class TableTools {
      * @return time table
      */
     public static Table timeTable(DateTime startTime, String period, ReplayerInterface replayer) {
-        final long periodValue = DateTimeUtil.expressionToNanos(period);
+        final long periodValue = DateTimeUtils.expressionToNanos(period);
         return timeTable(startTime, periodValue, replayer);
     }
 
@@ -838,7 +838,7 @@ public class TableTools {
      * @return time table
      */
     public static Table timeTable(String startTime, String period) {
-        return timeTable(DateTimeUtil.convertDateTime(startTime), period);
+        return timeTable(DateTimeUtils.convertDateTime(startTime), period);
     }
 
     /**
@@ -850,7 +850,7 @@ public class TableTools {
      * @return time table
      */
     public static Table timeTable(String startTime, String period, ReplayerInterface replayer) {
-        return timeTable(DateTimeUtil.convertDateTime(startTime), period, replayer);
+        return timeTable(DateTimeUtils.convertDateTime(startTime), period, replayer);
     }
 
     /**
@@ -911,7 +911,7 @@ public class TableTools {
      * @return time table
      */
     public static Table timeTable(String startTime, long periodNanos) {
-        return timeTable(DateTimeUtil.convertDateTime(startTime), periodNanos);
+        return timeTable(DateTimeUtils.convertDateTime(startTime), periodNanos);
     }
 
     /**
@@ -923,7 +923,7 @@ public class TableTools {
      * @return time table
      */
     public static Table timeTable(String startTime, long periodNanos, ReplayerInterface replayer) {
-        return timeTable(DateTimeUtil.convertDateTime(startTime), periodNanos, replayer);
+        return timeTable(DateTimeUtils.convertDateTime(startTime), periodNanos, replayer);
     }
 
     /**

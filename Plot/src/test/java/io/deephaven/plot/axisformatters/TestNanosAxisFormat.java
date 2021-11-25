@@ -6,7 +6,7 @@ package io.deephaven.plot.axisformatters;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.time.DateTimeUtil;
+import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.time.TimeZone;
 import junit.framework.TestCase;
 
@@ -20,7 +20,7 @@ public class TestNanosAxisFormat extends BaseArrayTestCase {
         final NumberFormat nyNumberFormat = nyFormat.getNumberFormatter();
         final NumberFormat tokyoNumberFormat = tokyoFormat.getNumberFormatter();
 
-        final DateTime time = new DateTime(DateTimeUtil.YEAR);
+        final DateTime time = new DateTime(DateTimeUtils.YEAR);
         final long lNanos = time.getNanos();
         final double dNanos = lNanos;
         assertEquals(nyNumberFormat.format(lNanos), time.toDateString(TimeZone.TZ_DEFAULT));
@@ -37,7 +37,7 @@ public class TestNanosAxisFormat extends BaseArrayTestCase {
     }
 
     public void testFormatString() {
-        final DateTime time = DateTimeUtil.convertDateTime("2017-03-24T14:32:12.345678 MN");
+        final DateTime time = DateTimeUtils.convertDateTime("2017-03-24T14:32:12.345678 MN");
 
         final NanosAxisFormat formatMN = new NanosAxisFormat(TimeZone.TZ_MN);
         final NanosAxisFormat formatNY = new NanosAxisFormat(TimeZone.TZ_NY);

@@ -12,7 +12,7 @@ import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.tuplesource.AbstractTupleSource;
 import io.deephaven.engine.table.impl.tuplesource.TwoColumnTupleSourceFactory;
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.time.DateTimeUtil;
+import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.tuple.generated.LongLongTuple;
 import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
@@ -59,8 +59,8 @@ public class ReinterpretedDateTimeReinterpretedDateTimeColumnTupleSource extends
     @Override
     public final LongLongTuple createTupleFromValues(@NotNull final Object... values) {
         return new LongLongTuple(
-                DateTimeUtil.nanos((DateTime)values[0]),
-                DateTimeUtil.nanos((DateTime)values[1])
+                DateTimeUtils.nanos((DateTime)values[0]),
+                DateTimeUtils.nanos((DateTime)values[1])
         );
     }
 
@@ -76,11 +76,11 @@ public class ReinterpretedDateTimeReinterpretedDateTimeColumnTupleSource extends
     @Override
     public final <ELEMENT_TYPE> void exportElement(@NotNull final LongLongTuple tuple, final int elementIndex, @NotNull final WritableColumnSource<ELEMENT_TYPE> writableSource, final long destinationIndexKey) {
         if (elementIndex == 0) {
-            writableSource.set(destinationIndexKey, (ELEMENT_TYPE) DateTimeUtil.nanosToTime(tuple.getFirstElement()));
+            writableSource.set(destinationIndexKey, (ELEMENT_TYPE) DateTimeUtils.nanosToTime(tuple.getFirstElement()));
             return;
         }
         if (elementIndex == 1) {
-            writableSource.set(destinationIndexKey, (ELEMENT_TYPE) DateTimeUtil.nanosToTime(tuple.getSecondElement()));
+            writableSource.set(destinationIndexKey, (ELEMENT_TYPE) DateTimeUtils.nanosToTime(tuple.getSecondElement()));
             return;
         }
         throw new IndexOutOfBoundsException("Invalid element index " + elementIndex + " for export");
@@ -89,18 +89,18 @@ public class ReinterpretedDateTimeReinterpretedDateTimeColumnTupleSource extends
     @Override
     public final Object exportToExternalKey(@NotNull final LongLongTuple tuple) {
         return new SmartKey(
-                DateTimeUtil.nanosToTime(tuple.getFirstElement()),
-                DateTimeUtil.nanosToTime(tuple.getSecondElement())
+                DateTimeUtils.nanosToTime(tuple.getFirstElement()),
+                DateTimeUtils.nanosToTime(tuple.getSecondElement())
         );
     }
 
     @Override
     public final Object exportElement(@NotNull final LongLongTuple tuple, int elementIndex) {
         if (elementIndex == 0) {
-            return DateTimeUtil.nanosToTime(tuple.getFirstElement());
+            return DateTimeUtils.nanosToTime(tuple.getFirstElement());
         }
         if (elementIndex == 1) {
-            return DateTimeUtil.nanosToTime(tuple.getSecondElement());
+            return DateTimeUtils.nanosToTime(tuple.getSecondElement());
         }
         throw new IllegalArgumentException("Bad elementIndex for 2 element tuple: " + elementIndex);
     }

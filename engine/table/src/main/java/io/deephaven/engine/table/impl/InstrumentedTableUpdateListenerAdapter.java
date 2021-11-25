@@ -8,7 +8,7 @@ import io.deephaven.base.cache.RetentionCache;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
-import io.deephaven.engine.time.DateTimeUtil;
+import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.liveness.Liveness;
 import io.deephaven.engine.table.impl.util.AsyncErrorLogger;
 import io.deephaven.engine.table.impl.util.AsyncClientErrorNotifier;
@@ -80,7 +80,7 @@ public abstract class InstrumentedTableUpdateListenerAdapter extends Instrumente
     @Override
     public void onFailureInternal(Throwable originalException, Entry sourceEntry) {
         try {
-            AsyncErrorLogger.log(DateTimeUtil.currentTime(), sourceEntry, sourceEntry, originalException);
+            AsyncErrorLogger.log(DateTimeUtils.currentTime(), sourceEntry, sourceEntry, originalException);
             AsyncClientErrorNotifier.reportError(originalException);
         } catch (IOException e) {
             throw new RuntimeException("Exception in " + sourceEntry.toString(), originalException);

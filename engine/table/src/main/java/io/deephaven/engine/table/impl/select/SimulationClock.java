@@ -3,7 +3,7 @@ package io.deephaven.engine.table.impl.select;
 import io.deephaven.base.clock.Clock;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
-import io.deephaven.engine.time.DateTimeUtil;
+import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.time.DateTime;
 import org.jetbrains.annotations.NotNull;
@@ -41,8 +41,8 @@ public class SimulationClock implements Clock {
     public SimulationClock(@NotNull final String startTime,
             @NotNull final String endTime,
             @NotNull final String stepSize) {
-        this(DateTimeUtil.convertDateTime(startTime), DateTimeUtil.convertDateTime(endTime),
-                DateTimeUtil.convertTime(stepSize));
+        this(DateTimeUtils.convertDateTime(startTime), DateTimeUtils.convertDateTime(endTime),
+                DateTimeUtils.convertTime(stepSize));
     }
 
     /**
@@ -57,7 +57,7 @@ public class SimulationClock implements Clock {
             final long stepNanos) {
         Require.neqNull(startTime, "startTime");
         this.endTime = Require.neqNull(endTime, "endTime");
-        Require.requirement(DateTimeUtil.isBefore(startTime, endTime), "DateTimeUtil.isBefore(startTime, endTime)");
+        Require.requirement(DateTimeUtils.isBefore(startTime, endTime), "DateTimeUtils.isBefore(startTime, endTime)");
         this.stepNanos = Require.gtZero(stepNanos, "stepNanos");
         now = startTime;
     }
@@ -106,8 +106,8 @@ public class SimulationClock implements Clock {
             UpdateGraphProcessor.DEFAULT.requestSignal(ugpCondition);
             return; // This return is not strictly necessary, but it seems clearer this way.
         }
-        final DateTime incremented = DateTimeUtil.plus(now, stepNanos);
-        now = DateTimeUtil.isAfter(incremented, endTime) ? endTime : incremented;
+        final DateTime incremented = DateTimeUtils.plus(now, stepNanos);
+        now = DateTimeUtils.isAfter(incremented, endTime) ? endTime : incremented;
     }
 
     /**

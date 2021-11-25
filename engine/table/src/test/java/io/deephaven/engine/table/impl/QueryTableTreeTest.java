@@ -7,7 +7,7 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.engine.table.TableMap;
-import io.deephaven.engine.time.DateTimeUtil;
+import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
@@ -1197,8 +1197,8 @@ public class QueryTableTreeTest extends QueryTableTestBase {
                 initColumnInfos(
                         new String[] {"USym", "DateTime", "IntCol", "DoubleCol", "BoolCol", "BigIntCol", "BigDecCol"},
                         new SetGenerator<>("AAPL", "TSLA", "VXX", "SPY"),
-                        new SetGenerator<>(DateTimeUtil.convertDateTime("2020-01-01T00:00:00 NY"), null,
-                                DateTimeUtil.convertDateTime("2020-02-28T14:30:00 NY")),
+                        new SetGenerator<>(DateTimeUtils.convertDateTime("2020-01-01T00:00:00 NY"), null,
+                                DateTimeUtils.convertDateTime("2020-02-28T14:30:00 NY")),
                         new IntGenerator(0, 1_000_000),
                         new DoubleGenerator(-100, 100),
                         new BooleanGenerator(0.4, 0.1),
@@ -1637,8 +1637,8 @@ public class QueryTableTreeTest extends QueryTableTestBase {
                 new TstUtils.SetGenerator<>("A", "B", "C", "D"),
                 new TstUtils.SetGenerator<>("A", "B", "C", "D", null),
                 new TstUtils.BooleanGenerator(.5, .1),
-                new TstUtils.UnsortedDateTimeGenerator(DateTimeUtil.convertDateTime("2020-03-17T09:30:00 NY"),
-                        DateTimeUtil.convertDateTime("2020-03-17T16:00:00 NY")),
+                new TstUtils.UnsortedDateTimeGenerator(DateTimeUtils.convertDateTime("2020-03-17T09:30:00 NY"),
+                        DateTimeUtils.convertDateTime("2020-03-17T16:00:00 NY")),
                 new TstUtils.SetGenerator<>(0, 1, 2, 3, 4, 5, NULL_INT),
                 new TstUtils.SetGenerator<>(0L, 1L, 2L, 3L, 4L, 5L, NULL_LONG),
                 new TstUtils.SetGenerator<>(0.0D, 1.1D, 2.2D, 3.3D, 4.4D, 5.5D, NULL_DOUBLE),

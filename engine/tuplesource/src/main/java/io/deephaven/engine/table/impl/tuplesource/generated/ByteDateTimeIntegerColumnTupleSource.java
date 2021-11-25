@@ -14,7 +14,7 @@ import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.tuplesource.AbstractTupleSource;
 import io.deephaven.engine.table.impl.tuplesource.ThreeColumnTupleSourceFactory;
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.time.DateTimeUtil;
+import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.tuple.generated.ByteLongIntTuple;
 import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
@@ -49,7 +49,7 @@ public class ByteDateTimeIntegerColumnTupleSource extends AbstractTupleSource<By
     public final ByteLongIntTuple createTuple(final long indexKey) {
         return new ByteLongIntTuple(
                 columnSource1.getByte(indexKey),
-                DateTimeUtil.nanos(columnSource2.get(indexKey)),
+                DateTimeUtils.nanos(columnSource2.get(indexKey)),
                 columnSource3.getInt(indexKey)
         );
     }
@@ -58,7 +58,7 @@ public class ByteDateTimeIntegerColumnTupleSource extends AbstractTupleSource<By
     public final ByteLongIntTuple createPreviousTuple(final long indexKey) {
         return new ByteLongIntTuple(
                 columnSource1.getPrevByte(indexKey),
-                DateTimeUtil.nanos(columnSource2.getPrev(indexKey)),
+                DateTimeUtils.nanos(columnSource2.getPrev(indexKey)),
                 columnSource3.getPrevInt(indexKey)
         );
     }
@@ -67,7 +67,7 @@ public class ByteDateTimeIntegerColumnTupleSource extends AbstractTupleSource<By
     public final ByteLongIntTuple createTupleFromValues(@NotNull final Object... values) {
         return new ByteLongIntTuple(
                 TypeUtils.unbox((Byte)values[0]),
-                DateTimeUtil.nanos((DateTime)values[1]),
+                DateTimeUtils.nanos((DateTime)values[1]),
                 TypeUtils.unbox((Integer)values[2])
         );
     }
@@ -76,7 +76,7 @@ public class ByteDateTimeIntegerColumnTupleSource extends AbstractTupleSource<By
     public final ByteLongIntTuple createTupleFromReinterpretedValues(@NotNull final Object... values) {
         return new ByteLongIntTuple(
                 TypeUtils.unbox((Byte)values[0]),
-                DateTimeUtil.nanos((DateTime)values[1]),
+                DateTimeUtils.nanos((DateTime)values[1]),
                 TypeUtils.unbox((Integer)values[2])
         );
     }
@@ -89,7 +89,7 @@ public class ByteDateTimeIntegerColumnTupleSource extends AbstractTupleSource<By
             return;
         }
         if (elementIndex == 1) {
-            writableSource.set(destinationIndexKey, (ELEMENT_TYPE) DateTimeUtil.nanosToTime(tuple.getSecondElement()));
+            writableSource.set(destinationIndexKey, (ELEMENT_TYPE) DateTimeUtils.nanosToTime(tuple.getSecondElement()));
             return;
         }
         if (elementIndex == 2) {
@@ -103,7 +103,7 @@ public class ByteDateTimeIntegerColumnTupleSource extends AbstractTupleSource<By
     public final Object exportToExternalKey(@NotNull final ByteLongIntTuple tuple) {
         return new SmartKey(
                 TypeUtils.box(tuple.getFirstElement()),
-                DateTimeUtil.nanosToTime(tuple.getSecondElement()),
+                DateTimeUtils.nanosToTime(tuple.getSecondElement()),
                 TypeUtils.box(tuple.getThirdElement())
         );
     }
@@ -114,7 +114,7 @@ public class ByteDateTimeIntegerColumnTupleSource extends AbstractTupleSource<By
             return TypeUtils.box(tuple.getFirstElement());
         }
         if (elementIndex == 1) {
-            return DateTimeUtil.nanosToTime(tuple.getSecondElement());
+            return DateTimeUtils.nanosToTime(tuple.getSecondElement());
         }
         if (elementIndex == 2) {
             return TypeUtils.box(tuple.getThirdElement());
@@ -128,7 +128,7 @@ public class ByteDateTimeIntegerColumnTupleSource extends AbstractTupleSource<By
             return TypeUtils.box(tuple.getFirstElement());
         }
         if (elementIndex == 1) {
-            return DateTimeUtil.nanosToTime(tuple.getSecondElement());
+            return DateTimeUtils.nanosToTime(tuple.getSecondElement());
         }
         if (elementIndex == 2) {
             return TypeUtils.box(tuple.getThirdElement());
@@ -143,7 +143,7 @@ public class ByteDateTimeIntegerColumnTupleSource extends AbstractTupleSource<By
         ObjectChunk<DateTime, Values> chunk2 = chunks[1].asObjectChunk();
         IntChunk<Values> chunk3 = chunks[2].asIntChunk();
         for (int ii = 0; ii < chunkSize; ++ii) {
-            destinationObjectChunk.set(ii, new ByteLongIntTuple(chunk1.get(ii), DateTimeUtil.nanos(chunk2.get(ii)), chunk3.get(ii)));
+            destinationObjectChunk.set(ii, new ByteLongIntTuple(chunk1.get(ii), DateTimeUtils.nanos(chunk2.get(ii)), chunk3.get(ii)));
         }
         destinationObjectChunk.setSize(chunkSize);
     }

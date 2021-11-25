@@ -34,7 +34,7 @@ import java.util.regex.Pattern;
  * Utilities for Deephaven date/time storage and manipulation.
  */
 @SuppressWarnings("UnusedDeclaration")
-public class DateTimeUtil {
+public class DateTimeUtils {
 
     public static final DateTime[] ZERO_LENGTH_DATETIME_ARRAY = new DateTime[0];
 
@@ -49,7 +49,7 @@ public class DateTimeUtil {
             Pattern.compile("^(?<year>[0-9][0-9][0-9][0-9])(?<month>[0-9][0-9])(?<day>[0-9][0-9])$");
     /**
      * Matches variations of month/day/year or day/month/year or year/month/day - how this is interpreted depends on the
-     * DateTimeUtil.dateStyle system property.
+     * DateTimeUtils.dateStyle system property.
      */
     private static final Pattern SLASH_DATE_PATTERN =
             Pattern.compile(
@@ -79,7 +79,7 @@ public class DateTimeUtil {
     private static final String DATE_COLUMN_PARTITION_FORMAT_STRING = "yyyy-MM-dd";
 
     private static final boolean ENABLE_MICROTIME_HACK =
-            Configuration.getInstance().getBooleanWithDefault("DateTimeUtil.enableMicrotimeHack", false);
+            Configuration.getInstance().getBooleanWithDefault("DateTimeUtils.enableMicrotimeHack", false);
 
     /**
      * Date formatting styles for use in conversion functions such as {@link #convertDateQuiet(String, DateStyle)}.
@@ -89,7 +89,7 @@ public class DateTimeUtil {
     }
 
     private static final DateStyle DATE_STYLE = DateStyle
-            .valueOf(Configuration.getInstance().getStringWithDefault("DateTimeUtil.dateStyle", DateStyle.MDY.name()));
+            .valueOf(Configuration.getInstance().getStringWithDefault("DateTimeUtils.dateStyle", DateStyle.MDY.name()));
 
     /**
      * Constant value of one second in nanoseconds.
@@ -1320,7 +1320,7 @@ public class DateTimeUtil {
         if (currentTimeMillis > endOfCurrentDateNyLastBusinessDay) {
             final BusinessCalendar bc = Calendars.calendar("USNYSE");
 
-            lastBusinessDateNy = bc.previousBusinessDay(DateTimeUtil.millisToTime(currentTimeMillis));
+            lastBusinessDateNy = bc.previousBusinessDay(DateTimeUtils.millisToTime(currentTimeMillis));
 
             // Calculate when this cached value expires
             endOfCurrentDateNyLastBusinessDay = getMillisAtMidnightNy(currentTimeMillis);
@@ -1482,7 +1482,7 @@ public class DateTimeUtil {
      *         DateTimeOverflowException} if the resultant value is more than max long nanoseconds from Epoch.
      */
     public static DateTime cappedTimeOffset(DateTime original, Period period, DateTime cap) {
-        DateTime offset = DateTimeUtil.plus(original, period);
+        DateTime offset = DateTimeUtils.plus(original, period);
         return (offset.compareTo(cap) > 0) ? cap : offset;
     }
 
@@ -1628,7 +1628,7 @@ public class DateTimeUtil {
             if (convertDateTimeQuiet(s) != null) {
                 matcher.appendReplacement(convertedFormula, "_date" + dateTimeIndex);
                 instanceVariablesString.append("        private DateTime _date").append(dateTimeIndex)
-                        .append("=DateTimeUtil.convertDateTime(\"")
+                        .append("=DateTimeUtils.convertDateTime(\"")
                         .append(formula, matcher.start() + 1, matcher.end() - 1).append("\");\n");
                 newVariables.put("_date" + dateTimeIndex, DateTime.class);
 
@@ -1636,14 +1636,14 @@ public class DateTimeUtil {
             } else if (convertDateQuiet(s) != null) {
                 matcher.appendReplacement(convertedFormula, "_localDate" + localDateIndex);
                 instanceVariablesString.append("        private java.time.LocalDate _localDate").append(localDateIndex)
-                        .append("=DateTimeUtil.convertDate(\"").append(formula, matcher.start() + 1, matcher.end() - 1)
+                        .append("=DateTimeUtils.convertDate(\"").append(formula, matcher.start() + 1, matcher.end() - 1)
                         .append("\");\n");
                 newVariables.put("_localDate" + localDateIndex, LocalDate.class);
                 localDateIndex++;
             } else if (convertTimeQuiet(s) != io.deephaven.util.QueryConstants.NULL_LONG) {
                 matcher.appendReplacement(convertedFormula, "_time" + timeIndex);
                 instanceVariablesString.append("        private long _time").append(timeIndex)
-                        .append("=DateTimeUtil.convertTime(\"").append(formula, matcher.start() + 1, matcher.end() - 1)
+                        .append("=DateTimeUtils.convertTime(\"").append(formula, matcher.start() + 1, matcher.end() - 1)
                         .append("\");\n");
                 newVariables.put("_time" + timeIndex, long.class);
 
@@ -1651,7 +1651,7 @@ public class DateTimeUtil {
             } else if (convertPeriodQuiet(s) != null) {
                 matcher.appendReplacement(convertedFormula, "_period" + periodIndex);
                 instanceVariablesString.append("        private Period _period").append(periodIndex)
-                        .append("=DateTimeUtil.convertPeriod(\"")
+                        .append("=DateTimeUtils.convertPeriod(\"")
                         .append(formula, matcher.start() + 1, matcher.end() - 1)
                         .append("\");\n");
                 newVariables.put("_period" + periodIndex, Period.class);
@@ -1660,7 +1660,7 @@ public class DateTimeUtil {
             } else if (convertLocalTimeQuiet(s) != null) {
                 matcher.appendReplacement(convertedFormula, "_localTime" + timeIndex);
                 instanceVariablesString.append("        private java.time.LocalTime _localTime").append(timeIndex)
-                        .append("=DateTimeUtil.convertLocalTime(\"")
+                        .append("=DateTimeUtils.convertLocalTime(\"")
                         .append(formula, matcher.start() + 1, matcher.end() - 1).append("\");\n");
                 newVariables.put("_localTime" + timeIndex, LocalTime.class);
                 timeIndex++;
@@ -2174,12 +2174,12 @@ public class DateTimeUtil {
         int nanos = zonedDateTime.getNano();
         long seconds = zonedDateTime.toEpochSecond();
 
-        long limit = (Long.MAX_VALUE - nanos) / DateTimeUtil.SECOND;
+        long limit = (Long.MAX_VALUE - nanos) / DateTimeUtils.SECOND;
         if (seconds >= limit) {
             throw new DateTimeOverflowException("Overflow: cannot convert " + zonedDateTime + " to new DateTime");
         }
 
-        return new DateTime(nanos + (seconds * DateTimeUtil.SECOND));
+        return new DateTime(nanos + (seconds * DateTimeUtils.SECOND));
     }
 
     /**

@@ -13,7 +13,7 @@ import io.deephaven.engine.table.impl.GroupingUtil;
 import io.deephaven.engine.table.impl.PrevColumnSource;
 import io.deephaven.engine.table.impl.indexer.RowSetIndexer;
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.time.DateTimeUtil;
+import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
@@ -259,7 +259,7 @@ public class ChunkedOperatorAggregationHelper {
         if (keySources.length == 1) {
             if (keySources[0].getType() == DateTime.class) {
                 ac.setReverseLookupFunction(key -> stateManager
-                        .findPositionForKey(key == null ? null : DateTimeUtil.nanos((DateTime) key)));
+                        .findPositionForKey(key == null ? null : DateTimeUtils.nanos((DateTime) key)));
             } else if (keySources[0].getType() == Boolean.class) {
                 ac.setReverseLookupFunction(
                         key -> stateManager.findPositionForKey(BooleanUtils.booleanAsByte((Boolean) key)));
@@ -272,7 +272,7 @@ public class ChunkedOperatorAggregationHelper {
                 if (keySources[ii].getType() == DateTime.class) {
                     final int fii = ii;
                     transformers.add(reinterpreted -> reinterpreted[fii] =
-                            reinterpreted[fii] == null ? null : DateTimeUtil.nanos((DateTime) reinterpreted[fii]));
+                            reinterpreted[fii] == null ? null : DateTimeUtils.nanos((DateTime) reinterpreted[fii]));
                 } else if (keySources[ii].getType() == Boolean.class) {
                     final int fii = ii;
                     transformers.add(reinterpreted -> reinterpreted[fii] =

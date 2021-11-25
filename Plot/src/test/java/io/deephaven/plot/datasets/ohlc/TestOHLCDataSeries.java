@@ -5,7 +5,7 @@
 package io.deephaven.plot.datasets.ohlc;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
-import io.deephaven.engine.time.DateTimeUtil;
+import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.plot.BaseFigureImpl;
 import io.deephaven.plot.datasets.data.IndexableNumericDataArrayDateTime;
 import io.deephaven.plot.util.tables.TableBackedTableMapHandle;
@@ -22,8 +22,8 @@ import io.deephaven.engine.util.TableTools;
 import java.util.ArrayList;
 
 public class TestOHLCDataSeries extends BaseArrayTestCase {
-    private final DateTime[] datesA = {new DateTime(DateTimeUtil.DAY), new DateTime(2 * DateTimeUtil.DAY),
-            new DateTime(3 * DateTimeUtil.DAY), new DateTime(4 * DateTimeUtil.DAY)};
+    private final DateTime[] datesA = {new DateTime(DateTimeUtils.DAY), new DateTime(2 * DateTimeUtils.DAY),
+            new DateTime(3 * DateTimeUtils.DAY), new DateTime(4 * DateTimeUtils.DAY)};
     private final double[] openA = {1.0, 2.0, 1.5, 2.0};
     private final double[] closeA = {1.8, 1.8, 1.7, 2.2};
     private final double[] highA = {2.0, 2.0, 1.8, 2.5};

@@ -14,7 +14,7 @@ import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.tuplesource.AbstractTupleSource;
 import io.deephaven.engine.table.impl.tuplesource.ThreeColumnTupleSourceFactory;
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.time.DateTimeUtil;
+import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.tuple.generated.LongCharShortTuple;
 import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
@@ -48,7 +48,7 @@ public class DateTimeCharacterShortColumnTupleSource extends AbstractTupleSource
     @Override
     public final LongCharShortTuple createTuple(final long indexKey) {
         return new LongCharShortTuple(
-                DateTimeUtil.nanos(columnSource1.get(indexKey)),
+                DateTimeUtils.nanos(columnSource1.get(indexKey)),
                 columnSource2.getChar(indexKey),
                 columnSource3.getShort(indexKey)
         );
@@ -57,7 +57,7 @@ public class DateTimeCharacterShortColumnTupleSource extends AbstractTupleSource
     @Override
     public final LongCharShortTuple createPreviousTuple(final long indexKey) {
         return new LongCharShortTuple(
-                DateTimeUtil.nanos(columnSource1.getPrev(indexKey)),
+                DateTimeUtils.nanos(columnSource1.getPrev(indexKey)),
                 columnSource2.getPrevChar(indexKey),
                 columnSource3.getPrevShort(indexKey)
         );
@@ -66,7 +66,7 @@ public class DateTimeCharacterShortColumnTupleSource extends AbstractTupleSource
     @Override
     public final LongCharShortTuple createTupleFromValues(@NotNull final Object... values) {
         return new LongCharShortTuple(
-                DateTimeUtil.nanos((DateTime)values[0]),
+                DateTimeUtils.nanos((DateTime)values[0]),
                 TypeUtils.unbox((Character)values[1]),
                 TypeUtils.unbox((Short)values[2])
         );
@@ -75,7 +75,7 @@ public class DateTimeCharacterShortColumnTupleSource extends AbstractTupleSource
     @Override
     public final LongCharShortTuple createTupleFromReinterpretedValues(@NotNull final Object... values) {
         return new LongCharShortTuple(
-                DateTimeUtil.nanos((DateTime)values[0]),
+                DateTimeUtils.nanos((DateTime)values[0]),
                 TypeUtils.unbox((Character)values[1]),
                 TypeUtils.unbox((Short)values[2])
         );
@@ -85,7 +85,7 @@ public class DateTimeCharacterShortColumnTupleSource extends AbstractTupleSource
     @Override
     public final <ELEMENT_TYPE> void exportElement(@NotNull final LongCharShortTuple tuple, final int elementIndex, @NotNull final WritableColumnSource<ELEMENT_TYPE> writableSource, final long destinationIndexKey) {
         if (elementIndex == 0) {
-            writableSource.set(destinationIndexKey, (ELEMENT_TYPE) DateTimeUtil.nanosToTime(tuple.getFirstElement()));
+            writableSource.set(destinationIndexKey, (ELEMENT_TYPE) DateTimeUtils.nanosToTime(tuple.getFirstElement()));
             return;
         }
         if (elementIndex == 1) {
@@ -102,7 +102,7 @@ public class DateTimeCharacterShortColumnTupleSource extends AbstractTupleSource
     @Override
     public final Object exportToExternalKey(@NotNull final LongCharShortTuple tuple) {
         return new SmartKey(
-                DateTimeUtil.nanosToTime(tuple.getFirstElement()),
+                DateTimeUtils.nanosToTime(tuple.getFirstElement()),
                 TypeUtils.box(tuple.getSecondElement()),
                 TypeUtils.box(tuple.getThirdElement())
         );
@@ -111,7 +111,7 @@ public class DateTimeCharacterShortColumnTupleSource extends AbstractTupleSource
     @Override
     public final Object exportElement(@NotNull final LongCharShortTuple tuple, int elementIndex) {
         if (elementIndex == 0) {
-            return DateTimeUtil.nanosToTime(tuple.getFirstElement());
+            return DateTimeUtils.nanosToTime(tuple.getFirstElement());
         }
         if (elementIndex == 1) {
             return TypeUtils.box(tuple.getSecondElement());
@@ -125,7 +125,7 @@ public class DateTimeCharacterShortColumnTupleSource extends AbstractTupleSource
     @Override
     public final Object exportElementReinterpreted(@NotNull final LongCharShortTuple tuple, int elementIndex) {
         if (elementIndex == 0) {
-            return DateTimeUtil.nanosToTime(tuple.getFirstElement());
+            return DateTimeUtils.nanosToTime(tuple.getFirstElement());
         }
         if (elementIndex == 1) {
             return TypeUtils.box(tuple.getSecondElement());
@@ -143,7 +143,7 @@ public class DateTimeCharacterShortColumnTupleSource extends AbstractTupleSource
         CharChunk<Values> chunk2 = chunks[1].asCharChunk();
         ShortChunk<Values> chunk3 = chunks[2].asShortChunk();
         for (int ii = 0; ii < chunkSize; ++ii) {
-            destinationObjectChunk.set(ii, new LongCharShortTuple(DateTimeUtil.nanos(chunk1.get(ii)), chunk2.get(ii), chunk3.get(ii)));
+            destinationObjectChunk.set(ii, new LongCharShortTuple(DateTimeUtils.nanos(chunk1.get(ii)), chunk2.get(ii), chunk3.get(ii)));
         }
         destinationObjectChunk.setSize(chunkSize);
     }

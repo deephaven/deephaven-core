@@ -3,7 +3,7 @@ package io.deephaven.benchmark.engine;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.time.DateTimeUtil;
+import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.table.impl.select.*;
 import io.deephaven.benchmarking.*;
 import io.deephaven.benchmarking.runner.TableBenchmarkState;
@@ -68,8 +68,8 @@ public class RangeFilterBenchmark {
         builder.setSeed(0xDEADBEEF)
                 .addColumn(BenchmarkTools.stringCol("PartCol", 4, 5, 7, 0xFEEDBEEF));
 
-        final DateTime startTime = DateTimeUtil.convertDateTime("2019-01-01T12:00:00 NY");
-        final DateTime endTime = DateTimeUtil.convertDateTime("2019-12-31T12:00:00 NY");
+        final DateTime startTime = DateTimeUtils.convertDateTime("2019-01-01T12:00:00 NY");
+        final DateTime endTime = DateTimeUtils.convertDateTime("2019-12-31T12:00:00 NY");
 
         switch (filterCol) {
             case "D1":
@@ -95,13 +95,13 @@ public class RangeFilterBenchmark {
                 upperBound = endTime;
                 lowerBound = startTime;
             } else if (selectivity == 0) {
-                lowerBound = DateTimeUtil.plus(endTime, 1000_000_000L);
-                upperBound = DateTimeUtil.plus(lowerBound, 1000_000_00L);
+                lowerBound = DateTimeUtils.plus(endTime, 1000_000_000L);
+                upperBound = DateTimeUtils.plus(lowerBound, 1000_000_00L);
             } else {
                 final long midpoint = (startTime.getNanos() + endTime.getNanos()) / 2;
                 final long range = (endTime.getNanos() - startTime.getNanos());
-                lowerBound = DateTimeUtil.nanosToTime(midpoint - (long) (range * (selectivity / 100.0)));
-                upperBound = DateTimeUtil.nanosToTime(midpoint + (long) (range * (selectivity / 100.0)));
+                lowerBound = DateTimeUtils.nanosToTime(midpoint - (long) (range * (selectivity / 100.0)));
+                upperBound = DateTimeUtils.nanosToTime(midpoint + (long) (range * (selectivity / 100.0)));
             }
 
             assert lowerBound != null;

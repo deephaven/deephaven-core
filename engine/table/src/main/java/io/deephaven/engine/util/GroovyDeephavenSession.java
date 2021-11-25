@@ -517,7 +517,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession implements Scr
                 "import io.deephaven.util.type.TypeUtils;\n" +
                 "import io.deephaven.util.type.ArrayTypeUtils;\n" +
                 "import io.deephaven.engine.time.DateTime;\n" +
-                "import io.deephaven.engine.time.DateTimeUtil;\n" +
+                "import io.deephaven.engine.time.DateTimeUtils;\n" +
                 "import io.deephaven.base.string.cache.CompressedString;\n" +
                 "import static io.deephaven.base.string.cache.CompressedString.compress;\n" +
                 "import org.joda.time.LocalTime;\n" +
@@ -528,7 +528,7 @@ public class GroovyDeephavenSession extends AbstractScriptSession implements Scr
                 "import java.lang.*;\n" +
                 "import static io.deephaven.util.QueryConstants.*;\n" +
                 "import static io.deephaven.libs.GroovyStaticImports.*;\n" +
-                "import static io.deephaven.engine.time.DateTimeUtil.*;\n" +
+                "import static io.deephaven.engine.time.DateTimeUtils.*;\n" +
                 "import static io.deephaven.engine.time.TimeZone.*;\n" +
                 "import static io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtil.*;\n" +
                 "import static io.deephaven.api.agg.Aggregation.*;\n" +

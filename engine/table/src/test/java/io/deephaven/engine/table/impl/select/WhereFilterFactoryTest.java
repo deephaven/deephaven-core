@@ -9,7 +9,7 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.lang.QueryScope;
 import io.deephaven.engine.table.impl.RefreshingTableTestCase;
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.time.DateTimeUtil;
+import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.TstUtils;
 import io.deephaven.engine.rowset.RowSet;
@@ -153,11 +153,11 @@ public class WhereFilterFactoryTest extends RefreshingTableTestCase {
 
 
     public void testInDateTimes() {
-        DateTime wed = DateTimeUtil.convertDateTime("2018-05-02T10:00:00 NY");// not in the table
+        DateTime wed = DateTimeUtils.convertDateTime("2018-05-02T10:00:00 NY");// not in the table
 
-        DateTime mon = DateTimeUtil.convertDateTime("2018-04-30T10:00:00 NY");
-        DateTime tues = DateTimeUtil.convertDateTime("2018-05-01T10:00:00 NY");
-        DateTime thurs = DateTimeUtil.convertDateTime("2018-05-03T10:00:00 NY");
+        DateTime mon = DateTimeUtils.convertDateTime("2018-04-30T10:00:00 NY");
+        DateTime tues = DateTimeUtils.convertDateTime("2018-05-01T10:00:00 NY");
+        DateTime thurs = DateTimeUtils.convertDateTime("2018-05-03T10:00:00 NY");
         Table t = TableTools.newTable(TableTools.col("Timestamp", new DateTime(mon.getNanos()),
                 new DateTime(tues.getNanos()), new DateTime(thurs.getNanos())));
         // match one item
@@ -243,18 +243,18 @@ public class WhereFilterFactoryTest extends RefreshingTableTestCase {
         checkDateRange("18:43", makeDateTime("18:43"), makeDateTime("18:44"));
         checkDateRange("18:43:40", makeDateTime("18:43:40"), makeDateTime("18:43:41"));
         checkDateRange("18:43:40.100", makeDateTime("18:43:40.100"), makeDateTime("18:43:40.101"));
-        checkDateRange("2018-03-25 NY", DateTimeUtil.convertDateTime("2018-03-25 NY"),
-                DateTimeUtil.convertDateTime("2018-03-26 NY"));
-        checkDateRange("2018-03-25T18:00 NY", DateTimeUtil.convertDateTime("2018-03-25T18:00 NY"),
-                DateTimeUtil.convertDateTime("2018-03-25T18:01 NY"));
-        checkDateRange("2018-03-25T18:00:00 NY", DateTimeUtil.convertDateTime("2018-03-25T18:00:00 NY"),
-                DateTimeUtil.convertDateTime("2018-03-25T18:00:01 NY"));
+        checkDateRange("2018-03-25 NY", DateTimeUtils.convertDateTime("2018-03-25 NY"),
+                DateTimeUtils.convertDateTime("2018-03-26 NY"));
+        checkDateRange("2018-03-25T18:00 NY", DateTimeUtils.convertDateTime("2018-03-25T18:00 NY"),
+                DateTimeUtils.convertDateTime("2018-03-25T18:01 NY"));
+        checkDateRange("2018-03-25T18:00:00 NY", DateTimeUtils.convertDateTime("2018-03-25T18:00:00 NY"),
+                DateTimeUtils.convertDateTime("2018-03-25T18:00:01 NY"));
     }
 
     private DateTime makeDateTime(String timeStr) {
         ZonedDateTime zdt = ZonedDateTime.now(ZoneId.of("America/New_York")).truncatedTo(ChronoUnit.DAYS)
-                .plus(DateTimeUtil.convertTime(timeStr), ChronoUnit.NANOS);
-        return DateTimeUtil.millisToTime(zdt.toInstant().toEpochMilli());
+                .plus(DateTimeUtils.convertTime(timeStr), ChronoUnit.NANOS);
+        return DateTimeUtils.millisToTime(zdt.toInstant().toEpochMilli());
     }
 
     private void checkDateRange(String input, DateTime lowerDate, DateTime upperDate) {

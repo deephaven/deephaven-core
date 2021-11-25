@@ -4,7 +4,7 @@
 
 package io.deephaven.engine.util;
 
-import io.deephaven.engine.time.DateTimeUtil;
+import io.deephaven.engine.time.DateTimeUtils;
 import junit.framework.TestCase;
 
 import java.util.Collections;
@@ -17,8 +17,8 @@ public class TestCompileSimpleFunction extends TestCase {
 
     public void testImport() {
         String res = DynamicCompileUtils.compileSimpleFunction(String.class, "return currentDateNy()",
-                Collections.emptyList(), Collections.singleton(DateTimeUtil.class)).get();
-        TestCase.assertEquals(DateTimeUtil.currentDateNy(), res);
+                Collections.emptyList(), Collections.singleton(DateTimeUtils.class)).get();
+        TestCase.assertEquals(DateTimeUtils.currentDateNy(), res);
     }
 
     public void testNotString() {

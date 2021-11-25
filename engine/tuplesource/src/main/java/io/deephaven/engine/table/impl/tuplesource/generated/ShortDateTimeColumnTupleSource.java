@@ -13,7 +13,7 @@ import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.tuplesource.AbstractTupleSource;
 import io.deephaven.engine.table.impl.tuplesource.TwoColumnTupleSourceFactory;
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.time.DateTimeUtil;
+import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.tuple.generated.ShortLongTuple;
 import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
@@ -45,7 +45,7 @@ public class ShortDateTimeColumnTupleSource extends AbstractTupleSource<ShortLon
     public final ShortLongTuple createTuple(final long indexKey) {
         return new ShortLongTuple(
                 columnSource1.getShort(indexKey),
-                DateTimeUtil.nanos(columnSource2.get(indexKey))
+                DateTimeUtils.nanos(columnSource2.get(indexKey))
         );
     }
 
@@ -53,7 +53,7 @@ public class ShortDateTimeColumnTupleSource extends AbstractTupleSource<ShortLon
     public final ShortLongTuple createPreviousTuple(final long indexKey) {
         return new ShortLongTuple(
                 columnSource1.getPrevShort(indexKey),
-                DateTimeUtil.nanos(columnSource2.getPrev(indexKey))
+                DateTimeUtils.nanos(columnSource2.getPrev(indexKey))
         );
     }
 
@@ -61,7 +61,7 @@ public class ShortDateTimeColumnTupleSource extends AbstractTupleSource<ShortLon
     public final ShortLongTuple createTupleFromValues(@NotNull final Object... values) {
         return new ShortLongTuple(
                 TypeUtils.unbox((Short)values[0]),
-                DateTimeUtil.nanos((DateTime)values[1])
+                DateTimeUtils.nanos((DateTime)values[1])
         );
     }
 
@@ -69,7 +69,7 @@ public class ShortDateTimeColumnTupleSource extends AbstractTupleSource<ShortLon
     public final ShortLongTuple createTupleFromReinterpretedValues(@NotNull final Object... values) {
         return new ShortLongTuple(
                 TypeUtils.unbox((Short)values[0]),
-                DateTimeUtil.nanos((DateTime)values[1])
+                DateTimeUtils.nanos((DateTime)values[1])
         );
     }
 
@@ -81,7 +81,7 @@ public class ShortDateTimeColumnTupleSource extends AbstractTupleSource<ShortLon
             return;
         }
         if (elementIndex == 1) {
-            writableSource.set(destinationIndexKey, (ELEMENT_TYPE) DateTimeUtil.nanosToTime(tuple.getSecondElement()));
+            writableSource.set(destinationIndexKey, (ELEMENT_TYPE) DateTimeUtils.nanosToTime(tuple.getSecondElement()));
             return;
         }
         throw new IndexOutOfBoundsException("Invalid element index " + elementIndex + " for export");
@@ -91,7 +91,7 @@ public class ShortDateTimeColumnTupleSource extends AbstractTupleSource<ShortLon
     public final Object exportToExternalKey(@NotNull final ShortLongTuple tuple) {
         return new SmartKey(
                 TypeUtils.box(tuple.getFirstElement()),
-                DateTimeUtil.nanosToTime(tuple.getSecondElement())
+                DateTimeUtils.nanosToTime(tuple.getSecondElement())
         );
     }
 
@@ -101,7 +101,7 @@ public class ShortDateTimeColumnTupleSource extends AbstractTupleSource<ShortLon
             return TypeUtils.box(tuple.getFirstElement());
         }
         if (elementIndex == 1) {
-            return DateTimeUtil.nanosToTime(tuple.getSecondElement());
+            return DateTimeUtils.nanosToTime(tuple.getSecondElement());
         }
         throw new IllegalArgumentException("Bad elementIndex for 2 element tuple: " + elementIndex);
     }
@@ -112,7 +112,7 @@ public class ShortDateTimeColumnTupleSource extends AbstractTupleSource<ShortLon
             return TypeUtils.box(tuple.getFirstElement());
         }
         if (elementIndex == 1) {
-            return DateTimeUtil.nanosToTime(tuple.getSecondElement());
+            return DateTimeUtils.nanosToTime(tuple.getSecondElement());
         }
         throw new IllegalArgumentException("Bad elementIndex for 2 element tuple: " + elementIndex);
     }
@@ -122,7 +122,7 @@ public class ShortDateTimeColumnTupleSource extends AbstractTupleSource<ShortLon
         ShortChunk<Values> chunk1 = chunks[0].asShortChunk();
         ObjectChunk<DateTime, Values> chunk2 = chunks[1].asObjectChunk();
         for (int ii = 0; ii < chunkSize; ++ii) {
-            destinationObjectChunk.set(ii, new ShortLongTuple(chunk1.get(ii), DateTimeUtil.nanos(chunk2.get(ii))));
+            destinationObjectChunk.set(ii, new ShortLongTuple(chunk1.get(ii), DateTimeUtils.nanos(chunk2.get(ii))));
         }
         destination.setSize(chunkSize);
     }

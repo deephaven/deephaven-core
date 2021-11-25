@@ -14,7 +14,7 @@ import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.tuplesource.AbstractTupleSource;
 import io.deephaven.engine.table.impl.tuplesource.ThreeColumnTupleSourceFactory;
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.time.DateTimeUtil;
+import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.tuple.generated.ByteLongLongTuple;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.util.type.TypeUtils;
@@ -51,7 +51,7 @@ public class ReinterpretedBooleanReinterpretedDateTimeDateTimeColumnTupleSource 
         return new ByteLongLongTuple(
                 columnSource1.getByte(indexKey),
                 columnSource2.getLong(indexKey),
-                DateTimeUtil.nanos(columnSource3.get(indexKey))
+                DateTimeUtils.nanos(columnSource3.get(indexKey))
         );
     }
 
@@ -60,7 +60,7 @@ public class ReinterpretedBooleanReinterpretedDateTimeDateTimeColumnTupleSource 
         return new ByteLongLongTuple(
                 columnSource1.getPrevByte(indexKey),
                 columnSource2.getPrevLong(indexKey),
-                DateTimeUtil.nanos(columnSource3.getPrev(indexKey))
+                DateTimeUtils.nanos(columnSource3.getPrev(indexKey))
         );
     }
 
@@ -68,8 +68,8 @@ public class ReinterpretedBooleanReinterpretedDateTimeDateTimeColumnTupleSource 
     public final ByteLongLongTuple createTupleFromValues(@NotNull final Object... values) {
         return new ByteLongLongTuple(
                 BooleanUtils.booleanAsByte((Boolean)values[0]),
-                DateTimeUtil.nanos((DateTime)values[1]),
-                DateTimeUtil.nanos((DateTime)values[2])
+                DateTimeUtils.nanos((DateTime)values[1]),
+                DateTimeUtils.nanos((DateTime)values[2])
         );
     }
 
@@ -78,7 +78,7 @@ public class ReinterpretedBooleanReinterpretedDateTimeDateTimeColumnTupleSource 
         return new ByteLongLongTuple(
                 TypeUtils.unbox((Byte)values[0]),
                 TypeUtils.unbox((Long)values[1]),
-                DateTimeUtil.nanos((DateTime)values[2])
+                DateTimeUtils.nanos((DateTime)values[2])
         );
     }
 
@@ -90,11 +90,11 @@ public class ReinterpretedBooleanReinterpretedDateTimeDateTimeColumnTupleSource 
             return;
         }
         if (elementIndex == 1) {
-            writableSource.set(destinationIndexKey, (ELEMENT_TYPE) DateTimeUtil.nanosToTime(tuple.getSecondElement()));
+            writableSource.set(destinationIndexKey, (ELEMENT_TYPE) DateTimeUtils.nanosToTime(tuple.getSecondElement()));
             return;
         }
         if (elementIndex == 2) {
-            writableSource.set(destinationIndexKey, (ELEMENT_TYPE) DateTimeUtil.nanosToTime(tuple.getThirdElement()));
+            writableSource.set(destinationIndexKey, (ELEMENT_TYPE) DateTimeUtils.nanosToTime(tuple.getThirdElement()));
             return;
         }
         throw new IndexOutOfBoundsException("Invalid element index " + elementIndex + " for export");
@@ -104,8 +104,8 @@ public class ReinterpretedBooleanReinterpretedDateTimeDateTimeColumnTupleSource 
     public final Object exportToExternalKey(@NotNull final ByteLongLongTuple tuple) {
         return new SmartKey(
                 BooleanUtils.byteAsBoolean(tuple.getFirstElement()),
-                DateTimeUtil.nanosToTime(tuple.getSecondElement()),
-                DateTimeUtil.nanosToTime(tuple.getThirdElement())
+                DateTimeUtils.nanosToTime(tuple.getSecondElement()),
+                DateTimeUtils.nanosToTime(tuple.getThirdElement())
         );
     }
 
@@ -115,10 +115,10 @@ public class ReinterpretedBooleanReinterpretedDateTimeDateTimeColumnTupleSource 
             return BooleanUtils.byteAsBoolean(tuple.getFirstElement());
         }
         if (elementIndex == 1) {
-            return DateTimeUtil.nanosToTime(tuple.getSecondElement());
+            return DateTimeUtils.nanosToTime(tuple.getSecondElement());
         }
         if (elementIndex == 2) {
-            return DateTimeUtil.nanosToTime(tuple.getThirdElement());
+            return DateTimeUtils.nanosToTime(tuple.getThirdElement());
         }
         throw new IllegalArgumentException("Bad elementIndex for 3 element tuple: " + elementIndex);
     }
@@ -132,7 +132,7 @@ public class ReinterpretedBooleanReinterpretedDateTimeDateTimeColumnTupleSource 
             return TypeUtils.box(tuple.getSecondElement());
         }
         if (elementIndex == 2) {
-            return DateTimeUtil.nanosToTime(tuple.getThirdElement());
+            return DateTimeUtils.nanosToTime(tuple.getThirdElement());
         }
         throw new IllegalArgumentException("Bad elementIndex for 3 element tuple: " + elementIndex);
     }
@@ -144,7 +144,7 @@ public class ReinterpretedBooleanReinterpretedDateTimeDateTimeColumnTupleSource 
         LongChunk<Values> chunk2 = chunks[1].asLongChunk();
         ObjectChunk<DateTime, Values> chunk3 = chunks[2].asObjectChunk();
         for (int ii = 0; ii < chunkSize; ++ii) {
-            destinationObjectChunk.set(ii, new ByteLongLongTuple(chunk1.get(ii), chunk2.get(ii), DateTimeUtil.nanos(chunk3.get(ii))));
+            destinationObjectChunk.set(ii, new ByteLongLongTuple(chunk1.get(ii), chunk2.get(ii), DateTimeUtils.nanos(chunk3.get(ii))));
         }
         destinationObjectChunk.setSize(chunkSize);
     }

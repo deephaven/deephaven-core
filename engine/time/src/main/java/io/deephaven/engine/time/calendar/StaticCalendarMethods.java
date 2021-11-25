@@ -13,7 +13,7 @@ import java.time.LocalDate;
 public class StaticCalendarMethods {
 
 
-    // These methods are imported from DateTimeUtil, so are not included here
+    // These methods are imported from DateTimeUtils, so are not included here
     // public static long diffNanos(final DateTime start, final DateTime end) {
     // public static long diffDay(final DateTime start, final DateTime end) {
     // public static long diffYear(final DateTime start, final DateTime end) {

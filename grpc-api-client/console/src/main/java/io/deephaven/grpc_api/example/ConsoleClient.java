@@ -4,7 +4,7 @@
 
 package io.deephaven.grpc_api.example;
 
-import io.deephaven.engine.time.DateTimeUtil;
+import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.grpc_api.console.ScopeTicketResolver;
 import io.deephaven.grpc_api.util.ExportTicketHelper;
 import io.deephaven.io.log.LogEntry;
@@ -238,7 +238,7 @@ public class ConsoleClient {
                 scheduler.currentTime().getMillis() + result.getTokenExpirationDelayMillis() / 3,
                 result.getTokenDeadlineTimeMillis() - result.getTokenExpirationDelayMillis() / 10);
 
-        scheduler.runAtTime(DateTimeUtil.millisToTime(refreshDelayMs), this::refreshToken);
+        scheduler.runAtTime(DateTimeUtils.millisToTime(refreshDelayMs), this::refreshToken);
     }
 
     private void refreshToken() {

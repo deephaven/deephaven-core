@@ -13,7 +13,7 @@ import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.tuplesource.AbstractTupleSource;
 import io.deephaven.engine.table.impl.tuplesource.ThreeColumnTupleSourceFactory;
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.time.DateTimeUtil;
+import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.tuple.generated.FloatLongLongTuple;
 import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
@@ -48,8 +48,8 @@ public class FloatDateTimeDateTimeColumnTupleSource extends AbstractTupleSource<
     public final FloatLongLongTuple createTuple(final long indexKey) {
         return new FloatLongLongTuple(
                 columnSource1.getFloat(indexKey),
-                DateTimeUtil.nanos(columnSource2.get(indexKey)),
-                DateTimeUtil.nanos(columnSource3.get(indexKey))
+                DateTimeUtils.nanos(columnSource2.get(indexKey)),
+                DateTimeUtils.nanos(columnSource3.get(indexKey))
         );
     }
 
@@ -57,8 +57,8 @@ public class FloatDateTimeDateTimeColumnTupleSource extends AbstractTupleSource<
     public final FloatLongLongTuple createPreviousTuple(final long indexKey) {
         return new FloatLongLongTuple(
                 columnSource1.getPrevFloat(indexKey),
-                DateTimeUtil.nanos(columnSource2.getPrev(indexKey)),
-                DateTimeUtil.nanos(columnSource3.getPrev(indexKey))
+                DateTimeUtils.nanos(columnSource2.getPrev(indexKey)),
+                DateTimeUtils.nanos(columnSource3.getPrev(indexKey))
         );
     }
 
@@ -66,8 +66,8 @@ public class FloatDateTimeDateTimeColumnTupleSource extends AbstractTupleSource<
     public final FloatLongLongTuple createTupleFromValues(@NotNull final Object... values) {
         return new FloatLongLongTuple(
                 TypeUtils.unbox((Float)values[0]),
-                DateTimeUtil.nanos((DateTime)values[1]),
-                DateTimeUtil.nanos((DateTime)values[2])
+                DateTimeUtils.nanos((DateTime)values[1]),
+                DateTimeUtils.nanos((DateTime)values[2])
         );
     }
 
@@ -75,8 +75,8 @@ public class FloatDateTimeDateTimeColumnTupleSource extends AbstractTupleSource<
     public final FloatLongLongTuple createTupleFromReinterpretedValues(@NotNull final Object... values) {
         return new FloatLongLongTuple(
                 TypeUtils.unbox((Float)values[0]),
-                DateTimeUtil.nanos((DateTime)values[1]),
-                DateTimeUtil.nanos((DateTime)values[2])
+                DateTimeUtils.nanos((DateTime)values[1]),
+                DateTimeUtils.nanos((DateTime)values[2])
         );
     }
 
@@ -88,11 +88,11 @@ public class FloatDateTimeDateTimeColumnTupleSource extends AbstractTupleSource<
             return;
         }
         if (elementIndex == 1) {
-            writableSource.set(destinationIndexKey, (ELEMENT_TYPE) DateTimeUtil.nanosToTime(tuple.getSecondElement()));
+            writableSource.set(destinationIndexKey, (ELEMENT_TYPE) DateTimeUtils.nanosToTime(tuple.getSecondElement()));
             return;
         }
         if (elementIndex == 2) {
-            writableSource.set(destinationIndexKey, (ELEMENT_TYPE) DateTimeUtil.nanosToTime(tuple.getThirdElement()));
+            writableSource.set(destinationIndexKey, (ELEMENT_TYPE) DateTimeUtils.nanosToTime(tuple.getThirdElement()));
             return;
         }
         throw new IndexOutOfBoundsException("Invalid element index " + elementIndex + " for export");
@@ -102,8 +102,8 @@ public class FloatDateTimeDateTimeColumnTupleSource extends AbstractTupleSource<
     public final Object exportToExternalKey(@NotNull final FloatLongLongTuple tuple) {
         return new SmartKey(
                 TypeUtils.box(tuple.getFirstElement()),
-                DateTimeUtil.nanosToTime(tuple.getSecondElement()),
-                DateTimeUtil.nanosToTime(tuple.getThirdElement())
+                DateTimeUtils.nanosToTime(tuple.getSecondElement()),
+                DateTimeUtils.nanosToTime(tuple.getThirdElement())
         );
     }
 
@@ -113,10 +113,10 @@ public class FloatDateTimeDateTimeColumnTupleSource extends AbstractTupleSource<
             return TypeUtils.box(tuple.getFirstElement());
         }
         if (elementIndex == 1) {
-            return DateTimeUtil.nanosToTime(tuple.getSecondElement());
+            return DateTimeUtils.nanosToTime(tuple.getSecondElement());
         }
         if (elementIndex == 2) {
-            return DateTimeUtil.nanosToTime(tuple.getThirdElement());
+            return DateTimeUtils.nanosToTime(tuple.getThirdElement());
         }
         throw new IllegalArgumentException("Bad elementIndex for 3 element tuple: " + elementIndex);
     }
@@ -127,10 +127,10 @@ public class FloatDateTimeDateTimeColumnTupleSource extends AbstractTupleSource<
             return TypeUtils.box(tuple.getFirstElement());
         }
         if (elementIndex == 1) {
-            return DateTimeUtil.nanosToTime(tuple.getSecondElement());
+            return DateTimeUtils.nanosToTime(tuple.getSecondElement());
         }
         if (elementIndex == 2) {
-            return DateTimeUtil.nanosToTime(tuple.getThirdElement());
+            return DateTimeUtils.nanosToTime(tuple.getThirdElement());
         }
         throw new IllegalArgumentException("Bad elementIndex for 3 element tuple: " + elementIndex);
     }
@@ -142,7 +142,7 @@ public class FloatDateTimeDateTimeColumnTupleSource extends AbstractTupleSource<
         ObjectChunk<DateTime, Values> chunk2 = chunks[1].asObjectChunk();
         ObjectChunk<DateTime, Values> chunk3 = chunks[2].asObjectChunk();
         for (int ii = 0; ii < chunkSize; ++ii) {
-            destinationObjectChunk.set(ii, new FloatLongLongTuple(chunk1.get(ii), DateTimeUtil.nanos(chunk2.get(ii)), DateTimeUtil.nanos(chunk3.get(ii))));
+            destinationObjectChunk.set(ii, new FloatLongLongTuple(chunk1.get(ii), DateTimeUtils.nanos(chunk2.get(ii)), DateTimeUtils.nanos(chunk3.get(ii))));
         }
         destinationObjectChunk.setSize(chunkSize);
     }

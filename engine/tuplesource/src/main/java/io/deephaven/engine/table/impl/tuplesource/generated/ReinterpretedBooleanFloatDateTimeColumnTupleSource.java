@@ -14,7 +14,7 @@ import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.tuplesource.AbstractTupleSource;
 import io.deephaven.engine.table.impl.tuplesource.ThreeColumnTupleSourceFactory;
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.time.DateTimeUtil;
+import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.tuple.generated.ByteFloatLongTuple;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.util.type.TypeUtils;
@@ -51,7 +51,7 @@ public class ReinterpretedBooleanFloatDateTimeColumnTupleSource extends Abstract
         return new ByteFloatLongTuple(
                 columnSource1.getByte(indexKey),
                 columnSource2.getFloat(indexKey),
-                DateTimeUtil.nanos(columnSource3.get(indexKey))
+                DateTimeUtils.nanos(columnSource3.get(indexKey))
         );
     }
 
@@ -60,7 +60,7 @@ public class ReinterpretedBooleanFloatDateTimeColumnTupleSource extends Abstract
         return new ByteFloatLongTuple(
                 columnSource1.getPrevByte(indexKey),
                 columnSource2.getPrevFloat(indexKey),
-                DateTimeUtil.nanos(columnSource3.getPrev(indexKey))
+                DateTimeUtils.nanos(columnSource3.getPrev(indexKey))
         );
     }
 
@@ -69,7 +69,7 @@ public class ReinterpretedBooleanFloatDateTimeColumnTupleSource extends Abstract
         return new ByteFloatLongTuple(
                 BooleanUtils.booleanAsByte((Boolean)values[0]),
                 TypeUtils.unbox((Float)values[1]),
-                DateTimeUtil.nanos((DateTime)values[2])
+                DateTimeUtils.nanos((DateTime)values[2])
         );
     }
 
@@ -78,7 +78,7 @@ public class ReinterpretedBooleanFloatDateTimeColumnTupleSource extends Abstract
         return new ByteFloatLongTuple(
                 TypeUtils.unbox((Byte)values[0]),
                 TypeUtils.unbox((Float)values[1]),
-                DateTimeUtil.nanos((DateTime)values[2])
+                DateTimeUtils.nanos((DateTime)values[2])
         );
     }
 
@@ -94,7 +94,7 @@ public class ReinterpretedBooleanFloatDateTimeColumnTupleSource extends Abstract
             return;
         }
         if (elementIndex == 2) {
-            writableSource.set(destinationIndexKey, (ELEMENT_TYPE) DateTimeUtil.nanosToTime(tuple.getThirdElement()));
+            writableSource.set(destinationIndexKey, (ELEMENT_TYPE) DateTimeUtils.nanosToTime(tuple.getThirdElement()));
             return;
         }
         throw new IndexOutOfBoundsException("Invalid element index " + elementIndex + " for export");
@@ -105,7 +105,7 @@ public class ReinterpretedBooleanFloatDateTimeColumnTupleSource extends Abstract
         return new SmartKey(
                 BooleanUtils.byteAsBoolean(tuple.getFirstElement()),
                 TypeUtils.box(tuple.getSecondElement()),
-                DateTimeUtil.nanosToTime(tuple.getThirdElement())
+                DateTimeUtils.nanosToTime(tuple.getThirdElement())
         );
     }
 
@@ -118,7 +118,7 @@ public class ReinterpretedBooleanFloatDateTimeColumnTupleSource extends Abstract
             return TypeUtils.box(tuple.getSecondElement());
         }
         if (elementIndex == 2) {
-            return DateTimeUtil.nanosToTime(tuple.getThirdElement());
+            return DateTimeUtils.nanosToTime(tuple.getThirdElement());
         }
         throw new IllegalArgumentException("Bad elementIndex for 3 element tuple: " + elementIndex);
     }
@@ -132,7 +132,7 @@ public class ReinterpretedBooleanFloatDateTimeColumnTupleSource extends Abstract
             return TypeUtils.box(tuple.getSecondElement());
         }
         if (elementIndex == 2) {
-            return DateTimeUtil.nanosToTime(tuple.getThirdElement());
+            return DateTimeUtils.nanosToTime(tuple.getThirdElement());
         }
         throw new IllegalArgumentException("Bad elementIndex for 3 element tuple: " + elementIndex);
     }
@@ -144,7 +144,7 @@ public class ReinterpretedBooleanFloatDateTimeColumnTupleSource extends Abstract
         FloatChunk<Values> chunk2 = chunks[1].asFloatChunk();
         ObjectChunk<DateTime, Values> chunk3 = chunks[2].asObjectChunk();
         for (int ii = 0; ii < chunkSize; ++ii) {
-            destinationObjectChunk.set(ii, new ByteFloatLongTuple(chunk1.get(ii), chunk2.get(ii), DateTimeUtil.nanos(chunk3.get(ii))));
+            destinationObjectChunk.set(ii, new ByteFloatLongTuple(chunk1.get(ii), chunk2.get(ii), DateTimeUtils.nanos(chunk3.get(ii))));
         }
         destinationObjectChunk.setSize(chunkSize);
     }

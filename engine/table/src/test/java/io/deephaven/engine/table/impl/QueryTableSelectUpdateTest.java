@@ -9,10 +9,10 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ShiftObliviousListener;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.lang.QueryLibrary;
+import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.lang.QueryScope;
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.time.DateTimeUtil;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
@@ -889,8 +889,8 @@ public class QueryTableSelectUpdateTest {
                         new CharGenerator('a', 'z'),
                         new ByteGenerator(),
                         new ShortGenerator(),
-                        new UnsortedDateTimeGenerator(DateTimeUtil.convertDateTime("2019-01-10T00:00:00 NY"),
-                                DateTimeUtil.convertDateTime("2019-01-20T00:00:00 NY"))));
+                        new UnsortedDateTimeGenerator(DateTimeUtils.convertDateTime("2019-01-10T00:00:00 NY"),
+                                DateTimeUtils.convertDateTime("2019-01-20T00:00:00 NY"))));
 
         final Table sortedTable = queryTable.sort("intCol");
 

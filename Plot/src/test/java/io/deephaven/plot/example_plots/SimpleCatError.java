@@ -4,10 +4,10 @@
 
 package io.deephaven.plot.example_plots;
 
+import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.plot.Figure;
 import io.deephaven.plot.FigureFactory;
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.time.DateTimeUtil;
 
 
 /**
@@ -27,10 +27,10 @@ public class SimpleCatError {
 
         final long time = 1491946585000000000L;
         DateTime[] date = {
-                new DateTime(time + DateTimeUtil.DAY * 1),
-                new DateTime(time + DateTimeUtil.DAY * 2),
-                new DateTime(time + DateTimeUtil.DAY * 3),
-                new DateTime(time + DateTimeUtil.DAY * 4)};
+                new DateTime(time + DateTimeUtils.DAY * 1),
+                new DateTime(time + DateTimeUtils.DAY * 2),
+                new DateTime(time + DateTimeUtils.DAY * 3),
+                new DateTime(time + DateTimeUtils.DAY * 4)};
 
         final Number[] open = {3, 4, 3, 5};
         final Number[] high = {5, 6, 5, 7};

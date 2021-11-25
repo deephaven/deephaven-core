@@ -10,7 +10,7 @@ import io.deephaven.engine.table.lang.QueryLibrary;
 import io.deephaven.engine.stringset.StringSet;
 import io.deephaven.engine.table.lang.QueryScope;
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.time.DateTimeUtil;
+import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.table.impl.TableWithDefaults;
 import io.deephaven.parquet.table.ParquetTools;
 import io.deephaven.engine.util.TableTools;
@@ -131,7 +131,7 @@ public class TestChunkedRegionedOperations {
         final QueryScope queryScope = new QueryScope.StandaloneImpl();
         Arrays.stream(originalScope.getParams(originalScope.getParamNames()))
                 .forEach(p -> queryScope.putParam(p.getName(), p.getValue()));
-        queryScope.putParam("nowNanos", DateTimeUtil.currentTime().getNanos());
+        queryScope.putParam("nowNanos", DateTimeUtils.currentTime().getNanos());
         queryScope.putParam("letters",
                 IntStream.range('A', 'A' + 64).mapToObj(c -> new String(new char[] {(char) c})).toArray(String[]::new));
         queryScope.putParam("emptySymbolSet", new ArrayStringSet());

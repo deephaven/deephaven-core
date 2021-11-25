@@ -14,7 +14,7 @@ import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.tuplesource.AbstractTupleSource;
 import io.deephaven.engine.table.impl.tuplesource.ThreeColumnTupleSourceFactory;
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.time.DateTimeUtil;
+import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.tuple.generated.DoubleShortLongTuple;
 import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
@@ -68,7 +68,7 @@ public class DoubleShortReinterpretedDateTimeColumnTupleSource extends AbstractT
         return new DoubleShortLongTuple(
                 TypeUtils.unbox((Double)values[0]),
                 TypeUtils.unbox((Short)values[1]),
-                DateTimeUtil.nanos((DateTime)values[2])
+                DateTimeUtils.nanos((DateTime)values[2])
         );
     }
 
@@ -93,7 +93,7 @@ public class DoubleShortReinterpretedDateTimeColumnTupleSource extends AbstractT
             return;
         }
         if (elementIndex == 2) {
-            writableSource.set(destinationIndexKey, (ELEMENT_TYPE) DateTimeUtil.nanosToTime(tuple.getThirdElement()));
+            writableSource.set(destinationIndexKey, (ELEMENT_TYPE) DateTimeUtils.nanosToTime(tuple.getThirdElement()));
             return;
         }
         throw new IndexOutOfBoundsException("Invalid element index " + elementIndex + " for export");
@@ -104,7 +104,7 @@ public class DoubleShortReinterpretedDateTimeColumnTupleSource extends AbstractT
         return new SmartKey(
                 TypeUtils.box(tuple.getFirstElement()),
                 TypeUtils.box(tuple.getSecondElement()),
-                DateTimeUtil.nanosToTime(tuple.getThirdElement())
+                DateTimeUtils.nanosToTime(tuple.getThirdElement())
         );
     }
 
@@ -117,7 +117,7 @@ public class DoubleShortReinterpretedDateTimeColumnTupleSource extends AbstractT
             return TypeUtils.box(tuple.getSecondElement());
         }
         if (elementIndex == 2) {
-            return DateTimeUtil.nanosToTime(tuple.getThirdElement());
+            return DateTimeUtils.nanosToTime(tuple.getThirdElement());
         }
         throw new IllegalArgumentException("Bad elementIndex for 3 element tuple: " + elementIndex);
     }

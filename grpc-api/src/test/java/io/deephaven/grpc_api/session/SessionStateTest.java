@@ -6,7 +6,7 @@ package io.deephaven.grpc_api.session;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.AssertionFailure;
-import io.deephaven.engine.time.DateTimeUtil;
+import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.liveness.LivenessScope;
@@ -61,7 +61,7 @@ public class SessionStateTest {
         scheduler = new TestControlledScheduler();
         session = new SessionState(scheduler, AUTH_CONTEXT);
         session.initializeExpiration(new SessionService.TokenExpiration(UUID.randomUUID(),
-                DateTimeUtil.nanosToTime(Long.MAX_VALUE), session));
+                DateTimeUtils.nanosToTime(Long.MAX_VALUE), session));
         nextExportId = 1;
     }
 
@@ -637,7 +637,7 @@ public class SessionStateTest {
     public void testVerifyExpirationSession() {
         final SessionState session = new SessionState(scheduler, AUTH_CONTEXT);
         final SessionService.TokenExpiration expiration =
-                new SessionService.TokenExpiration(UUID.randomUUID(), DateTimeUtil.nanosToTime(Long.MAX_VALUE),
+                new SessionService.TokenExpiration(UUID.randomUUID(), DateTimeUtils.nanosToTime(Long.MAX_VALUE),
                         session);
         expectException(IllegalArgumentException.class, () -> this.session.initializeExpiration(expiration));
         expectException(IllegalArgumentException.class, () -> this.session.updateExpiration(expiration));

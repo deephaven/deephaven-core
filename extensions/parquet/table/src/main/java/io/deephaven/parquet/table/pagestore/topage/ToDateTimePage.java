@@ -1,6 +1,6 @@
 package io.deephaven.parquet.table.pagestore.topage;
 
-import io.deephaven.engine.time.DateTimeUtil;
+import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.vector.ObjectVector;
 import io.deephaven.engine.vector.ObjectVectorDirect;
 import io.deephaven.engine.time.DateTime;
@@ -71,7 +71,7 @@ public abstract class ToDateTimePage<ATTR extends Attributes.Any> extends ToLong
         @Override
         @NotNull
         public ObjectVector<DateTime> makeVector(long[] result) {
-            return makeVectorHelper(result, DateTimeUtil::nanosToTime);
+            return makeVectorHelper(result, DateTimeUtils::nanosToTime);
         }
     }
 
@@ -79,12 +79,12 @@ public abstract class ToDateTimePage<ATTR extends Attributes.Any> extends ToLong
         @Override
         @NotNull
         public ObjectVector<DateTime> makeVector(long[] result) {
-            return makeVectorHelper(result, DateTimeUtil::microsToTime);
+            return makeVectorHelper(result, DateTimeUtils::microsToTime);
         }
 
         @Override
         public final long[] convertResult(@NotNull final Object result) {
-            return convertResultHelper(result, DateTimeUtil::microsToNanos);
+            return convertResultHelper(result, DateTimeUtils::microsToNanos);
         }
     }
 
@@ -92,12 +92,12 @@ public abstract class ToDateTimePage<ATTR extends Attributes.Any> extends ToLong
         @Override
         @NotNull
         public ObjectVector<DateTime> makeVector(long[] result) {
-            return makeVectorHelper(result, DateTimeUtil::millisToTime);
+            return makeVectorHelper(result, DateTimeUtils::millisToTime);
         }
 
         @Override
         public final long[] convertResult(@NotNull final Object result) {
-            return convertResultHelper(result, DateTimeUtil::millisToNanos);
+            return convertResultHelper(result, DateTimeUtils::millisToNanos);
         }
     }
 }

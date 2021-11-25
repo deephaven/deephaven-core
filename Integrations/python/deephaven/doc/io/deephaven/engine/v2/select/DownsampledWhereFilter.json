@@ -10,6 +10,6 @@
   "setRecomputeListener": "Set the ShiftObliviousListener that should be notified if results based on this filter must be recomputed.\n\n:param listener: (io.deephaven.engine.table.impl.select.SelectFilter.RecomputeListener) - the listener to notify."
  },
  "path": "io.deephaven.engine.table.impl.select.DownsampledWhereFilter",
- "text": "Utilities for downsampling non-ticking time series data within a query. The input table must be sorted by the\n DateTime column to be used for binning rows.\n \n\n\n Usage is of the form:\n downsampledX = x.where(new DownsampledWhereFilter(\"Timestamp\", 5 * DateTimeUtil.MINUTE));",
+ "text": "Utilities for downsampling non-ticking time series data within a query. The input table must be sorted by the\n DateTime column to be used for binning rows.\n \n\n\n Usage is of the form:\n downsampledX = x.where(new DownsampledWhereFilter(\"Timestamp\", 5 * DateTimeUtils.MINUTE));",
  "typeName": "class"
 }

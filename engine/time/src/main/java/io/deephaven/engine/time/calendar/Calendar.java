@@ -5,7 +5,7 @@
 package io.deephaven.engine.time.calendar;
 
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.time.DateTimeUtil;
+import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.time.TimeZone;
 
 import java.time.DayOfWeek;
@@ -44,7 +44,7 @@ public interface Calendar {
      * @return the current day
      */
     default String currentDay() {
-        return DateTimeUtil.currentDate(timeZone());
+        return DateTimeUtils.currentDate(timeZone());
     }
 
     /**

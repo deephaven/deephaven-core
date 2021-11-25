@@ -11,7 +11,7 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.time.DateTimeUtil;
+import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.table.ColumnSource;
 
@@ -25,7 +25,7 @@ import java.util.List;
  * </p>
  * <p>
  * Usage is of the form:
- * {@code downsampledX = x.where(new DownsampledWhereFilter("Timestamp", 5 * DateTimeUtil.MINUTE));}
+ * {@code downsampledX = x.where(new DownsampledWhereFilter("Timestamp", 5 * DateTimeUtils.MINUTE));}
  * </p>
  */
 
@@ -51,7 +51,7 @@ public class DownsampledWhereFilter extends WhereFilterImpl {
      * Creates a {@link DownsampledWhereFilter} which can be used in a .where clause to downsample time series rows.
      * 
      * @param column {@link DateTime} column to use for filtering.
-     * @param binSize Size in nanoseconds for the time bins. Constants like {@link DateTimeUtil#MINUTE} are typically
+     * @param binSize Size in nanoseconds for the time bins. Constants like {@link DateTimeUtils#MINUTE} are typically
      *        used.
      * @param order {@link SampleOrder} to set desired behavior.
      */
@@ -65,7 +65,7 @@ public class DownsampledWhereFilter extends WhereFilterImpl {
      * Creates a {@link DownsampledWhereFilter} which can be used in a .where clause to downsample time series rows.
      * 
      * @param column {@link DateTime} column to use for filtering.
-     * @param binSize Size in nanoseconds for the time bins. Constants like {@link DateTimeUtil#MINUTE} are typically
+     * @param binSize Size in nanoseconds for the time bins. Constants like {@link DateTimeUtils#MINUTE} are typically
      *        used.
      */
     public DownsampledWhereFilter(String column, long binSize) {
@@ -111,8 +111,8 @@ public class DownsampledWhereFilter extends WhereFilterImpl {
             hasNext = it.hasNext();
 
             DateTime timestamp = timestampColumn.get(next);
-            DateTime bin = (order == SampleOrder.UPPERLAST) ? DateTimeUtil.upperBin(timestamp, binSize)
-                    : DateTimeUtil.lowerBin(timestamp, binSize);
+            DateTime bin = (order == SampleOrder.UPPERLAST) ? DateTimeUtils.upperBin(timestamp, binSize)
+                    : DateTimeUtils.lowerBin(timestamp, binSize);
             if (!hasNext) {
                 if (order == SampleOrder.UPPERLAST) {
                     if (lastKey != -1 && (lastBin != null && !lastBin.equals(bin))) {

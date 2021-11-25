@@ -6,7 +6,7 @@ package io.deephaven.engine.tablelogger;
 
 import java.io.IOException;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.time.DateTimeUtil;
+import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.util.ColumnsSpecHelper;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.tablelogger.*;
@@ -95,8 +95,8 @@ public class UpdatePerformanceLogLogger
             this.OperationNumber.setInt(performanceEntry.getOperationNumber());
             this.EntryDescription.set(performanceEntry.getDescription());
             this.EntryCallerLine.set(performanceEntry.getCallerLine());
-            this.IntervalStartTime.set(DateTimeUtil.millisToTime(intervalLevelDetails.getIntervalStartTimeMillis()));
-            this.IntervalEndTime.set(DateTimeUtil.millisToTime(intervalLevelDetails.getIntervalEndTimeMillis()));
+            this.IntervalStartTime.set(DateTimeUtils.millisToTime(intervalLevelDetails.getIntervalStartTimeMillis()));
+            this.IntervalEndTime.set(DateTimeUtils.millisToTime(intervalLevelDetails.getIntervalEndTimeMillis()));
             this.IntervalDurationNanos.setLong(intervalLevelDetails.getIntervalDurationNanos());
             this.EntryIntervalUsage.setLong(performanceEntry.getIntervalUsageNanos());
             this.EntryIntervalCpuNanos.setLong(performanceEntry.getIntervalCpuNanos());

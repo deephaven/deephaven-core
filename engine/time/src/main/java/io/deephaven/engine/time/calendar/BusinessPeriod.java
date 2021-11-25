@@ -5,7 +5,7 @@
 package io.deephaven.engine.time.calendar;
 
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.time.DateTimeUtil;
+import io.deephaven.engine.time.DateTimeUtils;
 
 import java.io.Serializable;
 
@@ -55,7 +55,7 @@ public class BusinessPeriod implements Serializable {
      * @return length of the period in nanoseconds
      */
     public long getLength() {
-        return DateTimeUtil.minus(endTime, startTime);
+        return DateTimeUtils.minus(endTime, startTime);
     }
 
     /**

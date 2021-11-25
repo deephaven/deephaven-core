@@ -1,7 +1,7 @@
 package io.deephaven.grpc_api.util;
 
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.time.DateTimeUtil;
+import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.time.TimeProvider;
 import org.jetbrains.annotations.NotNull;
 
@@ -56,7 +56,7 @@ public interface Scheduler extends TimeProvider {
 
         @Override
         public DateTime currentTime() {
-            return DateTimeUtil.currentTime();
+            return DateTimeUtils.currentTime();
         }
 
         @Override

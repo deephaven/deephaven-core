@@ -11,7 +11,7 @@ For convenient usage in the python console, the main sub-packages of deephaven h
 
 * AggregationFactory imported as caf
 
-* DateTimeUtil imported as dtu
+* DateTimeUtils imported as dtu
 
 * MovingAverages imported as mavg
 
@@ -79,7 +79,7 @@ from .conversion_utils import convertToJavaArray, convertToJavaList, convertToJa
 
 
 from . import Calendars as cals, \
-    DateTimeUtil as dtu, \
+    DateTimeUtils as dtu, \
     MovingAverages as mavg, \
     ConsumeKafka as ck, \
     ProduceKafka as pk, \

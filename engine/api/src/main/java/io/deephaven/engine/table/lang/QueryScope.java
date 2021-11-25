@@ -6,7 +6,7 @@ package io.deephaven.engine.table.lang;
 
 import io.deephaven.base.CompareUtils;
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.time.DateTimeUtil;
+import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.time.Period;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
@@ -156,17 +156,17 @@ public abstract class QueryScope implements LogOutputAppendable {
                     && stringValue.charAt(stringValue.length() - 1) == '\'') {
                 final String datetimeString = stringValue.substring(1, stringValue.length() - 1);
 
-                final DateTime dateTime = DateTimeUtil.convertDateTimeQuiet(datetimeString);
+                final DateTime dateTime = DateTimeUtils.convertDateTimeQuiet(datetimeString);
                 if (dateTime != null) {
                     return dateTime;
                 }
 
-                final long localTime = DateTimeUtil.convertTimeQuiet(datetimeString);
+                final long localTime = DateTimeUtils.convertTimeQuiet(datetimeString);
                 if (localTime != QueryConstants.NULL_LONG) {
                     return localTime;
                 }
 
-                final Period period = DateTimeUtil.convertPeriodQuiet(datetimeString);
+                final Period period = DateTimeUtils.convertPeriodQuiet(datetimeString);
                 if (period != null) {
                     return period;
                 }

@@ -4,7 +4,7 @@
 
 package io.deephaven.engine.table.impl.perf;
 
-import io.deephaven.engine.time.DateTimeUtil;
+import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.table.impl.util.RuntimeMemory;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.profiling.ThreadProfiler;
@@ -313,7 +313,7 @@ public class QueryPerformanceNugget implements Serializable, AutoCloseable {
      * @return Time spent in garbage collection, in milliseconds, between time of completion and creation
      */
     public long getDiffCollectionTimeNanos() {
-        return DateTimeUtil
+        return DateTimeUtils
                 .millisToNanos(endMemorySample.totalCollectionTimeMs - startMemorySample.totalCollectionTimeMs);
     }
 

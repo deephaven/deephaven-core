@@ -11,8 +11,8 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.tablelogger.UpdatePerformanceLogLogger;
+import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.time.DateTimeUtil;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.util.MemoryTableLogger;
 import io.deephaven.engine.table.impl.util.MemoryTableLoggers;
@@ -443,7 +443,7 @@ public class UpdatePerformanceTracker {
                     .append(", maxTotalMemory=").append(maxTotalMemory)
                     .append(", minFreeMemory=").append(minFreeMemory)
                     .append(", collections=").append(collections)
-                    .append(", collectionTimeNanos=").append(DateTimeUtil.millisToNanos(collectionTimeMs))
+                    .append(", collectionTimeNanos=").append(DateTimeUtils.millisToNanos(collectionTimeMs))
                     .append('}');
         }
 
@@ -508,7 +508,7 @@ public class UpdatePerformanceTracker {
         }
 
         public long getCollectionTimeNanos() {
-            return DateTimeUtil.millisToNanos(collectionTimeMs);
+            return DateTimeUtils.millisToNanos(collectionTimeMs);
         }
 
         public long getIntervalAllocatedBytes() {

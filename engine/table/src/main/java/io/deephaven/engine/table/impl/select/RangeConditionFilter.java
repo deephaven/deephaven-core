@@ -4,7 +4,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.time.DateTimeUtil;
+import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.gui.table.filters.Condition;
@@ -209,7 +209,7 @@ public class RangeConditionFilter extends WhereFilterImpl {
 
     private static long parseDateTimeNanos(String value) {
         if (value.startsWith("'") && value.endsWith("'")) {
-            return DateTimeUtil.convertDateTime(value.substring(1, value.length() - 1)).getNanos();
+            return DateTimeUtils.convertDateTime(value.substring(1, value.length() - 1)).getNanos();
         }
         return Long.parseLong(value);
     }

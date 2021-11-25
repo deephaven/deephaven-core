@@ -6,7 +6,7 @@ package io.deephaven.engine.time.calendar;
 
 import io.deephaven.base.Pair;
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.time.DateTimeUtil;
+import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.time.TimeZone;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.annotations.VisibleForTesting;
@@ -266,10 +266,10 @@ public class DefaultBusinessCalendar extends AbstractBusinessCalendar implements
                 if (hhmm.matcher(open).matches() && hhmm.matcher(close).matches()) {
                     String[] openingTimeHHMM = open.split(":");
                     String[] closingTimeHHMM = close.split(":");
-                    long defOpenTimeNanos = (Integer.parseInt(openingTimeHHMM[0]) * DateTimeUtil.HOUR)
-                            + (Integer.parseInt(openingTimeHHMM[1]) * DateTimeUtil.MINUTE);
-                    long defClosingTimeNanos = (Integer.parseInt(closingTimeHHMM[0]) * DateTimeUtil.HOUR)
-                            + (Integer.parseInt(closingTimeHHMM[1]) * DateTimeUtil.MINUTE);
+                    long defOpenTimeNanos = (Integer.parseInt(openingTimeHHMM[0]) * DateTimeUtils.HOUR)
+                            + (Integer.parseInt(openingTimeHHMM[1]) * DateTimeUtils.MINUTE);
+                    long defClosingTimeNanos = (Integer.parseInt(closingTimeHHMM[0]) * DateTimeUtils.HOUR)
+                            + (Integer.parseInt(closingTimeHHMM[1]) * DateTimeUtils.MINUTE);
                     lengthOfDefaultDayNanos += defClosingTimeNanos - defOpenTimeNanos;
                     wellFormed = true;
                 }
@@ -310,8 +310,8 @@ public class DefaultBusinessCalendar extends AbstractBusinessCalendar implements
                     final String openDateStr = date.toString() + "T" + open + tz;
                     final String closeDateStr = closeDate.toString() + "T" + close + tz;
 
-                    businessPeriods[i++] = new BusinessPeriod(DateTimeUtil.convertDateTime(openDateStr),
-                            DateTimeUtil.convertDateTime(closeDateStr));
+                    businessPeriods[i++] = new BusinessPeriod(DateTimeUtils.convertDateTime(openDateStr),
+                            DateTimeUtils.convertDateTime(closeDateStr));
                 }
             }
         }
@@ -356,8 +356,8 @@ public class DefaultBusinessCalendar extends AbstractBusinessCalendar implements
             return null;
         }
 
-        final LocalDate localDate = LocalDate.ofYearDay(DateTimeUtil.year(time, timeZone()),
-                DateTimeUtil.dayOfYear(time, timeZone()));
+        final LocalDate localDate = LocalDate.ofYearDay(DateTimeUtils.year(time, timeZone()),
+                DateTimeUtils.dayOfYear(time, timeZone()));
 
         return getBusinessSchedule(localDate);
     }
@@ -384,8 +384,8 @@ public class DefaultBusinessCalendar extends AbstractBusinessCalendar implements
             return null;
         }
 
-        final LocalDate localDate = LocalDate.ofYearDay(DateTimeUtil.year(time, timeZone()),
-                DateTimeUtil.dayOfYear(time, timeZone()));
+        final LocalDate localDate = LocalDate.ofYearDay(DateTimeUtils.year(time, timeZone()),
+                DateTimeUtils.dayOfYear(time, timeZone()));
 
         return getBusinessSchedule(localDate);
     }
@@ -431,13 +431,13 @@ public class DefaultBusinessCalendar extends AbstractBusinessCalendar implements
         if (start == null || end == null) {
             return QueryConstants.NULL_LONG;
         }
-        if (DateTimeUtil.isAfter(start, end)) {
+        if (DateTimeUtils.isAfter(start, end)) {
             return -diffBusinessNanos(end, start);
         }
 
         long dayDiffNanos = 0;
         DateTime day = start;
-        while (!DateTimeUtil.isAfter(day, end)) {
+        while (!DateTimeUtils.isAfter(day, end)) {
             if (isBusinessDay(day)) {
                 BusinessSchedule businessDate = getBusinessSchedule(day);
 
@@ -447,19 +447,19 @@ public class DefaultBusinessCalendar extends AbstractBusinessCalendar implements
                         DateTime startOfPeriod = businessPeriod.getStartTime();
 
                         // noinspection StatementWithEmptyBody
-                        if (DateTimeUtil.isAfter(day, endOfPeriod) || DateTimeUtil.isBefore(end, startOfPeriod)) {
+                        if (DateTimeUtils.isAfter(day, endOfPeriod) || DateTimeUtils.isBefore(end, startOfPeriod)) {
                             // continue
-                        } else if (!DateTimeUtil.isAfter(day, startOfPeriod)) {
-                            if (DateTimeUtil.isBefore(end, endOfPeriod)) {
-                                dayDiffNanos += DateTimeUtil.minus(end, startOfPeriod);
+                        } else if (!DateTimeUtils.isAfter(day, startOfPeriod)) {
+                            if (DateTimeUtils.isBefore(end, endOfPeriod)) {
+                                dayDiffNanos += DateTimeUtils.minus(end, startOfPeriod);
                             } else {
                                 dayDiffNanos += businessPeriod.getLength();
                             }
                         } else {
-                            if (DateTimeUtil.isAfter(end, endOfPeriod)) {
-                                dayDiffNanos += DateTimeUtil.minus(endOfPeriod, day);
+                            if (DateTimeUtils.isAfter(end, endOfPeriod)) {
+                                dayDiffNanos += DateTimeUtils.minus(endOfPeriod, day);
                             } else {
-                                dayDiffNanos += DateTimeUtil.minus(end, day);
+                                dayDiffNanos += DateTimeUtils.minus(end, day);
                             }
                         }
                     }
@@ -478,14 +478,14 @@ public class DefaultBusinessCalendar extends AbstractBusinessCalendar implements
 
         double businessYearDiff = 0.0;
         DateTime time = startTime;
-        while (!DateTimeUtil.isAfter(time, endTime)) {
+        while (!DateTimeUtils.isAfter(time, endTime)) {
             // get length of the business year
-            final int startYear = DateTimeUtil.year(startTime, timeZone());
+            final int startYear = DateTimeUtils.year(startTime, timeZone());
             final long businessYearLength = cachedYearLengths.computeIfAbsent(startYear, this::getBusinessYearLength);
 
             final DateTime endOfYear = getFirstBusinessDateTimeOfYear(startYear + 1);
             final long yearDiff;
-            if (DateTimeUtil.isAfter(endOfYear, endTime)) {
+            if (DateTimeUtils.isAfter(endOfYear, endTime)) {
                 yearDiff = diffBusinessNanos(time, endTime);
             } else {
                 yearDiff = diffBusinessNanos(time, endOfYear);

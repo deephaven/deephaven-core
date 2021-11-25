@@ -5,7 +5,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.lang.QueryLibrary;
 import io.deephaven.engine.table.lang.QueryScope;
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.time.DateTimeUtil;
+import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.time.calendar.BusinessCalendar;
 import io.deephaven.engine.time.calendar.Calendars;
 import io.deephaven.engine.time.calendar.StaticCalendarMethods;
@@ -38,13 +38,13 @@ public class TestCalendarMethodsFromTable extends BaseArrayTestCase {
     }
 
     private final BusinessCalendar calendar = Calendars.calendar();
-    private final DateTime time1 = DateTimeUtil.convertDateTime("2002-01-01T01:00:00.000000000 NY");
-    private final DateTime time2 = DateTimeUtil.convertDateTime("2002-01-21T01:00:00.000000000 NY");
+    private final DateTime time1 = DateTimeUtils.convertDateTime("2002-01-01T01:00:00.000000000 NY");
+    private final DateTime time2 = DateTimeUtils.convertDateTime("2002-01-21T01:00:00.000000000 NY");
     private final String date1 = "2017-08-01";
     private final String date2 = "2017-08-05";
 
     // test to make sure these methods work inside the query strings
-    // previous clash with DateTimeUtil
+    // previous clash with DateTimeUtils
     public void testCalendarMethodsTable() {
         if (!QueryLibrary.getStaticImports().contains(StaticCalendarMethods.class)) {
             QueryLibrary.importStatic(StaticCalendarMethods.class);

@@ -9,7 +9,7 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.time.DateTimeUtil;
+import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.time.TimeProvider;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.io.logger.Logger;
@@ -84,7 +84,7 @@ public class TimeTable extends QueryTable implements Runnable {
                 getRowSet().writableCast().insert(lastIndex);
             } else
                 while (currentBinnedTime.compareTo(lastTime) > 0) {
-                    lastTime = DateTimeUtil.plus(lastTime, period);
+                    lastTime = DateTimeUtils.plus(lastTime, period);
                     lastIndex++;
                     dateTimeArraySource.ensureCapacity(lastIndex + 1);
                     dateTimeArraySource.set(lastIndex, lastTime);

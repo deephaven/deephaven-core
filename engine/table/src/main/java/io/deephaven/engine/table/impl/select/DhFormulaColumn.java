@@ -12,7 +12,7 @@ import io.deephaven.engine.vector.ObjectVector;
 import io.deephaven.engine.table.lang.QueryLibrary;
 import io.deephaven.engine.table.lang.QueryScopeParam;
 import io.deephaven.engine.table.lang.QueryScope;
-import io.deephaven.engine.time.DateTimeUtil;
+import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.util.PythonScopeJpyImpl.NumbaCallableWrapper;
@@ -176,7 +176,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
     public List<String> initDef(Map<String, ColumnDefinition<?>> columnDefinitionMap) {
         try {
             analyzedFormula = FormulaAnalyzer.analyze(formulaString, columnDefinitionMap, timeNewVariables);
-            final DateTimeUtil.Result timeConversionResult = DateTimeUtil.convertExpression(formulaString);
+            final DateTimeUtils.Result timeConversionResult = DateTimeUtils.convertExpression(formulaString);
             final QueryLanguageParser.Result result = FormulaAnalyzer.getCompiledFormula(columnDefinitionMap,
                     timeConversionResult, timeNewVariables);
 
@@ -188,7 +188,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
             if (returnedType == boolean.class) {
                 returnedType = Boolean.class;
             }
-            // The first time we do an initDef, we allow the formulaString to be transformed by DateTimeUtil,
+            // The first time we do an initDef, we allow the formulaString to be transformed by DateTimeUtils,
             // possibly with the side effect of creating 'timeInstanceVariables' and 'timeNewVariables'.
             // However, we should not do this on subsequent calls because the answer is not expected to
             // change further, and we don't want to overwrite our 'timeInstanceVariables'.

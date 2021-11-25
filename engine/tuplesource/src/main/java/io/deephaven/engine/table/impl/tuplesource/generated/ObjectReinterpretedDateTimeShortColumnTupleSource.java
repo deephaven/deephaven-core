@@ -14,7 +14,7 @@ import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.tuplesource.AbstractTupleSource;
 import io.deephaven.engine.table.impl.tuplesource.ThreeColumnTupleSourceFactory;
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.time.DateTimeUtil;
+import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.tuple.generated.ObjectLongShortTuple;
 import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
@@ -67,7 +67,7 @@ public class ObjectReinterpretedDateTimeShortColumnTupleSource extends AbstractT
     public final ObjectLongShortTuple createTupleFromValues(@NotNull final Object... values) {
         return new ObjectLongShortTuple(
                 values[0],
-                DateTimeUtil.nanos((DateTime)values[1]),
+                DateTimeUtils.nanos((DateTime)values[1]),
                 TypeUtils.unbox((Short)values[2])
         );
     }
@@ -89,7 +89,7 @@ public class ObjectReinterpretedDateTimeShortColumnTupleSource extends AbstractT
             return;
         }
         if (elementIndex == 1) {
-            writableSource.set(destinationIndexKey, (ELEMENT_TYPE) DateTimeUtil.nanosToTime(tuple.getSecondElement()));
+            writableSource.set(destinationIndexKey, (ELEMENT_TYPE) DateTimeUtils.nanosToTime(tuple.getSecondElement()));
             return;
         }
         if (elementIndex == 2) {
@@ -103,7 +103,7 @@ public class ObjectReinterpretedDateTimeShortColumnTupleSource extends AbstractT
     public final Object exportToExternalKey(@NotNull final ObjectLongShortTuple tuple) {
         return new SmartKey(
                 tuple.getFirstElement(),
-                DateTimeUtil.nanosToTime(tuple.getSecondElement()),
+                DateTimeUtils.nanosToTime(tuple.getSecondElement()),
                 TypeUtils.box(tuple.getThirdElement())
         );
     }
@@ -114,7 +114,7 @@ public class ObjectReinterpretedDateTimeShortColumnTupleSource extends AbstractT
             return tuple.getFirstElement();
         }
         if (elementIndex == 1) {
-            return DateTimeUtil.nanosToTime(tuple.getSecondElement());
+            return DateTimeUtils.nanosToTime(tuple.getSecondElement());
         }
         if (elementIndex == 2) {
             return TypeUtils.box(tuple.getThirdElement());

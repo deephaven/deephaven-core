@@ -4,7 +4,7 @@
 
 package io.deephaven.plot.example_plots;
 
-import io.deephaven.engine.time.DateTimeUtil;
+import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.plot.Figure;
 import io.deephaven.plot.FigureFactory;
 import io.deephaven.plot.axistransformations.AxisTransformBusinessCalendar;
@@ -18,14 +18,14 @@ public class BusinessTime {
         double[] y = new double[500];
         long time = 1493305755000000000L;
         for (int i = 0; i < 250; i++) {
-            time = time + DateTimeUtil.MINUTE;
+            time = time + DateTimeUtils.MINUTE;
             x[i] = new DateTime(time);
             y[i] = Math.sin(i);
         }
 
-        time = 1493305755000000000L + DateTimeUtil.DAY;
+        time = 1493305755000000000L + DateTimeUtils.DAY;
         for (int i = 250; i < x.length; i++) {
-            time = time + DateTimeUtil.MINUTE;
+            time = time + DateTimeUtils.MINUTE;
             x[i] = new DateTime(time);
             y[i] = Math.sin(i);
         }

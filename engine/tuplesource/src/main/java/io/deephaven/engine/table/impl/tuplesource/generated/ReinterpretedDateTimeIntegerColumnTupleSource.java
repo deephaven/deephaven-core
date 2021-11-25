@@ -13,7 +13,7 @@ import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.tuplesource.AbstractTupleSource;
 import io.deephaven.engine.table.impl.tuplesource.TwoColumnTupleSourceFactory;
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.time.DateTimeUtil;
+import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.tuple.generated.LongIntTuple;
 import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
@@ -60,7 +60,7 @@ public class ReinterpretedDateTimeIntegerColumnTupleSource extends AbstractTuple
     @Override
     public final LongIntTuple createTupleFromValues(@NotNull final Object... values) {
         return new LongIntTuple(
-                DateTimeUtil.nanos((DateTime)values[0]),
+                DateTimeUtils.nanos((DateTime)values[0]),
                 TypeUtils.unbox((Integer)values[1])
         );
     }
@@ -77,7 +77,7 @@ public class ReinterpretedDateTimeIntegerColumnTupleSource extends AbstractTuple
     @Override
     public final <ELEMENT_TYPE> void exportElement(@NotNull final LongIntTuple tuple, final int elementIndex, @NotNull final WritableColumnSource<ELEMENT_TYPE> writableSource, final long destinationIndexKey) {
         if (elementIndex == 0) {
-            writableSource.set(destinationIndexKey, (ELEMENT_TYPE) DateTimeUtil.nanosToTime(tuple.getFirstElement()));
+            writableSource.set(destinationIndexKey, (ELEMENT_TYPE) DateTimeUtils.nanosToTime(tuple.getFirstElement()));
             return;
         }
         if (elementIndex == 1) {
@@ -90,7 +90,7 @@ public class ReinterpretedDateTimeIntegerColumnTupleSource extends AbstractTuple
     @Override
     public final Object exportToExternalKey(@NotNull final LongIntTuple tuple) {
         return new SmartKey(
-                DateTimeUtil.nanosToTime(tuple.getFirstElement()),
+                DateTimeUtils.nanosToTime(tuple.getFirstElement()),
                 TypeUtils.box(tuple.getSecondElement())
         );
     }
@@ -98,7 +98,7 @@ public class ReinterpretedDateTimeIntegerColumnTupleSource extends AbstractTuple
     @Override
     public final Object exportElement(@NotNull final LongIntTuple tuple, int elementIndex) {
         if (elementIndex == 0) {
-            return DateTimeUtil.nanosToTime(tuple.getFirstElement());
+            return DateTimeUtils.nanosToTime(tuple.getFirstElement());
         }
         if (elementIndex == 1) {
             return TypeUtils.box(tuple.getSecondElement());

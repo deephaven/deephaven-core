@@ -7,7 +7,7 @@ package io.deephaven.engine.table.impl.select;
 import io.deephaven.base.Pair;
 import io.deephaven.engine.table.lang.QueryScope;
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.time.DateTimeUtil;
+import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.engine.table.Table;
@@ -412,12 +412,12 @@ public class WhereFilterFactory {
             ZonedDateTime dateUpper = null;
             try {
                 // Was it a full date?
-                dateLower = DateTimeUtil.getZonedDateTime(DateTimeUtil.convertDateTime(valString));
+                dateLower = DateTimeUtils.getZonedDateTime(DateTimeUtils.convertDateTime(valString));
             } catch (RuntimeException ignored) {
                 try {
                     // Maybe it was just a TOD?
-                    long time = DateTimeUtil.convertTime(valString);
-                    dateLower = DateTimeUtil.getZonedDateTime(DateTime.now()).truncatedTo(ChronoUnit.DAYS).plus(time,
+                    long time = DateTimeUtils.convertTime(valString);
+                    dateLower = DateTimeUtils.getZonedDateTime(DateTime.now()).truncatedTo(ChronoUnit.DAYS).plus(time,
                             ChronoUnit.NANOS);
                 } catch (RuntimeException stillIgnored) {
 
@@ -425,14 +425,14 @@ public class WhereFilterFactory {
             }
 
             if (dateLower != null) {
-                final ChronoField finestUnit = DateTimeUtil.getFinestDefinedUnit(valString);
+                final ChronoField finestUnit = DateTimeUtils.getFinestDefinedUnit(valString);
                 dateUpper = finestUnit == null ? dateLower : dateLower.plus(1, finestUnit.getBaseUnit());
             }
 
             this.dateUpper =
-                    dateUpper == null ? null : DateTimeUtil.millisToTime(dateUpper.toInstant().toEpochMilli());
+                    dateUpper == null ? null : DateTimeUtils.millisToTime(dateUpper.toInstant().toEpochMilli());
             this.dateLower =
-                    dateLower == null ? null : DateTimeUtil.millisToTime(dateLower.toInstant().toEpochMilli());
+                    dateLower == null ? null : DateTimeUtils.millisToTime(dateLower.toInstant().toEpochMilli());
         }
     }
 }

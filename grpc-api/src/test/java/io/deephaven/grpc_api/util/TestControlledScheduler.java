@@ -3,7 +3,7 @@ package io.deephaven.grpc_api.util;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.TreeMultimap;
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.time.DateTimeUtil;
+import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import org.jetbrains.annotations.NotNull;
@@ -96,12 +96,12 @@ public class TestControlledScheduler implements Scheduler {
      * @return a DateTime representing {@code now + delayInMs}
      */
     public DateTime timeAfterMs(final long delayInMs) {
-        return DateTimeUtil.nanosToTime(currentTimeInNs + DateTimeUtil.millisToNanos(delayInMs));
+        return DateTimeUtils.nanosToTime(currentTimeInNs + DateTimeUtils.millisToNanos(delayInMs));
     }
 
     @Override
     public DateTime currentTime() {
-        return DateTimeUtil.nanosToTime(currentTimeInNs);
+        return DateTimeUtils.nanosToTime(currentTimeInNs);
     }
 
     @Override
@@ -111,7 +111,7 @@ public class TestControlledScheduler implements Scheduler {
 
     @Override
     public void runAfterDelay(final long delayMs, final @NotNull Runnable command) {
-        workQueue.put(DateTimeUtil.nanosToTime(currentTimeInNs + delayMs * 1_000_000L), command);
+        workQueue.put(DateTimeUtils.nanosToTime(currentTimeInNs + delayMs * 1_000_000L), command);
     }
 
     @Override

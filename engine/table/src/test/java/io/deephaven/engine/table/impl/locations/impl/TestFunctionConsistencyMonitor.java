@@ -1,6 +1,6 @@
 package io.deephaven.engine.table.impl.locations.impl;
 
-import io.deephaven.engine.time.DateTimeUtil;
+import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.util.SafeCloseable;
 import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableBoolean;
@@ -12,24 +12,24 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class TestFunctionConsistencyMonitor {
     @Test
     public void testCurrentDateNy() {
-        DateTimeUtil.currentDateNyOverride = "Aardvark";
+        DateTimeUtils.currentDateNyOverride = "Aardvark";
         TestCase.assertEquals("Aardvark", CompositeTableDataServiceConsistencyMonitor.currentDateNy());
 
         try (final SafeCloseable ignored = CompositeTableDataServiceConsistencyMonitor.INSTANCE.start()) {
             TestCase.assertEquals("Aardvark", CompositeTableDataServiceConsistencyMonitor.currentDateNy());
-            DateTimeUtil.currentDateNyOverride = "Armadillo";
+            DateTimeUtils.currentDateNyOverride = "Armadillo";
             TestCase.assertEquals("Aardvark", CompositeTableDataServiceConsistencyMonitor.currentDateNy());
         }
 
         TestCase.assertEquals("Armadillo", CompositeTableDataServiceConsistencyMonitor.currentDateNy());
 
-        DateTimeUtil.currentDateNyOverride = null;
+        DateTimeUtils.currentDateNyOverride = null;
     }
 
 
     @Test
     public void testMidStreamRegistration() {
-        DateTimeUtil.currentDateNyOverride = "Aardvark";
+        DateTimeUtils.currentDateNyOverride = "Aardvark";
         TestCase.assertEquals("Aardvark", CompositeTableDataServiceConsistencyMonitor.currentDateNy());
 
         final AtomicInteger atomicInteger = new AtomicInteger(7);
@@ -37,7 +37,7 @@ public class TestFunctionConsistencyMonitor {
 
         try (final SafeCloseable ignored = CompositeTableDataServiceConsistencyMonitor.INSTANCE.start()) {
             TestCase.assertEquals("Aardvark", CompositeTableDataServiceConsistencyMonitor.currentDateNy());
-            DateTimeUtil.currentDateNyOverride = "Armadillo";
+            DateTimeUtils.currentDateNyOverride = "Armadillo";
             TestCase.assertEquals("Aardvark", CompositeTableDataServiceConsistencyMonitor.currentDateNy());
 
             consistentInteger = new CompositeTableDataServiceConsistencyMonitor.ConsistentSupplier<>(
@@ -51,12 +51,12 @@ public class TestFunctionConsistencyMonitor {
 
         TestCase.assertEquals("Armadillo", CompositeTableDataServiceConsistencyMonitor.currentDateNy());
 
-        DateTimeUtil.currentDateNyOverride = null;
+        DateTimeUtils.currentDateNyOverride = null;
     }
 
     @Test
     public void testCurrentDateNyWithThreads() throws InterruptedException {
-        DateTimeUtil.currentDateNyOverride = "Bobcat";
+        DateTimeUtils.currentDateNyOverride = "Bobcat";
         TestCase.assertEquals("Bobcat", CompositeTableDataServiceConsistencyMonitor.currentDateNy());
 
 
@@ -76,7 +76,7 @@ public class TestFunctionConsistencyMonitor {
             });
             synchronized (mutableString) {
                 t.start();
-                DateTimeUtil.currentDateNyOverride = "Bear";
+                DateTimeUtils.currentDateNyOverride = "Bear";
             }
 
             TestCase.assertEquals("Bobcat", CompositeTableDataServiceConsistencyMonitor.currentDateNy());
@@ -115,13 +115,13 @@ public class TestFunctionConsistencyMonitor {
                             }
                         }
                     }
-                    mutableString3.setValue(DateTimeUtil.currentDateNy());
+                    mutableString3.setValue(DateTimeUtils.currentDateNy());
                     mutableString2.setValue(CompositeTableDataServiceConsistencyMonitor.currentDateNy());
                 }
             });
             synchronized (mutableString) {
                 t.start();
-                DateTimeUtil.currentDateNyOverride = "Butterfly";
+                DateTimeUtils.currentDateNyOverride = "Butterfly";
             }
 
             TestCase.assertEquals("Bear", CompositeTableDataServiceConsistencyMonitor.currentDateNy());
@@ -137,7 +137,7 @@ public class TestFunctionConsistencyMonitor {
                 }
             }
             synchronized (mutableBoolean) {
-                DateTimeUtil.currentDateNyOverride = "Buffalo";
+                DateTimeUtils.currentDateNyOverride = "Buffalo";
                 mutableBoolean.setTrue();
                 mutableBoolean.notifyAll();
             }
@@ -149,6 +149,6 @@ public class TestFunctionConsistencyMonitor {
         TestCase.assertEquals("Butterfly", mutableString2.getValue());
         TestCase.assertEquals("Buffalo", mutableString3.getValue());
 
-        DateTimeUtil.currentDateNyOverride = null;
+        DateTimeUtils.currentDateNyOverride = null;
     }
 }

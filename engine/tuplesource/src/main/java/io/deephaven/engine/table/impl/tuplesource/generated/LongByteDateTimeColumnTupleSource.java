@@ -14,7 +14,7 @@ import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.tuplesource.AbstractTupleSource;
 import io.deephaven.engine.table.impl.tuplesource.ThreeColumnTupleSourceFactory;
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.time.DateTimeUtil;
+import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.tuple.generated.LongByteLongTuple;
 import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
@@ -50,7 +50,7 @@ public class LongByteDateTimeColumnTupleSource extends AbstractTupleSource<LongB
         return new LongByteLongTuple(
                 columnSource1.getLong(indexKey),
                 columnSource2.getByte(indexKey),
-                DateTimeUtil.nanos(columnSource3.get(indexKey))
+                DateTimeUtils.nanos(columnSource3.get(indexKey))
         );
     }
 
@@ -59,7 +59,7 @@ public class LongByteDateTimeColumnTupleSource extends AbstractTupleSource<LongB
         return new LongByteLongTuple(
                 columnSource1.getPrevLong(indexKey),
                 columnSource2.getPrevByte(indexKey),
-                DateTimeUtil.nanos(columnSource3.getPrev(indexKey))
+                DateTimeUtils.nanos(columnSource3.getPrev(indexKey))
         );
     }
 
@@ -68,7 +68,7 @@ public class LongByteDateTimeColumnTupleSource extends AbstractTupleSource<LongB
         return new LongByteLongTuple(
                 TypeUtils.unbox((Long)values[0]),
                 TypeUtils.unbox((Byte)values[1]),
-                DateTimeUtil.nanos((DateTime)values[2])
+                DateTimeUtils.nanos((DateTime)values[2])
         );
     }
 
@@ -77,7 +77,7 @@ public class LongByteDateTimeColumnTupleSource extends AbstractTupleSource<LongB
         return new LongByteLongTuple(
                 TypeUtils.unbox((Long)values[0]),
                 TypeUtils.unbox((Byte)values[1]),
-                DateTimeUtil.nanos((DateTime)values[2])
+                DateTimeUtils.nanos((DateTime)values[2])
         );
     }
 
@@ -93,7 +93,7 @@ public class LongByteDateTimeColumnTupleSource extends AbstractTupleSource<LongB
             return;
         }
         if (elementIndex == 2) {
-            writableSource.set(destinationIndexKey, (ELEMENT_TYPE) DateTimeUtil.nanosToTime(tuple.getThirdElement()));
+            writableSource.set(destinationIndexKey, (ELEMENT_TYPE) DateTimeUtils.nanosToTime(tuple.getThirdElement()));
             return;
         }
         throw new IndexOutOfBoundsException("Invalid element index " + elementIndex + " for export");
@@ -104,7 +104,7 @@ public class LongByteDateTimeColumnTupleSource extends AbstractTupleSource<LongB
         return new SmartKey(
                 TypeUtils.box(tuple.getFirstElement()),
                 TypeUtils.box(tuple.getSecondElement()),
-                DateTimeUtil.nanosToTime(tuple.getThirdElement())
+                DateTimeUtils.nanosToTime(tuple.getThirdElement())
         );
     }
 
@@ -117,7 +117,7 @@ public class LongByteDateTimeColumnTupleSource extends AbstractTupleSource<LongB
             return TypeUtils.box(tuple.getSecondElement());
         }
         if (elementIndex == 2) {
-            return DateTimeUtil.nanosToTime(tuple.getThirdElement());
+            return DateTimeUtils.nanosToTime(tuple.getThirdElement());
         }
         throw new IllegalArgumentException("Bad elementIndex for 3 element tuple: " + elementIndex);
     }
@@ -131,7 +131,7 @@ public class LongByteDateTimeColumnTupleSource extends AbstractTupleSource<LongB
             return TypeUtils.box(tuple.getSecondElement());
         }
         if (elementIndex == 2) {
-            return DateTimeUtil.nanosToTime(tuple.getThirdElement());
+            return DateTimeUtils.nanosToTime(tuple.getThirdElement());
         }
         throw new IllegalArgumentException("Bad elementIndex for 3 element tuple: " + elementIndex);
     }
@@ -143,7 +143,7 @@ public class LongByteDateTimeColumnTupleSource extends AbstractTupleSource<LongB
         ByteChunk<Values> chunk2 = chunks[1].asByteChunk();
         ObjectChunk<DateTime, Values> chunk3 = chunks[2].asObjectChunk();
         for (int ii = 0; ii < chunkSize; ++ii) {
-            destinationObjectChunk.set(ii, new LongByteLongTuple(chunk1.get(ii), chunk2.get(ii), DateTimeUtil.nanos(chunk3.get(ii))));
+            destinationObjectChunk.set(ii, new LongByteLongTuple(chunk1.get(ii), chunk2.get(ii), DateTimeUtils.nanos(chunk3.get(ii))));
         }
         destinationObjectChunk.setSize(chunkSize);
     }

@@ -9,7 +9,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtil;
 import io.deephaven.engine.table.lang.QueryLibraryImports;
 import io.deephaven.engine.table.lang.QueryScopeParam;
-import io.deephaven.engine.time.DateTimeUtil;
+import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.engine.table.Context;
 import io.deephaven.engine.time.DateTime;
@@ -41,7 +41,7 @@ public class QueryLibraryImportsDefaults implements QueryLibraryImports {
                 DataColumn.class,
                 ArrayTypeUtils.class,
                 DateTime.class,
-                DateTimeUtil.class,
+                DateTimeUtils.class,
                 io.deephaven.base.string.cache.CompressedString.class,
                 java.util.Arrays.class,
                 org.joda.time.LocalTime.class,
@@ -107,7 +107,7 @@ public class QueryLibraryImportsDefaults implements QueryLibraryImports {
                 Casting.class,
                 PrimitiveParseUtil.class,
                 QueryLanguageFunctionUtil.class,
-                DateTimeUtil.class,
+                DateTimeUtils.class,
                 TimeZone.class,
                 io.deephaven.base.string.cache.CompressedString.class,
                 io.deephaven.gui.color.Color.class,

@@ -7,7 +7,7 @@ package io.deephaven.engine.table.impl.replay;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.time.DateTimeUtil;
+import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.table.impl.ShiftObliviousInstrumentedListener;
@@ -24,8 +24,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 
-import static io.deephaven.engine.time.DateTimeUtil.millisToNanos;
-import static io.deephaven.engine.time.DateTimeUtil.nanosToTime;
+import static io.deephaven.engine.time.DateTimeUtils.millisToNanos;
+import static io.deephaven.engine.time.DateTimeUtils.nanosToTime;
 
 /**
  * Replay historical data as simulated real-time data.
@@ -167,7 +167,7 @@ public class Replayer implements ReplayerInterface, Runnable {
         return replayer == null ? new TimeProvider() {
             @Override
             public DateTime currentTime() {
-                return DateTimeUtil.currentTime();
+                return DateTimeUtils.currentTime();
             }
         } : new TimeProvider() {
             @Override
@@ -199,7 +199,7 @@ public class Replayer implements ReplayerInterface, Runnable {
     public DateTime currentTime() {
         if (delta == Long.MAX_VALUE)
             return startTime;
-        final DateTime result = DateTimeUtil.minus(nanosToTime(millisToNanos(System.currentTimeMillis())), delta);
+        final DateTime result = DateTimeUtils.minus(nanosToTime(millisToNanos(System.currentTimeMillis())), delta);
         if (result.getNanos() > endTime.getNanos()) {
             return endTime;
         }
@@ -214,7 +214,7 @@ public class Replayer implements ReplayerInterface, Runnable {
     @Override
     public void setTime(long updatedTime) {
         if (delta == Long.MAX_VALUE) {
-            startTime = DateTimeUtil.millisToTime(updatedTime);
+            startTime = DateTimeUtils.millisToTime(updatedTime);
         } else {
             long adjustment = updatedTime - currentTime().getMillis();
             if (adjustment > 0) {
@@ -327,12 +327,12 @@ public class Replayer implements ReplayerInterface, Runnable {
 
         public void next(DateTime currentTime) {
             if (nextTime == null) {
-                nextTime = DateTimeUtil.plus(currentTime, delay * 1000000);
+                nextTime = DateTimeUtils.plus(currentTime, delay * 1000000);
             } else {
                 if (nextTime.getNanos() < currentTime.getNanos()) {
                     try {
                         task.run();
-                        nextTime = DateTimeUtil.plus(currentTime, period * 1000000);
+                        nextTime = DateTimeUtils.plus(currentTime, period * 1000000);
                     } catch (Error e) {
                         log.error(e).append("Error").endl();
                     }

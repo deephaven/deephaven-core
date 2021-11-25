@@ -7,7 +7,7 @@ import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.time.DateTimeUtil;
+import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.ShiftObliviousInstrumentedListener;
@@ -39,11 +39,11 @@ public class TailInitializationFilter {
      *
      * @param table the source table to filter
      * @param timestampName the name of the timestamp column
-     * @param period interval between the last row in a partition (as converted by DateTimeUtil.expressionToNanos)
+     * @param period interval between the last row in a partition (as converted by DateTimeUtils.expressionToNanos)
      * @return a table with only the most recent values in each partition
      */
     public static Table mostRecent(final Table table, final String timestampName, final String period) {
-        return mostRecent(table, timestampName, DateTimeUtil.expressionToNanos(period));
+        return mostRecent(table, timestampName, DateTimeUtils.expressionToNanos(period));
     }
 
     /**

@@ -7,7 +7,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.time.DateTimeUtil;
+import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -528,7 +528,7 @@ public class JsonNodeUtil {
 
     /**
      * Returns a {@link DateTime} from a {@link JsonNode}. Will try to infer precision of a long value to be parsed
-     * using {@link DateTimeUtil} autoEpochToTime. If the value in the JSON record is not numeric, this method will
+     * using {@link DateTimeUtils} autoEpochToTime. If the value in the JSON record is not numeric, this method will
      * attempt to parse it as a Deephaven DateTime string (yyyy-MM-ddThh:mm:ss[.nnnnnnnnn] TZ).
      * 
      * @param node The {@link JsonNode} from which to retrieve the value.
@@ -544,7 +544,7 @@ public class JsonNodeUtil {
 
     /**
      * Returns a {@link DateTime} from a {@link JsonNode}. Will try to infer precision of a long value to be parsed
-     * using {@link DateTimeUtil} autoEpochToTime. If the value in the JSON record is not numeric, this method will
+     * using {@link DateTimeUtils} autoEpochToTime. If the value in the JSON record is not numeric, this method will
      * attempt to parse it as a Deephaven DateTime string (yyyy-MM-ddThh:mm:ss[.nnnnnnnnn] TZ).
      * 
      * @param node The {@link JsonNode} from which to retrieve the value.
@@ -559,9 +559,9 @@ public class JsonNodeUtil {
         // ISO Zoned String, millis (small number), or nanos (large number)
         if (node.isLong() || node.isInt()) {
             final long value = node.asLong();
-            return DateTimeUtil.autoEpochToTime(value);
+            return DateTimeUtils.autoEpochToTime(value);
         } else {
-            return DateTimeUtil.convertDateTime(node.asText());
+            return DateTimeUtils.convertDateTime(node.asText());
         }
     }
 }

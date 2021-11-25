@@ -1535,7 +1535,7 @@ public interface Table extends
      * <p>
      * For example if you have a Table keyed by a String column named USym, and a DateTime column named Expiry; a value
      * could be retrieved from the TableMap with
-     * {@code tableMap.get(new SmartKey("SPY";, DateTimeUtil.convertDateTime("2020-06-19T16:15:00 NY")))}. For a table
+     * {@code tableMap.get(new SmartKey("SPY";, DateTimeUtils.convertDateTime("2020-06-19T16:15:00 NY")))}. For a table
      * with an Integer column named Bucket, you simply use the desired value as in {@code tableMap.get(1)}.
      * </p>
      *
@@ -1561,7 +1561,7 @@ public interface Table extends
      * <p>
      * For example if you have a Table keyed by a String column named USym, and a DateTime column named Expiry; a value
      * could be retrieved from the TableMap with
-     * {@code tableMap.get(new SmartKey("SPY";, DateTimeUtil.convertDateTime("2020-06-19T16:15:00 NY")))}. For a table
+     * {@code tableMap.get(new SmartKey("SPY";, DateTimeUtils.convertDateTime("2020-06-19T16:15:00 NY")))}. For a table
      * with an Integer column named Bucket, you simply use the desired value as in {@code tableMap.get(1)}.
      * </p>
      *

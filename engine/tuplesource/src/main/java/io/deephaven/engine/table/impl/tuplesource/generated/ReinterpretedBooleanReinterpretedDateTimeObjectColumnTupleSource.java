@@ -14,7 +14,7 @@ import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.tuplesource.AbstractTupleSource;
 import io.deephaven.engine.table.impl.tuplesource.ThreeColumnTupleSourceFactory;
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.time.DateTimeUtil;
+import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.tuple.generated.ByteLongObjectTuple;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.util.type.TypeUtils;
@@ -68,7 +68,7 @@ public class ReinterpretedBooleanReinterpretedDateTimeObjectColumnTupleSource ex
     public final ByteLongObjectTuple createTupleFromValues(@NotNull final Object... values) {
         return new ByteLongObjectTuple(
                 BooleanUtils.booleanAsByte((Boolean)values[0]),
-                DateTimeUtil.nanos((DateTime)values[1]),
+                DateTimeUtils.nanos((DateTime)values[1]),
                 values[2]
         );
     }
@@ -90,7 +90,7 @@ public class ReinterpretedBooleanReinterpretedDateTimeObjectColumnTupleSource ex
             return;
         }
         if (elementIndex == 1) {
-            writableSource.set(destinationIndexKey, (ELEMENT_TYPE) DateTimeUtil.nanosToTime(tuple.getSecondElement()));
+            writableSource.set(destinationIndexKey, (ELEMENT_TYPE) DateTimeUtils.nanosToTime(tuple.getSecondElement()));
             return;
         }
         if (elementIndex == 2) {
@@ -104,7 +104,7 @@ public class ReinterpretedBooleanReinterpretedDateTimeObjectColumnTupleSource ex
     public final Object exportToExternalKey(@NotNull final ByteLongObjectTuple tuple) {
         return new SmartKey(
                 BooleanUtils.byteAsBoolean(tuple.getFirstElement()),
-                DateTimeUtil.nanosToTime(tuple.getSecondElement()),
+                DateTimeUtils.nanosToTime(tuple.getSecondElement()),
                 tuple.getThirdElement()
         );
     }
@@ -115,7 +115,7 @@ public class ReinterpretedBooleanReinterpretedDateTimeObjectColumnTupleSource ex
             return BooleanUtils.byteAsBoolean(tuple.getFirstElement());
         }
         if (elementIndex == 1) {
-            return DateTimeUtil.nanosToTime(tuple.getSecondElement());
+            return DateTimeUtils.nanosToTime(tuple.getSecondElement());
         }
         if (elementIndex == 2) {
             return tuple.getThirdElement();

@@ -13,7 +13,7 @@ import io.deephaven.engine.table.ShiftObliviousListener;
 import io.deephaven.engine.table.impl.QueryTableTestBase.TableComparator;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.time.DateTimeUtil;
+import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.impl.select.MatchPairFactory;
 import io.deephaven.engine.table.lang.QueryScope;
@@ -902,8 +902,8 @@ public class QueryTableWhereTest {
                         new DoubleGenerator(0.0, 100.0, 0, 0, 0, 0),
                         new LongGenerator(-100, 100, 0.01),
                         new CharGenerator('A', 'Z', 0.1),
-                        new UnsortedDateTimeGenerator(DateTimeUtil.convertDateTime("2020-01-01T00:00:00 NY"),
-                                DateTimeUtil.convertDateTime("2020-01-01T01:00:00 NY"))));
+                        new UnsortedDateTimeGenerator(DateTimeUtils.convertDateTime("2020-01-01T00:00:00 NY"),
+                                DateTimeUtils.convertDateTime("2020-01-01T01:00:00 NY"))));
         final String bigIntConversion = "BI4=" + getClass().getCanonicalName() + ".convertToBigInteger(L3)";
         final Table augmentedInts =
                 table.update(bigIntConversion, "D5=(double)L3", "I6=(int)L3", "S7=(short)L3", "B8=(byte)L3");
@@ -924,7 +924,7 @@ public class QueryTableWhereTest {
         final BigDecimal two = BigDecimal.valueOf(2);
         final BigDecimal nine = BigDecimal.valueOf(9);
         final String filterTimeString = "2020-01-01T00:30:00 NY";
-        final DateTime filterTime = DateTimeUtil.convertDateTime(filterTimeString);
+        final DateTime filterTime = DateTimeUtils.convertDateTime(filterTimeString);
 
         QueryScope.addParam("two", two);
         QueryScope.addParam("nine", nine);
@@ -1006,10 +1006,10 @@ public class QueryTableWhereTest {
 
     @Test
     public void testDateTimeRangeFilter() {
-        final DateTime startTime = DateTimeUtil.convertDateTime("2021-04-23T09:30 NY");
+        final DateTime startTime = DateTimeUtils.convertDateTime("2021-04-23T09:30 NY");
         final DateTime[] array = new DateTime[10];
         for (int ii = 0; ii < array.length; ++ii) {
-            array[ii] = DateTimeUtil.plus(startTime, 60_000_000_000L * ii);
+            array[ii] = DateTimeUtils.plus(startTime, 60_000_000_000L * ii);
         }
         final Table table = TableTools.newTable(col("DT", array));
         TableTools.showWithIndex(table);

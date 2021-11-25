@@ -5,7 +5,7 @@
 package io.deephaven.engine.table.impl.sources.regioned;
 
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.time.DateTimeUtil;
+import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.time.TimeZone;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.table.ColumnSource;
@@ -22,15 +22,15 @@ public class TestRegionedColumnSourceDateTime
 
     private static final DateTime[] TEST_DATES = new DateTime[] {
             null,
-            DateTimeUtil.currentTime(),
-            DateTimeUtil.dateAtMidnight(DateTimeUtil.currentTime(), TimeZone.TZ_NY),
-            DateTimeUtil.convertDateTime("2013-01-15T12:19:32.000 NY"),
-            DateTimeUtil.convertDateTime("2013-01-15T09:30:00.000 NY"),
-            DateTimeUtil.convertDateTime("2013-01-15T16:00:00.000 NY"),
-            DateTimeUtil.convertDateTime("2013-01-15T16:15:00.000 NY"),
-            DateTimeUtil.convertDateTime("2000-01-01T00:00:00.000 NY"),
-            DateTimeUtil.convertDateTime("1999-12-31T23:59:59.000 NY"),
-            DateTimeUtil.convertDateTime("1981-02-22T19:50:00.000 NY")
+            DateTimeUtils.currentTime(),
+            DateTimeUtils.dateAtMidnight(DateTimeUtils.currentTime(), TimeZone.TZ_NY),
+            DateTimeUtils.convertDateTime("2013-01-15T12:19:32.000 NY"),
+            DateTimeUtils.convertDateTime("2013-01-15T09:30:00.000 NY"),
+            DateTimeUtils.convertDateTime("2013-01-15T16:00:00.000 NY"),
+            DateTimeUtils.convertDateTime("2013-01-15T16:15:00.000 NY"),
+            DateTimeUtils.convertDateTime("2000-01-01T00:00:00.000 NY"),
+            DateTimeUtils.convertDateTime("1999-12-31T23:59:59.000 NY"),
+            DateTimeUtils.convertDateTime("1981-02-22T19:50:00.000 NY")
     };
 
     private ColumnSource<Long> SUT_AS_LONG;

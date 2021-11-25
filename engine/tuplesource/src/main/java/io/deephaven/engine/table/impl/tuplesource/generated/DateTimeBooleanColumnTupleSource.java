@@ -12,7 +12,7 @@ import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.tuplesource.AbstractTupleSource;
 import io.deephaven.engine.table.impl.tuplesource.TwoColumnTupleSourceFactory;
 import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.time.DateTimeUtil;
+import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.tuple.generated.LongByteTuple;
 import io.deephaven.util.BooleanUtils;
 import org.jetbrains.annotations.NotNull;
@@ -43,7 +43,7 @@ public class DateTimeBooleanColumnTupleSource extends AbstractTupleSource<LongBy
     @Override
     public final LongByteTuple createTuple(final long indexKey) {
         return new LongByteTuple(
-                DateTimeUtil.nanos(columnSource1.get(indexKey)),
+                DateTimeUtils.nanos(columnSource1.get(indexKey)),
                 BooleanUtils.booleanAsByte(columnSource2.getBoolean(indexKey))
         );
     }
@@ -51,7 +51,7 @@ public class DateTimeBooleanColumnTupleSource extends AbstractTupleSource<LongBy
     @Override
     public final LongByteTuple createPreviousTuple(final long indexKey) {
         return new LongByteTuple(
-                DateTimeUtil.nanos(columnSource1.getPrev(indexKey)),
+                DateTimeUtils.nanos(columnSource1.getPrev(indexKey)),
                 BooleanUtils.booleanAsByte(columnSource2.getPrevBoolean(indexKey))
         );
     }
@@ -59,7 +59,7 @@ public class DateTimeBooleanColumnTupleSource extends AbstractTupleSource<LongBy
     @Override
     public final LongByteTuple createTupleFromValues(@NotNull final Object... values) {
         return new LongByteTuple(
-                DateTimeUtil.nanos((DateTime)values[0]),
+                DateTimeUtils.nanos((DateTime)values[0]),
                 BooleanUtils.booleanAsByte((Boolean)values[1])
         );
     }
@@ -67,7 +67,7 @@ public class DateTimeBooleanColumnTupleSource extends AbstractTupleSource<LongBy
     @Override
     public final LongByteTuple createTupleFromReinterpretedValues(@NotNull final Object... values) {
         return new LongByteTuple(
-                DateTimeUtil.nanos((DateTime)values[0]),
+                DateTimeUtils.nanos((DateTime)values[0]),
                 BooleanUtils.booleanAsByte((Boolean)values[1])
         );
     }
@@ -76,7 +76,7 @@ public class DateTimeBooleanColumnTupleSource extends AbstractTupleSource<LongBy
     @Override
     public final <ELEMENT_TYPE> void exportElement(@NotNull final LongByteTuple tuple, final int elementIndex, @NotNull final WritableColumnSource<ELEMENT_TYPE> writableSource, final long destinationIndexKey) {
         if (elementIndex == 0) {
-            writableSource.set(destinationIndexKey, (ELEMENT_TYPE) DateTimeUtil.nanosToTime(tuple.getFirstElement()));
+            writableSource.set(destinationIndexKey, (ELEMENT_TYPE) DateTimeUtils.nanosToTime(tuple.getFirstElement()));
             return;
         }
         if (elementIndex == 1) {
@@ -89,7 +89,7 @@ public class DateTimeBooleanColumnTupleSource extends AbstractTupleSource<LongBy
     @Override
     public final Object exportToExternalKey(@NotNull final LongByteTuple tuple) {
         return new SmartKey(
-                DateTimeUtil.nanosToTime(tuple.getFirstElement()),
+                DateTimeUtils.nanosToTime(tuple.getFirstElement()),
                 BooleanUtils.byteAsBoolean(tuple.getSecondElement())
         );
     }
@@ -97,7 +97,7 @@ public class DateTimeBooleanColumnTupleSource extends AbstractTupleSource<LongBy
     @Override
     public final Object exportElement(@NotNull final LongByteTuple tuple, int elementIndex) {
         if (elementIndex == 0) {
-            return DateTimeUtil.nanosToTime(tuple.getFirstElement());
+            return DateTimeUtils.nanosToTime(tuple.getFirstElement());
         }
         if (elementIndex == 1) {
             return BooleanUtils.byteAsBoolean(tuple.getSecondElement());
@@ -108,7 +108,7 @@ public class DateTimeBooleanColumnTupleSource extends AbstractTupleSource<LongBy
     @Override
     public final Object exportElementReinterpreted(@NotNull final LongByteTuple tuple, int elementIndex) {
         if (elementIndex == 0) {
-            return DateTimeUtil.nanosToTime(tuple.getFirstElement());
+            return DateTimeUtils.nanosToTime(tuple.getFirstElement());
         }
         if (elementIndex == 1) {
             return BooleanUtils.byteAsBoolean(tuple.getSecondElement());
@@ -121,7 +121,7 @@ public class DateTimeBooleanColumnTupleSource extends AbstractTupleSource<LongBy
         ObjectChunk<DateTime, Values> chunk1 = chunks[0].asObjectChunk();
         ObjectChunk<Boolean, Values> chunk2 = chunks[1].asObjectChunk();
         for (int ii = 0; ii < chunkSize; ++ii) {
-            destinationObjectChunk.set(ii, new LongByteTuple(DateTimeUtil.nanos(chunk1.get(ii)), BooleanUtils.booleanAsByte(chunk2.get(ii))));
+            destinationObjectChunk.set(ii, new LongByteTuple(DateTimeUtils.nanos(chunk1.get(ii)), BooleanUtils.booleanAsByte(chunk2.get(ii))));
         }
         destination.setSize(chunkSize);
     }
