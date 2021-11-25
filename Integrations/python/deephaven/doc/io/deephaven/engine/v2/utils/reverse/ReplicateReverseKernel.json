@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.engine.table.impl.utils.reverse.ReplicateReverseKernel",
- "methods": {
-  "main": ":param args: java.lang.String[]"
- },
- "path": "io.deephaven.engine.table.impl.utils.reverse.ReplicateReverseKernel",
- "typeName": "class"
-}

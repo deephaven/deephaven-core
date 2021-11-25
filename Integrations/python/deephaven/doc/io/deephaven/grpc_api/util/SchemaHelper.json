@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.grpc_api.util.SchemaHelper",
- "methods": {
-  "flatbufSchema": "Creates a flatbuf schema from an export response.\n\n:param response: (io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse) - the response\n:return: (org.apache.arrow.flatbuf.Schema) the flatbuf schema",
-  "schema": "Creates a schema from an export response.\n\n:param response: (io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse) - the response\n:return: (org.apache.arrow.vector.types.pojo.Schema) the schema"
- },
- "path": "io.deephaven.grpc_api.util.SchemaHelper",
- "typeName": "class"
-}

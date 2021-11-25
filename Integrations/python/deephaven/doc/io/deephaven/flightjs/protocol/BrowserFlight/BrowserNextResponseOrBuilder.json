@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.flightjs.protocol.BrowserFlight$BrowserNextResponseOrBuilder",
- "methods": {
-  "getAppMetadata": "bytes app_metadata = 1;\n\n:return: (com.google.protobuf.ByteString) The appMetadata."
- },
- "path": "io.deephaven.flightjs.protocol.BrowserFlight.BrowserNextResponseOrBuilder",
- "typeName": "interface"
-}

@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.engine.table.impl.sort.megamerge.FloatLongMegaMergeDescendingKernel",
- "methods": {
-  "createContext": ":return: io.deephaven.engine.table.impl.sort.megamerge.FloatLongMegaMergeDescendingKernel.FloatLongMegaMergeDescendingKernelContext<ATTR,KEY_INDICES>",
-  "merge": ":param destinationKeys: io.deephaven.engine.table.impl.sources.LongArraySource\n:param destinationValues: io.deephaven.engine.table.impl.sources.FloatArraySource\n:param destinationOffset: long\n:param destinationSize: long\n:param keysChunk: io.deephaven.engine.chunk.LongChunk<KEY_INDICES>\n:param valuesChunk: io.deephaven.engine.chunk.FloatChunk<ATTR>"
- },
- "path": "io.deephaven.engine.table.impl.sort.megamerge.FloatLongMegaMergeDescendingKernel",
- "typeName": "class"
-}

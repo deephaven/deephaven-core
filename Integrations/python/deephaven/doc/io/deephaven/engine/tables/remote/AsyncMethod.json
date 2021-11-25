@@ -1,7 +1,0 @@
-{
- "className": "io.deephaven.engine.tables.remote.AsyncMethod",
- "methods": {},
- "path": "io.deephaven.engine.tables.remote.AsyncMethod",
- "text": "Indicates that the annotated method should be executed asynchronously with respect to the UGP. Asynchronous execution\n will not acquire the UGP lock before invocation, and will be run concurrently with other asynchronous methods.",
- "typeName": "class"
-}

@@ -891,7 +891,7 @@ class NULL_CONVERSION(object):
 
 def _isVectorType(type_name): \
         return type_name.startswith('io.deephaven.engine.vector.') or \
-               type_name.startswith('io.deephaven.engine.table.impl.dbarrays.')
+               type_name.startswith('io.deephaven.engine.table.impl.vector.')
 
 def _isVector(obj):
     try:

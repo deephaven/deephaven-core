@@ -29,6 +29,7 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.chunk.ChunkType;
 import io.deephaven.engine.table.impl.util.codegen.CodeGenerator;
 import io.deephaven.engine.table.impl.util.codegen.TypeAnalyzer;
+import io.deephaven.engine.vector.Vector;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.type.TypeUtils;
@@ -162,7 +163,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
             final String declaredTypeSimpleName =
                     io.deephaven.util.type.TypeUtils.getUnboxedType(declaredType).getSimpleName();
             try {
-                return Class.forName(ObjectVector.class.getPackage().getName() + '.'
+                return Class.forName(Vector.class.getPackage().getName() + '.'
                         + Character.toUpperCase(declaredTypeSimpleName.charAt(0))
                         + declaredTypeSimpleName.substring(1)
                         + "Vector");
@@ -311,7 +312,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
 
                     final String vtp = getVectorType(ac.columnSource.getType()).getCanonicalName().replace(
                             "io.deephaven.engine.vector",
-                            "io.deephaven.engine.table.impl.dbarrays");
+                            "io.deephaven.engine.table.impl.vector");
                     fc.replace("VECTOR_TYPE_PREFIX", vtp);
                     return null;
                 },

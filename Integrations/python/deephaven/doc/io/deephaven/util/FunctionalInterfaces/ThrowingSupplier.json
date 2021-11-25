@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.util.FunctionalInterfaces$ThrowingSupplier",
- "methods": {
-  "get": ":return: FunctionalInterfaces.ThrowingSupplier.T"
- },
- "path": "io.deephaven.util.FunctionalInterfaces.ThrowingSupplier",
- "text": "Represents an operation that accepts no input and returns a result, throwing an exception.",
- "typeName": "interface"
-}

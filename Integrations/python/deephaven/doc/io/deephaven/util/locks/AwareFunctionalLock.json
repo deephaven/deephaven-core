@@ -1,7 +1,0 @@
-{
- "className": "io.deephaven.util.locks.AwareFunctionalLock",
- "methods": {},
- "path": "io.deephaven.util.locks.AwareFunctionalLock",
- "text": "Lock that implements AwareLock and FunctionalLock.",
- "typeName": "interface"
-}

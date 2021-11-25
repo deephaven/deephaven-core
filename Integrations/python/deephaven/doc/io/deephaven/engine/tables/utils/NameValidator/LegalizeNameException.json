@@ -1,6 +1,0 @@
-{
- "className": "io.deephaven.api.util.NameValidator$LegalizeNameException",
- "methods": {},
- "path": "io.deephaven.api.util.NameValidator.LegalizeNameException",
- "typeName": "class"
-}

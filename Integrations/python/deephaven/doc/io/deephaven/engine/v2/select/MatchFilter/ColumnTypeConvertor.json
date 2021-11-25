@@ -1,6 +1,0 @@
-{
- "className": "io.deephaven.engine.table.impl.select.MatchFilter$ColumnTypeConvertor",
- "methods": {},
- "path": "io.deephaven.engine.table.impl.select.MatchFilter.ColumnTypeConvertor",
- "typeName": "class"
-}

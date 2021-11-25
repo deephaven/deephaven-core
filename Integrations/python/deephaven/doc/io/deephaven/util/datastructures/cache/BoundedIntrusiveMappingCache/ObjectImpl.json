@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.util.datastructures.cache.BoundedIntrusiveMappingCache$ObjectImpl",
- "methods": {
-  "computeIfAbsent": ":param key: BoundedIntrusiveMappingCache.ObjectImpl.KEY_TYPE\n:param mapper: java.util.function.Function<BoundedIntrusiveMappingCache.ObjectImpl.KEY_TYPE,BoundedIntrusiveMappingCache.ObjectImpl.VALUE_TYPE>\n:return: BoundedIntrusiveMappingCache.ObjectImpl.VALUE_TYPE"
- },
- "path": "io.deephaven.util.datastructures.cache.BoundedIntrusiveMappingCache.ObjectImpl",
- "typeName": "class"
-}

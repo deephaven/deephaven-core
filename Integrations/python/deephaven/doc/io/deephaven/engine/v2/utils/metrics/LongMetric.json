@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.engine.table.impl.utils.metrics.LongMetric",
- "methods": {
-  "accept": ":param v: long",
-  "sample": ":param v: long"
- },
- "path": "io.deephaven.engine.table.impl.utils.metrics.LongMetric",
- "typeName": "interface"
-}

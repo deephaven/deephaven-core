@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.util.datastructures.cache.BoundedIntrusiveMappingCache$ToFloatFunction",
- "methods": {
-  "applyAsFloat": ":param value: BoundedIntrusiveMappingCache.ToFloatFunction.T\n:return: float"
- },
- "path": "io.deephaven.util.datastructures.cache.BoundedIntrusiveMappingCache.ToFloatFunction",
- "typeName": "interface"
-}

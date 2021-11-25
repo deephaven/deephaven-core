@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.engine.table.impl.join.dupexpand.ReplicateDupExpandKernel",
- "methods": {
-  "main": ":param args: java.lang.String[]"
- },
- "path": "io.deephaven.engine.table.impl.join.dupexpand.ReplicateDupExpandKernel",
- "typeName": "class"
-}

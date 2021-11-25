@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.grpc_api.barrage.BarrageStreamGenerator$SubView",
- "methods": {
-  "forEachStream": ":param visitor: java.util.function.Consumer<java.io.InputStream>",
-  "isViewport": ":return: boolean"
- },
- "path": "io.deephaven.grpc_api.barrage.BarrageStreamGenerator.SubView",
- "typeName": "class"
-}

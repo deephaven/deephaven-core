@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.engine.chunk.DefaultGetContext",
- "methods": {
-  "getFillContext": "*Overload 1*  \n  :return: io.deephaven.engine.chunk.ChunkSource.FillContext\n  \n*Overload 2*  \n  :param context: io.deephaven.engine.chunk.ChunkSource.GetContext\n  :return: io.deephaven.engine.chunk.ChunkSource.FillContext"
- },
- "path": "io.deephaven.engine.chunk.DefaultGetContext",
- "typeName": "class"
-}

@@ -116,12 +116,12 @@ public class JavaKernelBuilder {
 
     private CodeGenerator generateKernelConstructor() {
         final CodeGenerator g = CodeGenerator.create(
-                "public $CLASSNAME$([[DBARRAYBASE_CANONICAL]][] __vectors,", CodeGenerator.indent(
+                "public $CLASSNAME$([[VECTOR_CANONICAL]][] __vectors,", CodeGenerator.indent(
                         "[[PARAM_CANONICAL]][] __params)"),
                 CodeGenerator.block(
                         CodeGenerator.repeated("getVector", "[[NAME]] = ([[TYPE]])__vectors[[[INDEX]]];"),
                         CodeGenerator.repeated("getParam", "[[NAME]] = ([[TYPE]])__params[[[INDEX]]].getValue();")));
-        g.replace("DBARRAYBASE_CANONICAL", Vector.class.getCanonicalName());
+        g.replace("VECTOR_CANONICAL", Vector.class.getCanonicalName());
         g.replace("PARAM_CANONICAL", QueryScopeParam.class.getCanonicalName());
         final int[] nextArrayIndex = {0};
         final int[] nextParamIndex = {0};

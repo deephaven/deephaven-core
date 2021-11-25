@@ -1,6 +1,0 @@
-{
- "className": "io.deephaven.util.FunctionalInterfaces$ThrowingRunnable",
- "methods": {},
- "path": "io.deephaven.util.FunctionalInterfaces.ThrowingRunnable",
- "typeName": "interface"
-}

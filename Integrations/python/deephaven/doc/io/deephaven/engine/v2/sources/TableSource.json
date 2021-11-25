@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.engine.table.impl.sources.TableSource",
- "methods": {
-  "getColumnSource": ":param columnName: java.lang.String\n:return: io.deephaven.engine.table.impl.sources.ColumnSource"
- },
- "path": "io.deephaven.engine.table.impl.sources.TableSource",
- "typeName": "interface"
-}

@@ -1,7 +1,0 @@
-{
- "className": "io.deephaven.util.annotations.VisibleForTesting",
- "methods": {},
- "path": "io.deephaven.util.annotations.VisibleForTesting",
- "text": "Indicates that a method or member is visible for testing purposes only.",
- "typeName": "class"
-}

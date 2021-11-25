@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.util.datastructures.cache.OffsetLookup",
- "methods": {
-  "lookup": ":param offset: int\n:param extra: OffsetLookup.EXTRA_INPUT_TYPE\n:return: OffsetLookup.VALUE_TYPE"
- },
- "path": "io.deephaven.util.datastructures.cache.OffsetLookup",
- "text": "Lookup function interface for OffsetLookupCaches and ReverseOffsetLookupCaches to use.",
- "typeName": "interface"
-}

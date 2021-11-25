@@ -1,7 +1,0 @@
-{
- "className": "io.deephaven.engine.exceptions.SizeException",
- "methods": {},
- "path": "io.deephaven.engine.exceptions.SizeException",
- "text": "Unchecked exception thrown when RowSet, Table\n or DataColumn operations are invoked (directly, or indirectly as data updates)\n that cannot be completed correctly due to size constraints on the underlying data structures.\n \n For example, the current implementations of MutableRowRedirection, required for\n Table.sort(io.deephaven.engine.tables.SortPair...), can only support an 32-bit integer number of keys.",
- "typeName": "class"
-}

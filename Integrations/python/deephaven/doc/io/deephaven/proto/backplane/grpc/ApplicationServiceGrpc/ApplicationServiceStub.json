@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.proto.backplane.grpc.ApplicationServiceGrpc$ApplicationServiceStub",
- "methods": {
-  "listFields": "Request the list of the fields exposed via the worker.\n - The first received message contains all fields that are currently available\n   on the worker. None of these fields will be RemovedFields.\n - Subsequent messages modify the existing state. Fields are identified by\n   their ticket and may be replaced or removed.\n \n\n:param request: io.deephaven.proto.backplane.grpc.ListFieldsRequest\n:param responseObserver: io.grpc.stub.StreamObserver<io.deephaven.proto.backplane.grpc.FieldsChangeUpdate>"
- },
- "path": "io.deephaven.proto.backplane.grpc.ApplicationServiceGrpc.ApplicationServiceStub",
- "text": "Allows clients to list fields that are accessible to them.",
- "typeName": "class"
-}

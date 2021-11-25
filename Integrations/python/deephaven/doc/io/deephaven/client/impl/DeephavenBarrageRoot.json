@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.client.impl.DeephavenBarrageRoot",
- "methods": {
-  "factoryBuilder": ":return: io.deephaven.client.impl.BarrageSubcomponent.Builder"
- },
- "path": "io.deephaven.client.impl.DeephavenBarrageRoot",
- "typeName": "interface"
-}

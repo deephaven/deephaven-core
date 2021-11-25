@@ -1,7 +1,0 @@
-{
- "className": "io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedStructureBase",
- "methods": {},
- "path": "io.deephaven.util.datastructures.linked.IntrusiveDoublyLinkedStructureBase",
- "text": "Circular doubly-linked structure base. Intended as a utility for building other structures.\n\n Note that \"unlinked\" nodes should have themselves as their next and previous nodes.",
- "typeName": "class"
-}

@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.grpc_api.runner.DeephavenApiServerModule",
- "methods": {
-  "provideScheduler": ":param poolSize: int\n:return: io.deephaven.grpc_api.util.Scheduler",
-  "provideUpdateGraphProcessor": ":return: io.deephaven.engine.tables.live.UpdateGraphProcessor"
- },
- "path": "io.deephaven.grpc_api.runner.DeephavenApiServerModule",
- "typeName": "class"
-}

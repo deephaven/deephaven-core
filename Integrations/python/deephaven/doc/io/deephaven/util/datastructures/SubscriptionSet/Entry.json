@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.util.datastructures.SubscriptionSet$Entry",
- "methods": {
-  "activate": "Activate this subscription entry. Must hold the lock on the enclosing subscription set."
- },
- "path": "io.deephaven.util.datastructures.SubscriptionSet.Entry",
- "text": "Subscription entry, allowing state associated with a listener.",
- "typeName": "class"
-}

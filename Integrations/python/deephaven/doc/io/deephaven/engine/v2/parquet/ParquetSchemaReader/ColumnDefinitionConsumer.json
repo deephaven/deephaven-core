@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.engine.table.impl.parquet.ParquetSchemaReader$ColumnDefinitionConsumer",
- "methods": {
-  "accept": ":param def: io.deephaven.engine.table.impl.parquet.ParquetSchemaReader.ParquetMessageDefinition"
- },
- "path": "io.deephaven.engine.table.impl.parquet.ParquetSchemaReader.ColumnDefinitionConsumer",
- "typeName": "interface"
-}

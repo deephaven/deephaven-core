@@ -1,7 +1,0 @@
-{
- "className": "io.deephaven.engine.table.impl.utils.AbstractIndexUpdateNotification",
- "methods": {},
- "path": "io.deephaven.engine.table.impl.utils.AbstractIndexUpdateNotification",
- "text": "Common base class for rowSet update notifications.",
- "typeName": "class"
-}

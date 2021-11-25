@@ -1,7 +1,0 @@
-{
- "className": "io.deephaven.engine.table.impl.ReplicateHashTable$OverflowStateColumnSource",
- "methods": {},
- "path": "io.deephaven.engine.table.impl.ReplicateHashTable.OverflowStateColumnSource",
- "text": "We tag the overflow state ColumnSource with this annotation, so we know what its name is in the source and\n destination.",
- "typeName": "class"
-}
