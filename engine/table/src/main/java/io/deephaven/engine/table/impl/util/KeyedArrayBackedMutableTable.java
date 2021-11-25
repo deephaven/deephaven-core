@@ -205,8 +205,8 @@ public class KeyedArrayBackedMutableTable extends BaseArrayBackedMutableTable {
         try (final WritableLongChunk<Attributes.RowKeys> destinations =
                 WritableLongChunk.makeWritableChunk(chunkCapacity)) {
             try (final ChunkSource.GetContext getContext = keySource.makeGetContext(chunkCapacity, sharedContext);
-                 final ChunkBoxer.BoxerKernel boxer = ChunkBoxer.getBoxer(keySource.getChunkType(), chunkCapacity);
-                 final RowSet tableRowSet = table.getRowSet().copy();) {
+                    final ChunkBoxer.BoxerKernel boxer = ChunkBoxer.getBoxer(keySource.getChunkType(), chunkCapacity);
+                    final RowSet tableRowSet = table.getRowSet().copy();) {
 
                 final Chunk<? extends Attributes.Values> keys = keySource.getChunk(getContext, tableRowSet);
                 final ObjectChunk<?, ? extends Attributes.Values> boxed = boxer.box(keys);

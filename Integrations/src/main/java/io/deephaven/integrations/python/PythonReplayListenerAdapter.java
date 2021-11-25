@@ -77,7 +77,8 @@ public class PythonReplayListenerAdapter extends InstrumentedTableUpdateListener
         final RowSet emptyRowSet = RowSetFactory.empty();
         final RowSetShiftData emptyShift = RowSetShiftData.EMPTY;
         final ModifiedColumnSet emptyColumnSet = ModifiedColumnSet.EMPTY;
-        final TableUpdate update = new TableUpdateImpl(source.getRowSet(), emptyRowSet, emptyRowSet, emptyShift, emptyColumnSet);
+        final TableUpdate update =
+                new TableUpdateImpl(source.getRowSet(), emptyRowSet, emptyRowSet, emptyShift, emptyColumnSet);
         final boolean isReplay = true;
         pyCallable.call("__call__", isReplay, update);
     }

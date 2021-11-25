@@ -62,7 +62,7 @@ public class FilterFactory implements FilterVisitor<WhereFilter> {
 
     @Override
     public WhereFilter onComparison(CompareCondition.CompareOperation operation, CaseSensitivity caseSensitivity,
-                                    Value lhs, Value rhs) {
+            Value lhs, Value rhs) {
         switch (operation) {
             case LESS_THAN:
             case LESS_THAN_OR_EQUAL:
@@ -86,7 +86,7 @@ public class FilterFactory implements FilterVisitor<WhereFilter> {
     }
 
     private WhereFilter generateNumericConditionFilter(CompareCondition.CompareOperation operation, Value lhs,
-                                                       Value rhs) {
+            Value rhs) {
         boolean invert;
         String columName;
         Literal value;
@@ -159,7 +159,7 @@ public class FilterFactory implements FilterVisitor<WhereFilter> {
 
     @Override
     public WhereFilter onIn(Value target, List<Value> candidatesList, CaseSensitivity caseSensitivity,
-                            MatchType matchType) {
+            MatchType matchType) {
         assert target.getDataCase() == Value.DataCase.REFERENCE;
         Reference reference = target.getReference();
         String[] values = new String[candidatesList.size()];
@@ -220,14 +220,14 @@ public class FilterFactory implements FilterVisitor<WhereFilter> {
 
     @Override
     public WhereFilter onContains(Reference reference, String searchString, CaseSensitivity caseSensitivity,
-                                  MatchType matchType) {
+            MatchType matchType) {
         return new StringContainsFilter(caseSensitivity(caseSensitivity), matchType(matchType),
                 reference.getColumnName(), searchString);
     }
 
     @Override
     public WhereFilter onMatches(Reference reference, String regex, CaseSensitivity caseSensitivity,
-                                 MatchType matchType) {
+            MatchType matchType) {
         return new RegexFilter(caseSensitivity(caseSensitivity), matchType(matchType), reference.getColumnName(),
                 regex);
     }

@@ -1185,7 +1185,8 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         check(expression, resultExpression, new Object[0].getClass(), new String[] {"myDoubleArray", "myInt"});
 
         expression = "testImplicitConversion4(myInt, myVector)";
-        resultExpression = "testImplicitConversion4(doubleCast(myInt), VectorConversions.nullSafeVectorToArray(myVector))";
+        resultExpression =
+                "testImplicitConversion4(doubleCast(myInt), VectorConversions.nullSafeVectorToArray(myVector))";
         check(expression, resultExpression, new Object[0].getClass(), new String[] {"myVector", "myInt"});
 
         expression = "testImplicitConversion4(myInt, myVector, myDouble)";
@@ -1328,7 +1329,8 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         String expression, resultExpression;
 
         PropertySaver p = new PropertySaver();
-        p.setProperty("QueryLanguageParser.verboseExceptionMessages", "false"); // Better to test with non-verbose messages
+        p.setProperty("QueryLanguageParser.verboseExceptionMessages", "false"); // Better to test with non-verbose
+                                                                                // messages
         try {
             // First, test just bad field name
             try {
@@ -1592,7 +1594,8 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         result = new QueryLanguageParser("`me`=`you`", null, null, staticImports, null, null).getResult();
         assertEquals("eq(\"me\", \"you\")", result.getConvertedExpression());
 
-        result = new QueryLanguageParser("1=1 || 2=2 && (3=3 && 4==4)", null, null, staticImports, null, null).getResult();
+        result = new QueryLanguageParser("1=1 || 2=2 && (3=3 && 4==4)", null, null, staticImports, null, null)
+                .getResult();
         assertEquals("eq(1, 1)||eq(2, 2)&&(eq(3, 3)&&eq(4, 4))", result.getConvertedExpression());
 
         result = new QueryLanguageParser("1<=1", null, null, staticImports, null, null).getResult();
@@ -1808,11 +1811,13 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         check(expression, resultExpression, Double.class, new String[] {"myVector"});
 
         expression = "genericArraysToSingle(myVector, myIntegerObjArray)";
-        resultExpression = "genericArraysToSingle(VectorConversions.nullSafeVectorToArray(myVector), myIntegerObjArray)";
+        resultExpression =
+                "genericArraysToSingle(VectorConversions.nullSafeVectorToArray(myVector), myIntegerObjArray)";
         check(expression, resultExpression, Integer.class, new String[] {"myVector", "myIntegerObjArray"});
 
         expression = "genericArraysToSingle(myIntegerObjArray, myVector)";
-        resultExpression = "genericArraysToSingle(myIntegerObjArray, VectorConversions.nullSafeVectorToArray(myVector))";
+        resultExpression =
+                "genericArraysToSingle(myIntegerObjArray, VectorConversions.nullSafeVectorToArray(myVector))";
         check(expression, resultExpression, Double.class, new String[] {"myVector", "myIntegerObjArray"});
 
         expression = "genericVector(myVector)";
@@ -1847,7 +1852,8 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
 
     public void testInnerClasses() throws Exception {
         QueryLanguageParser.Result result =
-                new QueryLanguageParser("io.deephaven.engine.table.impl.lang.TestQueryLanguageParser.InnerEnum.YEAH!=null", null,
+                new QueryLanguageParser(
+                        "io.deephaven.engine.table.impl.lang.TestQueryLanguageParser.InnerEnum.YEAH!=null", null,
                         null, staticImports, null, null).getResult();
         assertEquals("!eq(io.deephaven.engine.table.impl.lang.TestQueryLanguageParser.InnerEnum.YEAH, null)",
                 result.getConvertedExpression());
@@ -2192,8 +2198,9 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
 
     private void check(String expression, String resultExpression, Class<?> resultType, String[] resultVarsUsed)
             throws Exception {
-        QueryLanguageParser.Result result = new QueryLanguageParser(expression, packageImports, classImports, staticImports,
-                variables, variableParameterizedTypes).getResult();
+        QueryLanguageParser.Result result =
+                new QueryLanguageParser(expression, packageImports, classImports, staticImports,
+                        variables, variableParameterizedTypes).getResult();
 
         assertEquals(resultType, result.getType());
         assertEquals(resultExpression, result.getConvertedExpression());

@@ -71,7 +71,7 @@ public class DateTimeArraySource extends AbstractLongArraySource<DateTime> {
 
     @Override
     public void fillPrevChunk(@NotNull ColumnSource.FillContext context, @NotNull WritableChunk<? super Values> dest,
-                              @NotNull RowSequence rowSequence) {
+            @NotNull RowSequence rowSequence) {
         final ChunkFiller filler = ChunkFiller.forChunkType(dest.getChunkType());
         if (rowSequence.getAverageRunLengthEstimate() > USE_RANGES_AVERAGE_RUN_LENGTH) {
             filler.fillPrevByRanges(this, rowSequence, dest);

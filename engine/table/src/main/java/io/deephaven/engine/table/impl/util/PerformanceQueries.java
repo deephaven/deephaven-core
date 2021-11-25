@@ -13,7 +13,7 @@ import java.util.OptionalLong;
 
 import static io.deephaven.api.agg.Aggregation.*;
 
-public class  PerformanceQueries {
+public class PerformanceQueries {
     private static final boolean formatPctColumns = true;
 
     /**
@@ -193,11 +193,10 @@ public class  PerformanceQueries {
 
         // Create a table that summarizes the update performance data within each interval
         Table updateAggregate = qup.aggBy(
-                        Arrays.asList(
-                                AggSum("NRows", "EntryIntervalUsage"),
-                                AggFirst("QueryMemUsed", "WorkerHeapSize", "QueryMemUsedPct", "IntervalDurationNanos")
-                        ),
-                        "IntervalStartTime", "IntervalEndTime", "ProcessUniqueId")
+                Arrays.asList(
+                        AggSum("NRows", "EntryIntervalUsage"),
+                        AggFirst("QueryMemUsed", "WorkerHeapSize", "QueryMemUsedPct", "IntervalDurationNanos")),
+                "IntervalStartTime", "IntervalEndTime", "ProcessUniqueId")
                 .updateView("Ratio = EntryIntervalUsage / IntervalDurationNanos")
                 .moveColumnsUp("IntervalStartTime", "IntervalEndTime", "Ratio");
         if (formatPctColumns) {
@@ -211,8 +210,7 @@ public class  PerformanceQueries {
                 AggPct(0.90, "Ratio_90_Percentile = Ratio", "QueryMemUsedPct_90_Percentile = QueryMemUsedPct"),
                 AggPct(0.75, "Ratio_75_Percentile = Ratio", "QueryMemUsedPct_75_Percentile = QueryMemUsedPct"),
                 AggPct(0.50, "Ratio_50_Percentile = Ratio", "QueryMemUsedPct_50_Percentile = QueryMemUsedPct"),
-                AggMax("Ratio_Max = Ratio", "QueryMemUsedPct_Max = QueryMemUsedPct")
-        ));
+                AggMax("Ratio_Max = Ratio", "QueryMemUsedPct_Max = QueryMemUsedPct")));
 
         resultMap.put("UpdateSummaryStats", updateSummaryStats);
         return resultMap;

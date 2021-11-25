@@ -25,11 +25,11 @@ public class ChunkPoolInstrumentation {
     /**
      * Return the result of {@code allocationProcedure}, run by the currently installed {@code allocationRecorder}.
      *
-     * @param  allocationProcedure The allocation procedure to {@link Supplier#get()}
+     * @param allocationProcedure The allocation procedure to {@link Supplier#get()}
      * @return The result of {@code allocationProcedure}
      */
     public static <RETURN_TYPE> RETURN_TYPE getAndRecord(@NotNull final Supplier<RETURN_TYPE> allocationProcedure) {
-        //noinspection unchecked
+        // noinspection unchecked
         return (RETURN_TYPE) allocationRecorder.apply(allocationProcedure);
     }
 }

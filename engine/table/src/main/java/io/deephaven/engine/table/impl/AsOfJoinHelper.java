@@ -1283,9 +1283,9 @@ public class AsOfJoinHelper {
                             // modified
                             if (!stampModified && upstream.modified().isNonempty()) {
                                 try (final RowSequence.Iterator modit = upstream.modified().getRowSequenceIterator();
-                                     final WritableLongChunk<RowKeys> rightStampIndices =
+                                        final WritableLongChunk<RowKeys> rightStampIndices =
                                                 WritableLongChunk.makeWritableChunk(rightChunkSize);
-                                     final WritableChunk<Values> rightStampChunk =
+                                        final WritableChunk<Values> rightStampChunk =
                                                 stampChunkType.makeWritableChunk(rightChunkSize)) {
                                     while (modit.hasMore()) {
                                         final RowSequence chunkOk = modit.getNextRowSequenceWithLength(rightChunkSize);
@@ -1334,11 +1334,11 @@ public class AsOfJoinHelper {
     }
 
     private static void rightIncrementalApplySsaShift(RowSetShiftData shiftData, SegmentedSortedArray ssa,
-                                                      LongSortKernel<Values, RowKeys> sortKernel, ChunkSource.FillContext fillContext,
-                                                      RowSet restampRemovals, QueryTable table,
-                                                      int chunkSize, ColumnSource<?> stampSource, ChunkSsaStamp chunkSsaStamp,
-                                                      WritableChunk<Values> leftStampValues, WritableLongChunk<RowKeys> leftStampKeys,
-                                                      WritableRowRedirection rowRedirection, boolean disallowExactMatch) {
+            LongSortKernel<Values, RowKeys> sortKernel, ChunkSource.FillContext fillContext,
+            RowSet restampRemovals, QueryTable table,
+            int chunkSize, ColumnSource<?> stampSource, ChunkSsaStamp chunkSsaStamp,
+            WritableChunk<Values> leftStampValues, WritableLongChunk<RowKeys> leftStampKeys,
+            WritableRowRedirection rowRedirection, boolean disallowExactMatch) {
 
         try (final RowSet fullPrevRowSet = table.getRowSet().getPrevRowSet();
                 final RowSet previousToShift = fullPrevRowSet.minus(restampRemovals);

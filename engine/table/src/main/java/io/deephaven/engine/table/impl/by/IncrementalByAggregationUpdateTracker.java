@@ -38,9 +38,9 @@ import org.jetbrains.annotations.NotNull;
  * per state, then build the added {@link TrackingWritableRowSet} for each state and add it to the state's
  * {@link TrackingWritableRowSet}</li>
  * <li>Update redirections from the previous {@link TrackingWritableRowSet} first key to the current
- * {@link TrackingWritableRowSet} first key, and from old slot to new slot where a state was moved or promoted in rehash,
- * accumulating rowSet keys in 3 random builders (for added, removed, and modified) and shifts in a pair of parallel
- * {@link WritableLongChunk}s for previous and current, using the following logic:
+ * {@link TrackingWritableRowSet} first key, and from old slot to new slot where a state was moved or promoted in
+ * rehash, accumulating rowSet keys in 3 random builders (for added, removed, and modified) and shifts in a pair of
+ * parallel {@link WritableLongChunk}s for previous and current, using the following logic:
  * <ol>
  * <li>Non-empty to empty transitions as removes of the previous first key</li>
  * <li>Empty or null placeholder to non-empty transitions as adds of the current first key</li>
@@ -361,7 +361,8 @@ class IncrementalByAggregationUpdateTracker {
      *
      * @param rowSetSource The {@link TrackingWritableRowSet} column source for the main table
      * @param overflowRowSetSource The {@link TrackingWritableRowSet} column source for the overflow table
-     * @param rowRedirection The result {@link WritableRowRedirection} (from state first keys to state slots) to populate
+     * @param rowRedirection The result {@link WritableRowRedirection} (from state first keys to state slots) to
+     *        populate
      * @return The result {@link TrackingWritableRowSet}
      */
     final TrackingWritableRowSet applyAddsAndMakeInitialRowSet(
@@ -488,10 +489,10 @@ class IncrementalByAggregationUpdateTracker {
      * @return The result {@link TableUpdateImpl}
      */
     final TableUpdate makeUpdateFromStates(@NotNull final ObjectArraySource<TrackingWritableRowSet> rowSetSource,
-                                           @NotNull final ObjectArraySource<TrackingWritableRowSet> overflowRowSetSource,
-                                           @NotNull final WritableRowSet rowSet,
-                                           @NotNull final WritableRowRedirection rowRedirection,
-                                           @NotNull final ModifiedColumnSetProducer modifiedColumnSetProducer) {
+            @NotNull final ObjectArraySource<TrackingWritableRowSet> overflowRowSetSource,
+            @NotNull final WritableRowSet rowSet,
+            @NotNull final WritableRowRedirection rowRedirection,
+            @NotNull final ModifiedColumnSetProducer modifiedColumnSetProducer) {
         // First pass: Removes are handled on their own, because if the key moved to a new state we may reinsert it
         final RowSetBuilderRandom removedBuilder = RowSetFactory.builderRandom();
         int numStatesWithShifts = 0;

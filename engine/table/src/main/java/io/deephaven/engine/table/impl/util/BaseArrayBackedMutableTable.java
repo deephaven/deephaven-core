@@ -43,7 +43,7 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
     private long pendingProcessed = NULL_NOTIFICATION_STEP;
 
     public BaseArrayBackedMutableTable(TrackingRowSet rowSet, Map<String, ? extends ColumnSource<?>> nameToColumnSource,
-                                       Map<String, Object[]> enumValues, ProcessPendingUpdater processPendingUpdater) {
+            Map<String, Object[]> enumValues, ProcessPendingUpdater processPendingUpdater) {
         super(rowSet, nameToColumnSource, processPendingUpdater);
         this.enumValues = enumValues;
         MutableInputTable mutableInputTable = makeHandler();

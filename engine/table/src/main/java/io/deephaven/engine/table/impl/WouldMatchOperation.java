@@ -24,9 +24,9 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * A table operation similar to {@link Table#where(String...)} except that instead of
- * filtering the rows in the table, it appends new columns containing the result of the filter evaluation on each row of
- * the table. It will re-evaluate cell values if any of the underlying filters are dynamic, and change.
+ * A table operation similar to {@link Table#where(String...)} except that instead of filtering the rows in the table,
+ * it appends new columns containing the result of the filter evaluation on each row of the table. It will re-evaluate
+ * cell values if any of the underlying filters are dynamic, and change.
  */
 public class WouldMatchOperation implements QueryTable.MemoizableOperation<QueryTable> {
     private static final RowSet EMPTY_INDEX = RowSetFactory.empty();
@@ -164,8 +164,8 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
     }
 
     /**
-     * A {@link MergedListener} implementation for
-     * {@link Table#wouldMatch(WouldMatchPair...)} when the parent table is ticking.
+     * A {@link MergedListener} implementation for {@link Table#wouldMatch(WouldMatchPair...)} when the parent table is
+     * ticking.
      */
     private class Listener extends MergedListener {
         final ListenerRecorder recorder;
@@ -213,9 +213,8 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
     }
 
     /**
-     * A {@link MergedListener} implementation for
-     * {@link Table#wouldMatch(WouldMatchPair...)} when * the parent table is static (not
-     * ticking).
+     * A {@link MergedListener} implementation for {@link Table#wouldMatch(WouldMatchPair...)} when * the parent table
+     * is static (not ticking).
      */
     private class StaticListener extends MergedListener {
         StaticListener(@NotNull List<NotificationQueue.Dependency> dependencies) {
@@ -395,8 +394,8 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
         }
 
         /**
-         * Update the internal rowSet with the upstream {@link TableUpdateImpl}. If the column
-         * was recomputed, return an optional containing rows that were modified.
+         * Update the internal rowSet with the upstream {@link TableUpdateImpl}. If the column was recomputed, return an
+         * optional containing rows that were modified.
          *
          * @param added the set of added rows in the update
          * @param removed the set of removed rows in the update

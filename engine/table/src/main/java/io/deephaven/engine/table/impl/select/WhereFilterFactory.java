@@ -193,7 +193,7 @@ public class WhereFilterFactory {
     }
 
     public static WhereFilter[] expandQuickFilter(Table t, String quickFilter, QuickFilterMode filterMode,
-                                                  @NotNull Set<String> columnNames) {
+            @NotNull Set<String> columnNames) {
         // Do some type inference
         if (quickFilter != null && !quickFilter.isEmpty()) {
             if (filterMode == QuickFilterMode.MULTI) {
@@ -265,7 +265,7 @@ public class WhereFilterFactory {
     }
 
     private static WhereFilter getSelectFilter(String colName, String quickFilter, QuickFilterMode filterMode,
-                                               Class<?> colClass) {
+            Class<?> colClass) {
         final InferenceResult typeData = new InferenceResult(quickFilter);
         if ((colClass == Double.class || colClass == double.class) && (!Double.isNaN(typeData.doubleVal))) {
             try {
@@ -316,7 +316,7 @@ public class WhereFilterFactory {
     }
 
     public static WhereFilter[] getExpressionsWithQuickFilter(String[] expressions, Table t, String quickFilter,
-                                                              QuickFilterMode filterMode) {
+            QuickFilterMode filterMode) {
         if (quickFilter != null && !quickFilter.isEmpty()) {
             return Stream.concat(
                     Arrays.stream(getExpressions(expressions)),

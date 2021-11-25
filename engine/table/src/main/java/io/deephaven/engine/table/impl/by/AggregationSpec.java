@@ -14,8 +14,8 @@ public interface AggregationSpec {
      * Produces a MemoKey for this AggregationSpec.
      *
      * <p>
-     * If two AggregationSpecs have equal memoKeys, then {@link Table#groupBy} operations that have the same group
-     * by columns may be memoized. In that case instead of recomputing the result; the original result will be used.
+     * If two AggregationSpecs have equal memoKeys, then {@link Table#groupBy} operations that have the same group by
+     * columns may be memoized. In that case instead of recomputing the result; the original result will be used.
      * </p>
      *
      * <p>

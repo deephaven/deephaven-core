@@ -17,7 +17,8 @@ import static io.deephaven.replication.ReplicateUtilities.*;
 //
 public class ReplicateSegmentedSortedMultiset {
     public static void main(String[] args) throws IOException {
-        charToAllButBooleanAndLong("engine/table/src/main/java/io/deephaven/engine/table/impl/ssms/CharSegmentedSortedMultiset.java");
+        charToAllButBooleanAndLong(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/ssms/CharSegmentedSortedMultiset.java");
         insertDateTimeExtensions(charToLong(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/ssms/CharSegmentedSortedMultiset.java"));
 
@@ -28,20 +29,27 @@ public class ReplicateSegmentedSortedMultiset {
                 ReplicateSegmentedSortedMultiset::fixupSsmConstructor,
                 ReplicateSegmentedSortedMultiset::fixupObjectCompare);
 
-        charToAllButBoolean("engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmminmax/CharSetResult.java");
-        fixupObjectSsm(charToObject("engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmminmax/CharSetResult.java"),
-                ReplicateSegmentedSortedMultiset::fixupNulls);
-
-        charToAllButBoolean("engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmpercentile/CharPercentileTypeHelper.java");
+        charToAllButBoolean(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmminmax/CharSetResult.java");
         fixupObjectSsm(
-                charToObject("engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmpercentile/CharPercentileTypeHelper.java"),
+                charToObject(
+                        "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmminmax/CharSetResult.java"),
                 ReplicateSegmentedSortedMultiset::fixupNulls);
 
-        charToIntegers("engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmpercentile/CharPercentileTypeMedianHelper.java");
+        charToAllButBoolean(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmpercentile/CharPercentileTypeHelper.java");
+        fixupObjectSsm(
+                charToObject(
+                        "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmpercentile/CharPercentileTypeHelper.java"),
+                ReplicateSegmentedSortedMultiset::fixupNulls);
+
+        charToIntegers(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmpercentile/CharPercentileTypeMedianHelper.java");
         floatToAllFloatingPoints(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmpercentile/FloatPercentileTypeMedianHelper.java");
 
-        charToAllButBoolean("engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/CharSsmBackedSource.java");
+        charToAllButBoolean(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/CharSsmBackedSource.java");
         objectSsm = charToObject(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/by/ssmcountdistinct/CharSsmBackedSource.java");
         fixupObjectSsm(objectSsm,

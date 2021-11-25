@@ -77,7 +77,7 @@ public class TestSortedFirstOrLastByFactory extends RefreshingTableTestCase {
                 new QueryTableTest.TableComparator(
                         queryTable.sort(sortColumns).lastBy("Sym").sort("Sym"),
                         queryTable.by(AggCombo(AggSortedLast(sortColumns, "intCol", "doubleCol", "Indices")),
-                                        new SourceColumn("Sym"))
+                                new SourceColumn("Sym"))
                                 .sort("Sym"))
         };
         for (int step = 0; step < 100; step++) {

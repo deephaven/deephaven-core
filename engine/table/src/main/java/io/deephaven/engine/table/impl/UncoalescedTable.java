@@ -366,7 +366,7 @@ public abstract class UncoalescedTable extends BaseTable implements TableWithDef
     @Override
     @ConcurrentMethod
     public Table applyToAllBy(String formulaColumn, String columnParamName,
-                              Collection<? extends Selectable> groupByColumns) {
+            Collection<? extends Selectable> groupByColumns) {
         return coalesce().applyToAllBy(formulaColumn, columnParamName, groupByColumns);
     }
 

@@ -54,9 +54,9 @@ public class TreeSnapshotQuery<CLIENT_TYPE extends TreeTableClientTableManager.C
      * @param includedOps The set of operations the client has performed since the last TSQ.
      */
     public TreeSnapshotQuery(int baseId, Map<Object, TableDetails> tablesByKey,
-                             long firstRow, long lastRow, BitSet columns,
-                             @NotNull WhereFilter[] filters, @NotNull List<SortDirective> sorts,
-                             CLIENT_TYPE client, EnumSet<Operation> includedOps) {
+            long firstRow, long lastRow, BitSet columns,
+            @NotNull WhereFilter[] filters, @NotNull List<SortDirective> sorts,
+            CLIENT_TYPE client, EnumSet<Operation> includedOps) {
         this.client = client;
         Assert.leq(firstRow, "firstRow", lastRow, "lastRow");
         Assert.leq(lastRow - firstRow, "lastRow - firstRow", Integer.MAX_VALUE, "Integer.MAX_VALUE");

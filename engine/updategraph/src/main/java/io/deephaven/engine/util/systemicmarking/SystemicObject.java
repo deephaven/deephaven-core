@@ -8,8 +8,7 @@ import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 public interface SystemicObject {
 
     /**
-     * Returns true if this is a systemically important object (see
-     * {@link SystemicObjectTracker}).
+     * Returns true if this is a systemically important object (see {@link SystemicObjectTracker}).
      *
      * @return true if this is a systemically important object, false otherwise.
      */

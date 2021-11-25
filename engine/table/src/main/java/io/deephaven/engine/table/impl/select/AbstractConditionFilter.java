@@ -124,9 +124,11 @@ public abstract class AbstractConditionFilter extends WhereFilterImpl {
 
             possibleVariables.putAll(timeConversionResult.getNewVariables());
 
-            final QueryLanguageParser.Result result = new QueryLanguageParser(timeConversionResult.getConvertedFormula(),
-                    QueryLibrary.getPackageImports(), QueryLibrary.getClassImports(), QueryLibrary.getStaticImports(),
-                    possibleVariables, possibleVariableParameterizedTypes, unboxArguments).getResult();
+            final QueryLanguageParser.Result result =
+                    new QueryLanguageParser(timeConversionResult.getConvertedFormula(),
+                            QueryLibrary.getPackageImports(), QueryLibrary.getClassImports(),
+                            QueryLibrary.getStaticImports(),
+                            possibleVariables, possibleVariableParameterizedTypes, unboxArguments).getResult();
 
             log.debug("Expression (after language conversion) : " + result.getConvertedExpression());
 

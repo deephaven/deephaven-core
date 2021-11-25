@@ -364,7 +364,8 @@ public class SortHelpers {
             }
 
             final ColumnSource sortedRowSetSource = idMapping.getColumnSource(SORTED_INDEX_COLUMN_NAME);
-            try (final ColumnSource.FillContext sortedIndexContext = sortedRowSetSource.makeFillContext(symbolEntries)) {
+            try (final ColumnSource.FillContext sortedIndexContext =
+                    sortedRowSetSource.makeFillContext(symbolEntries)) {
                 sortedRowSetSource.fillChunk(sortedIndexContext, mappedIndex, idMapping.getRowSet());
             }
 
@@ -487,7 +488,7 @@ public class SortHelpers {
             RowSequence rowSequence, boolean usePrev, int chunkSize) {
         try (final WritableChunk<Values> values = makeAndFillValues(usePrev, rowSequence, columnSource)) {
             final long[] rowKeysArray = new long[chunkSize];
-                final WritableLongChunk<RowKeys> rowKeys = WritableLongChunk.writableChunkWrap(rowKeysArray);
+            final WritableLongChunk<RowKeys> rowKeys = WritableLongChunk.writableChunkWrap(rowKeysArray);
             rowSequence.fillRowKeyChunk(rowKeys);
 
             try (final LongSortKernel<Values, RowKeys> sortContext =

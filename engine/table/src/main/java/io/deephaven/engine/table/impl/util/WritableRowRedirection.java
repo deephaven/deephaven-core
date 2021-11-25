@@ -96,8 +96,8 @@ public interface WritableRowRedirection extends RowRedirection {
     ChunkSink.FillFromContext DEFAULT_FILL_FROM_INSTANCE = new ChunkSink.FillFromContext() {};
 
     /**
-     * Make a {@link ChunkSink.FillFromContext } for this WritableRowRedirection. The default implementation
-     * supplies {@link #DEFAULT_FILL_FROM_INSTANCE}, suitable for use with the default implementation of
+     * Make a {@link ChunkSink.FillFromContext } for this WritableRowRedirection. The default implementation supplies
+     * {@link #DEFAULT_FILL_FROM_INSTANCE}, suitable for use with the default implementation of
      * {@link #fillFromChunk(ChunkSink.FillFromContext , Chunk, RowSequence)}.
      *
      * @param chunkCapacity The maximum number of mappings that will be supplied in one operation

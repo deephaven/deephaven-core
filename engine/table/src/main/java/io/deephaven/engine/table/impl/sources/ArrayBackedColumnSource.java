@@ -467,8 +467,8 @@ public abstract class ArrayBackedColumnSource<T>
      * @return a ColumnSource with the supplied data.
      */
     public static <T> WritableColumnSource<T> getMemoryColumnSourceUntyped(@NotNull final Object dataArray,
-                                                                           @NotNull final Class<T> dataType,
-                                                                           @Nullable final Class<?> componentType) {
+            @NotNull final Class<T> dataType,
+            @Nullable final Class<?> componentType) {
         final WritableColumnSource<?> result;
         if (dataArray instanceof boolean[]) {
             result = getMemoryColumnSource(ArrayTypeUtils.getBoxedArray((boolean[]) dataArray), Boolean.class, null);

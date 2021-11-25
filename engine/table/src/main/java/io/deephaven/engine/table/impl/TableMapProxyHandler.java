@@ -226,7 +226,8 @@ public class TableMapProxyHandler extends LivenessArtifact implements Invocation
                     final Map<Object, Object> joinKeyToTableKey = new HashMap<>();
 
                     final String[] leftKeyNames = keyColumns.stream().map(MatchPair::leftColumn).toArray(String[]::new);
-                    final String[] rightKeyNames = keyColumns.stream().map(MatchPair::rightColumn).toArray(String[]::new);
+                    final String[] rightKeyNames =
+                            keyColumns.stream().map(MatchPair::rightColumn).toArray(String[]::new);
 
                     for (Object tableKey : underlyingTableMap.getKeySet()) {
                         final Table leftTable = underlyingTableMap.get(tableKey);

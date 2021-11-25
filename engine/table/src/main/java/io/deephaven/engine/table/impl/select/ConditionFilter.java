@@ -318,8 +318,8 @@ public class ConditionFilter extends AbstractConditionFilter {
 
         @Override
         public WritableRowSet filter(final RowSet selection, final RowSet fullSet, final Table table,
-                                     final boolean usePrev,
-                                     String formula, final QueryScopeParam... params) {
+                final boolean usePrev,
+                String formula, final QueryScopeParam... params) {
             try (final FilterKernel.Context context = filterKernel.getContext(chunkSize);
                     final RowSequence.Iterator rsIterator = selection.getRowSequenceIterator()) {
                 final ChunkGetter[] chunkGetters = new ChunkGetter[columnNames.length];
@@ -420,7 +420,7 @@ public class ConditionFilter extends AbstractConditionFilter {
         }
         final StringBuilder classBody = new StringBuilder();
         classBody.append(CodeGenerator.create(QueryLibrary.getImportStrings().toArray()).build()).append(
-                        "\n\npublic class $CLASSNAME$ implements ")
+                "\n\npublic class $CLASSNAME$ implements ")
                 .append(FilterKernel.class.getCanonicalName()).append("<FilterKernel.Context>{\n");
         classBody.append("\n").append(timeConversionResult.getInstanceVariablesString()).append("\n");
         final Indenter indenter = new Indenter();

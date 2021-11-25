@@ -217,8 +217,8 @@ public class ColumnRenderersBuilder {
     }
 
     /**
-     * Helper method for validating, building, and {@link Table#setColumnRenderers(String) applying} column renderers
-     * to a {@link Table}.
+     * Helper method for validating, building, and {@link Table#setColumnRenderers(String) applying} column renderers to
+     * a {@link Table}.
      *
      * @param table The source {@link Table}
      * @return {@code table.setColumnRenderers(buildDirective())}, or {@code table} if {@link #isEmpty()}

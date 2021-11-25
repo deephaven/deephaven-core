@@ -55,7 +55,8 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         TstUtils.validate(en);
 
         final QueryTable jt = (QueryTable) lTable.join(rTable, numRightBitsToReserve);
-        final io.deephaven.engine.table.impl.SimpleListener listener = new io.deephaven.engine.table.impl.SimpleListener(jt);
+        final io.deephaven.engine.table.impl.SimpleListener listener =
+                new io.deephaven.engine.table.impl.SimpleListener(jt);
         jt.listenForUpdates(listener);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
@@ -90,7 +91,8 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         TstUtils.validate(en);
 
         final QueryTable jt = (QueryTable) lTable.join(rTable, numRightBitsToReserve);
-        final io.deephaven.engine.table.impl.SimpleListener listener = new io.deephaven.engine.table.impl.SimpleListener(jt);
+        final io.deephaven.engine.table.impl.SimpleListener listener =
+                new io.deephaven.engine.table.impl.SimpleListener(jt);
         jt.listenForUpdates(listener);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
@@ -128,7 +130,8 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         TstUtils.validate(en);
 
         final QueryTable jt = (QueryTable) lTable.join(rTable, numRightBitsToReserve);
-        final io.deephaven.engine.table.impl.SimpleListener listener = new io.deephaven.engine.table.impl.SimpleListener(jt);
+        final io.deephaven.engine.table.impl.SimpleListener listener =
+                new io.deephaven.engine.table.impl.SimpleListener(jt);
         jt.listenForUpdates(listener);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {

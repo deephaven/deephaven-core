@@ -14,7 +14,7 @@ public class UnboxedDateTimeTreeMapSource extends UnboxedDateTimeColumnSource im
     private final TreeMapSource<Long> treeMapSource;
 
     public UnboxedDateTimeTreeMapSource(ColumnSource<DateTime> alternateColumnSource,
-                                        TreeMapSource<Long> treeMapSource) {
+            TreeMapSource<Long> treeMapSource) {
         super(alternateColumnSource);
         this.treeMapSource = treeMapSource;
     }

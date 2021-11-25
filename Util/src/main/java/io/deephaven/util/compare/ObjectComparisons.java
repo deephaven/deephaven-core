@@ -14,8 +14,8 @@ public class ObjectComparisons {
         if (rhs == null) {
             return 1;
         }
-        //noinspection unchecked
-        return ((Comparable)lhs).compareTo(rhs);
+        // noinspection unchecked
+        return ((Comparable) lhs).compareTo(rhs);
     }
 
     public static boolean eq(Object lhs, Object rhs) {

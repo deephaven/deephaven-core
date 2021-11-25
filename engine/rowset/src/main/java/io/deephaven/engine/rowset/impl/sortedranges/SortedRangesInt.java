@@ -19,7 +19,8 @@ public final class SortedRangesInt extends SortedRangesPacked<int[]> {
         return new SortedRangesInt(initialCapacity, offset);
     }
 
-    private static ThreadLocal<TIntObjectHashMap<int[]>> ARRAY_POOL = ThreadLocal.withInitial(() -> new TIntObjectHashMap<>(16));
+    private static ThreadLocal<TIntObjectHashMap<int[]>> ARRAY_POOL =
+            ThreadLocal.withInitial(() -> new TIntObjectHashMap<>(16));
 
     @Override
     protected int[] makeArray(final int capacity) {
@@ -57,7 +58,8 @@ public final class SortedRangesInt extends SortedRangesPacked<int[]> {
         return Integer.MAX_VALUE;
     }
 
-    @Override protected int capacityForLastIndex(final int lastIndex, final boolean isDense) {
+    @Override
+    protected int capacityForLastIndex(final int lastIndex, final boolean isDense) {
         return intArrayCapacityForLastIndex(lastIndex, isDense);
     }
 
@@ -84,6 +86,7 @@ public final class SortedRangesInt extends SortedRangesPacked<int[]> {
     protected long packedGet(final int i) {
         return data[i];
     }
+
     @Override
     protected void packedSet(final int i, final long v) {
         data[i] = (int) v;
@@ -102,7 +105,7 @@ public final class SortedRangesInt extends SortedRangesPacked<int[]> {
     }
 
     private static int[] fromLongArray(final long[] longArray, final int count,
-                                       final long newOffset, final int capacity) {
+            final long newOffset, final int capacity) {
         final int[] intArray = new int[capacity];
         for (int i = 0; i < count; ++i) {
             final long v = longArray[i];
@@ -122,7 +125,7 @@ public final class SortedRangesInt extends SortedRangesPacked<int[]> {
         if (initialShortCapacity == 0) {
             return null;
         }
-        return new SortedRangesShort(first,this, initialShortCapacity);
+        return new SortedRangesShort(first, this, initialShortCapacity);
     }
 
     @Override
@@ -158,7 +161,7 @@ public final class SortedRangesInt extends SortedRangesPacked<int[]> {
     @Override
     protected void rebaseAndShift(
             final int[] dataOut, final long newOffset, final long shiftOffset,
-            final  SortedRangesTyped<int[]> sar, final long first) {
+            final SortedRangesTyped<int[]> sar, final long first) {
         final long newUnpackedFirst = first + shiftOffset;
         dataOut[0] = (int) (newUnpackedFirst - newOffset);
         final long netOffset = offset + shiftOffset - newOffset;

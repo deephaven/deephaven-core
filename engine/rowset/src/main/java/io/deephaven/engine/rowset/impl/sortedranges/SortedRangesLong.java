@@ -29,11 +29,13 @@ public final class SortedRangesLong extends SortedRangesTyped<long[]> {
         return 8;
     }
 
-    @Override protected int capacityForLastIndex(final int lastIndex, final boolean isDense) {
+    @Override
+    protected int capacityForLastIndex(final int lastIndex, final boolean isDense) {
         return longArrayCapacityForLastIndex(lastIndex, isDense);
     }
 
-    private static ThreadLocal<TIntObjectHashMap<long[]>> ARRAY_POOL = ThreadLocal.withInitial(() -> new TIntObjectHashMap<>(16));
+    private static ThreadLocal<TIntObjectHashMap<long[]>> ARRAY_POOL =
+            ThreadLocal.withInitial(() -> new TIntObjectHashMap<>(16));
 
     @Override
     protected long[] makeArray(final int capacity) {
@@ -131,14 +133,16 @@ public final class SortedRangesLong extends SortedRangesTyped<long[]> {
             count = 1;
             cardinality = 1;
             packedSet(0, start);
-            if (DEBUG) validate(start, end);
+            if (DEBUG)
+                validate(start, end);
             return;
         }
         count = 2;
         cardinality = end - start + 1;
         packedSet(0, start);
         packedSet(1, -end);
-        if (DEBUG) validate(start, end);
+        if (DEBUG)
+            validate(start, end);
     }
 
     @Override
@@ -195,7 +199,8 @@ public final class SortedRangesLong extends SortedRangesTyped<long[]> {
         if (isNew) {
             return new SortedRangesLong(targetData, count, cardinality);
         }
-        if (DEBUG) validate();
+        if (DEBUG)
+            validate();
         return this;
     }
 

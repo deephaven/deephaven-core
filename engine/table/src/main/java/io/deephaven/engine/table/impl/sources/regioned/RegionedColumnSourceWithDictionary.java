@@ -70,7 +70,8 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
 
         @Override
         public long getLong(final long elementIndex) {
-            return (elementIndex == RowSequence.NULL_ROW_KEY ? getNullRegion() : lookupRegion(elementIndex)).getLong(elementIndex);
+            return (elementIndex == RowSequence.NULL_ROW_KEY ? getNullRegion() : lookupRegion(elementIndex))
+                    .getLong(elementIndex);
         }
 
         @Override
@@ -301,7 +302,7 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
                             .getColumnSource(SymbolTableSource.SYMBOL_COLUMN_NAME);
 
             try (final RowSet.SearchIterator keysToVisit = upstream.added().searchIterator();
-                 final RowSequence.Iterator knownKeys = symbolTable.getRowSet().getRowSequenceIterator()) {
+                    final RowSequence.Iterator knownKeys = symbolTable.getRowSet().getRowSequenceIterator()) {
                 keysToVisit.nextLong(); // Safe, since sourceIndex must be non-empty
                 do {
                     dictionaryColumn.lookupRegion(keysToVisit.currentValue()).gatherDictionaryValuesIndex(keysToVisit,

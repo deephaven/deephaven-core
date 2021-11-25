@@ -58,7 +58,7 @@ public abstract class ClockFilter extends WhereFilterLivenessArtifactImpl implem
 
     @Override
     public final WritableRowSet filter(@NotNull final RowSet selection, @NotNull final RowSet fullSet,
-                                       @NotNull final Table table, boolean usePrev) {
+            @NotNull final Table table, boolean usePrev) {
         if (usePrev) {
             throw new PreviousFilteringNotSupported();
         }
@@ -83,7 +83,7 @@ public abstract class ClockFilter extends WhereFilterLivenessArtifactImpl implem
 
     @Nullable
     protected abstract WritableRowSet initializeAndGetInitialIndex(@NotNull final RowSet selection,
-                                                                   @NotNull final RowSet fullSet, @NotNull final Table table);
+            @NotNull final RowSet fullSet, @NotNull final Table table);
 
     @Override
     public final boolean isSimpleFilter() {
@@ -144,8 +144,8 @@ public abstract class ClockFilter extends WhereFilterLivenessArtifactImpl implem
 
         @Nullable
         RowSetBuilderRandom consumeKeysAndAppendAdded(final ColumnSource<Long> nanosColumnSource,
-                                                      final long nowNanos,
-                                                      @Nullable RowSetBuilderRandom addedBuilder) {
+                final long nowNanos,
+                @Nullable RowSetBuilderRandom addedBuilder) {
             final long firstKeyAdded = nextKey;
             long lastKeyAdded = -1L;
             while (nextKey <= lastKey

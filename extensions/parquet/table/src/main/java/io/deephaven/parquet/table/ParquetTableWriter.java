@@ -937,11 +937,11 @@ public class ParquetTableWriter {
         tableToGroup.setAttribute(Table.STREAM_TABLE_ATTRIBUTE, true); // We want persistent first/last-by
         final Table grouped = tableToGroup
                 .view(List.of(Selectable.of(ColumnName.of(GROUPING_KEY), ColumnName.of(columnName)),
-                        Selectable.of(ColumnName.of(BEGIN_POS), RawString.of("ii")),  // Range start, inclusive
+                        Selectable.of(ColumnName.of(BEGIN_POS), RawString.of("ii")), // Range start, inclusive
                         Selectable.of(ColumnName.of(END_POS), RawString.of("ii+1")))) // Range end, exclusive
                 .aggBy(List.of(First.of(ColumnName.of(BEGIN_POS)), Last.of(ColumnName.of(END_POS))),
                         List.of(ColumnName.of(GROUPING_KEY)));
-        final Table invalid = grouped.where(BEGIN_POS + " != 0 && " + BEGIN_POS + " != "+ END_POS + "_[ii-1]");
+        final Table invalid = grouped.where(BEGIN_POS + " != 0 && " + BEGIN_POS + " != " + END_POS + "_[ii-1]");
         if (!invalid.isEmpty()) {
             throw new UncheckedDeephavenException(
                     "Range grouping is not possible for column because some indices are not contiguous");

@@ -7,7 +7,8 @@ public class LongCounterLog2HistogramMetric implements LongMetric {
         id = MetricsManager.instance.registerLongCounterLog2HistogramMetric(name);
     }
 
-    @Override public void sample(final long v) {
+    @Override
+    public void sample(final long v) {
         MetricsManager.instance.sampleLongCounterLog2HistogramCount(id, v);
     }
 }

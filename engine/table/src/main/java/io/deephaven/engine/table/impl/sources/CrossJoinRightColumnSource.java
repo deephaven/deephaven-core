@@ -648,7 +648,7 @@ public class CrossJoinRightColumnSource<T> extends AbstractColumnSource<T> imple
         }
 
         private void doOrderedFillAndPermute(@NotNull final ColumnSource<?> innerSource, final boolean usePrev,
-                                             @NotNull final WritableChunk<? super Values> destination) {
+                @NotNull final WritableChunk<? super Values> destination) {
             shareable.ensureSortedFillContextInitialized();
 
             innerOrderedValues.setSize(shareable.uniqueKeyCount);

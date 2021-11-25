@@ -19,7 +19,8 @@ public final class SortedRangesShort extends SortedRangesPacked<short[]> {
         return new SortedRangesShort(initialCapacity, offset);
     }
 
-    private static ThreadLocal<TIntObjectHashMap<short[]>> ARRAY_POOL = ThreadLocal.withInitial(() -> new TIntObjectHashMap<>(16));
+    private static ThreadLocal<TIntObjectHashMap<short[]>> ARRAY_POOL =
+            ThreadLocal.withInitial(() -> new TIntObjectHashMap<>(16));
 
     @Override
     protected short[] makeArray(final int capacity) {
@@ -57,7 +58,8 @@ public final class SortedRangesShort extends SortedRangesPacked<short[]> {
         return Short.MAX_VALUE;
     }
 
-    @Override protected int capacityForLastIndex(final int lastIndex, final boolean isDense) {
+    @Override
+    protected int capacityForLastIndex(final int lastIndex, final boolean isDense) {
         return shortArrayCapacityForLastIndex(lastIndex);
     }
 
@@ -84,6 +86,7 @@ public final class SortedRangesShort extends SortedRangesPacked<short[]> {
     protected long packedGet(final int i) {
         return data[i];
     }
+
     @Override
     protected void packedSet(final int i, final long v) {
         data[i] = (short) v;
@@ -152,20 +155,22 @@ public final class SortedRangesShort extends SortedRangesPacked<short[]> {
     }
 
     @Override
-    protected SortedRangesShort makeMyType(final short[] data, final long offset, final int count, final long cardinality) {
+    protected SortedRangesShort makeMyType(final short[] data, final long offset, final int count,
+            final long cardinality) {
         return new SortedRangesShort(data, offset, count, cardinality);
     }
 
     @Override
     protected void rebaseAndShift(
             final short[] dataOut, final long newOffset, final long shiftOffset,
-            final  SortedRangesTyped<short[]> sar, final long first) {
+            final SortedRangesTyped<short[]> sar, final long first) {
         final long newUnpackedFirst = first + shiftOffset;
         dataOut[0] = (short) (newUnpackedFirst - newOffset);
         final long netOffset = offset + shiftOffset - newOffset;
         for (int i = 1; i < sar.count; ++i) {
             final long v = sar.data[i];
-            dataOut[i] = (short) (v < 0 ? v - netOffset : v + netOffset);        }
+            dataOut[i] = (short) (v < 0 ? v - netOffset : v + netOffset);
+        }
     }
 
     @Override

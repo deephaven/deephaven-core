@@ -12,8 +12,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.List;
 
 /**
- * An {@link AggregationContextFactory} used in the implementation of
- * {@link Table#partitionBy}.
+ * An {@link AggregationContextFactory} used in the implementation of {@link Table#partitionBy}.
  */
 public class PartitionByAggregationFactory implements AggregationContextFactory {
 
@@ -24,8 +23,8 @@ public class PartitionByAggregationFactory implements AggregationContextFactory 
     private PartitionByChunkedOperator operator;
 
     private PartitionByAggregationFactory(final boolean dropKeys,
-                                          @NotNull final PartitionByChunkedOperator.AttributeCopier attributeCopier,
-                                          @NotNull final List<Object> keysToPrepopulate) {
+            @NotNull final PartitionByChunkedOperator.AttributeCopier attributeCopier,
+            @NotNull final List<Object> keysToPrepopulate) {
         this.dropKeys = dropKeys;
         this.attributeCopier = attributeCopier;
         this.keysToPrepopulate = keysToPrepopulate;

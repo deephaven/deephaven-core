@@ -23,8 +23,7 @@ import java.util.stream.Collectors;
 import static io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource.BLOCK_SIZE;
 
 /**
- * An {@link IterativeChunkedAggregationOperator} used in the implementation of
- * {@link Table#groupBy}.
+ * An {@link IterativeChunkedAggregationOperator} used in the implementation of {@link Table#groupBy}.
  */
 public final class GroupByChunkedOperator implements IterativeChunkedAggregationOperator {
 
@@ -41,7 +40,7 @@ public final class GroupByChunkedOperator implements IterativeChunkedAggregation
     private boolean someKeyHasModifies;
 
     GroupByChunkedOperator(@NotNull final QueryTable inputTable, final boolean registeredWithHelper,
-                           @NotNull final MatchPair... resultColumnPairs) {
+            @NotNull final MatchPair... resultColumnPairs) {
         this.inputTable = inputTable;
         this.registeredWithHelper = registeredWithHelper;
         live = inputTable.isRefreshing();
@@ -326,7 +325,7 @@ public final class GroupByChunkedOperator implements IterativeChunkedAggregation
             return;
         }
         try (final ChunkSource.GetContext indicesGetContext = rowSets.makeGetContext(BLOCK_SIZE);
-             final RowSequence.Iterator newDestinationsIterator = newDestinations.getRowSequenceIterator()) {
+                final RowSequence.Iterator newDestinationsIterator = newDestinations.getRowSequenceIterator()) {
             while (newDestinationsIterator.hasMore()) {
                 final long nextDestination = newDestinationsIterator.peekNextKey();
                 final long nextBlockEnd = (nextDestination / BLOCK_SIZE) * BLOCK_SIZE + BLOCK_SIZE - 1;

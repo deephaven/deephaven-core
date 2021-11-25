@@ -27,14 +27,14 @@ public class ShiftObliviousUpdateCoalescer {
      * them before passing them if they are shared.
      */
     public ShiftObliviousUpdateCoalescer(final TrackingWritableRowSet added, final TrackingWritableRowSet removed,
-                                         final TrackingWritableRowSet modified) {
+            final TrackingWritableRowSet modified) {
         this.added = added;
         this.removed = removed;
         this.modified = modified;
     }
 
     public void update(final RowSet addedOnUpdate, final RowSet removedOnUpdate,
-                       final RowSet modifiedOnUpdate) {
+            final RowSet modifiedOnUpdate) {
         // Note: extract removes matching ranges from the source rowSet
         try (final RowSet addedBack = this.removed.extract(addedOnUpdate);
                 final RowSet actuallyAdded = addedOnUpdate.minus(addedBack)) {

@@ -10,8 +10,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * The builder class for use in assembling layout hints suitable for use with
- * {@link #applyToTable(Table)} or {@link io.deephaven.engine.table.Table#setLayoutHints(String)}.
+ * The builder class for use in assembling layout hints suitable for use with {@link #applyToTable(Table)} or
+ * {@link io.deephaven.engine.table.Table#setLayoutHints(String)}.
  */
 @ScriptApi
 public class LayoutHintBuilder {
@@ -435,8 +435,7 @@ public class LayoutHintBuilder {
     // endregion
 
     /**
-     * Create an appropriate parameter string suitable for use with
-     * {@link Table#setLayoutHints(String)}.
+     * Create an appropriate parameter string suitable for use with {@link Table#setLayoutHints(String)}.
      *
      * @return this LayoutHintBuilder as a string
      */

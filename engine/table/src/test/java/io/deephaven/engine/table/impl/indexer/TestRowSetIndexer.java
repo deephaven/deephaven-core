@@ -157,7 +157,8 @@ public class TestRowSetIndexer extends RefreshingTableTestCase {
             TableTools.showWithIndex(queryTable);
         }
         for (numSteps.setValue(0); numSteps.intValue() < maxSteps; numSteps.increment()) {
-            RefreshingTableTestCase.simulateShiftAwareStep("step == " + numSteps.intValue(), size, random, queryTable, columnInfo, en);
+            RefreshingTableTestCase.simulateShiftAwareStep("step == " + numSteps.intValue(), size, random, queryTable,
+                    columnInfo, en);
         }
 
         // we don't need them after this test is done
@@ -252,7 +253,8 @@ public class TestRowSetIndexer extends RefreshingTableTestCase {
         TestCase.assertEquals(0, ((CountingTable.MethodCounter) symColumnSource).getMethodCount("get"));
         TestCase.assertEquals(0, ((CountingTable.MethodCounter) intColumnSource).getMethodCount("get"));
         TestCase.assertEquals(0, ((CountingTable.MethodCounter) intColumnSource).getMethodCount("getInt"));
-        TestCase.assertEquals(countingTable.size(), ((CountingTable.MethodCounter) doubleColumnSource).getMethodCount("get"));
+        TestCase.assertEquals(countingTable.size(),
+                ((CountingTable.MethodCounter) doubleColumnSource).getMethodCount("get"));
         TestCase.assertEquals(0, ((CountingTable.MethodCounter) doubleColumnSource).getMethodCount("getDouble"));
         GroupingValidator.validateGrouping(new String[] {"intCol", "Sym", "doubleCol"}, countingTable.getRowSet(),
                 countingTable, "intCol+sym+doubleCol", intSymDoubleGrouping);
@@ -266,7 +268,8 @@ public class TestRowSetIndexer extends RefreshingTableTestCase {
         TestCase.assertEquals(0, ((CountingTable.MethodCounter) sym2ColumnSource).getMethodCount("get"));
         TestCase.assertEquals(0, ((CountingTable.MethodCounter) intColumnSource).getMethodCount("get"));
         TestCase.assertEquals(0, ((CountingTable.MethodCounter) intColumnSource).getMethodCount("getInt"));
-        TestCase.assertEquals(countingTable.size(), ((CountingTable.MethodCounter) doubleColumnSource).getMethodCount("get"));
+        TestCase.assertEquals(countingTable.size(),
+                ((CountingTable.MethodCounter) doubleColumnSource).getMethodCount("get"));
         TestCase.assertEquals(0, ((CountingTable.MethodCounter) doubleColumnSource).getMethodCount("getDouble"));
         GroupingValidator.validateGrouping(new String[] {"intCol", "Sym", "Sym2", "doubleCol"},
                 countingTable.getRowSet(), countingTable, "intCol+sym+sym2+doubleCol", intSymSym2DoubleGrouping);

@@ -47,7 +47,7 @@ public abstract class DeephavenNestedPartitionLayout<TLK extends FileTableLocati
                 columnPartitionKey, internalPartitionValueFilter) {
             @Override
             protected ParquetTableLocationKey makeKey(@NotNull Path tableLeafDirectory,
-                                                      @NotNull Map<String, Comparable<?>> partitions) {
+                    @NotNull Map<String, Comparable<?>> partitions) {
                 return new ParquetTableLocationKey(tableLeafDirectory.resolve(PARQUET_FILE_NAME).toFile(), 0,
                         partitions);
             }

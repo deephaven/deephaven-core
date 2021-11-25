@@ -14,8 +14,8 @@ public interface StreamPublisher {
      * will be used when sufficient data is accumulated or on {@link #flush()}.
      *
      * <p>
-     * {@code consumer} must typically be primed to expect the same
-     * {@link io.deephaven.engine.chunk.ChunkType chunk types} that this produces, in the same order.
+     * {@code consumer} must typically be primed to expect the same {@link io.deephaven.engine.chunk.ChunkType chunk
+     * types} that this produces, in the same order.
      *
      * @param consumer The consumer
      * @throws IllegalStateException If a consumer has already been registered for this producer

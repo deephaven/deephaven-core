@@ -25,8 +25,7 @@ import java.util.Map;
 /**
  * A TimeTable adds rows at a fixed interval with a single column named "Timestamp".
  *
- * To create a TimeTable, you should use the {@link TableTools#timeTable} family of
- * methods.
+ * To create a TimeTable, you should use the {@link TableTools#timeTable} family of methods.
  */
 public class TimeTable extends QueryTable implements Runnable {
     private static final Logger log = LoggerFactory.getLogger(TimeTable.class);

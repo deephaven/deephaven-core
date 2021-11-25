@@ -147,7 +147,8 @@ public class SortedRangesRowSequenceTest extends RowSequenceTestBase {
                 while (rsIt.hasMore()) {
                     final String m2 = m + " && accum==" + accum;
                     final RowSequence rs = rsIt.getNextRowSequenceWithLength(step);
-                    final RowSet expected = new TrackingWritableRowSetImpl(sr.ixSubindexByPosOnNew(accum, accum + step));
+                    final RowSet expected =
+                            new TrackingWritableRowSetImpl(sr.ixSubindexByPosOnNew(accum, accum + step));
                     final RowSet fromOk = rs.asRowSet();
                     assertEquals(m2, expected.size(), fromOk.size());
                     assertTrue(m2, expected.subsetOf(fromOk));

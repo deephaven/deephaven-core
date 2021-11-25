@@ -1130,8 +1130,9 @@ public abstract class Container {
      * @return Relative position of the value in the sorted set of elements in this container, in the range [0 ..
      *         cardinality - 1]. If not present, (-(insertion point) - 1) similar to Array.binarySearch.
      *         <p>
-     *         For values of x that {@link io.deephaven.engine.rowset.impl.rsp.container.Container#contains} returns true,
-     *         this method returns the same value as {@link io.deephaven.engine.rowset.impl.rsp.container.Container#rank}.
+     *         For values of x that {@link io.deephaven.engine.rowset.impl.rsp.container.Container#contains} returns
+     *         true, this method returns the same value as
+     *         {@link io.deephaven.engine.rowset.impl.rsp.container.Container#rank}.
      */
     public abstract int find(short x);
 

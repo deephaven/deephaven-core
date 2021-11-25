@@ -20,7 +20,7 @@ import java.util.function.BiFunction;
 public class TestLongLongMap {
     private static final Factory troveFactory = new Factory("Trove", TLongLongHashMap::new);
 
-    @Parameterized.Parameters(name="map={0}, cap={1}, load={2}")
+    @Parameterized.Parameters(name = "map={0}, cap={1}, load={2}")
     public static Iterable<Object[]> data() {
         List<Object[]> result = new ArrayList<>();
         final Factory[] factories = {
@@ -34,7 +34,7 @@ public class TestLongLongMap {
         for (Factory factory : factories) {
             for (int ic : initialCapacities) {
                 for (float lf : loadFactors) {
-                    result.add(new Object[]{factory, ic, lf});
+                    result.add(new Object[] {factory, ic, lf});
                 }
             }
         }
@@ -86,7 +86,7 @@ public class TestLongLongMap {
         if (factory == troveFactory) {
             return;
         }
-        TNullableLongLongMap map = (TNullableLongLongMap)factory.create(initialCapacity, loadFactor);
+        TNullableLongLongMap map = (TNullableLongLongMap) factory.create(initialCapacity, loadFactor);
         final long noEntryValue = map.getNoEntryValue();
         map.put(0, 1);
         map.put(2, 3);
@@ -175,7 +175,7 @@ public class TestLongLongMap {
         }
         final int numIterations = 10;
         final int sizeAtWhichToClear = 10000;
-        TNullableLongLongMap map = (TNullableLongLongMap)factory.create(initialCapacity, loadFactor);
+        TNullableLongLongMap map = (TNullableLongLongMap) factory.create(initialCapacity, loadFactor);
         for (int iteration = 0; iteration < numIterations; ++iteration) {
             TestCase.assertEquals(map.size(), 0);
             for (long ii = 0; ii < sizeAtWhichToClear; ++ii) {
@@ -201,7 +201,7 @@ public class TestLongLongMap {
         Map<Long, Long> reference = new HashMap<>(initialCapacity, loadFactor);
         TLongLongMap test = factory.create(initialCapacity, loadFactor);
         Random rng = new Random(1283712890);
-        //populate(rng, 1000000, 10000, 0.75, reference, test);
+        // populate(rng, 1000000, 10000, 0.75, reference, test);
         populate(rng, 1000000, 10000, 0.75, reference, test);
 
         final long[] expectedKeys = new long[reference.size()];
@@ -315,9 +315,9 @@ public class TestLongLongMap {
         }
         final int size = 1000;
         final int iterations = 1000000;
-        final long randomMod = 1000000000;  // 1 billion
+        final long randomMod = 1000000000; // 1 billion
         // Use this interface because we want to access 'capacity'
-        TNullableLongLongMap map = (TNullableLongLongMap)factory.create(initialCapacity, loadFactor);
+        TNullableLongLongMap map = (TNullableLongLongMap) factory.create(initialCapacity, loadFactor);
         Random insertStream = new Random(67890);
         Random deleteStream = new Random(67890);
 
@@ -341,7 +341,7 @@ public class TestLongLongMap {
         // 2. Scale by the inverse of the load factor
         // 3. Scale by 2 (you might have gotten unlucky and gotten just to the threshold and then doubled)
         // 4. Fudge by scaling by 2 (you might have gotten unlucky and had just enough deleted items sitting in slots
-        final int expectedCapacityLimit = 2 * (int)(Math.max(size, initialCapacity) / loadFactor);
+        final int expectedCapacityLimit = 2 * (int) (Math.max(size, initialCapacity) / loadFactor);
         final int fudgedLimit = expectedCapacityLimit * 2;
         final int actualCapacity = map.capacity();
         if (actualCapacity > fudgedLimit) {
@@ -360,7 +360,7 @@ public class TestLongLongMap {
         if (factory == troveFactory) {
             return;
         }
-        TNullableLongLongMap nullableMap = (TNullableLongLongMap)map;
+        TNullableLongLongMap nullableMap = (TNullableLongLongMap) map;
         nullableMap.resetToNull();
         emptyMapHelper(map);
     }
@@ -398,7 +398,9 @@ public class TestLongLongMap {
         }
 
         @Override
-        public String toString() { return name; }
+        public String toString() {
+            return name;
+        }
 
         public TLongLongMap create(int initialCapacity, float loadFactor) {
             return constructor.apply(initialCapacity, loadFactor);
@@ -425,7 +427,7 @@ public class TestLongLongMap {
             final long[] keys = new long[size];
             final long[] values = new long[size];
             int nextIndex = 0;
-            for (TLongLongIterator it = map.iterator(); it.hasNext(); ) {
+            for (TLongLongIterator it = map.iterator(); it.hasNext();) {
                 it.advance();;
                 keys[nextIndex] = it.key();
                 values[nextIndex] = it.value();
@@ -456,7 +458,7 @@ public class TestLongLongMap {
     }
 
     private static void populate(Random rng, int numIterations, long randomRange, double putProbability,
-                                 Map<Long, Long> reference, TLongLongMap test) {
+            Map<Long, Long> reference, TLongLongMap test) {
         for (int ii = 0; ii < numIterations; ++ii) {
             final long nextKey = Math.abs(rng.nextLong()) % randomRange;
             final long nextValue = ii;

@@ -42,8 +42,7 @@ import static io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtil.plus
  * <ol>
  * <li>Update source {@code run()} invocations</li>
  * <li>{@link Table} {@link ShiftObliviousListener} notifications (see {@link ShiftObliviousInstrumentedListener})</li>
- * <li>{@link Table} {@link TableUpdateListener} notifications (see
- * {@link InstrumentedTableUpdateListener})</li>
+ * <li>{@link Table} {@link TableUpdateListener} notifications (see {@link InstrumentedTableUpdateListener})</li>
  * </ol>
  * (1)
  *
@@ -347,7 +346,7 @@ public class UpdatePerformanceTracker {
         }
 
         public final void onUpdateStart(final RowSet added, final RowSet removed, final RowSet modified,
-                                        final RowSetShiftData shifted) {
+                final RowSetShiftData shifted) {
             intervalAdded += added.size();
             intervalRemoved += removed.size();
             intervalModified += modified.size();

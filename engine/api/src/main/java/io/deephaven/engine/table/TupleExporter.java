@@ -26,7 +26,7 @@ public interface TupleExporter<TUPLE_TYPE> {
      * @param destinationIndexKey The destination rowSet key
      */
     <ELEMENT_TYPE> void exportElement(TUPLE_TYPE tuple, int elementIndex,
-                                      @NotNull WritableColumnSource<ELEMENT_TYPE> writableSource, long destinationIndexKey);
+            @NotNull WritableColumnSource<ELEMENT_TYPE> writableSource, long destinationIndexKey);
 
     /**
      * Export a single element from the tuple, identified by its element rowSet, to an Object
@@ -63,8 +63,8 @@ public interface TupleExporter<TUPLE_TYPE> {
 
     /**
      * <p>
-     * Export this tuple's element list as a key suitable for the {@link TableMap table maps} resulting
-     * from {@link Table#partitionBy}.
+     * Export this tuple's element list as a key suitable for the {@link TableMap table maps} resulting from
+     * {@link Table#partitionBy}.
      * <p>
      * For the empty tuple this is a unsupported.
      * <p>

@@ -81,8 +81,8 @@ public class FormulaAnalyzer {
     }
 
     public static QueryLanguageParser.Result getCompiledFormula(Map<String, ColumnDefinition<?>> availableColumns,
-                                                                DateTimeUtil.Result timeConversionResult,
-                                                                Map<String, Class<?>> otherVariables) throws Exception {
+            DateTimeUtil.Result timeConversionResult,
+            Map<String, Class<?>> otherVariables) throws Exception {
         final Map<String, Class<?>> possibleVariables = new HashMap<>();
         possibleVariables.put("i", int.class);
         possibleVariables.put("ii", long.class);

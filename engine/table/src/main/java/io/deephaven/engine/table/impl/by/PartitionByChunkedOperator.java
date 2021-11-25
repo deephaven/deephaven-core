@@ -30,8 +30,7 @@ import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
 /**
- * An {@link IterativeChunkedAggregationOperator} used in the implementation of
- * {@link Table#partitionBy}.
+ * An {@link IterativeChunkedAggregationOperator} used in the implementation of {@link Table#partitionBy}.
  */
 public final class PartitionByChunkedOperator implements IterativeChunkedAggregationOperator {
 
@@ -94,10 +93,10 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
      * @param keyColumnNames The key columns
      */
     PartitionByChunkedOperator(@NotNull final QueryTable unadjustedParentTable,
-                               @NotNull final QueryTable parentTable,
-                               @NotNull final AttributeCopier attributeCopier,
-                               @NotNull final List<Object> keysToPrepopulate,
-                               @NotNull final String... keyColumnNames) {
+            @NotNull final QueryTable parentTable,
+            @NotNull final AttributeCopier attributeCopier,
+            @NotNull final List<Object> keysToPrepopulate,
+            @NotNull final String... keyColumnNames) {
         this.parentTable = parentTable;
         this.attributeCopier = attributeCopier;
         this.keysToPrepopulate = keysToPrepopulate;

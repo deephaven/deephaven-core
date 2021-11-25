@@ -55,7 +55,7 @@ public class ComparableRangeFilter extends AbstractRangeFilter {
     }
 
     public static ChunkFilter makeComparableChunkFilter(Comparable lower, Comparable upper, boolean lowerInclusive,
-                                                        boolean upperInclusive) {
+            boolean upperInclusive) {
         if (lowerInclusive) {
             if (upperInclusive) {
                 return new InclusiveInclusiveComparableChunkFilter(lower, upper);

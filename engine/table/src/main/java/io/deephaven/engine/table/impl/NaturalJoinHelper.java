@@ -323,7 +323,8 @@ class NaturalJoinHelper {
                             @Override
                             public void onUpdate(final TableUpdate upstream) {
                                 checkRightTableSizeZeroKeys(leftTable, rightTable, exactMatch);
-                                leftTransformer.clearAndTransform(upstream.modifiedColumnSet(), result.modifiedColumnSet);
+                                leftTransformer.clearAndTransform(upstream.modifiedColumnSet(),
+                                        result.modifiedColumnSet);
                                 final TableUpdateImpl downstream = TableUpdateImpl.copy(upstream);
                                 downstream.modifiedColumnSet = result.modifiedColumnSet;
                                 result.notifyListeners(downstream);
@@ -610,7 +611,8 @@ class NaturalJoinHelper {
 
                     if (rightKeysChanged) {
                         previousToShift =
-                                getParent().getRowSet().getPrevRowSet().minus(modifiedPreShift).minus(upstream.removed());
+                                getParent().getRowSet().getPrevRowSet().minus(modifiedPreShift)
+                                        .minus(upstream.removed());
                     } else {
                         previousToShift = getParent().getRowSet().getPrevRowSet().minus(upstream.removed());
                     }
@@ -673,7 +675,7 @@ class NaturalJoinHelper {
         boolean changedRedirection = false;
 
         private ModifiedSlotUpdater(IncrementalNaturalJoinStateManager jsm, RowSetBuilderRandom modifiedLeftBuilder,
-                                    WritableRowRedirection rowRedirection, boolean exactMatch, boolean rightAddedColumnsChanged) {
+                WritableRowRedirection rowRedirection, boolean exactMatch, boolean rightAddedColumnsChanged) {
             this.jsm = jsm;
             this.modifiedLeftBuilder = modifiedLeftBuilder;
             this.rowRedirection = rowRedirection;

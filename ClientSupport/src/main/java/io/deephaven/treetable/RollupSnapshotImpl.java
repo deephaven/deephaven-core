@@ -162,7 +162,7 @@ class RollupSnapshotImpl<CLIENT_TYPE extends TreeTableClientTableManager.Client<
 
         final Table source = Require.neqNull(table.getSourceTable(), "Hierarchical source table");
         final RollupInfo info = getInfo();
-    return (HierarchicalTable) ((QueryTable) source.where(filters)).rollup(info.factory,
+        return (HierarchicalTable) ((QueryTable) source.where(filters)).rollup(info.factory,
                 info.getLeafType() == RollupInfo.LeafType.Constituent, info.getSelectColumns());
     }
 

@@ -436,7 +436,8 @@ public abstract class TableBase implements TableSpec {
     }
 
     @Override
-    public final AggregationTable aggBy(Collection<? extends Aggregation> aggregations, Collection<? extends Selectable> groupByColumns) {
+    public final AggregationTable aggBy(Collection<? extends Aggregation> aggregations,
+            Collection<? extends Selectable> groupByColumns) {
         return AggregationTable.builder().parent(this).addAllColumns(groupByColumns)
                 .addAllAggregations(aggregations).build();
     }

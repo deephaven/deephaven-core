@@ -106,7 +106,7 @@ public class SortedBy {
      */
     @NotNull
     public static Table sortedFirstBy(@NotNull Table input, @NotNull String sortColumnName,
-                                      @NotNull Collection<String> groupByColumns) {
+            @NotNull Collection<String> groupByColumns) {
         return input.aggBy(
                 AggSortedFirst(sortColumnName, resultColumns(input, groupByColumns)).aggregations(),
                 groupByColumns.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
@@ -187,7 +187,8 @@ public class SortedBy {
         return input.aggBy(
                 AggSortedLast(Arrays.asList(sortColumnNames), resultColumns(input, Arrays.asList(groupByColumns)))
                         .aggregations(),
-                groupByColumns);    }
+                groupByColumns);
+    }
 
     /**
      * Return an aggregated table with the greatest value of the sort column for each grouping key.
@@ -203,7 +204,8 @@ public class SortedBy {
             @NotNull Collection<String> groupByColumns) {
         return input.aggBy(
                 AggSortedLast(sortColumnName, resultColumns(input, groupByColumns)).aggregations(),
-                groupByColumns.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));    }
+                groupByColumns.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
+    }
 
     /**
      * Return an aggregated table with the greatest value of the sort columns for each grouping key.

@@ -142,7 +142,8 @@ public interface WritableRowSet extends RowSet {
      * <p>
      * It is an error to invoke this on an instance that is already tracking.
      *
-     * @return A {@link TrackingWritableRowSet} constructed from this WritableRowSet, or {@code this} if already tracking
+     * @return A {@link TrackingWritableRowSet} constructed from this WritableRowSet, or {@code this} if already
+     *         tracking
      */
     TrackingWritableRowSet toTracking();
 }

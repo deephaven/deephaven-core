@@ -63,7 +63,8 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
 
         this.setTable = setTable;
         final ColumnSource[] setColumns =
-                Arrays.stream(matchPairs).map(mp -> setTable.getColumnSource(mp.rightColumn())).toArray(ColumnSource[]::new);
+                Arrays.stream(matchPairs).map(mp -> setTable.getColumnSource(mp.rightColumn()))
+                        .toArray(ColumnSource[]::new);
         setTupleSource = TupleSourceFactory.makeTupleSource(setColumns);
 
         setTable.getRowSet().forAllRowKeys((final long v) -> addKey(makeKey(v)));
@@ -177,7 +178,8 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
         }
 
         final ColumnSource[] keyColumns =
-                Arrays.stream(matchPairs).map(mp -> table.getColumnSource(mp.leftColumn())).toArray(ColumnSource[]::new);
+                Arrays.stream(matchPairs).map(mp -> table.getColumnSource(mp.leftColumn()))
+                        .toArray(ColumnSource[]::new);
         final TupleSource tupleSource = TupleSourceFactory.makeTupleSource(keyColumns);
         final TrackingRowSet trackingSelection = selection.isTracking() ? selection.trackingCast() : null;
 
@@ -220,14 +222,15 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
     }
 
     private WritableRowSet filterGrouping(TrackingRowSet selection, RowSetIndexer selectionIndexer,
-                                          TupleSource tupleSource) {
+            TupleSource tupleSource) {
         final RowSet matchingKeys = selectionIndexer.getSubSetForKeySet(liveValues, tupleSource);
         return (inclusion ? matchingKeys.copy() : selection.minus(matchingKeys));
     }
 
     private WritableRowSet filterGrouping(TrackingRowSet selection, RowSetIndexer selectionIndexer, Table table) {
         final ColumnSource[] keyColumns =
-                Arrays.stream(matchPairs).map(mp -> table.getColumnSource(mp.leftColumn())).toArray(ColumnSource[]::new);
+                Arrays.stream(matchPairs).map(mp -> table.getColumnSource(mp.leftColumn()))
+                        .toArray(ColumnSource[]::new);
         final TupleSource tupleSource = TupleSourceFactory.makeTupleSource(keyColumns);
         return filterGrouping(selection, selectionIndexer, tupleSource);
     }

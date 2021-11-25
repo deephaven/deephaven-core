@@ -167,7 +167,8 @@ public class TableTools {
      * @param timeZone a TimeZone constant relative to which DateTime data should be adjusted
      * @param columns varargs of column names to display
      */
-    public static void show(Table source, long maxRowCount, io.deephaven.engine.time.TimeZone timeZone, String... columns) {
+    public static void show(Table source, long maxRowCount, io.deephaven.engine.time.TimeZone timeZone,
+            String... columns) {
         show(source, maxRowCount, timeZone, System.out, columns);
     }
 
@@ -180,7 +181,8 @@ public class TableTools {
      * @param out a PrintStream destination to which to print the data
      * @param columns varargs of column names to display
      */
-    public static void show(Table source, long maxRowCount, io.deephaven.engine.time.TimeZone timeZone, PrintStream out, String... columns) {
+    public static void show(Table source, long maxRowCount, io.deephaven.engine.time.TimeZone timeZone, PrintStream out,
+            String... columns) {
         show(source, maxRowCount, timeZone, "|", out, false, columns);
     }
 
@@ -194,8 +196,9 @@ public class TableTools {
      * @param out a PrintStream destination to which to print the data
      * @param columns varargs of column names to display
      */
-    public static void showWithIndex(Table source, long maxRowCount, io.deephaven.engine.time.TimeZone timeZone, PrintStream out,
-                                     String... columns) {
+    public static void showWithIndex(Table source, long maxRowCount, io.deephaven.engine.time.TimeZone timeZone,
+            PrintStream out,
+            String... columns) {
         show(source, maxRowCount, timeZone, "|", out, true, columns);
     }
 
@@ -210,7 +213,8 @@ public class TableTools {
      * @param columns varargs of column names to display
      */
     public static void showWithIndex(Table source, long firstRow, long lastRow, PrintStream out, String... columns) {
-        TableShowTools.showInternal(source, firstRow, lastRow, io.deephaven.engine.time.TimeZone.TZ_DEFAULT, "|", out, true, columns);
+        TableShowTools.showInternal(source, firstRow, lastRow, io.deephaven.engine.time.TimeZone.TZ_DEFAULT, "|", out,
+                true, columns);
     }
 
     /**
@@ -239,7 +243,8 @@ public class TableTools {
      * @param columns varargs of column names to display
      */
     public static void showWithIndex(final Table source, final long firstRow, final long lastRow, String... columns) {
-        TableShowTools.showInternal(source, firstRow, lastRow, io.deephaven.engine.time.TimeZone.TZ_DEFAULT, "|", System.out, true, columns);
+        TableShowTools.showInternal(source, firstRow, lastRow, io.deephaven.engine.time.TimeZone.TZ_DEFAULT, "|",
+                System.out, true, columns);
     }
 
     /**

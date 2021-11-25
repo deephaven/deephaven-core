@@ -142,7 +142,7 @@ public interface ChunkFilter {
      * @return A new WritableRowSet representing the filtered values, owned by the caller
      */
     static WritableRowSet applyChunkFilter(RowSet selection, ColumnSource<?> columnSource, boolean usePrev,
-                                           ChunkFilter chunkFilter) {
+            ChunkFilter chunkFilter) {
         final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
 
         final int contextSize = (int) Math.min(FILTER_CHUNK_SIZE, selection.size());

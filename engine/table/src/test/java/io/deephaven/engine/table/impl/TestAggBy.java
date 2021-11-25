@@ -368,7 +368,7 @@ public class TestAggBy extends RefreshingTableTestCase {
                                 AggDistinct(true, "dicN=intColNulls", "didN=doubleColNulls"),
                                 AggUnique("uic=intCol", "uid=doubleCol"),
                                 AggUnique(true, "uicN=intColNulls", "uidN=doubleColNulls")), "Sym")
-                                .sort("Sym"),
+                                        .sort("Sym"),
                         "AggCountDistinct")
         };
         final int steps = 100; // 8;

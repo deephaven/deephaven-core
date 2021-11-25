@@ -11,7 +11,8 @@ import io.deephaven.engine.table.TableMap;
 import java.util.Arrays;
 import java.util.Map;
 
-public abstract class AbstractTableMapHandleMultiSeries<SERIES extends DataSeriesInternal> extends AbstractMultiSeries<SERIES> {
+public abstract class AbstractTableMapHandleMultiSeries<SERIES extends DataSeriesInternal>
+        extends AbstractMultiSeries<SERIES> {
     private static final long serialVersionUID = 1L;
 
     private final TableBackedTableMapHandle tableMapHandle;
@@ -23,13 +24,14 @@ public abstract class AbstractTableMapHandleMultiSeries<SERIES extends DataSerie
      *
      * @param axes axes on which this {@link MultiSeries} will be plotted
      * @param id data series id
-     * @param name               series name
+     * @param name series name
      * @param tableMapHandle table handle
      * @param x the x-axis data column in {@code tableMapHandle}
      * @param y the y-axis data column in {@code tableMapHandle}
      * @param byColumns columns forming the keys of the table map
      */
-    AbstractTableMapHandleMultiSeries(final AxesImpl axes, final int id, final Comparable name, final TableBackedTableMapHandle tableMapHandle, final String x, final String y, final String[] byColumns) {
+    AbstractTableMapHandleMultiSeries(final AxesImpl axes, final int id, final Comparable name,
+            final TableBackedTableMapHandle tableMapHandle, final String x, final String y, final String[] byColumns) {
         super(axes, id, name, byColumns);
         this.tableMapHandle = tableMapHandle;
         this.x = x;
@@ -63,10 +65,10 @@ public abstract class AbstractTableMapHandleMultiSeries<SERIES extends DataSerie
     }
 
     @Override
-    public TableMap getTableMap(){
-        if(tableMap == null) {
+    public TableMap getTableMap() {
+        if (tableMap == null) {
             synchronized (tableMapLock) {
-                if(tableMap != null){
+                if (tableMap != null) {
                     return tableMap;
                 }
 
@@ -82,7 +84,8 @@ public abstract class AbstractTableMapHandleMultiSeries<SERIES extends DataSerie
     }
 
     @Override
-    public void applyTransform(final String columnName, final String update, final Class[] classesToImport, final Map<String, Object> params, boolean columnTypesPreserved) {
+    public void applyTransform(final String columnName, final String update, final Class[] classesToImport,
+            final Map<String, Object> params, boolean columnTypesPreserved) {
         ArgumentValidations.assertNull(tableMap, "tableMap must be null", getPlotInfo());
         Arrays.stream(classesToImport).forEach(QueryLibrary::importClass);
         params.forEach(QueryScope::addParam);

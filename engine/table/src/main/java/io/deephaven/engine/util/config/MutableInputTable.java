@@ -60,8 +60,7 @@ public interface MutableInputTable extends InputTableRowSetter, InputTableEnumGe
      *
      * @param tableToDelete the definition of the table to delete
      * @throws UnsupportedOperationException if this table does not support deletes
-     * @throws ArgumentException if the given definition isn't compatible to be used to
-     *         delete
+     * @throws ArgumentException if the given definition isn't compatible to be used to delete
      */
     default void validateDelete(Table tableToDelete) {
         final TableDefinition keyDefinition = tableToDelete.getDefinition();

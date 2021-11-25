@@ -139,7 +139,8 @@ public class FlattenOperation implements QueryTable.MemoizableOperation<QueryTab
 
                 updateIt.accept(rmIt);
                 updateIt.accept(addIt);
-            } else if (nextAdd == RowSequence.NULL_ROW_KEY || (nextRm != RowSequence.NULL_ROW_KEY && nextRm < nextAdd)) {
+            } else if (nextAdd == RowSequence.NULL_ROW_KEY
+                    || (nextRm != RowSequence.NULL_ROW_KEY && nextRm < nextAdd)) {
                 // rmIt cannot be null
                 final long dtRm = rmIt.getValue().currentRangeEnd() - rmIt.getValue().currentRangeStart() + 1;
 

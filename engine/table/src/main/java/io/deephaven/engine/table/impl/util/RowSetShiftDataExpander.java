@@ -20,8 +20,8 @@ import java.io.ObjectOutputStream;
 import java.util.function.BiConsumer;
 
 /**
- * Expands {@link TableUpdateListener#onUpdate(TableUpdate)}'s Update into a backward compatible ARM (added, removed, modified)
- * by expanding keyspace shifts.
+ * Expands {@link TableUpdateListener#onUpdate(TableUpdate)}'s Update into a backward compatible ARM (added, removed,
+ * modified) by expanding keyspace shifts.
  *
  * Using this is almost always less efficient than using the Update directly.
  */
@@ -75,7 +75,7 @@ public class RowSetShiftDataExpander implements SafeCloseable {
 
             // consider all rows that are in a shift region as modified (if they still exist)
             try (final WritableRowSet addedByShift = addedByShiftB.build();
-                 final RowSet rmByShift = removedByShiftB.build()) {
+                    final RowSet rmByShift = removedByShiftB.build()) {
                 addedByShift.insert(rmByShift);
                 addedByShift.retain(sourceRowSet);
                 modified.insert(addedByShift);

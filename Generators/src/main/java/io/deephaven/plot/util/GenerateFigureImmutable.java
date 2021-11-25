@@ -620,12 +620,14 @@ public class GenerateFigureImmutable {
                                 "            }\n" +
                                 "        }\n" +
                                 "\n" +
-                                "        for(final io.deephaven.engine.table.TableMap initTableMap : allTableMaps) {\n" +
+                                "        for(final io.deephaven.engine.table.TableMap initTableMap : allTableMaps) {\n"
+                                +
                                 "            if(tableMapFunctionMap.get(initTableMap) != null) {\n" +
                                 "                finalTableMapComputation.computeIfAbsent(initTableMap, t -> {\n" +
                                 "                    final java.util.Set<java.util.function.Function<io.deephaven.engine.table.TableMap, io.deephaven.engine.table.TableMap>> functions = tableMapFunctionMap.get(initTableMap);\n"
                                 +
-                                "                    io.deephaven.engine.table.TableMap resultTableMap = initTableMap;\n" +
+                                "                    io.deephaven.engine.table.TableMap resultTableMap = initTableMap;\n"
+                                +
                                 "\n" +
                                 "                    for(final java.util.function.Function<io.deephaven.engine.table.TableMap, io.deephaven.engine.table.TableMap> f : functions) {\n"
                                 +

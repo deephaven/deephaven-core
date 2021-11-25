@@ -13,7 +13,8 @@ import io.deephaven.engine.table.TableMap;
 import java.util.*;
 import java.util.function.Function;
 
-public abstract class AbstractSwappableMultiSeries<SERIES extends DataSeriesInternal> extends AbstractMultiSeries<SERIES> {
+public abstract class AbstractSwappableMultiSeries<SERIES extends DataSeriesInternal>
+        extends AbstractMultiSeries<SERIES> {
     private static final long serialVersionUID = 3034015389062108370L;
 
     private Table localTable;
@@ -25,15 +26,16 @@ public abstract class AbstractSwappableMultiSeries<SERIES extends DataSeriesInte
     /**
      * Creates a MultiSeries instance.
      *
-     * @param axes           axes on which this {@link MultiSeries} will be plotted
-     * @param id             data series id
-     * @param name           series name
+     * @param axes axes on which this {@link MultiSeries} will be plotted
+     * @param id data series id
+     * @param name series name
      * @param swappableTable table handle
-     * @param x              the x-axis data column in {@code swappableTable}
-     * @param y              the y-axis data column in {@code swappableTable}
-     * @param byColumns      columns forming the keys of the table map
+     * @param x the x-axis data column in {@code swappableTable}
+     * @param y the y-axis data column in {@code swappableTable}
+     * @param byColumns columns forming the keys of the table map
      */
-    AbstractSwappableMultiSeries(final AxesImpl axes, final int id, final Comparable name, final SwappableTable swappableTable, final String x, final String y, final String[] byColumns) {
+    AbstractSwappableMultiSeries(final AxesImpl axes, final int id, final Comparable name,
+            final SwappableTable swappableTable, final String x, final String y, final String[] byColumns) {
         super(axes, id, name, byColumns);
 
         this.swappableTable = swappableTable;
@@ -47,7 +49,7 @@ public abstract class AbstractSwappableMultiSeries<SERIES extends DataSeriesInte
      * Creates a copy of a series using a different Axes.
      *
      * @param series series to copy.
-     * @param axes   new axes to use.
+     * @param axes new axes to use.
      */
     AbstractSwappableMultiSeries(final AbstractSwappableMultiSeries series, final AxesImpl axes) {
         super(series, axes);
@@ -97,19 +99,22 @@ public abstract class AbstractSwappableMultiSeries<SERIES extends DataSeriesInte
     }
 
     @Override
-    protected void applyFunction(final java.util.function.Function function, final String columnName, final String functionInput, final Class resultClass) {
+    protected void applyFunction(final java.util.function.Function function, final String columnName,
+            final String functionInput, final Class resultClass) {
         ArgumentValidations.assertNotNull(function, "function", getPlotInfo());
         final String queryFunction = columnName + "Function";
         final Map<String, Object> params = new HashMap<>();
         params.put(queryFunction, function);
 
-        final String update = columnName + " = (" + resultClass.getSimpleName() + ") " + queryFunction + ".apply(" + functionInput + ")";
+        final String update = columnName + " = (" + resultClass.getSimpleName() + ") " + queryFunction + ".apply("
+                + functionInput + ")";
 
-        applyTransform(columnName, update, new Class[]{resultClass}, params, true);
+        applyTransform(columnName, update, new Class[] {resultClass}, params, true);
     }
 
     @Override
-    public void applyTransform(final String columnName, final String update, final Class[] classesToImport, final Map<String, Object> params, boolean columnTypesPreserved) {
+    public void applyTransform(final String columnName, final String update, final Class[] classesToImport,
+            final Map<String, Object> params, boolean columnTypesPreserved) {
         ArgumentValidations.assertNull(tableMap, "tableMap must be null", getPlotInfo());
         swappableTable.addColumn(columnName);
         final Function<Table, Table> tableTransform = t -> {

@@ -336,8 +336,7 @@ public class TotalsTableBuilder implements Serializable {
     }
 
     /**
-     * Helper method for building and {@link Table#setTotalsTable(String) applying} a totals table to a
-     * {@link Table}.
+     * Helper method for building and {@link Table#setTotalsTable(String) applying} a totals table to a {@link Table}.
      *
      * @param table The source {@link Table}
      * @return {@code table.setTotalsTable(buildDirective())}

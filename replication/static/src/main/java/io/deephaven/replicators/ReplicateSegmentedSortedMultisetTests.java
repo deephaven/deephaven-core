@@ -18,11 +18,15 @@ public class ReplicateSegmentedSortedMultisetTests {
         charToAllButBooleanAndFloats(
                 "engine/table/src/test/java/io/deephaven/engine/table/impl/ssms/TestCharSegmentedSortedMultiset.java");
         fixupFloatTests(
-                charToFloat("engine/table/src/test/java/io/deephaven/engine/table/impl/ssms/TestCharSegmentedSortedMultiset.java", null));
+                charToFloat(
+                        "engine/table/src/test/java/io/deephaven/engine/table/impl/ssms/TestCharSegmentedSortedMultiset.java",
+                        null));
         fixupFloatTests(charToDouble(
-                "engine/table/src/test/java/io/deephaven/engine/table/impl/ssms/TestCharSegmentedSortedMultiset.java", null));
+                "engine/table/src/test/java/io/deephaven/engine/table/impl/ssms/TestCharSegmentedSortedMultiset.java",
+                null));
         final String objectSsaTest =
-                charToObject("engine/table/src/test/java/io/deephaven/engine/table/impl/ssms/TestCharSegmentedSortedMultiset.java");
+                charToObject(
+                        "engine/table/src/test/java/io/deephaven/engine/table/impl/ssms/TestCharSegmentedSortedMultiset.java");
         fixupObjectSsaTest(objectSsaTest);
     }
 

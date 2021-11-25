@@ -14,8 +14,7 @@ public interface StreamConsumer extends StreamFailureConsumer {
      *
      * <p>
      * Ownership of {@code data} passes to the consumer, which must be sure to
-     * {@link io.deephaven.engine.chunk.util.pools.PoolableChunk#close close} each chunk when it's no longer
-     * needed.
+     * {@link io.deephaven.engine.chunk.util.pools.PoolableChunk#close close} each chunk when it's no longer needed.
      *
      * <p>
      * Implementations will generally have a mechanism for determining the expected number and type of input chunks, but

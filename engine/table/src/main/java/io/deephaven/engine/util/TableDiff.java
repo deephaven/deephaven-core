@@ -113,9 +113,9 @@ public class TableDiff {
         }
 
         try (final SafeCloseableList safeCloseables = new SafeCloseableList();
-             final SharedContext expectedSharedContext = SharedContext.makeSharedContext();
-             final SharedContext actualSharedContext = SharedContext.makeSharedContext();
-             final WritableBooleanChunk equalValues = WritableBooleanChunk.makeWritableChunk(chunkSize)) {
+                final SharedContext expectedSharedContext = SharedContext.makeSharedContext();
+                final SharedContext actualSharedContext = SharedContext.makeSharedContext();
+                final WritableBooleanChunk equalValues = WritableBooleanChunk.makeWritableChunk(chunkSize)) {
 
             final ColumnDiffContext[] columnContexts = columnNamesForDiff.stream()
                     .map(name -> safeCloseables.add(new ColumnDiffContext(name, expectedNameToColumnSource.get(name),

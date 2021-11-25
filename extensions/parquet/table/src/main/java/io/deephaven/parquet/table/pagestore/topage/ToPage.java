@@ -90,8 +90,8 @@ public interface ToPage<ATTR extends Attributes.Any, RESULT> {
 
     /**
      * @return an object implementing ToPage which will read the integral Dictionary Indices when there's a dictionary
-     *         for this column (as opposed to the values, which this object's toPage will return). This will return
-     *         null iff {@link #getDictionaryChunk()} returns null.
+     *         for this column (as opposed to the values, which this object's toPage will return). This will return null
+     *         iff {@link #getDictionaryChunk()} returns null.
      * @apiNote null iff {@link #getDictionaryChunk()} is null.
      */
     default ToPage<Attributes.DictionaryKeys, long[]> getDictionaryKeysToPage() {

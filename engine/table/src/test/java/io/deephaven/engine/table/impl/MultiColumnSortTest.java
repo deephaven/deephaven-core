@@ -69,13 +69,15 @@ public class MultiColumnSortTest {
 
         for (String outerColumn : columnNames) {
             final SortColumn outerPair = random.nextBoolean()
-                    ? SortColumn.asc(ColumnName.of(outerColumn)) : SortColumn.desc(ColumnName.of(outerColumn));
+                    ? SortColumn.asc(ColumnName.of(outerColumn))
+                    : SortColumn.desc(ColumnName.of(outerColumn));
             for (String innerColumn : columnNames) {
                 if (innerColumn.equals(outerColumn)) {
                     continue;
                 }
                 final SortColumn innerPair = random.nextBoolean()
-                        ? SortColumn.asc(ColumnName.of(innerColumn)) : SortColumn.desc(ColumnName.of(innerColumn));
+                        ? SortColumn.asc(ColumnName.of(innerColumn))
+                        : SortColumn.desc(ColumnName.of(innerColumn));
                 doMultiColumnTest(table, outerPair, innerPair);
             }
         }
@@ -85,9 +87,11 @@ public class MultiColumnSortTest {
             final String outerColumn = oneOf(columnNames, middleColumn);
             final String innerColumn = oneOf(columnNames, middleColumn, outerColumn);
             final SortColumn outerPair =
-                    random.nextBoolean() ? SortColumn.asc(ColumnName.of(outerColumn)) : SortColumn.desc(ColumnName.of(outerColumn));
+                    random.nextBoolean() ? SortColumn.asc(ColumnName.of(outerColumn))
+                            : SortColumn.desc(ColumnName.of(outerColumn));
             final SortColumn innerPair =
-                    random.nextBoolean() ? SortColumn.asc(ColumnName.of(innerColumn)) : SortColumn.desc(ColumnName.of(innerColumn));
+                    random.nextBoolean() ? SortColumn.asc(ColumnName.of(innerColumn))
+                            : SortColumn.desc(ColumnName.of(innerColumn));
 
             doMultiColumnTest(table, outerPair, SortColumn.asc(ColumnName.of(middleColumn)), innerPair);
             doMultiColumnTest(table, outerPair, SortColumn.desc(ColumnName.of(middleColumn)), innerPair);

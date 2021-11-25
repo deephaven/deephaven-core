@@ -358,7 +358,7 @@ class AggregationContext {
      * Initialize an array of singleton contexts based on an upstream update.
      */
     void initializeSingletonContexts(IterativeChunkedAggregationOperator.SingletonContext[] opContexts,
-                                     TableUpdate upstream, boolean[] modifiedColumns) {
+            TableUpdate upstream, boolean[] modifiedColumns) {
         final long maxSize = UpdateSizeCalculator.chunkSize(upstream, ChunkedOperatorAggregationHelper.CHUNK_SIZE);
         if (upstream.removed().isNonempty() || upstream.added().isNonempty()) {
             initializeSingletonContexts(opContexts, maxSize);
@@ -370,7 +370,7 @@ class AggregationContext {
     }
 
     private boolean[] computeInitializationMaskFromUpdate(TableUpdate upstream,
-                                                          boolean[] modifiedColumns) {
+            boolean[] modifiedColumns) {
         final boolean[] toInitialize = new boolean[size()];
         if (requiresIndices() && upstream.shifted().nonempty()) {
             for (int ii = 0; ii < size(); ++ii) {
@@ -408,7 +408,7 @@ class AggregationContext {
      * Initialize an array of singleton contexts based on an upstream update.
      */
     void initializeBucketedContexts(IterativeChunkedAggregationOperator.BucketedContext[] contexts,
-                                    TableUpdate upstream, boolean keysModified, boolean[] modifiedColumns) {
+            TableUpdate upstream, boolean keysModified, boolean[] modifiedColumns) {
         final long maxSize = UpdateSizeCalculator.chunkSize(upstream, ChunkedOperatorAggregationHelper.CHUNK_SIZE);
         if (upstream.added().isNonempty() || upstream.removed().isNonempty() || keysModified) {
             initializeBucketedContexts(contexts, maxSize);

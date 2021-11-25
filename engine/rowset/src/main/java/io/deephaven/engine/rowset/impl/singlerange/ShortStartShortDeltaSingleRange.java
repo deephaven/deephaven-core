@@ -10,18 +10,27 @@ public final class ShortStartShortDeltaSingleRange extends SingleRange {
         this.unsignedShortStart = unsignedShortStart;
         this.unsignedShortDelta = unsignedShortDelta;
     }
+
     @Override
-    public long rangeStart() { return unsignedShortToLong(unsignedShortStart); }
+    public long rangeStart() {
+        return unsignedShortToLong(unsignedShortStart);
+    }
+
     @Override
-    public long rangeEnd() { return rangeStart() + delta(); }
+    public long rangeEnd() {
+        return rangeStart() + delta();
+    }
+
     @Override
     public long getCardinality() {
         return delta() + 1;
     }
+
     @Override
     public ShortStartShortDeltaSingleRange copy() {
         return new ShortStartShortDeltaSingleRange(unsignedShortStart, unsignedShortDelta);
     }
+
     private long delta() {
         return unsignedShortToLong(unsignedShortDelta);
     }

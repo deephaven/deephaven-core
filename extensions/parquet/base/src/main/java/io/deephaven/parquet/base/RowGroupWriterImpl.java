@@ -27,7 +27,7 @@ public class RowGroupWriterImpl implements RowGroupWriter {
     private final CompressionCodecFactory.BytesInputCompressor compressor;
 
     RowGroupWriterImpl(String path, boolean append, SeekableChannelsProvider channelsProvider, MessageType type,
-                       int pageSize, ByteBufferAllocator allocator, CompressionCodecFactory.BytesInputCompressor compressor)
+            int pageSize, ByteBufferAllocator allocator, CompressionCodecFactory.BytesInputCompressor compressor)
             throws IOException {
         this(channelsProvider.getWriteChannel(path, append), type, pageSize, allocator, blockWithPath(path),
                 compressor);

@@ -150,13 +150,13 @@ public interface Aggregation extends Serializable {
 
     static SortedFirst AggSortedFirst(Collection<? extends String> sortedColumns, String pair) {
         return AggregationFinisher.sortedFirst(
-                        sortedColumns.stream().map(ColumnName::of).map(SortColumn::asc).collect(Collectors.toList()))
+                sortedColumns.stream().map(ColumnName::of).map(SortColumn::asc).collect(Collectors.toList()))
                 .of(pair);
     }
 
     static Multi<SortedFirst> AggSortedFirst(Collection<? extends String> sortedColumns, String... pairs) {
         return AggregationFinisher.sortedFirst(
-                        sortedColumns.stream().map(ColumnName::of).map(SortColumn::asc).collect(Collectors.toList()))
+                sortedColumns.stream().map(ColumnName::of).map(SortColumn::asc).collect(Collectors.toList()))
                 .of(pairs);
     }
 
@@ -170,15 +170,15 @@ public interface Aggregation extends Serializable {
                 .of(pairs);
     }
 
-    static SortedLast AggSortedLast(Collection<? extends String>   sortedColumns, String pair) {
+    static SortedLast AggSortedLast(Collection<? extends String> sortedColumns, String pair) {
         return AggregationFinisher.sortedLast(
-                        sortedColumns.stream().map(ColumnName::of).map(SortColumn::asc).collect(Collectors.toList()))
+                sortedColumns.stream().map(ColumnName::of).map(SortColumn::asc).collect(Collectors.toList()))
                 .of(pair);
     }
 
-    static Multi<SortedLast> AggSortedLast(Collection<? extends String>   sortedColumns, String... pairs) {
+    static Multi<SortedLast> AggSortedLast(Collection<? extends String> sortedColumns, String... pairs) {
         return AggregationFinisher.sortedLast(
-                        sortedColumns.stream().map(ColumnName::of).map(SortColumn::asc).collect(Collectors.toList()))
+                sortedColumns.stream().map(ColumnName::of).map(SortColumn::asc).collect(Collectors.toList()))
                 .of(pairs);
     }
 

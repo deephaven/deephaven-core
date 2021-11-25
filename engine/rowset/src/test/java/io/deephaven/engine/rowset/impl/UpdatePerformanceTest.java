@@ -353,7 +353,7 @@ public class UpdatePerformanceTest {
     final static boolean runIndexSequential = false;
     final static boolean runRspBitmap = true;
     static final TstValues.Config configs[] = {TstValues.dense}; // { TstValues.sparse, TstValues.dense,
-                                                                   // TstValues.asymmetric };
+                                                                 // TstValues.asymmetric };
     final static boolean doCrc32Check = true;
 
     static final String me = UpdatePerformanceTest.class.getSimpleName();

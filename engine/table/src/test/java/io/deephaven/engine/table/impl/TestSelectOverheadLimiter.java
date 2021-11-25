@@ -134,7 +134,8 @@ public class TestSelectOverheadLimiter extends RefreshingTableTestCase {
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
                 EvalNugget.Sorted.from(
                         () -> UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(
-                                () -> SelectOverheadLimiter.clampSelectOverhead(source.partitionBy("Sym").merge(), 2.0)),
+                                () -> SelectOverheadLimiter.clampSelectOverhead(source.partitionBy("Sym").merge(),
+                                        2.0)),
                         "Sym"),
                 EvalNugget.Sorted.from(() -> UpdateGraphProcessor.DEFAULT.sharedLock()
                         .computeLocked(() -> SelectOverheadLimiter
@@ -142,11 +143,13 @@ public class TestSelectOverheadLimiter extends RefreshingTableTestCase {
                         "Sym"),
                 EvalNugget.Sorted.from(
                         () -> UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(
-                                () -> SelectOverheadLimiter.clampSelectOverhead(source.partitionBy("Sym").merge(), 4.0)),
+                                () -> SelectOverheadLimiter.clampSelectOverhead(source.partitionBy("Sym").merge(),
+                                        4.0)),
                         "Sym"),
                 EvalNugget.Sorted.from(
                         () -> UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(
-                                () -> SelectOverheadLimiter.clampSelectOverhead(source.partitionBy("Sym").merge(), 4.5)),
+                                () -> SelectOverheadLimiter.clampSelectOverhead(source.partitionBy("Sym").merge(),
+                                        4.5)),
                         "Sym"),
                 EvalNugget.Sorted.from(() -> UpdateGraphProcessor.DEFAULT.sharedLock()
                         .computeLocked(() -> SelectOverheadLimiter
@@ -154,7 +157,8 @@ public class TestSelectOverheadLimiter extends RefreshingTableTestCase {
                         "Sym"),
                 EvalNugget.Sorted.from(
                         () -> UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(
-                                () -> SelectOverheadLimiter.clampSelectOverhead(source.partitionBy("Sym").merge(), 5.0)),
+                                () -> SelectOverheadLimiter.clampSelectOverhead(source.partitionBy("Sym").merge(),
+                                        5.0)),
                         "Sym"),
                 EvalNugget.Sorted.from(() -> UpdateGraphProcessor.DEFAULT.sharedLock()
                         .computeLocked(() -> SelectOverheadLimiter

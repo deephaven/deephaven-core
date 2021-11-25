@@ -25,9 +25,11 @@ public class QueryLibraryTest {
 
     @Test
     public void testImportClass() {
-        TestCase.assertFalse(QueryLibrary.getImportStrings().contains("import java.util.concurrent.ConcurrentLinkedDeque;"));
+        TestCase.assertFalse(
+                QueryLibrary.getImportStrings().contains("import java.util.concurrent.ConcurrentLinkedDeque;"));
         QueryLibrary.importClass(ConcurrentLinkedDeque.class);
-        TestCase.assertTrue(QueryLibrary.getImportStrings().contains("import java.util.concurrent.ConcurrentLinkedDeque;"));
+        TestCase.assertTrue(
+                QueryLibrary.getImportStrings().contains("import java.util.concurrent.ConcurrentLinkedDeque;"));
     }
 
     @Test
@@ -42,6 +44,7 @@ public class QueryLibraryTest {
         TestCase.assertFalse(
                 QueryLibrary.getImportStrings().contains("import static java.util.concurrent.ConcurrentHashMap.*;"));
         QueryLibrary.importStatic(ConcurrentHashMap.class);
-        TestCase.assertTrue(QueryLibrary.getImportStrings().contains("import static java.util.concurrent.ConcurrentHashMap.*;"));
+        TestCase.assertTrue(
+                QueryLibrary.getImportStrings().contains("import static java.util.concurrent.ConcurrentHashMap.*;"));
     }
 }

@@ -15,7 +15,8 @@ import static io.deephaven.util.QueryConstants.*;
 
 /**
  * A factory interface to create {@link IterativeChunkedAggregationOperator operators} for the
- * {@link io.deephaven.engine.table.impl.by.AggType#Distinct} {@link io.deephaven.engine.table.impl.by.AggType#CountDistinct},
+ * {@link io.deephaven.engine.table.impl.by.AggType#Distinct}
+ * {@link io.deephaven.engine.table.impl.by.AggType#CountDistinct},
  * {@link io.deephaven.engine.table.impl.by.AggType#Unique} and their rollup counterparts
  */
 public interface DistinctOperatorFactory {

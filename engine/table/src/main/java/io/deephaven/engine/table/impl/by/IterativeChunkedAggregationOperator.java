@@ -285,7 +285,7 @@ public interface IterativeChunkedAggregationOperator {
      * @return A factory that produces a result modified column set from the upstream modified column set
      */
     default UnaryOperator<ModifiedColumnSet> initializeRefreshing(@NotNull final QueryTable resultTable,
-                                                                  @NotNull final LivenessReferent aggregationUpdateListener) {
+            @NotNull final LivenessReferent aggregationUpdateListener) {
         final ModifiedColumnSet resultModifiedColumnSet = resultTable
                 .newModifiedColumnSet(getResultColumns().keySet().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
         return upstreamModifiedColumnSet -> resultModifiedColumnSet;
@@ -312,11 +312,12 @@ public interface IterativeChunkedAggregationOperator {
 
     /**
      * Called on error to propagate listener failure to this operator.
-     *  @param originalException The error {@link Throwable}
+     * 
+     * @param originalException The error {@link Throwable}
      * @param sourceEntry The UpdatePerformanceTracker.Entry for the failed listener
      */
     default void propagateFailure(@NotNull final Throwable originalException,
-                                  @NotNull final TableListener.Entry sourceEntry) {}
+            @NotNull final TableListener.Entry sourceEntry) {}
 
     /**
      * Make a {@link BucketedContext} suitable for this operator if necessary.

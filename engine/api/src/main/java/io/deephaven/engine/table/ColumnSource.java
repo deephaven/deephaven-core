@@ -44,7 +44,7 @@ public interface ColumnSource<T>
     }
 
     WritableRowSet match(boolean invertMatch, boolean usePrev, boolean caseInsensitive, RowSet mapper,
-                         final Object... keys);
+            final Object... keys);
 
     Map<T, RowSet> getValuesMapping(RowSet subRange);
 
@@ -135,7 +135,7 @@ public interface ColumnSource<T>
 
     @Override
     default <ELEMENT_TYPE> void exportElement(final T tuple, final int elementIndex,
-                                              @NotNull final WritableColumnSource<ELEMENT_TYPE> writableSource, final long destinationIndexKey) {
+            @NotNull final WritableColumnSource<ELEMENT_TYPE> writableSource, final long destinationIndexKey) {
         // noinspection unchecked
         writableSource.set(destinationIndexKey, (ELEMENT_TYPE) tuple);
     }

@@ -709,12 +709,12 @@ public class TreeSnapshotQueryTest extends QueryTableTestBase {
     }
 
     private static void testViewportAgainst(Table against, TTState state, long start, long end, BitSet columns,
-                                            List<SortDirective> sorts, WhereFilter[] filters, boolean showAfter) {
+            List<SortDirective> sorts, WhereFilter[] filters, boolean showAfter) {
         testViewportAgainst(against, state, start, end, columns, sorts, filters, Function.identity(), showAfter);
     }
 
     private static void testViewportAgainst(Table against, TTState state, long start, long end, BitSet columns,
-                                            List<SortDirective> sorts, WhereFilter[] filters, Function<Table, Table> childMutator, boolean showAfter) {
+            List<SortDirective> sorts, WhereFilter[] filters, Function<Table, Table> childMutator, boolean showAfter) {
         state.applyTsq(columns, start, end, filters, sorts);
 
         if (showAfter) {

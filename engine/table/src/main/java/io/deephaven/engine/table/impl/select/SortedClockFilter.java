@@ -53,8 +53,8 @@ public class SortedClockFilter extends ClockFilter {
     @Override
     @Nullable
     protected WritableRowSet initializeAndGetInitialIndex(@NotNull final RowSet selection,
-                                                          @NotNull final RowSet fullSet,
-                                                          @NotNull final Table table) {
+            @NotNull final RowSet fullSet,
+            @NotNull final Table table) {
         // External code is required to have sorted according to column before calling this, so we expect the input to
         // be flat. This is not actually a guarantee of the sort() method, but is something that happens to be true
         // because the input table must be historical, and the historical sort implementation uses a

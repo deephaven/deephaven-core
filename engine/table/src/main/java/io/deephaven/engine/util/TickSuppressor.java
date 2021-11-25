@@ -144,15 +144,15 @@ public class TickSuppressor {
 
                         try (final SafeCloseableArray<ChunkSource.GetContext> ignored =
                                 new SafeCloseableArray<>(getContextArray);
-                             final SafeCloseableArray<ChunkSource.GetContext> ignored2 =
+                                final SafeCloseableArray<ChunkSource.GetContext> ignored2 =
                                         new SafeCloseableArray<>(prevContextArray);
-                             final SafeCloseableArray<WritableBooleanChunk> ignored3 =
+                                final SafeCloseableArray<WritableBooleanChunk> ignored3 =
                                         new SafeCloseableArray<>(changedCellsArray);
-                             final SharedContext currentSharedContext = SharedContext.makeSharedContext();
-                             final SharedContext prevSharedContext = SharedContext.makeSharedContext();
-                             final RowSequence.Iterator preRsIt =
+                                final SharedContext currentSharedContext = SharedContext.makeSharedContext();
+                                final SharedContext prevSharedContext = SharedContext.makeSharedContext();
+                                final RowSequence.Iterator preRsIt =
                                         upstream.getModifiedPreShift().getRowSequenceIterator();
-                             final RowSequence.Iterator postRsIt = upstream.modified().getRowSequenceIterator()) {
+                                final RowSequence.Iterator postRsIt = upstream.modified().getRowSequenceIterator()) {
                             int changedColumnCount = 0;
                             for (int cc = 0; cc < columnCount; cc++) {
                                 if (upstream.modifiedColumnSet().containsAny(inputModifiedColumnSets[cc])) {

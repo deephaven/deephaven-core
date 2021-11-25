@@ -106,13 +106,14 @@ public abstract class SelectAndViewAnalyzer {
         return new BaseLayer(sources, publishTheseSources);
     }
 
-    private RedirectionLayer createRedirectionLayer(TrackingRowSet resultRowSet, WritableRowRedirection rowRedirection) {
+    private RedirectionLayer createRedirectionLayer(TrackingRowSet resultRowSet,
+            WritableRowRedirection rowRedirection) {
         return new RedirectionLayer(this, resultRowSet, rowRedirection);
     }
 
     private SelectAndViewAnalyzer createLayerForSelect(String name, SelectColumn sc,
-                                                       WritableColumnSource<?> cs, WritableColumnSource<?> underlyingSource,
-                                                       String[] parentColumnDependencies, ModifiedColumnSet mcsBuilder, boolean isRedirected) {
+            WritableColumnSource<?> cs, WritableColumnSource<?> underlyingSource,
+            String[] parentColumnDependencies, ModifiedColumnSet mcsBuilder, boolean isRedirected) {
         return new SelectColumnLayer(this, name, sc, cs, underlyingSource, parentColumnDependencies, mcsBuilder,
                 isRedirected);
     }

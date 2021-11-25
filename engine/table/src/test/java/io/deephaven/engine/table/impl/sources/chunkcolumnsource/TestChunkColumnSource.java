@@ -188,7 +188,8 @@ public class TestChunkColumnSource {
             columnSource.addChunk(charChunk1);
 
             try (final ChunkSource.GetContext getContext = columnSource.makeGetContext(1024)) {
-                final Chunk<? extends Attributes.Values> values = columnSource.getChunk(getContext, RowSequenceFactory.EMPTY);
+                final Chunk<? extends Attributes.Values> values =
+                        columnSource.getChunk(getContext, RowSequenceFactory.EMPTY);
                 TestCase.assertEquals(0, values.size());
             }
         }

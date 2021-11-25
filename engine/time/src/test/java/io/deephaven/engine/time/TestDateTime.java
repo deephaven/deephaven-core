@@ -76,7 +76,8 @@ public class TestDateTime extends BaseArrayTestCase {
         String dayBefore;
 
         // Test that the overloaded methods match (this will break if we manage to straddle midnight while it's run!)
-        TestCase.assertEquals(DateTimeUtil.lastBusinessDateNy(), DateTimeUtil.lastBusinessDateNy(System.currentTimeMillis()));
+        TestCase.assertEquals(DateTimeUtil.lastBusinessDateNy(),
+                DateTimeUtil.lastBusinessDateNy(System.currentTimeMillis()));
         DateTimeUtil.endOfCurrentDateNyLastBusinessDay = 0;
 
         // Test Monday-Friday
@@ -122,11 +123,12 @@ public class TestDateTime extends BaseArrayTestCase {
         TestCase.assertEquals(dayBefore, DateTimeUtil.lastBusinessDateNy(getMillisFromDateStr(format, today)));
         today = "2013-11-27";
         dayBefore = "2013-11-26";
-        TestCase.assertEquals(dayBefore, DateTimeUtil.lastBusinessDateNy(getMillisFromDateStr(format, today) + 1)); // make sure
-                                                                                                            // it
-                                                                                                            // advances
-                                                                                                            // just past
-                                                                                                            // midnight
+        TestCase.assertEquals(dayBefore, DateTimeUtil.lastBusinessDateNy(getMillisFromDateStr(format, today) + 1)); // make
+                                                                                                                    // sure
+        // it
+        // advances
+        // just past
+        // midnight
 
         // Rolling back should not work -- we have cached a later day
         today = "2013-11-26";

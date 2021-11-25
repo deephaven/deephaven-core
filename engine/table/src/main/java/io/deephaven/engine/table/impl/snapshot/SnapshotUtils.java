@@ -39,7 +39,7 @@ public class SnapshotUtils {
      * @param destRowSet The keys in destColumns we want to write to
      */
     public static void copyStampColumns(@NotNull Map<String, ? extends ColumnSource<?>> stampColumns, long stampKey,
-                                        @NotNull Map<String, ? extends WritableColumnSource<?>> destColumns, @NotNull RowSet destRowSet) {
+            @NotNull Map<String, ? extends WritableColumnSource<?>> destColumns, @NotNull RowSet destRowSet) {
         for (Map.Entry<String, ? extends ColumnSource<?>> entry : stampColumns.entrySet()) {
             final String name = entry.getKey();
             final ColumnSource<?> src = entry.getValue();
@@ -63,7 +63,7 @@ public class SnapshotUtils {
      * @param destKey The key in destColumns we want to write to
      */
     public static void copyStampColumns(@NotNull Map<String, ? extends ColumnSource<?>> stampColumns, long stampKey,
-                                        @NotNull Map<String, ? extends WritableColumnSource<?>> destColumns, long destKey) {
+            @NotNull Map<String, ? extends WritableColumnSource<?>> destColumns, long destKey) {
         for (Map.Entry<String, ? extends ColumnSource<?>> entry : stampColumns.entrySet()) {
             final String name = entry.getKey();
             final ColumnSource<?> src = entry.getValue();

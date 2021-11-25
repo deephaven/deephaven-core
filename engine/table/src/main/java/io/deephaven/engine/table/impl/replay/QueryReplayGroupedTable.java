@@ -76,7 +76,7 @@ public abstract class QueryReplayGroupedTable extends QueryTable implements Runn
     }
 
     protected QueryReplayGroupedTable(TrackingRowSet rowSet, Map<String, ? extends ColumnSource<?>> input,
-                                      String timeColumn, Replayer replayer, WritableRowRedirection rowRedirection, String[] groupingColumns) {
+            String timeColumn, Replayer replayer, WritableRowRedirection rowRedirection, String[] groupingColumns) {
 
         super(RowSetFactory.empty().toTracking(), getResultSources(input, rowRedirection));
         this.rowRedirection = rowRedirection;

@@ -376,7 +376,8 @@ public class ChunkedOperatorAggregationHelper {
                             : 0;
             final long probeSizeWithoutShifts = Math.max(upstream.removed().size(), probeSizeForModifies);
             final long probeSize =
-                    processShifts ? UpdateSizeCalculator.chunkSize(probeSizeWithoutShifts, upstream.shifted(), CHUNK_SIZE)
+                    processShifts
+                            ? UpdateSizeCalculator.chunkSize(probeSizeWithoutShifts, upstream.shifted(), CHUNK_SIZE)
                             : probeSizeWithoutShifts;
             final int buildChunkSize = chunkSize(buildSize);
             final int probeChunkSize = chunkSize(probeSize);
@@ -728,8 +729,9 @@ public class ChunkedOperatorAggregationHelper {
 
             try (final RowSequence preShiftChunkKeys =
                     RowSequenceFactory.wrapRowKeysChunkAsRowSequence(WritableLongChunk.downcast(preKeyIndices));
-                 final RowSequence postShiftChunkKeys =
-                            RowSequenceFactory.wrapRowKeysChunkAsRowSequence(WritableLongChunk.downcast(postKeyIndices))) {
+                    final RowSequence postShiftChunkKeys =
+                            RowSequenceFactory
+                                    .wrapRowKeysChunkAsRowSequence(WritableLongChunk.downcast(postKeyIndices))) {
                 sharedContext.reset();
                 postSharedContext.reset();
                 Arrays.fill(chunkInitialized, false);
@@ -969,9 +971,9 @@ public class ChunkedOperatorAggregationHelper {
 
             try (final RowSequence.Iterator modifiedPreShiftIterator =
                     upstream.getModifiedPreShift().getRowSequenceIterator();
-                 final RowSequence.Iterator modifiedPostShiftIterator =
+                    final RowSequence.Iterator modifiedPostShiftIterator =
                             shifted ? upstream.modified().getRowSequenceIterator() : null;
-                 final WritableIntChunk<RowKeys> postSlots = WritableIntChunk.makeWritableChunk(bc.chunkSize)) {
+                    final WritableIntChunk<RowKeys> postSlots = WritableIntChunk.makeWritableChunk(bc.chunkSize)) {
 
                 // Hijacking postPermutedKeyIndices because it's not used in this loop; the rename hopefully makes the
                 // code much clearer!
@@ -1165,8 +1167,8 @@ public class ChunkedOperatorAggregationHelper {
     }
 
     private static void processUpstreamShifts(TableUpdate upstream, RowSet useIndex,
-                                              WritableLongChunk<OrderedRowKeys> preKeyIndices, WritableLongChunk<OrderedRowKeys> postKeyIndices,
-                                              Runnable applyChunkedShift) {
+            WritableLongChunk<OrderedRowKeys> preKeyIndices, WritableLongChunk<OrderedRowKeys> postKeyIndices,
+            Runnable applyChunkedShift) {
         RowSet.SearchIterator postOkForward = null;
         RowSet.SearchIterator postOkReverse = null;
 
@@ -1556,9 +1558,9 @@ public class ChunkedOperatorAggregationHelper {
 
         try (final SafeCloseable bc =
                 stateManager.makeAggregationStateBuildContext(groupedFlatKeySource, responsiveGroups);
-             final RowSequence rs = RowSequenceFactory.forRange(0, responsiveGroups - 1);
-             final RowSequence.Iterator rsIt = rs.getRowSequenceIterator();
-             final WritableIntChunk<RowKeys> outputPositions =
+                final RowSequence rs = RowSequenceFactory.forRange(0, responsiveGroups - 1);
+                final RowSequence.Iterator rsIt = rs.getRowSequenceIterator();
+                final WritableIntChunk<RowKeys> outputPositions =
                         WritableIntChunk.makeWritableChunk(responsiveGroups)) {
             while (rsIt.hasMore()) {
                 final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(CHUNK_SIZE);
@@ -1668,7 +1670,8 @@ public class ChunkedOperatorAggregationHelper {
                             ac.resetOperatorsForStep(upstream);
 
                             final ModifiedColumnSet upstreamModifiedColumnSet =
-                                    upstream.modified().isEmpty() ? ModifiedColumnSet.EMPTY : upstream.modifiedColumnSet();
+                                    upstream.modified().isEmpty() ? ModifiedColumnSet.EMPTY
+                                            : upstream.modifiedColumnSet();
 
                             final IterativeChunkedAggregationOperator.SingletonContext[] opContexts =
                                     new IterativeChunkedAggregationOperator.SingletonContext[ac.size()];
@@ -1708,7 +1711,7 @@ public class ChunkedOperatorAggregationHelper {
                                                 // don't require indices
                                                 try (final RowSet shiftedModifiesPost =
                                                         upstream.modified().minus(unshiftedModifies);
-                                                     final WritableRowSet shiftedModifiesPre =
+                                                        final WritableRowSet shiftedModifiesPre =
                                                                 shiftedModifiesPost.copy()) {
                                                     upstream.shifted().unapply(shiftedModifiesPre);
                                                     doNoKeyModifications(shiftedModifiesPre, shiftedModifiesPost, ac,
@@ -1938,8 +1941,8 @@ public class ChunkedOperatorAggregationHelper {
     }
 
     private static void doNoKeyShifts(QueryTable source, TableUpdate upstream, AggregationContext ac,
-                                      final IterativeChunkedAggregationOperator.SingletonContext[] opContexts,
-                                      boolean[] operatorsToShift, boolean[] modifiedOperators) {
+            final IterativeChunkedAggregationOperator.SingletonContext[] opContexts,
+            boolean[] operatorsToShift, boolean[] modifiedOperators) {
         final ColumnSource.GetContext[] getContexts = new ColumnSource.GetContext[ac.size()];
         final ColumnSource.GetContext[] postGetContexts = new ColumnSource.GetContext[ac.size()];
 
@@ -1979,7 +1982,7 @@ public class ChunkedOperatorAggregationHelper {
         final Chunk<? extends Values>[] workingPostChunks = new Chunk[ac.size()];
 
         try (final RowSequence preChunkOk = RowSequenceFactory.wrapRowKeysChunkAsRowSequence(preKeyIndices);
-             final RowSequence postChunkOk = RowSequenceFactory.wrapRowKeysChunkAsRowSequence(postKeyIndices)) {
+                final RowSequence postChunkOk = RowSequenceFactory.wrapRowKeysChunkAsRowSequence(postKeyIndices)) {
             sharedContext.reset();
             postSharedContext.reset();
             Arrays.fill(workingPreChunks, null);

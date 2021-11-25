@@ -344,7 +344,7 @@ public class QueryTable extends BaseTable {
      * @return a transformer that passes dirty details via an identity mapping
      */
     public ModifiedColumnSet.Transformer newModifiedColumnSetTransformer(QueryTable resultTable,
-                                                                         String... columnNames) {
+            String... columnNames) {
         final ModifiedColumnSet[] columnSets = new ModifiedColumnSet[columnNames.length];
         for (int i = 0; i < columnNames.length; ++i) {
             columnSets[i] = resultTable.newModifiedColumnSet(columnNames[i]);
@@ -361,7 +361,7 @@ public class QueryTable extends BaseTable {
      * @return a transformer that passes dirty details via an identity mapping
      */
     public ModifiedColumnSet.Transformer newModifiedColumnSetTransformer(QueryTable resultTable,
-                                                                         MatchPair... matchPairs) {
+            MatchPair... matchPairs) {
         final ModifiedColumnSet[] columnSets = new ModifiedColumnSet[matchPairs.length];
         for (int ii = 0; ii < matchPairs.length; ++ii) {
             columnSets[ii] = resultTable.newModifiedColumnSet(matchPairs[ii].leftColumn());
@@ -436,14 +436,14 @@ public class QueryTable extends BaseTable {
 
     @Override
     public Table rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents,
-                        Selectable... groupByColumns) {
+            Selectable... groupByColumns) {
         return aggByInternal(aggregations, groupByColumns, (caf, gbc) -> rollup(caf, includeConstituents, gbc));
     }
 
     // TODO (https://github.com/deephaven/deephaven-core/issues/991): Make this private, and clean up everything that
     // uses the AggregationFactory as a specifier.
     public Table rollup(AggregationFactory aggregationFactory, boolean includeConstituents,
-                         SelectColumn... columns) {
+            SelectColumn... columns) {
         if (isStream() && includeConstituents) {
             throw streamUnsupported("rollup with included constituents");
         }
@@ -589,18 +589,19 @@ public class QueryTable extends BaseTable {
     public Table groupBy(Collection<? extends Selectable> groupByColumns) {
         return QueryPerformanceRecorder.withNugget("groupBy(" + groupByColumns + ")",
                 sizeForInstrumentation(),
-                () -> by(new AggregationGroupSpec(), SelectColumn.from(groupByColumns))
-        );
+                () -> by(new AggregationGroupSpec(), SelectColumn.from(groupByColumns)));
     }
 
     @Override
-    public Table aggBy(Collection<? extends Aggregation> aggregations, Collection<? extends Selectable> groupByColumns) {
+    public Table aggBy(Collection<? extends Aggregation> aggregations,
+            Collection<? extends Selectable> groupByColumns) {
         return aggByInternal(aggregations, groupByColumns.toArray(ZERO_LENGTH_SELECTABLE_ARRAY), this::by);
     }
 
     private Table aggByInternal(Collection<? extends Aggregation> aggregations, Selectable[] groupByColumns,
-                                BiFunction<AggregationFactory, SelectColumn[], Table> operation) {
-        List<AggregationFactory.AggregationElement> optimized = AggregationFactory.AggregationElement.optimize(aggregations);
+            BiFunction<AggregationFactory, SelectColumn[], Table> operation) {
+        List<AggregationFactory.AggregationElement> optimized =
+                AggregationFactory.AggregationElement.optimize(aggregations);
         List<ColumnName> optimizedOrder = optimized.stream()
                 .map(AggregationFactory.AggregationElement::getResultPairs)
                 .flatMap(Stream::of)
@@ -701,7 +702,7 @@ public class QueryTable extends BaseTable {
     }
 
     private QueryTable byNoMemo(AggregationSpec inputAggregationSpec,
-                                final SelectColumn... groupByColumns) {
+            final SelectColumn... groupByColumns) {
         final String description = "by(" + inputAggregationSpec + ", " + Arrays.toString(groupByColumns) + ")";
 
         return QueryPerformanceRecorder.withNugget(description, sizeForInstrumentation(), () -> {
@@ -951,10 +952,10 @@ public class QueryTable extends BaseTable {
                 final String currentColumn = currentColumns.get(cci++);
                 if (!leftColsToMove.contains(currentColumn)
                         && Arrays.stream(viewColumns).noneMatch(
-                        viewCol -> viewCol != null && viewCol.getMatchPair().leftColumn.equals(currentColumn))
+                                viewCol -> viewCol != null && viewCol.getMatchPair().leftColumn.equals(currentColumn))
                         && Arrays.stream(columnsToMove)
-                        .noneMatch(colToMove -> MatchPairFactory.getExpression(colToMove).rightColumn
-                                .equals(currentColumn))) {
+                                .noneMatch(colToMove -> MatchPairFactory.getExpression(colToMove).rightColumn
+                                        .equals(currentColumn))) {
 
                     viewColumns[vci++] = SelectColumnFactory.getExpression(currentColumn);
                 }
@@ -971,7 +972,7 @@ public class QueryTable extends BaseTable {
 
     @Override
     public Table applyToAllBy(String formulaColumn, String columnParamName,
-                              Collection<? extends Selectable> groupByColumns) {
+            Collection<? extends Selectable> groupByColumns) {
         final QueryTable tableToUse = (QueryTable) dropColumnFormats();
         return QueryPerformanceRecorder.withNugget(
                 "applyToAllBy(" + formulaColumn + ',' + columnParamName + ',' + groupByColumns + ")",
@@ -1102,7 +1103,7 @@ public class QueryTable extends BaseTable {
          * @param modifiedColumnSet the set of columns that have any changes to indices in {@code modified}
          */
         private void doRefilter(final RowSet upstreamAdded, final RowSet upstreamRemoved, final RowSet upstreamModified,
-                                final RowSetShiftData shiftData, final ModifiedColumnSet modifiedColumnSet) {
+                final RowSetShiftData shiftData, final ModifiedColumnSet modifiedColumnSet) {
 
             // Remove upstream keys first, so that keys at rows that were removed and then added are propagated as such.
             // Note that it is a failure to propagate these as modifies, since modifiedColumnSet may not mark that all
@@ -1262,12 +1263,12 @@ public class QueryTable extends BaseTable {
                                     }
 
                                     final List<NotificationQueue.Dependency> dependencies = Stream.concat(
-                                                    Stream.of(filters)
-                                                            .filter(f -> f instanceof NotificationQueue.Dependency)
-                                                            .map(f -> (NotificationQueue.Dependency) f),
-                                                    Stream.of(filters).filter(f -> f instanceof DependencyStreamProvider)
-                                                            .flatMap(f -> ((DependencyStreamProvider) f)
-                                                                    .getDependencyStream()))
+                                            Stream.of(filters)
+                                                    .filter(f -> f instanceof NotificationQueue.Dependency)
+                                                    .map(f -> (NotificationQueue.Dependency) f),
+                                            Stream.of(filters).filter(f -> f instanceof DependencyStreamProvider)
+                                                    .flatMap(f -> ((DependencyStreamProvider) f)
+                                                            .getDependencyStream()))
                                             .collect(Collectors.toList());
                                     if (swapListener != null) {
                                         final ListenerRecorder recorder =
@@ -1299,7 +1300,7 @@ public class QueryTable extends BaseTable {
 
     @SuppressWarnings("WeakerAccess")
     protected WritableRowSet filterRows(RowSet currentMapping, RowSet fullSet, boolean usePrev,
-                                        WhereFilter... filters) {
+            WhereFilter... filters) {
         WritableRowSet matched = currentMapping.copy();
 
         for (WhereFilter filter : filters) {
@@ -1700,7 +1701,7 @@ public class QueryTable extends BaseTable {
             // - create parallel arrays of pre-shift-keys and post-shift-keys so we can move them in chunks
 
             try (final WritableRowSet toClear = dependent.rowSet.getPrevRowSet();
-                 final SelectAndViewAnalyzer.UpdateHelper updateHelper =
+                    final SelectAndViewAnalyzer.UpdateHelper updateHelper =
                             new SelectAndViewAnalyzer.UpdateHelper(dependent.rowSet, upstream)) {
                 toClear.remove(dependent.rowSet);
                 analyzer.applyUpdate(upstream, toClear, updateHelper);
@@ -2044,7 +2045,8 @@ public class QueryTable extends BaseTable {
         }
 
         final Set<String> columnsToMatchSet =
-                Arrays.stream(columnsToMatch).map(MatchPair::rightColumn).collect(Collectors.toCollection(HashSet::new));
+                Arrays.stream(columnsToMatch).map(MatchPair::rightColumn)
+                        .collect(Collectors.toCollection(HashSet::new));
 
         final Map<String, Selectable> columnsToAddSelectColumns = new LinkedHashMap<>();
         final List<String> columnsToUngroupBy = new ArrayList<>();

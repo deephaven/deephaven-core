@@ -1095,7 +1095,8 @@ public class QueryTableTest extends QueryTableTestBase {
         final QueryTable table = testRefreshingTable(i(1).toTracking(), c("Sentinel", 1));
 
         final QueryTable reverseTable = (QueryTable) table.reverse();
-        final io.deephaven.engine.table.impl.SimpleListener listener = new io.deephaven.engine.table.impl.SimpleListener(reverseTable);
+        final io.deephaven.engine.table.impl.SimpleListener listener =
+                new io.deephaven.engine.table.impl.SimpleListener(reverseTable);
         reverseTable.listenForUpdates(listener);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
@@ -1120,7 +1121,8 @@ public class QueryTableTest extends QueryTableTestBase {
         final QueryTable table = testRefreshingTable(i(1).toTracking(), c("Sentinel", 1));
         final QueryTable reversedTable = (QueryTable) table.reverse();
 
-        final io.deephaven.engine.table.impl.SimpleListener listener = new io.deephaven.engine.table.impl.SimpleListener(reversedTable);
+        final io.deephaven.engine.table.impl.SimpleListener listener =
+                new io.deephaven.engine.table.impl.SimpleListener(reversedTable);
         reversedTable.listenForUpdates(listener);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
@@ -2236,7 +2238,8 @@ public class QueryTableTest extends QueryTableTestBase {
                 c("Sym", "aa", "bc", "aa", "aa"),
                 c("Timestamp", DateTimeUtil.currentTime(), DateTimeUtil.currentTime(), DateTimeUtil.currentTime(),
                         DateTimeUtil.currentTime()));
-        assertEquals(queryTable.groupBy("Sym").getDefinition().getColumn("Timestamp").getComponentType(), DateTime.class);
+        assertEquals(queryTable.groupBy("Sym").getDefinition().getColumn("Timestamp").getComponentType(),
+                DateTime.class);
         show(queryTable.update("x = Timestamp_[0]"));
         show(queryTable.update("TimeinSeconds=round((max(Timestamp_)-min(Timestamp_))/1000000000)"));
         show(queryTable.groupBy("Sym").view("Sym", "x = Timestamp[0]"));
@@ -2518,12 +2521,14 @@ public class QueryTableTest extends QueryTableTestBase {
                 EvalNugget.from(() -> table.groupBy("C1").sort("C1").ungroup(nullFill, "C2").ungroup(nullFill, "Date")),
                 EvalNugget.from(() -> table.groupBy("C1").sort("C1").ungroup(nullFill, "C2").ungroup(nullFill)),
                 EvalNugget.from(() -> table.groupBy("C1", "C2").sort("C1", "C2").ungroup(nullFill)),
-                EvalNugget.from(() -> table.groupBy().update("Date=Date.toArray()", "C1=C1.toArray()", "C2=C2.toArray()")
-                        .ungroup(nullFill)),
+                EvalNugget
+                        .from(() -> table.groupBy().update("Date=Date.toArray()", "C1=C1.toArray()", "C2=C2.toArray()")
+                                .ungroup(nullFill)),
                 EvalNugget.from(() -> table.groupBy("C1").update("Date=Date.toArray()", "C2=C2.toArray()").sort("C1")
                         .ungroup(nullFill)),
-                EvalNugget.from(() -> table.groupBy().update("Date=Date.toArray()", "C1=C1.toArray()", "C2=C2.toArray()")
-                        .ungroup(nullFill, "C1")),
+                EvalNugget
+                        .from(() -> table.groupBy().update("Date=Date.toArray()", "C1=C1.toArray()", "C2=C2.toArray()")
+                                .ungroup(nullFill, "C1")),
                 EvalNugget.from(() -> table.groupBy("C1").update("Date=Date.toArray()", "C2=C2.toArray()").sort("C1")
                         .ungroup(nullFill, "C2")),
                 EvalNugget.from(() -> table.groupBy("C1").update("Date=Date.toArray()", "C2=C2.toArray()").sort("C1")
@@ -2531,7 +2536,8 @@ public class QueryTableTest extends QueryTableTestBase {
                 EvalNugget.from(() -> table.groupBy("C1").update("Date=Date.toArray()", "C2=C2.toArray()").sort("C1")
                         .ungroup(nullFill, "C2").ungroup(nullFill)),
                 EvalNugget.from(
-                        () -> table.groupBy("C1", "C2").update("Date=Date.toArray()").sort("C1", "C2").ungroup(nullFill)),
+                        () -> table.groupBy("C1", "C2").update("Date=Date.toArray()").sort("C1", "C2")
+                                .ungroup(nullFill)),
                 EvalNugget.from(() -> table.groupBy("C1").update("Date=Date.toArray()", "C2=C2.toArray()").sort("C1")
                         .ungroup(nullFill)),
                 EvalNugget.from(() -> table.view("C3").ungroup(nullFill))
@@ -2568,7 +2574,8 @@ public class QueryTableTest extends QueryTableTestBase {
                             new SetGenerator<>("a", "b", "c", "d"),
                             new IntGenerator(10, 100)));
 
-            final Table mismatch = table.groupBy("Sym").sort("Sym").update("MyBoolean=boolArray", "MyDouble=doubleArray");
+            final Table mismatch =
+                    table.groupBy("Sym").sort("Sym").update("MyBoolean=boolArray", "MyDouble=doubleArray");
 
             final EvalNugget[] en = new EvalNugget[] {
                     new EvalNugget() {
@@ -3094,7 +3101,8 @@ public class QueryTableTest extends QueryTableTestBase {
         update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
 
         // we want to specifically test shift-aware-listener path
-        final io.deephaven.engine.table.impl.SimpleListener listener = new io.deephaven.engine.table.impl.SimpleListener(src);
+        final io.deephaven.engine.table.impl.SimpleListener listener =
+                new io.deephaven.engine.table.impl.SimpleListener(src);
         src.listenForUpdates(listener);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {

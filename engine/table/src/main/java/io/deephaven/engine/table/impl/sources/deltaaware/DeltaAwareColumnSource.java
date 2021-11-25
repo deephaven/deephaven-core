@@ -103,13 +103,13 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
     }
 
     /**
-     * A lambda that ensures the capacity of the baseline data structure. (We have this because the ChunkSink
-     * does not have an 'ensureCapacity', but the underlying data structure we use does).
+     * A lambda that ensures the capacity of the baseline data structure. (We have this because the ChunkSink does not
+     * have an 'ensureCapacity', but the underlying data structure we use does).
      */
     private final CapacityEnsurer baselineCapacityEnsurer;
     /**
-     * A lambda that ensures the capacity of the delta data structure. (We have this because the ChunkSink does
-     * not have an 'ensureCapacity', but the underlying data structure we use does).
+     * A lambda that ensures the capacity of the delta data structure. (We have this because the ChunkSink does not have
+     * an 'ensureCapacity', but the underlying data structure we use does).
      */
     private CapacityEnsurer deltaCapacityEnsurer;
     /**
@@ -279,8 +279,8 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
 
     @SuppressWarnings({"rawtypes", "unchecked"})
     private static Chunk<? super Values> getOrFillSimple(ChunkSource src, GetAndFillContexts ctx,
-                                                         WritableChunk<? super Values> optionalDest,
-                                                         RowSequence rowSequence) {
+            WritableChunk<? super Values> optionalDest,
+            RowSequence rowSequence) {
         if (optionalDest == null) {
             return src.getChunk(ctx.getContext, rowSequence);
         }

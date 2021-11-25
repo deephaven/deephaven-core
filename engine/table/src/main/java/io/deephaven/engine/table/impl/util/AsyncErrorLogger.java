@@ -47,7 +47,7 @@ public class AsyncErrorLogger {
     }
 
     public static void log(DateTime time, TableListener.Entry entry,
-                           TableListener.Entry sourceEntry, Throwable originalException) throws IOException {
+            TableListener.Entry sourceEntry, Throwable originalException) throws IOException {
         timeSetter.set(time);
         if (entry instanceof UpdatePerformanceTracker.Entry) {
             final UpdatePerformanceTracker.Entry uptEntry = (UpdatePerformanceTracker.Entry) entry;

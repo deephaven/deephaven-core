@@ -54,7 +54,7 @@ public class GroupingUtil {
                                 final RowSet rowSet = entry.getValue();
                                 Assert.gt(rowSet.firstRowKey(), "rowSet.firstRowKey()", prevLastKey, "prevLastKey");
                                 prevLastKey = rowSet.lastRowKey();
-                                return new long[]{currentSize, currentSize += rowSet.size()};
+                                return new long[] {currentSize, currentSize += rowSet.size()};
                             }
                         },
                         Assert::neverInvoked,

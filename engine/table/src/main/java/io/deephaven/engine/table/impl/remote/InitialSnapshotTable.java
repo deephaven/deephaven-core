@@ -31,8 +31,9 @@ public class InitialSnapshotTable extends QueryTable {
 
     private final BitSet subscribedColumns;
 
-    protected InitialSnapshotTable(Map<String, ? extends ColumnSource<?>> result, WritableColumnSource<?>[] writableSources,
-                                   WritableRowRedirection rowRedirection, BitSet subscribedColumns) {
+    protected InitialSnapshotTable(Map<String, ? extends ColumnSource<?>> result,
+            WritableColumnSource<?>[] writableSources,
+            WritableRowRedirection rowRedirection, BitSet subscribedColumns) {
         super(RowSetFactory.empty().toTracking(), result);
         this.subscribedColumns = subscribedColumns;
         this.writableSources = writableSources;

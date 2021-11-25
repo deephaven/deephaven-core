@@ -55,8 +55,8 @@ public class PublishToKafka<K, V> extends LivenessArtifact {
      * {@link UpdateGraphProcessor#exclusiveLock() exclusive lock} or its {@link UpdateGraphProcessor#sharedLock()
      * shared lock}. The publisher will install a listener in order to produce new records as updates become available.
      * Callers must be sure to maintain a reference to the publisher and ensure that it remains
-     * {@link io.deephaven.engine.liveness.LivenessReferent live}. The easiest way to do this may be to construct
-     * the publisher enclosed by a {@link io.deephaven.engine.liveness.LivenessScope liveness scope} with
+     * {@link io.deephaven.engine.liveness.LivenessReferent live}. The easiest way to do this may be to construct the
+     * publisher enclosed by a {@link io.deephaven.engine.liveness.LivenessScope liveness scope} with
      * {@code enforceStrongReachability} specified as {@code true}, and {@link LivenessScope#release() release} the
      * scope when publication is no longer needed. For example:
      * 

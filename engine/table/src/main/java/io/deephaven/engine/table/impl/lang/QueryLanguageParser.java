@@ -77,11 +77,11 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
      * @throws QueryLanguageParseException If any exception or error is encountered
      */
     public QueryLanguageParser(String expression,
-                               Collection<Package> packageImports,
-                               Collection<Class<?>> classImports,
-                               Collection<Class<?>> staticImports,
-                               Map<String, Class<?>> variables,
-                               Map<String, Class<?>[]> variableParameterizedTypes) throws QueryLanguageParseException {
+            Collection<Package> packageImports,
+            Collection<Class<?>> classImports,
+            Collection<Class<?>> staticImports,
+            Map<String, Class<?>> variables,
+            Map<String, Class<?>[]> variableParameterizedTypes) throws QueryLanguageParseException {
         this(expression, packageImports, classImports, staticImports, variables,
                 variableParameterizedTypes, true);
     }
@@ -102,11 +102,11 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
      * @throws QueryLanguageParseException If any exception or error is encountered
      */
     public QueryLanguageParser(String expression,
-                               Collection<Package> packageImports,
-                               Collection<Class<?>> classImports,
-                               Collection<Class<?>> staticImports,
-                               Map<String, Class<?>> variables,
-                               Map<String, Class<?>[]> variableParameterizedTypes, boolean unboxArguments)
+            Collection<Package> packageImports,
+            Collection<Class<?>> classImports,
+            Collection<Class<?>> staticImports,
+            Map<String, Class<?>> variables,
+            Map<String, Class<?>[]> variableParameterizedTypes, boolean unboxArguments)
             throws QueryLanguageParseException {
         this.packageImports = packageImports == null ? Collections.emptySet()
                 : Require.notContainsNull(packageImports, "packageImports");
@@ -837,8 +837,9 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             if (nArgExpressions == nArgs
                     && varArgType != expressionTypes[lastArgIndex]
                     && isVector(expressionTypes[lastArgIndex])) {
-                expressions[lastArgIndex] = new MethodCallExpr(new NameExpr("VectorConversions"), "nullSafeVectorToArray",
-                        new NodeList<>(expressions[lastArgIndex]));
+                expressions[lastArgIndex] =
+                        new MethodCallExpr(new NameExpr("VectorConversions"), "nullSafeVectorToArray",
+                                new NodeList<>(expressions[lastArgIndex]));
                 expressionTypes[lastArgIndex] = convertVector(expressionTypes[lastArgIndex],
                         parameterizedTypes[lastArgIndex] == null ? null : parameterizedTypes[lastArgIndex][0]);
                 allExpressionTypesArePrimitive = false;
@@ -900,8 +901,8 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
          *
          * What matters here: 1) If it's a simple name (i.e. not a qualified name; doesn't contain a '.'), then 1. Check
          * whether it's in the scope 2. If it's not in the scope, see if it's a static import 3. If it's not a static
-         * import, then it's not a situation the QueryLanguageParser has to worry about. 2) Qualified names -- we just throw
-         * them to 'findClass()'. Many details are not relevant here. For example, field access is handled by a
+         * import, then it's not a situation the QueryLanguageParser has to worry about. 2) Qualified names -- we just
+         * throw them to 'findClass()'. Many details are not relevant here. For example, field access is handled by a
          * different method: visit(FieldAccessExpr, StringBuilder).
          */
         printer.append(n.getNameAsString());

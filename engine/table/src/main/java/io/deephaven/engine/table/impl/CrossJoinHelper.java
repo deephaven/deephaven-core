@@ -435,7 +435,8 @@ public class CrossJoinHelper {
                                         final long beginRange =
                                                 upstreamLeft.shifted().getBeginRange(shiftIdx) << prevRightBits;
                                         final long endRange =
-                                                ((upstreamLeft.shifted().getEndRange(shiftIdx) + 1) << prevRightBits) - 1;
+                                                ((upstreamLeft.shifted().getEndRange(shiftIdx) + 1) << prevRightBits)
+                                                        - 1;
                                         final long shiftDelta =
                                                 upstreamLeft.shifted().getShiftDelta(shiftIdx) << currRightBits;
 
@@ -662,7 +663,8 @@ public class CrossJoinHelper {
                             downstream.modifiedColumnSet = resultTable.modifiedColumnSet;
                             downstream.modifiedColumnSet().clear();
                             if (leftChanged && tracker.hasLeftModifies) {
-                                leftTransformer.transform(upstreamLeft.modifiedColumnSet(), downstream.modifiedColumnSet());
+                                leftTransformer.transform(upstreamLeft.modifiedColumnSet(),
+                                        downstream.modifiedColumnSet());
                             }
                             if (rightChanged && tracker.hasRightModifies) {
                                 rightTransformer.transform(upstreamRight.modifiedColumnSet(),
@@ -938,7 +940,8 @@ public class CrossJoinHelper {
                     // Do note that add/mod's are in post-shift keyspace.
                     final RowSet.SearchIterator leftAddIter = leftChanged ? leftUpdate.added().searchIterator() : null;
                     final RowSet.SearchIterator leftRmIter = leftChanged ? leftUpdate.removed().searchIterator() : null;
-                    final RowSet.SearchIterator leftModIter = leftChanged ? leftUpdate.modified().searchIterator() : null;
+                    final RowSet.SearchIterator leftModIter =
+                            leftChanged ? leftUpdate.modified().searchIterator() : null;
                     boolean moreLeftAdd = leftChanged && advanceIterator(leftAddIter);
                     boolean moreLeftRm = leftChanged && advanceIterator(leftRmIter);
                     boolean moreLeftMod = leftChanged && advanceIterator(leftModIter);

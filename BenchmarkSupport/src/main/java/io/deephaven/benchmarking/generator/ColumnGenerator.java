@@ -7,8 +7,7 @@ import io.deephaven.engine.table.lang.QueryScope;
 
 /**
  * An interface that defines a class which will create Columns for a {@link io.deephaven.benchmarking.BenchmarkTable}
- * including {@link ColumnDefinition} creation and a method to create
- * {@link Table#update(String...)} strings.
+ * including {@link ColumnDefinition} creation and a method to create {@link Table#update(String...)} strings.
  *
  * @param <T> The column type
  */
@@ -26,11 +25,9 @@ public interface ColumnGenerator<T> {
     void init(ExtendedRandom random);
 
     /**
-     * Create a string suitable for use with {@link Table#update(String...)} calls to
-     * generate data.
+     * Create a string suitable for use with {@link Table#update(String...)} calls to generate data.
      *
-     * @param varName The name of this instance's variable within the
-     *        {@link QueryScope}
+     * @param varName The name of this instance's variable within the {@link QueryScope}
      * @return A string for use with update()
      */
     String getUpdateString(String varName);

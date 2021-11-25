@@ -441,9 +441,11 @@ public class TestAmbiguity {
         Assert.assertArrayEquals(expectedSortedPrimBytes, ByteNumericPrimitives.sort((byte) 1, (byte) 2, (byte) 3));
 
         final short[] expectedSortedPrimShorts = new short[] {1, 2, 3};
-        Assert.assertArrayEquals(expectedSortedPrimShorts, ShortNumericPrimitives.sort((short) 1, (short) 2, (short) 3));
+        Assert.assertArrayEquals(expectedSortedPrimShorts,
+                ShortNumericPrimitives.sort((short) 1, (short) 2, (short) 3));
         Assert.assertArrayEquals(expectedSortedPrimShorts, ShortNumericPrimitives.sort(new short[] {1, 2, 3}));
-        Assert.assertArrayEquals(expectedSortedPrimShorts, ShortNumericPrimitives.sort((short) 1, (short) 2, (short) 3));
+        Assert.assertArrayEquals(expectedSortedPrimShorts,
+                ShortNumericPrimitives.sort((short) 1, (short) 2, (short) 3));
 
         final int[] expectedSortedPrimInts = new int[] {1, 2, 3};
         Assert.assertArrayEquals(expectedSortedPrimInts, IntegerNumericPrimitives.sort(1, 2, 3));
@@ -477,14 +479,19 @@ public class TestAmbiguity {
     @Test
     public void testSortDescending() {
         final byte[] expectedSortedPrimBytes = new byte[] {3, 2, 1};
-        Assert.assertArrayEquals(expectedSortedPrimBytes, ByteNumericPrimitives.sortDescending((byte) 1, (byte) 2, (byte) 3));
+        Assert.assertArrayEquals(expectedSortedPrimBytes,
+                ByteNumericPrimitives.sortDescending((byte) 1, (byte) 2, (byte) 3));
         Assert.assertArrayEquals(expectedSortedPrimBytes, ByteNumericPrimitives.sortDescending(new byte[] {1, 2, 3}));
-        Assert.assertArrayEquals(expectedSortedPrimBytes, ByteNumericPrimitives.sortDescending((byte) 1, (byte) 2, (byte) 3));
+        Assert.assertArrayEquals(expectedSortedPrimBytes,
+                ByteNumericPrimitives.sortDescending((byte) 1, (byte) 2, (byte) 3));
 
         final short[] expectedSortedPrimShorts = new short[] {3, 2, 1};
-        Assert.assertArrayEquals(expectedSortedPrimShorts, ShortNumericPrimitives.sortDescending((short) 1, (short) 2, (short) 3));
-        Assert.assertArrayEquals(expectedSortedPrimShorts, ShortNumericPrimitives.sortDescending(new short[] {1, 2, 3}));
-        Assert.assertArrayEquals(expectedSortedPrimShorts, ShortNumericPrimitives.sortDescending((short) 1, (short) 2, (short) 3));
+        Assert.assertArrayEquals(expectedSortedPrimShorts,
+                ShortNumericPrimitives.sortDescending((short) 1, (short) 2, (short) 3));
+        Assert.assertArrayEquals(expectedSortedPrimShorts,
+                ShortNumericPrimitives.sortDescending(new short[] {1, 2, 3}));
+        Assert.assertArrayEquals(expectedSortedPrimShorts,
+                ShortNumericPrimitives.sortDescending((short) 1, (short) 2, (short) 3));
 
         final int[] expectedSortedPrimInts = new int[] {3, 2, 1};
         Assert.assertArrayEquals(expectedSortedPrimInts, IntegerNumericPrimitives.sortDescending(1, 2, 3));
@@ -499,7 +506,8 @@ public class TestAmbiguity {
 
         final float[] expectedSortedPrimFloats = new float[] {3f, 2f, 1f};
         Assert.assertArrayEquals(expectedSortedPrimFloats, FloatNumericPrimitives.sortDescending(1f, 2f, 3f), 0);
-        Assert.assertArrayEquals(expectedSortedPrimFloats, FloatNumericPrimitives.sortDescending(new float[] {1, 2, 3}), 0);
+        Assert.assertArrayEquals(expectedSortedPrimFloats, FloatNumericPrimitives.sortDescending(new float[] {1, 2, 3}),
+                0);
         Assert.assertArrayEquals(expectedSortedPrimFloats, FloatNumericPrimitives.sortDescending(1f, 2f, 3f), 0);
 
         final double[] expectedSortedPrimDoubles = new double[] {3d, 2d, 1d};

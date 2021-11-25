@@ -21,8 +21,8 @@ public class WritableRedirectedColumnSource<T> extends RedirectedColumnSource<T>
     private long maxInnerIndex;
 
     /**
-     * Create a type-appropriate WritableRedirectedColumnSource for the supplied {@link WritableRowRedirection} and inner
-     * {@link ColumnSource}.
+     * Create a type-appropriate WritableRedirectedColumnSource for the supplied {@link WritableRowRedirection} and
+     * inner {@link ColumnSource}.
      *
      * @param rowRedirection The redirection rowSet to use
      * @param innerSource The column source to redirect

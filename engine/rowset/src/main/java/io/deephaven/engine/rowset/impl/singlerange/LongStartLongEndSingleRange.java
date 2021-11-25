@@ -8,14 +8,22 @@ public final class LongStartLongEndSingleRange extends SingleRange {
         this.start = start;
         this.end = end;
     }
+
     @Override
-    public long rangeStart() { return start; }
+    public long rangeStart() {
+        return start;
+    }
+
     @Override
-    public long rangeEnd() { return end; }
+    public long rangeEnd() {
+        return end;
+    }
+
     @Override
     public long getCardinality() {
         return end - start + 1;
     }
+
     @Override
     public LongStartLongEndSingleRange copy() {
         return new LongStartLongEndSingleRange(start, end);

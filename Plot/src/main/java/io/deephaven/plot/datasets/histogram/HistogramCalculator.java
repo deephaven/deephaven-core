@@ -83,8 +83,7 @@ public class HistogramCalculator {
      * Finds the minimum and maximum of the data in the {@code column} of the {@code table} and splits this range into
      * {@code nbins} equally sized bins. Calculates the number of data values in each bin.
      * <p>
-     * Data which is not normal as defined in {@link DoubleFpPrimitives#isNormal} is
-     * filtered out of the data set.
+     * Data which is not normal as defined in {@link DoubleFpPrimitives#isNormal} is filtered out of the data set.
      *
      * @throws io.deephaven.base.verify.RequirementFailure {@code table} and {@code column} must not be null
      * @throws RuntimeException {@code column} must be numeric
@@ -111,8 +110,7 @@ public class HistogramCalculator {
      * Finds the minimum and maximum of the data in the {@code column} of the {@code table} and splits this range into
      * {@code nbins} equally sized bins. Calculates the number of data values in each bin.
      * <p>
-     * Data which is not normal as defined in {@link DoubleFpPrimitives#isNormal} is
-     * filtered out of the data set.
+     * Data which is not normal as defined in {@link DoubleFpPrimitives#isNormal} is filtered out of the data set.
      *
      * @param table table
      * @param column column in {@code table}
@@ -133,8 +131,7 @@ public class HistogramCalculator {
      * Splits the specified range into {@code nbins} equally sized bins. Calculates the number of data values in each
      * bin.
      * <p>
-     * Data which is not normal as defined in {@link DoubleFpPrimitives#isNormal} is
-     * filtered out of the data set.
+     * Data which is not normal as defined in {@link DoubleFpPrimitives#isNormal} is filtered out of the data set.
      *
      * @param table table
      * @param histogramColumn histogramColumn in {@code table}
@@ -161,8 +158,7 @@ public class HistogramCalculator {
      * Splits the specified range into {@code nbins} equally sized bins. Calculates the number of data values in each
      * bin.
      * <p>
-     * Data which is not normal as defined in {@link DoubleFpPrimitives#isNormal} is
-     * filtered out of the data set.
+     * Data which is not normal as defined in {@link DoubleFpPrimitives#isNormal} is filtered out of the data set.
      *
      * @param table table
      * @param histogramColumn histogramColumn in {@code table}

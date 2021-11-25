@@ -1091,8 +1091,8 @@ public class QueryTableTreeTest extends QueryTableTestBase {
                 new EvalNugget() {
                     @Override
                     protected Table e() {
-                        return UpdateGraphProcessor.DEFAULT.exclusiveLock().computeLocked(() ->
-                                TreeTableOrphanPromoter.promoteOrphans((QueryTable) prepared, "ID", "Parent"));
+                        return UpdateGraphProcessor.DEFAULT.exclusiveLock().computeLocked(
+                                () -> TreeTableOrphanPromoter.promoteOrphans((QueryTable) prepared, "ID", "Parent"));
                     }
                 },
                 new EvalNugget() {
@@ -1105,9 +1105,9 @@ public class QueryTableTreeTest extends QueryTableTestBase {
                 new TreeTableEvalNugget(prepared) {
                     @Override
                     protected Table e() {
-                        return UpdateGraphProcessor.DEFAULT.exclusiveLock().computeLocked(() ->
-                                TreeTableOrphanPromoter.promoteOrphans((QueryTable) prepared
-                                                .where("Sentinel % 2 == 0"), "ID", "Parent").treeTable("ID", "Parent"));
+                        return UpdateGraphProcessor.DEFAULT.exclusiveLock()
+                                .computeLocked(() -> TreeTableOrphanPromoter.promoteOrphans((QueryTable) prepared
+                                        .where("Sentinel % 2 == 0"), "ID", "Parent").treeTable("ID", "Parent"));
                     }
                 },
         };
@@ -1551,8 +1551,8 @@ public class QueryTableTreeTest extends QueryTableTestBase {
         testIncrementalSimple(AggUnique("IntCol"));
         testIncrementalSimple(AggUnique(true, "IntCol"));
         // TODO (https://github.com/deephaven/deephaven-core/issues/991): Re-enable these sub-tests
-//        testIncrementalSimple(AggUnique(false, -1, -2, "IntCol"));
-//        testIncrementalSimple(AggUnique(true, -1, -2, "IntCol"));
+        // testIncrementalSimple(AggUnique(false, -1, -2, "IntCol"));
+        // testIncrementalSimple(AggUnique(true, -1, -2, "IntCol"));
     }
 
     private void testIncrementalSimple(Aggregation aggregation) {

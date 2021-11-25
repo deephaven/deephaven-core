@@ -12,7 +12,7 @@ import java.io.File;
 public class ParquetKeyValuePartitionedLayout extends KeyValuePartitionLayout<ParquetTableLocationKey> {
 
     public ParquetKeyValuePartitionedLayout(@NotNull final File tableRootDirectory,
-                                            final int maxPartitioningLevels) {
+            final int maxPartitioningLevels) {
         super(tableRootDirectory,
                 path -> path.getFileName().toString().endsWith(ParquetTableWriter.PARQUET_FILE_EXTENSION),
                 (path, partitions) -> new ParquetTableLocationKey(path.toFile(), 0, partitions),

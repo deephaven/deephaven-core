@@ -124,10 +124,10 @@ public class AxesImpl implements Axes, PlotExceptionCause {
      * @param chart new chart.
      * @return axes array copy.
      */
-    private static AxisImpl[] copyAxes(final AxesImpl axes, final ChartImpl chart){
+    private static AxisImpl[] copyAxes(final AxesImpl axes, final ChartImpl chart) {
         final AxisImpl[] rst = new AxisImpl[axes.axes.length];
 
-        for(int dim=0; dim<rst.length; dim++){
+        for (int dim = 0; dim < rst.length; dim++) {
             final int id = axes.axes[dim].id();
             rst[dim] = chart.getAxis()[dim].get(id);
         }
@@ -136,7 +136,7 @@ public class AxesImpl implements Axes, PlotExceptionCause {
     }
 
 
-    //region Internals
+    // region Internals
 
     @Override
     public PlotInfo getPlotInfo() {
@@ -149,7 +149,9 @@ public class AxesImpl implements Axes, PlotExceptionCause {
      *
      * @return this Axes's {@link Chart}
      */
-    public ChartImpl chart() { return chart; }
+    public ChartImpl chart() {
+        return chart;
+    }
 
     /**
      * Gets this AxesImpl's id.
@@ -178,7 +180,8 @@ public class AxesImpl implements Axes, PlotExceptionCause {
 
     void setDimension(int dim) {
         if (dimension != -1 && dimension != dim) {
-            throw new PlotUnsupportedOperationException("Plots with different dimensions are not supported in a single chart.", this);
+            throw new PlotUnsupportedOperationException(
+                    "Plots with different dimensions are not supported in a single chart.", this);
         }
         dimension = dim;
     }
@@ -198,11 +201,11 @@ public class AxesImpl implements Axes, PlotExceptionCause {
      * @return this AxesImpl's {@link PlotStyle}
      */
     public PlotStyle getPlotStyle() {
-        if( plotStyle != null ){
+        if (plotStyle != null) {
             return plotStyle;
         }
 
-        switch (chart.getChartType()){
+        switch (chart.getChartType()) {
             case CATEGORY:
                 return PlotStyle.BAR;
             case XY:
@@ -212,7 +215,8 @@ public class AxesImpl implements Axes, PlotExceptionCause {
             case PIE:
                 return PlotStyle.PIE;
             default:
-                throw new PlotUnsupportedOperationException("No default plot style for chart type: " + chart.getChartType(), this);
+                throw new PlotUnsupportedOperationException(
+                        "No default plot style for chart type: " + chart.getChartType(), this);
         }
     }
 
@@ -252,18 +256,20 @@ public class AxesImpl implements Axes, PlotExceptionCause {
         chart.setInitialized(true);
     }
 
-    private void registerDataSeries(final SeriesCollection.SeriesType type, final boolean isMultiSeries, final SeriesInternal series){
+    private void registerDataSeries(final SeriesCollection.SeriesType type, final boolean isMultiSeries,
+            final SeriesInternal series) {
         dataSeries.add(type, isMultiSeries, series);
     }
 
-    private static SelectableDataSet getAggregatedSelectableDataSet(final SelectableDataSet sds, final Supplier<AggregationFactory> aggSupplier, final List<String> byColumns) {
+    private static SelectableDataSet getAggregatedSelectableDataSet(final SelectableDataSet sds,
+            final Supplier<AggregationFactory> aggSupplier, final List<String> byColumns) {
         final List<String> cols = new ArrayList<>(byColumns);
-        if(sds instanceof SelectableDataSetOneClick) {
+        if (sds instanceof SelectableDataSetOneClick) {
             Collections.addAll(cols, ((SelectableDataSetOneClick) sds).getByColumns());
         }
 
         final AggregationFactory caf = aggSupplier.get();
-        return sds.transform(caf.getMemoKey(), t -> ((QueryTable)t).by(caf, SelectColumn.from(Selectable.from(cols))));
+        return sds.transform(caf.getMemoKey(), t -> ((QueryTable) t).by(caf, SelectColumn.from(Selectable.from(cols))));
     }
 
     private static SelectableDataSet getLastBySelectableDataSet(final SelectableDataSet sds, final String... columns) {
@@ -272,17 +278,18 @@ public class AxesImpl implements Axes, PlotExceptionCause {
         return getLastBySelectableDataSet(sds, cols);
     }
 
-    private static SelectableDataSet getLastBySelectableDataSet(final SelectableDataSet sds, final Collection<String> columns) {
-        if(sds instanceof SelectableDataSetOneClick) {
+    private static SelectableDataSet getLastBySelectableDataSet(final SelectableDataSet sds,
+            final Collection<String> columns) {
+        if (sds instanceof SelectableDataSetOneClick) {
             Collections.addAll(columns, ((SelectableDataSetOneClick) sds).getByColumns());
         }
-        return sds.transform(columns, t -> ((Table)t).lastBy(columns));
+        return sds.transform(columns, t -> ((Table) t).lastBy(columns));
     }
 
     public Set<SwappableTable> getSwappableTables() {
         final Set<SwappableTable> result = new HashSet<>();
 
-        for(final AxisImpl axis: axes) {
+        for (final AxisImpl axis : axes) {
             result.addAll(axis.getSwappableTables());
         }
 
@@ -296,7 +303,7 @@ public class AxesImpl implements Axes, PlotExceptionCause {
     public Set<TableMapHandle> getTableMapHandles() {
         final Set<TableMapHandle> result = new HashSet<>();
 
-        for(final AxisImpl axis: axes) {
+        for (final AxisImpl axis : axes) {
             result.addAll(axis.getTableMapHandles());
         }
 
@@ -310,9 +317,9 @@ public class AxesImpl implements Axes, PlotExceptionCause {
     public AxisImpl[] getAxes() {
         return axes;
     }
-    //endregion
-    
-    //region Conveniance
+    // endregion
+
+    // region Conveniance
 
     /**
      * Removes the series with the specified {@code names} from this Axes.
@@ -321,7 +328,7 @@ public class AxesImpl implements Axes, PlotExceptionCause {
      * @return this Chart
      */
     @Override
-    public AxesImpl axesRemoveSeries(final String... names){
+    public AxesImpl axesRemoveSeries(final String... names) {
         dataSeries.remove(names);
         return this;
     }
@@ -335,9 +342,9 @@ public class AxesImpl implements Axes, PlotExceptionCause {
     public SeriesInternal series(Comparable name) {
         return dataSeries.series(name);
     }
-    //endregion
+    // endregion
 
-    //region Axis Creation
+    // region Axis Creation
 
     /**
      * Sets the {@link PlotStyle} of this Axes.
@@ -346,7 +353,7 @@ public class AxesImpl implements Axes, PlotExceptionCause {
      * @return this Axes
      */
     @Override
-    public AxesImpl plotStyle(final PlotStyle style){
+    public AxesImpl plotStyle(final PlotStyle style) {
         ArgumentValidations.assertNotNull(style, "style", getPlotInfo());
         this.plotStyle = style;
         return this;
@@ -359,14 +366,14 @@ public class AxesImpl implements Axes, PlotExceptionCause {
      * @return this Axes
      */
     @Override
-    public AxesImpl plotStyle(final String style){
+    public AxesImpl plotStyle(final String style) {
         ArgumentValidations.assertNotNull(style, "style", getPlotInfo());
         this.plotStyle = PlotStyle.plotStyle(style);
         return this;
     }
-    //endregion
+    // endregion
 
-    //region Axis Creation
+    // region Axis Creation
 
     @Override
     public AxesImpl twin() {
@@ -395,7 +402,7 @@ public class AxesImpl implements Axes, PlotExceptionCause {
             ax[i] = chart.newAxis(i);
         }
 
-        return chart.newAxes(ax,name);
+        return chart.newAxes(ax, name);
     }
 
     @Override
@@ -417,17 +424,18 @@ public class AxesImpl implements Axes, PlotExceptionCause {
     public AxesImpl twinY(String name) {
         return twin(name, 1);
     }
-    //endregion
+    // endregion
 
-    //region Axis Retrieval
+    // region Axis Retrieval
 
     @Override
     public AxisImpl axis(final int dim) {
         if (axes == null) {
             return null;
         }
-        if(dim < 0 | dim >= axes.length) {
-            throw new PlotIllegalArgumentException("Axis not found: rowSet=" + dim + ", required in range = [0," + (axes.length-1) + "]", this);
+        if (dim < 0 | dim >= axes.length) {
+            throw new PlotIllegalArgumentException(
+                    "Axis not found: rowSet=" + dim + ", required in range = [0," + (axes.length - 1) + "]", this);
         }
         return axes[dim];
     }
@@ -441,9 +449,9 @@ public class AxesImpl implements Axes, PlotExceptionCause {
     public AxisImpl yAxis() {
         return axis(1);
     }
-    //endregion
+    // endregion
 
-    //region Axis Configuration
+    // region Axis Configuration
 
     @Override
     public AxesImpl xFormat(final AxisFormat format) {
@@ -469,10 +477,10 @@ public class AxesImpl implements Axes, PlotExceptionCause {
         return this;
     }
 
-    //endregion
+    // endregion
 
-    //region Axis Coloring
-    
+    // region Axis Coloring
+
     @Override
     public AxesImpl xColor(final Paint color) {
         xAxis().axisColor(color);
@@ -494,9 +502,9 @@ public class AxesImpl implements Axes, PlotExceptionCause {
     public AxesImpl yColor(final String color) {
         return yColor(Color.color(color));
     }
-    //endregion
+    // endregion
 
-    //region Axis Labeling
+    // region Axis Labeling
 
     @Override
     public AxesImpl xLabel(final String label) {
@@ -557,9 +565,9 @@ public class AxesImpl implements Axes, PlotExceptionCause {
         yAxis().ticksFont(family, style, size);
         return this;
     }
-    //endregion
+    // endregion
 
-    //region Axis Transformations
+    // region Axis Transformations
 
     @Override
     public AxesImpl xTransform(final AxisTransform transform) {
@@ -586,76 +594,76 @@ public class AxesImpl implements Axes, PlotExceptionCause {
     }
 
     @Override
-    public AxesImpl xBusinessTime(final BusinessCalendar calendar){
+    public AxesImpl xBusinessTime(final BusinessCalendar calendar) {
         xAxis().businessTime(calendar);
         return this;
     }
 
     @Override
-    public AxesImpl yBusinessTime(final BusinessCalendar calendar){
+    public AxesImpl yBusinessTime(final BusinessCalendar calendar) {
         yAxis().businessTime(calendar);
         return this;
     }
 
     @Override
-    public AxesImpl xBusinessTime(final SelectableDataSet sds, final String valueColumn){
+    public AxesImpl xBusinessTime(final SelectableDataSet sds, final String valueColumn) {
         xAxis().businessTime(sds, valueColumn);
         return this;
     }
 
     @Override
-    public AxesImpl yBusinessTime(final SelectableDataSet sds, final String valueColumn){
+    public AxesImpl yBusinessTime(final SelectableDataSet sds, final String valueColumn) {
         yAxis().businessTime(sds, valueColumn);
         return this;
     }
 
     @Override
-    public AxesImpl xBusinessTime(){
+    public AxesImpl xBusinessTime() {
         xAxis().businessTime();
         return this;
     }
 
     @Override
-    public AxesImpl yBusinessTime(){
+    public AxesImpl yBusinessTime() {
         yAxis().businessTime();
         return this;
     }
-    //endregion
+    // endregion
 
-    //region Axis Scaling
+    // region Axis Scaling
 
     @Override
-    public AxesImpl xInvert(){
+    public AxesImpl xInvert() {
         xAxis().invert();
         return this;
     }
 
     @Override
-    public AxesImpl xInvert(final boolean invert){
+    public AxesImpl xInvert(final boolean invert) {
         xAxis().invert(invert);
         return this;
     }
 
     @Override
-    public AxesImpl yInvert(){
+    public AxesImpl yInvert() {
         yAxis().invert();
         return this;
     }
 
     @Override
-    public AxesImpl yInvert(final boolean invert){
+    public AxesImpl yInvert(final boolean invert) {
         yAxis().invert(invert);
         return this;
     }
 
     @Override
-    public AxesImpl xRange(final double min, final double max){
+    public AxesImpl xRange(final double min, final double max) {
         xAxis().range(min, max);
         return this;
     }
 
     @Override
-    public AxesImpl yRange(final double min, final double max){
+    public AxesImpl yRange(final double min, final double max) {
         yAxis().range(min, max);
         return this;
     }
@@ -707,9 +715,9 @@ public class AxesImpl implements Axes, PlotExceptionCause {
         yAxis().max(sds, valueColumn);
         return this;
     }
-    //endregion
-    
-    //region Axis Ticks Modifiers
+    // endregion
+
+    // region Axis Ticks Modifiers
 
     @Override
     public AxesImpl xTicksVisible(final boolean visible) {
@@ -760,7 +768,7 @@ public class AxesImpl implements Axes, PlotExceptionCause {
     }
 
     @Override
-    public AxesImpl xMinorTicks(final int count)  {
+    public AxesImpl xMinorTicks(final int count) {
         xAxis().minorTicks(count);
         return this;
     }
@@ -782,34 +790,41 @@ public class AxesImpl implements Axes, PlotExceptionCause {
         yAxis().tickLabelAngle(angle);
         return this;
     }
-    //endregion
+    // endregion
 
-    //region Error Bar Plots
-    
+    // region Error Bar Plots
+
     @Override
-    public XYErrorBarDataSeriesArray errorBarXY(final Comparable seriesName, final Table t, final String x, final String xLow, final String xHigh, final String y, final String yLow, final String yHigh) {
+    public XYErrorBarDataSeriesArray errorBarXY(final Comparable seriesName, final Table t, final String x,
+            final String xLow, final String xHigh, final String y, final String yLow, final String yHigh) {
         final TableHandle h = new TableHandle(t, x, xLow, xHigh, y, yLow, yHigh);
 
         final boolean hasXTimeAxis = ArgumentValidations.isTime(t, x, new PlotInfo(this, seriesName));
         final boolean hasYTimeAxis = ArgumentValidations.isTime(t, y, new PlotInfo(this, seriesName));
 
-        final XYErrorBarDataSeriesTableArray ds = new XYErrorBarDataSeriesTableArray(this, dataSeries.nextId(), seriesName, h, x, xLow, xHigh, y, yLow, yHigh, true, true);
-        return errorBarXY(ds, hasXTimeAxis, hasYTimeAxis, new TableHandle[]{h}, null);
+        final XYErrorBarDataSeriesTableArray ds = new XYErrorBarDataSeriesTableArray(this, dataSeries.nextId(),
+                seriesName, h, x, xLow, xHigh, y, yLow, yHigh, true, true);
+        return errorBarXY(ds, hasXTimeAxis, hasYTimeAxis, new TableHandle[] {h}, null);
     }
 
     @Override
-    public XYErrorBarDataSeriesArray errorBarXY(final Comparable seriesName, final SelectableDataSet sds, final String x, final String xLow, final String xHigh, final String y, final String yLow, final String yHigh) {
+    public XYErrorBarDataSeriesArray errorBarXY(final Comparable seriesName, final SelectableDataSet sds,
+            final String x, final String xLow, final String xHigh, final String y, final String yLow,
+            final String yHigh) {
         final SwappableTable t = sds.getSwappableTable(seriesName, chart, x, xLow, xHigh, y, yLow, yHigh);
 
         final boolean hasXTimeAxis = ArgumentValidations.isTime(sds, x, new PlotInfo(this, seriesName));
         final boolean hasYTimeAxis = ArgumentValidations.isTime(sds, y, new PlotInfo(this, seriesName));
 
-        final XYErrorBarDataSeriesSwappableTableArray ds = new XYErrorBarDataSeriesSwappableTableArray(this, dataSeries.nextId(), seriesName, t, x, xLow, xHigh, y, yLow, yHigh, true, true);
-        return errorBarXY(ds, hasXTimeAxis, hasYTimeAxis, null, new SwappableTable[]{t});
+        final XYErrorBarDataSeriesSwappableTableArray ds = new XYErrorBarDataSeriesSwappableTableArray(this,
+                dataSeries.nextId(), seriesName, t, x, xLow, xHigh, y, yLow, yHigh, true, true);
+        return errorBarXY(ds, hasXTimeAxis, hasYTimeAxis, null, new SwappableTable[] {t});
     }
 
     @Override
-    public MultiXYErrorBarSeries errorBarXYBy(final Comparable seriesName, final Table t, final String x, final String xLow, final String xHigh, final String y, final String yLow, final String yHigh, final String... byColumns) {
+    public MultiXYErrorBarSeries errorBarXYBy(final Comparable seriesName, final Table t, final String x,
+            final String xLow, final String xHigh, final String y, final String yLow, final String yHigh,
+            final String... byColumns) {
         ArgumentValidations.assertNotNull(t, "t", new PlotInfo(this, seriesName));
         ArgumentValidations.assertNotNull(x, "x", new PlotInfo(this, seriesName));
         ArgumentValidations.assertNotNull(xLow, "xLow", new PlotInfo(this, seriesName));
@@ -820,14 +835,16 @@ public class AxesImpl implements Axes, PlotExceptionCause {
         ArgumentValidations.assertNotNullAndNotEmpty(byColumns, "byColumns", new PlotInfo(this, seriesName));
         configureXYPlot();
 
-        final TableBackedTableMapHandle h = new TableBackedTableMapHandle(t, Arrays.asList(x, xLow, xHigh, y, yLow, yHigh), byColumns, new PlotInfo(this, seriesName));
-        final MultiXYErrorBarSeries series = new MultiXYErrorBarSeries(this, dataSeries.nextId(), seriesName, h, x, xLow, xHigh, y, yLow, yHigh, byColumns, true, true);
+        final TableBackedTableMapHandle h = new TableBackedTableMapHandle(t,
+                Arrays.asList(x, xLow, xHigh, y, yLow, yHigh), byColumns, new PlotInfo(this, seriesName));
+        final MultiXYErrorBarSeries series = new MultiXYErrorBarSeries(this, dataSeries.nextId(), seriesName, h, x,
+                xLow, xHigh, y, yLow, yHigh, byColumns, true, true);
 
-        if( ArgumentValidations.isTime(t, x, new PlotInfo(this, seriesName)) ){
+        if (ArgumentValidations.isTime(t, x, new PlotInfo(this, seriesName))) {
             axes[0].axisFormat(new NanosAxisFormat());
         }
 
-        if( ArgumentValidations.isTime(t, y, new PlotInfo(this, seriesName)) ){
+        if (ArgumentValidations.isTime(t, y, new PlotInfo(this, seriesName))) {
             axes[1].axisFormat(new NanosAxisFormat());
         }
 
@@ -837,7 +854,9 @@ public class AxesImpl implements Axes, PlotExceptionCause {
     }
 
     @Override
-    public MultiXYErrorBarSeriesSwappable errorBarXYBy(final Comparable seriesName, final SelectableDataSet sds, final String x, final String xLow, final String xHigh, final String y, final String yLow, final String yHigh, final String... byColumns) {
+    public MultiXYErrorBarSeriesSwappable errorBarXYBy(final Comparable seriesName, final SelectableDataSet sds,
+            final String x, final String xLow, final String xHigh, final String y, final String yLow,
+            final String yHigh, final String... byColumns) {
         ArgumentValidations.assertNotNull(sds, "sds", new PlotInfo(this, seriesName));
         ArgumentValidations.assertNotNull(x, "x", new PlotInfo(this, seriesName));
         ArgumentValidations.assertNotNull(xLow, "xLow", new PlotInfo(this, seriesName));
@@ -858,7 +877,8 @@ public class AxesImpl implements Axes, PlotExceptionCause {
 
         final SwappableTable t = sds.getSwappableTable(seriesName, chart, columns);
         configureXYPlot();
-        final MultiXYErrorBarSeriesSwappable series = new MultiXYErrorBarSeriesSwappable(this, dataSeries.nextId(), seriesName, t, x, xLow, xHigh, y, yLow, yHigh, byColumns, true, true);
+        final MultiXYErrorBarSeriesSwappable series = new MultiXYErrorBarSeriesSwappable(this, dataSeries.nextId(),
+                seriesName, t, x, xLow, xHigh, y, yLow, yHigh, byColumns, true, true);
 
         setUpPlotBySeries(t.getTableDefinition(), x, y, series);
 
@@ -866,27 +886,32 @@ public class AxesImpl implements Axes, PlotExceptionCause {
     }
 
     @Override
-    public XYErrorBarDataSeries errorBarY( java.lang.Comparable seriesName, Table t, java.lang.String x, java.lang.String y, java.lang.String yLow, java.lang.String yHigh ) {
+    public XYErrorBarDataSeries errorBarY(java.lang.Comparable seriesName, Table t, java.lang.String x,
+            java.lang.String y, java.lang.String yLow, java.lang.String yHigh) {
         final TableHandle h = new TableHandle(t, x, y, yLow, yHigh);
         final boolean hasXTimeAxis = ArgumentValidations.isTime(t, x, new PlotInfo(this, seriesName));
         final boolean hasYTimeAxis = ArgumentValidations.isTime(t, y, new PlotInfo(this, seriesName));
-        final XYErrorBarDataSeriesTableArray ds = new XYErrorBarDataSeriesTableArray(this, dataSeries.nextId(), seriesName, h, x, null, null, y, yLow, yHigh, false, true);
-        return errorBarXY(ds, hasXTimeAxis, hasYTimeAxis, new TableHandle[]{h}, null);
+        final XYErrorBarDataSeriesTableArray ds = new XYErrorBarDataSeriesTableArray(this, dataSeries.nextId(),
+                seriesName, h, x, null, null, y, yLow, yHigh, false, true);
+        return errorBarXY(ds, hasXTimeAxis, hasYTimeAxis, new TableHandle[] {h}, null);
     }
 
     @Override
-    public XYErrorBarDataSeries errorBarY( java.lang.Comparable seriesName, SelectableDataSet sds, java.lang.String x, java.lang.String y, java.lang.String yLow, java.lang.String yHigh ) {
+    public XYErrorBarDataSeries errorBarY(java.lang.Comparable seriesName, SelectableDataSet sds, java.lang.String x,
+            java.lang.String y, java.lang.String yLow, java.lang.String yHigh) {
         final SwappableTable t = sds.getSwappableTable(seriesName, chart, x, y, yLow, yHigh);
 
         final boolean hasXTimeAxis = ArgumentValidations.isTime(sds, x, new PlotInfo(this, seriesName));
         final boolean hasYTimeAxis = ArgumentValidations.isTime(sds, y, new PlotInfo(this, seriesName));
 
-        final XYErrorBarDataSeriesSwappableTableArray ds = new XYErrorBarDataSeriesSwappableTableArray(this, dataSeries.nextId(), seriesName, t, x, null, null, y, yLow, yHigh, false, true);
-        return errorBarXY(ds, hasXTimeAxis, hasYTimeAxis, null, new SwappableTable[]{t});
+        final XYErrorBarDataSeriesSwappableTableArray ds = new XYErrorBarDataSeriesSwappableTableArray(this,
+                dataSeries.nextId(), seriesName, t, x, null, null, y, yLow, yHigh, false, true);
+        return errorBarXY(ds, hasXTimeAxis, hasYTimeAxis, null, new SwappableTable[] {t});
     }
 
     @Override
-    public MultiXYErrorBarSeries errorBarYBy(final Comparable seriesName, final Table t, final String x, final String y, final String yLow, final String yHigh, final String... byColumns) {
+    public MultiXYErrorBarSeries errorBarYBy(final Comparable seriesName, final Table t, final String x, final String y,
+            final String yLow, final String yHigh, final String... byColumns) {
         ArgumentValidations.assertNotNull(t, "t", new PlotInfo(this, seriesName));
         ArgumentValidations.assertNotNull(x, "x", new PlotInfo(this, seriesName));
         ArgumentValidations.assertNotNull(y, "y", new PlotInfo(this, seriesName));
@@ -895,14 +920,16 @@ public class AxesImpl implements Axes, PlotExceptionCause {
         ArgumentValidations.assertNotNullAndNotEmpty(byColumns, "byColumns", new PlotInfo(this, seriesName));
         configureXYPlot();
 
-        final TableBackedTableMapHandle h = new TableBackedTableMapHandle( t, Arrays.asList(x, y, yLow, yHigh), byColumns, new PlotInfo(this, seriesName));
-        final MultiXYErrorBarSeries series = new MultiXYErrorBarSeries(this, dataSeries.nextId(), seriesName, h, x, null, null, y, yLow, yHigh, byColumns, false, true);
+        final TableBackedTableMapHandle h = new TableBackedTableMapHandle(t, Arrays.asList(x, y, yLow, yHigh),
+                byColumns, new PlotInfo(this, seriesName));
+        final MultiXYErrorBarSeries series = new MultiXYErrorBarSeries(this, dataSeries.nextId(), seriesName, h, x,
+                null, null, y, yLow, yHigh, byColumns, false, true);
 
-        if( ArgumentValidations.isTime(t, x, new PlotInfo(this, seriesName)) ){
+        if (ArgumentValidations.isTime(t, x, new PlotInfo(this, seriesName))) {
             axes[0].axisFormat(new NanosAxisFormat());
         }
 
-        if( ArgumentValidations.isTime(t, y, new PlotInfo(this, seriesName)) ){
+        if (ArgumentValidations.isTime(t, y, new PlotInfo(this, seriesName))) {
             axes[1].axisFormat(new NanosAxisFormat());
         }
 
@@ -912,7 +939,8 @@ public class AxesImpl implements Axes, PlotExceptionCause {
     }
 
     @Override
-    public MultiXYErrorBarSeriesSwappable errorBarYBy(final Comparable seriesName, final SelectableDataSet sds, final String x, final String y, final String yLow, final String yHigh, final String... byColumns) {
+    public MultiXYErrorBarSeriesSwappable errorBarYBy(final Comparable seriesName, final SelectableDataSet sds,
+            final String x, final String y, final String yLow, final String yHigh, final String... byColumns) {
         ArgumentValidations.assertNotNull(sds, "sds", new PlotInfo(this, seriesName));
         ArgumentValidations.assertNotNull(x, "x", new PlotInfo(this, seriesName));
         ArgumentValidations.assertNotNull(y, "y", new PlotInfo(this, seriesName));
@@ -929,7 +957,8 @@ public class AxesImpl implements Axes, PlotExceptionCause {
 
         final SwappableTable t = sds.getSwappableTable(seriesName, chart, columns);
         configureXYPlot();
-        final MultiXYErrorBarSeriesSwappable series = new MultiXYErrorBarSeriesSwappable(this, dataSeries.nextId(), seriesName, t, x, null, null, y, yLow, yHigh, byColumns, false, true);
+        final MultiXYErrorBarSeriesSwappable series = new MultiXYErrorBarSeriesSwappable(this, dataSeries.nextId(),
+                seriesName, t, x, null, null, y, yLow, yHigh, byColumns, false, true);
 
         setUpPlotBySeries(t.getTableDefinition(), x, y, series);
 
@@ -937,26 +966,31 @@ public class AxesImpl implements Axes, PlotExceptionCause {
     }
 
     @Override
-    public XYErrorBarDataSeries errorBarX( java.lang.Comparable seriesName, Table t, java.lang.String x, java.lang.String xLow, java.lang.String xHigh, java.lang.String y ) {
+    public XYErrorBarDataSeries errorBarX(java.lang.Comparable seriesName, Table t, java.lang.String x,
+            java.lang.String xLow, java.lang.String xHigh, java.lang.String y) {
         final TableHandle h = new TableHandle(t, x, xLow, xHigh, y);
         final boolean hasXTimeAxis = ArgumentValidations.isTime(t, x, new PlotInfo(this, seriesName));
         final boolean hasYTimeAxis = ArgumentValidations.isTime(t, y, new PlotInfo(this, seriesName));
-        final XYErrorBarDataSeriesTableArray ds = new XYErrorBarDataSeriesTableArray(this, dataSeries.nextId(), seriesName, h, x, xLow, xHigh, y, null, null, true, false);
-        return errorBarXY(ds, hasXTimeAxis, hasYTimeAxis, new TableHandle[]{h}, null);
+        final XYErrorBarDataSeriesTableArray ds = new XYErrorBarDataSeriesTableArray(this, dataSeries.nextId(),
+                seriesName, h, x, xLow, xHigh, y, null, null, true, false);
+        return errorBarXY(ds, hasXTimeAxis, hasYTimeAxis, new TableHandle[] {h}, null);
     }
 
     @Override
-    public XYErrorBarDataSeries errorBarX( java.lang.Comparable seriesName, SelectableDataSet sds, java.lang.String x, java.lang.String xLow, java.lang.String xHigh, java.lang.String y ) {
+    public XYErrorBarDataSeries errorBarX(java.lang.Comparable seriesName, SelectableDataSet sds, java.lang.String x,
+            java.lang.String xLow, java.lang.String xHigh, java.lang.String y) {
         final SwappableTable t = sds.getSwappableTable(seriesName, chart, x, xLow, xHigh, y);
         final boolean hasXTimeAxis = ArgumentValidations.isTime(sds, x, new PlotInfo(this, seriesName));
         final boolean hasYTimeAxis = ArgumentValidations.isTime(sds, y, new PlotInfo(this, seriesName));
 
-        final XYErrorBarDataSeriesSwappableTableArray ds = new XYErrorBarDataSeriesSwappableTableArray(this, dataSeries.nextId(), seriesName, t, x, xLow, xHigh, y, null, null, true, false);
-        return errorBarXY(ds, hasXTimeAxis, hasYTimeAxis, null, new SwappableTable[]{t});
+        final XYErrorBarDataSeriesSwappableTableArray ds = new XYErrorBarDataSeriesSwappableTableArray(this,
+                dataSeries.nextId(), seriesName, t, x, xLow, xHigh, y, null, null, true, false);
+        return errorBarXY(ds, hasXTimeAxis, hasYTimeAxis, null, new SwappableTable[] {t});
     }
 
     @Override
-    public MultiXYErrorBarSeries errorBarXBy(final Comparable seriesName, final Table t, final String x, final String xLow, final String xHigh, final String y, final String... byColumns) {
+    public MultiXYErrorBarSeries errorBarXBy(final Comparable seriesName, final Table t, final String x,
+            final String xLow, final String xHigh, final String y, final String... byColumns) {
         ArgumentValidations.assertNotNull(t, "t", new PlotInfo(this, seriesName));
         ArgumentValidations.assertNotNull(x, "x", new PlotInfo(this, seriesName));
         ArgumentValidations.assertNotNull(xLow, "xLow", new PlotInfo(this, seriesName));
@@ -965,14 +999,16 @@ public class AxesImpl implements Axes, PlotExceptionCause {
         ArgumentValidations.assertNotNullAndNotEmpty(byColumns, "byColumns", new PlotInfo(this, seriesName));
         configureXYPlot();
 
-        final TableBackedTableMapHandle h = new TableBackedTableMapHandle( t, Arrays.asList(x, xLow, xHigh, y), byColumns, new PlotInfo(this, seriesName));
-        final MultiXYErrorBarSeries series = new MultiXYErrorBarSeries(this, dataSeries.nextId(), seriesName, h, x, xLow, xHigh, y, null, null, byColumns, true, false);
+        final TableBackedTableMapHandle h = new TableBackedTableMapHandle(t, Arrays.asList(x, xLow, xHigh, y),
+                byColumns, new PlotInfo(this, seriesName));
+        final MultiXYErrorBarSeries series = new MultiXYErrorBarSeries(this, dataSeries.nextId(), seriesName, h, x,
+                xLow, xHigh, y, null, null, byColumns, true, false);
 
-        if( ArgumentValidations.isTime(t, x, new PlotInfo(this, seriesName)) ){
+        if (ArgumentValidations.isTime(t, x, new PlotInfo(this, seriesName))) {
             axes[0].axisFormat(new NanosAxisFormat());
         }
 
-        if( ArgumentValidations.isTime(t, y, new PlotInfo(this, seriesName)) ){
+        if (ArgumentValidations.isTime(t, y, new PlotInfo(this, seriesName))) {
             axes[1].axisFormat(new NanosAxisFormat());
         }
 
@@ -982,7 +1018,8 @@ public class AxesImpl implements Axes, PlotExceptionCause {
     }
 
     @Override
-    public MultiXYErrorBarSeriesSwappable errorBarXBy(final Comparable seriesName, final SelectableDataSet sds, final String x, final String xLow, final String xHigh, final String y, final String... byColumns) {
+    public MultiXYErrorBarSeriesSwappable errorBarXBy(final Comparable seriesName, final SelectableDataSet sds,
+            final String x, final String xLow, final String xHigh, final String y, final String... byColumns) {
         ArgumentValidations.assertNotNull(sds, "sds", new PlotInfo(this, seriesName));
         ArgumentValidations.assertNotNull(x, "x", new PlotInfo(this, seriesName));
         ArgumentValidations.assertNotNull(xLow, "xLow", new PlotInfo(this, seriesName));
@@ -999,51 +1036,68 @@ public class AxesImpl implements Axes, PlotExceptionCause {
 
         final SwappableTable t = sds.getSwappableTable(seriesName, chart, columns);
         configureXYPlot();
-        final MultiXYErrorBarSeriesSwappable series = new MultiXYErrorBarSeriesSwappable(this, dataSeries.nextId(), seriesName, t, x, xLow, xHigh, y, null, null, byColumns, true, false);
+        final MultiXYErrorBarSeriesSwappable series = new MultiXYErrorBarSeriesSwappable(this, dataSeries.nextId(),
+                seriesName, t, x, xLow, xHigh, y, null, null, byColumns, true, false);
 
         setUpPlotBySeries(t.getTableDefinition(), x, y, series);
 
         return series;
     }
 
-    private XYErrorBarDataSeriesArray errorBarXY(final Comparable seriesName, final IndexableNumericData x, final IndexableNumericData xLow, final IndexableNumericData xHigh, final IndexableNumericData y, final IndexableNumericData yLow, final IndexableNumericData yHigh, final boolean hasXTimeAxis, final boolean hasYTimeAxis) {
+    private XYErrorBarDataSeriesArray errorBarXY(final Comparable seriesName, final IndexableNumericData x,
+            final IndexableNumericData xLow, final IndexableNumericData xHigh, final IndexableNumericData y,
+            final IndexableNumericData yLow, final IndexableNumericData yHigh, final boolean hasXTimeAxis,
+            final boolean hasYTimeAxis) {
         return errorBarXY(seriesName, x, xLow, xHigh, y, yLow, yHigh, true, true, hasXTimeAxis, hasYTimeAxis);
     }
 
-    private XYErrorBarDataSeriesArray errorBarX(final Comparable seriesName, final IndexableNumericData x, final IndexableNumericData xLow, final IndexableNumericData xHigh, final IndexableNumericData y, final boolean drawXError, final boolean drawYError, final boolean hasXTimeAxis, final boolean hasYTimeAxis) {
-        return errorBarXY(seriesName, x, xLow, xHigh, y, null, null, drawXError, drawYError, hasXTimeAxis, hasYTimeAxis);
+    private XYErrorBarDataSeriesArray errorBarX(final Comparable seriesName, final IndexableNumericData x,
+            final IndexableNumericData xLow, final IndexableNumericData xHigh, final IndexableNumericData y,
+            final boolean drawXError, final boolean drawYError, final boolean hasXTimeAxis,
+            final boolean hasYTimeAxis) {
+        return errorBarXY(seriesName, x, xLow, xHigh, y, null, null, drawXError, drawYError, hasXTimeAxis,
+                hasYTimeAxis);
     }
 
-    private XYErrorBarDataSeriesArray errorBarY(final Comparable seriesName, final IndexableNumericData x, final IndexableNumericData y, final IndexableNumericData yLow, final IndexableNumericData yHigh, final boolean drawXError, final boolean drawYError, final boolean hasXTimeAxis, final boolean hasYTimeAxis) {
-        return errorBarXY(seriesName, x, null, null, y, yLow, yHigh, drawXError, drawYError, hasXTimeAxis, hasYTimeAxis);
+    private XYErrorBarDataSeriesArray errorBarY(final Comparable seriesName, final IndexableNumericData x,
+            final IndexableNumericData y, final IndexableNumericData yLow, final IndexableNumericData yHigh,
+            final boolean drawXError, final boolean drawYError, final boolean hasXTimeAxis,
+            final boolean hasYTimeAxis) {
+        return errorBarXY(seriesName, x, null, null, y, yLow, yHigh, drawXError, drawYError, hasXTimeAxis,
+                hasYTimeAxis);
     }
 
-    private XYErrorBarDataSeriesArray errorBarXY(final Comparable seriesName, final IndexableNumericData x, final IndexableNumericData xLow, final IndexableNumericData xHigh, final IndexableNumericData y, final IndexableNumericData yLow, final IndexableNumericData yHigh, final boolean drawXError, final boolean drawYError, final boolean hasXTimeAxis, final boolean hasYTimeAxis) {
-        final XYErrorBarDataSeriesArray ds = new XYErrorBarDataSeriesArray(this, dataSeries.nextId(), seriesName, x, xLow, xHigh, y, yLow, yHigh, drawXError, drawYError);
+    private XYErrorBarDataSeriesArray errorBarXY(final Comparable seriesName, final IndexableNumericData x,
+            final IndexableNumericData xLow, final IndexableNumericData xHigh, final IndexableNumericData y,
+            final IndexableNumericData yLow, final IndexableNumericData yHigh, final boolean drawXError,
+            final boolean drawYError, final boolean hasXTimeAxis, final boolean hasYTimeAxis) {
+        final XYErrorBarDataSeriesArray ds = new XYErrorBarDataSeriesArray(this, dataSeries.nextId(), seriesName, x,
+                xLow, xHigh, y, yLow, yHigh, drawXError, drawYError);
         return errorBarXY(ds, hasXTimeAxis, hasYTimeAxis, null, null);
     }
 
-    private XYErrorBarDataSeriesArray errorBarXY(final XYErrorBarDataSeriesArray series, final boolean hasXTimeAxis, final boolean hasYTimeAxis, final TableHandle[] tableHandles, final SwappableTable[] swappableTables) {
+    private XYErrorBarDataSeriesArray errorBarXY(final XYErrorBarDataSeriesArray series, final boolean hasXTimeAxis,
+            final boolean hasYTimeAxis, final TableHandle[] tableHandles, final SwappableTable[] swappableTables) {
         configureXYPlot();
 
-        if(tableHandles != null) {
+        if (tableHandles != null) {
             for (final TableHandle tableHandle : tableHandles) {
                 series.addTableHandle(tableHandle);
             }
         }
 
-        if(swappableTables != null) {
+        if (swappableTables != null) {
             for (SwappableTable swappableTable : swappableTables) {
                 series.addSwappableTable(swappableTable);
             }
         }
 
 
-        if( hasXTimeAxis ){
+        if (hasXTimeAxis) {
             axes[0].axisFormat(new NanosAxisFormat());
         }
 
-        if( hasYTimeAxis ){
+        if (hasYTimeAxis) {
             axes[1].axisFormat(new NanosAxisFormat());
         }
 
@@ -1051,36 +1105,43 @@ public class AxesImpl implements Axes, PlotExceptionCause {
 
         return series;
     }
-    //endregion
+    // endregion
 
-    //region Category Error Bar Plots
+    // region Category Error Bar Plots
 
     @Override
-    public CategoryDataSeries catErrorBar(final Comparable seriesName, final Table t, final String categories, final String values, final String yLow, final String yHigh) {
-        final TableHandle h = PlotUtils.createCategoryTableHandle( t, categories, values, yLow, yHigh);
+    public CategoryDataSeries catErrorBar(final Comparable seriesName, final Table t, final String categories,
+            final String values, final String yLow, final String yHigh) {
+        final TableHandle h = PlotUtils.createCategoryTableHandle(t, categories, values, yLow, yHigh);
 
-        if( ArgumentValidations.isTime(t, values, new PlotInfo(this, seriesName)) ){
+        if (ArgumentValidations.isTime(t, values, new PlotInfo(this, seriesName))) {
             axes[1].axisFormat(new NanosAxisFormat());
         }
 
-        return catPlot(new CategoryErrorBarDataSeriesTableMap(this, dataSeries.nextId(), seriesName, h, categories, values, yLow, yHigh), new TableHandle[]{h}, null);
+        return catPlot(new CategoryErrorBarDataSeriesTableMap(this, dataSeries.nextId(), seriesName, h, categories,
+                values, yLow, yHigh), new TableHandle[] {h}, null);
     }
 
     @Override
-    public CategoryDataSeries catErrorBar(final Comparable seriesName, final SelectableDataSet sds, final String categories, final String values, final String yLow, final String yHigh) {
+    public CategoryDataSeries catErrorBar(final Comparable seriesName, final SelectableDataSet sds,
+            final String categories, final String values, final String yLow, final String yHigh) {
         final SelectableDataSet lastBySelectableDataSet = getAggregatedSelectableDataSet(sds,
-                () -> PlotUtils.createCategoryComboAgg(AggLast(values, yLow, yHigh)), Collections.singletonList(categories));
-        final SwappableTable t = lastBySelectableDataSet.getSwappableTable(seriesName, chart, categories, values, yLow, yHigh, CategoryDataSeries.CAT_SERIES_ORDER_COLUMN);
+                () -> PlotUtils.createCategoryComboAgg(AggLast(values, yLow, yHigh)),
+                Collections.singletonList(categories));
+        final SwappableTable t = lastBySelectableDataSet.getSwappableTable(seriesName, chart, categories, values, yLow,
+                yHigh, CategoryDataSeries.CAT_SERIES_ORDER_COLUMN);
 
-        if( ArgumentValidations.isTime(lastBySelectableDataSet, values, new PlotInfo(this, seriesName)) ){
+        if (ArgumentValidations.isTime(lastBySelectableDataSet, values, new PlotInfo(this, seriesName))) {
             axes[1].axisFormat(new NanosAxisFormat());
         }
 
-        return catPlot(new CategoryErrorBarDataSeriesSwappableTableMap(this, dataSeries.nextId(), seriesName, t, categories, values, yLow, yHigh), null, new SwappableTable[]{t});
+        return catPlot(new CategoryErrorBarDataSeriesSwappableTableMap(this, dataSeries.nextId(), seriesName, t,
+                categories, values, yLow, yHigh), null, new SwappableTable[] {t});
     }
 
     @Override
-    public MultiSeries catErrorBarBy(final Comparable seriesName, final Table t, final String categories, final String values, final String yLow, final String yHigh, final String... byColumns) {
+    public MultiSeries catErrorBarBy(final Comparable seriesName, final Table t, final String categories,
+            final String values, final String yLow, final String yHigh, final String... byColumns) {
         ArgumentValidations.assertNotNull(t, "t", new PlotInfo(this, seriesName));
         ArgumentValidations.assertNotNull(categories, "categories", new PlotInfo(this, seriesName));
         ArgumentValidations.assertNotNull(values, "values", new PlotInfo(this, seriesName));
@@ -1089,10 +1150,12 @@ public class AxesImpl implements Axes, PlotExceptionCause {
         ArgumentValidations.assertNotNullAndNotEmpty(byColumns, "byColumns", new PlotInfo(this, seriesName));
         configureCategoryPlot();
 
-        final TableBackedTableMapHandle h = PlotUtils.createCategoryTableMapHandle( t, categories, new String[]{values, yLow, yHigh}, byColumns, new PlotInfo(this, seriesName));
-        final MultiCatErrorBarSeries series = new MultiCatErrorBarSeries(this, dataSeries.nextId(), seriesName, h, categories, values, yLow, yHigh, byColumns);
+        final TableBackedTableMapHandle h = PlotUtils.createCategoryTableMapHandle(t, categories,
+                new String[] {values, yLow, yHigh}, byColumns, new PlotInfo(this, seriesName));
+        final MultiCatErrorBarSeries series = new MultiCatErrorBarSeries(this, dataSeries.nextId(), seriesName, h,
+                categories, values, yLow, yHigh, byColumns);
 
-        if( ArgumentValidations.isTime(t, values, new PlotInfo(this, seriesName)) ){
+        if (ArgumentValidations.isTime(t, values, new PlotInfo(this, seriesName))) {
             axes[1].axisFormat(new NanosAxisFormat());
         }
 
@@ -1102,7 +1165,8 @@ public class AxesImpl implements Axes, PlotExceptionCause {
     }
 
     @Override
-    public MultiSeries catErrorBarBy(final Comparable seriesName, final SelectableDataSet sds, final String categories, final String values, final String yLow, final String yHigh, final String... byColumns) {
+    public MultiSeries catErrorBarBy(final Comparable seriesName, final SelectableDataSet sds, final String categories,
+            final String values, final String yLow, final String yHigh, final String... byColumns) {
         ArgumentValidations.assertNotNull(sds, "sds", new PlotInfo(this, seriesName));
         ArgumentValidations.assertNotNull(categories, "categories", new PlotInfo(this, seriesName));
         ArgumentValidations.assertNotNull(values, "values", new PlotInfo(this, seriesName));
@@ -1129,9 +1193,10 @@ public class AxesImpl implements Axes, PlotExceptionCause {
         final SwappableTable t = lastBySelectableDataSet.getSwappableTable(seriesName, chart, columns);
         configureCategoryPlot();
 
-        final MultiCatErrorBarSeriesSwappable series = new MultiCatErrorBarSeriesSwappable(this, dataSeries.nextId(), seriesName, t, categories, values, yLow, yHigh, byColumns);
+        final MultiCatErrorBarSeriesSwappable series = new MultiCatErrorBarSeriesSwappable(this, dataSeries.nextId(),
+                seriesName, t, categories, values, yLow, yHigh, byColumns);
 
-        if( ArgumentValidations.isTime(t.getTableDefinition(), values, new PlotInfo(this, seriesName)) ){
+        if (ArgumentValidations.isTime(t.getTableDefinition(), values, new PlotInfo(this, seriesName))) {
             axes[1].axisFormat(new NanosAxisFormat());
         }
 
@@ -1139,14 +1204,15 @@ public class AxesImpl implements Axes, PlotExceptionCause {
 
         return series;
     }
-    //endregion
+    // endregion
 
-    //region XY Functional plots
+    // region XY Functional plots
 
     @Override
     public XYDataSeriesFunctionImpl plot(final Comparable seriesName, final DoubleUnaryOperator function) {
         configureXYPlot();
-        final XYDataSeriesFunctionImpl ds = new XYDataSeriesFunctionImpl(this, dataSeries.nextId(), seriesName, function);
+        final XYDataSeriesFunctionImpl ds =
+                new XYDataSeriesFunctionImpl(this, dataSeries.nextId(), seriesName, function);
         registerDataSeries(SeriesCollection.SeriesType.UNARY_FUNCTION, false, ds);
         ds.pointsVisible(false);
         ds.linesVisible(true);
@@ -1157,20 +1223,21 @@ public class AxesImpl implements Axes, PlotExceptionCause {
     public <T extends Number> XYDataSeriesFunctionImpl plot(final Comparable seriesName, final Closure<T> function) {
         return plot(seriesName, new ClosureDoubleUnaryOperator<>(function));
     }
-    //endregion
+    // endregion
 
-    //region XY Plots
+    // region XY Plots
 
-    private XYDataSeriesArray plot(final XYDataSeriesArray series, final boolean hasXTimeAxis, final boolean hasYTimeAxis, final TableHandle[] tableHandles, final SwappableTable[] swappableTables) {
+    private XYDataSeriesArray plot(final XYDataSeriesArray series, final boolean hasXTimeAxis,
+            final boolean hasYTimeAxis, final TableHandle[] tableHandles, final SwappableTable[] swappableTables) {
         configureXYPlot();
 
-        if(tableHandles != null) {
+        if (tableHandles != null) {
             for (final TableHandle tableHandle : tableHandles) {
                 series.addTableHandle(tableHandle);
             }
         }
 
-        if(swappableTables != null) {
+        if (swappableTables != null) {
             for (SwappableTable swappableTable : swappableTables) {
                 series.addSwappableTable(swappableTable);
             }
@@ -1178,11 +1245,11 @@ public class AxesImpl implements Axes, PlotExceptionCause {
 
         registerDataSeries(SeriesCollection.SeriesType.XY, false, series);
 
-        if( hasXTimeAxis ){
+        if (hasXTimeAxis) {
             axes[0].axisFormat(new NanosAxisFormat());
         }
 
-        if( hasYTimeAxis ){
+        if (hasYTimeAxis) {
             axes[1].axisFormat(new NanosAxisFormat());
         }
 
@@ -1190,7 +1257,8 @@ public class AxesImpl implements Axes, PlotExceptionCause {
     }
 
     @Override
-    public XYDataSeriesArray plot(final Comparable seriesName, final IndexableNumericData x, final IndexableNumericData y, final boolean hasXTimeAxis, final boolean hasYTimeAxis) {
+    public XYDataSeriesArray plot(final Comparable seriesName, final IndexableNumericData x,
+            final IndexableNumericData y, final boolean hasXTimeAxis, final boolean hasYTimeAxis) {
         final XYDataSeriesArray ds = new XYDataSeriesArray(this, dataSeries.nextId(), seriesName, x, y);
         return plot(ds, hasXTimeAxis, hasYTimeAxis, null, null);
     }
@@ -1202,28 +1270,32 @@ public class AxesImpl implements Axes, PlotExceptionCause {
         final boolean hasYTimeAxis = ArgumentValidations.isTime(t, y, new PlotInfo(this, seriesName));
 
         final XYDataSeriesTableArray ds = new XYDataSeriesTableArray(this, dataSeries.nextId(), seriesName, h, x, y);
-        return plot(ds, hasXTimeAxis, hasYTimeAxis, new TableHandle[]{h}, null);
+        return plot(ds, hasXTimeAxis, hasYTimeAxis, new TableHandle[] {h}, null);
     }
 
     @Override
-    public XYDataSeriesArray plot(final Comparable seriesName, final SelectableDataSet sds, final String x, final String y) {
+    public XYDataSeriesArray plot(final Comparable seriesName, final SelectableDataSet sds, final String x,
+            final String y) {
         final SwappableTable t = sds.getSwappableTable(seriesName, chart, x, y);
         final boolean hasXTimeAxis = ArgumentValidations.isTime(sds, x, new PlotInfo(this, seriesName));
         final boolean hasYTimeAxis = ArgumentValidations.isTime(sds, y, new PlotInfo(this, seriesName));
 
-        final XYDataSeriesSwappableTableArray ds = new XYDataSeriesSwappableTableArray(this, dataSeries.nextId(), seriesName, t, x, y);
-        return plot(ds, hasXTimeAxis, hasYTimeAxis, null, new SwappableTable[]{t});
+        final XYDataSeriesSwappableTableArray ds =
+                new XYDataSeriesSwappableTableArray(this, dataSeries.nextId(), seriesName, t, x, y);
+        return plot(ds, hasXTimeAxis, hasYTimeAxis, null, new SwappableTable[] {t});
     }
 
     @Override
-    public MultiXYSeries plotBy(final Comparable seriesName, final Table t, final String x, final String y, final String... byColumns) {
+    public MultiXYSeries plotBy(final Comparable seriesName, final Table t, final String x, final String y,
+            final String... byColumns) {
         ArgumentValidations.assertNotNull(t, "t", new PlotInfo(this, seriesName));
         ArgumentValidations.assertNotNull(x, "x", new PlotInfo(this, seriesName));
         ArgumentValidations.assertNotNull(y, "y", new PlotInfo(this, seriesName));
         ArgumentValidations.assertNotNullAndNotEmpty(byColumns, "byColumns", new PlotInfo(this, seriesName));
         configureXYPlot();
 
-        final TableBackedTableMapHandle h = new TableBackedTableMapHandle( t, Arrays.asList(x, y), byColumns, new PlotInfo(this, seriesName));
+        final TableBackedTableMapHandle h =
+                new TableBackedTableMapHandle(t, Arrays.asList(x, y), byColumns, new PlotInfo(this, seriesName));
         final MultiXYSeries series = new MultiXYSeries(this, dataSeries.nextId(), seriesName, h, x, y, byColumns);
 
 
@@ -1233,7 +1305,8 @@ public class AxesImpl implements Axes, PlotExceptionCause {
     }
 
     @Override
-    public MultiXYSeriesSwappable plotBy(final Comparable seriesName, final SelectableDataSet sds, final String x, final String y, final String... byColumns) {
+    public MultiXYSeriesSwappable plotBy(final Comparable seriesName, final SelectableDataSet sds, final String x,
+            final String y, final String... byColumns) {
         ArgumentValidations.assertNotNull(sds, "sds", new PlotInfo(this, seriesName));
         ArgumentValidations.assertNotNull(x, "x", new PlotInfo(this, seriesName));
         ArgumentValidations.assertNotNull(y, "y", new PlotInfo(this, seriesName));
@@ -1242,7 +1315,8 @@ public class AxesImpl implements Axes, PlotExceptionCause {
 
 
         final SwappableTable t = sds.getSwappableTable(seriesName, chart, combineColumns(x, y, byColumns));
-        final MultiXYSeriesSwappable series = new MultiXYSeriesSwappable(this, dataSeries.nextId(), seriesName, t, x, y, byColumns);
+        final MultiXYSeriesSwappable series =
+                new MultiXYSeriesSwappable(this, dataSeries.nextId(), seriesName, t, x, y, byColumns);
 
         setUpPlotBySeries(t.getTableDefinition(), x, y, series);
 
@@ -1262,25 +1336,29 @@ public class AxesImpl implements Axes, PlotExceptionCause {
         setUpPlotBySeries(t.getDefinition(), x, y, series);
     }
 
-    private void setUpPlotBySeries(final TableDefinition t, final String x, final String y, final SeriesInternal series) {
-        if( ArgumentValidations.isTime(t, x, new PlotInfo(this, series.name())) ){
+    private void setUpPlotBySeries(final TableDefinition t, final String x, final String y,
+            final SeriesInternal series) {
+        if (ArgumentValidations.isTime(t, x, new PlotInfo(this, series.name()))) {
             axes[0].axisFormat(new NanosAxisFormat());
         }
 
-        if( ArgumentValidations.isTime(t, y, new PlotInfo(this, series.name())) ){
+        if (ArgumentValidations.isTime(t, y, new PlotInfo(this, series.name()))) {
             axes[1].axisFormat(new NanosAxisFormat());
         }
 
         registerDataSeries(SeriesCollection.SeriesType.XY, true, series);
     }
-    //endregion
-    
-    //region OHLC PLots
+    // endregion
+
+    // region OHLC PLots
 
     @Override
-    public OHLCDataSeriesArray ohlcPlot(final Comparable seriesName, final IndexableNumericData time, final IndexableNumericData open, final IndexableNumericData high, final IndexableNumericData low, final IndexableNumericData close) {
+    public OHLCDataSeriesArray ohlcPlot(final Comparable seriesName, final IndexableNumericData time,
+            final IndexableNumericData open, final IndexableNumericData high, final IndexableNumericData low,
+            final IndexableNumericData close) {
         configureOHLCPlot();
-        final OHLCDataSeriesArray ds = new OHLCDataSeriesArray(this, dataSeries.nextId(), seriesName, time, open, high, low, close);
+        final OHLCDataSeriesArray ds =
+                new OHLCDataSeriesArray(this, dataSeries.nextId(), seriesName, time, open, high, low, close);
 
         registerDataSeries(SeriesCollection.SeriesType.OHLC, false, ds);
         axes[0].axisFormat(new NanosAxisFormat());
@@ -1288,11 +1366,13 @@ public class AxesImpl implements Axes, PlotExceptionCause {
     }
 
     @Override
-    public OHLCDataSeriesTableArray ohlcPlot(final Comparable seriesName, final Table t, final String timeCol, final String openCol, final String highCol, final String lowCol, final String closeCol) {
+    public OHLCDataSeriesTableArray ohlcPlot(final Comparable seriesName, final Table t, final String timeCol,
+            final String openCol, final String highCol, final String lowCol, final String closeCol) {
         configureOHLCPlot();
         final TableHandle h = new TableHandle(t, timeCol, openCol, highCol, lowCol, closeCol);
 
-        final OHLCDataSeriesTableArray ds = new OHLCDataSeriesTableArray(this, dataSeries.nextId(), seriesName, h, timeCol, openCol, highCol, lowCol, closeCol);
+        final OHLCDataSeriesTableArray ds = new OHLCDataSeriesTableArray(this, dataSeries.nextId(), seriesName, h,
+                timeCol, openCol, highCol, lowCol, closeCol);
 
         registerDataSeries(SeriesCollection.SeriesType.OHLC, false, ds);
         ds.addTableHandle(h);
@@ -1302,11 +1382,13 @@ public class AxesImpl implements Axes, PlotExceptionCause {
     }
 
     @Override
-    public OHLCDataSeriesArray ohlcPlot(final Comparable seriesName, final SelectableDataSet sds, final String timeCol, final String openCol, final String highCol, final String lowCol, final String closeCol) {
+    public OHLCDataSeriesArray ohlcPlot(final Comparable seriesName, final SelectableDataSet sds, final String timeCol,
+            final String openCol, final String highCol, final String lowCol, final String closeCol) {
         configureOHLCPlot();
         final SwappableTable t = sds.getSwappableTable(seriesName, chart, timeCol, openCol, highCol, lowCol, closeCol);
 
-        final OHLCDataSeriesSwappableTableArray ds = new OHLCDataSeriesSwappableTableArray(this, dataSeries.nextId(), seriesName, t, timeCol, openCol, highCol, lowCol, closeCol);
+        final OHLCDataSeriesSwappableTableArray ds = new OHLCDataSeriesSwappableTableArray(this, dataSeries.nextId(),
+                seriesName, t, timeCol, openCol, highCol, lowCol, closeCol);
 
         registerDataSeries(SeriesCollection.SeriesType.OHLC, false, ds);
         ds.addSwappableTable(t);
@@ -1316,7 +1398,9 @@ public class AxesImpl implements Axes, PlotExceptionCause {
     }
 
     @Override
-    public MultiOHLCSeries ohlcPlotBy(final Comparable seriesName, final Table t, final String timeCol, final String openCol, final String highCol, final String lowCol, final String closeCol, final String... byColumns) {
+    public MultiOHLCSeries ohlcPlotBy(final Comparable seriesName, final Table t, final String timeCol,
+            final String openCol, final String highCol, final String lowCol, final String closeCol,
+            final String... byColumns) {
         ArgumentValidations.assertNotNull(t, "t", new PlotInfo(this, seriesName));
         ArgumentValidations.assertNotNull(timeCol, "timeCol", new PlotInfo(this, seriesName));
         ArgumentValidations.assertNotNull(openCol, "openCol", new PlotInfo(this, seriesName));
@@ -1326,8 +1410,10 @@ public class AxesImpl implements Axes, PlotExceptionCause {
         ArgumentValidations.assertNotNullAndNotEmpty(byColumns, "byColumns", new PlotInfo(this, seriesName));
         configureOHLCPlot();
 
-        final TableBackedTableMapHandle h = new TableBackedTableMapHandle( t, Arrays.asList(timeCol, openCol, highCol, lowCol, closeCol), byColumns, new PlotInfo(this, seriesName));
-        final MultiOHLCSeries series = new MultiOHLCSeries(this, dataSeries.nextId(), seriesName, h, timeCol, openCol, highCol, lowCol, closeCol, byColumns);
+        final TableBackedTableMapHandle h = new TableBackedTableMapHandle(t,
+                Arrays.asList(timeCol, openCol, highCol, lowCol, closeCol), byColumns, new PlotInfo(this, seriesName));
+        final MultiOHLCSeries series = new MultiOHLCSeries(this, dataSeries.nextId(), seriesName, h, timeCol, openCol,
+                highCol, lowCol, closeCol, byColumns);
 
         axes[0].axisFormat(new NanosAxisFormat());
 
@@ -1337,7 +1423,9 @@ public class AxesImpl implements Axes, PlotExceptionCause {
     }
 
     @Override
-    public MultiOHLCSeriesSwappable ohlcPlotBy(final Comparable seriesName, final SelectableDataSet sds, final String timeCol, final String openCol, final String highCol, final String lowCol, final String closeCol, final String... byColumns) {
+    public MultiOHLCSeriesSwappable ohlcPlotBy(final Comparable seriesName, final SelectableDataSet sds,
+            final String timeCol, final String openCol, final String highCol, final String lowCol,
+            final String closeCol, final String... byColumns) {
         ArgumentValidations.assertNotNull(sds, "sds", new PlotInfo(this, seriesName));
         ArgumentValidations.assertNotNull(timeCol, "timeCol", new PlotInfo(this, seriesName));
         ArgumentValidations.assertNotNull(openCol, "openCol", new PlotInfo(this, seriesName));
@@ -1356,7 +1444,8 @@ public class AxesImpl implements Axes, PlotExceptionCause {
 
         final SwappableTable t = sds.getSwappableTable(seriesName, chart, columns);
         configureOHLCPlot();
-        final MultiOHLCSeriesSwappable series = new MultiOHLCSeriesSwappable(this, dataSeries.nextId(), seriesName, t, timeCol, openCol, highCol, lowCol, closeCol, byColumns);
+        final MultiOHLCSeriesSwappable series = new MultiOHLCSeriesSwappable(this, dataSeries.nextId(), seriesName, t,
+                timeCol, openCol, highCol, lowCol, closeCol, byColumns);
 
         axes[0].axisFormat(new NanosAxisFormat());
 
@@ -1364,53 +1453,66 @@ public class AxesImpl implements Axes, PlotExceptionCause {
 
         return series;
     }
-    //endregion
+    // endregion
 
-    //region Histogram Plots
+    // region Histogram Plots
 
     @Override
     public IntervalXYDataSeriesArray histPlot(final Comparable seriesName, final Table counts) {
-        ArgumentValidations.assertColumnsInTable(counts, new PlotInfo(this, seriesName), BIN_MIN, BIN_MID, BIN_MAX, COUNT);
+        ArgumentValidations.assertColumnsInTable(counts, new PlotInfo(this, seriesName), BIN_MIN, BIN_MID, BIN_MAX,
+                COUNT);
         configureXYPlot();
         plotStyle(PlotStyle.HISTOGRAM);
 
 
-        final TableHandle h = new TableHandle( counts, BIN_MIN, BIN_MID, BIN_MAX, COUNT);
+        final TableHandle h = new TableHandle(counts, BIN_MIN, BIN_MID, BIN_MAX, COUNT);
         final IndexableNumericData startX = new IndexableNumericDataTable(h, BIN_MIN, new PlotInfo(this, seriesName));
         final IndexableNumericData midX = new IndexableNumericDataTable(h, BIN_MID, new PlotInfo(this, seriesName));
         final IndexableNumericData endX = new IndexableNumericDataTable(h, BIN_MAX, new PlotInfo(this, seriesName));
         // does Y need separate values for min, mid, and max?
         final IndexableNumericData y = new IndexableNumericDataTable(h, COUNT, new PlotInfo(this, seriesName));
-        final IntervalXYDataSeriesArray ds = new IntervalXYDataSeriesArray(this, dataSeries.nextId(), seriesName, h, startX, midX, endX, y, y, y);
+        final IntervalXYDataSeriesArray ds =
+                new IntervalXYDataSeriesArray(this, dataSeries.nextId(), seriesName, h, startX, midX, endX, y, y, y);
         ds.addTableHandle(h);
         registerDataSeries(SeriesCollection.SeriesType.INTERVAL, false, ds);
         return ds;
     }
 
     @Override
-    public IntervalXYDataSeriesArray histPlot(final Comparable seriesName, final Table t, final String columnName, final int nbins) {
-        ArgumentValidations.assertIsNumeric(t, columnName, "Histogram can not be computed on non-numeric column: "+ columnName, new PlotInfo(this, seriesName));
+    public IntervalXYDataSeriesArray histPlot(final Comparable seriesName, final Table t, final String columnName,
+            final int nbins) {
+        ArgumentValidations.assertIsNumeric(t, columnName,
+                "Histogram can not be computed on non-numeric column: " + columnName, new PlotInfo(this, seriesName));
         return histPlot(seriesName, HistogramCalculator.calc(t, columnName, nbins, new PlotInfo(this, seriesName)));
     }
 
     @Override
-    public IntervalXYDataSeriesArray histPlot(final Comparable seriesName, final Table t, final String columnName, final double rangeMin, final double rangeMax, final int nbins) {
-        ArgumentValidations.assertIsNumeric(t, columnName, "Histogram can not be computed on non-numeric column: "+ columnName, new PlotInfo(this, seriesName));
-        return histPlot(seriesName, HistogramCalculator.calc(t, columnName, rangeMin, rangeMax, nbins, new PlotInfo(this, seriesName)));
+    public IntervalXYDataSeriesArray histPlot(final Comparable seriesName, final Table t, final String columnName,
+            final double rangeMin, final double rangeMax, final int nbins) {
+        ArgumentValidations.assertIsNumeric(t, columnName,
+                "Histogram can not be computed on non-numeric column: " + columnName, new PlotInfo(this, seriesName));
+        return histPlot(seriesName,
+                HistogramCalculator.calc(t, columnName, rangeMin, rangeMax, nbins, new PlotInfo(this, seriesName)));
     }
 
     private IntervalXYDataSeriesArray histPlot(final Comparable seriesName, final SwappableTable counts) {
         configureXYPlot();
         plotStyle(PlotStyle.HISTOGRAM);
 
-        ArgumentValidations.assertColumnsInTable(counts.getTableDefinition(), new PlotInfo(this, seriesName), BIN_MIN, BIN_MID, BIN_MAX, COUNT);
+        ArgumentValidations.assertColumnsInTable(counts.getTableDefinition(), new PlotInfo(this, seriesName), BIN_MIN,
+                BIN_MID, BIN_MAX, COUNT);
 
-        final IndexableNumericData startX = new IndexableNumericDataSwappableTable(counts, BIN_MIN, new PlotInfo(this, seriesName));
-        final IndexableNumericData midX = new IndexableNumericDataSwappableTable(counts, BIN_MID, new PlotInfo(this, seriesName));
-        final IndexableNumericData endX = new IndexableNumericDataSwappableTable(counts, BIN_MAX, new PlotInfo(this, seriesName));
+        final IndexableNumericData startX =
+                new IndexableNumericDataSwappableTable(counts, BIN_MIN, new PlotInfo(this, seriesName));
+        final IndexableNumericData midX =
+                new IndexableNumericDataSwappableTable(counts, BIN_MID, new PlotInfo(this, seriesName));
+        final IndexableNumericData endX =
+                new IndexableNumericDataSwappableTable(counts, BIN_MAX, new PlotInfo(this, seriesName));
         // does Y need separate values for min, mid, and max?
-        final IndexableNumericData y = new IndexableNumericDataSwappableTable(counts, COUNT, new PlotInfo(this, seriesName));
-        final IntervalXYDataSeriesArray ds = new IntervalXYDataSeriesArray(this, dataSeries.nextId(), seriesName, counts, startX, midX, endX, y, y, y);
+        final IndexableNumericData y =
+                new IndexableNumericDataSwappableTable(counts, COUNT, new PlotInfo(this, seriesName));
+        final IntervalXYDataSeriesArray ds = new IntervalXYDataSeriesArray(this, dataSeries.nextId(), seriesName,
+                counts, startX, midX, endX, y, y, y);
         ds.addSwappableTable(counts);
 
         registerDataSeries(SeriesCollection.SeriesType.INTERVAL, false, ds);
@@ -1418,48 +1520,56 @@ public class AxesImpl implements Axes, PlotExceptionCause {
     }
 
     @Override
-    public IntervalXYDataSeriesArray histPlot(final Comparable seriesName, final SelectableDataSet sds, final String columnName, final int nbins) {
+    public IntervalXYDataSeriesArray histPlot(final Comparable seriesName, final SelectableDataSet sds,
+            final String columnName, final int nbins) {
         final PlotInfo plotInfo = new PlotInfo(this, seriesName);
-        ArgumentValidations.assertIsNumeric(sds, columnName, "Histogram can not be computed on non-numeric column: " + columnName, plotInfo);
+        ArgumentValidations.assertIsNumeric(sds, columnName,
+                "Histogram can not be computed on non-numeric column: " + columnName, plotInfo);
 
         final List<String> byCols;
-        if(sds instanceof SelectableDataSetOneClick) {
+        if (sds instanceof SelectableDataSetOneClick) {
             byCols = Arrays.asList(((SelectableDataSetOneClick) sds).getByColumns());
         } else {
             byCols = Collections.emptyList();
         }
-        final Function<Table, Table> tableTransform = (Function<Table, Table> & Serializable) t -> HistogramCalculator.calc(t, columnName, nbins, plotInfo, byCols);
+        final Function<Table, Table> tableTransform = (Function<Table, Table> & Serializable) t -> HistogramCalculator
+                .calc(t, columnName, nbins, plotInfo, byCols);
 
         final List<String> allCols = new ArrayList<>(byCols);
         allCols.add(columnName);
-        final SwappableTable ht = sds.getSwappableTable(seriesName, chart, tableTransform, allCols.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
+        final SwappableTable ht = sds.getSwappableTable(seriesName, chart, tableTransform,
+                allCols.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
         return histPlot(seriesName, ht);
     }
 
     @Override
-    public IntervalXYDataSeriesArray histPlot(final Comparable seriesName, final SelectableDataSet sds, final String columnName, final double rangeMin, final double rangeMax, final int nbins) {
+    public IntervalXYDataSeriesArray histPlot(final Comparable seriesName, final SelectableDataSet sds,
+            final String columnName, final double rangeMin, final double rangeMax, final int nbins) {
         final PlotInfo plotInfo = new PlotInfo(this, seriesName);
-        ArgumentValidations.assertIsNumeric(sds, columnName, "Histogram can not be computed on non-numeric column: " + columnName, plotInfo);
+        ArgumentValidations.assertIsNumeric(sds, columnName,
+                "Histogram can not be computed on non-numeric column: " + columnName, plotInfo);
 
         final List<String> byCols;
-        if(sds instanceof SelectableDataSetOneClick) {
+        if (sds instanceof SelectableDataSetOneClick) {
             byCols = Arrays.asList(((SelectableDataSetOneClick) sds).getByColumns());
         } else {
             byCols = Collections.emptyList();
         }
 
-        final Function<Table, Table> tableTransform = (Function<Table, Table> & Serializable) t -> HistogramCalculator.calc(t, columnName, rangeMin, rangeMax, nbins, plotInfo, byCols);
+        final Function<Table, Table> tableTransform = (Function<Table, Table> & Serializable) t -> HistogramCalculator
+                .calc(t, columnName, rangeMin, rangeMax, nbins, plotInfo, byCols);
 
         final List<String> allCols = new ArrayList<>(byCols);
         allCols.add(columnName);
-        final SwappableTable ht = sds.getSwappableTable(seriesName, chart, tableTransform, allCols.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
+        final SwappableTable ht = sds.getSwappableTable(seriesName, chart, tableTransform,
+                allCols.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
         return histPlot(seriesName, ht);
     }
 
-    //endregion
+    // endregion
 
-    //region Category Histogram Plot
-    
+    // region Category Histogram Plot
+
     @Override
     public CategoryDataSeriesTableMap catHistPlot(final Comparable seriesName, final Table t, final String columnName) {
         configureCategoryPlot();
@@ -1470,16 +1580,18 @@ public class AxesImpl implements Axes, PlotExceptionCause {
         }
 
         final Table counts = PlotUtils.createCategoryHistogramTable(t, columnName);
-        final TableHandle h = new TableHandle( counts, columnName, COUNT, CategoryDataSeries.CAT_SERIES_ORDER_COLUMN);
+        final TableHandle h = new TableHandle(counts, columnName, COUNT, CategoryDataSeries.CAT_SERIES_ORDER_COLUMN);
 
-        final CategoryDataSeriesTableMap ds = new CategoryDataSeriesTableMap(this, dataSeries.nextId(), seriesName, h, columnName, COUNT);
+        final CategoryDataSeriesTableMap ds =
+                new CategoryDataSeriesTableMap(this, dataSeries.nextId(), seriesName, h, columnName, COUNT);
         ds.addTableHandle(h);
         registerDataSeries(SeriesCollection.SeriesType.CATEGORY, false, ds);
         return ds;
     }
 
     @Override
-    public CategoryDataSeriesSwappableTableMap catHistPlot(final Comparable seriesName, final SelectableDataSet sds, final String columnName) {
+    public CategoryDataSeriesSwappableTableMap catHistPlot(final Comparable seriesName, final SelectableDataSet sds,
+            final String columnName) {
         configureCategoryPlot();
         plotStyle(PlotStyle.HISTOGRAM);
 
@@ -1489,13 +1601,16 @@ public class AxesImpl implements Axes, PlotExceptionCause {
 
         final List<String> cols = new ArrayList<>();
         cols.add(columnName);
-        if(sds instanceof SelectableDataSetOneClick){
+        if (sds instanceof SelectableDataSetOneClick) {
             cols.addAll(Arrays.asList(((SelectableDataSetOneClick) sds).getByColumns()));
         }
 
-        final Function<Table, Table> tableTransform = (Function<Table, Table> & Serializable) t -> PlotUtils.createCategoryHistogramTable(t, cols.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
-        final SwappableTable counts = sds.getSwappableTable(seriesName, chart, tableTransform, columnName, CategoryDataSeries.CAT_SERIES_ORDER_COLUMN);
-        final CategoryDataSeriesSwappableTableMap ds = new CategoryDataSeriesSwappableTableMap(this, dataSeries.nextId(), seriesName, counts, columnName, COUNT);
+        final Function<Table, Table> tableTransform = (Function<Table, Table> & Serializable) t -> PlotUtils
+                .createCategoryHistogramTable(t, cols.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
+        final SwappableTable counts = sds.getSwappableTable(seriesName, chart, tableTransform, columnName,
+                CategoryDataSeries.CAT_SERIES_ORDER_COLUMN);
+        final CategoryDataSeriesSwappableTableMap ds = new CategoryDataSeriesSwappableTableMap(this,
+                dataSeries.nextId(), seriesName, counts, columnName, COUNT);
         ds.addSwappableTable(counts);
         registerDataSeries(SeriesCollection.SeriesType.CATEGORY, false, ds);
         return ds;
@@ -1527,19 +1642,21 @@ public class AxesImpl implements Axes, PlotExceptionCause {
     }
 
     @Override
-    public <T extends Comparable> CategoryDataSeriesTableMap  catHistPlot(final Comparable seriesName, final List<T> x) {
+    public <T extends Comparable> CategoryDataSeriesTableMap catHistPlot(final Comparable seriesName, final List<T> x) {
         return catHistPlot(seriesName, PlotUtils.table(x, "Category"), "Category");
     }
-    
-    //endregion
-    
-    //region Category Plots
-    
-    private CategoryDataSeriesInternal catPlot(final CategoryDataSeriesInternal ds, final TableHandle[] tableHandles, final SwappableTable[] swappableTables) {
+
+    // endregion
+
+    // region Category Plots
+
+    private CategoryDataSeriesInternal catPlot(final CategoryDataSeriesInternal ds, final TableHandle[] tableHandles,
+            final SwappableTable[] swappableTables) {
         return catPlot(ds, tableHandles, swappableTables, false);
     }
 
-    private CategoryDataSeriesInternal catPlot(final CategoryDataSeriesInternal ds, final TableHandle[] tableHandles, final SwappableTable[] swappableTables, final boolean hasYTimeAxis) {
+    private CategoryDataSeriesInternal catPlot(final CategoryDataSeriesInternal ds, final TableHandle[] tableHandles,
+            final SwappableTable[] swappableTables, final boolean hasYTimeAxis) {
         configureCategoryPlot();
 
         if (hasYTimeAxis) {
@@ -1563,44 +1680,57 @@ public class AxesImpl implements Axes, PlotExceptionCause {
     }
 
     @Override
-    public <T1 extends Comparable> CategoryDataSeriesInternal catPlot(final Comparable seriesName, final IndexableData<T1> categories, final IndexableNumericData values) {
-        return catPlot(seriesName , categories, values, false);
+    public <T1 extends Comparable> CategoryDataSeriesInternal catPlot(final Comparable seriesName,
+            final IndexableData<T1> categories, final IndexableNumericData values) {
+        return catPlot(seriesName, categories, values, false);
     }
 
-    private <T1 extends Comparable> CategoryDataSeriesInternal catPlot(final Comparable seriesName, final IndexableData<T1> categories, final IndexableNumericData values, final boolean hasYTimeAxis) {
+    private <T1 extends Comparable> CategoryDataSeriesInternal catPlot(final Comparable seriesName,
+            final IndexableData<T1> categories, final IndexableNumericData values, final boolean hasYTimeAxis) {
         if (hasYTimeAxis) {
             axes[1].axisFormat(new NanosAxisFormat());
         }
 
-        return catPlot(new CategoryDataSeriesMap(this, dataSeries.nextId(), seriesName, categories, values), null, null);
+        return catPlot(new CategoryDataSeriesMap(this, dataSeries.nextId(), seriesName, categories, values), null,
+                null);
     }
 
     @Override
-    public CategoryDataSeriesInternal catPlot(final Comparable seriesName, final Table t, final String categories, final String values) {
-        final TableHandle h = PlotUtils.createCategoryTableHandle( t, categories, values);
-        return catPlot(new CategoryDataSeriesTableMap(this, dataSeries.nextId(), seriesName, h, categories, values), new TableHandle[]{h}, null, ArgumentValidations.isTime(t, values, new PlotInfo(this, seriesName)));
+    public CategoryDataSeriesInternal catPlot(final Comparable seriesName, final Table t, final String categories,
+            final String values) {
+        final TableHandle h = PlotUtils.createCategoryTableHandle(t, categories, values);
+        return catPlot(new CategoryDataSeriesTableMap(this, dataSeries.nextId(), seriesName, h, categories, values),
+                new TableHandle[] {h}, null, ArgumentValidations.isTime(t, values, new PlotInfo(this, seriesName)));
     }
 
     @Override
-    public CategoryDataSeriesInternal catPlot(final Comparable seriesName, final SelectableDataSet sds, final String categories, final String values) {
+    public CategoryDataSeriesInternal catPlot(final Comparable seriesName, final SelectableDataSet sds,
+            final String categories, final String values) {
         final SelectableDataSet lastBySelectableDataSet = getAggregatedSelectableDataSet(sds,
                 () -> PlotUtils.createCategoryComboAgg(AggLast(values)), Collections.singletonList(categories));
-        final SwappableTable t = lastBySelectableDataSet.getSwappableTable(seriesName, chart, categories, values, CategoryDataSeries.CAT_SERIES_ORDER_COLUMN);
-        return catPlot(new CategoryDataSeriesSwappableTableMap(this, dataSeries.nextId(), seriesName, t, categories, values), null, new SwappableTable[]{t}, ArgumentValidations.isTime(sds, values, new PlotInfo(this, seriesName)));
+        final SwappableTable t = lastBySelectableDataSet.getSwappableTable(seriesName, chart, categories, values,
+                CategoryDataSeries.CAT_SERIES_ORDER_COLUMN);
+        return catPlot(
+                new CategoryDataSeriesSwappableTableMap(this, dataSeries.nextId(), seriesName, t, categories, values),
+                null, new SwappableTable[] {t},
+                ArgumentValidations.isTime(sds, values, new PlotInfo(this, seriesName)));
     }
 
     @Override
-    public MultiCatSeries catPlotBy(final Comparable seriesName, final Table t, final String categories, final String values, final String... byColumns) {
+    public MultiCatSeries catPlotBy(final Comparable seriesName, final Table t, final String categories,
+            final String values, final String... byColumns) {
         ArgumentValidations.assertNotNull(t, "t", new PlotInfo(this, seriesName));
         ArgumentValidations.assertNotNull(categories, "categories", new PlotInfo(this, seriesName));
         ArgumentValidations.assertNotNull(values, "values", new PlotInfo(this, seriesName));
         ArgumentValidations.assertNotNullAndNotEmpty(byColumns, "byColumns", new PlotInfo(this, seriesName));
         configureCategoryPlot();
 
-        final TableBackedTableMapHandle h = PlotUtils.createCategoryTableMapHandle(t, categories, new String[]{values}, byColumns, new PlotInfo(this, seriesName));
-        final MultiCatSeries series = new MultiCatSeries(this, dataSeries.nextId(), seriesName, h, categories, values, byColumns);
+        final TableBackedTableMapHandle h = PlotUtils.createCategoryTableMapHandle(t, categories, new String[] {values},
+                byColumns, new PlotInfo(this, seriesName));
+        final MultiCatSeries series =
+                new MultiCatSeries(this, dataSeries.nextId(), seriesName, h, categories, values, byColumns);
 
-        if( ArgumentValidations.isTime(t, values, new PlotInfo(this, seriesName)) ){
+        if (ArgumentValidations.isTime(t, values, new PlotInfo(this, seriesName))) {
             axes[1].axisFormat(new NanosAxisFormat());
         }
 
@@ -1611,7 +1741,8 @@ public class AxesImpl implements Axes, PlotExceptionCause {
 
 
     @Override
-    public MultiCatSeriesSwappable catPlotBy(final Comparable seriesName, final SelectableDataSet sds, final String categories, final String values, final String... byColumns) {
+    public MultiCatSeriesSwappable catPlotBy(final Comparable seriesName, final SelectableDataSet sds,
+            final String categories, final String values, final String... byColumns) {
         ArgumentValidations.assertNotNull(sds, "sds", new PlotInfo(this, seriesName));
         ArgumentValidations.assertNotNull(categories, "categories", new PlotInfo(this, seriesName));
         ArgumentValidations.assertNotNull(values, "timeCol", new PlotInfo(this, seriesName));
@@ -1632,10 +1763,11 @@ public class AxesImpl implements Axes, PlotExceptionCause {
                 allOfTheByColumns);
         final SwappableTable t = lastBySelectableDataSet.getSwappableTable(seriesName, chart, columns);
         configureCategoryPlot();
-        final MultiCatSeriesSwappable series = new MultiCatSeriesSwappable(this, dataSeries.nextId(), seriesName, t, categories, values, byColumns);
+        final MultiCatSeriesSwappable series =
+                new MultiCatSeriesSwappable(this, dataSeries.nextId(), seriesName, t, categories, values, byColumns);
 
 
-        if( ArgumentValidations.isTime(t.getTableDefinition(), values, new PlotInfo(this, seriesName)) ){
+        if (ArgumentValidations.isTime(t.getTableDefinition(), values, new PlotInfo(this, seriesName))) {
             axes[1].axisFormat(new NanosAxisFormat());
         }
 
@@ -1644,20 +1776,21 @@ public class AxesImpl implements Axes, PlotExceptionCause {
         return series;
     }
 
-    //endregion
-    
-    //region Pie Plots
+    // endregion
 
-    private CategoryDataSeriesInternal piePlot(final CategoryDataSeriesInternal ds, final TableHandle[] tableHandles, final SwappableTable[] swappableTables) {
+    // region Pie Plots
+
+    private CategoryDataSeriesInternal piePlot(final CategoryDataSeriesInternal ds, final TableHandle[] tableHandles,
+            final SwappableTable[] swappableTables) {
         configurePiePlot();
 
-        if(tableHandles != null) {
+        if (tableHandles != null) {
             for (TableHandle tableHandle : tableHandles) {
                 ds.addTableHandle(tableHandle);
             }
         }
 
-        if(swappableTables != null){
+        if (swappableTables != null) {
             for (SwappableTable swappableTable : swappableTables) {
                 ds.addSwappableTable(swappableTable);
             }
@@ -1668,24 +1801,32 @@ public class AxesImpl implements Axes, PlotExceptionCause {
     }
 
     @Override
-    public <T1 extends Comparable> CategoryDataSeriesInternal piePlot(final Comparable seriesName, final IndexableData<T1> categories, final IndexableNumericData values) {
-        return piePlot(new CategoryDataSeriesMap(this, dataSeries.nextId(), seriesName, categories, values), null, null);
+    public <T1 extends Comparable> CategoryDataSeriesInternal piePlot(final Comparable seriesName,
+            final IndexableData<T1> categories, final IndexableNumericData values) {
+        return piePlot(new CategoryDataSeriesMap(this, dataSeries.nextId(), seriesName, categories, values), null,
+                null);
     }
 
     @Override
-    public CategoryDataSeriesInternal piePlot(final Comparable seriesName, final Table t, final String categories, final String values) {
-        final TableHandle h = PlotUtils.createCategoryTableHandle( t, categories, values);
-        return piePlot(new CategoryDataSeriesTableMap(this, dataSeries.nextId(), seriesName, h, categories, values), new TableHandle[]{h}, null);
+    public CategoryDataSeriesInternal piePlot(final Comparable seriesName, final Table t, final String categories,
+            final String values) {
+        final TableHandle h = PlotUtils.createCategoryTableHandle(t, categories, values);
+        return piePlot(new CategoryDataSeriesTableMap(this, dataSeries.nextId(), seriesName, h, categories, values),
+                new TableHandle[] {h}, null);
     }
 
     @Override
-    public CategoryDataSeriesInternal piePlot(final Comparable seriesName, final SelectableDataSet sds, final String categories, final String values) {
+    public CategoryDataSeriesInternal piePlot(final Comparable seriesName, final SelectableDataSet sds,
+            final String categories, final String values) {
         final SelectableDataSet lastBySelectableDataSet = getAggregatedSelectableDataSet(sds,
                 () -> PlotUtils.createCategoryComboAgg(AggLast(values)), Collections.singletonList(categories));
-        final SwappableTable t = lastBySelectableDataSet.getSwappableTable(seriesName, chart, categories, values, CategoryDataSeries.CAT_SERIES_ORDER_COLUMN);
-        return piePlot(new CategoryDataSeriesSwappableTableMap(this, dataSeries.nextId(), seriesName, t, categories, values), null, new SwappableTable[]{t});
+        final SwappableTable t = lastBySelectableDataSet.getSwappableTable(seriesName, chart, categories, values,
+                CategoryDataSeries.CAT_SERIES_ORDER_COLUMN);
+        return piePlot(
+                new CategoryDataSeriesSwappableTableMap(this, dataSeries.nextId(), seriesName, t, categories, values),
+                null, new SwappableTable[] {t});
     }
-    //endregion
+    // endregion
 
     ////////////////////////////// CODE BELOW HERE IS GENERATED -- DO NOT EDIT BY HAND //////////////////////////////
     ////////////////////////////// TO REGENERATE RUN GenerateAxesPlotMethods //////////////////////////////
@@ -1693,1076 +1834,2243 @@ public class AxesImpl implements Axes, PlotExceptionCause {
 
 
 
-    @Override public  XYDataSeriesArray plot(final Comparable seriesName, final Date[] x, final Date[] y) {
-        return plot(seriesName, new IndexableNumericDataArrayDate(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(y, new PlotInfo(this, seriesName)), true, true);
+    @Override
+    public XYDataSeriesArray plot(final Comparable seriesName, final Date[] x, final Date[] y) {
+        return plot(seriesName, new IndexableNumericDataArrayDate(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(y, new PlotInfo(this, seriesName)), true, true);
     }
 
-    @Override public  XYDataSeriesArray plot(final Comparable seriesName, final Date[] x, final DateTime[] y) {
-        return plot(seriesName, new IndexableNumericDataArrayDate(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(y, new PlotInfo(this, seriesName)), true, true);
+    @Override
+    public XYDataSeriesArray plot(final Comparable seriesName, final Date[] x, final DateTime[] y) {
+        return plot(seriesName, new IndexableNumericDataArrayDate(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(y, new PlotInfo(this, seriesName)), true, true);
     }
 
-    @Override public  XYDataSeriesArray plot(final Comparable seriesName, final Date[] x, final short[] y) {
-        return plot(seriesName, new IndexableNumericDataArrayDate(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayShort(y, new PlotInfo(this, seriesName)), true, false);
+    @Override
+    public XYDataSeriesArray plot(final Comparable seriesName, final Date[] x, final short[] y) {
+        return plot(seriesName, new IndexableNumericDataArrayDate(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayShort(y, new PlotInfo(this, seriesName)), true, false);
     }
 
-    @Override public  XYDataSeriesArray plot(final Comparable seriesName, final Date[] x, final int[] y) {
-        return plot(seriesName, new IndexableNumericDataArrayDate(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayInt(y, new PlotInfo(this, seriesName)), true, false);
+    @Override
+    public XYDataSeriesArray plot(final Comparable seriesName, final Date[] x, final int[] y) {
+        return plot(seriesName, new IndexableNumericDataArrayDate(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayInt(y, new PlotInfo(this, seriesName)), true, false);
     }
 
-    @Override public  XYDataSeriesArray plot(final Comparable seriesName, final Date[] x, final long[] y) {
-        return plot(seriesName, new IndexableNumericDataArrayDate(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayLong(y, new PlotInfo(this, seriesName)), true, false);
+    @Override
+    public XYDataSeriesArray plot(final Comparable seriesName, final Date[] x, final long[] y) {
+        return plot(seriesName, new IndexableNumericDataArrayDate(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayLong(y, new PlotInfo(this, seriesName)), true, false);
     }
 
-    @Override public  XYDataSeriesArray plot(final Comparable seriesName, final Date[] x, final float[] y) {
-        return plot(seriesName, new IndexableNumericDataArrayDate(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayFloat(y, new PlotInfo(this, seriesName)), true, false);
+    @Override
+    public XYDataSeriesArray plot(final Comparable seriesName, final Date[] x, final float[] y) {
+        return plot(seriesName, new IndexableNumericDataArrayDate(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayFloat(y, new PlotInfo(this, seriesName)), true, false);
     }
 
-    @Override public  XYDataSeriesArray plot(final Comparable seriesName, final Date[] x, final double[] y) {
-        return plot(seriesName, new IndexableNumericDataArrayDate(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDouble(y, new PlotInfo(this, seriesName)), true, false);
+    @Override
+    public XYDataSeriesArray plot(final Comparable seriesName, final Date[] x, final double[] y) {
+        return plot(seriesName, new IndexableNumericDataArrayDate(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDouble(y, new PlotInfo(this, seriesName)), true, false);
     }
 
-    @Override public <T1 extends Number> XYDataSeriesArray plot(final Comparable seriesName, final Date[] x, final T1[] y) {
-        return plot(seriesName, new IndexableNumericDataArrayDate(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayNumber<>(y, new PlotInfo(this, seriesName)), true, false);
+    @Override
+    public <T1 extends Number> XYDataSeriesArray plot(final Comparable seriesName, final Date[] x, final T1[] y) {
+        return plot(seriesName, new IndexableNumericDataArrayDate(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayNumber<>(y, new PlotInfo(this, seriesName)), true, false);
     }
 
-    @Override public <T1 extends Number> XYDataSeriesArray plot(final Comparable seriesName, final Date[] x, final List<T1> y) {
-        return plot(seriesName, new IndexableNumericDataArrayDate(x, new PlotInfo(this, seriesName)), new IndexableNumericDataListNumber<>(y, new PlotInfo(this, seriesName)), true, false);
+    @Override
+    public <T1 extends Number> XYDataSeriesArray plot(final Comparable seriesName, final Date[] x, final List<T1> y) {
+        return plot(seriesName, new IndexableNumericDataArrayDate(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataListNumber<>(y, new PlotInfo(this, seriesName)), true, false);
     }
 
-    @Override public  XYDataSeriesArray plot(final Comparable seriesName, final DateTime[] x, final Date[] y) {
-        return plot(seriesName, new IndexableNumericDataArrayDateTime(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(y, new PlotInfo(this, seriesName)), true, true);
+    @Override
+    public XYDataSeriesArray plot(final Comparable seriesName, final DateTime[] x, final Date[] y) {
+        return plot(seriesName, new IndexableNumericDataArrayDateTime(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(y, new PlotInfo(this, seriesName)), true, true);
     }
 
-    @Override public  XYDataSeriesArray plot(final Comparable seriesName, final DateTime[] x, final DateTime[] y) {
-        return plot(seriesName, new IndexableNumericDataArrayDateTime(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(y, new PlotInfo(this, seriesName)), true, true);
+    @Override
+    public XYDataSeriesArray plot(final Comparable seriesName, final DateTime[] x, final DateTime[] y) {
+        return plot(seriesName, new IndexableNumericDataArrayDateTime(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(y, new PlotInfo(this, seriesName)), true, true);
     }
 
-    @Override public  XYDataSeriesArray plot(final Comparable seriesName, final DateTime[] x, final short[] y) {
-        return plot(seriesName, new IndexableNumericDataArrayDateTime(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayShort(y, new PlotInfo(this, seriesName)), true, false);
+    @Override
+    public XYDataSeriesArray plot(final Comparable seriesName, final DateTime[] x, final short[] y) {
+        return plot(seriesName, new IndexableNumericDataArrayDateTime(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayShort(y, new PlotInfo(this, seriesName)), true, false);
     }
 
-    @Override public  XYDataSeriesArray plot(final Comparable seriesName, final DateTime[] x, final int[] y) {
-        return plot(seriesName, new IndexableNumericDataArrayDateTime(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayInt(y, new PlotInfo(this, seriesName)), true, false);
+    @Override
+    public XYDataSeriesArray plot(final Comparable seriesName, final DateTime[] x, final int[] y) {
+        return plot(seriesName, new IndexableNumericDataArrayDateTime(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayInt(y, new PlotInfo(this, seriesName)), true, false);
     }
 
-    @Override public  XYDataSeriesArray plot(final Comparable seriesName, final DateTime[] x, final long[] y) {
-        return plot(seriesName, new IndexableNumericDataArrayDateTime(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayLong(y, new PlotInfo(this, seriesName)), true, false);
+    @Override
+    public XYDataSeriesArray plot(final Comparable seriesName, final DateTime[] x, final long[] y) {
+        return plot(seriesName, new IndexableNumericDataArrayDateTime(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayLong(y, new PlotInfo(this, seriesName)), true, false);
     }
 
-    @Override public  XYDataSeriesArray plot(final Comparable seriesName, final DateTime[] x, final float[] y) {
-        return plot(seriesName, new IndexableNumericDataArrayDateTime(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayFloat(y, new PlotInfo(this, seriesName)), true, false);
+    @Override
+    public XYDataSeriesArray plot(final Comparable seriesName, final DateTime[] x, final float[] y) {
+        return plot(seriesName, new IndexableNumericDataArrayDateTime(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayFloat(y, new PlotInfo(this, seriesName)), true, false);
     }
 
-    @Override public  XYDataSeriesArray plot(final Comparable seriesName, final DateTime[] x, final double[] y) {
-        return plot(seriesName, new IndexableNumericDataArrayDateTime(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDouble(y, new PlotInfo(this, seriesName)), true, false);
+    @Override
+    public XYDataSeriesArray plot(final Comparable seriesName, final DateTime[] x, final double[] y) {
+        return plot(seriesName, new IndexableNumericDataArrayDateTime(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDouble(y, new PlotInfo(this, seriesName)), true, false);
     }
 
-    @Override public <T1 extends Number> XYDataSeriesArray plot(final Comparable seriesName, final DateTime[] x, final T1[] y) {
-        return plot(seriesName, new IndexableNumericDataArrayDateTime(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayNumber<>(y, new PlotInfo(this, seriesName)), true, false);
+    @Override
+    public <T1 extends Number> XYDataSeriesArray plot(final Comparable seriesName, final DateTime[] x, final T1[] y) {
+        return plot(seriesName, new IndexableNumericDataArrayDateTime(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayNumber<>(y, new PlotInfo(this, seriesName)), true, false);
     }
 
-    @Override public <T1 extends Number> XYDataSeriesArray plot(final Comparable seriesName, final DateTime[] x, final List<T1> y) {
-        return plot(seriesName, new IndexableNumericDataArrayDateTime(x, new PlotInfo(this, seriesName)), new IndexableNumericDataListNumber<>(y, new PlotInfo(this, seriesName)), true, false);
+    @Override
+    public <T1 extends Number> XYDataSeriesArray plot(final Comparable seriesName, final DateTime[] x,
+            final List<T1> y) {
+        return plot(seriesName, new IndexableNumericDataArrayDateTime(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataListNumber<>(y, new PlotInfo(this, seriesName)), true, false);
     }
 
-    @Override public  XYDataSeriesArray plot(final Comparable seriesName, final short[] x, final Date[] y) {
-        return plot(seriesName, new IndexableNumericDataArrayShort(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(y, new PlotInfo(this, seriesName)), false, true);
+    @Override
+    public XYDataSeriesArray plot(final Comparable seriesName, final short[] x, final Date[] y) {
+        return plot(seriesName, new IndexableNumericDataArrayShort(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(y, new PlotInfo(this, seriesName)), false, true);
     }
 
-    @Override public  XYDataSeriesArray plot(final Comparable seriesName, final short[] x, final DateTime[] y) {
-        return plot(seriesName, new IndexableNumericDataArrayShort(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(y, new PlotInfo(this, seriesName)), false, true);
+    @Override
+    public XYDataSeriesArray plot(final Comparable seriesName, final short[] x, final DateTime[] y) {
+        return plot(seriesName, new IndexableNumericDataArrayShort(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(y, new PlotInfo(this, seriesName)), false, true);
     }
 
-    @Override public  XYDataSeriesArray plot(final Comparable seriesName, final short[] x, final short[] y) {
-        return plot(seriesName, new IndexableNumericDataArrayShort(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayShort(y, new PlotInfo(this, seriesName)), false, false);
+    @Override
+    public XYDataSeriesArray plot(final Comparable seriesName, final short[] x, final short[] y) {
+        return plot(seriesName, new IndexableNumericDataArrayShort(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayShort(y, new PlotInfo(this, seriesName)), false, false);
     }
 
-    @Override public  XYDataSeriesArray plot(final Comparable seriesName, final short[] x, final int[] y) {
-        return plot(seriesName, new IndexableNumericDataArrayShort(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayInt(y, new PlotInfo(this, seriesName)), false, false);
+    @Override
+    public XYDataSeriesArray plot(final Comparable seriesName, final short[] x, final int[] y) {
+        return plot(seriesName, new IndexableNumericDataArrayShort(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayInt(y, new PlotInfo(this, seriesName)), false, false);
     }
 
-    @Override public  XYDataSeriesArray plot(final Comparable seriesName, final short[] x, final long[] y) {
-        return plot(seriesName, new IndexableNumericDataArrayShort(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayLong(y, new PlotInfo(this, seriesName)), false, false);
+    @Override
+    public XYDataSeriesArray plot(final Comparable seriesName, final short[] x, final long[] y) {
+        return plot(seriesName, new IndexableNumericDataArrayShort(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayLong(y, new PlotInfo(this, seriesName)), false, false);
     }
 
-    @Override public  XYDataSeriesArray plot(final Comparable seriesName, final short[] x, final float[] y) {
-        return plot(seriesName, new IndexableNumericDataArrayShort(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayFloat(y, new PlotInfo(this, seriesName)), false, false);
+    @Override
+    public XYDataSeriesArray plot(final Comparable seriesName, final short[] x, final float[] y) {
+        return plot(seriesName, new IndexableNumericDataArrayShort(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayFloat(y, new PlotInfo(this, seriesName)), false, false);
     }
 
-    @Override public  XYDataSeriesArray plot(final Comparable seriesName, final short[] x, final double[] y) {
-        return plot(seriesName, new IndexableNumericDataArrayShort(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDouble(y, new PlotInfo(this, seriesName)), false, false);
+    @Override
+    public XYDataSeriesArray plot(final Comparable seriesName, final short[] x, final double[] y) {
+        return plot(seriesName, new IndexableNumericDataArrayShort(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDouble(y, new PlotInfo(this, seriesName)), false, false);
     }
 
-    @Override public <T1 extends Number> XYDataSeriesArray plot(final Comparable seriesName, final short[] x, final T1[] y) {
-        return plot(seriesName, new IndexableNumericDataArrayShort(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayNumber<>(y, new PlotInfo(this, seriesName)), false, false);
+    @Override
+    public <T1 extends Number> XYDataSeriesArray plot(final Comparable seriesName, final short[] x, final T1[] y) {
+        return plot(seriesName, new IndexableNumericDataArrayShort(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayNumber<>(y, new PlotInfo(this, seriesName)), false, false);
     }
 
-    @Override public <T1 extends Number> XYDataSeriesArray plot(final Comparable seriesName, final short[] x, final List<T1> y) {
-        return plot(seriesName, new IndexableNumericDataArrayShort(x, new PlotInfo(this, seriesName)), new IndexableNumericDataListNumber<>(y, new PlotInfo(this, seriesName)), false, false);
+    @Override
+    public <T1 extends Number> XYDataSeriesArray plot(final Comparable seriesName, final short[] x, final List<T1> y) {
+        return plot(seriesName, new IndexableNumericDataArrayShort(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataListNumber<>(y, new PlotInfo(this, seriesName)), false, false);
     }
 
-    @Override public  XYDataSeriesArray plot(final Comparable seriesName, final int[] x, final Date[] y) {
-        return plot(seriesName, new IndexableNumericDataArrayInt(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(y, new PlotInfo(this, seriesName)), false, true);
+    @Override
+    public XYDataSeriesArray plot(final Comparable seriesName, final int[] x, final Date[] y) {
+        return plot(seriesName, new IndexableNumericDataArrayInt(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(y, new PlotInfo(this, seriesName)), false, true);
     }
 
-    @Override public  XYDataSeriesArray plot(final Comparable seriesName, final int[] x, final DateTime[] y) {
-        return plot(seriesName, new IndexableNumericDataArrayInt(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(y, new PlotInfo(this, seriesName)), false, true);
+    @Override
+    public XYDataSeriesArray plot(final Comparable seriesName, final int[] x, final DateTime[] y) {
+        return plot(seriesName, new IndexableNumericDataArrayInt(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(y, new PlotInfo(this, seriesName)), false, true);
     }
 
-    @Override public  XYDataSeriesArray plot(final Comparable seriesName, final int[] x, final short[] y) {
-        return plot(seriesName, new IndexableNumericDataArrayInt(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayShort(y, new PlotInfo(this, seriesName)), false, false);
+    @Override
+    public XYDataSeriesArray plot(final Comparable seriesName, final int[] x, final short[] y) {
+        return plot(seriesName, new IndexableNumericDataArrayInt(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayShort(y, new PlotInfo(this, seriesName)), false, false);
     }
 
-    @Override public  XYDataSeriesArray plot(final Comparable seriesName, final int[] x, final int[] y) {
-        return plot(seriesName, new IndexableNumericDataArrayInt(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayInt(y, new PlotInfo(this, seriesName)), false, false);
+    @Override
+    public XYDataSeriesArray plot(final Comparable seriesName, final int[] x, final int[] y) {
+        return plot(seriesName, new IndexableNumericDataArrayInt(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayInt(y, new PlotInfo(this, seriesName)), false, false);
     }
 
-    @Override public  XYDataSeriesArray plot(final Comparable seriesName, final int[] x, final long[] y) {
-        return plot(seriesName, new IndexableNumericDataArrayInt(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayLong(y, new PlotInfo(this, seriesName)), false, false);
+    @Override
+    public XYDataSeriesArray plot(final Comparable seriesName, final int[] x, final long[] y) {
+        return plot(seriesName, new IndexableNumericDataArrayInt(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayLong(y, new PlotInfo(this, seriesName)), false, false);
     }
 
-    @Override public  XYDataSeriesArray plot(final Comparable seriesName, final int[] x, final float[] y) {
-        return plot(seriesName, new IndexableNumericDataArrayInt(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayFloat(y, new PlotInfo(this, seriesName)), false, false);
+    @Override
+    public XYDataSeriesArray plot(final Comparable seriesName, final int[] x, final float[] y) {
+        return plot(seriesName, new IndexableNumericDataArrayInt(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayFloat(y, new PlotInfo(this, seriesName)), false, false);
     }
 
-    @Override public  XYDataSeriesArray plot(final Comparable seriesName, final int[] x, final double[] y) {
-        return plot(seriesName, new IndexableNumericDataArrayInt(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDouble(y, new PlotInfo(this, seriesName)), false, false);
+    @Override
+    public XYDataSeriesArray plot(final Comparable seriesName, final int[] x, final double[] y) {
+        return plot(seriesName, new IndexableNumericDataArrayInt(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDouble(y, new PlotInfo(this, seriesName)), false, false);
     }
 
-    @Override public <T1 extends Number> XYDataSeriesArray plot(final Comparable seriesName, final int[] x, final T1[] y) {
-        return plot(seriesName, new IndexableNumericDataArrayInt(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayNumber<>(y, new PlotInfo(this, seriesName)), false, false);
+    @Override
+    public <T1 extends Number> XYDataSeriesArray plot(final Comparable seriesName, final int[] x, final T1[] y) {
+        return plot(seriesName, new IndexableNumericDataArrayInt(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayNumber<>(y, new PlotInfo(this, seriesName)), false, false);
     }
 
-    @Override public <T1 extends Number> XYDataSeriesArray plot(final Comparable seriesName, final int[] x, final List<T1> y) {
-        return plot(seriesName, new IndexableNumericDataArrayInt(x, new PlotInfo(this, seriesName)), new IndexableNumericDataListNumber<>(y, new PlotInfo(this, seriesName)), false, false);
+    @Override
+    public <T1 extends Number> XYDataSeriesArray plot(final Comparable seriesName, final int[] x, final List<T1> y) {
+        return plot(seriesName, new IndexableNumericDataArrayInt(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataListNumber<>(y, new PlotInfo(this, seriesName)), false, false);
     }
 
-    @Override public  XYDataSeriesArray plot(final Comparable seriesName, final long[] x, final Date[] y) {
-        return plot(seriesName, new IndexableNumericDataArrayLong(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(y, new PlotInfo(this, seriesName)), false, true);
+    @Override
+    public XYDataSeriesArray plot(final Comparable seriesName, final long[] x, final Date[] y) {
+        return plot(seriesName, new IndexableNumericDataArrayLong(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(y, new PlotInfo(this, seriesName)), false, true);
     }
 
-    @Override public  XYDataSeriesArray plot(final Comparable seriesName, final long[] x, final DateTime[] y) {
-        return plot(seriesName, new IndexableNumericDataArrayLong(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(y, new PlotInfo(this, seriesName)), false, true);
+    @Override
+    public XYDataSeriesArray plot(final Comparable seriesName, final long[] x, final DateTime[] y) {
+        return plot(seriesName, new IndexableNumericDataArrayLong(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(y, new PlotInfo(this, seriesName)), false, true);
     }
 
-    @Override public  XYDataSeriesArray plot(final Comparable seriesName, final long[] x, final short[] y) {
-        return plot(seriesName, new IndexableNumericDataArrayLong(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayShort(y, new PlotInfo(this, seriesName)), false, false);
+    @Override
+    public XYDataSeriesArray plot(final Comparable seriesName, final long[] x, final short[] y) {
+        return plot(seriesName, new IndexableNumericDataArrayLong(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayShort(y, new PlotInfo(this, seriesName)), false, false);
     }
 
-    @Override public  XYDataSeriesArray plot(final Comparable seriesName, final long[] x, final int[] y) {
-        return plot(seriesName, new IndexableNumericDataArrayLong(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayInt(y, new PlotInfo(this, seriesName)), false, false);
+    @Override
+    public XYDataSeriesArray plot(final Comparable seriesName, final long[] x, final int[] y) {
+        return plot(seriesName, new IndexableNumericDataArrayLong(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayInt(y, new PlotInfo(this, seriesName)), false, false);
     }
 
-    @Override public  XYDataSeriesArray plot(final Comparable seriesName, final long[] x, final long[] y) {
-        return plot(seriesName, new IndexableNumericDataArrayLong(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayLong(y, new PlotInfo(this, seriesName)), false, false);
+    @Override
+    public XYDataSeriesArray plot(final Comparable seriesName, final long[] x, final long[] y) {
+        return plot(seriesName, new IndexableNumericDataArrayLong(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayLong(y, new PlotInfo(this, seriesName)), false, false);
     }
 
-    @Override public  XYDataSeriesArray plot(final Comparable seriesName, final long[] x, final float[] y) {
-        return plot(seriesName, new IndexableNumericDataArrayLong(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayFloat(y, new PlotInfo(this, seriesName)), false, false);
+    @Override
+    public XYDataSeriesArray plot(final Comparable seriesName, final long[] x, final float[] y) {
+        return plot(seriesName, new IndexableNumericDataArrayLong(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayFloat(y, new PlotInfo(this, seriesName)), false, false);
     }
 
-    @Override public  XYDataSeriesArray plot(final Comparable seriesName, final long[] x, final double[] y) {
-        return plot(seriesName, new IndexableNumericDataArrayLong(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDouble(y, new PlotInfo(this, seriesName)), false, false);
+    @Override
+    public XYDataSeriesArray plot(final Comparable seriesName, final long[] x, final double[] y) {
+        return plot(seriesName, new IndexableNumericDataArrayLong(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDouble(y, new PlotInfo(this, seriesName)), false, false);
     }
 
-    @Override public <T1 extends Number> XYDataSeriesArray plot(final Comparable seriesName, final long[] x, final T1[] y) {
-        return plot(seriesName, new IndexableNumericDataArrayLong(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayNumber<>(y, new PlotInfo(this, seriesName)), false, false);
+    @Override
+    public <T1 extends Number> XYDataSeriesArray plot(final Comparable seriesName, final long[] x, final T1[] y) {
+        return plot(seriesName, new IndexableNumericDataArrayLong(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayNumber<>(y, new PlotInfo(this, seriesName)), false, false);
     }
 
-    @Override public <T1 extends Number> XYDataSeriesArray plot(final Comparable seriesName, final long[] x, final List<T1> y) {
-        return plot(seriesName, new IndexableNumericDataArrayLong(x, new PlotInfo(this, seriesName)), new IndexableNumericDataListNumber<>(y, new PlotInfo(this, seriesName)), false, false);
+    @Override
+    public <T1 extends Number> XYDataSeriesArray plot(final Comparable seriesName, final long[] x, final List<T1> y) {
+        return plot(seriesName, new IndexableNumericDataArrayLong(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataListNumber<>(y, new PlotInfo(this, seriesName)), false, false);
     }
 
-    @Override public  XYDataSeriesArray plot(final Comparable seriesName, final float[] x, final Date[] y) {
-        return plot(seriesName, new IndexableNumericDataArrayFloat(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(y, new PlotInfo(this, seriesName)), false, true);
+    @Override
+    public XYDataSeriesArray plot(final Comparable seriesName, final float[] x, final Date[] y) {
+        return plot(seriesName, new IndexableNumericDataArrayFloat(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(y, new PlotInfo(this, seriesName)), false, true);
     }
 
-    @Override public  XYDataSeriesArray plot(final Comparable seriesName, final float[] x, final DateTime[] y) {
-        return plot(seriesName, new IndexableNumericDataArrayFloat(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(y, new PlotInfo(this, seriesName)), false, true);
+    @Override
+    public XYDataSeriesArray plot(final Comparable seriesName, final float[] x, final DateTime[] y) {
+        return plot(seriesName, new IndexableNumericDataArrayFloat(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(y, new PlotInfo(this, seriesName)), false, true);
     }
 
-    @Override public  XYDataSeriesArray plot(final Comparable seriesName, final float[] x, final short[] y) {
-        return plot(seriesName, new IndexableNumericDataArrayFloat(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayShort(y, new PlotInfo(this, seriesName)), false, false);
+    @Override
+    public XYDataSeriesArray plot(final Comparable seriesName, final float[] x, final short[] y) {
+        return plot(seriesName, new IndexableNumericDataArrayFloat(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayShort(y, new PlotInfo(this, seriesName)), false, false);
     }
 
-    @Override public  XYDataSeriesArray plot(final Comparable seriesName, final float[] x, final int[] y) {
-        return plot(seriesName, new IndexableNumericDataArrayFloat(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayInt(y, new PlotInfo(this, seriesName)), false, false);
+    @Override
+    public XYDataSeriesArray plot(final Comparable seriesName, final float[] x, final int[] y) {
+        return plot(seriesName, new IndexableNumericDataArrayFloat(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayInt(y, new PlotInfo(this, seriesName)), false, false);
     }
 
-    @Override public  XYDataSeriesArray plot(final Comparable seriesName, final float[] x, final long[] y) {
-        return plot(seriesName, new IndexableNumericDataArrayFloat(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayLong(y, new PlotInfo(this, seriesName)), false, false);
+    @Override
+    public XYDataSeriesArray plot(final Comparable seriesName, final float[] x, final long[] y) {
+        return plot(seriesName, new IndexableNumericDataArrayFloat(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayLong(y, new PlotInfo(this, seriesName)), false, false);
     }
 
-    @Override public  XYDataSeriesArray plot(final Comparable seriesName, final float[] x, final float[] y) {
-        return plot(seriesName, new IndexableNumericDataArrayFloat(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayFloat(y, new PlotInfo(this, seriesName)), false, false);
+    @Override
+    public XYDataSeriesArray plot(final Comparable seriesName, final float[] x, final float[] y) {
+        return plot(seriesName, new IndexableNumericDataArrayFloat(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayFloat(y, new PlotInfo(this, seriesName)), false, false);
     }
 
-    @Override public  XYDataSeriesArray plot(final Comparable seriesName, final float[] x, final double[] y) {
-        return plot(seriesName, new IndexableNumericDataArrayFloat(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDouble(y, new PlotInfo(this, seriesName)), false, false);
+    @Override
+    public XYDataSeriesArray plot(final Comparable seriesName, final float[] x, final double[] y) {
+        return plot(seriesName, new IndexableNumericDataArrayFloat(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDouble(y, new PlotInfo(this, seriesName)), false, false);
     }
 
-    @Override public <T1 extends Number> XYDataSeriesArray plot(final Comparable seriesName, final float[] x, final T1[] y) {
-        return plot(seriesName, new IndexableNumericDataArrayFloat(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayNumber<>(y, new PlotInfo(this, seriesName)), false, false);
+    @Override
+    public <T1 extends Number> XYDataSeriesArray plot(final Comparable seriesName, final float[] x, final T1[] y) {
+        return plot(seriesName, new IndexableNumericDataArrayFloat(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayNumber<>(y, new PlotInfo(this, seriesName)), false, false);
     }
 
-    @Override public <T1 extends Number> XYDataSeriesArray plot(final Comparable seriesName, final float[] x, final List<T1> y) {
-        return plot(seriesName, new IndexableNumericDataArrayFloat(x, new PlotInfo(this, seriesName)), new IndexableNumericDataListNumber<>(y, new PlotInfo(this, seriesName)), false, false);
+    @Override
+    public <T1 extends Number> XYDataSeriesArray plot(final Comparable seriesName, final float[] x, final List<T1> y) {
+        return plot(seriesName, new IndexableNumericDataArrayFloat(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataListNumber<>(y, new PlotInfo(this, seriesName)), false, false);
     }
 
-    @Override public  XYDataSeriesArray plot(final Comparable seriesName, final double[] x, final Date[] y) {
-        return plot(seriesName, new IndexableNumericDataArrayDouble(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(y, new PlotInfo(this, seriesName)), false, true);
+    @Override
+    public XYDataSeriesArray plot(final Comparable seriesName, final double[] x, final Date[] y) {
+        return plot(seriesName, new IndexableNumericDataArrayDouble(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(y, new PlotInfo(this, seriesName)), false, true);
     }
 
-    @Override public  XYDataSeriesArray plot(final Comparable seriesName, final double[] x, final DateTime[] y) {
-        return plot(seriesName, new IndexableNumericDataArrayDouble(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(y, new PlotInfo(this, seriesName)), false, true);
+    @Override
+    public XYDataSeriesArray plot(final Comparable seriesName, final double[] x, final DateTime[] y) {
+        return plot(seriesName, new IndexableNumericDataArrayDouble(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(y, new PlotInfo(this, seriesName)), false, true);
     }
 
-    @Override public  XYDataSeriesArray plot(final Comparable seriesName, final double[] x, final short[] y) {
-        return plot(seriesName, new IndexableNumericDataArrayDouble(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayShort(y, new PlotInfo(this, seriesName)), false, false);
+    @Override
+    public XYDataSeriesArray plot(final Comparable seriesName, final double[] x, final short[] y) {
+        return plot(seriesName, new IndexableNumericDataArrayDouble(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayShort(y, new PlotInfo(this, seriesName)), false, false);
     }
 
-    @Override public  XYDataSeriesArray plot(final Comparable seriesName, final double[] x, final int[] y) {
-        return plot(seriesName, new IndexableNumericDataArrayDouble(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayInt(y, new PlotInfo(this, seriesName)), false, false);
+    @Override
+    public XYDataSeriesArray plot(final Comparable seriesName, final double[] x, final int[] y) {
+        return plot(seriesName, new IndexableNumericDataArrayDouble(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayInt(y, new PlotInfo(this, seriesName)), false, false);
     }
 
-    @Override public  XYDataSeriesArray plot(final Comparable seriesName, final double[] x, final long[] y) {
-        return plot(seriesName, new IndexableNumericDataArrayDouble(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayLong(y, new PlotInfo(this, seriesName)), false, false);
+    @Override
+    public XYDataSeriesArray plot(final Comparable seriesName, final double[] x, final long[] y) {
+        return plot(seriesName, new IndexableNumericDataArrayDouble(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayLong(y, new PlotInfo(this, seriesName)), false, false);
     }
 
-    @Override public  XYDataSeriesArray plot(final Comparable seriesName, final double[] x, final float[] y) {
-        return plot(seriesName, new IndexableNumericDataArrayDouble(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayFloat(y, new PlotInfo(this, seriesName)), false, false);
+    @Override
+    public XYDataSeriesArray plot(final Comparable seriesName, final double[] x, final float[] y) {
+        return plot(seriesName, new IndexableNumericDataArrayDouble(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayFloat(y, new PlotInfo(this, seriesName)), false, false);
     }
 
-    @Override public  XYDataSeriesArray plot(final Comparable seriesName, final double[] x, final double[] y) {
-        return plot(seriesName, new IndexableNumericDataArrayDouble(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDouble(y, new PlotInfo(this, seriesName)), false, false);
+    @Override
+    public XYDataSeriesArray plot(final Comparable seriesName, final double[] x, final double[] y) {
+        return plot(seriesName, new IndexableNumericDataArrayDouble(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDouble(y, new PlotInfo(this, seriesName)), false, false);
     }
 
-    @Override public <T1 extends Number> XYDataSeriesArray plot(final Comparable seriesName, final double[] x, final T1[] y) {
-        return plot(seriesName, new IndexableNumericDataArrayDouble(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayNumber<>(y, new PlotInfo(this, seriesName)), false, false);
+    @Override
+    public <T1 extends Number> XYDataSeriesArray plot(final Comparable seriesName, final double[] x, final T1[] y) {
+        return plot(seriesName, new IndexableNumericDataArrayDouble(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayNumber<>(y, new PlotInfo(this, seriesName)), false, false);
     }
 
-    @Override public <T1 extends Number> XYDataSeriesArray plot(final Comparable seriesName, final double[] x, final List<T1> y) {
-        return plot(seriesName, new IndexableNumericDataArrayDouble(x, new PlotInfo(this, seriesName)), new IndexableNumericDataListNumber<>(y, new PlotInfo(this, seriesName)), false, false);
+    @Override
+    public <T1 extends Number> XYDataSeriesArray plot(final Comparable seriesName, final double[] x, final List<T1> y) {
+        return plot(seriesName, new IndexableNumericDataArrayDouble(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataListNumber<>(y, new PlotInfo(this, seriesName)), false, false);
     }
 
-    @Override public <T0 extends Number> XYDataSeriesArray plot(final Comparable seriesName, final T0[] x, final Date[] y) {
-        return plot(seriesName, new IndexableNumericDataArrayNumber<>(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(y, new PlotInfo(this, seriesName)), false, true);
+    @Override
+    public <T0 extends Number> XYDataSeriesArray plot(final Comparable seriesName, final T0[] x, final Date[] y) {
+        return plot(seriesName, new IndexableNumericDataArrayNumber<>(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(y, new PlotInfo(this, seriesName)), false, true);
     }
 
-    @Override public <T0 extends Number> XYDataSeriesArray plot(final Comparable seriesName, final T0[] x, final DateTime[] y) {
-        return plot(seriesName, new IndexableNumericDataArrayNumber<>(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(y, new PlotInfo(this, seriesName)), false, true);
+    @Override
+    public <T0 extends Number> XYDataSeriesArray plot(final Comparable seriesName, final T0[] x, final DateTime[] y) {
+        return plot(seriesName, new IndexableNumericDataArrayNumber<>(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(y, new PlotInfo(this, seriesName)), false, true);
     }
 
-    @Override public <T0 extends Number> XYDataSeriesArray plot(final Comparable seriesName, final T0[] x, final short[] y) {
-        return plot(seriesName, new IndexableNumericDataArrayNumber<>(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayShort(y, new PlotInfo(this, seriesName)), false, false);
+    @Override
+    public <T0 extends Number> XYDataSeriesArray plot(final Comparable seriesName, final T0[] x, final short[] y) {
+        return plot(seriesName, new IndexableNumericDataArrayNumber<>(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayShort(y, new PlotInfo(this, seriesName)), false, false);
     }
 
-    @Override public <T0 extends Number> XYDataSeriesArray plot(final Comparable seriesName, final T0[] x, final int[] y) {
-        return plot(seriesName, new IndexableNumericDataArrayNumber<>(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayInt(y, new PlotInfo(this, seriesName)), false, false);
+    @Override
+    public <T0 extends Number> XYDataSeriesArray plot(final Comparable seriesName, final T0[] x, final int[] y) {
+        return plot(seriesName, new IndexableNumericDataArrayNumber<>(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayInt(y, new PlotInfo(this, seriesName)), false, false);
     }
 
-    @Override public <T0 extends Number> XYDataSeriesArray plot(final Comparable seriesName, final T0[] x, final long[] y) {
-        return plot(seriesName, new IndexableNumericDataArrayNumber<>(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayLong(y, new PlotInfo(this, seriesName)), false, false);
+    @Override
+    public <T0 extends Number> XYDataSeriesArray plot(final Comparable seriesName, final T0[] x, final long[] y) {
+        return plot(seriesName, new IndexableNumericDataArrayNumber<>(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayLong(y, new PlotInfo(this, seriesName)), false, false);
     }
 
-    @Override public <T0 extends Number> XYDataSeriesArray plot(final Comparable seriesName, final T0[] x, final float[] y) {
-        return plot(seriesName, new IndexableNumericDataArrayNumber<>(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayFloat(y, new PlotInfo(this, seriesName)), false, false);
+    @Override
+    public <T0 extends Number> XYDataSeriesArray plot(final Comparable seriesName, final T0[] x, final float[] y) {
+        return plot(seriesName, new IndexableNumericDataArrayNumber<>(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayFloat(y, new PlotInfo(this, seriesName)), false, false);
     }
 
-    @Override public <T0 extends Number> XYDataSeriesArray plot(final Comparable seriesName, final T0[] x, final double[] y) {
-        return plot(seriesName, new IndexableNumericDataArrayNumber<>(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDouble(y, new PlotInfo(this, seriesName)), false, false);
+    @Override
+    public <T0 extends Number> XYDataSeriesArray plot(final Comparable seriesName, final T0[] x, final double[] y) {
+        return plot(seriesName, new IndexableNumericDataArrayNumber<>(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDouble(y, new PlotInfo(this, seriesName)), false, false);
     }
 
-    @Override public <T0 extends Number,T1 extends Number> XYDataSeriesArray plot(final Comparable seriesName, final T0[] x, final T1[] y) {
-        return plot(seriesName, new IndexableNumericDataArrayNumber<>(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayNumber<>(y, new PlotInfo(this, seriesName)), false, false);
+    @Override
+    public <T0 extends Number, T1 extends Number> XYDataSeriesArray plot(final Comparable seriesName, final T0[] x,
+            final T1[] y) {
+        return plot(seriesName, new IndexableNumericDataArrayNumber<>(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayNumber<>(y, new PlotInfo(this, seriesName)), false, false);
     }
 
-    @Override public <T0 extends Number,T1 extends Number> XYDataSeriesArray plot(final Comparable seriesName, final T0[] x, final List<T1> y) {
-        return plot(seriesName, new IndexableNumericDataArrayNumber<>(x, new PlotInfo(this, seriesName)), new IndexableNumericDataListNumber<>(y, new PlotInfo(this, seriesName)), false, false);
+    @Override
+    public <T0 extends Number, T1 extends Number> XYDataSeriesArray plot(final Comparable seriesName, final T0[] x,
+            final List<T1> y) {
+        return plot(seriesName, new IndexableNumericDataArrayNumber<>(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataListNumber<>(y, new PlotInfo(this, seriesName)), false, false);
     }
 
-    @Override public <T0 extends Number> XYDataSeriesArray plot(final Comparable seriesName, final List<T0> x, final Date[] y) {
-        return plot(seriesName, new IndexableNumericDataListNumber<>(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(y, new PlotInfo(this, seriesName)), false, true);
+    @Override
+    public <T0 extends Number> XYDataSeriesArray plot(final Comparable seriesName, final List<T0> x, final Date[] y) {
+        return plot(seriesName, new IndexableNumericDataListNumber<>(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(y, new PlotInfo(this, seriesName)), false, true);
     }
 
-    @Override public <T0 extends Number> XYDataSeriesArray plot(final Comparable seriesName, final List<T0> x, final DateTime[] y) {
-        return plot(seriesName, new IndexableNumericDataListNumber<>(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(y, new PlotInfo(this, seriesName)), false, true);
+    @Override
+    public <T0 extends Number> XYDataSeriesArray plot(final Comparable seriesName, final List<T0> x,
+            final DateTime[] y) {
+        return plot(seriesName, new IndexableNumericDataListNumber<>(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(y, new PlotInfo(this, seriesName)), false, true);
     }
 
-    @Override public <T0 extends Number> XYDataSeriesArray plot(final Comparable seriesName, final List<T0> x, final short[] y) {
-        return plot(seriesName, new IndexableNumericDataListNumber<>(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayShort(y, new PlotInfo(this, seriesName)), false, false);
+    @Override
+    public <T0 extends Number> XYDataSeriesArray plot(final Comparable seriesName, final List<T0> x, final short[] y) {
+        return plot(seriesName, new IndexableNumericDataListNumber<>(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayShort(y, new PlotInfo(this, seriesName)), false, false);
     }
 
-    @Override public <T0 extends Number> XYDataSeriesArray plot(final Comparable seriesName, final List<T0> x, final int[] y) {
-        return plot(seriesName, new IndexableNumericDataListNumber<>(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayInt(y, new PlotInfo(this, seriesName)), false, false);
+    @Override
+    public <T0 extends Number> XYDataSeriesArray plot(final Comparable seriesName, final List<T0> x, final int[] y) {
+        return plot(seriesName, new IndexableNumericDataListNumber<>(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayInt(y, new PlotInfo(this, seriesName)), false, false);
     }
 
-    @Override public <T0 extends Number> XYDataSeriesArray plot(final Comparable seriesName, final List<T0> x, final long[] y) {
-        return plot(seriesName, new IndexableNumericDataListNumber<>(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayLong(y, new PlotInfo(this, seriesName)), false, false);
+    @Override
+    public <T0 extends Number> XYDataSeriesArray plot(final Comparable seriesName, final List<T0> x, final long[] y) {
+        return plot(seriesName, new IndexableNumericDataListNumber<>(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayLong(y, new PlotInfo(this, seriesName)), false, false);
     }
 
-    @Override public <T0 extends Number> XYDataSeriesArray plot(final Comparable seriesName, final List<T0> x, final float[] y) {
-        return plot(seriesName, new IndexableNumericDataListNumber<>(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayFloat(y, new PlotInfo(this, seriesName)), false, false);
+    @Override
+    public <T0 extends Number> XYDataSeriesArray plot(final Comparable seriesName, final List<T0> x, final float[] y) {
+        return plot(seriesName, new IndexableNumericDataListNumber<>(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayFloat(y, new PlotInfo(this, seriesName)), false, false);
     }
 
-    @Override public <T0 extends Number> XYDataSeriesArray plot(final Comparable seriesName, final List<T0> x, final double[] y) {
-        return plot(seriesName, new IndexableNumericDataListNumber<>(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDouble(y, new PlotInfo(this, seriesName)), false, false);
+    @Override
+    public <T0 extends Number> XYDataSeriesArray plot(final Comparable seriesName, final List<T0> x, final double[] y) {
+        return plot(seriesName, new IndexableNumericDataListNumber<>(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDouble(y, new PlotInfo(this, seriesName)), false, false);
     }
 
-    @Override public <T0 extends Number,T1 extends Number> XYDataSeriesArray plot(final Comparable seriesName, final List<T0> x, final T1[] y) {
-        return plot(seriesName, new IndexableNumericDataListNumber<>(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayNumber<>(y, new PlotInfo(this, seriesName)), false, false);
+    @Override
+    public <T0 extends Number, T1 extends Number> XYDataSeriesArray plot(final Comparable seriesName, final List<T0> x,
+            final T1[] y) {
+        return plot(seriesName, new IndexableNumericDataListNumber<>(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayNumber<>(y, new PlotInfo(this, seriesName)), false, false);
     }
 
-    @Override public <T0 extends Number,T1 extends Number> XYDataSeriesArray plot(final Comparable seriesName, final List<T0> x, final List<T1> y) {
-        return plot(seriesName, new IndexableNumericDataListNumber<>(x, new PlotInfo(this, seriesName)), new IndexableNumericDataListNumber<>(y, new PlotInfo(this, seriesName)), false, false);
+    @Override
+    public <T0 extends Number, T1 extends Number> XYDataSeriesArray plot(final Comparable seriesName, final List<T0> x,
+            final List<T1> y) {
+        return plot(seriesName, new IndexableNumericDataListNumber<>(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataListNumber<>(y, new PlotInfo(this, seriesName)), false, false);
     }
 
-    @Override public  OHLCDataSeriesArray ohlcPlot(final Comparable seriesName, final Date[] time, final short[] open, final short[] high, final short[] low, final short[] close) {
-        return ohlcPlot(seriesName, new IndexableNumericDataArrayDate(time, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayShort(open, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayShort(high, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayShort(low, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayShort(close, new PlotInfo(this, seriesName)));
+    @Override
+    public OHLCDataSeriesArray ohlcPlot(final Comparable seriesName, final Date[] time, final short[] open,
+            final short[] high, final short[] low, final short[] close) {
+        return ohlcPlot(seriesName, new IndexableNumericDataArrayDate(time, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayShort(open, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayShort(high, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayShort(low, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayShort(close, new PlotInfo(this, seriesName)));
     }
 
-    @Override public  OHLCDataSeriesArray ohlcPlot(final Comparable seriesName, final DateTime[] time, final short[] open, final short[] high, final short[] low, final short[] close) {
-        return ohlcPlot(seriesName, new IndexableNumericDataArrayDateTime(time, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayShort(open, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayShort(high, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayShort(low, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayShort(close, new PlotInfo(this, seriesName)));
+    @Override
+    public OHLCDataSeriesArray ohlcPlot(final Comparable seriesName, final DateTime[] time, final short[] open,
+            final short[] high, final short[] low, final short[] close) {
+        return ohlcPlot(seriesName, new IndexableNumericDataArrayDateTime(time, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayShort(open, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayShort(high, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayShort(low, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayShort(close, new PlotInfo(this, seriesName)));
     }
 
-    @Override public  OHLCDataSeriesArray ohlcPlot(final Comparable seriesName, final Date[] time, final int[] open, final int[] high, final int[] low, final int[] close) {
-        return ohlcPlot(seriesName, new IndexableNumericDataArrayDate(time, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayInt(open, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayInt(high, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayInt(low, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayInt(close, new PlotInfo(this, seriesName)));
+    @Override
+    public OHLCDataSeriesArray ohlcPlot(final Comparable seriesName, final Date[] time, final int[] open,
+            final int[] high, final int[] low, final int[] close) {
+        return ohlcPlot(seriesName, new IndexableNumericDataArrayDate(time, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayInt(open, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayInt(high, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayInt(low, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayInt(close, new PlotInfo(this, seriesName)));
     }
 
-    @Override public  OHLCDataSeriesArray ohlcPlot(final Comparable seriesName, final DateTime[] time, final int[] open, final int[] high, final int[] low, final int[] close) {
-        return ohlcPlot(seriesName, new IndexableNumericDataArrayDateTime(time, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayInt(open, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayInt(high, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayInt(low, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayInt(close, new PlotInfo(this, seriesName)));
+    @Override
+    public OHLCDataSeriesArray ohlcPlot(final Comparable seriesName, final DateTime[] time, final int[] open,
+            final int[] high, final int[] low, final int[] close) {
+        return ohlcPlot(seriesName, new IndexableNumericDataArrayDateTime(time, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayInt(open, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayInt(high, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayInt(low, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayInt(close, new PlotInfo(this, seriesName)));
     }
 
-    @Override public  OHLCDataSeriesArray ohlcPlot(final Comparable seriesName, final Date[] time, final long[] open, final long[] high, final long[] low, final long[] close) {
-        return ohlcPlot(seriesName, new IndexableNumericDataArrayDate(time, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayLong(open, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayLong(high, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayLong(low, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayLong(close, new PlotInfo(this, seriesName)));
+    @Override
+    public OHLCDataSeriesArray ohlcPlot(final Comparable seriesName, final Date[] time, final long[] open,
+            final long[] high, final long[] low, final long[] close) {
+        return ohlcPlot(seriesName, new IndexableNumericDataArrayDate(time, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayLong(open, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayLong(high, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayLong(low, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayLong(close, new PlotInfo(this, seriesName)));
     }
 
-    @Override public  OHLCDataSeriesArray ohlcPlot(final Comparable seriesName, final DateTime[] time, final long[] open, final long[] high, final long[] low, final long[] close) {
-        return ohlcPlot(seriesName, new IndexableNumericDataArrayDateTime(time, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayLong(open, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayLong(high, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayLong(low, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayLong(close, new PlotInfo(this, seriesName)));
+    @Override
+    public OHLCDataSeriesArray ohlcPlot(final Comparable seriesName, final DateTime[] time, final long[] open,
+            final long[] high, final long[] low, final long[] close) {
+        return ohlcPlot(seriesName, new IndexableNumericDataArrayDateTime(time, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayLong(open, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayLong(high, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayLong(low, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayLong(close, new PlotInfo(this, seriesName)));
     }
 
-    @Override public  OHLCDataSeriesArray ohlcPlot(final Comparable seriesName, final Date[] time, final float[] open, final float[] high, final float[] low, final float[] close) {
-        return ohlcPlot(seriesName, new IndexableNumericDataArrayDate(time, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayFloat(open, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayFloat(high, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayFloat(low, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayFloat(close, new PlotInfo(this, seriesName)));
+    @Override
+    public OHLCDataSeriesArray ohlcPlot(final Comparable seriesName, final Date[] time, final float[] open,
+            final float[] high, final float[] low, final float[] close) {
+        return ohlcPlot(seriesName, new IndexableNumericDataArrayDate(time, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayFloat(open, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayFloat(high, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayFloat(low, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayFloat(close, new PlotInfo(this, seriesName)));
     }
 
-    @Override public  OHLCDataSeriesArray ohlcPlot(final Comparable seriesName, final DateTime[] time, final float[] open, final float[] high, final float[] low, final float[] close) {
-        return ohlcPlot(seriesName, new IndexableNumericDataArrayDateTime(time, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayFloat(open, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayFloat(high, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayFloat(low, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayFloat(close, new PlotInfo(this, seriesName)));
+    @Override
+    public OHLCDataSeriesArray ohlcPlot(final Comparable seriesName, final DateTime[] time, final float[] open,
+            final float[] high, final float[] low, final float[] close) {
+        return ohlcPlot(seriesName, new IndexableNumericDataArrayDateTime(time, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayFloat(open, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayFloat(high, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayFloat(low, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayFloat(close, new PlotInfo(this, seriesName)));
     }
 
-    @Override public  OHLCDataSeriesArray ohlcPlot(final Comparable seriesName, final Date[] time, final double[] open, final double[] high, final double[] low, final double[] close) {
-        return ohlcPlot(seriesName, new IndexableNumericDataArrayDate(time, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDouble(open, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDouble(high, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDouble(low, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDouble(close, new PlotInfo(this, seriesName)));
+    @Override
+    public OHLCDataSeriesArray ohlcPlot(final Comparable seriesName, final Date[] time, final double[] open,
+            final double[] high, final double[] low, final double[] close) {
+        return ohlcPlot(seriesName, new IndexableNumericDataArrayDate(time, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDouble(open, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDouble(high, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDouble(low, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDouble(close, new PlotInfo(this, seriesName)));
     }
 
-    @Override public  OHLCDataSeriesArray ohlcPlot(final Comparable seriesName, final DateTime[] time, final double[] open, final double[] high, final double[] low, final double[] close) {
-        return ohlcPlot(seriesName, new IndexableNumericDataArrayDateTime(time, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDouble(open, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDouble(high, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDouble(low, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDouble(close, new PlotInfo(this, seriesName)));
+    @Override
+    public OHLCDataSeriesArray ohlcPlot(final Comparable seriesName, final DateTime[] time, final double[] open,
+            final double[] high, final double[] low, final double[] close) {
+        return ohlcPlot(seriesName, new IndexableNumericDataArrayDateTime(time, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDouble(open, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDouble(high, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDouble(low, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDouble(close, new PlotInfo(this, seriesName)));
     }
 
-    @Override public <T1 extends Number,T2 extends Number,T3 extends Number,T4 extends Number> OHLCDataSeriesArray ohlcPlot(final Comparable seriesName, final Date[] time, final T1[] open, final T2[] high, final T3[] low, final T4[] close) {
-        return ohlcPlot(seriesName, new IndexableNumericDataArrayDate(time, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayNumber<>(open, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayNumber<>(high, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayNumber<>(low, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayNumber<>(close, new PlotInfo(this, seriesName)));
+    @Override
+    public <T1 extends Number, T2 extends Number, T3 extends Number, T4 extends Number> OHLCDataSeriesArray ohlcPlot(
+            final Comparable seriesName, final Date[] time, final T1[] open, final T2[] high, final T3[] low,
+            final T4[] close) {
+        return ohlcPlot(seriesName, new IndexableNumericDataArrayDate(time, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayNumber<>(open, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayNumber<>(high, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayNumber<>(low, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayNumber<>(close, new PlotInfo(this, seriesName)));
     }
 
-    @Override public <T1 extends Number,T2 extends Number,T3 extends Number,T4 extends Number> OHLCDataSeriesArray ohlcPlot(final Comparable seriesName, final DateTime[] time, final T1[] open, final T2[] high, final T3[] low, final T4[] close) {
-        return ohlcPlot(seriesName, new IndexableNumericDataArrayDateTime(time, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayNumber<>(open, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayNumber<>(high, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayNumber<>(low, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayNumber<>(close, new PlotInfo(this, seriesName)));
+    @Override
+    public <T1 extends Number, T2 extends Number, T3 extends Number, T4 extends Number> OHLCDataSeriesArray ohlcPlot(
+            final Comparable seriesName, final DateTime[] time, final T1[] open, final T2[] high, final T3[] low,
+            final T4[] close) {
+        return ohlcPlot(seriesName, new IndexableNumericDataArrayDateTime(time, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayNumber<>(open, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayNumber<>(high, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayNumber<>(low, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayNumber<>(close, new PlotInfo(this, seriesName)));
     }
 
-    @Override public <T1 extends Number,T2 extends Number,T3 extends Number,T4 extends Number> OHLCDataSeriesArray ohlcPlot(final Comparable seriesName, final Date[] time, final List<T1> open, final List<T2> high, final List<T3> low, final List<T4> close) {
-        return ohlcPlot(seriesName, new IndexableNumericDataArrayDate(time, new PlotInfo(this, seriesName)), new IndexableNumericDataListNumber<>(open, new PlotInfo(this, seriesName)), new IndexableNumericDataListNumber<>(high, new PlotInfo(this, seriesName)), new IndexableNumericDataListNumber<>(low, new PlotInfo(this, seriesName)), new IndexableNumericDataListNumber<>(close, new PlotInfo(this, seriesName)));
+    @Override
+    public <T1 extends Number, T2 extends Number, T3 extends Number, T4 extends Number> OHLCDataSeriesArray ohlcPlot(
+            final Comparable seriesName, final Date[] time, final List<T1> open, final List<T2> high,
+            final List<T3> low, final List<T4> close) {
+        return ohlcPlot(seriesName, new IndexableNumericDataArrayDate(time, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataListNumber<>(open, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataListNumber<>(high, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataListNumber<>(low, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataListNumber<>(close, new PlotInfo(this, seriesName)));
     }
 
-    @Override public <T1 extends Number,T2 extends Number,T3 extends Number,T4 extends Number> OHLCDataSeriesArray ohlcPlot(final Comparable seriesName, final DateTime[] time, final List<T1> open, final List<T2> high, final List<T3> low, final List<T4> close) {
-        return ohlcPlot(seriesName, new IndexableNumericDataArrayDateTime(time, new PlotInfo(this, seriesName)), new IndexableNumericDataListNumber<>(open, new PlotInfo(this, seriesName)), new IndexableNumericDataListNumber<>(high, new PlotInfo(this, seriesName)), new IndexableNumericDataListNumber<>(low, new PlotInfo(this, seriesName)), new IndexableNumericDataListNumber<>(close, new PlotInfo(this, seriesName)));
+    @Override
+    public <T1 extends Number, T2 extends Number, T3 extends Number, T4 extends Number> OHLCDataSeriesArray ohlcPlot(
+            final Comparable seriesName, final DateTime[] time, final List<T1> open, final List<T2> high,
+            final List<T3> low, final List<T4> close) {
+        return ohlcPlot(seriesName, new IndexableNumericDataArrayDateTime(time, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataListNumber<>(open, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataListNumber<>(high, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataListNumber<>(low, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataListNumber<>(close, new PlotInfo(this, seriesName)));
     }
 
-    @Override public  IntervalXYDataSeriesArray histPlot(final Comparable seriesName, final short[] x, final int nbins) {
+    @Override
+    public IntervalXYDataSeriesArray histPlot(final Comparable seriesName, final short[] x, final int nbins) {
         return histPlot(seriesName, PlotUtils.doubleTable(x, "Y"), "Y", nbins);
     }
 
-    @Override public  IntervalXYDataSeriesArray histPlot(final Comparable seriesName, final int[] x, final int nbins) {
+    @Override
+    public IntervalXYDataSeriesArray histPlot(final Comparable seriesName, final int[] x, final int nbins) {
         return histPlot(seriesName, PlotUtils.doubleTable(x, "Y"), "Y", nbins);
     }
 
-    @Override public  IntervalXYDataSeriesArray histPlot(final Comparable seriesName, final long[] x, final int nbins) {
+    @Override
+    public IntervalXYDataSeriesArray histPlot(final Comparable seriesName, final long[] x, final int nbins) {
         return histPlot(seriesName, PlotUtils.doubleTable(x, "Y"), "Y", nbins);
     }
 
-    @Override public  IntervalXYDataSeriesArray histPlot(final Comparable seriesName, final float[] x, final int nbins) {
+    @Override
+    public IntervalXYDataSeriesArray histPlot(final Comparable seriesName, final float[] x, final int nbins) {
         return histPlot(seriesName, PlotUtils.doubleTable(x, "Y"), "Y", nbins);
     }
 
-    @Override public  IntervalXYDataSeriesArray histPlot(final Comparable seriesName, final double[] x, final int nbins) {
+    @Override
+    public IntervalXYDataSeriesArray histPlot(final Comparable seriesName, final double[] x, final int nbins) {
         return histPlot(seriesName, PlotUtils.doubleTable(x, "Y"), "Y", nbins);
     }
 
-    @Override public <T0 extends Number> IntervalXYDataSeriesArray histPlot(final Comparable seriesName, final T0[] x, final int nbins) {
+    @Override
+    public <T0 extends Number> IntervalXYDataSeriesArray histPlot(final Comparable seriesName, final T0[] x,
+            final int nbins) {
         return histPlot(seriesName, PlotUtils.doubleTable(x, "Y"), "Y", nbins);
     }
 
-    @Override public <T0 extends Number> IntervalXYDataSeriesArray histPlot(final Comparable seriesName, final List<T0> x, final int nbins) {
+    @Override
+    public <T0 extends Number> IntervalXYDataSeriesArray histPlot(final Comparable seriesName, final List<T0> x,
+            final int nbins) {
         return histPlot(seriesName, PlotUtils.doubleTable(x, "Y"), "Y", nbins);
     }
 
-    @Override public  IntervalXYDataSeriesArray histPlot(final Comparable seriesName, final short[] x, final double rangeMin, final double rangeMax, final int nbins) {
+    @Override
+    public IntervalXYDataSeriesArray histPlot(final Comparable seriesName, final short[] x, final double rangeMin,
+            final double rangeMax, final int nbins) {
         return histPlot(seriesName, PlotUtils.doubleTable(x, "Y"), "Y", rangeMin, rangeMax, nbins);
     }
 
-    @Override public  IntervalXYDataSeriesArray histPlot(final Comparable seriesName, final int[] x, final double rangeMin, final double rangeMax, final int nbins) {
+    @Override
+    public IntervalXYDataSeriesArray histPlot(final Comparable seriesName, final int[] x, final double rangeMin,
+            final double rangeMax, final int nbins) {
         return histPlot(seriesName, PlotUtils.doubleTable(x, "Y"), "Y", rangeMin, rangeMax, nbins);
     }
 
-    @Override public  IntervalXYDataSeriesArray histPlot(final Comparable seriesName, final long[] x, final double rangeMin, final double rangeMax, final int nbins) {
+    @Override
+    public IntervalXYDataSeriesArray histPlot(final Comparable seriesName, final long[] x, final double rangeMin,
+            final double rangeMax, final int nbins) {
         return histPlot(seriesName, PlotUtils.doubleTable(x, "Y"), "Y", rangeMin, rangeMax, nbins);
     }
 
-    @Override public  IntervalXYDataSeriesArray histPlot(final Comparable seriesName, final float[] x, final double rangeMin, final double rangeMax, final int nbins) {
+    @Override
+    public IntervalXYDataSeriesArray histPlot(final Comparable seriesName, final float[] x, final double rangeMin,
+            final double rangeMax, final int nbins) {
         return histPlot(seriesName, PlotUtils.doubleTable(x, "Y"), "Y", rangeMin, rangeMax, nbins);
     }
 
-    @Override public  IntervalXYDataSeriesArray histPlot(final Comparable seriesName, final double[] x, final double rangeMin, final double rangeMax, final int nbins) {
+    @Override
+    public IntervalXYDataSeriesArray histPlot(final Comparable seriesName, final double[] x, final double rangeMin,
+            final double rangeMax, final int nbins) {
         return histPlot(seriesName, PlotUtils.doubleTable(x, "Y"), "Y", rangeMin, rangeMax, nbins);
     }
 
-    @Override public <T0 extends Number> IntervalXYDataSeriesArray histPlot(final Comparable seriesName, final T0[] x, final double rangeMin, final double rangeMax, final int nbins) {
+    @Override
+    public <T0 extends Number> IntervalXYDataSeriesArray histPlot(final Comparable seriesName, final T0[] x,
+            final double rangeMin, final double rangeMax, final int nbins) {
         return histPlot(seriesName, PlotUtils.doubleTable(x, "Y"), "Y", rangeMin, rangeMax, nbins);
     }
 
-    @Override public <T0 extends Number> IntervalXYDataSeriesArray histPlot(final Comparable seriesName, final List<T0> x, final double rangeMin, final double rangeMax, final int nbins) {
+    @Override
+    public <T0 extends Number> IntervalXYDataSeriesArray histPlot(final Comparable seriesName, final List<T0> x,
+            final double rangeMin, final double rangeMax, final int nbins) {
         return histPlot(seriesName, PlotUtils.doubleTable(x, "Y"), "Y", rangeMin, rangeMax, nbins);
     }
 
-    @Override public  XYErrorBarDataSeriesArray errorBarXY(final Comparable seriesName, final short[] x, final short[] xLow, final short[] xHigh, final short[] y, final short[] yLow, final short[] yHigh) {
-        return errorBarXY(seriesName, new IndexableNumericDataArrayShort(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayShort(xLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayShort(xHigh, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayShort(y, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayShort(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayShort(yHigh, new PlotInfo(this, seriesName)), true, true, false, false);
-    }
-
-    @Override public  XYErrorBarDataSeriesArray errorBarXY(final Comparable seriesName, final int[] x, final int[] xLow, final int[] xHigh, final int[] y, final int[] yLow, final int[] yHigh) {
-        return errorBarXY(seriesName, new IndexableNumericDataArrayInt(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayInt(xLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayInt(xHigh, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayInt(y, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayInt(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayInt(yHigh, new PlotInfo(this, seriesName)), true, true, false, false);
-    }
-
-    @Override public  XYErrorBarDataSeriesArray errorBarXY(final Comparable seriesName, final long[] x, final long[] xLow, final long[] xHigh, final long[] y, final long[] yLow, final long[] yHigh) {
-        return errorBarXY(seriesName, new IndexableNumericDataArrayLong(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayLong(xLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayLong(xHigh, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayLong(y, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayLong(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayLong(yHigh, new PlotInfo(this, seriesName)), true, true, false, false);
-    }
-
-    @Override public  XYErrorBarDataSeriesArray errorBarXY(final Comparable seriesName, final float[] x, final float[] xLow, final float[] xHigh, final float[] y, final float[] yLow, final float[] yHigh) {
-        return errorBarXY(seriesName, new IndexableNumericDataArrayFloat(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayFloat(xLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayFloat(xHigh, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayFloat(y, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayFloat(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayFloat(yHigh, new PlotInfo(this, seriesName)), true, true, false, false);
-    }
-
-    @Override public  XYErrorBarDataSeriesArray errorBarXY(final Comparable seriesName, final double[] x, final double[] xLow, final double[] xHigh, final double[] y, final double[] yLow, final double[] yHigh) {
-        return errorBarXY(seriesName, new IndexableNumericDataArrayDouble(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDouble(xLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDouble(xHigh, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDouble(y, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDouble(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDouble(yHigh, new PlotInfo(this, seriesName)), true, true, false, false);
-    }
-
-    @Override public <T0 extends Number,T1 extends Number,T2 extends Number,T3 extends Number,T4 extends Number,T5 extends Number> XYErrorBarDataSeriesArray errorBarXY(final Comparable seriesName, final T0[] x, final T1[] xLow, final T2[] xHigh, final T3[] y, final T4[] yLow, final T5[] yHigh) {
-        return errorBarXY(seriesName, new IndexableNumericDataArrayNumber<>(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayNumber<>(xLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayNumber<>(xHigh, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayNumber<>(y, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayNumber<>(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayNumber<>(yHigh, new PlotInfo(this, seriesName)), true, true, false, false);
-    }
-
-    @Override public <T0 extends Number,T1 extends Number,T2 extends Number,T3 extends Number,T4 extends Number,T5 extends Number> XYErrorBarDataSeriesArray errorBarXY(final Comparable seriesName, final List<T0> x, final List<T1> xLow, final List<T2> xHigh, final List<T3> y, final List<T4> yLow, final List<T5> yHigh) {
-        return errorBarXY(seriesName, new IndexableNumericDataListNumber<>(x, new PlotInfo(this, seriesName)), new IndexableNumericDataListNumber<>(xLow, new PlotInfo(this, seriesName)), new IndexableNumericDataListNumber<>(xHigh, new PlotInfo(this, seriesName)), new IndexableNumericDataListNumber<>(y, new PlotInfo(this, seriesName)), new IndexableNumericDataListNumber<>(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataListNumber<>(yHigh, new PlotInfo(this, seriesName)), true, true, false, false);
-    }
-
-    @Override public  XYErrorBarDataSeriesArray errorBarXY(final Comparable seriesName, final Date[] x, final Date[] xLow, final Date[] xHigh, final Date[] y, final Date[] yLow, final Date[] yHigh) {
-        return errorBarXY(seriesName, new IndexableNumericDataArrayDate(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(xLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(xHigh, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(y, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(yHigh, new PlotInfo(this, seriesName)), true, true, true, true);
-    }
-
-    @Override public  XYErrorBarDataSeriesArray errorBarXY(final Comparable seriesName, final DateTime[] x, final DateTime[] xLow, final DateTime[] xHigh, final DateTime[] y, final DateTime[] yLow, final DateTime[] yHigh) {
-        return errorBarXY(seriesName, new IndexableNumericDataArrayDateTime(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(xLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(xHigh, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(y, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(yHigh, new PlotInfo(this, seriesName)), true, true, true, true);
-    }
-
-    @Override public  XYErrorBarDataSeriesArray errorBarXY(final Comparable seriesName, final Date[] x, final Date[] xLow, final Date[] xHigh, final short[] y, final short[] yLow, final short[] yHigh) {
-        return errorBarXY(seriesName, new IndexableNumericDataArrayDate(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(xLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(xHigh, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayShort(y, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayShort(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayShort(yHigh, new PlotInfo(this, seriesName)), true, true, true, false);
-    }
-
-    @Override public  XYErrorBarDataSeriesArray errorBarXY(final Comparable seriesName, final short[] x, final short[] xLow, final short[] xHigh, final Date[] y, final Date[] yLow, final Date[] yHigh) {
-        return errorBarXY(seriesName, new IndexableNumericDataArrayShort(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayShort(xLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayShort(xHigh, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(y, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(yHigh, new PlotInfo(this, seriesName)), true, true, false, true);
-    }
-
-    @Override public  XYErrorBarDataSeriesArray errorBarXY(final Comparable seriesName, final Date[] x, final Date[] xLow, final Date[] xHigh, final int[] y, final int[] yLow, final int[] yHigh) {
-        return errorBarXY(seriesName, new IndexableNumericDataArrayDate(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(xLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(xHigh, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayInt(y, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayInt(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayInt(yHigh, new PlotInfo(this, seriesName)), true, true, true, false);
-    }
-
-    @Override public  XYErrorBarDataSeriesArray errorBarXY(final Comparable seriesName, final int[] x, final int[] xLow, final int[] xHigh, final Date[] y, final Date[] yLow, final Date[] yHigh) {
-        return errorBarXY(seriesName, new IndexableNumericDataArrayInt(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayInt(xLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayInt(xHigh, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(y, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(yHigh, new PlotInfo(this, seriesName)), true, true, false, true);
-    }
-
-    @Override public  XYErrorBarDataSeriesArray errorBarXY(final Comparable seriesName, final Date[] x, final Date[] xLow, final Date[] xHigh, final long[] y, final long[] yLow, final long[] yHigh) {
-        return errorBarXY(seriesName, new IndexableNumericDataArrayDate(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(xLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(xHigh, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayLong(y, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayLong(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayLong(yHigh, new PlotInfo(this, seriesName)), true, true, true, false);
-    }
-
-    @Override public  XYErrorBarDataSeriesArray errorBarXY(final Comparable seriesName, final long[] x, final long[] xLow, final long[] xHigh, final Date[] y, final Date[] yLow, final Date[] yHigh) {
-        return errorBarXY(seriesName, new IndexableNumericDataArrayLong(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayLong(xLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayLong(xHigh, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(y, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(yHigh, new PlotInfo(this, seriesName)), true, true, false, true);
-    }
-
-    @Override public  XYErrorBarDataSeriesArray errorBarXY(final Comparable seriesName, final Date[] x, final Date[] xLow, final Date[] xHigh, final float[] y, final float[] yLow, final float[] yHigh) {
-        return errorBarXY(seriesName, new IndexableNumericDataArrayDate(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(xLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(xHigh, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayFloat(y, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayFloat(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayFloat(yHigh, new PlotInfo(this, seriesName)), true, true, true, false);
-    }
-
-    @Override public  XYErrorBarDataSeriesArray errorBarXY(final Comparable seriesName, final float[] x, final float[] xLow, final float[] xHigh, final Date[] y, final Date[] yLow, final Date[] yHigh) {
-        return errorBarXY(seriesName, new IndexableNumericDataArrayFloat(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayFloat(xLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayFloat(xHigh, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(y, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(yHigh, new PlotInfo(this, seriesName)), true, true, false, true);
-    }
-
-    @Override public  XYErrorBarDataSeriesArray errorBarXY(final Comparable seriesName, final Date[] x, final Date[] xLow, final Date[] xHigh, final double[] y, final double[] yLow, final double[] yHigh) {
-        return errorBarXY(seriesName, new IndexableNumericDataArrayDate(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(xLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(xHigh, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDouble(y, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDouble(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDouble(yHigh, new PlotInfo(this, seriesName)), true, true, true, false);
-    }
-
-    @Override public  XYErrorBarDataSeriesArray errorBarXY(final Comparable seriesName, final double[] x, final double[] xLow, final double[] xHigh, final Date[] y, final Date[] yLow, final Date[] yHigh) {
-        return errorBarXY(seriesName, new IndexableNumericDataArrayDouble(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDouble(xLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDouble(xHigh, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(y, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(yHigh, new PlotInfo(this, seriesName)), true, true, false, true);
-    }
-
-    @Override public <T3 extends Number,T4 extends Number,T5 extends Number> XYErrorBarDataSeriesArray errorBarXY(final Comparable seriesName, final Date[] x, final Date[] xLow, final Date[] xHigh, final T3[] y, final T4[] yLow, final T5[] yHigh) {
-        return errorBarXY(seriesName, new IndexableNumericDataArrayDate(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(xLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(xHigh, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayNumber<>(y, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayNumber<>(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayNumber<>(yHigh, new PlotInfo(this, seriesName)), true, true, true, false);
-    }
-
-    @Override public <T0 extends Number,T1 extends Number,T2 extends Number> XYErrorBarDataSeriesArray errorBarXY(final Comparable seriesName, final T0[] x, final T1[] xLow, final T2[] xHigh, final Date[] y, final Date[] yLow, final Date[] yHigh) {
-        return errorBarXY(seriesName, new IndexableNumericDataArrayNumber<>(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayNumber<>(xLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayNumber<>(xHigh, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(y, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(yHigh, new PlotInfo(this, seriesName)), true, true, false, true);
-    }
-
-    @Override public <T3 extends Number,T4 extends Number,T5 extends Number> XYErrorBarDataSeriesArray errorBarXY(final Comparable seriesName, final Date[] x, final Date[] xLow, final Date[] xHigh, final List<T3> y, final List<T4> yLow, final List<T5> yHigh) {
-        return errorBarXY(seriesName, new IndexableNumericDataArrayDate(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(xLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(xHigh, new PlotInfo(this, seriesName)), new IndexableNumericDataListNumber<>(y, new PlotInfo(this, seriesName)), new IndexableNumericDataListNumber<>(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataListNumber<>(yHigh, new PlotInfo(this, seriesName)), true, true, true, false);
-    }
-
-    @Override public <T0 extends Number,T1 extends Number,T2 extends Number> XYErrorBarDataSeriesArray errorBarXY(final Comparable seriesName, final List<T0> x, final List<T1> xLow, final List<T2> xHigh, final Date[] y, final Date[] yLow, final Date[] yHigh) {
-        return errorBarXY(seriesName, new IndexableNumericDataListNumber<>(x, new PlotInfo(this, seriesName)), new IndexableNumericDataListNumber<>(xLow, new PlotInfo(this, seriesName)), new IndexableNumericDataListNumber<>(xHigh, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(y, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(yHigh, new PlotInfo(this, seriesName)), true, true, false, true);
-    }
-
-    @Override public  XYErrorBarDataSeriesArray errorBarXY(final Comparable seriesName, final DateTime[] x, final DateTime[] xLow, final DateTime[] xHigh, final short[] y, final short[] yLow, final short[] yHigh) {
-        return errorBarXY(seriesName, new IndexableNumericDataArrayDateTime(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(xLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(xHigh, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayShort(y, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayShort(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayShort(yHigh, new PlotInfo(this, seriesName)), true, true, true, false);
-    }
-
-    @Override public  XYErrorBarDataSeriesArray errorBarXY(final Comparable seriesName, final short[] x, final short[] xLow, final short[] xHigh, final DateTime[] y, final DateTime[] yLow, final DateTime[] yHigh) {
-        return errorBarXY(seriesName, new IndexableNumericDataArrayShort(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayShort(xLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayShort(xHigh, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(y, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(yHigh, new PlotInfo(this, seriesName)), true, true, false, true);
-    }
-
-    @Override public  XYErrorBarDataSeriesArray errorBarXY(final Comparable seriesName, final DateTime[] x, final DateTime[] xLow, final DateTime[] xHigh, final int[] y, final int[] yLow, final int[] yHigh) {
-        return errorBarXY(seriesName, new IndexableNumericDataArrayDateTime(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(xLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(xHigh, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayInt(y, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayInt(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayInt(yHigh, new PlotInfo(this, seriesName)), true, true, true, false);
-    }
-
-    @Override public  XYErrorBarDataSeriesArray errorBarXY(final Comparable seriesName, final int[] x, final int[] xLow, final int[] xHigh, final DateTime[] y, final DateTime[] yLow, final DateTime[] yHigh) {
-        return errorBarXY(seriesName, new IndexableNumericDataArrayInt(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayInt(xLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayInt(xHigh, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(y, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(yHigh, new PlotInfo(this, seriesName)), true, true, false, true);
-    }
-
-    @Override public  XYErrorBarDataSeriesArray errorBarXY(final Comparable seriesName, final DateTime[] x, final DateTime[] xLow, final DateTime[] xHigh, final long[] y, final long[] yLow, final long[] yHigh) {
-        return errorBarXY(seriesName, new IndexableNumericDataArrayDateTime(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(xLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(xHigh, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayLong(y, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayLong(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayLong(yHigh, new PlotInfo(this, seriesName)), true, true, true, false);
-    }
-
-    @Override public  XYErrorBarDataSeriesArray errorBarXY(final Comparable seriesName, final long[] x, final long[] xLow, final long[] xHigh, final DateTime[] y, final DateTime[] yLow, final DateTime[] yHigh) {
-        return errorBarXY(seriesName, new IndexableNumericDataArrayLong(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayLong(xLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayLong(xHigh, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(y, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(yHigh, new PlotInfo(this, seriesName)), true, true, false, true);
-    }
-
-    @Override public  XYErrorBarDataSeriesArray errorBarXY(final Comparable seriesName, final DateTime[] x, final DateTime[] xLow, final DateTime[] xHigh, final float[] y, final float[] yLow, final float[] yHigh) {
-        return errorBarXY(seriesName, new IndexableNumericDataArrayDateTime(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(xLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(xHigh, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayFloat(y, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayFloat(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayFloat(yHigh, new PlotInfo(this, seriesName)), true, true, true, false);
-    }
-
-    @Override public  XYErrorBarDataSeriesArray errorBarXY(final Comparable seriesName, final float[] x, final float[] xLow, final float[] xHigh, final DateTime[] y, final DateTime[] yLow, final DateTime[] yHigh) {
-        return errorBarXY(seriesName, new IndexableNumericDataArrayFloat(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayFloat(xLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayFloat(xHigh, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(y, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(yHigh, new PlotInfo(this, seriesName)), true, true, false, true);
-    }
-
-    @Override public  XYErrorBarDataSeriesArray errorBarXY(final Comparable seriesName, final DateTime[] x, final DateTime[] xLow, final DateTime[] xHigh, final double[] y, final double[] yLow, final double[] yHigh) {
-        return errorBarXY(seriesName, new IndexableNumericDataArrayDateTime(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(xLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(xHigh, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDouble(y, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDouble(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDouble(yHigh, new PlotInfo(this, seriesName)), true, true, true, false);
-    }
-
-    @Override public  XYErrorBarDataSeriesArray errorBarXY(final Comparable seriesName, final double[] x, final double[] xLow, final double[] xHigh, final DateTime[] y, final DateTime[] yLow, final DateTime[] yHigh) {
-        return errorBarXY(seriesName, new IndexableNumericDataArrayDouble(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDouble(xLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDouble(xHigh, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(y, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(yHigh, new PlotInfo(this, seriesName)), true, true, false, true);
-    }
-
-    @Override public <T3 extends Number,T4 extends Number,T5 extends Number> XYErrorBarDataSeriesArray errorBarXY(final Comparable seriesName, final DateTime[] x, final DateTime[] xLow, final DateTime[] xHigh, final T3[] y, final T4[] yLow, final T5[] yHigh) {
-        return errorBarXY(seriesName, new IndexableNumericDataArrayDateTime(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(xLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(xHigh, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayNumber<>(y, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayNumber<>(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayNumber<>(yHigh, new PlotInfo(this, seriesName)), true, true, true, false);
-    }
-
-    @Override public <T0 extends Number,T1 extends Number,T2 extends Number> XYErrorBarDataSeriesArray errorBarXY(final Comparable seriesName, final T0[] x, final T1[] xLow, final T2[] xHigh, final DateTime[] y, final DateTime[] yLow, final DateTime[] yHigh) {
-        return errorBarXY(seriesName, new IndexableNumericDataArrayNumber<>(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayNumber<>(xLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayNumber<>(xHigh, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(y, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(yHigh, new PlotInfo(this, seriesName)), true, true, false, true);
-    }
-
-    @Override public <T3 extends Number,T4 extends Number,T5 extends Number> XYErrorBarDataSeriesArray errorBarXY(final Comparable seriesName, final DateTime[] x, final DateTime[] xLow, final DateTime[] xHigh, final List<T3> y, final List<T4> yLow, final List<T5> yHigh) {
-        return errorBarXY(seriesName, new IndexableNumericDataArrayDateTime(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(xLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(xHigh, new PlotInfo(this, seriesName)), new IndexableNumericDataListNumber<>(y, new PlotInfo(this, seriesName)), new IndexableNumericDataListNumber<>(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataListNumber<>(yHigh, new PlotInfo(this, seriesName)), true, true, true, false);
-    }
-
-    @Override public <T0 extends Number,T1 extends Number,T2 extends Number> XYErrorBarDataSeriesArray errorBarXY(final Comparable seriesName, final List<T0> x, final List<T1> xLow, final List<T2> xHigh, final DateTime[] y, final DateTime[] yLow, final DateTime[] yHigh) {
-        return errorBarXY(seriesName, new IndexableNumericDataListNumber<>(x, new PlotInfo(this, seriesName)), new IndexableNumericDataListNumber<>(xLow, new PlotInfo(this, seriesName)), new IndexableNumericDataListNumber<>(xHigh, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(y, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(yHigh, new PlotInfo(this, seriesName)), true, true, false, true);
-    }
-
-    @Override public  XYErrorBarDataSeriesArray errorBarX(final Comparable seriesName, final short[] x, final short[] xLow, final short[] xHigh, final short[] y) {
-        return errorBarX(seriesName, new IndexableNumericDataArrayShort(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayShort(xLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayShort(xHigh, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayShort(y, new PlotInfo(this, seriesName)), true, false, false, false);
-    }
-
-    @Override public  XYErrorBarDataSeriesArray errorBarX(final Comparable seriesName, final int[] x, final int[] xLow, final int[] xHigh, final int[] y) {
-        return errorBarX(seriesName, new IndexableNumericDataArrayInt(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayInt(xLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayInt(xHigh, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayInt(y, new PlotInfo(this, seriesName)), true, false, false, false);
-    }
-
-    @Override public  XYErrorBarDataSeriesArray errorBarX(final Comparable seriesName, final long[] x, final long[] xLow, final long[] xHigh, final long[] y) {
-        return errorBarX(seriesName, new IndexableNumericDataArrayLong(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayLong(xLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayLong(xHigh, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayLong(y, new PlotInfo(this, seriesName)), true, false, false, false);
-    }
-
-    @Override public  XYErrorBarDataSeriesArray errorBarX(final Comparable seriesName, final float[] x, final float[] xLow, final float[] xHigh, final float[] y) {
-        return errorBarX(seriesName, new IndexableNumericDataArrayFloat(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayFloat(xLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayFloat(xHigh, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayFloat(y, new PlotInfo(this, seriesName)), true, false, false, false);
-    }
-
-    @Override public  XYErrorBarDataSeriesArray errorBarX(final Comparable seriesName, final double[] x, final double[] xLow, final double[] xHigh, final double[] y) {
-        return errorBarX(seriesName, new IndexableNumericDataArrayDouble(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDouble(xLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDouble(xHigh, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDouble(y, new PlotInfo(this, seriesName)), true, false, false, false);
-    }
-
-    @Override public <T0 extends Number,T1 extends Number,T2 extends Number,T3 extends Number> XYErrorBarDataSeriesArray errorBarX(final Comparable seriesName, final T0[] x, final T1[] xLow, final T2[] xHigh, final T3[] y) {
-        return errorBarX(seriesName, new IndexableNumericDataArrayNumber<>(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayNumber<>(xLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayNumber<>(xHigh, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayNumber<>(y, new PlotInfo(this, seriesName)), true, false, false, false);
-    }
-
-    @Override public <T0 extends Number,T1 extends Number,T2 extends Number,T3 extends Number> XYErrorBarDataSeriesArray errorBarX(final Comparable seriesName, final List<T0> x, final List<T1> xLow, final List<T2> xHigh, final List<T3> y) {
-        return errorBarX(seriesName, new IndexableNumericDataListNumber<>(x, new PlotInfo(this, seriesName)), new IndexableNumericDataListNumber<>(xLow, new PlotInfo(this, seriesName)), new IndexableNumericDataListNumber<>(xHigh, new PlotInfo(this, seriesName)), new IndexableNumericDataListNumber<>(y, new PlotInfo(this, seriesName)), true, false, false, false);
-    }
-
-    @Override public  XYErrorBarDataSeriesArray errorBarX(final Comparable seriesName, final Date[] x, final Date[] xLow, final Date[] xHigh, final Date[] y) {
-        return errorBarX(seriesName, new IndexableNumericDataArrayDate(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(xLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(xHigh, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(y, new PlotInfo(this, seriesName)), true, false, true, true);
-    }
-
-    @Override public  XYErrorBarDataSeriesArray errorBarX(final Comparable seriesName, final DateTime[] x, final DateTime[] xLow, final DateTime[] xHigh, final DateTime[] y) {
-        return errorBarX(seriesName, new IndexableNumericDataArrayDateTime(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(xLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(xHigh, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(y, new PlotInfo(this, seriesName)), true, false, true, true);
-    }
-
-    @Override public  XYErrorBarDataSeriesArray errorBarX(final Comparable seriesName, final Date[] x, final Date[] xLow, final Date[] xHigh, final short[] y) {
-        return errorBarX(seriesName, new IndexableNumericDataArrayDate(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(xLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(xHigh, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayShort(y, new PlotInfo(this, seriesName)), true, false, true, false);
-    }
-
-    @Override public  XYErrorBarDataSeriesArray errorBarX(final Comparable seriesName, final short[] x, final short[] xLow, final short[] xHigh, final Date[] y) {
-        return errorBarX(seriesName, new IndexableNumericDataArrayShort(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayShort(xLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayShort(xHigh, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(y, new PlotInfo(this, seriesName)), true, false, false, true);
-    }
-
-    @Override public  XYErrorBarDataSeriesArray errorBarX(final Comparable seriesName, final Date[] x, final Date[] xLow, final Date[] xHigh, final int[] y) {
-        return errorBarX(seriesName, new IndexableNumericDataArrayDate(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(xLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(xHigh, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayInt(y, new PlotInfo(this, seriesName)), true, false, true, false);
-    }
-
-    @Override public  XYErrorBarDataSeriesArray errorBarX(final Comparable seriesName, final int[] x, final int[] xLow, final int[] xHigh, final Date[] y) {
-        return errorBarX(seriesName, new IndexableNumericDataArrayInt(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayInt(xLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayInt(xHigh, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(y, new PlotInfo(this, seriesName)), true, false, false, true);
-    }
-
-    @Override public  XYErrorBarDataSeriesArray errorBarX(final Comparable seriesName, final Date[] x, final Date[] xLow, final Date[] xHigh, final long[] y) {
-        return errorBarX(seriesName, new IndexableNumericDataArrayDate(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(xLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(xHigh, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayLong(y, new PlotInfo(this, seriesName)), true, false, true, false);
-    }
-
-    @Override public  XYErrorBarDataSeriesArray errorBarX(final Comparable seriesName, final long[] x, final long[] xLow, final long[] xHigh, final Date[] y) {
-        return errorBarX(seriesName, new IndexableNumericDataArrayLong(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayLong(xLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayLong(xHigh, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(y, new PlotInfo(this, seriesName)), true, false, false, true);
-    }
-
-    @Override public  XYErrorBarDataSeriesArray errorBarX(final Comparable seriesName, final Date[] x, final Date[] xLow, final Date[] xHigh, final float[] y) {
-        return errorBarX(seriesName, new IndexableNumericDataArrayDate(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(xLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(xHigh, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayFloat(y, new PlotInfo(this, seriesName)), true, false, true, false);
-    }
-
-    @Override public  XYErrorBarDataSeriesArray errorBarX(final Comparable seriesName, final float[] x, final float[] xLow, final float[] xHigh, final Date[] y) {
-        return errorBarX(seriesName, new IndexableNumericDataArrayFloat(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayFloat(xLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayFloat(xHigh, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(y, new PlotInfo(this, seriesName)), true, false, false, true);
-    }
-
-    @Override public  XYErrorBarDataSeriesArray errorBarX(final Comparable seriesName, final Date[] x, final Date[] xLow, final Date[] xHigh, final double[] y) {
-        return errorBarX(seriesName, new IndexableNumericDataArrayDate(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(xLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(xHigh, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDouble(y, new PlotInfo(this, seriesName)), true, false, true, false);
-    }
-
-    @Override public  XYErrorBarDataSeriesArray errorBarX(final Comparable seriesName, final double[] x, final double[] xLow, final double[] xHigh, final Date[] y) {
-        return errorBarX(seriesName, new IndexableNumericDataArrayDouble(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDouble(xLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDouble(xHigh, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(y, new PlotInfo(this, seriesName)), true, false, false, true);
-    }
-
-    @Override public <T3 extends Number> XYErrorBarDataSeriesArray errorBarX(final Comparable seriesName, final Date[] x, final Date[] xLow, final Date[] xHigh, final T3[] y) {
-        return errorBarX(seriesName, new IndexableNumericDataArrayDate(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(xLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(xHigh, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayNumber<>(y, new PlotInfo(this, seriesName)), true, false, true, false);
-    }
-
-    @Override public <T0 extends Number,T1 extends Number,T2 extends Number> XYErrorBarDataSeriesArray errorBarX(final Comparable seriesName, final T0[] x, final T1[] xLow, final T2[] xHigh, final Date[] y) {
-        return errorBarX(seriesName, new IndexableNumericDataArrayNumber<>(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayNumber<>(xLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayNumber<>(xHigh, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(y, new PlotInfo(this, seriesName)), true, false, false, true);
-    }
-
-    @Override public <T3 extends Number> XYErrorBarDataSeriesArray errorBarX(final Comparable seriesName, final Date[] x, final Date[] xLow, final Date[] xHigh, final List<T3> y) {
-        return errorBarX(seriesName, new IndexableNumericDataArrayDate(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(xLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(xHigh, new PlotInfo(this, seriesName)), new IndexableNumericDataListNumber<>(y, new PlotInfo(this, seriesName)), true, false, true, false);
-    }
-
-    @Override public <T0 extends Number,T1 extends Number,T2 extends Number> XYErrorBarDataSeriesArray errorBarX(final Comparable seriesName, final List<T0> x, final List<T1> xLow, final List<T2> xHigh, final Date[] y) {
-        return errorBarX(seriesName, new IndexableNumericDataListNumber<>(x, new PlotInfo(this, seriesName)), new IndexableNumericDataListNumber<>(xLow, new PlotInfo(this, seriesName)), new IndexableNumericDataListNumber<>(xHigh, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(y, new PlotInfo(this, seriesName)), true, false, false, true);
-    }
-
-    @Override public  XYErrorBarDataSeriesArray errorBarX(final Comparable seriesName, final DateTime[] x, final DateTime[] xLow, final DateTime[] xHigh, final short[] y) {
-        return errorBarX(seriesName, new IndexableNumericDataArrayDateTime(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(xLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(xHigh, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayShort(y, new PlotInfo(this, seriesName)), true, false, true, false);
-    }
-
-    @Override public  XYErrorBarDataSeriesArray errorBarX(final Comparable seriesName, final short[] x, final short[] xLow, final short[] xHigh, final DateTime[] y) {
-        return errorBarX(seriesName, new IndexableNumericDataArrayShort(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayShort(xLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayShort(xHigh, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(y, new PlotInfo(this, seriesName)), true, false, false, true);
-    }
-
-    @Override public  XYErrorBarDataSeriesArray errorBarX(final Comparable seriesName, final DateTime[] x, final DateTime[] xLow, final DateTime[] xHigh, final int[] y) {
-        return errorBarX(seriesName, new IndexableNumericDataArrayDateTime(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(xLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(xHigh, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayInt(y, new PlotInfo(this, seriesName)), true, false, true, false);
-    }
-
-    @Override public  XYErrorBarDataSeriesArray errorBarX(final Comparable seriesName, final int[] x, final int[] xLow, final int[] xHigh, final DateTime[] y) {
-        return errorBarX(seriesName, new IndexableNumericDataArrayInt(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayInt(xLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayInt(xHigh, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(y, new PlotInfo(this, seriesName)), true, false, false, true);
-    }
-
-    @Override public  XYErrorBarDataSeriesArray errorBarX(final Comparable seriesName, final DateTime[] x, final DateTime[] xLow, final DateTime[] xHigh, final long[] y) {
-        return errorBarX(seriesName, new IndexableNumericDataArrayDateTime(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(xLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(xHigh, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayLong(y, new PlotInfo(this, seriesName)), true, false, true, false);
-    }
-
-    @Override public  XYErrorBarDataSeriesArray errorBarX(final Comparable seriesName, final long[] x, final long[] xLow, final long[] xHigh, final DateTime[] y) {
-        return errorBarX(seriesName, new IndexableNumericDataArrayLong(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayLong(xLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayLong(xHigh, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(y, new PlotInfo(this, seriesName)), true, false, false, true);
-    }
-
-    @Override public  XYErrorBarDataSeriesArray errorBarX(final Comparable seriesName, final DateTime[] x, final DateTime[] xLow, final DateTime[] xHigh, final float[] y) {
-        return errorBarX(seriesName, new IndexableNumericDataArrayDateTime(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(xLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(xHigh, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayFloat(y, new PlotInfo(this, seriesName)), true, false, true, false);
-    }
-
-    @Override public  XYErrorBarDataSeriesArray errorBarX(final Comparable seriesName, final float[] x, final float[] xLow, final float[] xHigh, final DateTime[] y) {
-        return errorBarX(seriesName, new IndexableNumericDataArrayFloat(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayFloat(xLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayFloat(xHigh, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(y, new PlotInfo(this, seriesName)), true, false, false, true);
-    }
-
-    @Override public  XYErrorBarDataSeriesArray errorBarX(final Comparable seriesName, final DateTime[] x, final DateTime[] xLow, final DateTime[] xHigh, final double[] y) {
-        return errorBarX(seriesName, new IndexableNumericDataArrayDateTime(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(xLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(xHigh, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDouble(y, new PlotInfo(this, seriesName)), true, false, true, false);
-    }
-
-    @Override public  XYErrorBarDataSeriesArray errorBarX(final Comparable seriesName, final double[] x, final double[] xLow, final double[] xHigh, final DateTime[] y) {
-        return errorBarX(seriesName, new IndexableNumericDataArrayDouble(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDouble(xLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDouble(xHigh, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(y, new PlotInfo(this, seriesName)), true, false, false, true);
-    }
-
-    @Override public <T3 extends Number> XYErrorBarDataSeriesArray errorBarX(final Comparable seriesName, final DateTime[] x, final DateTime[] xLow, final DateTime[] xHigh, final T3[] y) {
-        return errorBarX(seriesName, new IndexableNumericDataArrayDateTime(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(xLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(xHigh, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayNumber<>(y, new PlotInfo(this, seriesName)), true, false, true, false);
-    }
-
-    @Override public <T0 extends Number,T1 extends Number,T2 extends Number> XYErrorBarDataSeriesArray errorBarX(final Comparable seriesName, final T0[] x, final T1[] xLow, final T2[] xHigh, final DateTime[] y) {
-        return errorBarX(seriesName, new IndexableNumericDataArrayNumber<>(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayNumber<>(xLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayNumber<>(xHigh, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(y, new PlotInfo(this, seriesName)), true, false, false, true);
-    }
-
-    @Override public <T3 extends Number> XYErrorBarDataSeriesArray errorBarX(final Comparable seriesName, final DateTime[] x, final DateTime[] xLow, final DateTime[] xHigh, final List<T3> y) {
-        return errorBarX(seriesName, new IndexableNumericDataArrayDateTime(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(xLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(xHigh, new PlotInfo(this, seriesName)), new IndexableNumericDataListNumber<>(y, new PlotInfo(this, seriesName)), true, false, true, false);
-    }
-
-    @Override public <T0 extends Number,T1 extends Number,T2 extends Number> XYErrorBarDataSeriesArray errorBarX(final Comparable seriesName, final List<T0> x, final List<T1> xLow, final List<T2> xHigh, final DateTime[] y) {
-        return errorBarX(seriesName, new IndexableNumericDataListNumber<>(x, new PlotInfo(this, seriesName)), new IndexableNumericDataListNumber<>(xLow, new PlotInfo(this, seriesName)), new IndexableNumericDataListNumber<>(xHigh, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(y, new PlotInfo(this, seriesName)), true, false, false, true);
-    }
-
-    @Override public  XYErrorBarDataSeriesArray errorBarY(final Comparable seriesName, final short[] x, final short[] y, final short[] yLow, final short[] yHigh) {
-        return errorBarY(seriesName, new IndexableNumericDataArrayShort(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayShort(y, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayShort(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayShort(yHigh, new PlotInfo(this, seriesName)), false, true, false, false);
-    }
-
-    @Override public  XYErrorBarDataSeriesArray errorBarY(final Comparable seriesName, final int[] x, final int[] y, final int[] yLow, final int[] yHigh) {
-        return errorBarY(seriesName, new IndexableNumericDataArrayInt(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayInt(y, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayInt(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayInt(yHigh, new PlotInfo(this, seriesName)), false, true, false, false);
-    }
-
-    @Override public  XYErrorBarDataSeriesArray errorBarY(final Comparable seriesName, final long[] x, final long[] y, final long[] yLow, final long[] yHigh) {
-        return errorBarY(seriesName, new IndexableNumericDataArrayLong(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayLong(y, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayLong(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayLong(yHigh, new PlotInfo(this, seriesName)), false, true, false, false);
-    }
-
-    @Override public  XYErrorBarDataSeriesArray errorBarY(final Comparable seriesName, final float[] x, final float[] y, final float[] yLow, final float[] yHigh) {
-        return errorBarY(seriesName, new IndexableNumericDataArrayFloat(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayFloat(y, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayFloat(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayFloat(yHigh, new PlotInfo(this, seriesName)), false, true, false, false);
-    }
-
-    @Override public  XYErrorBarDataSeriesArray errorBarY(final Comparable seriesName, final double[] x, final double[] y, final double[] yLow, final double[] yHigh) {
-        return errorBarY(seriesName, new IndexableNumericDataArrayDouble(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDouble(y, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDouble(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDouble(yHigh, new PlotInfo(this, seriesName)), false, true, false, false);
-    }
-
-    @Override public <T0 extends Number,T1 extends Number,T2 extends Number,T3 extends Number> XYErrorBarDataSeriesArray errorBarY(final Comparable seriesName, final T0[] x, final T1[] y, final T2[] yLow, final T3[] yHigh) {
-        return errorBarY(seriesName, new IndexableNumericDataArrayNumber<>(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayNumber<>(y, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayNumber<>(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayNumber<>(yHigh, new PlotInfo(this, seriesName)), false, true, false, false);
-    }
-
-    @Override public <T0 extends Number,T1 extends Number,T2 extends Number,T3 extends Number> XYErrorBarDataSeriesArray errorBarY(final Comparable seriesName, final List<T0> x, final List<T1> y, final List<T2> yLow, final List<T3> yHigh) {
-        return errorBarY(seriesName, new IndexableNumericDataListNumber<>(x, new PlotInfo(this, seriesName)), new IndexableNumericDataListNumber<>(y, new PlotInfo(this, seriesName)), new IndexableNumericDataListNumber<>(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataListNumber<>(yHigh, new PlotInfo(this, seriesName)), false, true, false, false);
-    }
-
-    @Override public  XYErrorBarDataSeriesArray errorBarY(final Comparable seriesName, final Date[] x, final Date[] y, final Date[] yLow, final Date[] yHigh) {
-        return errorBarY(seriesName, new IndexableNumericDataArrayDate(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(y, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(yHigh, new PlotInfo(this, seriesName)), false, true, true, true);
-    }
-
-    @Override public  XYErrorBarDataSeriesArray errorBarY(final Comparable seriesName, final DateTime[] x, final DateTime[] y, final DateTime[] yLow, final DateTime[] yHigh) {
-        return errorBarY(seriesName, new IndexableNumericDataArrayDateTime(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(y, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(yHigh, new PlotInfo(this, seriesName)), false, true, true, true);
-    }
-
-    @Override public  XYErrorBarDataSeriesArray errorBarY(final Comparable seriesName, final Date[] x, final short[] y, final short[] yLow, final short[] yHigh) {
-        return errorBarY(seriesName, new IndexableNumericDataArrayDate(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayShort(y, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayShort(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayShort(yHigh, new PlotInfo(this, seriesName)), false, true, true, false);
-    }
-
-    @Override public  XYErrorBarDataSeriesArray errorBarY(final Comparable seriesName, final short[] x, final Date[] y, final Date[] yLow, final Date[] yHigh) {
-        return errorBarY(seriesName, new IndexableNumericDataArrayShort(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(y, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(yHigh, new PlotInfo(this, seriesName)), false, true, false, true);
-    }
-
-    @Override public  XYErrorBarDataSeriesArray errorBarY(final Comparable seriesName, final Date[] x, final int[] y, final int[] yLow, final int[] yHigh) {
-        return errorBarY(seriesName, new IndexableNumericDataArrayDate(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayInt(y, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayInt(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayInt(yHigh, new PlotInfo(this, seriesName)), false, true, true, false);
-    }
-
-    @Override public  XYErrorBarDataSeriesArray errorBarY(final Comparable seriesName, final int[] x, final Date[] y, final Date[] yLow, final Date[] yHigh) {
-        return errorBarY(seriesName, new IndexableNumericDataArrayInt(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(y, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(yHigh, new PlotInfo(this, seriesName)), false, true, false, true);
-    }
-
-    @Override public  XYErrorBarDataSeriesArray errorBarY(final Comparable seriesName, final Date[] x, final long[] y, final long[] yLow, final long[] yHigh) {
-        return errorBarY(seriesName, new IndexableNumericDataArrayDate(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayLong(y, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayLong(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayLong(yHigh, new PlotInfo(this, seriesName)), false, true, true, false);
-    }
-
-    @Override public  XYErrorBarDataSeriesArray errorBarY(final Comparable seriesName, final long[] x, final Date[] y, final Date[] yLow, final Date[] yHigh) {
-        return errorBarY(seriesName, new IndexableNumericDataArrayLong(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(y, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(yHigh, new PlotInfo(this, seriesName)), false, true, false, true);
-    }
-
-    @Override public  XYErrorBarDataSeriesArray errorBarY(final Comparable seriesName, final Date[] x, final float[] y, final float[] yLow, final float[] yHigh) {
-        return errorBarY(seriesName, new IndexableNumericDataArrayDate(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayFloat(y, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayFloat(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayFloat(yHigh, new PlotInfo(this, seriesName)), false, true, true, false);
-    }
-
-    @Override public  XYErrorBarDataSeriesArray errorBarY(final Comparable seriesName, final float[] x, final Date[] y, final Date[] yLow, final Date[] yHigh) {
-        return errorBarY(seriesName, new IndexableNumericDataArrayFloat(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(y, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(yHigh, new PlotInfo(this, seriesName)), false, true, false, true);
-    }
-
-    @Override public  XYErrorBarDataSeriesArray errorBarY(final Comparable seriesName, final Date[] x, final double[] y, final double[] yLow, final double[] yHigh) {
-        return errorBarY(seriesName, new IndexableNumericDataArrayDate(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDouble(y, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDouble(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDouble(yHigh, new PlotInfo(this, seriesName)), false, true, true, false);
-    }
-
-    @Override public  XYErrorBarDataSeriesArray errorBarY(final Comparable seriesName, final double[] x, final Date[] y, final Date[] yLow, final Date[] yHigh) {
-        return errorBarY(seriesName, new IndexableNumericDataArrayDouble(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(y, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(yHigh, new PlotInfo(this, seriesName)), false, true, false, true);
-    }
-
-    @Override public <T1 extends Number,T2 extends Number,T3 extends Number> XYErrorBarDataSeriesArray errorBarY(final Comparable seriesName, final Date[] x, final T1[] y, final T2[] yLow, final T3[] yHigh) {
-        return errorBarY(seriesName, new IndexableNumericDataArrayDate(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayNumber<>(y, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayNumber<>(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayNumber<>(yHigh, new PlotInfo(this, seriesName)), false, true, true, false);
-    }
-
-    @Override public <T0 extends Number> XYErrorBarDataSeriesArray errorBarY(final Comparable seriesName, final T0[] x, final Date[] y, final Date[] yLow, final Date[] yHigh) {
-        return errorBarY(seriesName, new IndexableNumericDataArrayNumber<>(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(y, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(yHigh, new PlotInfo(this, seriesName)), false, true, false, true);
-    }
-
-    @Override public <T1 extends Number,T2 extends Number,T3 extends Number> XYErrorBarDataSeriesArray errorBarY(final Comparable seriesName, final Date[] x, final List<T1> y, final List<T2> yLow, final List<T3> yHigh) {
-        return errorBarY(seriesName, new IndexableNumericDataArrayDate(x, new PlotInfo(this, seriesName)), new IndexableNumericDataListNumber<>(y, new PlotInfo(this, seriesName)), new IndexableNumericDataListNumber<>(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataListNumber<>(yHigh, new PlotInfo(this, seriesName)), false, true, true, false);
-    }
-
-    @Override public <T0 extends Number> XYErrorBarDataSeriesArray errorBarY(final Comparable seriesName, final List<T0> x, final Date[] y, final Date[] yLow, final Date[] yHigh) {
-        return errorBarY(seriesName, new IndexableNumericDataListNumber<>(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(y, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(yHigh, new PlotInfo(this, seriesName)), false, true, false, true);
-    }
-
-    @Override public  XYErrorBarDataSeriesArray errorBarY(final Comparable seriesName, final DateTime[] x, final short[] y, final short[] yLow, final short[] yHigh) {
-        return errorBarY(seriesName, new IndexableNumericDataArrayDateTime(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayShort(y, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayShort(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayShort(yHigh, new PlotInfo(this, seriesName)), false, true, true, false);
-    }
-
-    @Override public  XYErrorBarDataSeriesArray errorBarY(final Comparable seriesName, final short[] x, final DateTime[] y, final DateTime[] yLow, final DateTime[] yHigh) {
-        return errorBarY(seriesName, new IndexableNumericDataArrayShort(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(y, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(yHigh, new PlotInfo(this, seriesName)), false, true, false, true);
-    }
-
-    @Override public  XYErrorBarDataSeriesArray errorBarY(final Comparable seriesName, final DateTime[] x, final int[] y, final int[] yLow, final int[] yHigh) {
-        return errorBarY(seriesName, new IndexableNumericDataArrayDateTime(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayInt(y, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayInt(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayInt(yHigh, new PlotInfo(this, seriesName)), false, true, true, false);
-    }
-
-    @Override public  XYErrorBarDataSeriesArray errorBarY(final Comparable seriesName, final int[] x, final DateTime[] y, final DateTime[] yLow, final DateTime[] yHigh) {
-        return errorBarY(seriesName, new IndexableNumericDataArrayInt(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(y, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(yHigh, new PlotInfo(this, seriesName)), false, true, false, true);
-    }
-
-    @Override public  XYErrorBarDataSeriesArray errorBarY(final Comparable seriesName, final DateTime[] x, final long[] y, final long[] yLow, final long[] yHigh) {
-        return errorBarY(seriesName, new IndexableNumericDataArrayDateTime(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayLong(y, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayLong(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayLong(yHigh, new PlotInfo(this, seriesName)), false, true, true, false);
-    }
-
-    @Override public  XYErrorBarDataSeriesArray errorBarY(final Comparable seriesName, final long[] x, final DateTime[] y, final DateTime[] yLow, final DateTime[] yHigh) {
-        return errorBarY(seriesName, new IndexableNumericDataArrayLong(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(y, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(yHigh, new PlotInfo(this, seriesName)), false, true, false, true);
-    }
-
-    @Override public  XYErrorBarDataSeriesArray errorBarY(final Comparable seriesName, final DateTime[] x, final float[] y, final float[] yLow, final float[] yHigh) {
-        return errorBarY(seriesName, new IndexableNumericDataArrayDateTime(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayFloat(y, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayFloat(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayFloat(yHigh, new PlotInfo(this, seriesName)), false, true, true, false);
-    }
-
-    @Override public  XYErrorBarDataSeriesArray errorBarY(final Comparable seriesName, final float[] x, final DateTime[] y, final DateTime[] yLow, final DateTime[] yHigh) {
-        return errorBarY(seriesName, new IndexableNumericDataArrayFloat(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(y, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(yHigh, new PlotInfo(this, seriesName)), false, true, false, true);
-    }
-
-    @Override public  XYErrorBarDataSeriesArray errorBarY(final Comparable seriesName, final DateTime[] x, final double[] y, final double[] yLow, final double[] yHigh) {
-        return errorBarY(seriesName, new IndexableNumericDataArrayDateTime(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDouble(y, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDouble(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDouble(yHigh, new PlotInfo(this, seriesName)), false, true, true, false);
-    }
-
-    @Override public  XYErrorBarDataSeriesArray errorBarY(final Comparable seriesName, final double[] x, final DateTime[] y, final DateTime[] yLow, final DateTime[] yHigh) {
-        return errorBarY(seriesName, new IndexableNumericDataArrayDouble(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(y, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(yHigh, new PlotInfo(this, seriesName)), false, true, false, true);
-    }
-
-    @Override public <T1 extends Number,T2 extends Number,T3 extends Number> XYErrorBarDataSeriesArray errorBarY(final Comparable seriesName, final DateTime[] x, final T1[] y, final T2[] yLow, final T3[] yHigh) {
-        return errorBarY(seriesName, new IndexableNumericDataArrayDateTime(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayNumber<>(y, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayNumber<>(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayNumber<>(yHigh, new PlotInfo(this, seriesName)), false, true, true, false);
-    }
-
-    @Override public <T0 extends Number> XYErrorBarDataSeriesArray errorBarY(final Comparable seriesName, final T0[] x, final DateTime[] y, final DateTime[] yLow, final DateTime[] yHigh) {
-        return errorBarY(seriesName, new IndexableNumericDataArrayNumber<>(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(y, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(yHigh, new PlotInfo(this, seriesName)), false, true, false, true);
-    }
-
-    @Override public <T1 extends Number,T2 extends Number,T3 extends Number> XYErrorBarDataSeriesArray errorBarY(final Comparable seriesName, final DateTime[] x, final List<T1> y, final List<T2> yLow, final List<T3> yHigh) {
-        return errorBarY(seriesName, new IndexableNumericDataArrayDateTime(x, new PlotInfo(this, seriesName)), new IndexableNumericDataListNumber<>(y, new PlotInfo(this, seriesName)), new IndexableNumericDataListNumber<>(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataListNumber<>(yHigh, new PlotInfo(this, seriesName)), false, true, true, false);
-    }
-
-    @Override public <T0 extends Number> XYErrorBarDataSeriesArray errorBarY(final Comparable seriesName, final List<T0> x, final DateTime[] y, final DateTime[] yLow, final DateTime[] yHigh) {
-        return errorBarY(seriesName, new IndexableNumericDataListNumber<>(x, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(y, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(yHigh, new PlotInfo(this, seriesName)), false, true, false, true);
-    }
-
-    @Override public <T0 extends Comparable> CategoryDataSeriesInternal catErrorBar(final Comparable seriesName, final T0[] categories, final short[] values, final short[] yLow, final short[] yHigh) {
-        return catPlot(new CategoryErrorBarDataSeriesMap(this, dataSeries.nextId(), seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayShort(values, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayShort(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayShort(yHigh, new PlotInfo(this, seriesName))), null, null, false);
-    }
-
-    @Override public <T0 extends Comparable> CategoryDataSeriesInternal catErrorBar(final Comparable seriesName, final T0[] categories, final int[] values, final int[] yLow, final int[] yHigh) {
-        return catPlot(new CategoryErrorBarDataSeriesMap(this, dataSeries.nextId(), seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayInt(values, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayInt(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayInt(yHigh, new PlotInfo(this, seriesName))), null, null, false);
-    }
-
-    @Override public <T0 extends Comparable> CategoryDataSeriesInternal catErrorBar(final Comparable seriesName, final T0[] categories, final long[] values, final long[] yLow, final long[] yHigh) {
-        return catPlot(new CategoryErrorBarDataSeriesMap(this, dataSeries.nextId(), seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayLong(values, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayLong(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayLong(yHigh, new PlotInfo(this, seriesName))), null, null, false);
-    }
-
-    @Override public <T0 extends Comparable> CategoryDataSeriesInternal catErrorBar(final Comparable seriesName, final T0[] categories, final float[] values, final float[] yLow, final float[] yHigh) {
-        return catPlot(new CategoryErrorBarDataSeriesMap(this, dataSeries.nextId(), seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayFloat(values, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayFloat(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayFloat(yHigh, new PlotInfo(this, seriesName))), null, null, false);
-    }
-
-    @Override public <T0 extends Comparable> CategoryDataSeriesInternal catErrorBar(final Comparable seriesName, final T0[] categories, final double[] values, final double[] yLow, final double[] yHigh) {
-        return catPlot(new CategoryErrorBarDataSeriesMap(this, dataSeries.nextId(), seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDouble(values, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDouble(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDouble(yHigh, new PlotInfo(this, seriesName))), null, null, false);
-    }
-
-    @Override public <T0 extends Comparable,T1 extends Number,T2 extends Number,T3 extends Number> CategoryDataSeriesInternal catErrorBar(final Comparable seriesName, final T0[] categories, final T1[] values, final T2[] yLow, final T3[] yHigh) {
-        return catPlot(new CategoryErrorBarDataSeriesMap(this, dataSeries.nextId(), seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayNumber<>(values, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayNumber<>(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayNumber<>(yHigh, new PlotInfo(this, seriesName))), null, null, false);
-    }
-
-    @Override public <T0 extends Comparable,T1 extends Number,T2 extends Number,T3 extends Number> CategoryDataSeriesInternal catErrorBar(final Comparable seriesName, final T0[] categories, final List<T1> values, final List<T2> yLow, final List<T3> yHigh) {
-        return catPlot(new CategoryErrorBarDataSeriesMap(this, dataSeries.nextId(), seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)), new IndexableNumericDataListNumber<>(values, new PlotInfo(this, seriesName)), new IndexableNumericDataListNumber<>(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataListNumber<>(yHigh, new PlotInfo(this, seriesName))), null, null, false);
-    }
-
-    @Override public <T0 extends Comparable> CategoryDataSeriesInternal catErrorBar(final Comparable seriesName, final List<T0> categories, final short[] values, final short[] yLow, final short[] yHigh) {
-        return catPlot(new CategoryErrorBarDataSeriesMap(this, dataSeries.nextId(), seriesName, new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]), new PlotInfo(this, seriesName)), new IndexableNumericDataArrayShort(values, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayShort(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayShort(yHigh, new PlotInfo(this, seriesName))), null, null, false);
-    }
-
-    @Override public <T0 extends Comparable> CategoryDataSeriesInternal catErrorBar(final Comparable seriesName, final List<T0> categories, final int[] values, final int[] yLow, final int[] yHigh) {
-        return catPlot(new CategoryErrorBarDataSeriesMap(this, dataSeries.nextId(), seriesName, new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]), new PlotInfo(this, seriesName)), new IndexableNumericDataArrayInt(values, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayInt(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayInt(yHigh, new PlotInfo(this, seriesName))), null, null, false);
-    }
-
-    @Override public <T0 extends Comparable> CategoryDataSeriesInternal catErrorBar(final Comparable seriesName, final List<T0> categories, final long[] values, final long[] yLow, final long[] yHigh) {
-        return catPlot(new CategoryErrorBarDataSeriesMap(this, dataSeries.nextId(), seriesName, new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]), new PlotInfo(this, seriesName)), new IndexableNumericDataArrayLong(values, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayLong(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayLong(yHigh, new PlotInfo(this, seriesName))), null, null, false);
-    }
-
-    @Override public <T0 extends Comparable> CategoryDataSeriesInternal catErrorBar(final Comparable seriesName, final List<T0> categories, final float[] values, final float[] yLow, final float[] yHigh) {
-        return catPlot(new CategoryErrorBarDataSeriesMap(this, dataSeries.nextId(), seriesName, new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]), new PlotInfo(this, seriesName)), new IndexableNumericDataArrayFloat(values, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayFloat(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayFloat(yHigh, new PlotInfo(this, seriesName))), null, null, false);
-    }
-
-    @Override public <T0 extends Comparable> CategoryDataSeriesInternal catErrorBar(final Comparable seriesName, final List<T0> categories, final double[] values, final double[] yLow, final double[] yHigh) {
-        return catPlot(new CategoryErrorBarDataSeriesMap(this, dataSeries.nextId(), seriesName, new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]), new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDouble(values, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDouble(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDouble(yHigh, new PlotInfo(this, seriesName))), null, null, false);
-    }
-
-    @Override public <T0 extends Comparable,T1 extends Number,T2 extends Number,T3 extends Number> CategoryDataSeriesInternal catErrorBar(final Comparable seriesName, final List<T0> categories, final T1[] values, final T2[] yLow, final T3[] yHigh) {
-        return catPlot(new CategoryErrorBarDataSeriesMap(this, dataSeries.nextId(), seriesName, new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]), new PlotInfo(this, seriesName)), new IndexableNumericDataArrayNumber<>(values, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayNumber<>(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayNumber<>(yHigh, new PlotInfo(this, seriesName))), null, null, false);
-    }
-
-    @Override public <T0 extends Comparable,T1 extends Number,T2 extends Number,T3 extends Number> CategoryDataSeriesInternal catErrorBar(final Comparable seriesName, final List<T0> categories, final List<T1> values, final List<T2> yLow, final List<T3> yHigh) {
-        return catPlot(new CategoryErrorBarDataSeriesMap(this, dataSeries.nextId(), seriesName, new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]), new PlotInfo(this, seriesName)), new IndexableNumericDataListNumber<>(values, new PlotInfo(this, seriesName)), new IndexableNumericDataListNumber<>(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataListNumber<>(yHigh, new PlotInfo(this, seriesName))), null, null, false);
-    }
-
-    @Override public <T0 extends Comparable> CategoryDataSeriesInternal catErrorBar(final Comparable seriesName, final T0[] categories, final Date[] values, final Date[] yLow, final Date[] yHigh) {
-        return catPlot(new CategoryErrorBarDataSeriesMap(this, dataSeries.nextId(), seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(values, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(yHigh, new PlotInfo(this, seriesName))), null, null, true);
-    }
-
-    @Override public <T0 extends Comparable> CategoryDataSeriesInternal catErrorBar(final Comparable seriesName, final T0[] categories, final DateTime[] values, final DateTime[] yLow, final DateTime[] yHigh) {
-        return catPlot(new CategoryErrorBarDataSeriesMap(this, dataSeries.nextId(), seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(values, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(yLow, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(yHigh, new PlotInfo(this, seriesName))), null, null, true);
-    }
-
-    @Override public <T0 extends Comparable> CategoryDataSeriesInternal catPlot(final Comparable seriesName, final T0[] categories, final Date[] values) {
-        return catPlot(seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(values, new PlotInfo(this, seriesName)), true);
-    }
-
-    @Override public <T0 extends Comparable> CategoryDataSeriesInternal catPlot(final Comparable seriesName, final T0[] categories, final DateTime[] values) {
-        return catPlot(seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(values, new PlotInfo(this, seriesName)), true);
-    }
-
-    @Override public <T0 extends Comparable> CategoryDataSeriesInternal catPlot(final Comparable seriesName, final T0[] categories, final short[] values) {
-        return catPlot(seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayShort(values, new PlotInfo(this, seriesName)), false);
-    }
-
-    @Override public <T0 extends Comparable> CategoryDataSeriesInternal catPlot(final Comparable seriesName, final T0[] categories, final int[] values) {
-        return catPlot(seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayInt(values, new PlotInfo(this, seriesName)), false);
-    }
-
-    @Override public <T0 extends Comparable> CategoryDataSeriesInternal catPlot(final Comparable seriesName, final T0[] categories, final long[] values) {
-        return catPlot(seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayLong(values, new PlotInfo(this, seriesName)), false);
-    }
-
-    @Override public <T0 extends Comparable> CategoryDataSeriesInternal catPlot(final Comparable seriesName, final T0[] categories, final float[] values) {
-        return catPlot(seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayFloat(values, new PlotInfo(this, seriesName)), false);
-    }
-
-    @Override public <T0 extends Comparable> CategoryDataSeriesInternal catPlot(final Comparable seriesName, final T0[] categories, final double[] values) {
-        return catPlot(seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDouble(values, new PlotInfo(this, seriesName)), false);
-    }
-
-    @Override public <T0 extends Comparable,T1 extends Number> CategoryDataSeriesInternal catPlot(final Comparable seriesName, final T0[] categories, final T1[] values) {
-        return catPlot(seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayNumber<>(values, new PlotInfo(this, seriesName)), false);
-    }
-
-    @Override public <T0 extends Comparable,T1 extends Number> CategoryDataSeriesInternal catPlot(final Comparable seriesName, final T0[] categories, final List<T1> values) {
-        return catPlot(seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)), new IndexableNumericDataListNumber<>(values, new PlotInfo(this, seriesName)), false);
-    }
-
-    @Override public <T0 extends Comparable> CategoryDataSeriesInternal catPlot(final Comparable seriesName, final List<T0> categories, final Date[] values) {
-        return catPlot(seriesName, new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]), new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDate(values, new PlotInfo(this, seriesName)), true);
-    }
-
-    @Override public <T0 extends Comparable> CategoryDataSeriesInternal catPlot(final Comparable seriesName, final List<T0> categories, final DateTime[] values) {
-        return catPlot(seriesName, new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]), new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDateTime(values, new PlotInfo(this, seriesName)), true);
-    }
-
-    @Override public <T0 extends Comparable> CategoryDataSeriesInternal catPlot(final Comparable seriesName, final List<T0> categories, final short[] values) {
-        return catPlot(seriesName, new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]), new PlotInfo(this, seriesName)), new IndexableNumericDataArrayShort(values, new PlotInfo(this, seriesName)), false);
-    }
-
-    @Override public <T0 extends Comparable> CategoryDataSeriesInternal catPlot(final Comparable seriesName, final List<T0> categories, final int[] values) {
-        return catPlot(seriesName, new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]), new PlotInfo(this, seriesName)), new IndexableNumericDataArrayInt(values, new PlotInfo(this, seriesName)), false);
-    }
-
-    @Override public <T0 extends Comparable> CategoryDataSeriesInternal catPlot(final Comparable seriesName, final List<T0> categories, final long[] values) {
-        return catPlot(seriesName, new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]), new PlotInfo(this, seriesName)), new IndexableNumericDataArrayLong(values, new PlotInfo(this, seriesName)), false);
-    }
-
-    @Override public <T0 extends Comparable> CategoryDataSeriesInternal catPlot(final Comparable seriesName, final List<T0> categories, final float[] values) {
-        return catPlot(seriesName, new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]), new PlotInfo(this, seriesName)), new IndexableNumericDataArrayFloat(values, new PlotInfo(this, seriesName)), false);
-    }
-
-    @Override public <T0 extends Comparable> CategoryDataSeriesInternal catPlot(final Comparable seriesName, final List<T0> categories, final double[] values) {
-        return catPlot(seriesName, new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]), new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDouble(values, new PlotInfo(this, seriesName)), false);
-    }
-
-    @Override public <T0 extends Comparable,T1 extends Number> CategoryDataSeriesInternal catPlot(final Comparable seriesName, final List<T0> categories, final T1[] values) {
-        return catPlot(seriesName, new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]), new PlotInfo(this, seriesName)), new IndexableNumericDataArrayNumber<>(values, new PlotInfo(this, seriesName)), false);
-    }
-
-    @Override public <T0 extends Comparable,T1 extends Number> CategoryDataSeriesInternal catPlot(final Comparable seriesName, final List<T0> categories, final List<T1> values) {
-        return catPlot(seriesName, new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]), new PlotInfo(this, seriesName)), new IndexableNumericDataListNumber<>(values, new PlotInfo(this, seriesName)), false);
-    }
-
-    @Override public <T0 extends Comparable> CategoryDataSeriesInternal piePlot(final Comparable seriesName, final T0[] categories, final short[] values) {
-        return piePlot(seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayShort(values, new PlotInfo(this, seriesName)));
-    }
-
-    @Override public <T0 extends Comparable> CategoryDataSeriesInternal piePlot(final Comparable seriesName, final T0[] categories, final int[] values) {
-        return piePlot(seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayInt(values, new PlotInfo(this, seriesName)));
-    }
-
-    @Override public <T0 extends Comparable> CategoryDataSeriesInternal piePlot(final Comparable seriesName, final T0[] categories, final long[] values) {
-        return piePlot(seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayLong(values, new PlotInfo(this, seriesName)));
-    }
-
-    @Override public <T0 extends Comparable> CategoryDataSeriesInternal piePlot(final Comparable seriesName, final T0[] categories, final float[] values) {
-        return piePlot(seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayFloat(values, new PlotInfo(this, seriesName)));
-    }
-
-    @Override public <T0 extends Comparable> CategoryDataSeriesInternal piePlot(final Comparable seriesName, final T0[] categories, final double[] values) {
-        return piePlot(seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDouble(values, new PlotInfo(this, seriesName)));
-    }
-
-    @Override public <T0 extends Comparable,T1 extends Number> CategoryDataSeriesInternal piePlot(final Comparable seriesName, final T0[] categories, final T1[] values) {
-        return piePlot(seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)), new IndexableNumericDataArrayNumber<>(values, new PlotInfo(this, seriesName)));
-    }
-
-    @Override public <T0 extends Comparable,T1 extends Number> CategoryDataSeriesInternal piePlot(final Comparable seriesName, final T0[] categories, final List<T1> values) {
-        return piePlot(seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)), new IndexableNumericDataListNumber<>(values, new PlotInfo(this, seriesName)));
-    }
-
-    @Override public <T0 extends Comparable> CategoryDataSeriesInternal piePlot(final Comparable seriesName, final List<T0> categories, final short[] values) {
-        return piePlot(seriesName, new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]), new PlotInfo(this, seriesName)), new IndexableNumericDataArrayShort(values, new PlotInfo(this, seriesName)));
-    }
-
-    @Override public <T0 extends Comparable> CategoryDataSeriesInternal piePlot(final Comparable seriesName, final List<T0> categories, final int[] values) {
-        return piePlot(seriesName, new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]), new PlotInfo(this, seriesName)), new IndexableNumericDataArrayInt(values, new PlotInfo(this, seriesName)));
-    }
-
-    @Override public <T0 extends Comparable> CategoryDataSeriesInternal piePlot(final Comparable seriesName, final List<T0> categories, final long[] values) {
-        return piePlot(seriesName, new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]), new PlotInfo(this, seriesName)), new IndexableNumericDataArrayLong(values, new PlotInfo(this, seriesName)));
-    }
-
-    @Override public <T0 extends Comparable> CategoryDataSeriesInternal piePlot(final Comparable seriesName, final List<T0> categories, final float[] values) {
-        return piePlot(seriesName, new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]), new PlotInfo(this, seriesName)), new IndexableNumericDataArrayFloat(values, new PlotInfo(this, seriesName)));
-    }
-
-    @Override public <T0 extends Comparable> CategoryDataSeriesInternal piePlot(final Comparable seriesName, final List<T0> categories, final double[] values) {
-        return piePlot(seriesName, new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]), new PlotInfo(this, seriesName)), new IndexableNumericDataArrayDouble(values, new PlotInfo(this, seriesName)));
-    }
-
-    @Override public <T0 extends Comparable,T1 extends Number> CategoryDataSeriesInternal piePlot(final Comparable seriesName, final List<T0> categories, final T1[] values) {
-        return piePlot(seriesName, new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]), new PlotInfo(this, seriesName)), new IndexableNumericDataArrayNumber<>(values, new PlotInfo(this, seriesName)));
-    }
-
-    @Override public <T0 extends Comparable,T1 extends Number> CategoryDataSeriesInternal piePlot(final Comparable seriesName, final List<T0> categories, final List<T1> values) {
-        return piePlot(seriesName, new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]), new PlotInfo(this, seriesName)), new IndexableNumericDataListNumber<>(values, new PlotInfo(this, seriesName)));
+    @Override
+    public XYErrorBarDataSeriesArray errorBarXY(final Comparable seriesName, final short[] x, final short[] xLow,
+            final short[] xHigh, final short[] y, final short[] yLow, final short[] yHigh) {
+        return errorBarXY(seriesName, new IndexableNumericDataArrayShort(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayShort(xLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayShort(xHigh, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayShort(y, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayShort(yLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayShort(yHigh, new PlotInfo(this, seriesName)), true, true, false, false);
+    }
+
+    @Override
+    public XYErrorBarDataSeriesArray errorBarXY(final Comparable seriesName, final int[] x, final int[] xLow,
+            final int[] xHigh, final int[] y, final int[] yLow, final int[] yHigh) {
+        return errorBarXY(seriesName, new IndexableNumericDataArrayInt(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayInt(xLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayInt(xHigh, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayInt(y, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayInt(yLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayInt(yHigh, new PlotInfo(this, seriesName)), true, true, false, false);
+    }
+
+    @Override
+    public XYErrorBarDataSeriesArray errorBarXY(final Comparable seriesName, final long[] x, final long[] xLow,
+            final long[] xHigh, final long[] y, final long[] yLow, final long[] yHigh) {
+        return errorBarXY(seriesName, new IndexableNumericDataArrayLong(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayLong(xLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayLong(xHigh, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayLong(y, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayLong(yLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayLong(yHigh, new PlotInfo(this, seriesName)), true, true, false, false);
+    }
+
+    @Override
+    public XYErrorBarDataSeriesArray errorBarXY(final Comparable seriesName, final float[] x, final float[] xLow,
+            final float[] xHigh, final float[] y, final float[] yLow, final float[] yHigh) {
+        return errorBarXY(seriesName, new IndexableNumericDataArrayFloat(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayFloat(xLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayFloat(xHigh, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayFloat(y, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayFloat(yLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayFloat(yHigh, new PlotInfo(this, seriesName)), true, true, false, false);
+    }
+
+    @Override
+    public XYErrorBarDataSeriesArray errorBarXY(final Comparable seriesName, final double[] x, final double[] xLow,
+            final double[] xHigh, final double[] y, final double[] yLow, final double[] yHigh) {
+        return errorBarXY(seriesName, new IndexableNumericDataArrayDouble(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDouble(xLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDouble(xHigh, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDouble(y, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDouble(yLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDouble(yHigh, new PlotInfo(this, seriesName)), true, true, false, false);
+    }
+
+    @Override
+    public <T0 extends Number, T1 extends Number, T2 extends Number, T3 extends Number, T4 extends Number, T5 extends Number> XYErrorBarDataSeriesArray errorBarXY(
+            final Comparable seriesName, final T0[] x, final T1[] xLow, final T2[] xHigh, final T3[] y, final T4[] yLow,
+            final T5[] yHigh) {
+        return errorBarXY(seriesName, new IndexableNumericDataArrayNumber<>(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayNumber<>(xLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayNumber<>(xHigh, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayNumber<>(y, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayNumber<>(yLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayNumber<>(yHigh, new PlotInfo(this, seriesName)), true, true, false, false);
+    }
+
+    @Override
+    public <T0 extends Number, T1 extends Number, T2 extends Number, T3 extends Number, T4 extends Number, T5 extends Number> XYErrorBarDataSeriesArray errorBarXY(
+            final Comparable seriesName, final List<T0> x, final List<T1> xLow, final List<T2> xHigh, final List<T3> y,
+            final List<T4> yLow, final List<T5> yHigh) {
+        return errorBarXY(seriesName, new IndexableNumericDataListNumber<>(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataListNumber<>(xLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataListNumber<>(xHigh, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataListNumber<>(y, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataListNumber<>(yLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataListNumber<>(yHigh, new PlotInfo(this, seriesName)), true, true, false, false);
+    }
+
+    @Override
+    public XYErrorBarDataSeriesArray errorBarXY(final Comparable seriesName, final Date[] x, final Date[] xLow,
+            final Date[] xHigh, final Date[] y, final Date[] yLow, final Date[] yHigh) {
+        return errorBarXY(seriesName, new IndexableNumericDataArrayDate(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(xLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(xHigh, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(y, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(yLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(yHigh, new PlotInfo(this, seriesName)), true, true, true, true);
+    }
+
+    @Override
+    public XYErrorBarDataSeriesArray errorBarXY(final Comparable seriesName, final DateTime[] x, final DateTime[] xLow,
+            final DateTime[] xHigh, final DateTime[] y, final DateTime[] yLow, final DateTime[] yHigh) {
+        return errorBarXY(seriesName, new IndexableNumericDataArrayDateTime(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(xLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(xHigh, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(y, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(yLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(yHigh, new PlotInfo(this, seriesName)), true, true, true, true);
+    }
+
+    @Override
+    public XYErrorBarDataSeriesArray errorBarXY(final Comparable seriesName, final Date[] x, final Date[] xLow,
+            final Date[] xHigh, final short[] y, final short[] yLow, final short[] yHigh) {
+        return errorBarXY(seriesName, new IndexableNumericDataArrayDate(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(xLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(xHigh, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayShort(y, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayShort(yLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayShort(yHigh, new PlotInfo(this, seriesName)), true, true, true, false);
+    }
+
+    @Override
+    public XYErrorBarDataSeriesArray errorBarXY(final Comparable seriesName, final short[] x, final short[] xLow,
+            final short[] xHigh, final Date[] y, final Date[] yLow, final Date[] yHigh) {
+        return errorBarXY(seriesName, new IndexableNumericDataArrayShort(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayShort(xLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayShort(xHigh, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(y, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(yLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(yHigh, new PlotInfo(this, seriesName)), true, true, false, true);
+    }
+
+    @Override
+    public XYErrorBarDataSeriesArray errorBarXY(final Comparable seriesName, final Date[] x, final Date[] xLow,
+            final Date[] xHigh, final int[] y, final int[] yLow, final int[] yHigh) {
+        return errorBarXY(seriesName, new IndexableNumericDataArrayDate(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(xLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(xHigh, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayInt(y, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayInt(yLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayInt(yHigh, new PlotInfo(this, seriesName)), true, true, true, false);
+    }
+
+    @Override
+    public XYErrorBarDataSeriesArray errorBarXY(final Comparable seriesName, final int[] x, final int[] xLow,
+            final int[] xHigh, final Date[] y, final Date[] yLow, final Date[] yHigh) {
+        return errorBarXY(seriesName, new IndexableNumericDataArrayInt(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayInt(xLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayInt(xHigh, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(y, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(yLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(yHigh, new PlotInfo(this, seriesName)), true, true, false, true);
+    }
+
+    @Override
+    public XYErrorBarDataSeriesArray errorBarXY(final Comparable seriesName, final Date[] x, final Date[] xLow,
+            final Date[] xHigh, final long[] y, final long[] yLow, final long[] yHigh) {
+        return errorBarXY(seriesName, new IndexableNumericDataArrayDate(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(xLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(xHigh, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayLong(y, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayLong(yLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayLong(yHigh, new PlotInfo(this, seriesName)), true, true, true, false);
+    }
+
+    @Override
+    public XYErrorBarDataSeriesArray errorBarXY(final Comparable seriesName, final long[] x, final long[] xLow,
+            final long[] xHigh, final Date[] y, final Date[] yLow, final Date[] yHigh) {
+        return errorBarXY(seriesName, new IndexableNumericDataArrayLong(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayLong(xLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayLong(xHigh, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(y, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(yLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(yHigh, new PlotInfo(this, seriesName)), true, true, false, true);
+    }
+
+    @Override
+    public XYErrorBarDataSeriesArray errorBarXY(final Comparable seriesName, final Date[] x, final Date[] xLow,
+            final Date[] xHigh, final float[] y, final float[] yLow, final float[] yHigh) {
+        return errorBarXY(seriesName, new IndexableNumericDataArrayDate(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(xLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(xHigh, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayFloat(y, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayFloat(yLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayFloat(yHigh, new PlotInfo(this, seriesName)), true, true, true, false);
+    }
+
+    @Override
+    public XYErrorBarDataSeriesArray errorBarXY(final Comparable seriesName, final float[] x, final float[] xLow,
+            final float[] xHigh, final Date[] y, final Date[] yLow, final Date[] yHigh) {
+        return errorBarXY(seriesName, new IndexableNumericDataArrayFloat(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayFloat(xLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayFloat(xHigh, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(y, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(yLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(yHigh, new PlotInfo(this, seriesName)), true, true, false, true);
+    }
+
+    @Override
+    public XYErrorBarDataSeriesArray errorBarXY(final Comparable seriesName, final Date[] x, final Date[] xLow,
+            final Date[] xHigh, final double[] y, final double[] yLow, final double[] yHigh) {
+        return errorBarXY(seriesName, new IndexableNumericDataArrayDate(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(xLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(xHigh, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDouble(y, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDouble(yLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDouble(yHigh, new PlotInfo(this, seriesName)), true, true, true, false);
+    }
+
+    @Override
+    public XYErrorBarDataSeriesArray errorBarXY(final Comparable seriesName, final double[] x, final double[] xLow,
+            final double[] xHigh, final Date[] y, final Date[] yLow, final Date[] yHigh) {
+        return errorBarXY(seriesName, new IndexableNumericDataArrayDouble(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDouble(xLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDouble(xHigh, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(y, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(yLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(yHigh, new PlotInfo(this, seriesName)), true, true, false, true);
+    }
+
+    @Override
+    public <T3 extends Number, T4 extends Number, T5 extends Number> XYErrorBarDataSeriesArray errorBarXY(
+            final Comparable seriesName, final Date[] x, final Date[] xLow, final Date[] xHigh, final T3[] y,
+            final T4[] yLow, final T5[] yHigh) {
+        return errorBarXY(seriesName, new IndexableNumericDataArrayDate(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(xLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(xHigh, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayNumber<>(y, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayNumber<>(yLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayNumber<>(yHigh, new PlotInfo(this, seriesName)), true, true, true, false);
+    }
+
+    @Override
+    public <T0 extends Number, T1 extends Number, T2 extends Number> XYErrorBarDataSeriesArray errorBarXY(
+            final Comparable seriesName, final T0[] x, final T1[] xLow, final T2[] xHigh, final Date[] y,
+            final Date[] yLow, final Date[] yHigh) {
+        return errorBarXY(seriesName, new IndexableNumericDataArrayNumber<>(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayNumber<>(xLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayNumber<>(xHigh, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(y, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(yLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(yHigh, new PlotInfo(this, seriesName)), true, true, false, true);
+    }
+
+    @Override
+    public <T3 extends Number, T4 extends Number, T5 extends Number> XYErrorBarDataSeriesArray errorBarXY(
+            final Comparable seriesName, final Date[] x, final Date[] xLow, final Date[] xHigh, final List<T3> y,
+            final List<T4> yLow, final List<T5> yHigh) {
+        return errorBarXY(seriesName, new IndexableNumericDataArrayDate(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(xLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(xHigh, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataListNumber<>(y, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataListNumber<>(yLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataListNumber<>(yHigh, new PlotInfo(this, seriesName)), true, true, true, false);
+    }
+
+    @Override
+    public <T0 extends Number, T1 extends Number, T2 extends Number> XYErrorBarDataSeriesArray errorBarXY(
+            final Comparable seriesName, final List<T0> x, final List<T1> xLow, final List<T2> xHigh, final Date[] y,
+            final Date[] yLow, final Date[] yHigh) {
+        return errorBarXY(seriesName, new IndexableNumericDataListNumber<>(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataListNumber<>(xLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataListNumber<>(xHigh, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(y, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(yLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(yHigh, new PlotInfo(this, seriesName)), true, true, false, true);
+    }
+
+    @Override
+    public XYErrorBarDataSeriesArray errorBarXY(final Comparable seriesName, final DateTime[] x, final DateTime[] xLow,
+            final DateTime[] xHigh, final short[] y, final short[] yLow, final short[] yHigh) {
+        return errorBarXY(seriesName, new IndexableNumericDataArrayDateTime(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(xLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(xHigh, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayShort(y, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayShort(yLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayShort(yHigh, new PlotInfo(this, seriesName)), true, true, true, false);
+    }
+
+    @Override
+    public XYErrorBarDataSeriesArray errorBarXY(final Comparable seriesName, final short[] x, final short[] xLow,
+            final short[] xHigh, final DateTime[] y, final DateTime[] yLow, final DateTime[] yHigh) {
+        return errorBarXY(seriesName, new IndexableNumericDataArrayShort(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayShort(xLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayShort(xHigh, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(y, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(yLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(yHigh, new PlotInfo(this, seriesName)), true, true, false, true);
+    }
+
+    @Override
+    public XYErrorBarDataSeriesArray errorBarXY(final Comparable seriesName, final DateTime[] x, final DateTime[] xLow,
+            final DateTime[] xHigh, final int[] y, final int[] yLow, final int[] yHigh) {
+        return errorBarXY(seriesName, new IndexableNumericDataArrayDateTime(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(xLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(xHigh, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayInt(y, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayInt(yLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayInt(yHigh, new PlotInfo(this, seriesName)), true, true, true, false);
+    }
+
+    @Override
+    public XYErrorBarDataSeriesArray errorBarXY(final Comparable seriesName, final int[] x, final int[] xLow,
+            final int[] xHigh, final DateTime[] y, final DateTime[] yLow, final DateTime[] yHigh) {
+        return errorBarXY(seriesName, new IndexableNumericDataArrayInt(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayInt(xLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayInt(xHigh, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(y, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(yLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(yHigh, new PlotInfo(this, seriesName)), true, true, false, true);
+    }
+
+    @Override
+    public XYErrorBarDataSeriesArray errorBarXY(final Comparable seriesName, final DateTime[] x, final DateTime[] xLow,
+            final DateTime[] xHigh, final long[] y, final long[] yLow, final long[] yHigh) {
+        return errorBarXY(seriesName, new IndexableNumericDataArrayDateTime(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(xLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(xHigh, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayLong(y, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayLong(yLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayLong(yHigh, new PlotInfo(this, seriesName)), true, true, true, false);
+    }
+
+    @Override
+    public XYErrorBarDataSeriesArray errorBarXY(final Comparable seriesName, final long[] x, final long[] xLow,
+            final long[] xHigh, final DateTime[] y, final DateTime[] yLow, final DateTime[] yHigh) {
+        return errorBarXY(seriesName, new IndexableNumericDataArrayLong(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayLong(xLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayLong(xHigh, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(y, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(yLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(yHigh, new PlotInfo(this, seriesName)), true, true, false, true);
+    }
+
+    @Override
+    public XYErrorBarDataSeriesArray errorBarXY(final Comparable seriesName, final DateTime[] x, final DateTime[] xLow,
+            final DateTime[] xHigh, final float[] y, final float[] yLow, final float[] yHigh) {
+        return errorBarXY(seriesName, new IndexableNumericDataArrayDateTime(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(xLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(xHigh, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayFloat(y, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayFloat(yLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayFloat(yHigh, new PlotInfo(this, seriesName)), true, true, true, false);
+    }
+
+    @Override
+    public XYErrorBarDataSeriesArray errorBarXY(final Comparable seriesName, final float[] x, final float[] xLow,
+            final float[] xHigh, final DateTime[] y, final DateTime[] yLow, final DateTime[] yHigh) {
+        return errorBarXY(seriesName, new IndexableNumericDataArrayFloat(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayFloat(xLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayFloat(xHigh, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(y, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(yLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(yHigh, new PlotInfo(this, seriesName)), true, true, false, true);
+    }
+
+    @Override
+    public XYErrorBarDataSeriesArray errorBarXY(final Comparable seriesName, final DateTime[] x, final DateTime[] xLow,
+            final DateTime[] xHigh, final double[] y, final double[] yLow, final double[] yHigh) {
+        return errorBarXY(seriesName, new IndexableNumericDataArrayDateTime(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(xLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(xHigh, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDouble(y, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDouble(yLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDouble(yHigh, new PlotInfo(this, seriesName)), true, true, true, false);
+    }
+
+    @Override
+    public XYErrorBarDataSeriesArray errorBarXY(final Comparable seriesName, final double[] x, final double[] xLow,
+            final double[] xHigh, final DateTime[] y, final DateTime[] yLow, final DateTime[] yHigh) {
+        return errorBarXY(seriesName, new IndexableNumericDataArrayDouble(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDouble(xLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDouble(xHigh, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(y, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(yLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(yHigh, new PlotInfo(this, seriesName)), true, true, false, true);
+    }
+
+    @Override
+    public <T3 extends Number, T4 extends Number, T5 extends Number> XYErrorBarDataSeriesArray errorBarXY(
+            final Comparable seriesName, final DateTime[] x, final DateTime[] xLow, final DateTime[] xHigh,
+            final T3[] y, final T4[] yLow, final T5[] yHigh) {
+        return errorBarXY(seriesName, new IndexableNumericDataArrayDateTime(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(xLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(xHigh, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayNumber<>(y, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayNumber<>(yLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayNumber<>(yHigh, new PlotInfo(this, seriesName)), true, true, true, false);
+    }
+
+    @Override
+    public <T0 extends Number, T1 extends Number, T2 extends Number> XYErrorBarDataSeriesArray errorBarXY(
+            final Comparable seriesName, final T0[] x, final T1[] xLow, final T2[] xHigh, final DateTime[] y,
+            final DateTime[] yLow, final DateTime[] yHigh) {
+        return errorBarXY(seriesName, new IndexableNumericDataArrayNumber<>(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayNumber<>(xLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayNumber<>(xHigh, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(y, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(yLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(yHigh, new PlotInfo(this, seriesName)), true, true, false, true);
+    }
+
+    @Override
+    public <T3 extends Number, T4 extends Number, T5 extends Number> XYErrorBarDataSeriesArray errorBarXY(
+            final Comparable seriesName, final DateTime[] x, final DateTime[] xLow, final DateTime[] xHigh,
+            final List<T3> y, final List<T4> yLow, final List<T5> yHigh) {
+        return errorBarXY(seriesName, new IndexableNumericDataArrayDateTime(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(xLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(xHigh, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataListNumber<>(y, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataListNumber<>(yLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataListNumber<>(yHigh, new PlotInfo(this, seriesName)), true, true, true, false);
+    }
+
+    @Override
+    public <T0 extends Number, T1 extends Number, T2 extends Number> XYErrorBarDataSeriesArray errorBarXY(
+            final Comparable seriesName, final List<T0> x, final List<T1> xLow, final List<T2> xHigh,
+            final DateTime[] y, final DateTime[] yLow, final DateTime[] yHigh) {
+        return errorBarXY(seriesName, new IndexableNumericDataListNumber<>(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataListNumber<>(xLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataListNumber<>(xHigh, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(y, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(yLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(yHigh, new PlotInfo(this, seriesName)), true, true, false, true);
+    }
+
+    @Override
+    public XYErrorBarDataSeriesArray errorBarX(final Comparable seriesName, final short[] x, final short[] xLow,
+            final short[] xHigh, final short[] y) {
+        return errorBarX(seriesName, new IndexableNumericDataArrayShort(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayShort(xLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayShort(xHigh, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayShort(y, new PlotInfo(this, seriesName)), true, false, false, false);
+    }
+
+    @Override
+    public XYErrorBarDataSeriesArray errorBarX(final Comparable seriesName, final int[] x, final int[] xLow,
+            final int[] xHigh, final int[] y) {
+        return errorBarX(seriesName, new IndexableNumericDataArrayInt(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayInt(xLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayInt(xHigh, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayInt(y, new PlotInfo(this, seriesName)), true, false, false, false);
+    }
+
+    @Override
+    public XYErrorBarDataSeriesArray errorBarX(final Comparable seriesName, final long[] x, final long[] xLow,
+            final long[] xHigh, final long[] y) {
+        return errorBarX(seriesName, new IndexableNumericDataArrayLong(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayLong(xLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayLong(xHigh, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayLong(y, new PlotInfo(this, seriesName)), true, false, false, false);
+    }
+
+    @Override
+    public XYErrorBarDataSeriesArray errorBarX(final Comparable seriesName, final float[] x, final float[] xLow,
+            final float[] xHigh, final float[] y) {
+        return errorBarX(seriesName, new IndexableNumericDataArrayFloat(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayFloat(xLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayFloat(xHigh, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayFloat(y, new PlotInfo(this, seriesName)), true, false, false, false);
+    }
+
+    @Override
+    public XYErrorBarDataSeriesArray errorBarX(final Comparable seriesName, final double[] x, final double[] xLow,
+            final double[] xHigh, final double[] y) {
+        return errorBarX(seriesName, new IndexableNumericDataArrayDouble(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDouble(xLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDouble(xHigh, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDouble(y, new PlotInfo(this, seriesName)), true, false, false, false);
+    }
+
+    @Override
+    public <T0 extends Number, T1 extends Number, T2 extends Number, T3 extends Number> XYErrorBarDataSeriesArray errorBarX(
+            final Comparable seriesName, final T0[] x, final T1[] xLow, final T2[] xHigh, final T3[] y) {
+        return errorBarX(seriesName, new IndexableNumericDataArrayNumber<>(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayNumber<>(xLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayNumber<>(xHigh, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayNumber<>(y, new PlotInfo(this, seriesName)), true, false, false, false);
+    }
+
+    @Override
+    public <T0 extends Number, T1 extends Number, T2 extends Number, T3 extends Number> XYErrorBarDataSeriesArray errorBarX(
+            final Comparable seriesName, final List<T0> x, final List<T1> xLow, final List<T2> xHigh,
+            final List<T3> y) {
+        return errorBarX(seriesName, new IndexableNumericDataListNumber<>(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataListNumber<>(xLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataListNumber<>(xHigh, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataListNumber<>(y, new PlotInfo(this, seriesName)), true, false, false, false);
+    }
+
+    @Override
+    public XYErrorBarDataSeriesArray errorBarX(final Comparable seriesName, final Date[] x, final Date[] xLow,
+            final Date[] xHigh, final Date[] y) {
+        return errorBarX(seriesName, new IndexableNumericDataArrayDate(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(xLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(xHigh, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(y, new PlotInfo(this, seriesName)), true, false, true, true);
+    }
+
+    @Override
+    public XYErrorBarDataSeriesArray errorBarX(final Comparable seriesName, final DateTime[] x, final DateTime[] xLow,
+            final DateTime[] xHigh, final DateTime[] y) {
+        return errorBarX(seriesName, new IndexableNumericDataArrayDateTime(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(xLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(xHigh, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(y, new PlotInfo(this, seriesName)), true, false, true, true);
+    }
+
+    @Override
+    public XYErrorBarDataSeriesArray errorBarX(final Comparable seriesName, final Date[] x, final Date[] xLow,
+            final Date[] xHigh, final short[] y) {
+        return errorBarX(seriesName, new IndexableNumericDataArrayDate(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(xLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(xHigh, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayShort(y, new PlotInfo(this, seriesName)), true, false, true, false);
+    }
+
+    @Override
+    public XYErrorBarDataSeriesArray errorBarX(final Comparable seriesName, final short[] x, final short[] xLow,
+            final short[] xHigh, final Date[] y) {
+        return errorBarX(seriesName, new IndexableNumericDataArrayShort(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayShort(xLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayShort(xHigh, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(y, new PlotInfo(this, seriesName)), true, false, false, true);
+    }
+
+    @Override
+    public XYErrorBarDataSeriesArray errorBarX(final Comparable seriesName, final Date[] x, final Date[] xLow,
+            final Date[] xHigh, final int[] y) {
+        return errorBarX(seriesName, new IndexableNumericDataArrayDate(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(xLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(xHigh, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayInt(y, new PlotInfo(this, seriesName)), true, false, true, false);
+    }
+
+    @Override
+    public XYErrorBarDataSeriesArray errorBarX(final Comparable seriesName, final int[] x, final int[] xLow,
+            final int[] xHigh, final Date[] y) {
+        return errorBarX(seriesName, new IndexableNumericDataArrayInt(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayInt(xLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayInt(xHigh, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(y, new PlotInfo(this, seriesName)), true, false, false, true);
+    }
+
+    @Override
+    public XYErrorBarDataSeriesArray errorBarX(final Comparable seriesName, final Date[] x, final Date[] xLow,
+            final Date[] xHigh, final long[] y) {
+        return errorBarX(seriesName, new IndexableNumericDataArrayDate(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(xLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(xHigh, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayLong(y, new PlotInfo(this, seriesName)), true, false, true, false);
+    }
+
+    @Override
+    public XYErrorBarDataSeriesArray errorBarX(final Comparable seriesName, final long[] x, final long[] xLow,
+            final long[] xHigh, final Date[] y) {
+        return errorBarX(seriesName, new IndexableNumericDataArrayLong(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayLong(xLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayLong(xHigh, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(y, new PlotInfo(this, seriesName)), true, false, false, true);
+    }
+
+    @Override
+    public XYErrorBarDataSeriesArray errorBarX(final Comparable seriesName, final Date[] x, final Date[] xLow,
+            final Date[] xHigh, final float[] y) {
+        return errorBarX(seriesName, new IndexableNumericDataArrayDate(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(xLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(xHigh, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayFloat(y, new PlotInfo(this, seriesName)), true, false, true, false);
+    }
+
+    @Override
+    public XYErrorBarDataSeriesArray errorBarX(final Comparable seriesName, final float[] x, final float[] xLow,
+            final float[] xHigh, final Date[] y) {
+        return errorBarX(seriesName, new IndexableNumericDataArrayFloat(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayFloat(xLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayFloat(xHigh, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(y, new PlotInfo(this, seriesName)), true, false, false, true);
+    }
+
+    @Override
+    public XYErrorBarDataSeriesArray errorBarX(final Comparable seriesName, final Date[] x, final Date[] xLow,
+            final Date[] xHigh, final double[] y) {
+        return errorBarX(seriesName, new IndexableNumericDataArrayDate(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(xLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(xHigh, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDouble(y, new PlotInfo(this, seriesName)), true, false, true, false);
+    }
+
+    @Override
+    public XYErrorBarDataSeriesArray errorBarX(final Comparable seriesName, final double[] x, final double[] xLow,
+            final double[] xHigh, final Date[] y) {
+        return errorBarX(seriesName, new IndexableNumericDataArrayDouble(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDouble(xLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDouble(xHigh, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(y, new PlotInfo(this, seriesName)), true, false, false, true);
+    }
+
+    @Override
+    public <T3 extends Number> XYErrorBarDataSeriesArray errorBarX(final Comparable seriesName, final Date[] x,
+            final Date[] xLow, final Date[] xHigh, final T3[] y) {
+        return errorBarX(seriesName, new IndexableNumericDataArrayDate(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(xLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(xHigh, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayNumber<>(y, new PlotInfo(this, seriesName)), true, false, true, false);
+    }
+
+    @Override
+    public <T0 extends Number, T1 extends Number, T2 extends Number> XYErrorBarDataSeriesArray errorBarX(
+            final Comparable seriesName, final T0[] x, final T1[] xLow, final T2[] xHigh, final Date[] y) {
+        return errorBarX(seriesName, new IndexableNumericDataArrayNumber<>(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayNumber<>(xLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayNumber<>(xHigh, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(y, new PlotInfo(this, seriesName)), true, false, false, true);
+    }
+
+    @Override
+    public <T3 extends Number> XYErrorBarDataSeriesArray errorBarX(final Comparable seriesName, final Date[] x,
+            final Date[] xLow, final Date[] xHigh, final List<T3> y) {
+        return errorBarX(seriesName, new IndexableNumericDataArrayDate(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(xLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(xHigh, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataListNumber<>(y, new PlotInfo(this, seriesName)), true, false, true, false);
+    }
+
+    @Override
+    public <T0 extends Number, T1 extends Number, T2 extends Number> XYErrorBarDataSeriesArray errorBarX(
+            final Comparable seriesName, final List<T0> x, final List<T1> xLow, final List<T2> xHigh, final Date[] y) {
+        return errorBarX(seriesName, new IndexableNumericDataListNumber<>(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataListNumber<>(xLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataListNumber<>(xHigh, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(y, new PlotInfo(this, seriesName)), true, false, false, true);
+    }
+
+    @Override
+    public XYErrorBarDataSeriesArray errorBarX(final Comparable seriesName, final DateTime[] x, final DateTime[] xLow,
+            final DateTime[] xHigh, final short[] y) {
+        return errorBarX(seriesName, new IndexableNumericDataArrayDateTime(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(xLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(xHigh, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayShort(y, new PlotInfo(this, seriesName)), true, false, true, false);
+    }
+
+    @Override
+    public XYErrorBarDataSeriesArray errorBarX(final Comparable seriesName, final short[] x, final short[] xLow,
+            final short[] xHigh, final DateTime[] y) {
+        return errorBarX(seriesName, new IndexableNumericDataArrayShort(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayShort(xLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayShort(xHigh, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(y, new PlotInfo(this, seriesName)), true, false, false, true);
+    }
+
+    @Override
+    public XYErrorBarDataSeriesArray errorBarX(final Comparable seriesName, final DateTime[] x, final DateTime[] xLow,
+            final DateTime[] xHigh, final int[] y) {
+        return errorBarX(seriesName, new IndexableNumericDataArrayDateTime(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(xLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(xHigh, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayInt(y, new PlotInfo(this, seriesName)), true, false, true, false);
+    }
+
+    @Override
+    public XYErrorBarDataSeriesArray errorBarX(final Comparable seriesName, final int[] x, final int[] xLow,
+            final int[] xHigh, final DateTime[] y) {
+        return errorBarX(seriesName, new IndexableNumericDataArrayInt(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayInt(xLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayInt(xHigh, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(y, new PlotInfo(this, seriesName)), true, false, false, true);
+    }
+
+    @Override
+    public XYErrorBarDataSeriesArray errorBarX(final Comparable seriesName, final DateTime[] x, final DateTime[] xLow,
+            final DateTime[] xHigh, final long[] y) {
+        return errorBarX(seriesName, new IndexableNumericDataArrayDateTime(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(xLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(xHigh, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayLong(y, new PlotInfo(this, seriesName)), true, false, true, false);
+    }
+
+    @Override
+    public XYErrorBarDataSeriesArray errorBarX(final Comparable seriesName, final long[] x, final long[] xLow,
+            final long[] xHigh, final DateTime[] y) {
+        return errorBarX(seriesName, new IndexableNumericDataArrayLong(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayLong(xLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayLong(xHigh, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(y, new PlotInfo(this, seriesName)), true, false, false, true);
+    }
+
+    @Override
+    public XYErrorBarDataSeriesArray errorBarX(final Comparable seriesName, final DateTime[] x, final DateTime[] xLow,
+            final DateTime[] xHigh, final float[] y) {
+        return errorBarX(seriesName, new IndexableNumericDataArrayDateTime(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(xLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(xHigh, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayFloat(y, new PlotInfo(this, seriesName)), true, false, true, false);
+    }
+
+    @Override
+    public XYErrorBarDataSeriesArray errorBarX(final Comparable seriesName, final float[] x, final float[] xLow,
+            final float[] xHigh, final DateTime[] y) {
+        return errorBarX(seriesName, new IndexableNumericDataArrayFloat(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayFloat(xLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayFloat(xHigh, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(y, new PlotInfo(this, seriesName)), true, false, false, true);
+    }
+
+    @Override
+    public XYErrorBarDataSeriesArray errorBarX(final Comparable seriesName, final DateTime[] x, final DateTime[] xLow,
+            final DateTime[] xHigh, final double[] y) {
+        return errorBarX(seriesName, new IndexableNumericDataArrayDateTime(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(xLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(xHigh, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDouble(y, new PlotInfo(this, seriesName)), true, false, true, false);
+    }
+
+    @Override
+    public XYErrorBarDataSeriesArray errorBarX(final Comparable seriesName, final double[] x, final double[] xLow,
+            final double[] xHigh, final DateTime[] y) {
+        return errorBarX(seriesName, new IndexableNumericDataArrayDouble(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDouble(xLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDouble(xHigh, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(y, new PlotInfo(this, seriesName)), true, false, false, true);
+    }
+
+    @Override
+    public <T3 extends Number> XYErrorBarDataSeriesArray errorBarX(final Comparable seriesName, final DateTime[] x,
+            final DateTime[] xLow, final DateTime[] xHigh, final T3[] y) {
+        return errorBarX(seriesName, new IndexableNumericDataArrayDateTime(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(xLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(xHigh, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayNumber<>(y, new PlotInfo(this, seriesName)), true, false, true, false);
+    }
+
+    @Override
+    public <T0 extends Number, T1 extends Number, T2 extends Number> XYErrorBarDataSeriesArray errorBarX(
+            final Comparable seriesName, final T0[] x, final T1[] xLow, final T2[] xHigh, final DateTime[] y) {
+        return errorBarX(seriesName, new IndexableNumericDataArrayNumber<>(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayNumber<>(xLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayNumber<>(xHigh, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(y, new PlotInfo(this, seriesName)), true, false, false, true);
+    }
+
+    @Override
+    public <T3 extends Number> XYErrorBarDataSeriesArray errorBarX(final Comparable seriesName, final DateTime[] x,
+            final DateTime[] xLow, final DateTime[] xHigh, final List<T3> y) {
+        return errorBarX(seriesName, new IndexableNumericDataArrayDateTime(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(xLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(xHigh, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataListNumber<>(y, new PlotInfo(this, seriesName)), true, false, true, false);
+    }
+
+    @Override
+    public <T0 extends Number, T1 extends Number, T2 extends Number> XYErrorBarDataSeriesArray errorBarX(
+            final Comparable seriesName, final List<T0> x, final List<T1> xLow, final List<T2> xHigh,
+            final DateTime[] y) {
+        return errorBarX(seriesName, new IndexableNumericDataListNumber<>(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataListNumber<>(xLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataListNumber<>(xHigh, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(y, new PlotInfo(this, seriesName)), true, false, false, true);
+    }
+
+    @Override
+    public XYErrorBarDataSeriesArray errorBarY(final Comparable seriesName, final short[] x, final short[] y,
+            final short[] yLow, final short[] yHigh) {
+        return errorBarY(seriesName, new IndexableNumericDataArrayShort(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayShort(y, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayShort(yLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayShort(yHigh, new PlotInfo(this, seriesName)), false, true, false, false);
+    }
+
+    @Override
+    public XYErrorBarDataSeriesArray errorBarY(final Comparable seriesName, final int[] x, final int[] y,
+            final int[] yLow, final int[] yHigh) {
+        return errorBarY(seriesName, new IndexableNumericDataArrayInt(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayInt(y, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayInt(yLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayInt(yHigh, new PlotInfo(this, seriesName)), false, true, false, false);
+    }
+
+    @Override
+    public XYErrorBarDataSeriesArray errorBarY(final Comparable seriesName, final long[] x, final long[] y,
+            final long[] yLow, final long[] yHigh) {
+        return errorBarY(seriesName, new IndexableNumericDataArrayLong(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayLong(y, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayLong(yLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayLong(yHigh, new PlotInfo(this, seriesName)), false, true, false, false);
+    }
+
+    @Override
+    public XYErrorBarDataSeriesArray errorBarY(final Comparable seriesName, final float[] x, final float[] y,
+            final float[] yLow, final float[] yHigh) {
+        return errorBarY(seriesName, new IndexableNumericDataArrayFloat(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayFloat(y, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayFloat(yLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayFloat(yHigh, new PlotInfo(this, seriesName)), false, true, false, false);
+    }
+
+    @Override
+    public XYErrorBarDataSeriesArray errorBarY(final Comparable seriesName, final double[] x, final double[] y,
+            final double[] yLow, final double[] yHigh) {
+        return errorBarY(seriesName, new IndexableNumericDataArrayDouble(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDouble(y, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDouble(yLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDouble(yHigh, new PlotInfo(this, seriesName)), false, true, false, false);
+    }
+
+    @Override
+    public <T0 extends Number, T1 extends Number, T2 extends Number, T3 extends Number> XYErrorBarDataSeriesArray errorBarY(
+            final Comparable seriesName, final T0[] x, final T1[] y, final T2[] yLow, final T3[] yHigh) {
+        return errorBarY(seriesName, new IndexableNumericDataArrayNumber<>(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayNumber<>(y, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayNumber<>(yLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayNumber<>(yHigh, new PlotInfo(this, seriesName)), false, true, false,
+                false);
+    }
+
+    @Override
+    public <T0 extends Number, T1 extends Number, T2 extends Number, T3 extends Number> XYErrorBarDataSeriesArray errorBarY(
+            final Comparable seriesName, final List<T0> x, final List<T1> y, final List<T2> yLow,
+            final List<T3> yHigh) {
+        return errorBarY(seriesName, new IndexableNumericDataListNumber<>(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataListNumber<>(y, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataListNumber<>(yLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataListNumber<>(yHigh, new PlotInfo(this, seriesName)), false, true, false, false);
+    }
+
+    @Override
+    public XYErrorBarDataSeriesArray errorBarY(final Comparable seriesName, final Date[] x, final Date[] y,
+            final Date[] yLow, final Date[] yHigh) {
+        return errorBarY(seriesName, new IndexableNumericDataArrayDate(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(y, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(yLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(yHigh, new PlotInfo(this, seriesName)), false, true, true, true);
+    }
+
+    @Override
+    public XYErrorBarDataSeriesArray errorBarY(final Comparable seriesName, final DateTime[] x, final DateTime[] y,
+            final DateTime[] yLow, final DateTime[] yHigh) {
+        return errorBarY(seriesName, new IndexableNumericDataArrayDateTime(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(y, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(yLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(yHigh, new PlotInfo(this, seriesName)), false, true, true, true);
+    }
+
+    @Override
+    public XYErrorBarDataSeriesArray errorBarY(final Comparable seriesName, final Date[] x, final short[] y,
+            final short[] yLow, final short[] yHigh) {
+        return errorBarY(seriesName, new IndexableNumericDataArrayDate(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayShort(y, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayShort(yLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayShort(yHigh, new PlotInfo(this, seriesName)), false, true, true, false);
+    }
+
+    @Override
+    public XYErrorBarDataSeriesArray errorBarY(final Comparable seriesName, final short[] x, final Date[] y,
+            final Date[] yLow, final Date[] yHigh) {
+        return errorBarY(seriesName, new IndexableNumericDataArrayShort(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(y, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(yLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(yHigh, new PlotInfo(this, seriesName)), false, true, false, true);
+    }
+
+    @Override
+    public XYErrorBarDataSeriesArray errorBarY(final Comparable seriesName, final Date[] x, final int[] y,
+            final int[] yLow, final int[] yHigh) {
+        return errorBarY(seriesName, new IndexableNumericDataArrayDate(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayInt(y, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayInt(yLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayInt(yHigh, new PlotInfo(this, seriesName)), false, true, true, false);
+    }
+
+    @Override
+    public XYErrorBarDataSeriesArray errorBarY(final Comparable seriesName, final int[] x, final Date[] y,
+            final Date[] yLow, final Date[] yHigh) {
+        return errorBarY(seriesName, new IndexableNumericDataArrayInt(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(y, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(yLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(yHigh, new PlotInfo(this, seriesName)), false, true, false, true);
+    }
+
+    @Override
+    public XYErrorBarDataSeriesArray errorBarY(final Comparable seriesName, final Date[] x, final long[] y,
+            final long[] yLow, final long[] yHigh) {
+        return errorBarY(seriesName, new IndexableNumericDataArrayDate(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayLong(y, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayLong(yLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayLong(yHigh, new PlotInfo(this, seriesName)), false, true, true, false);
+    }
+
+    @Override
+    public XYErrorBarDataSeriesArray errorBarY(final Comparable seriesName, final long[] x, final Date[] y,
+            final Date[] yLow, final Date[] yHigh) {
+        return errorBarY(seriesName, new IndexableNumericDataArrayLong(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(y, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(yLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(yHigh, new PlotInfo(this, seriesName)), false, true, false, true);
+    }
+
+    @Override
+    public XYErrorBarDataSeriesArray errorBarY(final Comparable seriesName, final Date[] x, final float[] y,
+            final float[] yLow, final float[] yHigh) {
+        return errorBarY(seriesName, new IndexableNumericDataArrayDate(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayFloat(y, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayFloat(yLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayFloat(yHigh, new PlotInfo(this, seriesName)), false, true, true, false);
+    }
+
+    @Override
+    public XYErrorBarDataSeriesArray errorBarY(final Comparable seriesName, final float[] x, final Date[] y,
+            final Date[] yLow, final Date[] yHigh) {
+        return errorBarY(seriesName, new IndexableNumericDataArrayFloat(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(y, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(yLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(yHigh, new PlotInfo(this, seriesName)), false, true, false, true);
+    }
+
+    @Override
+    public XYErrorBarDataSeriesArray errorBarY(final Comparable seriesName, final Date[] x, final double[] y,
+            final double[] yLow, final double[] yHigh) {
+        return errorBarY(seriesName, new IndexableNumericDataArrayDate(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDouble(y, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDouble(yLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDouble(yHigh, new PlotInfo(this, seriesName)), false, true, true, false);
+    }
+
+    @Override
+    public XYErrorBarDataSeriesArray errorBarY(final Comparable seriesName, final double[] x, final Date[] y,
+            final Date[] yLow, final Date[] yHigh) {
+        return errorBarY(seriesName, new IndexableNumericDataArrayDouble(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(y, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(yLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(yHigh, new PlotInfo(this, seriesName)), false, true, false, true);
+    }
+
+    @Override
+    public <T1 extends Number, T2 extends Number, T3 extends Number> XYErrorBarDataSeriesArray errorBarY(
+            final Comparable seriesName, final Date[] x, final T1[] y, final T2[] yLow, final T3[] yHigh) {
+        return errorBarY(seriesName, new IndexableNumericDataArrayDate(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayNumber<>(y, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayNumber<>(yLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayNumber<>(yHigh, new PlotInfo(this, seriesName)), false, true, true, false);
+    }
+
+    @Override
+    public <T0 extends Number> XYErrorBarDataSeriesArray errorBarY(final Comparable seriesName, final T0[] x,
+            final Date[] y, final Date[] yLow, final Date[] yHigh) {
+        return errorBarY(seriesName, new IndexableNumericDataArrayNumber<>(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(y, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(yLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(yHigh, new PlotInfo(this, seriesName)), false, true, false, true);
+    }
+
+    @Override
+    public <T1 extends Number, T2 extends Number, T3 extends Number> XYErrorBarDataSeriesArray errorBarY(
+            final Comparable seriesName, final Date[] x, final List<T1> y, final List<T2> yLow, final List<T3> yHigh) {
+        return errorBarY(seriesName, new IndexableNumericDataArrayDate(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataListNumber<>(y, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataListNumber<>(yLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataListNumber<>(yHigh, new PlotInfo(this, seriesName)), false, true, true, false);
+    }
+
+    @Override
+    public <T0 extends Number> XYErrorBarDataSeriesArray errorBarY(final Comparable seriesName, final List<T0> x,
+            final Date[] y, final Date[] yLow, final Date[] yHigh) {
+        return errorBarY(seriesName, new IndexableNumericDataListNumber<>(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(y, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(yLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(yHigh, new PlotInfo(this, seriesName)), false, true, false, true);
+    }
+
+    @Override
+    public XYErrorBarDataSeriesArray errorBarY(final Comparable seriesName, final DateTime[] x, final short[] y,
+            final short[] yLow, final short[] yHigh) {
+        return errorBarY(seriesName, new IndexableNumericDataArrayDateTime(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayShort(y, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayShort(yLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayShort(yHigh, new PlotInfo(this, seriesName)), false, true, true, false);
+    }
+
+    @Override
+    public XYErrorBarDataSeriesArray errorBarY(final Comparable seriesName, final short[] x, final DateTime[] y,
+            final DateTime[] yLow, final DateTime[] yHigh) {
+        return errorBarY(seriesName, new IndexableNumericDataArrayShort(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(y, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(yLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(yHigh, new PlotInfo(this, seriesName)), false, true, false, true);
+    }
+
+    @Override
+    public XYErrorBarDataSeriesArray errorBarY(final Comparable seriesName, final DateTime[] x, final int[] y,
+            final int[] yLow, final int[] yHigh) {
+        return errorBarY(seriesName, new IndexableNumericDataArrayDateTime(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayInt(y, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayInt(yLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayInt(yHigh, new PlotInfo(this, seriesName)), false, true, true, false);
+    }
+
+    @Override
+    public XYErrorBarDataSeriesArray errorBarY(final Comparable seriesName, final int[] x, final DateTime[] y,
+            final DateTime[] yLow, final DateTime[] yHigh) {
+        return errorBarY(seriesName, new IndexableNumericDataArrayInt(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(y, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(yLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(yHigh, new PlotInfo(this, seriesName)), false, true, false, true);
+    }
+
+    @Override
+    public XYErrorBarDataSeriesArray errorBarY(final Comparable seriesName, final DateTime[] x, final long[] y,
+            final long[] yLow, final long[] yHigh) {
+        return errorBarY(seriesName, new IndexableNumericDataArrayDateTime(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayLong(y, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayLong(yLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayLong(yHigh, new PlotInfo(this, seriesName)), false, true, true, false);
+    }
+
+    @Override
+    public XYErrorBarDataSeriesArray errorBarY(final Comparable seriesName, final long[] x, final DateTime[] y,
+            final DateTime[] yLow, final DateTime[] yHigh) {
+        return errorBarY(seriesName, new IndexableNumericDataArrayLong(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(y, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(yLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(yHigh, new PlotInfo(this, seriesName)), false, true, false, true);
+    }
+
+    @Override
+    public XYErrorBarDataSeriesArray errorBarY(final Comparable seriesName, final DateTime[] x, final float[] y,
+            final float[] yLow, final float[] yHigh) {
+        return errorBarY(seriesName, new IndexableNumericDataArrayDateTime(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayFloat(y, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayFloat(yLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayFloat(yHigh, new PlotInfo(this, seriesName)), false, true, true, false);
+    }
+
+    @Override
+    public XYErrorBarDataSeriesArray errorBarY(final Comparable seriesName, final float[] x, final DateTime[] y,
+            final DateTime[] yLow, final DateTime[] yHigh) {
+        return errorBarY(seriesName, new IndexableNumericDataArrayFloat(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(y, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(yLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(yHigh, new PlotInfo(this, seriesName)), false, true, false, true);
+    }
+
+    @Override
+    public XYErrorBarDataSeriesArray errorBarY(final Comparable seriesName, final DateTime[] x, final double[] y,
+            final double[] yLow, final double[] yHigh) {
+        return errorBarY(seriesName, new IndexableNumericDataArrayDateTime(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDouble(y, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDouble(yLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDouble(yHigh, new PlotInfo(this, seriesName)), false, true, true, false);
+    }
+
+    @Override
+    public XYErrorBarDataSeriesArray errorBarY(final Comparable seriesName, final double[] x, final DateTime[] y,
+            final DateTime[] yLow, final DateTime[] yHigh) {
+        return errorBarY(seriesName, new IndexableNumericDataArrayDouble(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(y, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(yLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(yHigh, new PlotInfo(this, seriesName)), false, true, false, true);
+    }
+
+    @Override
+    public <T1 extends Number, T2 extends Number, T3 extends Number> XYErrorBarDataSeriesArray errorBarY(
+            final Comparable seriesName, final DateTime[] x, final T1[] y, final T2[] yLow, final T3[] yHigh) {
+        return errorBarY(seriesName, new IndexableNumericDataArrayDateTime(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayNumber<>(y, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayNumber<>(yLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayNumber<>(yHigh, new PlotInfo(this, seriesName)), false, true, true, false);
+    }
+
+    @Override
+    public <T0 extends Number> XYErrorBarDataSeriesArray errorBarY(final Comparable seriesName, final T0[] x,
+            final DateTime[] y, final DateTime[] yLow, final DateTime[] yHigh) {
+        return errorBarY(seriesName, new IndexableNumericDataArrayNumber<>(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(y, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(yLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(yHigh, new PlotInfo(this, seriesName)), false, true, false, true);
+    }
+
+    @Override
+    public <T1 extends Number, T2 extends Number, T3 extends Number> XYErrorBarDataSeriesArray errorBarY(
+            final Comparable seriesName, final DateTime[] x, final List<T1> y, final List<T2> yLow,
+            final List<T3> yHigh) {
+        return errorBarY(seriesName, new IndexableNumericDataArrayDateTime(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataListNumber<>(y, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataListNumber<>(yLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataListNumber<>(yHigh, new PlotInfo(this, seriesName)), false, true, true, false);
+    }
+
+    @Override
+    public <T0 extends Number> XYErrorBarDataSeriesArray errorBarY(final Comparable seriesName, final List<T0> x,
+            final DateTime[] y, final DateTime[] yLow, final DateTime[] yHigh) {
+        return errorBarY(seriesName, new IndexableNumericDataListNumber<>(x, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(y, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(yLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(yHigh, new PlotInfo(this, seriesName)), false, true, false, true);
+    }
+
+    @Override
+    public <T0 extends Comparable> CategoryDataSeriesInternal catErrorBar(final Comparable seriesName,
+            final T0[] categories, final short[] values, final short[] yLow, final short[] yHigh) {
+        return catPlot(new CategoryErrorBarDataSeriesMap(this, dataSeries.nextId(), seriesName,
+                new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayShort(values, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayShort(yLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayShort(yHigh, new PlotInfo(this, seriesName))), null, null, false);
+    }
+
+    @Override
+    public <T0 extends Comparable> CategoryDataSeriesInternal catErrorBar(final Comparable seriesName,
+            final T0[] categories, final int[] values, final int[] yLow, final int[] yHigh) {
+        return catPlot(new CategoryErrorBarDataSeriesMap(this, dataSeries.nextId(), seriesName,
+                new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayInt(values, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayInt(yLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayInt(yHigh, new PlotInfo(this, seriesName))), null, null, false);
+    }
+
+    @Override
+    public <T0 extends Comparable> CategoryDataSeriesInternal catErrorBar(final Comparable seriesName,
+            final T0[] categories, final long[] values, final long[] yLow, final long[] yHigh) {
+        return catPlot(new CategoryErrorBarDataSeriesMap(this, dataSeries.nextId(), seriesName,
+                new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayLong(values, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayLong(yLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayLong(yHigh, new PlotInfo(this, seriesName))), null, null, false);
+    }
+
+    @Override
+    public <T0 extends Comparable> CategoryDataSeriesInternal catErrorBar(final Comparable seriesName,
+            final T0[] categories, final float[] values, final float[] yLow, final float[] yHigh) {
+        return catPlot(new CategoryErrorBarDataSeriesMap(this, dataSeries.nextId(), seriesName,
+                new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayFloat(values, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayFloat(yLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayFloat(yHigh, new PlotInfo(this, seriesName))), null, null, false);
+    }
+
+    @Override
+    public <T0 extends Comparable> CategoryDataSeriesInternal catErrorBar(final Comparable seriesName,
+            final T0[] categories, final double[] values, final double[] yLow, final double[] yHigh) {
+        return catPlot(new CategoryErrorBarDataSeriesMap(this, dataSeries.nextId(), seriesName,
+                new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDouble(values, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDouble(yLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDouble(yHigh, new PlotInfo(this, seriesName))), null, null, false);
+    }
+
+    @Override
+    public <T0 extends Comparable, T1 extends Number, T2 extends Number, T3 extends Number> CategoryDataSeriesInternal catErrorBar(
+            final Comparable seriesName, final T0[] categories, final T1[] values, final T2[] yLow, final T3[] yHigh) {
+        return catPlot(
+                new CategoryErrorBarDataSeriesMap(this, dataSeries.nextId(), seriesName,
+                        new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)),
+                        new IndexableNumericDataArrayNumber<>(values, new PlotInfo(this, seriesName)),
+                        new IndexableNumericDataArrayNumber<>(yLow, new PlotInfo(this, seriesName)),
+                        new IndexableNumericDataArrayNumber<>(yHigh, new PlotInfo(this, seriesName))),
+                null, null, false);
+    }
+
+    @Override
+    public <T0 extends Comparable, T1 extends Number, T2 extends Number, T3 extends Number> CategoryDataSeriesInternal catErrorBar(
+            final Comparable seriesName, final T0[] categories, final List<T1> values, final List<T2> yLow,
+            final List<T3> yHigh) {
+        return catPlot(
+                new CategoryErrorBarDataSeriesMap(this, dataSeries.nextId(), seriesName,
+                        new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)),
+                        new IndexableNumericDataListNumber<>(values, new PlotInfo(this, seriesName)),
+                        new IndexableNumericDataListNumber<>(yLow, new PlotInfo(this, seriesName)),
+                        new IndexableNumericDataListNumber<>(yHigh, new PlotInfo(this, seriesName))),
+                null, null, false);
+    }
+
+    @Override
+    public <T0 extends Comparable> CategoryDataSeriesInternal catErrorBar(final Comparable seriesName,
+            final List<T0> categories, final short[] values, final short[] yLow, final short[] yHigh) {
+        return catPlot(new CategoryErrorBarDataSeriesMap(this, dataSeries.nextId(), seriesName,
+                new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]),
+                        new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayShort(values, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayShort(yLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayShort(yHigh, new PlotInfo(this, seriesName))), null, null, false);
+    }
+
+    @Override
+    public <T0 extends Comparable> CategoryDataSeriesInternal catErrorBar(final Comparable seriesName,
+            final List<T0> categories, final int[] values, final int[] yLow, final int[] yHigh) {
+        return catPlot(new CategoryErrorBarDataSeriesMap(this, dataSeries.nextId(), seriesName,
+                new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]),
+                        new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayInt(values, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayInt(yLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayInt(yHigh, new PlotInfo(this, seriesName))), null, null, false);
+    }
+
+    @Override
+    public <T0 extends Comparable> CategoryDataSeriesInternal catErrorBar(final Comparable seriesName,
+            final List<T0> categories, final long[] values, final long[] yLow, final long[] yHigh) {
+        return catPlot(new CategoryErrorBarDataSeriesMap(this, dataSeries.nextId(), seriesName,
+                new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]),
+                        new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayLong(values, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayLong(yLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayLong(yHigh, new PlotInfo(this, seriesName))), null, null, false);
+    }
+
+    @Override
+    public <T0 extends Comparable> CategoryDataSeriesInternal catErrorBar(final Comparable seriesName,
+            final List<T0> categories, final float[] values, final float[] yLow, final float[] yHigh) {
+        return catPlot(new CategoryErrorBarDataSeriesMap(this, dataSeries.nextId(), seriesName,
+                new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]),
+                        new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayFloat(values, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayFloat(yLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayFloat(yHigh, new PlotInfo(this, seriesName))), null, null, false);
+    }
+
+    @Override
+    public <T0 extends Comparable> CategoryDataSeriesInternal catErrorBar(final Comparable seriesName,
+            final List<T0> categories, final double[] values, final double[] yLow, final double[] yHigh) {
+        return catPlot(new CategoryErrorBarDataSeriesMap(this, dataSeries.nextId(), seriesName,
+                new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]),
+                        new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDouble(values, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDouble(yLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDouble(yHigh, new PlotInfo(this, seriesName))), null, null, false);
+    }
+
+    @Override
+    public <T0 extends Comparable, T1 extends Number, T2 extends Number, T3 extends Number> CategoryDataSeriesInternal catErrorBar(
+            final Comparable seriesName, final List<T0> categories, final T1[] values, final T2[] yLow,
+            final T3[] yHigh) {
+        return catPlot(
+                new CategoryErrorBarDataSeriesMap(this, dataSeries.nextId(), seriesName,
+                        new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]),
+                                new PlotInfo(this, seriesName)),
+                        new IndexableNumericDataArrayNumber<>(values, new PlotInfo(this, seriesName)),
+                        new IndexableNumericDataArrayNumber<>(yLow, new PlotInfo(this, seriesName)),
+                        new IndexableNumericDataArrayNumber<>(yHigh, new PlotInfo(this, seriesName))),
+                null, null, false);
+    }
+
+    @Override
+    public <T0 extends Comparable, T1 extends Number, T2 extends Number, T3 extends Number> CategoryDataSeriesInternal catErrorBar(
+            final Comparable seriesName, final List<T0> categories, final List<T1> values, final List<T2> yLow,
+            final List<T3> yHigh) {
+        return catPlot(
+                new CategoryErrorBarDataSeriesMap(this, dataSeries.nextId(), seriesName,
+                        new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]),
+                                new PlotInfo(this, seriesName)),
+                        new IndexableNumericDataListNumber<>(values, new PlotInfo(this, seriesName)),
+                        new IndexableNumericDataListNumber<>(yLow, new PlotInfo(this, seriesName)),
+                        new IndexableNumericDataListNumber<>(yHigh, new PlotInfo(this, seriesName))),
+                null, null, false);
+    }
+
+    @Override
+    public <T0 extends Comparable> CategoryDataSeriesInternal catErrorBar(final Comparable seriesName,
+            final T0[] categories, final Date[] values, final Date[] yLow, final Date[] yHigh) {
+        return catPlot(new CategoryErrorBarDataSeriesMap(this, dataSeries.nextId(), seriesName,
+                new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(values, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(yLow, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(yHigh, new PlotInfo(this, seriesName))), null, null, true);
+    }
+
+    @Override
+    public <T0 extends Comparable> CategoryDataSeriesInternal catErrorBar(final Comparable seriesName,
+            final T0[] categories, final DateTime[] values, final DateTime[] yLow, final DateTime[] yHigh) {
+        return catPlot(
+                new CategoryErrorBarDataSeriesMap(this, dataSeries.nextId(), seriesName,
+                        new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)),
+                        new IndexableNumericDataArrayDateTime(values, new PlotInfo(this, seriesName)),
+                        new IndexableNumericDataArrayDateTime(yLow, new PlotInfo(this, seriesName)),
+                        new IndexableNumericDataArrayDateTime(yHigh, new PlotInfo(this, seriesName))),
+                null, null, true);
+    }
+
+    @Override
+    public <T0 extends Comparable> CategoryDataSeriesInternal catPlot(final Comparable seriesName,
+            final T0[] categories, final Date[] values) {
+        return catPlot(seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(values, new PlotInfo(this, seriesName)), true);
+    }
+
+    @Override
+    public <T0 extends Comparable> CategoryDataSeriesInternal catPlot(final Comparable seriesName,
+            final T0[] categories, final DateTime[] values) {
+        return catPlot(seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(values, new PlotInfo(this, seriesName)), true);
+    }
+
+    @Override
+    public <T0 extends Comparable> CategoryDataSeriesInternal catPlot(final Comparable seriesName,
+            final T0[] categories, final short[] values) {
+        return catPlot(seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayShort(values, new PlotInfo(this, seriesName)), false);
+    }
+
+    @Override
+    public <T0 extends Comparable> CategoryDataSeriesInternal catPlot(final Comparable seriesName,
+            final T0[] categories, final int[] values) {
+        return catPlot(seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayInt(values, new PlotInfo(this, seriesName)), false);
+    }
+
+    @Override
+    public <T0 extends Comparable> CategoryDataSeriesInternal catPlot(final Comparable seriesName,
+            final T0[] categories, final long[] values) {
+        return catPlot(seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayLong(values, new PlotInfo(this, seriesName)), false);
+    }
+
+    @Override
+    public <T0 extends Comparable> CategoryDataSeriesInternal catPlot(final Comparable seriesName,
+            final T0[] categories, final float[] values) {
+        return catPlot(seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayFloat(values, new PlotInfo(this, seriesName)), false);
+    }
+
+    @Override
+    public <T0 extends Comparable> CategoryDataSeriesInternal catPlot(final Comparable seriesName,
+            final T0[] categories, final double[] values) {
+        return catPlot(seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDouble(values, new PlotInfo(this, seriesName)), false);
+    }
+
+    @Override
+    public <T0 extends Comparable, T1 extends Number> CategoryDataSeriesInternal catPlot(final Comparable seriesName,
+            final T0[] categories, final T1[] values) {
+        return catPlot(seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayNumber<>(values, new PlotInfo(this, seriesName)), false);
+    }
+
+    @Override
+    public <T0 extends Comparable, T1 extends Number> CategoryDataSeriesInternal catPlot(final Comparable seriesName,
+            final T0[] categories, final List<T1> values) {
+        return catPlot(seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataListNumber<>(values, new PlotInfo(this, seriesName)), false);
+    }
+
+    @Override
+    public <T0 extends Comparable> CategoryDataSeriesInternal catPlot(final Comparable seriesName,
+            final List<T0> categories, final Date[] values) {
+        return catPlot(seriesName,
+                new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]),
+                        new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDate(values, new PlotInfo(this, seriesName)), true);
+    }
+
+    @Override
+    public <T0 extends Comparable> CategoryDataSeriesInternal catPlot(final Comparable seriesName,
+            final List<T0> categories, final DateTime[] values) {
+        return catPlot(seriesName,
+                new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]),
+                        new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDateTime(values, new PlotInfo(this, seriesName)), true);
+    }
+
+    @Override
+    public <T0 extends Comparable> CategoryDataSeriesInternal catPlot(final Comparable seriesName,
+            final List<T0> categories, final short[] values) {
+        return catPlot(seriesName,
+                new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]),
+                        new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayShort(values, new PlotInfo(this, seriesName)), false);
+    }
+
+    @Override
+    public <T0 extends Comparable> CategoryDataSeriesInternal catPlot(final Comparable seriesName,
+            final List<T0> categories, final int[] values) {
+        return catPlot(seriesName,
+                new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]),
+                        new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayInt(values, new PlotInfo(this, seriesName)), false);
+    }
+
+    @Override
+    public <T0 extends Comparable> CategoryDataSeriesInternal catPlot(final Comparable seriesName,
+            final List<T0> categories, final long[] values) {
+        return catPlot(seriesName,
+                new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]),
+                        new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayLong(values, new PlotInfo(this, seriesName)), false);
+    }
+
+    @Override
+    public <T0 extends Comparable> CategoryDataSeriesInternal catPlot(final Comparable seriesName,
+            final List<T0> categories, final float[] values) {
+        return catPlot(seriesName,
+                new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]),
+                        new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayFloat(values, new PlotInfo(this, seriesName)), false);
+    }
+
+    @Override
+    public <T0 extends Comparable> CategoryDataSeriesInternal catPlot(final Comparable seriesName,
+            final List<T0> categories, final double[] values) {
+        return catPlot(seriesName,
+                new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]),
+                        new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDouble(values, new PlotInfo(this, seriesName)), false);
+    }
+
+    @Override
+    public <T0 extends Comparable, T1 extends Number> CategoryDataSeriesInternal catPlot(final Comparable seriesName,
+            final List<T0> categories, final T1[] values) {
+        return catPlot(seriesName,
+                new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]),
+                        new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayNumber<>(values, new PlotInfo(this, seriesName)), false);
+    }
+
+    @Override
+    public <T0 extends Comparable, T1 extends Number> CategoryDataSeriesInternal catPlot(final Comparable seriesName,
+            final List<T0> categories, final List<T1> values) {
+        return catPlot(seriesName,
+                new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]),
+                        new PlotInfo(this, seriesName)),
+                new IndexableNumericDataListNumber<>(values, new PlotInfo(this, seriesName)), false);
+    }
+
+    @Override
+    public <T0 extends Comparable> CategoryDataSeriesInternal piePlot(final Comparable seriesName,
+            final T0[] categories, final short[] values) {
+        return piePlot(seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayShort(values, new PlotInfo(this, seriesName)));
+    }
+
+    @Override
+    public <T0 extends Comparable> CategoryDataSeriesInternal piePlot(final Comparable seriesName,
+            final T0[] categories, final int[] values) {
+        return piePlot(seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayInt(values, new PlotInfo(this, seriesName)));
+    }
+
+    @Override
+    public <T0 extends Comparable> CategoryDataSeriesInternal piePlot(final Comparable seriesName,
+            final T0[] categories, final long[] values) {
+        return piePlot(seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayLong(values, new PlotInfo(this, seriesName)));
+    }
+
+    @Override
+    public <T0 extends Comparable> CategoryDataSeriesInternal piePlot(final Comparable seriesName,
+            final T0[] categories, final float[] values) {
+        return piePlot(seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayFloat(values, new PlotInfo(this, seriesName)));
+    }
+
+    @Override
+    public <T0 extends Comparable> CategoryDataSeriesInternal piePlot(final Comparable seriesName,
+            final T0[] categories, final double[] values) {
+        return piePlot(seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDouble(values, new PlotInfo(this, seriesName)));
+    }
+
+    @Override
+    public <T0 extends Comparable, T1 extends Number> CategoryDataSeriesInternal piePlot(final Comparable seriesName,
+            final T0[] categories, final T1[] values) {
+        return piePlot(seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayNumber<>(values, new PlotInfo(this, seriesName)));
+    }
+
+    @Override
+    public <T0 extends Comparable, T1 extends Number> CategoryDataSeriesInternal piePlot(final Comparable seriesName,
+            final T0[] categories, final List<T1> values) {
+        return piePlot(seriesName, new IndexableDataArray<>(categories, new PlotInfo(this, seriesName)),
+                new IndexableNumericDataListNumber<>(values, new PlotInfo(this, seriesName)));
+    }
+
+    @Override
+    public <T0 extends Comparable> CategoryDataSeriesInternal piePlot(final Comparable seriesName,
+            final List<T0> categories, final short[] values) {
+        return piePlot(seriesName,
+                new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]),
+                        new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayShort(values, new PlotInfo(this, seriesName)));
+    }
+
+    @Override
+    public <T0 extends Comparable> CategoryDataSeriesInternal piePlot(final Comparable seriesName,
+            final List<T0> categories, final int[] values) {
+        return piePlot(seriesName,
+                new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]),
+                        new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayInt(values, new PlotInfo(this, seriesName)));
+    }
+
+    @Override
+    public <T0 extends Comparable> CategoryDataSeriesInternal piePlot(final Comparable seriesName,
+            final List<T0> categories, final long[] values) {
+        return piePlot(seriesName,
+                new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]),
+                        new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayLong(values, new PlotInfo(this, seriesName)));
+    }
+
+    @Override
+    public <T0 extends Comparable> CategoryDataSeriesInternal piePlot(final Comparable seriesName,
+            final List<T0> categories, final float[] values) {
+        return piePlot(seriesName,
+                new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]),
+                        new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayFloat(values, new PlotInfo(this, seriesName)));
+    }
+
+    @Override
+    public <T0 extends Comparable> CategoryDataSeriesInternal piePlot(final Comparable seriesName,
+            final List<T0> categories, final double[] values) {
+        return piePlot(seriesName,
+                new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]),
+                        new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayDouble(values, new PlotInfo(this, seriesName)));
+    }
+
+    @Override
+    public <T0 extends Comparable, T1 extends Number> CategoryDataSeriesInternal piePlot(final Comparable seriesName,
+            final List<T0> categories, final T1[] values) {
+        return piePlot(seriesName,
+                new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]),
+                        new PlotInfo(this, seriesName)),
+                new IndexableNumericDataArrayNumber<>(values, new PlotInfo(this, seriesName)));
+    }
+
+    @Override
+    public <T0 extends Comparable, T1 extends Number> CategoryDataSeriesInternal piePlot(final Comparable seriesName,
+            final List<T0> categories, final List<T1> values) {
+        return piePlot(seriesName,
+                new IndexableDataArray<>(categories.toArray(new Comparable[categories.size()]),
+                        new PlotInfo(this, seriesName)),
+                new IndexableNumericDataListNumber<>(values, new PlotInfo(this, seriesName)));
     }
 
 }

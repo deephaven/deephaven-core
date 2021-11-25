@@ -20,7 +20,8 @@ import java.util.Map;
 /**
  * A parent data series that spawns a {@link DataSeries} for each unique key in the parent series.
  */
-public interface MultiSeriesInternal<T extends DataSeriesInternal> extends MultiSeries, SeriesInternal, PlotExceptionCause {
+public interface MultiSeriesInternal<T extends DataSeriesInternal>
+        extends MultiSeries, SeriesInternal, PlotExceptionCause {
 
     @Override
     MultiSeriesInternal<T> copy(final AxesImpl axes);
@@ -78,7 +79,7 @@ public interface MultiSeriesInternal<T extends DataSeriesInternal> extends Multi
      * Creates a new series for this multi-series.
      *
      * @param seriesName name for the series
-     * @param t   client side source table
+     * @param t client side source table
      * @return new series for this multi-series
      */
     T createSeries(final String seriesName, final BaseTable t);
@@ -86,8 +87,8 @@ public interface MultiSeriesInternal<T extends DataSeriesInternal> extends Multi
     /**
      * Creates a new series for this multi-series.
      *
-     * @param seriesName         name for the series
-     * @param t                  client side source table
+     * @param seriesName name for the series
+     * @param t client side source table
      * @param dynamicSeriesNamer creates the name for the newly generated series. Ensures unique names.
      * @return new series for this multi-series
      */
@@ -104,6 +105,7 @@ public interface MultiSeriesInternal<T extends DataSeriesInternal> extends Multi
 
     /**
      * Assigns series modifiers, e.g. point color, to the given {@code series}
+     * 
      * @param series series to initialize
      */
     void initializeSeries(T series);
@@ -127,18 +129,18 @@ public interface MultiSeriesInternal<T extends DataSeriesInternal> extends Multi
     }
 
     /**
-     * Calls a .update() on the underlying table with the given formula:
-     * underlyingTable.update(columnName = update)
+     * Calls a .update() on the underlying table with the given formula: underlyingTable.update(columnName = update)
      *
      * @param columnName the resulting column
      * @param update the formula inside
      * @param classesToImport classes to import into the query scope
      * @param params parameters to add to the query scope
-     * @param columnTypesPreserved set to true if the update clause is 'add only' with respect to columns.  This allows the
-     *                  copying of ACLs
+     * @param columnTypesPreserved set to true if the update clause is 'add only' with respect to columns. This allows
+     *        the copying of ACLs
      *
      */
-     void applyTransform(final String columnName, final String update, final Class[] classesToImport, final Map<String, Object> params, boolean columnTypesPreserved);
+    void applyTransform(final String columnName, final String update, final Class[] classesToImport,
+            final Map<String, Object> params, boolean columnTypesPreserved);
 
     /**
      * @return the x-axis data column

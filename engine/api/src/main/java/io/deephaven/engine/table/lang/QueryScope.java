@@ -187,8 +187,7 @@ public abstract class QueryScope implements LogOutputAppendable {
      *
      * @param names parameter names
      * @return A newly-constructed array of newly-constructed Params.
-     * @throws QueryScope.MissingVariableException If any of the named scope variables
-     *         does not exist.
+     * @throws QueryScope.MissingVariableException If any of the named scope variables does not exist.
      */
     public final QueryScopeParam[] getParams(final Collection<String> names) throws MissingVariableException {
         final QueryScopeParam[] result = new QueryScopeParam[names.size()];
@@ -223,8 +222,7 @@ public abstract class QueryScope implements LogOutputAppendable {
      * 
      * @param name parameter name
      * @return newly-constructed QueryScopeParam (name + value-snapshot pair).
-     * @throws QueryScope.MissingVariableException If any of the named scope variables
-     *         does not exist.
+     * @throws QueryScope.MissingVariableException If any of the named scope variables does not exist.
      */
     protected abstract <T> QueryScopeParam<T> createParam(final String name) throws MissingVariableException;
 

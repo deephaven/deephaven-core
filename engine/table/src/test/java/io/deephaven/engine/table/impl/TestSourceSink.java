@@ -42,7 +42,8 @@ public class TestSourceSink {
 
         // Get the whole thing back as one big chunk
         final RowSequence keysAll =
-                RowSequenceFactory.wrapKeyRangesChunkAsRowSequence(LongChunk.chunkWrap(new long[] {0, 4 * chunkSize - 1}));
+                RowSequenceFactory
+                        .wrapKeyRangesChunkAsRowSequence(LongChunk.chunkWrap(new long[] {0, 4 * chunkSize - 1}));
         final ChunkSource.GetContext getContext = sink.makeGetContext(totalSize);
 
         final Chunk<Values> valuesAll = sink.getChunk(getContext, keysAll);

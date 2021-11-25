@@ -241,8 +241,8 @@ class TableAdapterImpl<TOPS extends TableOperations<TOPS, TABLE>, TABLE> impleme
 
     @Override
     public void visit(AggregationTable aggregationTable) {
-        addOp(aggregationTable, parentOps(aggregationTable).aggBy(aggregationTable.aggregations(), aggregationTable.columns()
-        ));
+        addOp(aggregationTable,
+                parentOps(aggregationTable).aggBy(aggregationTable.aggregations(), aggregationTable.columns()));
     }
 
     @Override

@@ -3170,7 +3170,7 @@ public class WritableRowSetImplTest extends TestCase {
             }
         }
         try (final WritableRowSet result = outer.build();
-             final RowSet toRemove = inner.build()) {
+                final RowSet toRemove = inner.build()) {
             final long t0 = System.currentTimeMillis();
             result.remove(toRemove);
             final long t1 = System.currentTimeMillis();

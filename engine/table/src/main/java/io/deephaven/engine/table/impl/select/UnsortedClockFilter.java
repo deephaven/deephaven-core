@@ -67,8 +67,9 @@ public class UnsortedClockFilter extends ClockFilter {
 
     @Override
     @Nullable
-    protected WritableRowSet initializeAndGetInitialIndex(@NotNull final RowSet selection, @NotNull final RowSet fullSet,
-                                                          @NotNull final Table table) {
+    protected WritableRowSet initializeAndGetInitialIndex(@NotNull final RowSet selection,
+            @NotNull final RowSet fullSet,
+            @NotNull final Table table) {
         rangesByNextTime = new PriorityQueue<>(INITIAL_RANGE_QUEUE_CAPACITY, new RangeComparator());
 
         if (selection.isEmpty()) {

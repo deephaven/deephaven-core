@@ -12296,7 +12296,8 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Double.NaN, value1));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero1, zero2));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero2, zero1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_INT, QueryConstants.NULL_DOUBLE));
+        TestCase.assertEquals(0,
+                QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_INT, QueryConstants.NULL_DOUBLE));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value1, value1));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value2, value2));
         TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, value2));
@@ -12318,7 +12319,8 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Double.NaN, value1));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero1, zero2));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero2, zero1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_INT, QueryConstants.NULL_LONG));
+        TestCase.assertEquals(0,
+                QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_INT, QueryConstants.NULL_LONG));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value1, value1));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value2, value2));
         TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, value2));
@@ -12340,7 +12342,8 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Double.NaN, value1));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero1, zero2));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero2, zero1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_INT, QueryConstants.NULL_FLOAT));
+        TestCase.assertEquals(0,
+                QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_INT, QueryConstants.NULL_FLOAT));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value1, value1));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value2, value2));
         TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, value2));
@@ -12362,7 +12365,8 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Double.NaN, value1));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero1, zero2));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero2, zero1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_INT, QueryConstants.NULL_CHAR));
+        TestCase.assertEquals(0,
+                QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_INT, QueryConstants.NULL_CHAR));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value1, value1));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value2, value2));
         TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, value2));
@@ -12384,7 +12388,8 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Double.NaN, value1));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero1, zero2));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero2, zero1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_INT, QueryConstants.NULL_BYTE));
+        TestCase.assertEquals(0,
+                QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_INT, QueryConstants.NULL_BYTE));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value1, value1));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value2, value2));
         TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, value2));
@@ -12406,7 +12411,8 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Double.NaN, value1));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero1, zero2));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero2, zero1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_INT, QueryConstants.NULL_SHORT));
+        TestCase.assertEquals(0,
+                QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_INT, QueryConstants.NULL_SHORT));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value1, value1));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value2, value2));
         TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, value2));
@@ -12428,7 +12434,8 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Double.NaN, value1));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero1, zero2));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero2, zero1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_INT));
+        TestCase.assertEquals(0,
+                QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_INT));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value1, value1));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value2, value2));
         TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, value2));
@@ -12588,7 +12595,8 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Double.NaN, value1));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero1, zero2));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero2, zero1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_LONG, QueryConstants.NULL_INT));
+        TestCase.assertEquals(0,
+                QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_LONG, QueryConstants.NULL_INT));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value1, value1));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value2, value2));
         TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, value2));
@@ -12633,7 +12641,8 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Double.NaN, value1));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero1, zero2));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero2, zero1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_LONG, QueryConstants.NULL_LONG));
+        TestCase.assertEquals(0,
+                QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_LONG, QueryConstants.NULL_LONG));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value1, value1));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value2, value2));
         TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, value2));
@@ -12655,7 +12664,8 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Double.NaN, value1));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero1, zero2));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero2, zero1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_LONG, QueryConstants.NULL_FLOAT));
+        TestCase.assertEquals(0,
+                QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_LONG, QueryConstants.NULL_FLOAT));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value1, value1));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value2, value2));
         TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, value2));
@@ -12677,7 +12687,8 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Double.NaN, value1));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero1, zero2));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero2, zero1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_LONG, QueryConstants.NULL_CHAR));
+        TestCase.assertEquals(0,
+                QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_LONG, QueryConstants.NULL_CHAR));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value1, value1));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value2, value2));
         TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, value2));
@@ -12699,7 +12710,8 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Double.NaN, value1));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero1, zero2));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero2, zero1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_LONG, QueryConstants.NULL_BYTE));
+        TestCase.assertEquals(0,
+                QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_LONG, QueryConstants.NULL_BYTE));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value1, value1));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value2, value2));
         TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, value2));
@@ -12721,7 +12733,8 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Double.NaN, value1));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero1, zero2));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero2, zero1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_LONG, QueryConstants.NULL_SHORT));
+        TestCase.assertEquals(0,
+                QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_LONG, QueryConstants.NULL_SHORT));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value1, value1));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value2, value2));
         TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, value2));
@@ -12743,7 +12756,8 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Double.NaN, value1));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero1, zero2));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero2, zero1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_FLOAT, QueryConstants.NULL_INT));
+        TestCase.assertEquals(0,
+                QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_FLOAT, QueryConstants.NULL_INT));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value1, value1));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value2, value2));
         TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, value2));
@@ -12788,7 +12802,8 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Double.NaN, value1));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero1, zero2));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero2, zero1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_FLOAT, QueryConstants.NULL_LONG));
+        TestCase.assertEquals(0,
+                QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_FLOAT, QueryConstants.NULL_LONG));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value1, value1));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value2, value2));
         TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, value2));
@@ -12833,7 +12848,8 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Double.NaN, value1));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero1, zero2));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero2, zero1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_FLOAT, QueryConstants.NULL_CHAR));
+        TestCase.assertEquals(0,
+                QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_FLOAT, QueryConstants.NULL_CHAR));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value1, value1));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value2, value2));
         TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, value2));
@@ -12855,7 +12871,8 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Double.NaN, value1));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero1, zero2));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero2, zero1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_FLOAT, QueryConstants.NULL_BYTE));
+        TestCase.assertEquals(0,
+                QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_FLOAT, QueryConstants.NULL_BYTE));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value1, value1));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value2, value2));
         TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, value2));
@@ -12900,7 +12917,8 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Double.NaN, value1));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero1, zero2));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero2, zero1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_CHAR, QueryConstants.NULL_INT));
+        TestCase.assertEquals(0,
+                QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_CHAR, QueryConstants.NULL_INT));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value1, value1));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value2, value2));
         TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, value2));
@@ -12945,7 +12963,8 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Double.NaN, value1));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero1, zero2));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero2, zero1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_CHAR, QueryConstants.NULL_LONG));
+        TestCase.assertEquals(0,
+                QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_CHAR, QueryConstants.NULL_LONG));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value1, value1));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value2, value2));
         TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, value2));
@@ -12967,7 +12986,8 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Double.NaN, value1));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero1, zero2));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero2, zero1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_CHAR, QueryConstants.NULL_FLOAT));
+        TestCase.assertEquals(0,
+                QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_CHAR, QueryConstants.NULL_FLOAT));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value1, value1));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value2, value2));
         TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, value2));
@@ -12989,7 +13009,8 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Double.NaN, value1));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero1, zero2));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero2, zero1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_CHAR, QueryConstants.NULL_CHAR));
+        TestCase.assertEquals(0,
+                QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_CHAR, QueryConstants.NULL_CHAR));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value1, value1));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value2, value2));
         TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, value2));
@@ -13011,7 +13032,8 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Double.NaN, value1));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero1, zero2));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero2, zero1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_CHAR, QueryConstants.NULL_BYTE));
+        TestCase.assertEquals(0,
+                QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_CHAR, QueryConstants.NULL_BYTE));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value1, value1));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value2, value2));
         TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, value2));
@@ -13033,7 +13055,8 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Double.NaN, value1));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero1, zero2));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero2, zero1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_CHAR, QueryConstants.NULL_SHORT));
+        TestCase.assertEquals(0,
+                QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_CHAR, QueryConstants.NULL_SHORT));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value1, value1));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value2, value2));
         TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, value2));
@@ -13055,7 +13078,8 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Double.NaN, value1));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero1, zero2));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero2, zero1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_BYTE, QueryConstants.NULL_INT));
+        TestCase.assertEquals(0,
+                QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_BYTE, QueryConstants.NULL_INT));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value1, value1));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value2, value2));
         TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, value2));
@@ -13100,7 +13124,8 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Double.NaN, value1));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero1, zero2));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero2, zero1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_BYTE, QueryConstants.NULL_LONG));
+        TestCase.assertEquals(0,
+                QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_BYTE, QueryConstants.NULL_LONG));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value1, value1));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value2, value2));
         TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, value2));
@@ -13122,7 +13147,8 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Double.NaN, value1));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero1, zero2));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero2, zero1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_BYTE, QueryConstants.NULL_FLOAT));
+        TestCase.assertEquals(0,
+                QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_BYTE, QueryConstants.NULL_FLOAT));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value1, value1));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value2, value2));
         TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, value2));
@@ -13144,7 +13170,8 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Double.NaN, value1));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero1, zero2));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero2, zero1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_BYTE, QueryConstants.NULL_CHAR));
+        TestCase.assertEquals(0,
+                QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_BYTE, QueryConstants.NULL_CHAR));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value1, value1));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value2, value2));
         TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, value2));
@@ -13166,7 +13193,8 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Double.NaN, value1));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero1, zero2));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero2, zero1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_BYTE, QueryConstants.NULL_BYTE));
+        TestCase.assertEquals(0,
+                QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_BYTE, QueryConstants.NULL_BYTE));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value1, value1));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value2, value2));
         TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, value2));
@@ -13188,7 +13216,8 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Double.NaN, value1));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero1, zero2));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero2, zero1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_BYTE, QueryConstants.NULL_SHORT));
+        TestCase.assertEquals(0,
+                QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_BYTE, QueryConstants.NULL_SHORT));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value1, value1));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value2, value2));
         TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, value2));
@@ -13210,7 +13239,8 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Double.NaN, value1));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero1, zero2));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero2, zero1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_SHORT, QueryConstants.NULL_INT));
+        TestCase.assertEquals(0,
+                QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_SHORT, QueryConstants.NULL_INT));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value1, value1));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value2, value2));
         TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, value2));
@@ -13255,7 +13285,8 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Double.NaN, value1));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero1, zero2));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero2, zero1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_SHORT, QueryConstants.NULL_LONG));
+        TestCase.assertEquals(0,
+                QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_SHORT, QueryConstants.NULL_LONG));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value1, value1));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value2, value2));
         TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, value2));
@@ -13300,7 +13331,8 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Double.NaN, value1));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero1, zero2));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero2, zero1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_SHORT, QueryConstants.NULL_CHAR));
+        TestCase.assertEquals(0,
+                QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_SHORT, QueryConstants.NULL_CHAR));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value1, value1));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value2, value2));
         TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, value2));
@@ -13322,7 +13354,8 @@ public final class TestQueryLanguageFunctionUtil extends TestCase {
         TestCase.assertEquals(1, QueryLanguageFunctionUtil.compareTo(Double.NaN, value1));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero1, zero2));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(zero2, zero1));
-        TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_SHORT, QueryConstants.NULL_BYTE));
+        TestCase.assertEquals(0,
+                QueryLanguageFunctionUtil.compareTo(QueryConstants.NULL_SHORT, QueryConstants.NULL_BYTE));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value1, value1));
         TestCase.assertEquals(0, QueryLanguageFunctionUtil.compareTo(value2, value2));
         TestCase.assertEquals(-1, QueryLanguageFunctionUtil.compareTo(value1, value2));

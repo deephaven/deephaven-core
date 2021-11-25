@@ -766,7 +766,8 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
                                                                                                              // than
                                                                                                              // deltaChunkSize
                             try (final RowSequence dstKeys =
-                                    RowSequenceFactory.forRange(nextFreeDeltaKey, nextFreeDeltaKey + srcKeys.size() - 1)) {
+                                    RowSequenceFactory.forRange(nextFreeDeltaKey,
+                                            nextFreeDeltaKey + srcKeys.size() - 1)) {
                                 nextFreeDeltaKey += srcKeys.size();
 
                                 for (final FillDeltaContext fillDeltaContext : fillDeltaContexts) {
@@ -1382,9 +1383,9 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
                         final WritableRowSet remaining = addedMapping ? addedRemaining : modifiedRemaining;
                         final RowSet deltaRecorded = recordedAdds ? delta.recordedAdds : delta.recordedMods;
                         try (final RowSet recorded = remaining.intersect(deltaRecorded);
-                             final WritableRowSet sourceRows = deltaRecorded.invert(recorded);
-                             final RowSet destinationsInPosSpace = remaining.invert(recorded);
-                             final RowSet rowsToFill = (addedMapping ? unfilledAdds : unfilledMods)
+                                final WritableRowSet sourceRows = deltaRecorded.invert(recorded);
+                                final RowSet destinationsInPosSpace = remaining.invert(recorded);
+                                final RowSet rowsToFill = (addedMapping ? unfilledAdds : unfilledMods)
                                         .subSetForPositions(destinationsInPosSpace)) {
                             sourceRows.shiftInPlace(
                                     delta.deltaColumnOffset + (recordedAdds ? 0 : delta.recordedAdds.size()));

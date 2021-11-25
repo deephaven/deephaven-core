@@ -1007,7 +1007,8 @@ public interface TableWithDefaults extends Table {
 
     @Override
     @ConcurrentMethod
-    default Table rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents, String... columns) {
+    default Table rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents,
+            String... columns) {
         return rollup(aggregations, includeConstituents,
                 Selectable.from(columns).toArray(ZERO_LENGTH_SELECTABLE_ARRAY));
     }

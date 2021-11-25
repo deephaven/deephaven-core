@@ -46,10 +46,8 @@ public abstract class ModelFarmBase<DATATYPE> implements ModelFarm {
     }
 
     /**
-     * An operation that uses data from Deephaven {@link Table Tables}, using either
-     * {@link ColumnSource#getPrev} or
-     * {@link ColumnSource#get}) depending on the value of the argument to
-     * {@link #retrieveData}.
+     * An operation that uses data from Deephaven {@link Table Tables}, using either {@link ColumnSource#getPrev} or
+     * {@link ColumnSource#get}) depending on the value of the argument to {@link #retrieveData}.
      */
     @FunctionalInterface
     interface QueryDataRetrievalOperation {
@@ -58,8 +56,7 @@ public abstract class ModelFarmBase<DATATYPE> implements ModelFarm {
          * Performs an operation using data from a query.
          *
          * @param usePrev Whether to use the previous data at a given rowSet when retrieving data (i.e. if {@code true},
-         *        use {@link ColumnSource#getPrev} instead of
-         *        {@link ColumnSource#get}).
+         *        use {@link ColumnSource#getPrev} instead of {@link ColumnSource#get}).
          */
         void retrieveData(boolean usePrev);
 

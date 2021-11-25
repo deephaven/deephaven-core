@@ -7,8 +7,7 @@ import io.deephaven.engine.table.impl.ImmutableColumnSourceGetDefaults;
 import java.util.BitSet;
 
 /**
- * A {@link ColumnSource} wrapping a bitset. It does not support previous values and is
- * immutable.
+ * A {@link ColumnSource} wrapping a bitset. It does not support previous values and is immutable.
  *
  * @implNote This is intended only for use with {@link TreeSnapshotQuery}.
  */

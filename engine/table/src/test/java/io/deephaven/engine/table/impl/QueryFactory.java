@@ -262,7 +262,8 @@ public class QueryFactory {
         final String nextTableName = "table" + nameSeed + "_" + opNum;
         final String lastTableName = "table" + nameSeed + "_" + (opNum - 1);
         opChain.append(nextTableName).append("prime = ");
-        opChain.append("io.deephaven.engine.table.impl.SelectOverheadLimiter.clampSelectOverhead(").append(lastTableName)
+        opChain.append("io.deephaven.engine.table.impl.SelectOverheadLimiter.clampSelectOverhead(")
+                .append(lastTableName)
                 .append(", 10.0d);\n");
         opChain.append(nextTableName).append(" = ").append(nextTableName).append("prime").append(".select();\n");
     }

@@ -30,8 +30,7 @@ import java.util.function.UnaryOperator;
 import static io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource.BLOCK_SIZE;
 
 /**
- * An {@link IterativeChunkedAggregationOperator} used in the implementation of
- * {@link Table#applyToAllBy}.
+ * An {@link IterativeChunkedAggregationOperator} used in the implementation of {@link Table#applyToAllBy}.
  */
 class FormulaChunkedOperator implements IterativeChunkedAggregationOperator {
 
@@ -354,7 +353,7 @@ class FormulaChunkedOperator implements IterativeChunkedAggregationOperator {
 
     @Override
     public void propagateFailure(@NotNull final Throwable originalException,
-                                 @NotNull final TableListener.Entry sourceEntry) {
+            @NotNull final TableListener.Entry sourceEntry) {
         if (delegateToBy) {
             groupBy.propagateFailure(originalException, sourceEntry);
         }

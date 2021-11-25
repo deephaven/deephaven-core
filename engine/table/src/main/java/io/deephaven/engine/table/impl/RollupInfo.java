@@ -37,7 +37,7 @@ public class RollupInfo extends AbstractHierarchicalTableInfo {
     }
 
     public RollupInfo(AggregationFactory factory, SelectColumn[] selectColumns, LeafType leafType,
-                      String[] columnFormats) {
+            String[] columnFormats) {
         super(columnFormats);
         this.factory = factory;
         this.selectColumns = selectColumns;

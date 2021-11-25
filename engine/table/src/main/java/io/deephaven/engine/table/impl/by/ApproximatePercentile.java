@@ -58,10 +58,11 @@ import java.util.List;
  * <p>
  * When parallelizing a workload, you may want to divide it based on natural partitioning and then compute an overall
  * percentile. In these cases, you should use the {@link PercentileDefinition#exposeDigest} method to expose the
- * internal t-digest structure as a column. If you then perform an array aggregation ({@link Table#groupBy}), you can call
- * the {@link #accumulateDigests} function to produce a single digest that represents all of the constituent digests.
- * The amount of error introduced is related to the compression factor that you have selected for the digests. Once you
- * have a combined digest object, you can call the quantile or other functions to extract the desired percentile.
+ * internal t-digest structure as a column. If you then perform an array aggregation ({@link Table#groupBy}), you can
+ * call the {@link #accumulateDigests} function to produce a single digest that represents all of the constituent
+ * digests. The amount of error introduced is related to the compression factor that you have selected for the digests.
+ * Once you have a combined digest object, you can call the quantile or other functions to extract the desired
+ * percentile.
  * </p>
  */
 public class ApproximatePercentile {

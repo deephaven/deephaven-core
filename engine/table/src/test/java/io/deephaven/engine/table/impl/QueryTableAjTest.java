@@ -423,7 +423,8 @@ public class QueryTableAjTest {
                 (QueryTable) left.aj(right, (key ? "SingleKey," : "") + stampColumn, "Dummy=LongCol");
         try {
             base.setExpectError(true);
-            final io.deephaven.engine.table.impl.ErrorListener listener = new io.deephaven.engine.table.impl.ErrorListener(result1);
+            final io.deephaven.engine.table.impl.ErrorListener listener =
+                    new io.deephaven.engine.table.impl.ErrorListener(result1);
             result1.listenForUpdates(listener);
 
             UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {

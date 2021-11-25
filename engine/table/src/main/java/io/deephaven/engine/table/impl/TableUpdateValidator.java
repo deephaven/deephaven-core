@@ -159,7 +159,8 @@ public class TableUpdateValidator implements QueryTable.Operation {
                 validateValues("pre-update", ModifiedColumnSet.ALL, rowSet, true, false);
             } else {
                 validateValues("pre-update removed", ModifiedColumnSet.ALL, upstream.removed(), true, false);
-                validateValues("pre-update modified", upstream.modifiedColumnSet(), upstream.getModifiedPreShift(), true,
+                validateValues("pre-update modified", upstream.modifiedColumnSet(), upstream.getModifiedPreShift(),
+                        true,
                         false);
             }
 
@@ -169,12 +170,13 @@ public class TableUpdateValidator implements QueryTable.Operation {
 
             // shift columns first because they use tracking rowSet
             Arrays.stream(columnInfos).forEach((ci) -> upstream.shifted().apply(ci));
-            upstream.shifted().apply( rowSet);
+            upstream.shifted().apply(rowSet);
 
             if (aggressiveUpdateValidation) {
                 final RowSet unmodified = rowSet.minus(upstream.modified());
                 validateValues("post-shift unmodified", ModifiedColumnSet.ALL, unmodified, false, false);
-                validateValues("post-shift unmodified columns", upstream.modifiedColumnSet(), upstream.modified(), false,
+                validateValues("post-shift unmodified columns", upstream.modifiedColumnSet(), upstream.modified(),
+                        false,
                         true);
             }
 

@@ -60,11 +60,12 @@ public interface SsaSsaStamp {
             boolean disallowExactMatch);
 
     void processRemovals(SegmentedSortedArray leftSsa, Chunk<? extends Values> rightStampChunk,
-                         LongChunk<RowKeys> rightKeys, WritableLongChunk<RowKeys> priorRedirections,
-                         WritableRowRedirection rowRedirection, RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch);
+            LongChunk<RowKeys> rightKeys, WritableLongChunk<RowKeys> priorRedirections,
+            WritableRowRedirection rowRedirection, RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch);
 
     void processInsertion(SegmentedSortedArray leftSsa, Chunk<? extends Values> rightStampChunk,
-            LongChunk<Attributes.RowKeys> rightKeys, Chunk<Values> nextRightValue, WritableRowRedirection rowRedirection,
+            LongChunk<Attributes.RowKeys> rightKeys, Chunk<Values> nextRightValue,
+            WritableRowRedirection rowRedirection,
             RowSetBuilderRandom modifiedBuilder, boolean endsWithLastValue, boolean disallowExactMatch);
 
     void findModified(SegmentedSortedArray leftSsa, RowRedirection rowRedirection,

@@ -31,7 +31,8 @@ import java.util.stream.Collectors;
 import static io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_STRING_ARRAY;
 
 /**
- * Implementation for chunk-oriented aggregation operations, including {@link Table#groupBy} and {@link Table#partitionBy}.
+ * Implementation for chunk-oriented aggregation operations, including {@link Table#groupBy} and
+ * {@link Table#partitionBy}.
  */
 public class AggregationHelper {
 
@@ -515,13 +516,13 @@ public class AggregationHelper {
         final int chunkSize = Math.min(numGroups, IncrementalChunkedByAggregationStateManager.CHUNK_SIZE);
 
         try (final RowSequence groupIndices = RowSetFactory.flat(numGroups);
-             final RowSequence.Iterator groupIndicesIterator = groupIndices.getRowSequenceIterator();
-             final ChunkSource.GetContext hashSlotGetContext = groupIndexToHashSlot.makeGetContext(chunkSize);
-             final WritableObjectChunk<TrackingWritableRowSet, Values> aggregatedIndexes =
+                final RowSequence.Iterator groupIndicesIterator = groupIndices.getRowSequenceIterator();
+                final ChunkSource.GetContext hashSlotGetContext = groupIndexToHashSlot.makeGetContext(chunkSize);
+                final WritableObjectChunk<TrackingWritableRowSet, Values> aggregatedIndexes =
                         WritableObjectChunk.makeWritableChunk(chunkSize);
-             final WritableLongChunk<OrderedRowKeys> mapKeySourceIndices =
+                final WritableLongChunk<OrderedRowKeys> mapKeySourceIndices =
                         WritableLongChunk.makeWritableChunk(chunkSize);
-             final ChunkSource.GetContext mapKeyGetContext = inputKeyIndexToMapKeySource.makeGetContext(chunkSize)) {
+                final ChunkSource.GetContext mapKeyGetContext = inputKeyIndexToMapKeySource.makeGetContext(chunkSize)) {
             while (groupIndicesIterator.hasMore()) {
                 final RowSequence groupIndexesForThisChunk =
                         groupIndicesIterator.getNextRowSequenceWithLength(chunkSize);

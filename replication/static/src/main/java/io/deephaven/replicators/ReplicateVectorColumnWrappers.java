@@ -11,8 +11,11 @@ import static io.deephaven.replication.ReplicatePrimitiveCode.charToAllButBoolea
 public class ReplicateVectorColumnWrappers {
 
     public static void main(String[] args) throws IOException {
-        charToAllButBoolean("engine/table/src/main/java/io/deephaven/engine/table/impl/vector/CharVectorColumnWrapper.java");
-        charToAllButBoolean("engine/table/src/main/java/io/deephaven/engine/table/impl/vector/PrevCharVectorColumnWrapper.java");
-        charToAllButBoolean("engine/table/src/test/java/io/deephaven/engine/table/impl/vector/CharVectorColumnWrapperTest.java");
+        charToAllButBoolean(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/vector/CharVectorColumnWrapper.java");
+        charToAllButBoolean(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/vector/PrevCharVectorColumnWrapper.java");
+        charToAllButBoolean(
+                "engine/table/src/test/java/io/deephaven/engine/table/impl/vector/CharVectorColumnWrapperTest.java");
     }
 }

@@ -226,7 +226,7 @@ public class HierarchicalTable extends QueryTable {
 
     @Override
     public Table applyToAllBy(String formulaColumn, String columnParamName,
-                              Collection<? extends Selectable> groupByColumns) {
+            Collection<? extends Selectable> groupByColumns) {
         return throwUnsupported("applyToAllBy()");
     }
 

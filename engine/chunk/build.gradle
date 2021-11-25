@@ -18,15 +18,15 @@ dependencies {
 spotless {
     java {
         targetExclude(
-                '**/*Boolean*Chunk.java',
-                '**/*Byte*Chunk.java',
-                '**/*Char*Chunk.java',
-                '**/*Short*Chunk.java',
-                '**/*Int*Chunk.java',
-                '**/*Long*Chunk.java',
-                '**/*Float*Chunk.java',
-                '**/*Double*Chunk.java',
-                '**/*Object*Chunk.java',
+                '**/*Boolean*.java',
+                '**/*Byte*.java',
+                '**/*Char*.java',
+                '**/*Short*.java',
+                '**/*Int*.java',
+                '**/*Long*.java',
+                '**/*Float*.java',
+                '**/*Double*.java',
+                '**/*Object*.java',
         )
     }
 }

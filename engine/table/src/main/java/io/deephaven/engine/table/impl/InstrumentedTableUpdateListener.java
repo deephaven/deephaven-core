@@ -8,7 +8,8 @@ import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.TableUpdateListener;
 import org.jetbrains.annotations.Nullable;
 
-public abstract class InstrumentedTableUpdateListener extends InstrumentedTableListenerBase implements TableUpdateListener {
+public abstract class InstrumentedTableUpdateListener extends InstrumentedTableListenerBase
+        implements TableUpdateListener {
 
     public InstrumentedTableUpdateListener(@Nullable final String description) {
         super(description, false);

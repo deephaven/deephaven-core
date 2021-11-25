@@ -17,8 +17,8 @@ import java.util.function.Supplier;
  * an operation (usually a chunk of ordered keys).
  *
  * <p>
- * For example, redirected data sources that share the same mappings may cache a chunk of
- * redirections for the most recent chunk of row keys they have been handed.
+ * For example, redirected data sources that share the same mappings may cache a chunk of redirections for the most
+ * recent chunk of row keys they have been handed.
  *
  * <p>
  * It's important that "nested" usage follows the convention of creating a new instance and passing that instance to

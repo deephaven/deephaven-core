@@ -3,8 +3,7 @@ package io.deephaven.engine.table.impl.by;
 import io.deephaven.engine.util.TotalsTableBuilder;
 
 /**
- * Enumeration representing valid aggregation types for {@link AggregationFactory} or
- * {@link TotalsTableBuilder}.
+ * Enumeration representing valid aggregation types for {@link AggregationFactory} or {@link TotalsTableBuilder}.
  */
 public enum AggType {
     /** Return the number of rows in each group. */

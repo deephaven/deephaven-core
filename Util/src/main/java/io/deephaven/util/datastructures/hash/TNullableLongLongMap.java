@@ -8,5 +8,6 @@ import gnu.trove.map.TLongLongMap;
 
 public interface TNullableLongLongMap extends TLongLongMap {
     void resetToNull();
+
     int capacity();
 }

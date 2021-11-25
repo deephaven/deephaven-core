@@ -51,7 +51,8 @@ public class WindowCheck {
      * @return a new table that contains an in-window Boolean column
      */
     @SuppressWarnings("unused")
-    public static Table addTimeWindow(QueryTable table, String timestampColumn, long windowNanos, String inWindowColumn) {
+    public static Table addTimeWindow(QueryTable table, String timestampColumn, long windowNanos,
+            String inWindowColumn) {
         return addTimeWindowInternal(null, table, timestampColumn, windowNanos, inWindowColumn, true).first;
     }
 

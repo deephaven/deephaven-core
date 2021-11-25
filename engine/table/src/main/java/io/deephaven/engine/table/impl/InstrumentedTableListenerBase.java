@@ -114,7 +114,7 @@ public abstract class InstrumentedTableListenerBase extends LivenessArtifact
     protected abstract void onFailureInternal(Throwable originalException, Entry sourceEntry);
 
     protected final void onFailureInternalWithDependent(final BaseTable dependent, final Throwable originalException,
-                                                        final Entry sourceEntry) {
+            final Entry sourceEntry) {
         dependent.notifyListenersOnError(originalException, sourceEntry);
 
         // although we have notified the dependent tables, we should notify the client side as well. In pretty

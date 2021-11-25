@@ -206,8 +206,8 @@ public class QueryTableAggregationTest {
 
         /**
          * Return an incremental groupBy() result on first invocation, in order to establish the enclosing
-         * {@link EvalNugget}'s baseline "original table". Return a static groupBy() result on subsequent invocations, in
-         * order to use the static implementation to validate the incremental implementation. Note that the static
+         * {@link EvalNugget}'s baseline "original table". Return a static groupBy() result on subsequent invocations,
+         * in order to use the static implementation to validate the incremental implementation. Note that the static
          * implementation is well tested by its own unit tests that don't rely on groupBy().
          *
          * @return The appropriate {@link Table}
@@ -591,7 +591,8 @@ public class QueryTableAggregationTest {
         TestCase.assertEquals(2, table.groupBy("S").getColumns().length);
         TestCase.assertEquals(String.class, table.groupBy("S").getColumn("S").getType());
         TestCase.assertEquals(IntVector.class, table.groupBy("S").getColumn("I").getType());
-        TestCase.assertEquals(Arrays.asList("c", null, "g"), Arrays.asList(table.groupBy("S").getColumn("S").get(0, 3)));
+        TestCase.assertEquals(Arrays.asList("c", null, "g"),
+                Arrays.asList(table.groupBy("S").getColumn("S").get(0, 3)));
         intGroups = (IntVector[]) table.groupBy("S").getColumn("I").getDirect();
         TestCase.assertEquals(3, intGroups.length);
         TestCase.assertEquals(1, intGroups[0].size());
@@ -2174,10 +2175,12 @@ public class QueryTableAggregationTest {
                 EvalNugget.Sorted.from(() -> queryTable.wsumBy("byteCol", "Sym"), "Sym"),
                 EvalNugget.Sorted.from(() -> queryTable.wsumBy("shortCol", "Sym"), "Sym"),
                 new TableComparator(queryTable.view("intCol2", "intCol").wsumBy("intCol2"), "wsum",
-                        queryTable.updateView("W=intCol*intCol2").groupBy().update("intCol=(long)sum(W)").view("intCol"),
+                        queryTable.updateView("W=intCol*intCol2").groupBy().update("intCol=(long)sum(W)")
+                                .view("intCol"),
                         "update"),
                 new TableComparator(queryTable.view("intCol2", "doubleCol").wsumBy("intCol2"), "wsum",
-                        queryTable.updateView("W=doubleCol*intCol2").groupBy().update("doubleCol=sum(W)").view("doubleCol"),
+                        queryTable.updateView("W=doubleCol*intCol2").groupBy().update("doubleCol=sum(W)")
+                                .view("doubleCol"),
                         "update"),
                 new TableComparator(queryTable.view("doubleCol", "intCol").wsumBy("doubleCol"), "wsum",
                         queryTable.updateView("W=doubleCol*intCol").groupBy().update("intCol=sum(W)").view("intCol"),
@@ -2935,15 +2938,16 @@ public class QueryTableAggregationTest {
             this.columns = columns;
             this.originalValue = e();
 
-            ((QueryTable) originalValue).listenForUpdates(new InstrumentedTableUpdateListener("Failure ShiftObliviousListener") {
-                @Override
-                public void onUpdate(final TableUpdate update) {}
+            ((QueryTable) originalValue)
+                    .listenForUpdates(new InstrumentedTableUpdateListener("Failure ShiftObliviousListener") {
+                        @Override
+                        public void onUpdate(final TableUpdate update) {}
 
-                @Override
-                public void onFailureInternal(Throwable originalException, Entry sourceEntry) {
-                    exception = originalException;
-                }
-            });
+                        @Override
+                        public void onFailureInternal(Throwable originalException, Entry sourceEntry) {
+                            exception = originalException;
+                        }
+                    });
         }
 
         public Table e() {

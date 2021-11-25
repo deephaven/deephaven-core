@@ -389,9 +389,9 @@ public class TreeTableFilter implements Function<Table, Table>, MemoizedOperatio
 
                 try (final RowSet allRemoved =
                         useModified ? upstream.removed().union(upstream.getModifiedPreShift()) : null;
-                     final RowSet valuesToRemove =
+                        final RowSet valuesToRemove =
                                 (useModified ? allRemoved : upstream.removed()).intersect(valuesRowSet);
-                     final RowSet removedParents =
+                        final RowSet removedParents =
                                 (useModified ? allRemoved : upstream.removed()).intersect(parentRowSet)) {
 
                     removeValues(valuesToRemove);
@@ -419,10 +419,10 @@ public class TreeTableFilter implements Function<Table, Table>, MemoizedOperatio
 
                 // Finally, handle added sets.
                 try (final WritableRowSet addedAndModified = upstream.added().union(upstream.modified());
-                     final RowSet newFiltered = doValueFilter(false, addedAndModified);
-                     final RowSet resurrectedParents = checkForResurrectedParent(addedAndModified);
-                     final RowSet newParents = computeParents(false, newFiltered);
-                     final RowSet newResurrectedParents = computeParents(false, resurrectedParents)) {
+                        final RowSet newFiltered = doValueFilter(false, addedAndModified);
+                        final RowSet resurrectedParents = checkForResurrectedParent(addedAndModified);
+                        final RowSet newParents = computeParents(false, newFiltered);
+                        final RowSet newResurrectedParents = computeParents(false, resurrectedParents)) {
 
 
                     valuesRowSet.insert(newFiltered);

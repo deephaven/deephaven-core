@@ -30,8 +30,8 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
     private ChunkSource<Attributes.Values> chunkSource;
 
     SelectColumnLayer(SelectAndViewAnalyzer inner, String name, SelectColumn sc,
-                      WritableColumnSource ws, WritableColumnSource underlying,
-                      String[] deps, ModifiedColumnSet mcsBuilder, boolean isRedirected) {
+            WritableColumnSource ws, WritableColumnSource underlying,
+            String[] deps, ModifiedColumnSet mcsBuilder, boolean isRedirected) {
         super(inner, name, sc, ws, underlying, deps, mcsBuilder);
         this.writableSource = ws;
         this.isRedirected = isRedirected;
@@ -50,7 +50,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
 
     @Override
     public void applyUpdate(final TableUpdate upstream, final RowSet toClear,
-                            final UpdateHelper helper) {
+            final UpdateHelper helper) {
         final int PAGE_SIZE = 4096;
         final LongToIntFunction contextSize = (long size) -> size > PAGE_SIZE ? PAGE_SIZE : (int) size;
 

@@ -65,7 +65,7 @@ public class RangeConditionFilter extends WhereFilterImpl {
 
     // Used for copy method
     private RangeConditionFilter(String columnName, Condition condition, String value, String expression,
-                                 WhereFilter filter, FormulaParserConfiguration parserConfiguration) {
+            WhereFilter filter, FormulaParserConfiguration parserConfiguration) {
         Assert.eqTrue(conditionSupported(condition), condition + " is not supported by RangeConditionFilter");
         this.columnName = columnName;
         this.condition = condition;

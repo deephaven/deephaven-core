@@ -17,8 +17,8 @@ public class ReplayGroupedFullTable extends QueryReplayGroupedTable {
     private int redirIndexSize;
 
     public ReplayGroupedFullTable(TrackingRowSet rowSet, Map<String, ? extends ColumnSource<?>> input,
-                                  String timeColumn,
-                                  Replayer replayer, String groupingColumn) {
+            String timeColumn,
+            Replayer replayer, String groupingColumn) {
         super(rowSet, input, timeColumn, replayer,
                 WritableRowRedirection.FACTORY.createRowRedirection((int) rowSet.size()),
                 new String[] {groupingColumn});

@@ -350,7 +350,8 @@ public class ZeroKeyChunkedAjMergedListener extends MergedListener {
                             || rightRecorder.getRemoved().isNonempty()) {
                         downstream.modifiedColumnSet().setAll(allRightColumns);
                     } else {
-                        rightTransformer.transform(rightRecorder.getModifiedColumnSet(), downstream.modifiedColumnSet());
+                        rightTransformer.transform(rightRecorder.getModifiedColumnSet(),
+                                downstream.modifiedColumnSet());
                     }
                 }
             }

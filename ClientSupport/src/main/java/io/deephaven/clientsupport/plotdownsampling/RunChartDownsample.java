@@ -394,7 +394,8 @@ public class RunChartDownsample implements Function<Table, Table> {
                 // we're un-downsampling
                 // TODO
                 final TableUpdate switchToPassThrough =
-                        new TableUpdateImpl(addToResultTable, removed, modified, upstream.shifted(), upstream.modifiedColumnSet());
+                        new TableUpdateImpl(addToResultTable, removed, modified, upstream.shifted(),
+                                upstream.modifiedColumnSet());
                 resultTable.notifyListeners(switchToPassThrough);
             } else if (indexMode == IndexMode.PASSTHROUGH) {
                 log.info().append("PASSTHROUGH update ").append(upstream).endl();
@@ -711,7 +712,8 @@ public class RunChartDownsample implements Function<Table, Table> {
             // log.info().append("After downsample update, rowSet.size=").append(rowSet.size()).append(",
             // rowSet=").endl();//.append(rowSet).endl();
 
-            final TableUpdate update = new TableUpdateImpl(added, removed, modified, upstream.shifted(), upstream.modifiedColumnSet());
+            final TableUpdate update =
+                    new TableUpdateImpl(added, removed, modified, upstream.shifted(), upstream.modifiedColumnSet());
             // log.info().append("resultTable.notifyListeners").append(update).endl();
             resultTable.notifyListeners(update);
         }

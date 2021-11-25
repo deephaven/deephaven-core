@@ -24,14 +24,20 @@ public class ReplicateSourcesAndChunks {
         replicateSparseArraySources();
 
         replicateSingleValues();
-        charToAllButBooleanAndLong("engine/table/src/main/java/io/deephaven/engine/table/impl/sources/CharacterArraySource.java");
-        charToAllButBoolean("engine/table/src/main/java/io/deephaven/engine/table/impl/sources/aggregate/CharAggregateColumnSource.java");
-        charToAllButBoolean("engine/table/src/main/java/io/deephaven/engine/table/impl/sources/UngroupedCharArrayColumnSource.java");
-        charToAllButBoolean("engine/table/src/main/java/io/deephaven/engine/table/impl/sources/UngroupedCharVectorColumnSource.java");
+        charToAllButBooleanAndLong(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/CharacterArraySource.java");
+        charToAllButBoolean(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/aggregate/CharAggregateColumnSource.java");
+        charToAllButBoolean(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/UngroupedCharArrayColumnSource.java");
+        charToAllButBoolean(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/UngroupedCharVectorColumnSource.java");
         charToAllButBoolean(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/UngroupedBoxedCharObjectVectorColumnSource.java");
-        charToAllButBoolean("engine/table/src/main/java/io/deephaven/engine/table/impl/sources/UngroupedBoxedCharArrayColumnSource.java");
-        charToAllButBoolean("engine/table/src/main/java/io/deephaven/engine/table/impl/sources/immutable/ImmutableCharArraySource.java");
+        charToAllButBoolean(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/UngroupedBoxedCharArrayColumnSource.java");
+        charToAllButBoolean(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/immutable/ImmutableCharArraySource.java");
         charToAll("engine/chunk/src/main/java/io/deephaven/engine/chunk/sized/SizedCharChunk.java");
 
         replicateChunks();
@@ -57,7 +63,8 @@ public class ReplicateSourcesAndChunks {
     }
 
     private static void replicateSingleValues() throws IOException {
-        charToAllButBoolean("engine/table/src/main/java/io/deephaven/engine/table/impl/sources/CharacterSingleValueSource.java");
+        charToAllButBoolean(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/CharacterSingleValueSource.java");
         replicateObjectSingleValue();
     }
 
@@ -127,7 +134,8 @@ public class ReplicateSourcesAndChunks {
     private static void replicateSparseArraySources() throws IOException {
         replicateOneOrN();
 
-        charToAllButBooleanAndLong("engine/table/src/main/java/io/deephaven/engine/table/impl/sources/CharacterSparseArraySource.java");
+        charToAllButBooleanAndLong(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/CharacterSparseArraySource.java");
         replicateSparseLongSource();
 
         replicateSparseBooleanSource();

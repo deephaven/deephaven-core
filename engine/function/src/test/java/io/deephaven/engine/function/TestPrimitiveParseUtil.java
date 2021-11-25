@@ -69,8 +69,10 @@ public class TestPrimitiveParseUtil extends TestCase {
         }
 
         // Test with radix
-        Require.eq(PrimitiveParseUtil.parseUnsignedInt("1000000", NULL_INT), "parseUnsignedInt(\"1_000_000\", NULL_INT)", NULL_INT);
-        Require.eq(PrimitiveParseUtil.parseUnsignedInt("1000000", 10), "parseUnsignedInt(\"1_000_000\", 10)", 1_000_000);
+        Require.eq(PrimitiveParseUtil.parseUnsignedInt("1000000", NULL_INT),
+                "parseUnsignedInt(\"1_000_000\", NULL_INT)", NULL_INT);
+        Require.eq(PrimitiveParseUtil.parseUnsignedInt("1000000", 10), "parseUnsignedInt(\"1_000_000\", 10)",
+                1_000_000);
     }
 
     public void testParseLong() {
@@ -90,7 +92,8 @@ public class TestPrimitiveParseUtil extends TestCase {
 
     public void testParseUnsignedLong() {
         Require.eq(PrimitiveParseUtil.parseUnsignedLong(null), "parseUnsignedLong(null)", NULL_LONG);
-        Require.eq(PrimitiveParseUtil.parseUnsignedLong("4000000000"), "parseUnsignedLong(\"4000000000\")", 4_000_000_000L);
+        Require.eq(PrimitiveParseUtil.parseUnsignedLong("4000000000"), "parseUnsignedLong(\"4000000000\")",
+                4_000_000_000L);
 
         try {
             PrimitiveParseUtil.parseUnsignedLong("");
@@ -105,9 +108,11 @@ public class TestPrimitiveParseUtil extends TestCase {
         }
 
         // Test with radix
-        Require.eq(PrimitiveParseUtil.parseUnsignedLong("4000000000", NULL_INT), "parseUnsignedLong(\"4_000_000_000\", NULL_INT)",
+        Require.eq(PrimitiveParseUtil.parseUnsignedLong("4000000000", NULL_INT),
+                "parseUnsignedLong(\"4_000_000_000\", NULL_INT)",
                 NULL_LONG);
-        Require.eq(PrimitiveParseUtil.parseUnsignedLong("4000000000", 10), "parseUnsignedLong(\"4_000_000_000\", 10)", 4_000_000_000L);
+        Require.eq(PrimitiveParseUtil.parseUnsignedLong("4000000000", 10), "parseUnsignedLong(\"4_000_000_000\", 10)",
+                4_000_000_000L);
     }
 
     public void testParseDouble() {
@@ -135,7 +140,8 @@ public class TestPrimitiveParseUtil extends TestCase {
     public void testParseBoolean() {
         Require.eq(PrimitiveParseUtil.parseBoolean(null), "parseBoolean(null)", NULL_BOOLEAN);
         Require.eq(PrimitiveParseUtil.parseBoolean("true"), "parseBoolean(\"true\")", Boolean.TRUE);
-        Require.eq(PrimitiveParseUtil.parseBoolean(""), "parseBoolean(\"\")", Boolean.FALSE); // Unlike numbers, no Exception for this one
+        Require.eq(PrimitiveParseUtil.parseBoolean(""), "parseBoolean(\"\")", Boolean.FALSE); // Unlike numbers, no
+                                                                                              // Exception for this one
     }
 
 }

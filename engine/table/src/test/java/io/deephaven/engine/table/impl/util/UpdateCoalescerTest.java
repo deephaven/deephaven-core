@@ -594,9 +594,9 @@ public class UpdateCoalescerTest {
         final TableUpdate agg = coalescer.coalesce();
 
         try (final WritableRowSet perUpdate = rowSet.copy();
-             final WritableRowSet aggUpdate = rowSet.copy();
-             final WritableRowSet perModify = RowSetFactory.empty();
-             final WritableRowSet perAdded = RowSetFactory.empty()) {
+                final WritableRowSet aggUpdate = rowSet.copy();
+                final WritableRowSet perModify = RowSetFactory.empty();
+                final WritableRowSet perAdded = RowSetFactory.empty()) {
 
             for (TableUpdate up : updates) {
                 perAdded.remove(up.removed());

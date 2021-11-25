@@ -265,7 +265,7 @@ public abstract class AbstractScriptSession extends LivenessScope implements Scr
         }
     }
 
-    public static class SynchronizedScriptSessionQueryScope extends ScriptSessionQueryScope{
+    public static class SynchronizedScriptSessionQueryScope extends ScriptSessionQueryScope {
         public SynchronizedScriptSessionQueryScope(@NotNull final ScriptSession scriptSession) {
             super(scriptSession);
         }
@@ -281,7 +281,8 @@ public abstract class AbstractScriptSession extends LivenessScope implements Scr
         }
 
         @Override
-        protected synchronized <T> QueryScopeParam<T> createParam(final String name) throws QueryScope.MissingVariableException {
+        protected synchronized <T> QueryScopeParam<T> createParam(final String name)
+                throws QueryScope.MissingVariableException {
             // noinspection unchecked
             return new QueryScopeParam<>(name, (T) scriptSession.getVariable(name));
         }

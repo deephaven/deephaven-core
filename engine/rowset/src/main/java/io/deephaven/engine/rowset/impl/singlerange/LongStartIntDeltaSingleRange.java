@@ -10,18 +10,27 @@ public final class LongStartIntDeltaSingleRange extends SingleRange {
         this.rangeStart = rangeStart;
         this.unsignedIntDelta = unsignedIntDelta;
     }
+
     @Override
-    public long rangeStart() { return rangeStart; }
+    public long rangeStart() {
+        return rangeStart;
+    }
+
     @Override
-    public long rangeEnd() { return rangeStart + delta(); }
+    public long rangeEnd() {
+        return rangeStart + delta();
+    }
+
     @Override
     public long getCardinality() {
         return delta() + 1;
     }
+
     @Override
     public LongStartIntDeltaSingleRange copy() {
         return new LongStartIntDeltaSingleRange(rangeStart, unsignedIntDelta);
     }
+
     private long delta() {
         return unsignedIntToLong(unsignedIntDelta);
     }
