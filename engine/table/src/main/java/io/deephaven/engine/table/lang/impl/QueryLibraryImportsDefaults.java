@@ -22,7 +22,6 @@ import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-// from default_*_imports.txt
 public class QueryLibraryImportsDefaults implements QueryLibraryImports {
 
     @Override

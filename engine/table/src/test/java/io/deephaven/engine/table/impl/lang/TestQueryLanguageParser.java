@@ -46,7 +46,7 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
 
         // Package.getPackage returns null if the class loader has yet to see a class from that package; force a load
         Package tablePackage = Table.class.getPackage();
-        Assert.equals(tablePackage.getName(), "tablePackage.getName()", "io.deephaven.engine.tables");
+        Assert.equals(tablePackage.getName(), "tablePackage.getName()", "io.deephaven.engine.table");
         packageImports.add(tablePackage);
 
         classImports = new HashSet<>();

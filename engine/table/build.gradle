@@ -16,13 +16,8 @@ sourceSets {
                     'io/deephaven/ipykernel/*.py'
         }
         resources {
-            srcDir 'resources'
+            srcDir 'src/main/resources'
             include '**'
-        }
-    }
-    test {
-        resources {
-            srcDirs += ['test-resources']
         }
     }
 }
