@@ -41,7 +41,7 @@ public class CsvTest {
                 timestampMicros(),
                 timestampNanos(),
                 timestampMixed(),
-                timestampDb(),
+                timestampLegacy(),
                 bools(),
                 chars(),
                 byteIsShort(),
@@ -129,13 +129,13 @@ public class CsvTest {
         return new CsvTest("timestampMixed", "timestamp-mixed.csv", CsvSpecs.csv(), expected);
     }
 
-    public static CsvTest timestampDb() {
+    public static CsvTest timestampLegacy() {
         final NewTable expected = ColumnHeader.ofInstant("Timestamp")
                 .row(TIMESTAMP_A)
                 .row(null)
                 .row(TIMESTAMP_B)
                 .newTable();
-        return new CsvTest("timestampDb", "timestamp-db.csv", CsvSpecs.csv(), expected);
+        return new CsvTest("timestampLegacy", "timestamp-legacy.csv", CsvSpecs.csv(), expected);
     }
 
     public static CsvTest bools() {

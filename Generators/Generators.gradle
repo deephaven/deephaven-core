@@ -10,7 +10,6 @@ configurations {
 }
 
 dependencies {
-
     compile project(':engine-table'),
             project(':Plot'),
             project(':extensions-kafka')
@@ -22,8 +21,8 @@ dependencies {
     runtimeOnly project(':log-to-slf4j')
     Classpaths.inheritLogbackClassic(project)
 
-    testRuntime project(path: ':configs'), project(path: ':test-configs')
-
+    testRuntime project(path: ':configs'),
+            project(path: ':test-configs')
 }
 
 def workspace = "$rootDir/tmp/workspace"

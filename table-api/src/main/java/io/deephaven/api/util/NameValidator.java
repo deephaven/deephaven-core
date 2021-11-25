@@ -88,7 +88,7 @@ public class NameValidator {
         }
     }
 
-    private static final Set<String> DB_RESERVED_VARIABLE_NAMES =
+    private static final Set<String> QUERY_LANG_RESERVED_VARIABLE_NAMES =
             Stream.of("in", "not", "i", "ii", "k").collect(
                     Collectors.collectingAndThen(Collectors.toSet(), Collections::unmodifiableSet));
 
@@ -128,7 +128,7 @@ public class NameValidator {
         }
 
         if (checkReservedVariableNames) {
-            // isReserved checks if name is a DB literal, or Java reserved word or literal
+            // isReserved checks if name is a query language reserved variable, Java reserved word, or Java literal
             if (isReserved(name)) {
                 return ValidationCode.RESERVED;
             }
@@ -537,7 +537,7 @@ public class NameValidator {
     }
 
     private static boolean isReserved(String replacedName) {
-        return DB_RESERVED_VARIABLE_NAMES.contains(replacedName)
+        return QUERY_LANG_RESERVED_VARIABLE_NAMES.contains(replacedName)
                 || SourceVersion.isKeyword(replacedName);
     }
 

@@ -17,7 +17,7 @@ public class WouldMatchPair {
     private final Filter filter;
 
     /**
-     * Create a SelectPair from a column name and DB expression.
+     * Create a SelectPair from a column name and expression.
      *
      * @param columnName the name of the resultant column
      * @param expression the expression to populate the column

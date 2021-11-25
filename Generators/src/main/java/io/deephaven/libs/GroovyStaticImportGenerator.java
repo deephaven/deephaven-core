@@ -425,7 +425,7 @@ public class GroovyStaticImportGenerator {
             String oldCode = new String(Files.readAllBytes(Paths.get(file)));
             if (!code.equals(oldCode)) {
                 throw new RuntimeException(
-                        "Change in generated code.  Run GroovyStaticImportGenerator or \"./gradlew :DB:groovyStaticImportGenerator\" to regenerate\n");
+                        "Change in generated code.  Run GroovyStaticImportGenerator or \"./gradlew :Generators:groovyStaticImportGenerator\" to regenerate\n");
             }
         } else {
 

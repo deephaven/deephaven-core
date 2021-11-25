@@ -36,7 +36,7 @@ import java.util.Random;
 @Category(SerialTest.class)
 public class FuzzerTest {
     private static final String TEST_ROOT = System.getProperty("devroot", ".");
-    private static final String DB_ROOT = TEST_ROOT + "/tmp/" + FuzzerTest.class.getSimpleName() + "_DBRoot";
+    private static final String OUTPUT_ROOT = TEST_ROOT + "/tmp/" + FuzzerTest.class.getSimpleName() + "output";
     private static final boolean REALTIME_FUZZER_ENABLED =
             Configuration.getInstance().getBooleanWithDefault("FuzzerTest.realTime", false);
 
@@ -69,25 +69,13 @@ public class FuzzerTest {
     };
 
     private void cleanupPersistence() {
-        System.gc();
-        System.gc();
-        int tries = 0;
-        boolean success = false;
-        do {
-            try {
-                FileUtils.deleteRecursively(new File(DB_ROOT));
-                success = true;
-            } catch (Exception e) {
-                System.gc();
-                tries++;
-            }
-        } while (!success && tries < 10);
+        FileUtils.deleteRecursively(new File(OUTPUT_ROOT));
     }
 
     private void setupPersistence() {
         cleanupPersistence();
         // noinspection ResultOfMethodCallIgnored
-        new File(DB_ROOT + File.separatorChar + "Definitions").mkdirs();
+        new File(OUTPUT_ROOT).mkdirs();
     }
 
     @Before

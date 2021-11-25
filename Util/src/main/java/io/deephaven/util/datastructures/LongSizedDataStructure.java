@@ -3,7 +3,7 @@ package io.deephaven.util.datastructures;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Common interface for Deephaven DB structures with a long (64-bit signed integer) size.
+ * Common interface for Deephaven data structures with a long (64-bit signed integer) size.
  */
 public interface LongSizedDataStructure {
 

@@ -32,7 +32,6 @@ dependencies {
             project(':TableLogger'),
             project(':engine-stringset'),
             project(':engine-base'),
-            project(':web-shared-beans'),
             project(':deephaven-jpy'),
             project(':deephaven-jpy-ext')
 
@@ -95,7 +94,7 @@ test {
     // alas, we have tests that cannot tolerate running in parallel.  DO NOT INCREASE THIS NUMBER WITHOUT EXTENSIVE TESTING IN JENKINS
     maxParallelForks = Integer.parseInt(findProperty('dbTestJvms') as String ?: '1') // -PdbTestJvms=11 if you are ok pegging your local machine
     //  For now, if you apply @Category(ParallelTest.class) to tests which are not huge CPU/RAM hogs, you can get parallelism
-    //  If you have CPU/RAM-heavy tasks that you don't want gumming up :DB:test runs, apply @Category(SerialTest.class) instead
+    //  If you have CPU/RAM-heavy tasks that you don't want gumming up :engine-table:test runs, apply @Category(SerialTest.class) instead
     //  (note that the above only works for junit 4 tests; see the documentation on SerialTest class and others for porting instructions)
 
     def props = project.properties.subMap(["jpy.pythonLib", "jpy.jpyLib", "jpy.jdlLib"])

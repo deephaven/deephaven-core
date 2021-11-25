@@ -52,7 +52,7 @@ public abstract class CustomType<T> extends GenericTypeBase<T> {
 
     @Check
     final void checkNotVector() {
-        if (clazz().getName().startsWith("io.deephaven.engine.vector.Db")) {
+        if (clazz().getName().startsWith("io.deephaven.engine.vector.")) {
             throw new IllegalArgumentException("Can't create Vector types as custom types");
         }
     }

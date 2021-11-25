@@ -186,9 +186,9 @@ public class TypeTest {
     }
 
     @Test
-    void dbPrimitiveTypesAreEmpty()
+    void primitiveVectorTypesAreEmpty()
             throws NoSuchMethodException, IllegalAccessException, InvocationTargetException {
-        // Db primitive array types are not on the classpath as QST dependency, make sure
+        // Primitive vector types are not on the classpath as QST dependency, make sure
         // they are not found.
         try {
             PrimitiveVectorType.types();

@@ -86,7 +86,7 @@ public enum JsDataHandler {
             addNode.apply(new Node(data.length, nullCount));
         }
     },
-    DATE_TIME(Type.Int, "io.deephaven.db.tables.utils.DBDateTime") {
+    DATE_TIME(Type.Int, "io.deephaven.engine.time.DateTime") {
         @Override
         public double writeType(Builder builder) {
             return Int.createInt(builder, 64, true);

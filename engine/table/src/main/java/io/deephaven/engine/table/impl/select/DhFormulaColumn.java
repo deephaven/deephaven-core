@@ -370,8 +370,8 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
                         "return applyFormulaPerItem([[FORMULA_ARGS]]);"));
         final String returnTypeString;
         final String resultTypeString;
-        if (ta.dbPrimitiveType != null) {
-            resultTypeString = returnTypeString = ta.dbPrimitiveType.getName();
+        if (ta.enginePrimitiveType != null) {
+            resultTypeString = returnTypeString = ta.enginePrimitiveType.getName();
         } else {
             returnTypeString = "Object";
             resultTypeString = ta.typeString;
@@ -415,7 +415,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
 
     @NotNull
     private CodeGenerator generateOptionalObjectGetMethod(TypeAnalyzer ta, boolean usePrev) {
-        if (ta.dbPrimitiveType == null) {
+        if (ta.enginePrimitiveType == null) {
             return CodeGenerator.create(); // empty
         }
         final CodeGenerator g = CodeGenerator.create(
@@ -425,7 +425,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
                 "" // Extra spacing to get spacing right for my caller (because I am optional)
         );
         final String getterName = usePrev ? "getPrev" : "get";
-        final String delegatedGetterName = getGetterName(ta.dbPrimitiveType, usePrev);
+        final String delegatedGetterName = getGetterName(ta.enginePrimitiveType, usePrev);
         g.replace("GETTER_NAME", getterName);
         g.replace("DELEGATED_GETTER_NAME", delegatedGetterName);
         return g.freeze();
@@ -603,7 +603,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
                 null);
         g.replace("APPLY_FORMULA_ARGS", makeCommaSeparatedList(applyFormulaArgs));
 
-        g.replace("RESULT_TYPE", ta.dbPrimitiveType != null ? ta.dbPrimitiveType.getName() : ta.typeString);
+        g.replace("RESULT_TYPE", ta.enginePrimitiveType != null ? ta.enginePrimitiveType.getName() : ta.typeString);
         g.replace("LAZY_RESULT_CACHE_NAME", LAZY_RESULT_CACHE_NAME);
         g.replace("C14NUTIL_CLASSNAME", C14NUTIL_CLASSNAME);
 

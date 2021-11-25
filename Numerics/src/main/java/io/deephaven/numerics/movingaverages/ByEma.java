@@ -78,9 +78,8 @@ public abstract class ByEma implements Serializable {
         Require.neqNull(nanBehavior, "nanBehavior");
     }
 
-    // DB automatic type conversion takes care of converting all non-double nulls into double nulls so we don't have to
-    // duplicate the null checking
-    // for each type.
+    // Engine automatic type conversion takes care of converting all non-double nulls into double nulls so we don't have
+    // to duplicate the null checking for each type.
 
     public synchronized double update(double value) {
         return update(value, (Object) null);

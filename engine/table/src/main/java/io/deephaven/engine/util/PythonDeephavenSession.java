@@ -38,7 +38,7 @@ import java.util.stream.Collectors;
 /**
  * A ScriptSession that uses a JPy cpython interpreter internally.
  *
- * This is used for persistent queries or the DB console; Python code running remotely uses WorkerPythonEnvironment for
+ * This is used for applications or the console; Python code running remotely uses WorkerPythonEnvironment for
  * it's supporting structures.
  */
 public class PythonDeephavenSession extends AbstractScriptSession implements ScriptSession {

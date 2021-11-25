@@ -52,14 +52,14 @@ jobs:
         uses: burrunan/gradle-cache-action@v1
         with:
           job-id: benchmark
-          arguments: :DB:sumByBenchmark
+          arguments: :engine-benchmark:sumByBenchmark
           gradle-version: wrapper
 
       - name: Benchmark - PercentileByBenchmark
         uses: burrunan/gradle-cache-action@v1
         with:
           job-id: benchmark
-          arguments: :DB:PercentileByBenchmark 
+          arguments: :engine-benchmark:percentileByBenchmark
           gradle-version: wrapper
 
   archive:

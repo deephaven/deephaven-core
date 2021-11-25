@@ -51,63 +51,63 @@ public class QueryLanguageFunctionGenerator {
                 "        final {1} zero1 = 0;\n" +
                 "        final {2} zero2 = 0;\n" +
                 "\n" +
-                "        {3} dbResult = -1, expectedResult = -1;\n" +
+                "        {3} actualResult = -1, expectedResult = -1;\n" +
                 "        int compareResult;\n" +
                 "        String description;\n" +
                 "\n" +
                 "        try '{'\n" +
-                "            dbResult = QueryLanguageFunctionUtils.{0}(value1, value2);\n" +
+                "            actualResult = QueryLanguageFunctionUtils.{0}(value1, value2);\n" +
                 "            expectedResult = value1{7}{8}value2;\n" +
-                "            compareResult = {13}.compare(dbResult, expectedResult);\n" +
+                "            compareResult = {13}.compare(actualResult, expectedResult);\n" +
                 "            description = \"{13}.compare(QueryLanguageFunctionUtils.{0}(value1, value2), value1{7}{8}value2)\";\n"
                 +
                 "            TestCase.assertEquals(description, 0, compareResult);\n" +
                 /*
                  * ---------- This one runs into ArithmeticExceptions doing stuff like 0 % 0 ---------- "\n" +
-                 * "            dbResult = QueryLanguageFunctionUtils.{0}(value1, zero2);\n" +
+                 * "            actualResult = QueryLanguageFunctionUtils.{0}(value1, zero2);\n" +
                  * "            expectedResult = value1{7}{8}zero2;\n" +
-                 * "            compareResult = {13}.compare(dbResult, expectedResult);\n" +
+                 * "            compareResult = {13}.compare(actualResult, expectedResult);\n" +
                  * "            description = \"{13}.compare(QueryLanguageFunctionUtils.{0}(value1, zero2), value1{7}{8}zero2)\";\n"
                  * + "            TestCase.assertEquals(description, 0, compareResult);\n" +
                  */
                 "\n" +
-                "            dbResult = QueryLanguageFunctionUtils.{0}(value1, QueryConstants.NULL_{5});\n" +
+                "            actualResult = QueryLanguageFunctionUtils.{0}(value1, QueryConstants.NULL_{5});\n" +
                 "            expectedResult = QueryConstants.NULL_{6};\n" +
-                "            compareResult = {13}.compare(dbResult, expectedResult);\n" +
+                "            compareResult = {13}.compare(actualResult, expectedResult);\n" +
                 "            description = \"{13}.compare(QueryLanguageFunctionUtils.{0}(value1, QueryConstants.NULL_{5}), QueryConstants.NULL_{6})\";\n"
                 +
                 "            TestCase.assertEquals(description, 0, compareResult);\n" +
                 "\n" +
-                "            dbResult = QueryLanguageFunctionUtils.{0}(zero1, value2);\n" +
+                "            actualResult = QueryLanguageFunctionUtils.{0}(zero1, value2);\n" +
                 "            expectedResult = zero1{7}{8}value2;\n" +
-                "            compareResult = {13}.compare(dbResult, expectedResult);\n" +
+                "            compareResult = {13}.compare(actualResult, expectedResult);\n" +
                 "            description = \"{13}.compare(QueryLanguageFunctionUtils.{0}(zero1, value2), zero1{7}{8}value2)\";\n"
                 +
                 "            TestCase.assertEquals(description, 0, compareResult);\n" +
                 "\n" +
-                "            dbResult = QueryLanguageFunctionUtils.{0}(QueryConstants.NULL_{4}, value2);\n" +
+                "            actualResult = QueryLanguageFunctionUtils.{0}(QueryConstants.NULL_{4}, value2);\n" +
                 "            expectedResult = QueryConstants.NULL_{6};\n" +
-                "            compareResult = {13}.compare(dbResult, expectedResult);\n" +
+                "            compareResult = {13}.compare(actualResult, expectedResult);\n" +
                 "            description = \"{13}.compare(QueryLanguageFunctionUtils.{0}(QueryConstants.NULL_{4}, value2), QueryConstants.NULL_{6})\";\n"
                 +
                 "            TestCase.assertEquals(description, 0, compareResult);\n" +
                 "\n" +
-                "            dbResult = QueryLanguageFunctionUtils.{0}(QueryConstants.NULL_{4}, QueryConstants.NULL_{5});\n"
+                "            actualResult = QueryLanguageFunctionUtils.{0}(QueryConstants.NULL_{4}, QueryConstants.NULL_{5});\n"
                 +
                 "            expectedResult = QueryConstants.NULL_{6};\n" +
-                "            compareResult = {13}.compare(dbResult, expectedResult);\n" +
+                "            compareResult = {13}.compare(actualResult, expectedResult);\n" +
                 "            description = \"{13}.compare(QueryLanguageFunctionUtils.{0}(QueryConstants.NULL_{4}, QueryConstants.NULL_{5}), QueryConstants.NULL_{6})\";\n"
                 +
                 "            TestCase.assertEquals(description, 0, compareResult);\n" +
                 /*----------  Same issue as above  ----------
                 "\n" +
-                "            dbResult = QueryLanguageFunctionUtils.{0}(zero1, zero2);\n" +
+                "            actualResult = QueryLanguageFunctionUtils.{0}(zero1, zero2);\n" +
                 "            expectedResult = zero1{7}{8}zero2;\n" +
-                "            compareResult = {13}.compare(dbResult, expectedResult);\n" +
+                "            compareResult = {13}.compare(actualResult, expectedResult);\n" +
                 "            description = \"{13}.compare(QueryLanguageFunctionUtils.{0}(zero1, zero2), zero1{7}{8}zero2)\";\n" +
                 "            TestCase.assertEquals(description, 0, compareResult);\n" +*/
                 "        '}' catch (Exception ex) '{'\n" +
-                "            throw new RuntimeException(\"Comparison failure: dbResult=\" + dbResult + \", expectedResult=\" + expectedResult, ex);\n"
+                "            throw new RuntimeException(\"Comparison failure: actualResult=\" + actualResult + \", expectedResult=\" + expectedResult, ex);\n"
                 +
                 "        '}'\n" +
                 "\n" +
@@ -141,8 +141,8 @@ public class QueryLanguageFunctionGenerator {
          * Special varVar formatter for boolean operations. If one expression in a ternary if is a boxed type and the
          * other is a primitive, Java's inclination is to unbox the one that's boxed.
          *
-         * Since the DB uses {@code Boolean} to store booleans while supporting {@code null}, we must manually box the
-         * result of boolean operations if we wish to support nulls.
+         * Since the engine uses {@code Boolean} to store booleans while supporting {@code null}, we must manually box
+         * the result of boolean operations if we wish to support nulls.
          *
          * See JLS Chapter 15 section 25 -- https://docs.oracle.com/javase/specs/jls/se8/html/jls-15.html#jls-15.25"
          *

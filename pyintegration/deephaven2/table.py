@@ -13,8 +13,8 @@ from deephaven2.column import Column
 from deephaven2.agg import Aggregation
 from deephaven2.constants import SortDirection
 
-_JTableTools = jpy.get_type("io.deephaven.db.tables.utils.TableTools")
-_JSortPair = jpy.get_type("io.deephaven.db.tables.SortPair")
+_JTableTools = jpy.get_type("io.deephaven.engine.util.TableTools")
+_JSortPair = jpy.get_type("io.deephaven.engine.table.impl.SortPair")
 
 
 #

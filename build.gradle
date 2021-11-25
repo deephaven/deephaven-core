@@ -256,8 +256,9 @@ configure modsRegular,
         }
 
         if (!forkEvery) {
+            // NB: This comment may be outdated:
             // throw away jvms after 32 tests have run on them.
-            // this is sadly needed as :DB:test seems to have a leak;
+            // this is sadly needed as some of the engine tests seem to have a leak;
             // tests which can pass locally in IDE on 2g can't survive in CI w/ 3g
             forkEvery = 32
         }
@@ -371,7 +372,21 @@ tasks.register 'allJavadoc', Javadoc, {
         //add to as javadoc gets completed
         String [] exportedProjects = [
                 ':DataStructures',
-                ':DB',
+                ':engine-chunk',
+                ':engine-vector',
+                ':engine-time',
+                ':engine-stringset',
+                ':engine-function',
+                ':engine-tuple',
+                ':engine-updategraph',
+                ':engine-rowset',
+                ':engine-api',
+                ':engine-base',
+                ':engine-tuplesource',
+                ':engine-table',
+                ':extensions-csv',
+                ':extensions-kafka',
+                ':extensions-parquet-table',
                 ':Util',
                 ':ModelFarm',
                 ':Numerics',

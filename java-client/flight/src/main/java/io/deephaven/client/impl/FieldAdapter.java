@@ -80,7 +80,7 @@ public class FieldAdapter implements Type.Visitor, PrimitiveType.Visitor {
 
     public static Field instantField(String name) {
         return field(name, new ArrowType.Timestamp(TimeUnit.NANOSECOND, "UTC"),
-                "io.deephaven.db.tables.utils.DBDateTime");
+                "io.deephaven.engine.time.DateTime");
     }
 
     private static Field field(String name, ArrowType arrowType, String deephavenType) {

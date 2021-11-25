@@ -5,7 +5,6 @@ import io.deephaven.engine.time.DateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
-
 /**
  * Class to generate query strings. You can use the along with the getTablePreamble() function to create queries.
  * <p>
@@ -14,7 +13,7 @@ import java.util.stream.Collectors;
  * <p>
  * Example:
  * <p>
- * cd DB/build/classes/java/test/ jar cfv QueryFactory.jar io/deephaven/engine/v2/QueryFactory*
+ * cd engine/table/build/classes/java/test/ jar cfv QueryFactory.jar io/deephaven/engine/table/QueryFactory*
  * <p>
  * This will get you a QueryFactory jar you can use on the remote servers.
  * <p>

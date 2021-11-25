@@ -5,8 +5,8 @@ import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.engine.chunk.Attributes.ChunkLengths;
 import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.chunk.*;
+import org.jetbrains.annotations.NotNull;
 
-import javax.validation.constraints.NotNull;
 import java.util.Arrays;
 import java.util.function.Supplier;
 

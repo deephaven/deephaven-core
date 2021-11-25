@@ -110,8 +110,7 @@ public class ScriptRepository implements ScriptPathLoader {
      *
      * @throws RuntimeException if the repository configuration is incorrect.
      */
-    // TODO: Move most/all of the repo configuration into the ACL MySQL DB, or add runtime re-configuration some other
-    // way.
+    // TODO: Move most/all of the repo configuration into ACLs, or add runtime re-configuration some other way.
     ScriptRepository(@NotNull final Logger log,
             @NotNull final String name,
             @NotNull final Set<String> groupNames,
