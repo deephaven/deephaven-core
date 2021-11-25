@@ -6,11 +6,11 @@
 // import static io.deephaven.plot.Font.FontStyle
 //////////////////// Colors ////////////////////////
 
-import io.deephaven.engine.plot.PlotStyle
-import io.deephaven.engine.plot.axistransformations.AxisTransforms
-import io.deephaven.engine.plot.colors.ColorMaps
+import io.deephaven.plot.PlotStyle
+import io.deephaven.plot.axistransformations.AxisTransforms
+import io.deephaven.plot.colors.ColorMaps
 
-import static io.deephaven.engine.plot.PlottingConvenience.*
+import static io.deephaven.plot.PlottingConvenience.*
 
 for( String c : io.deephaven.gui.color.Color.colorNames() ) {
     publishVariable( "COLOR_" + c, io.deephaven.gui.color.Color.valueOf(c) )

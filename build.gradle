@@ -391,7 +391,6 @@ tasks.register 'allJavadoc', Javadoc, {
                 ':ModelFarm',
                 ':Numerics',
                 ':Plot',
-                ':Kafka',
                 ':grpc-api',
                 ':qst',
                 ':table-api',

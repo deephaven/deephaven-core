@@ -7,8 +7,8 @@
 import io.deephaven.engine.time.DateTime
 import io.deephaven.engine.util.TableTools
 
-import static io.deephaven.engine.plot.colors.ColorMaps.heatMap
-import static io.deephaven.engine.plot.colors.ColorMaps.rangeMap
+import static io.deephaven.plot.colors.ColorMaps.heatMap
+import static io.deephaven.plot.colors.ColorMaps.rangeMap
 
 
 /**
