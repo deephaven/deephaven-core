@@ -67,11 +67,19 @@ public class QueryTableWhereTest {
         final QueryTable table = testRefreshingTable(i(2, 4, 6).toTracking(),
                 c("x", 1, 2, 3), c("y", 'a', 'b', 'c'));
 
+        assertEquals("", diff(table.where(Filter.from("k%2 == 0")), table, 10));
         assertEquals("", diff(table.where(filter.apply("k%2 == 0")), table, 10));
+
+        assertEquals("", diff(table.where(Filter.from("i%2 == 0")),
+                testRefreshingTable(i(2, 6).toTracking(), c("x", 1, 3), c("y", 'a', 'c')), 10));
         assertEquals("", diff(table.where(filter.apply("i%2 == 0")), testRefreshingTable(i(2, 6).toTracking(),
                 c("x", 1, 3), c("y", 'a', 'c')), 10));
+
+        assertEquals("", diff(table.where((Filter.from("(y-'a') = 2"))),
+                testRefreshingTable(i(2).toTracking(), c("x", 3), c("y", 'c')), 10));
         assertEquals("", diff(table.where(filter.apply("(y-'a') = 2")), testRefreshingTable(i(2).toTracking(),
                 c("x", 3), c("y", 'c')), 10));
+
         final QueryTable whereResult = (QueryTable) table.where(filter.apply("x%2 == 1"));
         final ShiftObliviousListener whereResultListener = base.newListenerWithGlobals(whereResult);
         whereResult.listenForUpdates(whereResultListener);
@@ -144,85 +152,11 @@ public class QueryTableWhereTest {
         assertTableEquals(newTable(intCol("x", 1)), table.where("i < 1"));
     }
 
-
-    // this has no changes from the original testWhere, it is just to make sure that we still work as a single clause
-    @Test
-    public void testWhereOneOfSingle() {
-        final QueryTable table = testRefreshingTable(i(2, 4, 6).toTracking(),
-                c("x", 1, 2, 3), c("y", 'a', 'b', 'c'));
-
-        assertEquals("", diff(table.where(FilterOr.of(Filter.from("k%2 == 0"))), table, 10));
-        assertEquals("", diff(table.where(FilterOr.of(Filter.from("i%2 == 0"))),
-                testRefreshingTable(i(2, 6).toTracking(), c("x", 1, 3), c("y", 'a', 'c')), 10));
-        assertEquals("", diff(table.where(FilterOr.of(Filter.from("(y-'a') = 2"))),
-                testRefreshingTable(i(2).toTracking(), c("x", 3), c("y", 'c')), 10));
-
-        final QueryTable whereResult = (QueryTable) table.where(FilterOr.of(Filter.from("x%2 == 1")));
-        final ShiftObliviousListener whereResultListener = base.newListenerWithGlobals(whereResult);
-        whereResult.listenForUpdates(whereResultListener);
-        assertEquals("", diff(whereResult,
-                testRefreshingTable(i(2, 6).toTracking(), c("x", 1, 3), c("y", 'a', 'c')), 10));
-
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            addToTable(table, i(7, 9), c("x", 4, 5), c("y", 'd', 'e'));
-            table.notifyListeners(i(7, 9), i(), i());
-        });
-
-        assertEquals("", diff(whereResult,
-                testRefreshingTable(i(2, 6, 9).toTracking(), c("x", 1, 3, 5), c("y", 'a', 'c', 'e')), 10));
-        assertEquals(base.added, i(9));
-        assertEquals(base.removed, i());
-        assertEquals(base.modified, i());
-
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            addToTable(table, i(7, 9), c("x", 3, 10), c("y", 'e', 'd'));
-            table.notifyListeners(i(), i(), i(7, 9));
-        });
-
-        assertEquals("", diff(whereResult,
-                testRefreshingTable(i(2, 6, 7).toTracking(), c("x", 1, 3, 3), c("y", 'a', 'c', 'e')), 10));
-
-        assertEquals(base.added, i(7));
-        assertEquals(base.removed, i(9));
-        assertEquals(base.modified, i());
-
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            removeRows(table, i(2, 6, 7));
-            table.notifyListeners(i(), i(2, 6, 7), i());
-        });
-
-        assertTableEquals(testRefreshingTable(i().toTracking(), intCol("x"), charCol("y")), whereResult);
-
-        assertEquals(base.added, i());
-        assertEquals(base.removed, i(2, 6, 7));
-        assertEquals(base.modified, i());
-
-        UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-            removeRows(table, i(9));
-            addToTable(table, i(2, 4, 6), c("x", 1, 21, 3), c("y", 'a', 'x', 'c'));
-            table.notifyListeners(i(2, 6), i(9), i(4));
-        });
-
-        assertEquals("", diff(whereResult,
-                testRefreshingTable(i(2, 4, 6).toTracking(), c("x", 1, 21, 3), c("y", 'a', 'x', 'c')), 10));
-
-        assertEquals(base.added, i(2, 4, 6));
-        assertEquals(base.removed, i());
-        assertEquals(base.modified, i());
-
-    }
-
     // adds a second clause
     @Test
     public void testWhereOneOfTwo() {
         final QueryTable table = testRefreshingTable(i(2, 4, 6, 8).toTracking(),
                 c("x", 1, 2, 3, 4), c("y", 'a', 'b', 'c', 'f'));
-
-        assertEquals("", diff(table.where(FilterOr.of(Filter.from("k%2 == 0"))), table, 10));
-        assertEquals("", diff(table.where(FilterOr.of(Filter.from("i%2 == 0"))),
-                testRefreshingTable(i(2, 6).toTracking(), c("x", 1, 3), c("y", 'a', 'c')), 10));
-        assertEquals("", diff(table.where(FilterOr.of(Filter.from("(y-'a') = 2"))),
-                testRefreshingTable(i(2).toTracking(), c("x", 3), c("y", 'c')), 10));
 
         final QueryTable whereResult = (QueryTable) table.where(FilterOr.of(Filter.from("x%2 == 1", "y=='f'")));
         final ShiftObliviousListener whereResultListener = base.newListenerWithGlobals(whereResult);
@@ -609,11 +543,6 @@ public class QueryTableWhereTest {
                         new DoubleGenerator(0, 100)));
 
         final EvalNugget[] en = new EvalNugget[] {
-                new EvalNugget() {
-                    public Table e() {
-                        return filteredTable.where(FilterOr.of(Filter.from("Sym in `aa`, `ee`")));
-                    }
-                },
                 new EvalNugget() {
                     public Table e() {
                         return filteredTable.where(FilterOr.of(Filter.from("Sym in `aa`, `ee`", "intCol % 2 == 0")));
