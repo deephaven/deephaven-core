@@ -24,7 +24,7 @@ public class TestAvroAdapter {
     @NotNull
     private File getSchemaFile(String name) {
         final String avscPath =
-                Configuration.getInstance().getDevRootPath() + "/Kafka/src/test/resources/avro-examples/";
+                Configuration.getInstance().getDevRootPath() + "/extensions/kafka/src/test/resources/avro-examples/";
         return new File(avscPath + name);
     }
 

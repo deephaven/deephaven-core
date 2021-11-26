@@ -381,7 +381,7 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      * updates.
      *
      * <p>
-     * An io.deephaven.engine.table.impl.utils.OutOfKeySpaceException is thrown when the total number of bits needed to
+     * An io.deephaven.engine.table.impl.util.OutOfKeySpaceException is thrown when the total number of bits needed to
      * express the result table exceeds that needed to represent Long.MAX_VALUE. There are a few work arounds:
      *
      * <p>

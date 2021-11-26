@@ -16,6 +16,7 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.stringset.StringSet;
 import io.deephaven.engine.updategraph.AbstractNotification;
+import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.util.TableDiff;
@@ -29,6 +30,7 @@ import junit.framework.AssertionFailedError;
 import junit.framework.ComparisonFailure;
 import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableInt;
+import org.apache.tools.ant.taskdefs.condition.Not;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.ByteArrayOutputStream;
@@ -2099,7 +2101,6 @@ public class TstUtils {
         }
     }
 
-
     public static class TstNotification extends AbstractNotification {
 
         private boolean invoked = false;
@@ -2130,6 +2131,9 @@ public class TstUtils {
         public void assertNotInvoked() {
             TestCase.assertFalse(invoked);
         }
+    }
+
+    public static class TstErrorNotification extends TstNotification implements NotificationQueue.ErrorNotification {
     }
 
     public static void assertIndexEquals(@NotNull final RowSet expected, @NotNull final RowSet actual) {

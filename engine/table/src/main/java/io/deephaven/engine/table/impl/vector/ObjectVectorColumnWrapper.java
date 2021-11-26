@@ -122,14 +122,14 @@ public class ObjectVectorColumnWrapper<T> extends ObjectVector.Indirect<T> {
             final long size = size();
             // noinspection unchecked
             final T[] array =
-                    (T[]) Array.newInstance(getComponentType(), LongSizedDataStructure.intSize("toArray", size));
+                    (T[]) Array.newInstance(getComponentType(), LongSizedDataStructure.intSize("getDirect", size));
             for (int ii = 0; ii < size; ++ii) {
-                final T arrayBase = get(ii);
-                if (arrayBase == null) {
+                final T element = get(ii);
+                if (element == null) {
                     array[ii] = null;
                 } else {
                     // noinspection unchecked
-                    array[ii] = (T) ((Vector<?>) arrayBase).getDirect();
+                    array[ii] = (T) ((Vector<?>) element).getDirect();
                 }
             }
             return new ObjectVectorDirect<>(array);

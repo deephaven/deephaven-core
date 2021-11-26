@@ -79,6 +79,7 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
     private Table coalesced;
     private TableUpdateListener listener;
     private final TstUtils.TstNotification notification = new TstUtils.TstNotification();
+    private final TstUtils.TstErrorNotification errorNotification = new TstUtils.TstErrorNotification();
 
     private WritableRowSet expectedRowSet;
 
@@ -372,16 +373,16 @@ public class TestPartitionAwareSourceTable extends RefreshingTableTestCase {
                     @Override
                     public Object invoke(Invocation invocation) {
                         assertEquals(exception, ((Exception) invocation.getParameter(0)).getCause());
-                        return notification;
+                        return errorNotification;
                     }
                 });
             }
         });
 
-        notification.reset();
+        errorNotification.reset();
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(SUT::refresh);
         assertIsSatisfied();
-        notification.assertInvoked();
+        errorNotification.assertInvoked();
 
         assertIndexEquals(expectedRowSet, SUT.getRowSet());
     }

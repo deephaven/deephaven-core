@@ -112,7 +112,7 @@ public class TestIncrementalReleaseFilter extends RefreshingTableTestCase {
         final Table filtered = source.where(incrementalReleaseFilter);
 
         final Table updated = UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> filtered
-                .update("I=io.deephaven.engine.table.impl.utils.TestIncrementalReleaseFilter.sleepValue(100000, ii)"));
+                .update("I=io.deephaven.engine.table.impl.util.TestIncrementalReleaseFilter.sleepValue(100000, ii)"));
 
         int cycles = 0;
         while (filtered.size() < source.size()) {

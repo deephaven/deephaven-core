@@ -11,6 +11,7 @@ import io.deephaven.base.Pair;
 import io.deephaven.base.StringUtils;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.lang.QueryLanguageParser;
 import io.deephaven.engine.table.iterators.*;
 import io.deephaven.engine.table.impl.select.AjMatchPairFactory;
 import io.deephaven.engine.table.impl.select.MatchPairFactory;
@@ -952,14 +953,14 @@ public interface TableWithDefaults extends Table {
         final Set<String> columnsNotToUnwrapSet = Arrays.stream(columnsNotToUngroup).collect(Collectors.toSet());
         return ungroup(getDefinition().getColumnStream()
                 .filter(c -> !columnsNotToUnwrapSet.contains(c.getName())
-                        && (c.getDataType().isArray() || Vector.class.isAssignableFrom(c.getDataType())))
+                        && (c.getDataType().isArray() || QueryLanguageParser.isTypedVector(c.getDataType())))
                 .map(ColumnDefinition::getName).toArray(String[]::new));
     }
 
     @Override
     default Table ungroup() {
         return ungroup(getDefinition().getColumnStream()
-                .filter(c -> c.getDataType().isArray() || Vector.class.isAssignableFrom(c.getDataType()))
+                .filter(c -> c.getDataType().isArray() || QueryLanguageParser.isTypedVector(c.getDataType()))
                 .map(ColumnDefinition::getName).toArray(String[]::new));
     }
 
@@ -967,7 +968,7 @@ public interface TableWithDefaults extends Table {
     default Table ungroup(boolean nullFill) {
         return ungroup(nullFill,
                 getDefinition().getColumnStream()
-                        .filter(c -> c.getDataType().isArray() || Vector.class.isAssignableFrom(c.getDataType()))
+                        .filter(c -> c.getDataType().isArray() || QueryLanguageParser.isTypedVector(c.getDataType()))
                         .map(ColumnDefinition::getName).toArray(String[]::new));
     }
 

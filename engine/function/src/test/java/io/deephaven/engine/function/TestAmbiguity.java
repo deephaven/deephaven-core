@@ -7,16 +7,18 @@
 package io.deephaven.engine.function;
 
 import io.deephaven.util.QueryConstants;
-import org.junit.Assert;
 import org.junit.Test;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
 
+import static io.deephaven.engine.function.BooleanPrimitives.isNull;
 import static io.deephaven.engine.function.ByteNumericPrimitives.max;
 import static io.deephaven.engine.function.ByteNumericPrimitives.min;
 import static io.deephaven.engine.function.ByteNumericPrimitives.sort;
 import static io.deephaven.engine.function.ByteNumericPrimitives.sortDescending;
+import static io.deephaven.engine.function.BytePrimitives.isNull;
+import static io.deephaven.engine.function.CharacterPrimitives.isNull;
 import static io.deephaven.engine.function.ComparePrimitives.max;
 import static io.deephaven.engine.function.ComparePrimitives.min;
 import static io.deephaven.engine.function.DoubleNumericPrimitives.max;
@@ -28,14 +30,18 @@ import static io.deephaven.engine.function.FloatNumericPrimitives.max;
 import static io.deephaven.engine.function.FloatNumericPrimitives.min;
 import static io.deephaven.engine.function.FloatNumericPrimitives.sort;
 import static io.deephaven.engine.function.FloatNumericPrimitives.sortDescending;
+import static io.deephaven.engine.function.FloatPrimitives.isNull;
 import static io.deephaven.engine.function.IntegerNumericPrimitives.max;
 import static io.deephaven.engine.function.IntegerNumericPrimitives.min;
 import static io.deephaven.engine.function.IntegerNumericPrimitives.sort;
 import static io.deephaven.engine.function.IntegerNumericPrimitives.sortDescending;
+import static io.deephaven.engine.function.IntegerPrimitives.isNull;
 import static io.deephaven.engine.function.LongNumericPrimitives.max;
 import static io.deephaven.engine.function.LongNumericPrimitives.min;
 import static io.deephaven.engine.function.LongNumericPrimitives.sort;
 import static io.deephaven.engine.function.LongNumericPrimitives.sortDescending;
+import static io.deephaven.engine.function.LongPrimitives.isNull;
+import static io.deephaven.engine.function.ObjectPrimitives.isNull;
 import static io.deephaven.engine.function.ObjectPrimitives.max;
 import static io.deephaven.engine.function.ObjectPrimitives.min;
 import static io.deephaven.engine.function.ObjectPrimitives.sort;
@@ -44,6 +50,7 @@ import static io.deephaven.engine.function.ShortNumericPrimitives.max;
 import static io.deephaven.engine.function.ShortNumericPrimitives.min;
 import static io.deephaven.engine.function.ShortNumericPrimitives.sort;
 import static io.deephaven.engine.function.ShortNumericPrimitives.sortDescending;
+import static io.deephaven.engine.function.ShortPrimitives.isNull;
 import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 import static org.junit.Assert.*;
 
@@ -51,40 +58,40 @@ public class TestAmbiguity {
 
     @Test
     public void testIsNull() {
-        assertTrue(IntegerPrimitives.isNull(QueryConstants.NULL_BYTE));
-        assertTrue(IntegerPrimitives.isNull(QueryConstants.NULL_SHORT));
-        assertTrue(IntegerPrimitives.isNull(QueryConstants.NULL_INT));
-        assertTrue(FloatPrimitives.isNull(QueryConstants.NULL_FLOAT));
-        assertTrue(LongPrimitives.isNull(QueryConstants.NULL_LONG));
+        assertTrue(isNull(QueryConstants.NULL_BYTE));
+        assertTrue(isNull(QueryConstants.NULL_SHORT));
+        assertTrue(isNull(QueryConstants.NULL_INT));
+        assertTrue(isNull(QueryConstants.NULL_FLOAT));
+        assertTrue(isNull(QueryConstants.NULL_LONG));
         assertTrue(isNull(QueryConstants.NULL_DOUBLE));
-        assertTrue(BooleanPrimitives.isNull(QueryConstants.NULL_BOOLEAN));
-        assertTrue(CharacterPrimitives.isNull(QueryConstants.NULL_CHAR));
-        assertTrue(BooleanPrimitives.isNull(null));
-        assertFalse(IntegerPrimitives.isNull(new Integer(QueryConstants.NULL_INT)));
-        assertFalse(IntegerPrimitives.isNull(new Integer(5)));
+        assertTrue(isNull(QueryConstants.NULL_BOOLEAN));
+        assertTrue(isNull(QueryConstants.NULL_CHAR));
+        assertTrue(isNull(null));
+        assertFalse(isNull(new Integer(QueryConstants.NULL_INT)));
+        assertFalse(isNull(new Integer(5)));
     }
 
     @Test
     public void testMin() {
-        Assert.assertEquals((byte) 1, ByteNumericPrimitives.min((byte) 1, (byte) 2, (byte) 3));
-        Assert.assertEquals((byte) 1, ByteNumericPrimitives.min(new byte[] {1, 2, 3}));
-        Assert.assertEquals((byte) 1, ByteNumericPrimitives.min((byte) 1, (byte) 2, (byte) 3));
+        assertEquals((byte) 1, min((byte) 1, (byte) 2, (byte) 3));
+        assertEquals((byte) 1, min(new byte[] {1, 2, 3}));
+        assertEquals((byte) 1, min((byte) 1, (byte) 2, (byte) 3));
 
-        Assert.assertEquals((short) 1, ShortNumericPrimitives.min((short) 1, (short) 2, (short) 3));
-        Assert.assertEquals((short) 1, ShortNumericPrimitives.min(new short[] {1, 2, 3}));
-        Assert.assertEquals((short) 1, ShortNumericPrimitives.min((short) 1, (short) 2, (short) 3));
+        assertEquals((short) 1, min((short) 1, (short) 2, (short) 3));
+        assertEquals((short) 1, min(new short[] {1, 2, 3}));
+        assertEquals((short) 1, min((short) 1, (short) 2, (short) 3));
 
-        Assert.assertEquals(1, IntegerNumericPrimitives.min(1, 2, 3));
-        Assert.assertEquals(1, IntegerNumericPrimitives.min(1, 2, 3));
-        Assert.assertEquals(1, IntegerNumericPrimitives.min(new int[] {1, 2, 3}));
+        assertEquals(1, min(1, 2, 3));
+        assertEquals(1, min(1, 2, 3));
+        assertEquals(1, min(new int[] {1, 2, 3}));
 
-        Assert.assertEquals(1l, LongNumericPrimitives.min(1l, 2l, 3l));
-        Assert.assertEquals(1l, LongNumericPrimitives.min(new long[] {1, 2, 3}));
-        Assert.assertEquals(1l, LongNumericPrimitives.min(1l, 2l, 3l));
+        assertEquals(1l, min(1l, 2l, 3l));
+        assertEquals(1l, min(new long[] {1, 2, 3}));
+        assertEquals(1l, min(1l, 2l, 3l));
 
-        Assert.assertEquals(1f, FloatNumericPrimitives.min(1f, 2f, 3f), 0);
-        Assert.assertEquals(1f, FloatNumericPrimitives.min(new float[] {1, 2, 3}), 0);
-        Assert.assertEquals(1f, FloatNumericPrimitives.min(1f, 2f, 3f), 0);
+        assertEquals(1f, min(1f, 2f, 3f), 0);
+        assertEquals(1f, min(new float[] {1, 2, 3}), 0);
+        assertEquals(1f, min(1f, 2f, 3f), 0);
 
         assertEquals(1d, min(1d, 2d, 3d), 0);
         assertEquals(1d, min(new double[] {1d, 2d, 3d}), 0);
@@ -97,7 +104,7 @@ public class TestAmbiguity {
 
         assertEquals("A", min("A", "B"));
 
-        Assert.assertEquals(1, ByteNumericPrimitives.min((byte) 1, (byte) 2));
+        assertEquals(1, min((byte) 1, (byte) 2));
         assertEquals(1, min((byte) 1, (short) 2));
         assertEquals(1, min((byte) 1, 2));
         assertEquals(1, min((byte) 1, 2l));
@@ -107,7 +114,7 @@ public class TestAmbiguity {
         assertEquals(26l, min(QueryConstants.NULL_BYTE, 26l));
 
         assertEquals((short) 1, min((short) 1, (byte) 2));
-        Assert.assertEquals((short) 1, ShortNumericPrimitives.min((short) 1, (short) 2));
+        assertEquals((short) 1, min((short) 1, (short) 2));
         assertEquals((short) 1, min((short) 1, 2));
         assertEquals((short) 1, min((short) 1, 2l));
         assertEquals((short) 1, min((short) 1, 2f), 0);
@@ -118,7 +125,7 @@ public class TestAmbiguity {
 
         assertEquals(1, min(1, (byte) 2));
         assertEquals(1, min(1, (short) 2));
-        Assert.assertEquals(1, IntegerNumericPrimitives.min(1, 2));
+        assertEquals(1, min(1, 2));
         assertEquals(1, min(1, 2l));
         assertEquals(1, min(1, 2f), 0);
         assertEquals(1, min(1, 2d), 0);
@@ -128,7 +135,7 @@ public class TestAmbiguity {
         assertEquals(1l, min(1l, (byte) 2));
         assertEquals(1l, min(1l, (short) 2));
         assertEquals(1l, min(1l, 2));
-        Assert.assertEquals(1l, LongNumericPrimitives.min(1l, 2l));
+        assertEquals(1l, min(1l, 2l));
         assertEquals(1l, min(1l, 2f), 0);
         assertEquals(1l, min(1l, 2d), 0);
         assertEquals(QueryConstants.NULL_DOUBLE, min(QueryConstants.NULL_LONG, QueryConstants.NULL_FLOAT), 0d);
@@ -139,7 +146,7 @@ public class TestAmbiguity {
         assertEquals(1, min(1f, (short) 2), 0);
         assertEquals(1, min(1f, 2), 0);
         assertEquals(1, min(1f, 2l), 0);
-        Assert.assertEquals(1, FloatNumericPrimitives.min(1f, 2f), 0);
+        assertEquals(1, min(1f, 2f), 0);
         assertEquals(1, min(1f, 2d), 0);
         assertEquals(QueryConstants.NULL_DOUBLE, min(QueryConstants.NULL_INT, QueryConstants.NULL_FLOAT), 0d);
         assertEquals(5l, min(QueryConstants.NULL_FLOAT, 5l), 0d);
@@ -255,34 +262,34 @@ public class TestAmbiguity {
 
     @Test
     public void testMax() {
-        Assert.assertEquals((byte) 3, ByteNumericPrimitives.max((byte) 1, (byte) 2, (byte) 3));
-        Assert.assertEquals((byte) 3, ByteNumericPrimitives.max(new byte[] {1, 2, 3}));
-        Assert.assertEquals((byte) 3, ByteNumericPrimitives.max((byte) 1, (byte) 2, (byte) 3));
+        assertEquals((byte) 3, max((byte) 1, (byte) 2, (byte) 3));
+        assertEquals((byte) 3, max(new byte[] {1, 2, 3}));
+        assertEquals((byte) 3, max((byte) 1, (byte) 2, (byte) 3));
         assertEquals(QueryConstants.NULL_INT, max(QueryConstants.NULL_INT, QueryConstants.NULL_BYTE));
         assertEquals((short) (QueryConstants.NULL_BYTE - 1),
                 max(QueryConstants.NULL_BYTE, (short) (QueryConstants.NULL_BYTE - 1)));
 
-        Assert.assertEquals((short) 3, ShortNumericPrimitives.max((short) 1, (short) 2, (short) 3));
-        Assert.assertEquals((short) 3, ShortNumericPrimitives.max(new short[] {1, 2, 3}));
-        Assert.assertEquals((short) 3, ShortNumericPrimitives.max((short) 1, (short) 2, (short) 3));
+        assertEquals((short) 3, max((short) 1, (short) 2, (short) 3));
+        assertEquals((short) 3, max(new short[] {1, 2, 3}));
+        assertEquals((short) 3, max((short) 1, (short) 2, (short) 3));
         assertEquals(QueryConstants.NULL_SHORT, max(QueryConstants.NULL_SHORT, QueryConstants.NULL_BYTE));
         assertEquals(5, max(QueryConstants.NULL_SHORT, 5));
 
-        Assert.assertEquals(3, IntegerNumericPrimitives.max(1, 2, 3));
-        Assert.assertEquals(3, IntegerNumericPrimitives.max(1, 2, 3));
-        Assert.assertEquals(3, IntegerNumericPrimitives.max(new int[] {1, 2, 3}));
+        assertEquals(3, max(1, 2, 3));
+        assertEquals(3, max(1, 2, 3));
+        assertEquals(3, max(new int[] {1, 2, 3}));
         assertEquals(QueryConstants.NULL_DOUBLE, max(QueryConstants.NULL_INT, QueryConstants.NULL_FLOAT), 0d);
         assertEquals(5l, max(QueryConstants.NULL_INT, 5l));
 
-        Assert.assertEquals(3l, LongNumericPrimitives.max(1l, 2l, 3l));
-        Assert.assertEquals(3l, LongNumericPrimitives.max(new long[] {1, 2, 3}));
-        Assert.assertEquals(3l, LongNumericPrimitives.max(1l, 2l, 3l));
+        assertEquals(3l, max(1l, 2l, 3l));
+        assertEquals(3l, max(new long[] {1, 2, 3}));
+        assertEquals(3l, max(1l, 2l, 3l));
         assertEquals(QueryConstants.NULL_DOUBLE, max(QueryConstants.NULL_LONG, QueryConstants.NULL_FLOAT), 0d);
         assertEquals(5, max(QueryConstants.NULL_LONG, 5));
 
-        Assert.assertEquals(3f, FloatNumericPrimitives.max(1f, 2f, 3f), 0d);
-        Assert.assertEquals(3f, FloatNumericPrimitives.max(new float[] {1, 2, 3}), 0d);
-        Assert.assertEquals(3f, FloatNumericPrimitives.max(1f, 2f, 3f), 0d);
+        assertEquals(3f, max(1f, 2f, 3f), 0d);
+        assertEquals(3f, max(new float[] {1, 2, 3}), 0d);
+        assertEquals(3f, max(1f, 2f, 3f), 0d);
         assertEquals(QueryConstants.NULL_DOUBLE, max(QueryConstants.NULL_DOUBLE, QueryConstants.NULL_FLOAT), 0d);
         assertEquals(5l, max(QueryConstants.NULL_FLOAT, 5l), 0d);
 
@@ -298,7 +305,7 @@ public class TestAmbiguity {
 
         assertEquals("B", max("A", "B"));
 
-        Assert.assertEquals(2, ByteNumericPrimitives.max((byte) 1, (byte) 2));
+        assertEquals(2, max((byte) 1, (byte) 2));
         assertEquals(2, max((byte) 1, (short) 2));
         assertEquals(2, max((byte) 1, 2));
         assertEquals(2, max((byte) 1, 2l));
@@ -306,7 +313,7 @@ public class TestAmbiguity {
         assertEquals(2, max((byte) 1, 2d), 0);
 
         assertEquals((short) 2, max((short) 1, (byte) 2));
-        Assert.assertEquals((short) 2, ShortNumericPrimitives.max((short) 1, (short) 2));
+        assertEquals((short) 2, max((short) 1, (short) 2));
         assertEquals((short) 2, max((short) 1, 2));
         assertEquals((short) 2, max((short) 1, 2l));
         assertEquals((short) 2, max((short) 1, 2f), 0);
@@ -314,7 +321,7 @@ public class TestAmbiguity {
 
         assertEquals(2, max(2, (byte) 2));
         assertEquals(2, max(2, (short) 2));
-        Assert.assertEquals(2, IntegerNumericPrimitives.max(2, 2));
+        assertEquals(2, max(2, 2));
         assertEquals(2, max(2, 2l));
         assertEquals(2, max(2, 2f), 0);
         assertEquals(2, max(2, 2d), 0);
@@ -322,7 +329,7 @@ public class TestAmbiguity {
         assertEquals(2l, max(1l, (byte) 2));
         assertEquals(2l, max(1l, (short) 2));
         assertEquals(2l, max(1l, 2));
-        Assert.assertEquals(2l, LongNumericPrimitives.max(1l, 2l));
+        assertEquals(2l, max(1l, 2l));
         assertEquals(2l, max(1l, 2f), 0);
         assertEquals(2l, max(1l, 2d), 0);
 
@@ -330,7 +337,7 @@ public class TestAmbiguity {
         assertEquals(2, max(1f, (short) 2), 0);
         assertEquals(2, max(1f, 2), 0);
         assertEquals(2, max(1f, 2l), 0);
-        Assert.assertEquals(2, FloatNumericPrimitives.max(1f, 2f), 0);
+        assertEquals(2, max(1f, 2f), 0);
         assertEquals(2, max(1f, 2d), 0);
 
         assertEquals(2, max(1d, (byte) 2), 0);
@@ -436,31 +443,29 @@ public class TestAmbiguity {
     @Test
     public void testSort() {
         final byte[] expectedSortedPrimBytes = new byte[] {1, 2, 3};
-        Assert.assertArrayEquals(expectedSortedPrimBytes, ByteNumericPrimitives.sort((byte) 1, (byte) 2, (byte) 3));
-        Assert.assertArrayEquals(expectedSortedPrimBytes, ByteNumericPrimitives.sort(new byte[] {1, 2, 3}));
-        Assert.assertArrayEquals(expectedSortedPrimBytes, ByteNumericPrimitives.sort((byte) 1, (byte) 2, (byte) 3));
+        assertArrayEquals(expectedSortedPrimBytes, sort((byte) 1, (byte) 2, (byte) 3));
+        assertArrayEquals(expectedSortedPrimBytes, sort(new byte[] {1, 2, 3}));
+        assertArrayEquals(expectedSortedPrimBytes, sort((byte) 1, (byte) 2, (byte) 3));
 
         final short[] expectedSortedPrimShorts = new short[] {1, 2, 3};
-        Assert.assertArrayEquals(expectedSortedPrimShorts,
-                ShortNumericPrimitives.sort((short) 1, (short) 2, (short) 3));
-        Assert.assertArrayEquals(expectedSortedPrimShorts, ShortNumericPrimitives.sort(new short[] {1, 2, 3}));
-        Assert.assertArrayEquals(expectedSortedPrimShorts,
-                ShortNumericPrimitives.sort((short) 1, (short) 2, (short) 3));
+        assertArrayEquals(expectedSortedPrimShorts, sort((short) 1, (short) 2, (short) 3));
+        assertArrayEquals(expectedSortedPrimShorts, sort(new short[] {1, 2, 3}));
+        assertArrayEquals(expectedSortedPrimShorts, sort((short) 1, (short) 2, (short) 3));
 
         final int[] expectedSortedPrimInts = new int[] {1, 2, 3};
-        Assert.assertArrayEquals(expectedSortedPrimInts, IntegerNumericPrimitives.sort(1, 2, 3));
-        Assert.assertArrayEquals(expectedSortedPrimInts, IntegerNumericPrimitives.sort(1, 2, 3));
-        Assert.assertArrayEquals(expectedSortedPrimInts, IntegerNumericPrimitives.sort(new int[] {1, 2, 3}));
+        assertArrayEquals(expectedSortedPrimInts, sort(1, 2, 3));
+        assertArrayEquals(expectedSortedPrimInts, sort(1, 2, 3));
+        assertArrayEquals(expectedSortedPrimInts, sort(new int[] {1, 2, 3}));
 
         final long[] expectedSortedPrimLongs = new long[] {1, 2, 3};
-        Assert.assertArrayEquals(expectedSortedPrimLongs, LongNumericPrimitives.sort(1l, 2l, 3l));
-        Assert.assertArrayEquals(expectedSortedPrimLongs, LongNumericPrimitives.sort(new long[] {1, 2, 3}));
-        Assert.assertArrayEquals(expectedSortedPrimLongs, LongNumericPrimitives.sort(1l, 2l, 3l));
+        assertArrayEquals(expectedSortedPrimLongs, sort(1l, 2l, 3l));
+        assertArrayEquals(expectedSortedPrimLongs, sort(new long[] {1, 2, 3}));
+        assertArrayEquals(expectedSortedPrimLongs, sort(1l, 2l, 3l));
 
         final float[] expectedSortedPrimFloats = new float[] {1f, 2f, 3f};
-        Assert.assertArrayEquals(expectedSortedPrimFloats, FloatNumericPrimitives.sort(1f, 2f, 3f), 0);
-        Assert.assertArrayEquals(expectedSortedPrimFloats, FloatNumericPrimitives.sort(new float[] {1, 2, 3}), 0);
-        Assert.assertArrayEquals(expectedSortedPrimFloats, FloatNumericPrimitives.sort(1f, 2f, 3f), 0);
+        assertArrayEquals(expectedSortedPrimFloats, sort(1f, 2f, 3f), 0);
+        assertArrayEquals(expectedSortedPrimFloats, sort(new float[] {1, 2, 3}), 0);
+        assertArrayEquals(expectedSortedPrimFloats, sort(1f, 2f, 3f), 0);
 
         final double[] expectedSortedPrimDoubles = new double[] {1d, 2d, 3d};
         assertArrayEquals(expectedSortedPrimDoubles, sort(1d, 2d, 3d), 0);
@@ -479,36 +484,30 @@ public class TestAmbiguity {
     @Test
     public void testSortDescending() {
         final byte[] expectedSortedPrimBytes = new byte[] {3, 2, 1};
-        Assert.assertArrayEquals(expectedSortedPrimBytes,
-                ByteNumericPrimitives.sortDescending((byte) 1, (byte) 2, (byte) 3));
-        Assert.assertArrayEquals(expectedSortedPrimBytes, ByteNumericPrimitives.sortDescending(new byte[] {1, 2, 3}));
-        Assert.assertArrayEquals(expectedSortedPrimBytes,
-                ByteNumericPrimitives.sortDescending((byte) 1, (byte) 2, (byte) 3));
+        assertArrayEquals(expectedSortedPrimBytes, sortDescending((byte) 1, (byte) 2, (byte) 3));
+        assertArrayEquals(expectedSortedPrimBytes, sortDescending(new byte[] {1, 2, 3}));
+        assertArrayEquals(expectedSortedPrimBytes, sortDescending((byte) 1, (byte) 2, (byte) 3));
 
         final short[] expectedSortedPrimShorts = new short[] {3, 2, 1};
-        Assert.assertArrayEquals(expectedSortedPrimShorts,
-                ShortNumericPrimitives.sortDescending((short) 1, (short) 2, (short) 3));
-        Assert.assertArrayEquals(expectedSortedPrimShorts,
-                ShortNumericPrimitives.sortDescending(new short[] {1, 2, 3}));
-        Assert.assertArrayEquals(expectedSortedPrimShorts,
-                ShortNumericPrimitives.sortDescending((short) 1, (short) 2, (short) 3));
+        assertArrayEquals(expectedSortedPrimShorts, sortDescending((short) 1, (short) 2, (short) 3));
+        assertArrayEquals(expectedSortedPrimShorts, sortDescending(new short[] {1, 2, 3}));
+        assertArrayEquals(expectedSortedPrimShorts, sortDescending((short) 1, (short) 2, (short) 3));
 
         final int[] expectedSortedPrimInts = new int[] {3, 2, 1};
-        Assert.assertArrayEquals(expectedSortedPrimInts, IntegerNumericPrimitives.sortDescending(1, 2, 3));
-        Assert.assertArrayEquals(expectedSortedPrimInts, IntegerNumericPrimitives.sortDescending(1, 2, 3));
-        Assert.assertArrayEquals(expectedSortedPrimInts, IntegerNumericPrimitives.sortDescending(new int[] {1, 2, 3}));
+        assertArrayEquals(expectedSortedPrimInts, sortDescending(1, 2, 3));
+        assertArrayEquals(expectedSortedPrimInts, sortDescending(1, 2, 3));
+        assertArrayEquals(expectedSortedPrimInts, sortDescending(new int[] {1, 2, 3}));
 
 
         final long[] expectedSortedPrimLongs = new long[] {3l, 2l, 1l};
-        Assert.assertArrayEquals(expectedSortedPrimLongs, LongNumericPrimitives.sortDescending(1l, 2l, 3l));
-        Assert.assertArrayEquals(expectedSortedPrimLongs, LongNumericPrimitives.sortDescending(new long[] {1, 2, 3}));
-        Assert.assertArrayEquals(expectedSortedPrimLongs, LongNumericPrimitives.sortDescending(1l, 2l, 3l));
+        assertArrayEquals(expectedSortedPrimLongs, sortDescending(1l, 2l, 3l));
+        assertArrayEquals(expectedSortedPrimLongs, sortDescending(new long[] {1, 2, 3}));
+        assertArrayEquals(expectedSortedPrimLongs, sortDescending(1l, 2l, 3l));
 
         final float[] expectedSortedPrimFloats = new float[] {3f, 2f, 1f};
-        Assert.assertArrayEquals(expectedSortedPrimFloats, FloatNumericPrimitives.sortDescending(1f, 2f, 3f), 0);
-        Assert.assertArrayEquals(expectedSortedPrimFloats, FloatNumericPrimitives.sortDescending(new float[] {1, 2, 3}),
-                0);
-        Assert.assertArrayEquals(expectedSortedPrimFloats, FloatNumericPrimitives.sortDescending(1f, 2f, 3f), 0);
+        assertArrayEquals(expectedSortedPrimFloats, sortDescending(1f, 2f, 3f), 0);
+        assertArrayEquals(expectedSortedPrimFloats, sortDescending(new float[] {1, 2, 3}), 0);
+        assertArrayEquals(expectedSortedPrimFloats, sortDescending(1f, 2f, 3f), 0);
 
         final double[] expectedSortedPrimDoubles = new double[] {3d, 2d, 1d};
         assertArrayEquals(expectedSortedPrimDoubles, sortDescending(1d, 2d, 3d), 0);

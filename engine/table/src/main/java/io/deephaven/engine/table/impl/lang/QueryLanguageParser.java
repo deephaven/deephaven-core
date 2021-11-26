@@ -543,7 +543,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         for (int i = 0; i < lengthWithoutVarArg; i++) {
             Class<?> paramType = paramTypes[i];
 
-            if (isVector(paramType) && candidateParamTypes[i].isArray()) {
+            if (isTypedVector(paramType) && candidateParamTypes[i].isArray()) {
                 paramType = convertVector(paramType, parameterizedTypes[i] == null ? null : parameterizedTypes[i][0]);
             }
 
@@ -559,7 +559,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
 
             Assert.eqTrue(candidateParamType.isArray(), "candidateParamType.isArray()");
 
-            if (isVector(paramType)) {
+            if (isTypedVector(paramType)) {
                 paramType = convertVector(paramType, parameterizedTypes[candidateParamTypes.length - 1] == null ? null
                         : parameterizedTypes[candidateParamTypes.length - 1][0]);
             }
@@ -573,7 +573,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             for (int i = candidateParamTypes.length - 1; i < paramTypes.length; i++) {
                 paramType = paramTypes[i];
 
-                if (isVector(paramType) && lastClass.isArray()) {
+                if (isTypedVector(paramType) && lastClass.isArray()) {
                     paramType = convertVector(paramType,
                             parameterizedTypes[i] == null ? null : parameterizedTypes[i][0]);
                 }
@@ -641,7 +641,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
         }
 
         for (int i = 0; i < e1ParamTypes.length; i++) {
-            if (!canAssignType(e1ParamTypes[i], e2ParamTypes[i]) && !isVector(e2ParamTypes[i])) {
+            if (!canAssignType(e1ParamTypes[i], e2ParamTypes[i]) && !isTypedVector(e2ParamTypes[i])) {
                 return false;
             }
         }
@@ -784,8 +784,8 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
                 || type == char.class;
     }
 
-    public static boolean isVector(Class<?> type) {
-        return Vector.class.isAssignableFrom(type);
+    public static boolean isTypedVector(Class<?> type) {
+        return Vector.class.isAssignableFrom(type) && Vector.class != type;
     }
 
     /**
@@ -817,7 +817,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             } else if (unboxArguments && argumentTypes[ai].isPrimitive() && !expressionTypes[ai].isPrimitive()) {
                 expressions[ai] = new MethodCallExpr(expressions[ai],
                         argumentTypes[ai].getSimpleName() + "Value", new NodeList<>());
-            } else if (argumentTypes[ai].isArray() && isVector(expressionTypes[ai])) {
+            } else if (argumentTypes[ai].isArray() && isTypedVector(expressionTypes[ai])) {
                 expressions[ai] = new MethodCallExpr(new NameExpr("VectorConversions"), "nullSafeVectorToArray",
                         new NodeList<>(expressions[ai]));
                 expressionTypes[ai] = convertVector(expressionTypes[ai],
@@ -836,7 +836,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             // *isn't* Vector, then convert the Vector to a Java array
             if (nArgExpressions == nArgs
                     && varArgType != expressionTypes[lastArgIndex]
-                    && isVector(expressionTypes[lastArgIndex])) {
+                    && isTypedVector(expressionTypes[lastArgIndex])) {
                 expressions[lastArgIndex] =
                         new MethodCallExpr(new NameExpr("VectorConversions"), "nullSafeVectorToArray",
                                 new NodeList<>(expressions[lastArgIndex]));
@@ -1060,7 +1060,7 @@ public final class QueryLanguageParser extends GenericVisitorAdapter<Class<?>, Q
             op = BinaryExpr.Operator.EQUALS;
         }
 
-        boolean isArray = lhType.isArray() || rhType.isArray() || isVector(lhType) || isVector(rhType);
+        boolean isArray = lhType.isArray() || rhType.isArray() || isTypedVector(lhType) || isTypedVector(rhType);
 
         String methodName = getOperatorName(op) + (isArray ? "Array" : "");
 

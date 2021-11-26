@@ -15,7 +15,7 @@ __all__ = ['ColumnRenderersBuilder', 'DistinctFormatter', 'DownsampledWhereFilte
 ColumnRenderersBuilder = None   #: Class to build and parse the directive for Table.COLUMN_RENDERERS_ATTRIBUTE (io.deephaven.engine.util.ColumnRenderersBuilder).
 DistinctFormatter = None        #: Class to create distinct and unique coloration for each unique input value (io.deephaven.engine.util.ColorUtil$DistinctFormatter).
 DownsampledWhereFilter = None   #: Class to downsample time series data by calculating the bin intervals for values, and then using upperBin and lastBy to select the last row for each bin (io.deephaven.engine.table.impl.select.DownsampledWhereFilter).
-DynamicTableWriter = None       #: Class to create a TableWriter object {@link io.deephaven.engine.table.impl.utils.DynamicTableWriter}
+DynamicTableWriter = None       #: Class to create a TableWriter object {@link io.deephaven.engine.table.impl.util.DynamicTableWriter}
 LayoutHintBuilder = None        #: Builder class for use in assembling layout hints suitable for use with {@link io.deephaven.engine.table.Table#setLayoutHints(LayoutHintBuilder)} or {@link io.deephaven.engine.table.Table#setLayoutHints(String)} (io.deephaven.engine.util.LayoutHintBuilder).
 Replayer = None                 #: Class to create a Replayer object {@link io.deephaven.engine.v2.replay.Replayer}
 SmartKey = None                 #: A datastructure key class, where more than one value can be used as the key (io.deephaven.datastructures.util.SmartKey).
@@ -40,7 +40,7 @@ def _defineSymbols():
         ColumnRenderersBuilder = jpy.get_type('io.deephaven.engine.util.ColumnRenderersBuilder')
         DistinctFormatter = jpy.get_type('io.deephaven.engine.util.ColorUtil$DistinctFormatter')
         DownsampledWhereFilter = jpy.get_type('io.deephaven.engine.table.impl.select.DownsampledWhereFilter')
-        DynamicTableWriter = jpy.get_type('io.deephaven.engine.table.impl.utils.DynamicTableWriter')
+        DynamicTableWriter = jpy.get_type('io.deephaven.engine.table.impl.util.DynamicTableWriter')
         LayoutHintBuilder = jpy.get_type('io.deephaven.engine.util.LayoutHintBuilder')
         Replayer = jpy.get_type('io.deephaven.engine.v2.replay.Replayer')
         SmartKey = jpy.get_type('io.deephaven.datastructures.util.SmartKey')

@@ -114,10 +114,9 @@ u = t.'''
                 }
             }
         }
-        // TODO(deephaven-core#875): Auto-complete on instance should not suggest static methods
-        // This is what we *want*, but due to issue above, we need to hack around it for now.
-        //results.size() == 0
-        results.size() != 0
+        // TODO (deephaven-core#875): Auto-complete on instance should not suggest static methods. Table doesn't have
+        //                            anymore, though, so we don't need to hack around that here.
+        results.size() == 0
     }
 
     def "Completion should offer binding-scoped variables after an empty assign="() {

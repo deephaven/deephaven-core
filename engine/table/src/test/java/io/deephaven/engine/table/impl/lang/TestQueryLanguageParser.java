@@ -2206,8 +2206,9 @@ public class TestQueryLanguageParser extends BaseArrayTestCase {
         assertEquals(resultExpression, result.getConvertedExpression());
 
         String[] variablesUsed = result.getVariablesUsed().toArray(new String[0]);
-        Arrays.sort(variablesUsed);
 
+        Arrays.sort(resultVarsUsed);
+        Arrays.sort(variablesUsed);
         assertEquals(resultVarsUsed, variablesUsed);
     }
 

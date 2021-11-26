@@ -21,6 +21,11 @@ dependencies {
 
     testImplementation TestTools.projectDependency(project, 'engine-table'),
             'junit:junit:4.13.2'
+
+    testRuntimeOnly project(':log-to-slf4j'),
+            project(path: ':configs'),
+            project(path: ':test-configs')
+    Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
 }
 
 spotless {

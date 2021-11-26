@@ -422,7 +422,7 @@ public class SortHelpers {
             // Fill a chunk that is Writable, and does not have an ordered tag with the rowSet keys that we are sorting,
             // the
             // rowSet would does something very similar inside of
-            // io.deephaven.engine.table.impl.utils.RowSequence.asRowKeyChunk;
+            // io.deephaven.engine.table.impl.util.RowSequence.asRowKeyChunk;
             // but provides a LongChunk<OrderedRowKeys> as its return.
             final long[] rowKeysArray = new long[sortSize];
             final WritableLongChunk<RowKeys> rowKeys = WritableLongChunk.writableChunkWrap(rowKeysArray);

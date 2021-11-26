@@ -246,7 +246,7 @@ public class PerformanceQueries {
                 "AvailMemMiB = MaxMemMiB - TotalMemMiB + FreeMemMiB",
                 "MaxMemMiB",
                 "AvailMemRatio = AvailMemMiB/MaxMemMiB",
-                "GcTimeRatio = io.deephaven.engine.table.impl.utils.PerformanceQueries.approxRatio(IntervalCollectionTimeNanos, IntervalDurationNanos)");
+                "GcTimeRatio = io.deephaven.engine.table.impl.util.PerformanceQueries.approxRatio(IntervalCollectionTimeNanos, IntervalDurationNanos)");
         pm = pm.formatColumns(
                 "AvailMemRatio=Decimal(`#0.0%`)",
                 "AvailMemRatio=(AvailMemRatio < 0.05) ? PALE_RED : " +
