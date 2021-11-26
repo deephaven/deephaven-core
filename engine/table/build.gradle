@@ -12,8 +12,7 @@ sourceSets {
         }
         resources {
             srcDir 'python'
-            include 'core/*.py',
-                    'io/deephaven/ipykernel/*.py'
+            include 'core/*.py'
         }
         resources {
             srcDir 'src/main/resources'

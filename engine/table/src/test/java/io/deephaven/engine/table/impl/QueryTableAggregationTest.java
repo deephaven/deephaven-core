@@ -2533,7 +2533,7 @@ public class QueryTableAggregationTest {
         TableTools.showWithIndex(aggregatedBySym);
 
         final Table accumulated = aggregatedBySym.dropColumns("Sym").groupBy()
-                .update("Digest=io.deephaven.engine.table.impl.groupBy.ApproximatePercentile.accumulateDigests(Digest)")
+                .update("Digest=io.deephaven.engine.table.impl.by.ApproximatePercentile.accumulateDigests(Digest)")
                 .update("P95=Digest.quantile(0.95)");
         TableTools.show(accumulated);
 

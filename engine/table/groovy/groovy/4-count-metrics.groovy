@@ -1,4 +1,3 @@
-package groovy
 //////////////////// Count Metrics //////////////////////////
 
 resetMetricsCounts = {

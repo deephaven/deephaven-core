@@ -1,5 +1,4 @@
-package groovy
-// Functions to gather performnace data for individual queries.
+// Functions to gather performance data for individual queries.
 
 import io.deephaven.engine.table.impl.util.PerformanceQueries
 

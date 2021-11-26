@@ -1,5 +1,3 @@
-package groovy
-
 __QUERY_NAME__="core"
 getDevRootPath = {io.deephaven.configuration.Configuration.getInstance().getDevRootPath()}
 
