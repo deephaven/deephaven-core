@@ -88,15 +88,17 @@ public class TestObjectSegmentedSortedMultiset extends RefreshingTableTestCase {
         final ObjectSegmentedSortedMultiset ssm = new ObjectSegmentedSortedMultiset(nodeSize, Object.class);
 
         final Object[] data = new Object[24];
-        final WritableObjectChunk<Object, Values> valuesChunk = WritableObjectChunk.makeWritableChunk(24);
-        final WritableIntChunk<ChunkLengths> countsChunk = WritableIntChunk.makeWritableChunk(24);
-        for(int ii = 0; ii < 24; ii++) {
-            data[ii] = (Object)('a' + ii);
-            countsChunk.set(ii, 1);
-            valuesChunk.set(ii, data[ii]);
-        }
+        try (final WritableObjectChunk<Object, Values> valuesChunk = WritableObjectChunk.makeWritableChunk(24);
+             final WritableIntChunk<ChunkLengths> countsChunk = WritableIntChunk.makeWritableChunk(24)) {
 
-        ssm.insert(valuesChunk, countsChunk);
+            for (int ii = 0; ii < 24; ii++) {
+                data[ii] = (Object) ('a' + ii);
+                countsChunk.set(ii, 1);
+                valuesChunk.set(ii, data[ii]);
+            }
+
+            ssm.insert(valuesChunk, countsChunk);
+        }
 
         assertArrayEquals(data, ssm.toArray()/*EXTRA*/);
         assertArrayEquals(data, ssm.subVector(0, 23).toArray()/*EXTRA*/);
@@ -275,34 +277,36 @@ public class TestObjectSegmentedSortedMultiset extends RefreshingTableTestCase {
     private void checkSsm(ObjectSegmentedSortedMultiset ssm, ObjectChunk<Object, ? extends Values> valueChunk, boolean countNull, @NotNull final SsaTestHelpers.TestDescriptor desc) {
         try {
             ssm.validate();
-            final ObjectChunk<Object, ?> keys = ssm.keyChunk();
-            final LongChunk<?> counts = ssm.countChunk();
-            int totalSize = 0;
+            try (final WritableObjectChunk<Object, ?> keys = ssm.keyChunk();
+                 final WritableLongChunk<?> counts = ssm.countChunk()) {
 
-            final Map<Object, Integer> checkMap = new TreeMap<>(ObjectComparisons::compare);
-            for (int ii = 0; ii < valueChunk.size(); ++ii) {
-                final Object value = valueChunk.get(ii);
-                if (value == null && !countNull) {
-                    continue;
+                int totalSize = 0;
+
+                final Map<Object, Integer> checkMap = new TreeMap<>(ObjectComparisons::compare);
+                for (int ii = 0; ii < valueChunk.size(); ++ii) {
+                    final Object value = valueChunk.get(ii);
+                    if (value == null && !countNull) {
+                        continue;
+                    }
+                    totalSize++;
+                    checkMap.compute(value, (key, cnt) -> {
+                        if (cnt == null) return 1;
+                        else return cnt + 1;
+                    });
                 }
-                totalSize++;
-                checkMap.compute(value, (key, cnt) -> {
-                    if (cnt == null) return 1;
-                    else return cnt + 1;
+
+                assertEquals(checkMap.size(), ssm.size());
+                assertEquals(totalSize, ssm.totalSize());
+                assertEquals(checkMap.size(), keys.size());
+                assertEquals(checkMap.size(), counts.size());
+
+                final MutableInt offset = new MutableInt(0);
+                checkMap.forEach((key, count) -> {
+                    assertEquals((Object) key, keys.get(offset.intValue()));
+                    assertEquals((long) count, counts.get(offset.intValue()));
+                    offset.increment();
                 });
             }
-
-            assertEquals(checkMap.size(), ssm.size());
-            assertEquals(totalSize, ssm.totalSize());
-            assertEquals(checkMap.size(), keys.size());
-            assertEquals(checkMap.size(), counts.size());
-
-            final MutableInt offset = new MutableInt(0);
-            checkMap.forEach((key, count) -> {
-                assertEquals((Object) key, keys.get(offset.intValue()));
-                assertEquals((long) count, counts.get(offset.intValue()));
-                offset.increment();
-            });
         } catch (AssertionFailure e) {
             TestCase.fail("Check failed at " + desc + ": " + e.getMessage());
         }

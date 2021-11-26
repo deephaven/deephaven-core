@@ -3,16 +3,16 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.table.impl.select;
 
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ColumnDefinition;
-import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
-import io.deephaven.util.compare.ShortComparisons;
-import io.deephaven.engine.table.impl.chunkfilter.ShortRangeComparator;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.chunkfilter.ShortRangeComparator;
+import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 import io.deephaven.gui.table.filters.Condition;
 import io.deephaven.util.QueryConstants;
+import io.deephaven.util.compare.ShortComparisons;
 import io.deephaven.util.type.TypeUtils;
 
 public class ShortRangeFilter extends AbstractRangeFilter {

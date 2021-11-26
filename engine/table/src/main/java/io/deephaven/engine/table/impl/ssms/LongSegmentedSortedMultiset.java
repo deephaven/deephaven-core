@@ -2103,8 +2103,8 @@ public final class LongSegmentedSortedMultiset implements SegmentedSortedMultiSe
     //endregion
 
     @Override
-    public LongChunk<?> keyChunk() {
-        final WritableLongChunk keyChunk = WritableLongChunk.makeWritableChunk(intSize());
+    public WritableLongChunk<?> keyChunk() {
+        final WritableLongChunk<?> keyChunk = WritableLongChunk.makeWritableChunk(intSize());
         fillKeyChunk(keyChunk, 0);
         return keyChunk;
     }
@@ -2131,8 +2131,8 @@ public final class LongSegmentedSortedMultiset implements SegmentedSortedMultiSe
     }
 
     @Override
-    public LongChunk<?> countChunk() {
-        final WritableLongChunk countChunk = WritableLongChunk.makeWritableChunk(intSize());
+    public WritableLongChunk<?> countChunk() {
+        final WritableLongChunk<Attributes.Any> countChunk = WritableLongChunk.makeWritableChunk(intSize());
         if (leafCount == 1) {
             countChunk.copyFromTypedArray(directoryCount, 0, 0, size);
         } else if (leafCount > 0) {

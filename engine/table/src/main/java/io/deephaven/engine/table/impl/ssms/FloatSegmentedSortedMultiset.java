@@ -2099,8 +2099,8 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
     //endregion
 
     @Override
-    public FloatChunk<?> keyChunk() {
-        final WritableFloatChunk keyChunk = WritableFloatChunk.makeWritableChunk(intSize());
+    public WritableFloatChunk<?> keyChunk() {
+        final WritableFloatChunk<?> keyChunk = WritableFloatChunk.makeWritableChunk(intSize());
         fillKeyChunk(keyChunk, 0);
         return keyChunk;
     }
@@ -2127,8 +2127,8 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
     }
 
     @Override
-    public LongChunk<?> countChunk() {
-        final WritableLongChunk countChunk = WritableLongChunk.makeWritableChunk(intSize());
+    public WritableLongChunk<?> countChunk() {
+        final WritableLongChunk<Attributes.Any> countChunk = WritableLongChunk.makeWritableChunk(intSize());
         if (leafCount == 1) {
             countChunk.copyFromTypedArray(directoryCount, 0, 0, size);
         } else if (leafCount > 0) {

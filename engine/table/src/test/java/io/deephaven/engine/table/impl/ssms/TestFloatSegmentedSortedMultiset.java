@@ -89,15 +89,17 @@ public class TestFloatSegmentedSortedMultiset extends RefreshingTableTestCase {
         final FloatSegmentedSortedMultiset ssm = new FloatSegmentedSortedMultiset(nodeSize);
 
         final float[] data = new float[24];
-        final WritableFloatChunk<Values> valuesChunk = WritableFloatChunk.makeWritableChunk(24);
-        final WritableIntChunk<ChunkLengths> countsChunk = WritableIntChunk.makeWritableChunk(24);
-        for(int ii = 0; ii < 24; ii++) {
-            data[ii] = (float)('a' + ii);
-            countsChunk.set(ii, 1);
-            valuesChunk.set(ii, data[ii]);
-        }
+        try (final WritableFloatChunk<Values> valuesChunk = WritableFloatChunk.makeWritableChunk(24);
+             final WritableIntChunk<ChunkLengths> countsChunk = WritableIntChunk.makeWritableChunk(24)) {
 
-        ssm.insert(valuesChunk, countsChunk);
+            for (int ii = 0; ii < 24; ii++) {
+                data[ii] = (float) ('a' + ii);
+                countsChunk.set(ii, 1);
+                valuesChunk.set(ii, data[ii]);
+            }
+
+            ssm.insert(valuesChunk, countsChunk);
+        }
 
         assertArrayEquals(data, ssm.toArray(), .000001f);
         assertArrayEquals(data, ssm.subVector(0, 23).toArray(), .000001f);
@@ -287,34 +289,36 @@ public class TestFloatSegmentedSortedMultiset extends RefreshingTableTestCase {
     private void checkSsm(FloatSegmentedSortedMultiset ssm, FloatChunk<? extends Values> valueChunk, boolean countNull, @NotNull final SsaTestHelpers.TestDescriptor desc) {
         try {
             ssm.validate();
-            final FloatChunk<?> keys = ssm.keyChunk();
-            final LongChunk<?> counts = ssm.countChunk();
-            int totalSize = 0;
+            try (final WritableFloatChunk<?> keys = ssm.keyChunk();
+                 final WritableLongChunk<?> counts = ssm.countChunk()) {
 
-            final Map<Float, Integer> checkMap = new TreeMap<>(FloatComparisons::compare);
-            for (int ii = 0; ii < valueChunk.size(); ++ii) {
-                final float value = valueChunk.get(ii);
-                if (value == NULL_FLOAT && !countNull) {
-                    continue;
+                int totalSize = 0;
+
+                final Map<Float, Integer> checkMap = new TreeMap<>(FloatComparisons::compare);
+                for (int ii = 0; ii < valueChunk.size(); ++ii) {
+                    final float value = valueChunk.get(ii);
+                    if (value == NULL_FLOAT && !countNull) {
+                        continue;
+                    }
+                    totalSize++;
+                    checkMap.compute(value, (key, cnt) -> {
+                        if (cnt == null) return 1;
+                        else return cnt + 1;
+                    });
                 }
-                totalSize++;
-                checkMap.compute(value, (key, cnt) -> {
-                    if (cnt == null) return 1;
-                    else return cnt + 1;
+
+                assertEquals(checkMap.size(), ssm.size());
+                assertEquals(totalSize, ssm.totalSize());
+                assertEquals(checkMap.size(), keys.size());
+                assertEquals(checkMap.size(), counts.size());
+
+                final MutableInt offset = new MutableInt(0);
+                checkMap.forEach((key, count) -> {
+                    assertEquals((float) key, keys.get(offset.intValue()));
+                    assertEquals((long) count, counts.get(offset.intValue()));
+                    offset.increment();
                 });
             }
-
-            assertEquals(checkMap.size(), ssm.size());
-            assertEquals(totalSize, ssm.totalSize());
-            assertEquals(checkMap.size(), keys.size());
-            assertEquals(checkMap.size(), counts.size());
-
-            final MutableInt offset = new MutableInt(0);
-            checkMap.forEach((key, count) -> {
-                assertEquals((float) key, keys.get(offset.intValue()));
-                assertEquals((long) count, counts.get(offset.intValue()));
-                offset.increment();
-            });
         } catch (AssertionFailure e) {
             TestCase.fail("Check failed at " + desc + ": " + e.getMessage());
         }

@@ -1359,7 +1359,7 @@ public final class ObjectSegmentedSortedArray implements SegmentedSortedArray {
      *
      * @return a chunk of the SSAs value's, the caller owns the chunk and should close it
      */
-    ObjectChunk<Object, ? extends Any> asObjectChunk() {
+    WritableObjectChunk<Object, ? extends Any> asObjectChunk() {
         final int chunkSize = intSize();
         final WritableObjectChunk<Object, ? extends Any> values = WritableObjectChunk.makeWritableChunk(chunkSize);
         if (leafCount == 0) {
@@ -1380,11 +1380,11 @@ public final class ObjectSegmentedSortedArray implements SegmentedSortedArray {
     }
 
     /**
-     * Produce a single chunk of all the indiceds in this SSA.
+     * Produce a single chunk of all the indices in this SSA.
      *
      * @return a chunk of the SSA's indices, the caller owns the chunk and should close it
      */
-    LongChunk<RowKeys> keyIndicesChunk() {
+    WritableLongChunk<RowKeys> keyIndicesChunk() {
         final int chunkSize = intSize();
         final WritableLongChunk<Attributes.RowKeys> indices = WritableLongChunk.makeWritableChunk(chunkSize);
         if (leafCount == 0) {
