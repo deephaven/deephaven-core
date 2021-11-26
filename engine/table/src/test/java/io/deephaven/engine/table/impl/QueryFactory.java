@@ -619,9 +619,9 @@ public class QueryFactory {
                     String[] wightedAverageCols = {"MyInt", "MyLong", "MyFloat", "MyDouble", "MyShort", "MyByte"};
                     ArrayList<String> otherColSet = new ArrayList<>(Arrays.asList(wightedAverageCols));
                     int otherColNum = 1;
-                    int numOfColumns = random.nextInt(otherColSet.size() - 1) + 1;
-                    opChain.append("AggWAvg(\"").append(otherColSet.get(0)).append("\",");
+                    int numOfColumns = random.nextInt(otherColSet.size() - 2) + 2; // Must be > 1
                     Collections.shuffle(otherColSet, random);
+                    opChain.append("AggWAvg(\"").append(otherColSet.get(0)).append("\",");
                     for (; otherColNum < numOfColumns; ++otherColNum) {
                         String col = otherColSet.get(otherColNum);
                         opChain.append("\"other_").append(col).append(" = ").append(col).append("\",");

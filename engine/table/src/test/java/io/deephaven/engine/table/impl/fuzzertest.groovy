@@ -90,6 +90,6 @@ table8227532519336383174_7a = table8227532519336383174_3.flatten()
 maybeAddValidator(validators, "table8227532519336383174_7a")
 table8227532519336383174_7 = table8227532519336383174_7a.join(randomValues,"MyLong","Timestamp");
 maybeAddValidator(validators, "table8227532519336383174_7")
-table8227532519336383174_8a = table8227532519336383174_7.aggBy(AggCombo(AggLast("MyLong")))
+table8227532519336383174_8a = table8227532519336383174_7.aggBy(AggLast("MyLong"))
 maybeAddValidator(validators, "table8227532519336383174_8a")
 addPrintListener("table8227532519336383174_8a", printListeners)
