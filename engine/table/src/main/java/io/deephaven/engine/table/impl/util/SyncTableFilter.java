@@ -293,10 +293,10 @@ public class SyncTableFilter {
     private void doMatch(final int tableIndex, final KeyState state, final long matchValue) {
         final RowSetBuilderSequential matchedBuilder = RowSetFactory.builderSequential();
         final RowSetBuilderSequential pendingBuilder = RowSetFactory.builderSequential();
-        final WritableLongChunk<Attributes.OrderedRowKeys> keyIndices =
-                WritableLongChunk.makeWritableChunk(CHUNK_SIZE);
 
-        try (final RowSequence.Iterator rsIt = state.pendingRows.getRowSequenceIterator();
+        try (final WritableLongChunk<Attributes.OrderedRowKeys> keyIndices =
+                WritableLongChunk.makeWritableChunk(CHUNK_SIZE);
+                final RowSequence.Iterator rsIt = state.pendingRows.getRowSequenceIterator();
                 final ColumnSource.GetContext getContext = idSources.get(tableIndex).makeGetContext(CHUNK_SIZE)) {
             while (rsIt.hasMore()) {
                 final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(CHUNK_SIZE);
@@ -399,13 +399,14 @@ public class SyncTableFilter {
     }
 
     private void consumeRows(final int tableIndex, final RowSet rowSet) {
-        // in Treasure the TupleSource will handle chunks better
-        final WritableObjectChunk valuesChunk = WritableObjectChunk.makeWritableChunk(CHUNK_SIZE);
-        final WritableLongChunk<Attributes.Values> idChunk = WritableLongChunk.makeWritableChunk(CHUNK_SIZE);
-        final WritableLongChunk<Attributes.OrderedRowKeys> keyIndicesChunk =
-                WritableLongChunk.makeWritableChunk(CHUNK_SIZE);
         final ColumnSource<Long> idSource = idSources.get(tableIndex);
-        try (final RowSequence.Iterator rsIt = rowSet.getRowSequenceIterator();
+        // TODO(1606): migrate to using TupleSource.fillChunk
+        try (final WritableObjectChunk<Object, Attributes.Any> valuesChunk =
+                WritableObjectChunk.makeWritableChunk(CHUNK_SIZE);
+                final WritableLongChunk<Attributes.Values> idChunk = WritableLongChunk.makeWritableChunk(CHUNK_SIZE);
+                final WritableLongChunk<Attributes.OrderedRowKeys> keyIndicesChunk =
+                        WritableLongChunk.makeWritableChunk(CHUNK_SIZE);
+                final RowSequence.Iterator rsIt = rowSet.getRowSequenceIterator();
                 final ColumnSource.FillContext fillContext = idSource.makeFillContext(CHUNK_SIZE)) {
             while (rsIt.hasMore()) {
                 final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(CHUNK_SIZE);
@@ -413,14 +414,12 @@ public class SyncTableFilter {
                 valuesChunk.setSize(0);
                 chunkOk.forEachRowKey(idx -> {
                     Object tuple = keySources[tableIndex].createTuple(idx);
-                    // noinspection unchecked
                     valuesChunk.add(tuple);
                     return true;
                 });
                 idSource.fillChunk(fillContext, idChunk, chunkOk);
 
-                // TODO: when we are in Treasure, we should sort this so we do not need to repeatedly look things up
-                // TODO: In Treasure we can also use current factories for our rowSet
+                // TODO(1606): we should sort this so we do not need to repeatedly look things up
                 for (int ii = 0; ii < idChunk.size(); ++ii) {
                     final Object key = valuesChunk.get(ii);
                     pendingKeys.add(key);

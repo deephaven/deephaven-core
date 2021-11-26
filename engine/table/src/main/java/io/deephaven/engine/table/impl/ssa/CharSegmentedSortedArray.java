@@ -1354,7 +1354,7 @@ public final class CharSegmentedSortedArray implements SegmentedSortedArray {
      *
      * @return a chunk of the SSAs value's, the caller owns the chunk and should close it
      */
-    CharChunk<? extends Any> asCharChunk() {
+    WritableCharChunk<? extends Any> asCharChunk() {
         final int chunkSize = intSize();
         final WritableCharChunk<? extends Any> values = WritableCharChunk.makeWritableChunk(chunkSize);
         if (leafCount == 0) {
@@ -1375,11 +1375,11 @@ public final class CharSegmentedSortedArray implements SegmentedSortedArray {
     }
 
     /**
-     * Produce a single chunk of all the indiceds in this SSA.
+     * Produce a single chunk of all the indices in this SSA.
      *
      * @return a chunk of the SSA's indices, the caller owns the chunk and should close it
      */
-    LongChunk<RowKeys> keyIndicesChunk() {
+    WritableLongChunk<RowKeys> keyIndicesChunk() {
         final int chunkSize = intSize();
         final WritableLongChunk<Attributes.RowKeys> indices = WritableLongChunk.makeWritableChunk(chunkSize);
         if (leafCount == 0) {

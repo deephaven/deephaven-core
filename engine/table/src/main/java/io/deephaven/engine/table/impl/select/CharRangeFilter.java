@@ -1,15 +1,15 @@
 package io.deephaven.engine.table.impl.select;
 
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ColumnDefinition;
-import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
-import io.deephaven.util.compare.CharComparisons;
-import io.deephaven.engine.table.impl.chunkfilter.CharRangeComparator;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.chunkfilter.CharRangeComparator;
+import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 import io.deephaven.gui.table.filters.Condition;
 import io.deephaven.util.QueryConstants;
+import io.deephaven.util.compare.CharComparisons;
 import io.deephaven.util.type.TypeUtils;
 
 public class CharRangeFilter extends AbstractRangeFilter {

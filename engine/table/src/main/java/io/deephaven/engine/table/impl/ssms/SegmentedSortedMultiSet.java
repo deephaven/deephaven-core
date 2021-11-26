@@ -1,10 +1,14 @@
 package io.deephaven.engine.table.impl.ssms;
 
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.chunk.ChunkType;
+import io.deephaven.engine.chunk.WritableChunk;
+import io.deephaven.engine.chunk.WritableIntChunk;
+import io.deephaven.engine.chunk.WritableLongChunk;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.engine.chunk.Attributes.ChunkLengths;
 import io.deephaven.engine.chunk.Attributes.Values;
-import io.deephaven.engine.chunk.*;
+import io.deephaven.util.annotations.VisibleForTesting;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
@@ -77,16 +81,14 @@ public interface SegmentedSortedMultiSet<T> extends LongSizedDataStructure {
             WritableIntChunk<ChunkLengths> lengths);
 
     @NotNull
-    default Chunk<?> keyChunk() {
-        return null;
-    }
+    @VisibleForTesting
+    WritableChunk<?> keyChunk();
 
     default void fillKeyChunk(WritableChunk<?> keyChunk, int offset) {}
 
     @NotNull
-    default LongChunk<?> countChunk() {
-        return null;
-    }
+    @VisibleForTesting
+    WritableLongChunk<?> countChunk();
 
     class RemoveContext {
         RemoveContext(int leafSize) {
