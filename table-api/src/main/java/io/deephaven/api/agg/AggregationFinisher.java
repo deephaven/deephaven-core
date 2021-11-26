@@ -28,7 +28,7 @@ public abstract class AggregationFinisher<AGG extends Aggregation> {
         return ImmutableAggregationFinisher.of(AbsSum::of);
     }
 
-    public static AggregationFinisher<Group> array() {
+    public static AggregationFinisher<Group> group() {
         return ImmutableAggregationFinisher.of(Group::of);
     }
 
@@ -166,7 +166,11 @@ public abstract class AggregationFinisher<AGG extends Aggregation> {
         return of(Pair.parse(arg));
     }
 
-    public final Multi<AGG> of(String... arguments) {
+    public final Aggregation of(String... arguments) {
+        return arguments.length == 1 ? of(arguments[0]) : multiOf(arguments);
+    }
+
+    public final Multi<AGG> multiOf(String... arguments) {
         Multi.Builder<AGG> builder = Multi.builder();
         for (String x : arguments) {
             builder.addAggregations(of(x));

@@ -1189,7 +1189,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     }
 
     public void testRollupReverseLookup() {
-        final Collection<? extends Aggregation> comboAgg = Aggregation.AggSum("IntCol", "DoubleCol").aggregations();
+        final Collection<? extends Aggregation> comboAgg = List.of(Aggregation.AggSum("IntCol", "DoubleCol"));
         final Random random = new Random(0);
 
         final int size = 100;

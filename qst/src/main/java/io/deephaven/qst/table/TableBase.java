@@ -422,6 +422,25 @@ public abstract class TableBase implements TableSpec {
     }
 
     @Override
+    public final AggregationTable aggBy(Aggregation aggregation) {
+        return AggregationTable.builder().parent(this).addAggregations(aggregation).build();
+    }
+
+    @Override
+    public final AggregationTable aggBy(Aggregation aggregation, String... groupByColumns) {
+        final AggregationTable.Builder builder = AggregationTable.builder().parent(this);
+        for (String groupByColumn : groupByColumns) {
+            builder.addColumns(Selectable.parse(groupByColumn));
+        }
+        return builder.addAggregations(aggregation).build();    }
+
+    @Override
+    public final AggregationTable aggBy(Aggregation aggregation, Collection<? extends Selectable> groupByColumns) {
+        return AggregationTable.builder().parent(this).addAllColumns(groupByColumns)
+                .addAggregations(aggregation).build();
+    }
+
+    @Override
     public final AggregationTable aggBy(Collection<? extends Aggregation> aggregations) {
         return AggregationTable.builder().parent(this).addAllAggregations(aggregations).build();
     }

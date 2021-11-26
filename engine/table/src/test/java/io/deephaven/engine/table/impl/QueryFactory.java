@@ -46,7 +46,6 @@ public class QueryFactory {
     // Needs to have keys: supportedOps, safeBy, safeAgg, changingBy, changingAgg
     private final Map<String, String[]> switchControlValues;
 
-
     // default values
     private static final String DEFAULT_TABLE_ONE = "randomValues";
     private static final String DEFAULT_TABLE_TWO = "tickingValues";
@@ -190,7 +189,6 @@ public class QueryFactory {
 
         for (int opNum = 1; opNum <= numberOfOperations; ++opNum) {
 
-
             // Select half way
             if (doSelectHalfWay && opNum == numberOfOperations / 2) {
                 addSelectOperation(opNum, opChain, nameSeed);
@@ -245,13 +243,9 @@ public class QueryFactory {
             addNormalOperation(opNum, opChain, queryRandom, nameSeed);
 
             // TODO add attribute string
-
-
         }
 
         // TODO add validators
-
-
         return opChain.toString();
     }
 
@@ -292,13 +286,12 @@ public class QueryFactory {
 
     private void addByOperation(int opNum, StringBuilder opChain, Random random, String[] possibleByOperations,
             String nameSeed) {
-
         final String operation = possibleByOperations[random.nextInt(possibleByOperations.length)];
         final int numberOfColumns = random.nextInt(3) + 1;
-        final ArrayList<String> anyCols = new ArrayList<>();
-        final ArrayList<String> numericCols = new ArrayList<>();
-        final ArrayList<String> colSet = new ArrayList<>(Arrays.asList(columnNames));
-        final ArrayList<String> numericColSet = new ArrayList<>(numericColumns);
+        final List<String> anyCols = new ArrayList<>();
+        final List<String> numericCols = new ArrayList<>();
+        final List<String> colSet = new ArrayList<>(Arrays.asList(columnNames));
+        final List<String> numericColSet = new ArrayList<>(numericColumns);
         addNormalTableSegment(opChain, nameSeed, opNum);
 
         Collections.shuffle(colSet, random);
@@ -308,7 +301,6 @@ public class QueryFactory {
             anyCols.add(colSet.get(colNum));
             numericCols.add(numericColSet.get(colNum));
         }
-
 
         switch (operation) {
 
@@ -357,25 +349,30 @@ public class QueryFactory {
                 break;
 
             case "sortedFirstBy":
-                opChain.append(".groupBy( new SortedFirstBy(").append(stringArrayToMultipleStringArgumentList(anyCols))
-                        .append("));\n");
+                opChain.append(".aggBy(List.of(AggSortedFirst(List.of(")
+                        .append(stringArrayToMultipleStringArgumentList(anyCols))
+                        .append("), ")
+                        .append(stringArrayToMultipleStringArgumentList(colSet))
+                        .append(")));\n");
                 break;
 
             case "sortedLastBy":
-                opChain.append(".groupBy( new SortedLastBy(").append(stringArrayToMultipleStringArgumentList(anyCols))
-                        .append("));\n");
+                opChain.append(".aggBy(List.of(AggSortedLast(List.of(")
+                        .append(stringArrayToMultipleStringArgumentList(anyCols))
+                        .append("), ")
+                        .append(stringArrayToMultipleStringArgumentList(colSet))
+                        .append(")));\n");
                 break;
 
             case "percentileBy":
-                opChain.append(".groupBy(new PercentileBySpecImpl(0.25));\n");
+                opChain.append(".aggBy(List.of(AggPct(0.25, ")
+                        .append(stringArrayToMultipleStringArgumentList(colSet))
+                        .append(")));\n");
                 break;
-
 
             default:
                 throw new RuntimeException("By operation(" + operation + ") not found in switch statement");
-
         }
-
     }
 
     private void addApplyToAllByOperation(int opNum, StringBuilder opChain, Random random, String nameSeed) {
@@ -403,15 +400,13 @@ public class QueryFactory {
         final ArrayList<String> colSet = new ArrayList<>(numericColumns);
         final int numOfAggs = random.nextInt(colSet.size() - 1) + 1;
 
-
         Collections.shuffle(colSet, random);
         Collections.shuffle(aggSet, random);
         for (int aggNum = 0; aggNum < numOfAggs; ++aggNum) {
             activeAggs.add(aggSet.get(aggNum));
         }
 
-
-        opChain.append(".rollup(AggCombo(");
+        opChain.append(".rollup(List.of(");
         int columnNumber = 0;
         for (String agg : activeAggs) {
             opChain.append(agg).append("(\"").append(colSet.get(columnNumber)).append("\"),");
@@ -450,10 +445,7 @@ public class QueryFactory {
         opChain.append(" \"Parent = `T`+").append(columnName).append("\");\n");
 
         opChain.append("tree").append(nameSeed).append(" = merge(part1,part2).treeTable(\"ID\",\"Parent\");\n");
-
-
     }
-
 
     private void addPartitionByOperation(int opNum, StringBuilder opChain, Random random, String nameSeed) {
         final StringBuilder mapName = new StringBuilder("map").append(nameSeed).append("_").append(opNum);
@@ -485,7 +477,6 @@ public class QueryFactory {
                 colsToJoin.add(columnNames[0]);
         }
 
-
         opChain.append(".dropColumns(").append(stringArrayToMultipleStringArgumentList(colsToJoin))
                 .append(").flatten().join(");
         if (random.nextInt(2) == 0) {
@@ -497,7 +488,6 @@ public class QueryFactory {
 
         opChain.append(",\"").append(joinCol).append("\",").append(stringArrayToSingleArgumentList(colsToJoin))
                 .append(");\n");
-
     }
 
     private void addNaturalJoinOperation(int opNum, StringBuilder opChain, Random random, String nameSeed) {
@@ -536,12 +526,9 @@ public class QueryFactory {
         int numOfAggs = random.nextInt(Math.min(numericColumns.size(), aggSet.size()) - 1) + 1;
         addNormalTableSegment(opChain, nameSeed, opNum);
 
-
         ArrayList<String> colSet = new ArrayList<>(numericColumns);
 
-
         Collections.shuffle(colSet, random);
-
 
         // Set up buckets
         ArrayList<ArrayList<String>> argLists = new ArrayList<>();
@@ -557,7 +544,6 @@ public class QueryFactory {
         // NOOPColumns.add("Timestamp");
         argLists.add(NOOPColumns);
 
-
         // Add columns to buckets.
         // Make sure each bucket has at least one column
         for (int aggNum = 0; aggNum < activeAggs.size(); ++aggNum) {
@@ -569,8 +555,7 @@ public class QueryFactory {
             argLists.get(random.nextInt(argLists.size())).add(colSet.get(columnIndex));
         }
 
-
-        opChain.append(".groupBy(AggCombo(");
+        opChain.append(".aggBy(List.of(");
         for (int aggNum = 0; aggNum < activeAggs.size(); ++aggNum) {
             switch (activeAggs.get(aggNum)) {
                 case "AggSum":
@@ -651,7 +636,7 @@ public class QueryFactory {
                     continue;
 
                 default:
-                    throw new RuntimeException("Have a bug in the  aggCombo: " + activeAggs.get(aggNum) + " missing");
+                    throw new RuntimeException("Have a bug in the aggCombo: " + activeAggs.get(aggNum) + " missing");
 
             }
             opChain.append(stringArrayToMultipleStringArgumentList(argLists.get(aggNum))).append("),");
@@ -663,14 +648,11 @@ public class QueryFactory {
             opChain.append(".join( table").append(nameSeed).append("_").append(opNum - 1).append(",\"")
                     .append(argLists.get(0).get(0)).append("\", ")
                     .append(stringArrayToSingleArgumentList(argLists.get(argLists.size() - 1))).append(");\n");
-
-
     }
 
     private String createWhereFilter(Random random) {
         final int colNum = random.nextInt(columnNames.length);
         final String colName = columnNames[colNum];
-
 
         // TODO add more filter variations.
         StringBuilder filter = new StringBuilder();
@@ -693,14 +675,12 @@ public class QueryFactory {
                 filter.append(colName).append(" > ").append(random.nextInt(500) - 250);
                 break;
 
-
             case "float":
             case "Float":
             case "double":
             case "Double":
                 filter.append(colName).append(" > ").append(250 * random.nextFloat());
                 break;
-
 
             case "boolean":
             case "Boolean":
@@ -712,7 +692,6 @@ public class QueryFactory {
                 filter.append("in(").append(colName).append(",'").append((char) (random.nextInt(27) + 97)).append("')");
                 break;
 
-
             case "byte":
             case "Byte":
                 filter.append(colName).append(" > ").append(random.nextInt(128) - 64);
@@ -723,20 +702,16 @@ public class QueryFactory {
                 filter.append(colName).append(" != null");
                 break;
 
-
             default:
                 throw new RuntimeException("Column type not found:" + columnTypes[colNum].getSimpleName());
-
         }
 
         return filter.toString();
     }
 
     private void addNormalOperation(int opNum, StringBuilder opChain, Random random, String nameSeed) {
-
         String operation =
                 switchControlValues.get("supportedOps")[random.nextInt(switchControlValues.get("supportedOps").length)];
-
 
         switch (operation) {
 
@@ -822,7 +797,6 @@ public class QueryFactory {
         // TODO set attributes
     }
 
-
     /**
      * Get a set of table to use with the fuzzer.
      * <p>
@@ -834,11 +808,9 @@ public class QueryFactory {
      * @return A string that contains all common things that are needed to use generateQuery()
      */
     public String getTablePreamble(Long tableSeed) {
-
-
-        return "\n\nimport io.deephaven.engine.table.impl.groupBy.SortedFirstBy;\n" +
-                "import io.deephaven.engine.table.impl.groupBy.PercentileBySpecImpl;\n" +
-                "import io.deephaven.engine.table.impl.groupBy.SortedLastBy;\n\n\n" +
+        return "\n\nimport io.deephaven.engine.table.impl.by.SortedFirstBy;\n" +
+                "import io.deephaven.engine.table.impl.by.SortedLastBy;\n\n\n" +
+                "import io.deephaven.engine.table.impl.by.PercentileBySpecImpl;\n" +
                 "tableSeed = " + tableSeed + " as long;\n" +
                 "size = 100 as int;\n" +
                 "scale = 1000 as int;\n" +
@@ -895,8 +867,5 @@ public class QueryFactory {
                 "\"MyBigInteger=(i%nullPoints[15] == 0 ? null : new java.math.BigInteger(Integer.toString(columnRandoms[10].nextInt(scale*2) - scale) ))\"\n"
                 +
                 ");\n\n";
-
     }
-
-
 }

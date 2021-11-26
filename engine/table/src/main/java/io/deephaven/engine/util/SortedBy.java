@@ -44,7 +44,7 @@ public class SortedBy {
      */
     @NotNull
     public static Table sortedFirstBy(@NotNull Table input, @NotNull String sortColumnName) {
-        return input.aggBy(AggSortedFirst(sortColumnName, resultColumns(input)).aggregations());
+        return input.aggBy(AggSortedFirst(sortColumnName, resultColumns(input)));
     }
 
     /**
@@ -57,7 +57,7 @@ public class SortedBy {
      */
     @NotNull
     public static Table sortedFirstBy(@NotNull Table input, @NotNull String[] sortColumnNames) {
-        return input.aggBy(AggSortedFirst(Arrays.asList(sortColumnNames), resultColumns(input)).aggregations());
+        return input.aggBy(AggSortedFirst(Arrays.asList(sortColumnNames), resultColumns(input)));
     }
 
     /**
@@ -73,7 +73,7 @@ public class SortedBy {
     public static Table sortedFirstBy(@NotNull Table input, @NotNull String sortColumnName,
             @NotNull String... groupByColumns) {
         return input.aggBy(
-                AggSortedFirst(sortColumnName, resultColumns(input, Arrays.asList(groupByColumns))).aggregations(),
+                AggSortedFirst(sortColumnName, resultColumns(input, Arrays.asList(groupByColumns))),
                 groupByColumns);
     }
 
@@ -90,8 +90,7 @@ public class SortedBy {
     public static Table sortedFirstBy(@NotNull Table input, @NotNull String[] sortColumnNames,
             @NotNull String... groupByColumns) {
         return input.aggBy(
-                AggSortedFirst(Arrays.asList(sortColumnNames), resultColumns(input, Arrays.asList(groupByColumns)))
-                        .aggregations(),
+                AggSortedFirst(Arrays.asList(sortColumnNames), resultColumns(input, Arrays.asList(groupByColumns))),
                 groupByColumns);
     }
 
@@ -108,7 +107,7 @@ public class SortedBy {
     public static Table sortedFirstBy(@NotNull Table input, @NotNull String sortColumnName,
             @NotNull Collection<String> groupByColumns) {
         return input.aggBy(
-                AggSortedFirst(sortColumnName, resultColumns(input, groupByColumns)).aggregations(),
+                AggSortedFirst(sortColumnName, resultColumns(input, groupByColumns)),
                 groupByColumns.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
     }
 
@@ -125,7 +124,7 @@ public class SortedBy {
     public static Table sortedFirstBy(@NotNull Table input, @NotNull Collection<String> sortColumnNames,
             @NotNull Collection<String> groupByColumns) {
         return input.aggBy(
-                AggSortedFirst(sortColumnNames, resultColumns(input, groupByColumns)).aggregations(),
+                AggSortedFirst(sortColumnNames, resultColumns(input, groupByColumns)),
                 groupByColumns.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
     }
 
@@ -139,7 +138,7 @@ public class SortedBy {
      */
     @NotNull
     public static Table sortedLastBy(@NotNull Table input, @NotNull String sortColumnName) {
-        return input.aggBy(AggSortedLast(sortColumnName, resultColumns(input)).aggregations());
+        return input.aggBy(AggSortedLast(sortColumnName, resultColumns(input)));
     }
 
     /**
@@ -152,7 +151,7 @@ public class SortedBy {
      */
     @NotNull
     public static Table sortedLastBy(@NotNull Table input, @NotNull String[] sortColumnNames) {
-        return input.aggBy(AggSortedLast(Arrays.asList(sortColumnNames), resultColumns(input)).aggregations());
+        return input.aggBy(AggSortedLast(Arrays.asList(sortColumnNames), resultColumns(input)));
     }
 
     /**
@@ -168,7 +167,7 @@ public class SortedBy {
     public static Table sortedLastBy(@NotNull Table input, @NotNull String sortColumnName,
             @NotNull String... groupByColumns) {
         return input.aggBy(
-                AggSortedLast(sortColumnName, resultColumns(input, Arrays.asList(groupByColumns))).aggregations(),
+                AggSortedLast(sortColumnName, resultColumns(input, Arrays.asList(groupByColumns))),
                 groupByColumns);
     }
 
@@ -185,8 +184,7 @@ public class SortedBy {
     public static Table sortedLastBy(@NotNull Table input, @NotNull String[] sortColumnNames,
             @NotNull String... groupByColumns) {
         return input.aggBy(
-                AggSortedLast(Arrays.asList(sortColumnNames), resultColumns(input, Arrays.asList(groupByColumns)))
-                        .aggregations(),
+                AggSortedLast(Arrays.asList(sortColumnNames), resultColumns(input, Arrays.asList(groupByColumns))),
                 groupByColumns);
     }
 
@@ -203,7 +201,7 @@ public class SortedBy {
     public static Table sortedLastBy(@NotNull Table input, @NotNull String sortColumnName,
             @NotNull Collection<String> groupByColumns) {
         return input.aggBy(
-                AggSortedLast(sortColumnName, resultColumns(input, groupByColumns)).aggregations(),
+                AggSortedLast(sortColumnName, resultColumns(input, groupByColumns)),
                 groupByColumns.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
     }
 
@@ -220,7 +218,7 @@ public class SortedBy {
     public static Table sortedLastBy(@NotNull Table input, @NotNull Collection<String> sortColumnNames,
             @NotNull Collection<String> groupByColumns) {
         return input.aggBy(
-                AggSortedLast(sortColumnNames, resultColumns(input, groupByColumns)).aggregations(),
+                AggSortedLast(sortColumnNames, resultColumns(input, groupByColumns)),
                 groupByColumns.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY));
     }
 }

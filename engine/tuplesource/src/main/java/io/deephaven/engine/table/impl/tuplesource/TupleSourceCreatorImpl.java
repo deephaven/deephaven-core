@@ -6,6 +6,7 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.TupleSource;
 import io.deephaven.engine.table.impl.TupleSourceFactory;
 import io.deephaven.engine.time.DateTime;
+import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.Constructor;
@@ -50,8 +51,11 @@ public class TupleSourceCreatorImpl implements TupleSourceFactory.TupleSourceCre
             for (int csi = 0; csi < length; ++csi) {
                 typesNamesAndInternalSources[csi] = columnSourceToTypeNameAndInternalSource(columnSources[csi]);
             }
-            final String factoryClassName = Stream.of(typesNamesAndInternalSources)
-                    .map(Pair::getFirst).collect(Collectors.joining()) + "ColumnTupleSource";
+            final String factoryClassName =
+                    getClass().getPackageName()
+                            + ".generated."
+                            + Stream.of(typesNamesAndInternalSources).map(Pair::getFirst).collect(Collectors.joining())
+                            + "ColumnTupleSource";
             final Class<TupleSource> factoryClass;
             try {
                 // noinspection unchecked
@@ -85,13 +89,13 @@ public class TupleSourceCreatorImpl implements TupleSourceFactory.TupleSourceCre
 
     private static Pair<String, ColumnSource> columnSourceToTypeNameAndInternalSource(
             @NotNull final ColumnSource columnSource) {
-        final ChunkType chunkType = columnSource.getChunkType();
-        if (chunkType != ChunkType.Object) {
-            return new Pair<>(chunkType.name(), columnSource);
+        final Class<?> dataType = columnSource.getType();
+        if (dataType.isPrimitive()) {
+            return new Pair<>(TypeUtils.getBoxedType(dataType).getSimpleName(), columnSource);
         }
         final Class<?> reinterpretAs = TYPE_TO_REINTERPRETED.get(columnSource.getType());
         if (reinterpretAs == null) {
-            return new Pair<>(chunkType.name(), columnSource);
+            return new Pair<>("Object", columnSource);
         }
         // noinspection unchecked
         if (columnSource.allowsReinterpret(reinterpretAs)) {

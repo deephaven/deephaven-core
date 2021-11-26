@@ -675,6 +675,24 @@ public interface TableWithDefaults extends Table {
 
     @Override
     @ConcurrentMethod
+    default Table aggBy(Aggregation aggregation) {
+        return aggBy(List.of(aggregation));
+    }
+
+    @Override
+    @ConcurrentMethod
+    default Table aggBy(Aggregation aggregation, String... groupByColumns) {
+        return aggBy(List.of(aggregation), groupByColumns);
+    }
+
+    @Override
+    @ConcurrentMethod
+    default Table aggBy(Aggregation aggregation, Collection<? extends Selectable> groupByColumns) {
+        return aggBy(List.of(aggregation), groupByColumns);
+    }
+
+    @Override
+    @ConcurrentMethod
     default Table aggBy(Collection<? extends Aggregation> aggregations, String... groupByColumns) {
         return aggBy(aggregations, Stream.of(groupByColumns).map(Selectable::parse).collect(Collectors.toList()));
     }

@@ -14,7 +14,6 @@ import io.deephaven.engine.updategraph.ConcurrentMethod;
 import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.util.systemicmarking.SystemicObject;
-import io.deephaven.qst.table.TableSpec;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -137,7 +136,7 @@ public interface Table extends
      * all rows:
      * <ol>
      * <li>{@link #groupBy} is unsupported
-     * <li>{@link #aggBy} is unsupported if {@link Aggregation#AggArray(String...)} is used
+     * <li>{@link #aggBy} is unsupported if {@link Aggregation#AggGroup(String...)} is used
      * <li>{@link #partitionBy} is unsupported</li>
      * <li>{@link #rollup(Collection, boolean, Selectable...) rollup()} is unsupported if
      * {@code includeConstituents == true}</li>
