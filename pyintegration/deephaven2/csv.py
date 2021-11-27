@@ -58,7 +58,7 @@ def _build_header(header: Dict[str, DType] = None):
 
     table_header_builder = _JTableHeader.builder()
     for k, v in header.items():
-        table_header_builder.putHeaders(k, v.value)
+        table_header_builder.putHeaders(k, v.qst_type)
 
     return table_header_builder.build()
 

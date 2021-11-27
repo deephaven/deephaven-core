@@ -17,40 +17,9 @@ class TableTestCase(BaseTestCase):
     def tearDown(self) -> None:
         self.test_table = None
 
-    def test_empty_table(self):
-        t = empty_table(10)
-        self.assertEqual(0, len(t.columns))
-
-    #
-    # Table creation
-    #
-    def test_empty_table_error(self):
-        with self.assertRaises(DHError) as cm:
-            t = empty_table("abc")
-
-        print(cm.exception.root_cause)
-        self.assertIn("RuntimeError", cm.exception.root_cause)
-        self.assertIn("no matching Java method overloads found", cm.exception.compact_traceback)
-
-    def test_time_table(self):
-        t = time_table("00:00:01")
-        self.assertEqual(1, len(t.columns))
-        self.assertTrue(t.is_refreshing)
-
-        t = time_table("00:00:01", start_time="2021-11-06T13:21:00 NY")
-        self.assertEqual(1, len(t.columns))
-        self.assertTrue(t.is_refreshing)
-        self.assertEqual("2021-11-06T13:21:00.000000000 NY", t.j_table.getColumnSource("Timestamp").get(0).toString())
-
     def test_repr(self):
         print(self.test_table)
         self.assertIn(self.test_table.__class__.__name__, repr(self.test_table))
-
-    def test_time_table_error(self):
-        with self.assertRaises(DHError) as cm:
-            t = time_table("00:0a:01")
-
-        self.assertIn("IllegalArgumentException", cm.exception.root_cause)
 
     #
     # Table operation category: Select
@@ -156,9 +125,7 @@ class TableTestCase(BaseTestCase):
     #
     def test_sort(self):
         sorted_table = self.test_table.sort(order_by=["a", "b"], order=[SortDirection.DESCENDING])
-        # TODO when java-to-python is ready
-        # df = sorted_table.snapshot().to_pandas()
-        # self.assertTrue(df.iloc[:, 0].is_monotonic_decreasing)
+        self.assertEqual(sorted_table.size, self.test_table.size)
 
     def test_restrict_sort_to(self):
         cols = ["b", "e"]
@@ -264,6 +231,15 @@ class TableTestCase(BaseTestCase):
 
         result_table = self.test_table.agg_by(aggs=aggs, by=["a"])
         self.assertEqual(result_table.size, num_distinct_a)
+
+    def test_snapshot(self):
+        snapshot = time_table("00:00:01").snapshot(base_table=self.test_table)
+        self.assertEqual(1 + len(self.test_table.columns), len(snapshot.columns))
+        self.assertTrue(snapshot.is_refreshing)
+        self.assertEqual(0, snapshot.size)
+
+        snapshot = time_table("00:00:01").snapshot(base_table=self.test_table, do_init=True)
+        self.assertEqual(self.test_table.size, snapshot.size)
 
 
 if __name__ == '__main__':
