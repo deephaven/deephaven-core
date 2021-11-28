@@ -437,13 +437,12 @@ public class QueryTable extends BaseTable {
     @Override
     public Table rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents,
             Selectable... groupByColumns) {
-        return aggByInternal(aggregations, groupByColumns, (caf, gbc) -> rollup(caf, includeConstituents, gbc));
+        return aggByInternal(aggregations, groupByColumns, (af, gbc) -> rollup(af, includeConstituents, gbc));
     }
 
     // TODO (https://github.com/deephaven/deephaven-core/issues/991): Make this private, and clean up everything that
-    // uses the AggregationFactory as a specifier.
-    public Table rollup(AggregationFactory aggregationFactory, boolean includeConstituents,
-            SelectColumn... columns) {
+    //                                                                uses the AggregationFactory as a specifier.
+    public Table rollup(AggregationFactory aggregationFactory, boolean includeConstituents, SelectColumn... columns) {
         if (isStream() && includeConstituents) {
             throw streamUnsupported("rollup with included constituents");
         }
@@ -695,7 +694,7 @@ public class QueryTable extends BaseTable {
     }
 
     // TODO (https://github.com/deephaven/deephaven-core/issues/991): Make this private, and clean up everything that
-    // uses the AggregationFactory as a specifier.
+    //                                                                uses the AggregationFactory as a specifier.
     public Table by(final AggregationSpec inputAggregationSpec, final SelectColumn... groupByColumns) {
         return memoizeResult(MemoizedOperationKey.by(inputAggregationSpec, groupByColumns),
                 () -> byNoMemo(inputAggregationSpec, groupByColumns));

@@ -2356,7 +2356,7 @@ public class QueryTableTest extends QueryTableTestBase {
         final String diff4 = diff(t8, t7, 10);
         Assert.assertEquals("UngroupableColumnSources do not match!", "", diff4);
 
-        final Table t9 = t1.update("Array=new IntVectorDirect(19, 40)");
+        final Table t9 = t1.update("Array=new io.deephaven.engine.vector.IntVectorDirect(19, 40)");
         final Table t10 = t9.ungroup();
         final String diff5 = diff(t10, t6, 10);
         Assert.assertEquals("UngroupableColumnSources do not match!", "", diff5);

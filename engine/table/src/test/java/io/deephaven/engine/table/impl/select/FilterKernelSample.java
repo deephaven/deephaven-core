@@ -39,6 +39,7 @@ import io.deephaven.engine.table.lang.QueryScopeParam;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.time.Period;
+import io.deephaven.engine.vector.VectorConversions;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.util.type.TypeUtils;
@@ -84,7 +85,7 @@ public class FilterKernelSample implements io.deephaven.engine.table.impl.select
     private final float p2;
     private final java.lang.String p3;
 
-    public FilterKernelSample(Table table, TrackingRowSet fullSet, QueryScopeParam... params) {
+    public FilterKernelSample(Table table, RowSet fullSet, QueryScopeParam... params) {
         this.p1 = (java.lang.Integer) params[0].getValue();
         this.p2 = (java.lang.Float) params[1].getValue();
         this.p3 = (java.lang.String) params[2].getValue();

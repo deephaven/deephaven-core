@@ -1164,11 +1164,11 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
     }
 
     public void testPercentileBy() throws Exception {
-        final String[] nonKeyColumnNames = testTable().getDefinition().getColumnStream()
+        final Function<Table, String[]> nonKeyColumnNames = t -> t.getDefinition().getColumnStream()
                 .map(ColumnDefinition::getName).filter(cn -> !cn.equals("KeyColumn")).toArray(String[]::new);
-        testByConcurrent(t -> t.dropColumns("KeyColumn").aggBy(AggPct(0.25, nonKeyColumnNames)),
+        testByConcurrent(t -> t.dropColumns("KeyColumn").aggBy(AggPct(0.25, nonKeyColumnNames.apply(t))),
                 false, false, true, true);
-        testByConcurrent(t -> t.dropColumns("KeyColumn").aggBy(AggPct(0.75, nonKeyColumnNames)),
+        testByConcurrent(t -> t.dropColumns("KeyColumn").aggBy(AggPct(0.75, nonKeyColumnNames.apply(t))),
                 false, false, true, true);
         testByConcurrent(t -> t.medianBy("KeyColumn"));
     }

@@ -918,8 +918,8 @@ public class QueryTableJoinTest {
         assertEquals(1, vValues[1].size());
         assertNull(vValues[2]);
         DoubleVector[] uValues = (DoubleVector[]) pairMatch.getColumn("u").getDirect();
-        assertEquals(3.0, uValues[0].get(0));
-        assertEquals(4.0, uValues[1].get(0));
+        assertEquals(3.0, uValues[0].get(0), 0.000001);
+        assertEquals(4.0, uValues[1].get(0), 0.000001);
         assertEquals(1, uValues[0].size());
         assertEquals(1, uValues[1].size());
         assertNull(vValues[2]);
@@ -956,8 +956,8 @@ public class QueryTableJoinTest {
         assertEquals(1, vValues[1].size());
         assertNull(vValues[2]);
         uValues = (DoubleVector[]) pairMatch.getColumn("u").getDirect();
-        assertEquals(3.0, uValues[0].get(0));
-        assertEquals(4.0, uValues[1].get(0));
+        assertEquals(3.0, uValues[0].get(0), 0.000001);
+        assertEquals(4.0, uValues[1].get(0), 0.000001);
         assertEquals(1, uValues[0].size());
         assertEquals(1, uValues[1].size());
         assertNull(vValues[2]);

@@ -30,11 +30,11 @@ public interface JoinMatch extends Serializable {
     }
 
     static JoinMatch parse(String x) {
-        if (ColumnName.isValidParsedColumnName(x)) {
+        final int ix = x.indexOf('=');
+        if (ix < 0) {
             return ColumnName.parse(x);
         }
-        final int ix = x.indexOf('=');
-        if (ix < 0 || ix + 1 == x.length()) {
+        if (ix + 1 == x.length()) {
             throw new IllegalArgumentException(String.format(
                     "Unable to parse match '%s', expected form '<left>==<right>' or `<left>=<right>`",
                     x));

@@ -160,11 +160,6 @@ public class ZeroKeyChunkedAjMergedListener extends MergedListener {
                     }
                 }
 
-                if (leftStampModified) {
-                    leftRestampRemovals.close();
-                }
-
-
                 final RowSetShiftData leftShifted = leftRecorder.getShifted();
                 if (leftShifted.nonempty()) {
                     // now we apply the left shifts, so that anything in our SSA is a relevant thing to stamp
@@ -173,6 +168,10 @@ public class ZeroKeyChunkedAjMergedListener extends MergedListener {
                     }
                     ChunkedAjUtils.bothIncrementalLeftSsaShift(leftShifted, leftSsa, leftRestampRemovals, leftTable,
                             leftChunkSize, leftStampSource);
+                }
+
+                if (leftStampModified) {
+                    leftRestampRemovals.close();
                 }
             } else {
                 downstream.added = RowSetFactory.empty();

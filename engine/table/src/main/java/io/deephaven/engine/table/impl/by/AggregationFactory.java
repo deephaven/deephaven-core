@@ -619,7 +619,7 @@ public class AggregationFactory implements AggregationSpec {
          * Equivalent to {@code optimize(Collections.singleton(aggregation))}.
          *
          * @param aggregation the aggregation
-         * @return the optimized combos
+         * @return the optimized aggregations
          * @see #optimize(Collection)
          */
         static List<AggregationElement> optimize(Aggregation aggregation) {
@@ -627,18 +627,18 @@ public class AggregationFactory implements AggregationSpec {
         }
 
         /**
-         * Optimizes the aggregations, collapsing relevant aggregations into single {@link AggregationElement comboBys}
+         * Optimizes the aggregations, collapsing relevant aggregations into single {@link AggregationElement elements}
          * where applicable.
          *
          * <p>
-         * Note: due to the optimization, the combo bys may not be in the same order as specified in
+         * Note: due to the optimization, the aggregation elements may not be in the same order as specified in
          * {@code aggregations}.
          *
          * @param aggregations the aggregations
-         * @return the optimized combos
+         * @return the optimized aggregations
          */
         static List<AggregationElement> optimize(Collection<? extends Aggregation> aggregations) {
-            ComboByAggregationAdapterOptimizer builder = new ComboByAggregationAdapterOptimizer();
+            AggregationAdapterOptimizer builder = new AggregationAdapterOptimizer();
             for (Aggregation a : aggregations) {
                 a.walk(builder);
             }
@@ -885,7 +885,7 @@ public class AggregationFactory implements AggregationSpec {
                     aggregationElement.getResultPairs());
         }
 
-        return new ComboByMemoKey(underlyingMemoKeys);
+        return new AggByMemoKey(underlyingMemoKeys);
     }
 
     private static class UnderlyingMemoKey {
@@ -922,10 +922,10 @@ public class AggregationFactory implements AggregationSpec {
         }
     }
 
-    private static class ComboByMemoKey implements AggregationMemoKey {
+    private static class AggByMemoKey implements AggregationMemoKey {
         private final UnderlyingMemoKey[] underlyingMemoKeys;
 
-        private ComboByMemoKey(UnderlyingMemoKey[] underlyingMemoKeys) {
+        private AggByMemoKey(UnderlyingMemoKey[] underlyingMemoKeys) {
             this.underlyingMemoKeys = underlyingMemoKeys;
         }
 
@@ -936,8 +936,8 @@ public class AggregationFactory implements AggregationSpec {
 
         @Override
         public boolean equals(Object obj) {
-            return obj instanceof ComboByMemoKey
-                    && Arrays.equals(underlyingMemoKeys, ((ComboByMemoKey) obj).underlyingMemoKeys);
+            return obj instanceof AggByMemoKey
+                    && Arrays.equals(underlyingMemoKeys, ((AggByMemoKey) obj).underlyingMemoKeys);
         }
     }
 
@@ -1590,7 +1590,7 @@ public class AggregationFactory implements AggregationSpec {
         table.setAttribute(Table.REVERSE_LOOKUP_ATTRIBUTE, ReverseLookup.NULL);
     }
 
-    private static class ComboByAggregationAdapterOptimizer implements Aggregation.Visitor {
+    private static class AggregationAdapterOptimizer implements Aggregation.Visitor {
 
         private final List<Pair> absSums = new ArrayList<>();
         private final List<Pair> arrays = new ArrayList<>();
@@ -1614,8 +1614,8 @@ public class AggregationFactory implements AggregationSpec {
         private final Map<ColumnName, List<Pair>> wSums = new HashMap<>();
 
         /**
-         * We'll do our best to maintain the original combo ordering. This will maintain the user-specified order as
-         * long as the user aggregation types were all next to each other.
+         * We'll do our best to maintain the original aggregation ordering. This will maintain the user-specified order
+         * as long as the user aggregation types were all next to each other.
          *
          * ie:
          *
@@ -1655,138 +1655,137 @@ public class AggregationFactory implements AggregationSpec {
 
 
         List<AggregationElement> build() {
-            List<AggregationElement> combos = new ArrayList<>();
+            List<AggregationElement> aggs = new ArrayList<>();
             for (BuildLogic buildLogic : buildOrder) {
-                buildLogic.appendTo(combos);
+                buildLogic.appendTo(aggs);
             }
-            return combos;
+            return aggs;
         }
 
-        private void buildWSums(List<AggregationElement> combos) {
+        private void buildWSums(List<AggregationElement> aggs) {
             for (Map.Entry<ColumnName, List<Pair>> e : wSums.entrySet()) {
-                combos.add(Agg(new WeightedSumSpecImpl(e.getKey().name()), MatchPair.fromPairs(e.getValue())));
+                aggs.add(Agg(new WeightedSumSpecImpl(e.getKey().name()), MatchPair.fromPairs(e.getValue())));
             }
         }
 
-        private void buildWAvgs(List<AggregationElement> combos) {
+        private void buildWAvgs(List<AggregationElement> aggs) {
             for (Map.Entry<ColumnName, List<Pair>> e : wAvgs.entrySet()) {
-                combos.add(
-                        Agg(new WeightedAverageSpecImpl(e.getKey().name()), MatchPair.fromPairs(e.getValue())));
+                aggs.add(Agg(new WeightedAverageSpecImpl(e.getKey().name()), MatchPair.fromPairs(e.getValue())));
             }
         }
 
-        private void buildVars(List<AggregationElement> combos) {
+        private void buildVars(List<AggregationElement> aggs) {
             if (!vars.isEmpty()) {
-                combos.add(Agg(AggType.Var, MatchPair.fromPairs(vars)));
+                aggs.add(Agg(AggType.Var, MatchPair.fromPairs(vars)));
             }
         }
 
-        private void buildUniques(List<AggregationElement> combos) {
+        private void buildUniques(List<AggregationElement> aggs) {
             for (Map.Entry<Boolean, List<Pair>> e : uniques.entrySet()) {
-                combos.add(Agg(new UniqueSpec(e.getKey()), MatchPair.fromPairs(e.getValue())));
+                aggs.add(Agg(new UniqueSpec(e.getKey()), MatchPair.fromPairs(e.getValue())));
             }
         }
 
-        private void buildSums(List<AggregationElement> combos) {
+        private void buildSums(List<AggregationElement> aggs) {
             if (!sums.isEmpty()) {
-                combos.add(Agg(AggType.Sum, MatchPair.fromPairs(sums)));
+                aggs.add(Agg(AggType.Sum, MatchPair.fromPairs(sums)));
             }
         }
 
-        private void buildStds(List<AggregationElement> combos) {
+        private void buildStds(List<AggregationElement> aggs) {
             if (!stds.isEmpty()) {
-                combos.add(Agg(AggType.Std, MatchPair.fromPairs(stds)));
+                aggs.add(Agg(AggType.Std, MatchPair.fromPairs(stds)));
             }
         }
 
-        private void buildSortedLasts(List<AggregationElement> combos) {
+        private void buildSortedLasts(List<AggregationElement> aggs) {
             for (Map.Entry<List<SortColumn>, List<Pair>> e : sortedLasts.entrySet()) {
                 // TODO(deephaven-core#821): SortedFirst / SortedLast aggregations with sort direction
                 String[] columns =
                         e.getKey().stream().map(SortColumn::column).map(ColumnName::name).toArray(String[]::new);
-                combos.add(Agg(new SortedLastBy(columns), MatchPair.fromPairs(e.getValue())));
+                aggs.add(Agg(new SortedLastBy(columns), MatchPair.fromPairs(e.getValue())));
             }
         }
 
-        private void buildSortedFirsts(List<AggregationElement> combos) {
+        private void buildSortedFirsts(List<AggregationElement> aggs) {
             for (Map.Entry<List<SortColumn>, List<Pair>> e : sortedFirsts.entrySet()) {
                 // TODO(deephaven-core#821): SortedFirst / SortedLast aggregations with sort direction
                 String[] columns =
                         e.getKey().stream().map(SortColumn::column).map(ColumnName::name).toArray(String[]::new);
-                combos.add(Agg(new SortedFirstBy(columns), MatchPair.fromPairs(e.getValue())));
+                aggs.add(Agg(new SortedFirstBy(columns), MatchPair.fromPairs(e.getValue())));
             }
         }
 
-        private void buildPcts(List<AggregationElement> combos) {
+        private void buildPcts(List<AggregationElement> aggs) {
             for (Map.Entry<ByteDoubleTuple, List<Pair>> e : pcts.entrySet()) {
-                combos.add(Agg(new PercentileBySpecImpl(e.getKey().getSecondElement(),
+                aggs.add(Agg(new PercentileBySpecImpl(e.getKey().getSecondElement(),
                         e.getKey().getFirstElement() != 0), MatchPair.fromPairs(e.getValue())));
             }
         }
 
-        private void buildMins(List<AggregationElement> combos) {
+        private void buildMins(List<AggregationElement> aggs) {
             if (!mins.isEmpty()) {
-                combos.add(Agg(AggType.Min, MatchPair.fromPairs(mins)));
+                aggs.add(Agg(AggType.Min, MatchPair.fromPairs(mins)));
             }
         }
 
-        private void buildMedians(List<AggregationElement> combos) {
+        private void buildMedians(List<AggregationElement> aggs) {
             for (Map.Entry<Boolean, List<Pair>> e : medians.entrySet()) {
-                combos.add(Agg(new PercentileBySpecImpl(0.50d, e.getKey()), MatchPair.fromPairs(e.getValue())));
+                aggs.add(Agg(new PercentileBySpecImpl(0.50d, e.getKey()), MatchPair.fromPairs(e.getValue())));
             }
         }
 
-        private void buildMaxes(List<AggregationElement> combos) {
+        private void buildMaxes(List<AggregationElement> aggs) {
             if (!maxs.isEmpty()) {
-                combos.add(Agg(AggType.Max, MatchPair.fromPairs(maxs)));
+                aggs.add(Agg(AggType.Max, MatchPair.fromPairs(maxs)));
             }
         }
 
-        private void buildLasts(List<AggregationElement> combos) {
+        private void buildLasts(List<AggregationElement> aggs) {
             if (!lasts.isEmpty()) {
-                combos.add(Agg(AggType.Last, MatchPair.fromPairs(lasts)));
+                aggs.add(Agg(AggType.Last, MatchPair.fromPairs(lasts)));
             }
         }
 
-        private void buildFirsts(List<AggregationElement> combos) {
+        private void buildFirsts(List<AggregationElement> aggs) {
             if (!firsts.isEmpty()) {
-                combos.add(Agg(AggType.First, MatchPair.fromPairs(firsts)));
+                aggs.add(Agg(AggType.First, MatchPair.fromPairs(firsts)));
             }
         }
 
-        private void buildDistincts(List<AggregationElement> combos) {
+        private void buildDistincts(List<AggregationElement> aggs) {
             for (Map.Entry<Boolean, List<Pair>> e : distincts.entrySet()) {
-                combos.add(Agg(new DistinctSpec(e.getKey()), MatchPair.fromPairs(e.getValue())));
+                aggs.add(Agg(new DistinctSpec(e.getKey()), MatchPair.fromPairs(e.getValue())));
             }
         }
 
-        private void buildCountDistincts(List<AggregationElement> combos) {
+        private void buildCountDistincts(List<AggregationElement> aggs) {
             for (Map.Entry<Boolean, List<Pair>> e : countDistincts.entrySet()) {
-                combos.add(Agg(new CountDistinctSpec(e.getKey()), MatchPair.fromPairs(e.getValue())));
+                aggs.add(Agg(new CountDistinctSpec(e.getKey()), MatchPair.fromPairs(e.getValue())));
             }
         }
 
-        private void buildCounts(List<AggregationElement> combos) {
+        private void buildCounts(List<AggregationElement> aggs) {
             for (ColumnName count : counts) {
-                combos.add(new CountAggregationElement(count.name()));
+                aggs.add(new CountAggregationElement(count.name()));
             }
         }
 
-        private void buildAvgs(List<AggregationElement> combos) {
+        private void buildAvgs(List<AggregationElement> aggs) {
             if (!avgs.isEmpty()) {
-                combos.add(Agg(AggType.Avg, MatchPair.fromPairs(avgs)));
+                aggs.add(Agg(AggType.Avg, MatchPair.fromPairs(avgs)));
             }
         }
 
-        private void buildArrays(List<AggregationElement> combos) {
+        private void buildArrays(List<AggregationElement> aggs) {
             if (!arrays.isEmpty()) {
-                combos.add(Agg(AggType.Group, MatchPair.fromPairs(arrays)));
+                aggs.add(Agg(AggType.Group, MatchPair.fromPairs(arrays)));
             }
         }
 
-        private void buildAbsSums(List<AggregationElement> combos) {
+        private void buildAbsSums(List<AggregationElement> aggs) {
             if (!absSums.isEmpty()) {
-                combos.add(Agg(AggType.AbsSum, MatchPair.fromPairs(absSums)));
+                aggs.add(Agg(AggType.AbsSum, MatchPair.fromPairs(absSums)));
             }
         }
 

@@ -211,12 +211,7 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                         }
                     }
                 }
-
-                if (leftStampModified || leftKeysModified) {
-                    leftRestampRemovals.close();
-                }
             }
-
 
             final RowSetShiftData leftShifted = leftRecorder.getShifted();
             if (leftShifted.nonempty()) {
@@ -276,6 +271,10 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                         }
                     }
                 }
+            }
+
+            if (leftStampModified || leftKeysModified) {
+                leftRestampRemovals.close();
             }
         } else {
             downstream.added = RowSetFactory.empty();

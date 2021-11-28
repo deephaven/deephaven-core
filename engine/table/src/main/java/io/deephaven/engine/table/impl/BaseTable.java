@@ -900,7 +900,7 @@ public abstract class BaseTable extends LivenessArtifact
 
         @ReferentialIntegrity
         private final Table parent;
-        private final BaseTable dependent; // TODO-RWC: Should I make this a BaseTable?
+        private final BaseTable dependent;
 
         public ShiftObliviousListenerImpl(String description, Table parent, BaseTable dependent) {
             super(description);

@@ -113,3 +113,11 @@ tasks.testParallel.maxHeapSize = '6g'
 tasks.testSerial.maxHeapSize = '6g'
 tasks.testOutOfBand.maxHeapSize = '6g'
 tasks.test.maxHeapSize = '6g'
+
+// TODO-RWC: Don't merge this!
+// log lots of progress of the tests as they run
+tasks.withType(Test) {
+    testLogging {
+        events "PASSED", "SKIPPED", "FAILED", "STANDARD_OUT", "STANDARD_ERROR"
+    }
+}

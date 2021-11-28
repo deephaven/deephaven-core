@@ -389,5 +389,4 @@ public class TestRowSetIndexer extends RefreshingTableTestCase {
                 countingTable.getRowSet(), countingTable, "intCol+sym+sym2+doubleCol", intSymSym2DoubleGrouping,
                 keySet);
     }
-
 }

@@ -91,7 +91,7 @@ public class TableMapProxyHandler extends LivenessArtifact implements Invocation
                 new TableMapProxyHandler(localTableMap, strictKeys, allowCoalesce, sanityCheckJoins));
     }
 
-    public interface TableMapProxy extends TableWithDefaults, TransformableTableMap {
+    public interface TableMapProxy extends Table, TransformableTableMap {
     }
 
     private TableMapProxyHandler(TableMap underlyingTableMap, boolean strictKeys, boolean allowCoalesce,

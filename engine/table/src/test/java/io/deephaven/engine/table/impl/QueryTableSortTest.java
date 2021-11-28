@@ -207,7 +207,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
                 "Apple", "Apple", "Apple"), col("Sentinel", 6, 7, 8, 3, 4, 5, 0, 1, 2)), sorted);
 
         final QueryTable sorted2 = (QueryTable) table.sort(List.of(
-                SortColumn.asc(ColumnName.of("A")),
+                SortColumn.desc(ColumnName.of("A")),
                 SortColumn.asc(ColumnName.of("Secondary"))));
         show(sorted2);
         assertTableEquals(newTable(

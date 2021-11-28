@@ -10,6 +10,7 @@ import io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtils;
 import io.deephaven.engine.table.lang.QueryLibraryImports;
 import io.deephaven.engine.table.lang.QueryScopeParam;
 import io.deephaven.engine.time.DateTimeUtils;
+import io.deephaven.engine.vector.VectorConversions;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.engine.table.Context;
 import io.deephaven.engine.time.DateTime;
@@ -39,6 +40,7 @@ public class QueryLibraryImportsDefaults implements QueryLibraryImports {
                 Table.class,
                 DataColumn.class,
                 ArrayTypeUtils.class,
+                VectorConversions.class,
                 DateTime.class,
                 DateTimeUtils.class,
                 io.deephaven.base.string.cache.CompressedString.class,

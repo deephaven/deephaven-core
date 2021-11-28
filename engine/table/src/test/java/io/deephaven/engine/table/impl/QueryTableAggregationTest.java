@@ -439,9 +439,7 @@ public class QueryTableAggregationTest {
             table.groupBy("i");
             TestCase.fail("Previous statement should have thrown an exception");
         } catch (Exception e) {
-            TestCase.assertEquals("Failed to get expression for all matched patterns", e.getMessage());
-            TestCase.assertNotNull(e.getCause());
-            TestCase.assertEquals("Invalid column name \"i\": \"i\" is a reserved keyword", e.getCause().getMessage());
+            TestCase.assertEquals("Invalid column name \"i\": \"i\" is a reserved keyword", e.getMessage());
         }
         TestCase.assertEquals(0, table.groupBy("j=i").size());
         TestCase.assertEquals(1, table.groupBy("j=i").getColumns().length);

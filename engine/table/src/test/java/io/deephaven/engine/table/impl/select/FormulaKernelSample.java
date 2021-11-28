@@ -39,6 +39,7 @@ import io.deephaven.engine.table.lang.QueryScopeParam;
 import io.deephaven.engine.time.DateTime;
 import io.deephaven.engine.time.DateTimeUtils;
 import io.deephaven.engine.time.Period;
+import io.deephaven.engine.vector.VectorConversions;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.util.type.TypeUtils;

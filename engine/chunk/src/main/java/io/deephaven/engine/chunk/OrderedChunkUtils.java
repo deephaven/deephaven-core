@@ -4,7 +4,7 @@ import io.deephaven.engine.chunk.Attributes.Any;
 
 import java.util.Arrays;
 
-public class OrderedChunkUtils { // TODO-RWC: Move or rename?
+public class OrderedChunkUtils {
 
     /**
      * Finds the insertion point in {@code chunk} for {@code value}.
