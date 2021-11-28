@@ -34,7 +34,7 @@ public class CategoryErrorBarDataSeriesKernel {
     /** The ordered categories at the end of an update cycle */
     private Collection<Comparable> categories = Collections.emptyList();
 
-    /** A lookup for the rowSet of a particular category within the series. */
+    /** A lookup for the index of a particular category within the series. */
     private final TObjectLongHashMap<Comparable> catIndex = new TObjectLongHashMap<>(10, .75f, -1);
 
     /** The mapping of category to actual value */
@@ -108,7 +108,7 @@ public class CategoryErrorBarDataSeriesKernel {
     }
 
     /**
-     * Get the rowSet key of the category within the original dataset. This can be used to enforce a global ordering of
+     * Get the index key of the category within the original dataset. This can be used to enforce a global ordering of
      * a MultiSeries cat plot.
      *
      * @param category The category to locate.

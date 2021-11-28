@@ -314,7 +314,7 @@ public class CrossJoinHelper {
 
                                 try (final WritableRowSet toRemove = RowSetFactory.empty()) {
                                     // This could use a sequential builder, however, since we are always appending
-                                    // non-overlapping containers, inserting into an rowSet is actually rather
+                                    // non-overlapping containers, inserting into a rowSet is actually rather
                                     // efficient.
                                     leftIndexToVisitForRightRm.forAllRowKeys(ii -> {
                                         final long prevOffset = ii << prevRightBits;

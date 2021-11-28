@@ -20,7 +20,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * Abstract class for ModelFarm implementations that will take data from a {@link RowDataManager}. This class tracks the
- * mappings between each key and the corresponding rowSet in the {@code RowDataManager}'s {@link RowDataManager#table()
+ * mappings between each key and the corresponding index in the {@code RowDataManager}'s {@link RowDataManager#table()
  * table}. Each row of this table should contain all of the data necessary to populate an instance of {@code DATATYPE},
  * which will then be passed to the {@link ModelFarmBase#model model}.
  *
@@ -157,7 +157,7 @@ public abstract class RDMModelFarm<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE extends
         }
 
         if (i == NO_ENTRY_VALUE) {
-            log.warn().append("Attempting to get row data for a key with no rowSet.  key=").append(key.toString())
+            log.warn().append("Attempting to get row data for a key with no index.  key=").append(key.toString())
                     .endl();
             return false;
         }

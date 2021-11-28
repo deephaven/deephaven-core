@@ -26,7 +26,7 @@ public class JsonNodeChunkAdapter extends MultiFieldChunkAdapter {
      * Create a JsonRecordChunkAdapter.
      *
      * @param definition the definition of the output table
-     * @param chunkTypeForIndex a function from column rowSet to chunk type
+     * @param chunkTypeForIndex a function from column index to chunk type
      * @param fieldNamesToColumnNames a map from JSON field names to Deephaven column names
      * @param allowNulls true if null records should be allowed, if false then an ISE is thrown
      * @return a JsonRecordChunkAdapter for the given definition and column mapping

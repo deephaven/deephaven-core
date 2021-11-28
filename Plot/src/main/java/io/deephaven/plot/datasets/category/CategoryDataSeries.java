@@ -82,7 +82,7 @@ public interface CategoryDataSeries extends DataSeries {
     /**
      * Sets the default line {@link Paint} for this dataset.
      *
-     * @param color rowSet of the color in the series color palette
+     * @param color index of the color in the series color palette
      * @return this CategoryDataSeries
      */
     CategoryDataSeries lineColor(final int color);
@@ -110,7 +110,7 @@ public interface CategoryDataSeries extends DataSeries {
     /**
      * Sets the error bar {@link Paint} for this dataset.
      *
-     * @param color rowSet of the color in the series color palette
+     * @param color index of the color in the series color palette
      * @return this CategoryDataSeries
      */
     CategoryDataSeries errorBarColor(final int color);
@@ -150,7 +150,7 @@ public interface CategoryDataSeries extends DataSeries {
     /**
      * Sets the point color. Unspecified points use the default color.
      *
-     * @param color rowSet of the color in the series color palette to use as the default color
+     * @param color index of the color in the series color palette to use as the default color
      * @return this CategoryDataSeries
      */
     CategoryDataSeries pointColor(int color);
@@ -176,7 +176,7 @@ public interface CategoryDataSeries extends DataSeries {
      * Sets the point color. Unspecified points use the default color.
      *
      * @param category data point
-     * @param color rowSet of the color in the series color palette
+     * @param color index of the color in the series color palette
      * @return this CategoryDataSeries
      */
     CategoryDataSeries pointColor(final Comparable category, final int color);
@@ -225,7 +225,7 @@ public interface CategoryDataSeries extends DataSeries {
     /**
      * Sets the point color. Unspecified points use the default color.
      *
-     * @param colors map from data points to the rowSet of the color palette
+     * @param colors map from data points to the index of the color palette
      * @param <CATEGORY> type of the categorical data
      * @param <COLOR> type of color for the points
      * @return this CategoryDataSeries
@@ -236,7 +236,7 @@ public interface CategoryDataSeries extends DataSeries {
     /**
      * Sets the point color. Unspecified points use the default color.
      *
-     * @param colors function from data points to the rowSet of the color palette
+     * @param colors function from data points to the index of the color palette
      * @param <COLOR> type of color for the points
      * @return this CategoryDataSeries
      */
@@ -245,7 +245,7 @@ public interface CategoryDataSeries extends DataSeries {
     /**
      * Sets the point color. Unspecified points use the default color.
      *
-     * @param colors closure from data points to the rowSet of the color palette
+     * @param colors closure from data points to the index of the color palette
      * @param <COLOR> type of color palette indices
      * @return this CategoryDataSeries
      */
@@ -287,7 +287,7 @@ public interface CategoryDataSeries extends DataSeries {
 
 
     /**
-     * Sets the point label for data point i from rowSet i of the input labels. Points outside of these indices are
+     * Sets the point label for data point i from index i of the input labels. Points outside of these indices are
      * unlabeled.
      *
      * @param category category value
@@ -297,7 +297,7 @@ public interface CategoryDataSeries extends DataSeries {
     CategoryDataSeries pointLabel(final Comparable category, final Object label);
 
     /**
-     * Sets the point label for data point i from rowSet i of the input labels. Points outside of these indices are
+     * Sets the point label for data point i from index i of the input labels. Points outside of these indices are
      * unlabeled.
      *
      * @param labels map used to determine point labels
@@ -308,7 +308,7 @@ public interface CategoryDataSeries extends DataSeries {
     <CATEGORY extends Comparable, LABEL> CategoryDataSeries pointLabel(final Map<CATEGORY, LABEL> labels);
 
     /**
-     * Sets the point label for data point i from rowSet i of the input labels. Points outside of these indices are
+     * Sets the point label for data point i from index i of the input labels. Points outside of these indices are
      * unlabeled.
      *
      * @param labels function used to determine point labels
@@ -318,7 +318,7 @@ public interface CategoryDataSeries extends DataSeries {
     <LABEL> CategoryDataSeries pointLabel(final Function<Comparable, LABEL> labels);
 
     /**
-     * Sets the point label for data point i from rowSet i of the input labels. Points outside of these indices are
+     * Sets the point label for data point i from index i of the input labels. Points outside of these indices are
      * unlabeled.
      *
      * @param labels closure used to determine point labels for input categories
@@ -330,7 +330,7 @@ public interface CategoryDataSeries extends DataSeries {
     }
 
     /**
-     * Sets the point label for data point i from rowSet i of the input labels. Points outside of these indices are
+     * Sets the point label for data point i from index i of the input labels. Points outside of these indices are
      * unlabeled.
      *
      * @param t table
@@ -341,7 +341,7 @@ public interface CategoryDataSeries extends DataSeries {
     CategoryDataSeries pointLabel(Table t, String keyColumn, String valueColumn);
 
     /**
-     * Sets the point label for data point i from rowSet i of the input labels. Points outside of these indices are
+     * Sets the point label for data point i from index i of the input labels. Points outside of these indices are
      * unlabeled.
      *
      * @param sds selectable data set (e.g. OneClick filterable table)
@@ -363,7 +363,7 @@ public interface CategoryDataSeries extends DataSeries {
 
 
     /**
-     * Sets the point shapes for data point i from rowSet i of the input labels. Points outside of these indices use
+     * Sets the point shapes for data point i from index i of the input labels. Points outside of these indices use
      * default shapes.
      *
      * @param category category value
@@ -373,7 +373,7 @@ public interface CategoryDataSeries extends DataSeries {
     CategoryDataSeries pointShape(final Comparable category, final String shape);
 
     /**
-     * Sets the point shapes for data point i from rowSet i of the input labels. Points outside of these indices use
+     * Sets the point shapes for data point i from index i of the input labels. Points outside of these indices use
      * default shapes.
      *
      * @param category category value
@@ -383,7 +383,7 @@ public interface CategoryDataSeries extends DataSeries {
     CategoryDataSeries pointShape(final Comparable category, final Shape shape);
 
     /**
-     * Sets the point shapes for data point i from rowSet i of the input labels. Points outside of these indices use
+     * Sets the point shapes for data point i from index i of the input labels. Points outside of these indices use
      * default shapes.
      *
      * @param shapes map used to determine point shapes
@@ -393,7 +393,7 @@ public interface CategoryDataSeries extends DataSeries {
     <CATEGORY extends Comparable> CategoryDataSeries pointShape(final Map<CATEGORY, String> shapes);
 
     /**
-     * Sets the point shapes for data point i from rowSet i of the input labels. Points outside of these indices use
+     * Sets the point shapes for data point i from index i of the input labels. Points outside of these indices use
      * default shapes.
      *
      * @param shapes function used to determine point shapes
@@ -402,7 +402,7 @@ public interface CategoryDataSeries extends DataSeries {
     CategoryDataSeries pointShape(final Function<Comparable, String> shapes);
 
     /**
-     * Sets the point shapes for data point i from rowSet i of the input labels. Points outside of these indices use
+     * Sets the point shapes for data point i from index i of the input labels. Points outside of these indices use
      * default shapes.
      *
      * @param shapes closure used to determine point shapes
@@ -413,7 +413,7 @@ public interface CategoryDataSeries extends DataSeries {
     }
 
     /**
-     * Sets the point shapes for data point i from rowSet i of the input labels. Points outside of these indices use
+     * Sets the point shapes for data point i from index i of the input labels. Points outside of these indices use
      * default shapes.
      *
      * @param t table
@@ -424,7 +424,7 @@ public interface CategoryDataSeries extends DataSeries {
     CategoryDataSeries pointShape(Table t, String keyColumn, String valueColumn);
 
     /**
-     * Sets the point shapes for data point i from rowSet i of the input labels. Points outside of these indices use
+     * Sets the point shapes for data point i from index i of the input labels. Points outside of these indices use
      * default shapes.
      *
      * @param sds selectable data set (e.g. OneClick filterable table)

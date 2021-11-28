@@ -194,7 +194,7 @@ public abstract class BaseTestObjectTimSortKernel extends TestTimSortKernel {
                 // after some consideration, I think the next stage of the sort is:
                 // (1) using the chunk of rowSet keys that are relevant, build a second chunk that indicates their position
                 // (2) use the LongTimsortKernel to sort by the rowSet key; using the position keys as our as our "indexKeys"
-                //     argument.  The sorted rowSet keys can be used as input to an rowSet builder for filling a chunk.
+                //     argument.  The sorted rowSet keys can be used as input to a rowSet builder for filling a chunk.
                 // (3) After the chunk of secondary keys is filled, the second sorted indexKeys (really positions that
                 //     we care about), will then be used to permute the resulting chunk into a parallel chunk
                 //     to our actual indexKeys.

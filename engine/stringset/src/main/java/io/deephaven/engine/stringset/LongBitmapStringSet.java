@@ -127,7 +127,7 @@ public class LongBitmapStringSet implements StringSet, Serializable {
                 final String value = reversibleLookup.get(bi);
                 final int keyBitIndex = toOffset.applyAsInt(value);
                 if (keyBitIndex >= Long.SIZE) {
-                    throw new RuntimeException("Symbol manager returned an rowSet " + keyBitIndex
+                    throw new RuntimeException("Symbol manager returned a rowSet " + keyBitIndex
                             + " greater than the maximum, for symbol " + value);
                 }
                 encoding |= (1L << keyBitIndex);

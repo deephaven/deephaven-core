@@ -14,7 +14,7 @@ class IndexSet implements Iterable<Long> {
     /**
      * Creates a new IndexSet.
      *
-     * @param maxSize maximum allowed size of this rowSet set.
+     * @param maxSize maximum allowed size of this index set.
      */
     IndexSet(int maxSize) {
 
@@ -27,18 +27,18 @@ class IndexSet implements Iterable<Long> {
     }
 
     /**
-     * Determines whether this rowSet set has reached its maximum allowable size.
+     * Determines whether this index set has reached its maximum allowable size.
      *
-     * @return whether this rowSet set has been filled.
+     * @return whether this index set has been filled.
      */
     boolean isFull() {
         return getSize() >= idx.length;
     }
 
     /**
-     * Adds an rowSet to this rowSet set.
+     * Adds an index to this index set.
      *
-     * @param k rowSet to be added to this rowSet set.
+     * @param k index to be added to this index set.
      */
     void add(long k) {
 
@@ -60,7 +60,7 @@ class IndexSet implements Iterable<Long> {
             public long nextLong() {
 
                 if (!hasNext()) {
-                    throw new NoSuchElementException("There are no more elements in the rowSet set.");
+                    throw new NoSuchElementException("There are no more elements in the index set.");
                 }
 
                 i++;
@@ -75,9 +75,9 @@ class IndexSet implements Iterable<Long> {
     }
 
     /**
-     * Gets the number of elements in the rowSet set.
+     * Gets the number of elements in the index set.
      *
-     * @return number of elements in the rowSet set.
+     * @return number of elements in the index set.
      */
     public int getSize() {
         return current + 1;

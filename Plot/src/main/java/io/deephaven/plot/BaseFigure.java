@@ -101,19 +101,19 @@ public interface BaseFigure extends Serializable {
     /**
      * Adds a new {@link Chart} to this figure.
      *
-     * @param index rowSet from the Figure's grid to remove. The rowSet starts at 0 in the upper left hand corner of the
+     * @param index index from the Figure's grid to remove. The index starts at 0 in the upper left hand corner of the
      *        grid and increases going left to right, top to bottom. E.g. for a 2x2 Figure, the indices would be [0, 1]
      *        [2, 3].
-     * @throws RuntimeException if {@code rowSet} is outside this Figure's grid
-     * @return the new {@link Chart}. The {@link Chart} is placed at the grid space indicated by the {@code rowSet}.
+     * @throws RuntimeException if {@code index} is outside this Figure's grid
+     * @return the new {@link Chart}. The {@link Chart} is placed at the grid space indicated by the {@code index}.
      */
     Chart newChart(final int index);
 
     /**
      * Adds a new {@link Chart} to this figure.
      *
-     * @param rowNum row rowSet in this Figure's grid. The row rowSet starts at 0.
-     * @param colNum column rowSet in this Figure's grid. The column rowSet starts at 0.
+     * @param rowNum row index in this Figure's grid. The row index starts at 0.
+     * @param colNum column index in this Figure's grid. The column index starts at 0.
      * @throws RuntimeException if the coordinates are outside the Figure's grid
      * @return the new {@link Chart}. The {@link Chart} is placed at the grid space [{@code rowNum}, {@code colNum}.
      */
@@ -122,7 +122,7 @@ public interface BaseFigure extends Serializable {
     /**
      * Removes a chart from the Figure's grid.
      *
-     * @param index rowSet from the Figure's grid to remove. The rowSet starts at 0 in the upper left hand corner of the
+     * @param index index from the Figure's grid to remove. The index starts at 0 in the upper left hand corner of the
      *        grid and increases going left to right, top to bottom. E.g. for a 2x2 Figure, the indices would be [0, 1]
      *        [2, 3].
      * @return this Figure with the chart removed.
@@ -132,8 +132,8 @@ public interface BaseFigure extends Serializable {
     /**
      * Removes a chart from the Figure's grid.
      *
-     * @param rowNum row rowSet in this Figure's grid. The row rowSet starts at 0.
-     * @param colNum column rowSet in this Figure's grid. The column rowSet starts at 0.
+     * @param rowNum row index in this Figure's grid. The row index starts at 0.
+     * @param colNum column index in this Figure's grid. The column index starts at 0.
      * @throws RuntimeException if the coordinates are outside the Figure's grid
      * @return this Figure with the chart removed.
      */
@@ -142,10 +142,10 @@ public interface BaseFigure extends Serializable {
     /**
      * Returns a chart from this Figure's grid.
      *
-     * @param index rowSet from the Figure's grid to remove. The rowSet starts at 0 in the upper left hand corner of the
+     * @param index index from the Figure's grid to remove. The index starts at 0 in the upper left hand corner of the
      *        grid and increases going left to right, top to bottom. E.g. for a 2x2 Figure, the indices would be [0, 1]
      *        [2, 3].
-     * @throws RuntimeException if the rowSet is outside the Figure's grid
+     * @throws RuntimeException if the index is outside the Figure's grid
      * @return selected {@link Chart}
      */
     Chart chart(final int index);
@@ -153,8 +153,8 @@ public interface BaseFigure extends Serializable {
     /**
      * Returns a chart from this Figure's grid.
      *
-     * @param rowNum row rowSet in this Figure's grid. The row rowSet starts at 0.
-     * @param colNum column rowSet in this Figure's grid. The column rowSet starts at 0.
+     * @param rowNum row index in this Figure's grid. The row index starts at 0.
+     * @param colNum column index in this Figure's grid. The column index starts at 0.
      * @throws RuntimeException if the coordinates are outside the Figure's grid
      * @return selected {@link Chart}
      */

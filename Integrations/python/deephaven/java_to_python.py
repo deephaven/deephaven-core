@@ -333,7 +333,7 @@ def createCategoricalSeries(table, columnName, convertNulls=NULL_CONVERSION.ERRO
 
     # create a dumb intermediate map array
     tempMapping = numpy.arange(len(mapping), dtype=numpy.int64)
-    # now, construct the "rowSet" array - *SHOULD* be of type int
+    # now, construct the "index" array - *SHOULD* be of type int
     indices = columnToNumpyArray(tempTable, columnId, convertNulls=NULL_CONVERSION.PASS, forPandas=False)
 
     # TODO: if null is in the categorical set, then those indices should probably be set to -1,

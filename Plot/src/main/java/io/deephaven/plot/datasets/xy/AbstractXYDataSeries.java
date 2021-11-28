@@ -499,7 +499,7 @@ public abstract class AbstractXYDataSeries extends AbstractDataSeries implements
             try {
                 NamedShape.getShape(shape);
             } catch (final IllegalArgumentException iae) {
-                throw new PlotIllegalArgumentException("Not a valid shape: `" + shape + "` at rowSet: " + index
+                throw new PlotIllegalArgumentException("Not a valid shape: `" + shape + "` at index: " + index
                         + "; valid shapes: " + Arrays.toString(NamedShape.values()), this);
             }
             ++index;

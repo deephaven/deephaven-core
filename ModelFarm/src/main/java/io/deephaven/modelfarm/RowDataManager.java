@@ -33,7 +33,7 @@ public interface RowDataManager<KEYTYPE, DATATYPE> {
      * <p>
      * This function should only be called during an update loop or while holding the UGP lock.
      *
-     * @param index table row rowSet.
+     * @param index table row index.
      * @return current unique identifier for a row.
      */
     KEYTYPE uniqueIdCurrent(final long index);
@@ -44,7 +44,7 @@ public interface RowDataManager<KEYTYPE, DATATYPE> {
      * <p>
      * This function should only be called during an update loop or while holding the UGP lock.
      *
-     * @param index table row rowSet.
+     * @param index table row index.
      * @return previous underlying id.
      */
     KEYTYPE uniqueIdPrev(final long index);
@@ -57,7 +57,7 @@ public interface RowDataManager<KEYTYPE, DATATYPE> {
      * corrupt.
      *
      * @param data data structure to populate
-     * @param index table rowSet of the row to load data from
+     * @param index table index of the row to load data from
      * @param usePrev use data from the previous table update
      */
     void loadData(final DATATYPE data, final long index, final boolean usePrev);
@@ -73,7 +73,7 @@ public interface RowDataManager<KEYTYPE, DATATYPE> {
          * Load data for extra columns.
          *
          * @param data data structure to populate
-         * @param index table rowSet of the row to load data from
+         * @param index table index of the row to load data from
          * @param usePrev use data from the previous table update
          */
         void load(DATATYPE data, long index, boolean usePrev);

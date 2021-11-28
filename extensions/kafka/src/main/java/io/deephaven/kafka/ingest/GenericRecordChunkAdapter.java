@@ -37,7 +37,7 @@ public class GenericRecordChunkAdapter extends MultiFieldChunkAdapter {
      * Create a GenericRecordChunkAdapter.
      *
      * @param definition the definition of the output table
-     * @param chunkTypeForIndex a function from column rowSet to chunk type
+     * @param chunkTypeForIndex a function from column index to chunk type
      * @param columns a map from Avro field names to Deephaven column names
      * @param schema the Avro schema for our input
      * @param allowNulls true if null records should be allowed, if false then an ISE is thrown

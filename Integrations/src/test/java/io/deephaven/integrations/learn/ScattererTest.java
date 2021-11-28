@@ -70,7 +70,7 @@ public class ScattererTest {
 
             // first parameter of scatterFunc is the result of modelFunc, so
             Assert.assertEquals(2, params[0]);
-            // second parameter is the rowSet of this particular output
+            // second parameter is the index of this particular output
             Assert.assertEquals(0, params[1]);
 
             return 3;
@@ -80,7 +80,7 @@ public class ScattererTest {
 
             // first parameter of scatterFunc is the result of modelFunc, so
             Assert.assertEquals(2, params[0]);
-            // second parameter is the rowSet of this particular output
+            // second parameter is the index of this particular output
             Assert.assertEquals(1, params[1]);
 
             return 4;

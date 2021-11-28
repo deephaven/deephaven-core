@@ -55,8 +55,8 @@ public abstract class ModelFarmBase<DATATYPE> implements ModelFarm {
         /**
          * Performs an operation using data from a query.
          *
-         * @param usePrev Whether to use the previous data at a given rowSet when retrieving data (i.e. if {@code true},
-         *        use {@link ColumnSource#getPrev} instead of {@link ColumnSource#get}).
+         * @param usePrev Whether to use the previous data at a given row key when retrieving data (i.e. if
+         *        {@code true}, use {@link ColumnSource#getPrev} instead of {@link ColumnSource#get}).
          */
         void retrieveData(boolean usePrev);
 

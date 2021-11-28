@@ -648,12 +648,12 @@ public abstract class AbstractTreeSnapshotImpl<INFO_TYPE extends HierarchicalTab
 
     /**
      * Use the {@link ReverseLookup} provided by the specific implementation to locate where client-expanded rows have
-     * moved within the table, and return an rowSet of these rows.
+     * moved within the table, and return a rowSet of these rows.
      *
      * @param usePrev If we should use previous values
      * @param t The table to look in
      * @param childKeys The keys of the child tables to find
-     * @return An rowSet containing the rows that represent the indices of the tables indicated in childKeys, if they
+     * @return A rowSet containing the rows that represent the indices of the tables indicated in childKeys, if they
      *         still exist.
      */
     private RowSet getExpandedIndex(boolean usePrev, Table t, Set<Object> childKeys) {

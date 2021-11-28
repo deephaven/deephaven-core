@@ -436,4 +436,4 @@ Java API
 ********
 
 jpy's Java API documentation has been generated from Java source code using the javadoc tool.
-It can be found `here <_static/java-apidocs/rowSet.html>`_.
+It can be found `here <_static/java-apidocs/index.html>`_.

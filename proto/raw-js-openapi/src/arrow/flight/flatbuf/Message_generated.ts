@@ -68,14 +68,14 @@ export function unionToMessageHeader(
 
 export function unionListToMessageHeader(
   type: MessageHeader, 
-  accessor: (rowSet: number, obj:NS17716817176095924048.org.apache.arrow.flatbuf.Schema|org.apache.arrow.flatbuf.DictionaryBatch|org.apache.arrow.flatbuf.RecordBatch) => NS17716817176095924048.org.apache.arrow.flatbuf.Schema|org.apache.arrow.flatbuf.DictionaryBatch|org.apache.arrow.flatbuf.RecordBatch|null,
-  rowSet: number
+  accessor: (index: number, obj:NS17716817176095924048.org.apache.arrow.flatbuf.Schema|org.apache.arrow.flatbuf.DictionaryBatch|org.apache.arrow.flatbuf.RecordBatch) => NS17716817176095924048.org.apache.arrow.flatbuf.Schema|org.apache.arrow.flatbuf.DictionaryBatch|org.apache.arrow.flatbuf.RecordBatch|null,
+  index: number
 ): NS17716817176095924048.org.apache.arrow.flatbuf.Schema|org.apache.arrow.flatbuf.DictionaryBatch|org.apache.arrow.flatbuf.RecordBatch|null {
   switch(org.apache.arrow.flatbuf.MessageHeader[type]) {
     case 'NONE': return null; 
-    case 'Schema': return accessor(rowSet, new NS17716817176095924048.org.apache.arrow.flatbuf.Schema())! as NS17716817176095924048.org.apache.arrow.flatbuf.Schema;
-    case 'DictionaryBatch': return accessor(rowSet, new org.apache.arrow.flatbuf.DictionaryBatch())! as org.apache.arrow.flatbuf.DictionaryBatch;
-    case 'RecordBatch': return accessor(rowSet, new org.apache.arrow.flatbuf.RecordBatch())! as org.apache.arrow.flatbuf.RecordBatch;
+    case 'Schema': return accessor(index, new NS17716817176095924048.org.apache.arrow.flatbuf.Schema())! as NS17716817176095924048.org.apache.arrow.flatbuf.Schema;
+    case 'DictionaryBatch': return accessor(index, new org.apache.arrow.flatbuf.DictionaryBatch())! as org.apache.arrow.flatbuf.DictionaryBatch;
+    case 'RecordBatch': return accessor(index, new org.apache.arrow.flatbuf.RecordBatch())! as org.apache.arrow.flatbuf.RecordBatch;
     default: return null;
   }
 }
@@ -311,13 +311,13 @@ length():flatbuffers.Long {
 /**
  * Nodes correspond to the pre-ordered flattened logical schema
  *
- * @param number rowSet
+ * @param number index
  * @param org.apache.arrow.flatbuf.FieldNode= obj
  * @returns org.apache.arrow.flatbuf.FieldNode
  */
-nodes(rowSet: number, obj?:org.apache.arrow.flatbuf.FieldNode):org.apache.arrow.flatbuf.FieldNode|null {
+nodes(index: number, obj?:org.apache.arrow.flatbuf.FieldNode):org.apache.arrow.flatbuf.FieldNode|null {
   var offset = this.bb!.__offset(this.bb_pos, 6);
-  return offset ? (obj || new org.apache.arrow.flatbuf.FieldNode()).__init(this.bb!.__vector(this.bb_pos + offset) + rowSet * 16, this.bb!) : null;
+  return offset ? (obj || new org.apache.arrow.flatbuf.FieldNode()).__init(this.bb!.__vector(this.bb_pos + offset) + index * 16, this.bb!) : null;
 };
 
 /**
@@ -336,13 +336,13 @@ nodesLength():number {
  * bitmap and 1 for the values. For struct arrays, there will only be a
  * single buffer for the validity (nulls) bitmap
  *
- * @param number rowSet
+ * @param number index
  * @param org.apache.arrow.flatbuf.Buffer= obj
  * @returns org.apache.arrow.flatbuf.Buffer
  */
-buffers(rowSet: number, obj?:NS17716817176095924048.org.apache.arrow.flatbuf.Buffer):NS17716817176095924048.org.apache.arrow.flatbuf.Buffer|null {
+buffers(index: number, obj?:NS17716817176095924048.org.apache.arrow.flatbuf.Buffer):NS17716817176095924048.org.apache.arrow.flatbuf.Buffer|null {
   var offset = this.bb!.__offset(this.bb_pos, 8);
-  return offset ? (obj || new NS17716817176095924048.org.apache.arrow.flatbuf.Buffer()).__init(this.bb!.__vector(this.bb_pos + offset) + rowSet * 16, this.bb!) : null;
+  return offset ? (obj || new NS17716817176095924048.org.apache.arrow.flatbuf.Buffer()).__init(this.bb!.__vector(this.bb_pos + offset) + index * 16, this.bb!) : null;
 };
 
 /**
@@ -618,13 +618,13 @@ bodyLength():flatbuffers.Long {
 };
 
 /**
- * @param number rowSet
+ * @param number index
  * @param org.apache.arrow.flatbuf.KeyValue= obj
  * @returns org.apache.arrow.flatbuf.KeyValue
  */
-customMetadata(rowSet: number, obj?:NS17716817176095924048.org.apache.arrow.flatbuf.KeyValue):NS17716817176095924048.org.apache.arrow.flatbuf.KeyValue|null {
+customMetadata(index: number, obj?:NS17716817176095924048.org.apache.arrow.flatbuf.KeyValue):NS17716817176095924048.org.apache.arrow.flatbuf.KeyValue|null {
   var offset = this.bb!.__offset(this.bb_pos, 12);
-  return offset ? (obj || new NS17716817176095924048.org.apache.arrow.flatbuf.KeyValue()).__init(this.bb!.__indirect(this.bb!.__vector(this.bb_pos + offset) + rowSet * 4), this.bb!) : null;
+  return offset ? (obj || new NS17716817176095924048.org.apache.arrow.flatbuf.KeyValue()).__init(this.bb!.__indirect(this.bb!.__vector(this.bb_pos + offset) + index * 4), this.bb!) : null;
 };
 
 /**

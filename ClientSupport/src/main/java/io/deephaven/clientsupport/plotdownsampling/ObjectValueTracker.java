@@ -40,11 +40,11 @@ public final class ObjectValueTracker<T extends Comparable<T>> extends ValueTrac
     }
 
     @Override
-    public void append(int offset, long rowIndex, Chunk<? extends Attributes.Values> valuesChunk, int indexInChunk, @Nullable WritableRowSet nulls) {
+    public void append(int offset, long rowKey, Chunk<? extends Attributes.Values> valuesChunk, int indexInChunk, @Nullable WritableRowSet nulls) {
         final T val = valuesChunk.<T>asObjectChunk().get(indexInChunk);
         if (val == null) {
             if (nulls != null) {
-                nulls.insert(rowIndex);
+                nulls.insert(rowKey);
             }
             return;
         }
@@ -55,39 +55,40 @@ public final class ObjectValueTracker<T extends Comparable<T>> extends ValueTrac
 
         if (first || val.compareTo(maxValue(offset)) > 0) {
             setMaxValue(offset, val);
-            setMaxIndex(offset, rowIndex);
+            setMaxIndex(offset, rowKey);
             maxValueValid(offset, true);
         }
         if (first || val.compareTo(minValue(offset)) < 0) {
             setMinValue(offset, val);
-            setMinIndex(offset, rowIndex);
+            setMinIndex(offset, rowKey);
             minValueValid(offset, true);
         }
     }
 
     @Override
-    public void update(int offset, long rowIndex, Chunk<? extends Attributes.Values> valuesChunk, int indexInChunk, @Nullable WritableRowSet nulls) {
+    public void update(int offset, long rowKey, Chunk<? extends Attributes.Values> valuesChunk, int indexInChunk, @Nullable WritableRowSet nulls) {
         T val = valuesChunk.<T>asObjectChunk().get(indexInChunk);
         if (val == null) {
             if (nulls != null) {
-                nulls.insert(rowIndex);
+                nulls.insert(rowKey);
             } else {
-                // whether or not we are tracking nulls, if the row was our max/min, mark the rowSet as garbage and the value as invalid
-                if (rowIndex == maxIndex(offset)) {
+                // whether or not we are tracking nulls, if the row was our max/min, mark the row key as garbage and the
+                // value as invalid
+                if (rowKey == maxIndex(offset)) {
                     maxValueValid(offset, false);
                     setMaxIndex(offset, QueryConstants.NULL_LONG);
                 }
-                if (rowIndex == minIndex(offset)) {
+                if (rowKey == minIndex(offset)) {
                     minValueValid(offset, false);
                     setMinIndex(offset, QueryConstants.NULL_LONG);
                 }
             }
         } else {
             if (nulls != null) {
-                nulls.remove(rowIndex);
+                nulls.remove(rowKey);
             }
 
-            if (rowIndex == maxIndex(offset)) {
+            if (rowKey == maxIndex(offset)) {
                 if (val.compareTo(maxValue(offset)) >= 0) {
                     // This is still the max, but update the value
                     setMaxValue(offset, val);
@@ -100,11 +101,11 @@ public final class ObjectValueTracker<T extends Comparable<T>> extends ValueTrac
                 if (val.compareTo(maxValue(offset)) > 0) {
                     // this is the new max
                     setMaxValue(offset, val);
-                    setMaxIndex(offset, rowIndex);
+                    setMaxIndex(offset, rowKey);
                     maxValueValid(offset, true);
                 }
             }
-            if (rowIndex == minIndex(offset)) {
+            if (rowKey == minIndex(offset)) {
                 if (val.compareTo(minValue(offset)) <= 0) {
                     setMinValue(offset, val);
                 } else {
@@ -113,7 +114,7 @@ public final class ObjectValueTracker<T extends Comparable<T>> extends ValueTrac
             } else {
                 if (val.compareTo(minValue(offset)) < 0) {
                     setMinValue(offset, val);
-                    setMinIndex(offset, rowIndex);
+                    setMinIndex(offset, rowKey);
                     minValueValid(offset, true);
                 }
             }
@@ -121,25 +122,26 @@ public final class ObjectValueTracker<T extends Comparable<T>> extends ValueTrac
     }
 
     @Override
-    public void validate(int offset, long rowIndex, Chunk<? extends Attributes.Values> valuesChunk, int indexInChunk, @Nullable RowSet nulls) {
+    public void validate(int offset, long rowKey, Chunk<? extends Attributes.Values> valuesChunk, int indexInChunk, @Nullable RowSet nulls) {
         T val = valuesChunk.<T>asObjectChunk().get(indexInChunk);
         if (val == null) {
-            // can't check if our min/max is valid, or anything about positions, only can confirm that this rowSet is in nulls
+            // can't check if our min/max is valid, or anything about positions, only can confirm that this row key is in
+            // nulls
             if (nulls != null) {
-                Assert.eqTrue(nulls.containsRange(rowIndex, rowIndex), "nulls.containsRange(rowIndex, rowIndex)");
+                Assert.eqTrue(nulls.containsRange(rowKey, rowKey), "nulls.containsRange(rowIndex, rowIndex)");
             }
             return;
         }
         Assert.eqTrue(minValueValid(offset), "minValueValid(offset)");
         Assert.eqTrue(maxValueValid(offset), "maxValueValid(offset)");
 
-        if (maxIndex(offset) == rowIndex) {
+        if (maxIndex(offset) == rowKey) {
             Assert.eq(val.compareTo(maxValue(offset)), "val.compareTo(maxValue(offset))", 0, "0");
             Assert.eq(val, "val", maxValue(offset), "maxValue(offset)");
         } else {
             Assert.leq(val.compareTo(maxValue(offset)), "val.compareTo(maxValue(offset))", 0, "0");
         }
-        if (minIndex(offset) == rowIndex) {
+        if (minIndex(offset) == rowKey) {
             Assert.eq(val.compareTo(minValue(offset)), "val.compareTo(minValue(offset))", 0, "0");
             Assert.eq(val, "val", minValue(offset), "minValue(offset)");
         } else {

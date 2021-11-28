@@ -194,7 +194,7 @@ public class XYDataSeriesFunctionImpl extends AbstractXYDataSeries implements XY
     public double getX(int i) {
         if (i < 0 || i > size()) {
             throw new IndexOutOfBoundsException(
-                    "TrackingWritableRowSet out of bounds. rowSet=" + i + " size=" + size());
+                    "Index out of bounds. index=" + i + " size=" + size());
         }
 
         return currentData[0][i];
@@ -204,7 +204,7 @@ public class XYDataSeriesFunctionImpl extends AbstractXYDataSeries implements XY
     public double getY(int i) {
         if (i < 0 || i > size()) {
             throw new IndexOutOfBoundsException(
-                    "TrackingWritableRowSet out of bounds. rowSet=" + i + " size=" + size());
+                    "Index out of bounds. index=" + i + " size=" + size());
         }
 
         return currentData[1][i];

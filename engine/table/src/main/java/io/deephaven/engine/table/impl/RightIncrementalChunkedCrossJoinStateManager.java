@@ -554,7 +554,7 @@ class RightIncrementalChunkedCrossJoinStateManager
         shifted.forAllInRowSet(filterIndex, (ii, delta) -> {
             final long slot = leftIndexToSlot.get(ii);
             if (slot == RowSequence.NULL_ROW_KEY) {
-                // This might happen if an rowSet is moving from one slot to another; we shift after removes but before
+                // This might happen if a rowSet is moving from one slot to another; we shift after removes but before
                 // the adds. We don't need to shift the slot that was related to this rowSet.
                 return;
             }

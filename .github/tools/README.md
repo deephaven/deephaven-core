@@ -21,7 +21,7 @@ Any fields beyond the "Benchmark", "Score", "Run" and "Iteration" are added as l
 
 For each CSV file processed by the tooling a dashboard will be generated to render the metrics. Each dashboard is limited to rendering a total of 40 metrics, this is a customizable value from the commandline but has been chosen as a default in line with the upper limit from GCP for metrics per dashboard.
 
-The dashboard title is generated from the filename basename and postfixed by the dashboard rowSet, in the even there are greater than 40 metrics total then you will see multiple dashboards created to support this.
+The dashboard title is generated from the filename basename and postfixed by the dashboard index, in the even there are greater than 40 metrics total then you will see multiple dashboards created to support this.
 
 ### GitHub Actions Integration
 

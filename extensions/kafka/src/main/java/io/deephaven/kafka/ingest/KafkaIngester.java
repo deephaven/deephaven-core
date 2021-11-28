@@ -128,8 +128,8 @@ public class KafkaIngester {
         /**
          * Creates a predicate for evenly distributing partitions among a set of ingesters.
          *
-         * @param consumerIndex the rowSet of this consumer; you should have precisely one ingester configured for each
-         *        rowSet between zero (inclusive) and consumerCount (exclusive)
+         * @param consumerIndex the index of this consumer; you should have precisely one ingester configured for each
+         *        index between zero (inclusive) and consumerCount (exclusive)
          * @param consumerCount the number of consumers that will ingest this topic
          */
         public PartitionRoundRobin(int consumerIndex, int consumerCount) {

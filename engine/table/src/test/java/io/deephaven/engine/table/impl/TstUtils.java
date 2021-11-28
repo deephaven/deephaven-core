@@ -380,7 +380,7 @@ public class TstUtils {
         }
         Collections.shuffle(Arrays.asList(positions), random);
 
-        // now create an rowSet with each of our selected positions
+        // now create a rowSet with each of our selected positions
         final RowSetBuilderRandom resultBuilder = RowSetFactory.builderRandom();
         for (int ii = 0; ii < size; ++ii) {
             resultBuilder.addKey(sourceRowSet.get(positions[ii]));

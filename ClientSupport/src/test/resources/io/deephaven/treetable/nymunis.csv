@@ -85,10 +85,10 @@ SWIS Code,Type Code,Type,County Name,City Name,Town Name,Village Name,2nd County
 030000,1,County,Broome,,,,,http://www.gobroomecounty.com,,974102,36,007,36007
 041200,2,City,Cattaraugus,Olean,,,,http://www.cityofolean.org/,Olean,979305,36,009,36009
 041600,2,City,Cattaraugus,Salamanca,,,,http://www.salmun.com,Salamanca,979451,36,009,36009
-042001,4,Village,Cattaraugus,,Allegany,Allegany,,http://www.allegany.org/rowSet.php?Village%20of%20Allegany,Allegany,2391509,36,009,36009
-042000,3,Town,Cattaraugus,,Allegany,,,http://www.allegany.org/rowSet.php?Town%20of%20Allegany,Allegany,978666,36,009,36009
+042001,4,Village,Cattaraugus,,Allegany,Allegany,,http://www.allegany.org/index.php?Village%20of%20Allegany,Allegany,2391509,36,009,36009
+042000,3,Town,Cattaraugus,,Allegany,,,http://www.allegany.org/index.php?Town%20of%20Allegany,Allegany,978666,36,009,36009
 042200,3,Town,Cattaraugus,,Ashford,,,http://ashfordny.org,Ashford,978690,36,009,36009
-042400,3,Town,Cattaraugus,,Carrollton,,,http://www.carrolltonny.org/rowSet.htm,Carrollton,978797,36,009,36009
+042400,3,Town,Cattaraugus,,Carrollton,,,http://www.carrolltonny.org/index.htm,Carrollton,978797,36,009,36009
 042600,3,Town,Cattaraugus,,Coldspring,,,http://www.cold-springny.org/,Coldspring,978850,36,009,36009
 042800,3,Town,Cattaraugus,,Conewango,,,,Conewango,978860,36,009,36009
 043001,4,Village,Cattaraugus,,Dayton,South Dayton,,,South Dayton,2391147,36,009,36009
@@ -208,7 +208,7 @@ SWIS Code,Type Code,Type,County Name,City Name,Town Name,Village Name,2nd County
 070400,2,City,Chemung,Elmira,,,,http://cityofelmira.net,Elmira,978938,36,015,36015
 072001,4,Village,Chemung,,Ashland,Wellsburg,,http://villageofwellsburg.com/blog/,Wellsburg,2391205,36,015,36015
 072000,3,Town,Chemung,,Ashland,,,http://www.townofashland.net,Ashland,978691,36,015,36015
-072200,3,Town,Chemung,,Baldwin,,,http://www.chemungcounty.com/rowSet.asp?pageId=231,Baldwin,978706,36,015,36015
+072200,3,Town,Chemung,,Baldwin,,,http://www.chemungcounty.com/index.asp?pageId=231,Baldwin,978706,36,015,36015
 072400,3,Town,Chemung,,Big Flats,,,http://www.bigflatsny.gov,Big Flats,978732,36,015,36015
 072600,3,Town,Chemung,,Catlin,,,http://townofcatlin.com,Catlin,978800,36,015,36015
 072800,3,Town,Chemung,,Chemung,,,http://www.townofchemung.com,Chemung,978818,36,015,36015
@@ -219,7 +219,7 @@ SWIS Code,Type Code,Type,County Name,City Name,Town Name,Village Name,2nd County
 073400,3,Town,Chemung,,Horseheads,,,http://www.townofhorseheads.org,Horseheads,979080,36,015,36015
 073600,3,Town,Chemung,,Southport,,,http://townofsouthport.com/,Southport,979509,36,015,36015
 073801,4,Village,Chemung,,Van Etten,Van Etten,,,Van Etten,2391183,36,015,36015
-073800,3,Town,Chemung,,Van Etten,,,http://www.chemungcounty.com/rowSet.asp?pageId=242,Van Etten,979577,36,015,36015
+073800,3,Town,Chemung,,Van Etten,,,http://www.chemungcounty.com/index.asp?pageId=242,Van Etten,979577,36,015,36015
 074001,4,Village,Chemung,,Veteran,Millport,,http://vlgmillport-ny.webs.com/,Millport,2390986,36,015,36015
 074000,3,Town,Chemung,,Veteran,,,,Veteran,979583,36,015,36015
 070000,1,County,Chemung,,,,,http://www.chemungcounty.com,,974106,36,015,36015
@@ -241,7 +241,7 @@ SWIS Code,Type Code,Type,County Name,City Name,Town Name,Village Name,2nd County
 084000,3,Town,Chenango,,North Norwich,,,,North Norwich,979291,36,017,36017
 084200,3,Town,Chenango,,Norwich,,,http://www.townofnorwich.homestead.com,Norwich,979296,36,017,36017
 084400,3,Town,Chenango,,Otselic,,,,Otselic,979330,36,017,36017
-084601,4,Village,Chenango,,Oxford,Oxford,,http://www.oxfordny.com/government/village/rowSet.php,Oxford,2391046,36,017,36017
+084601,4,Village,Chenango,,Oxford,Oxford,,http://www.oxfordny.com/government/village/index.php,Oxford,2391046,36,017,36017
 084600,3,Town,Chenango,,Oxford,,,http://www.townofoxfordny.com,Oxford,979335,36,017,36017
 084800,3,Town,Chenango,,Pharsalia,,,,Pharsalia,979360,36,017,36017
 085000,3,Town,Chenango,,Pitcher,,,,Pitcher,979370,36,017,36017
@@ -818,7 +818,7 @@ SWIS Code,Type Code,Type,County Name,City Name,Town Name,Village Name,2nd County
 280000,1,County,Nassau,,,,,http://www.nassaucountyny.gov,,974128,36,059,36059
 620000,1,Borough/County,New York,Manhattan,,,,,Manhattan,974129,36,061,36061
 650000,2,City,New York City,New York City,,,,http://www.nyc.gov,New York City,2395220,36,061,36061
-290900,2,City,Niagara,Lockport,,,,http://elockport.com/city-rowSet.php,Lockport,979164,36,063,36063
+290900,2,City,Niagara,Lockport,,,,http://elockport.com/city-index.php,Lockport,979164,36,063,36063
 291100,2,City,Niagara,Niagara Falls,,,,http://www.niagarafallsusa.org,Niagara Falls,979276,36,063,36063
 291200,2,City,Niagara,North Tonawanda,,,,http://www.northtonawanda.org/,North Tonawanda,979293,36,063,36063
 292000,3,Town,Niagara,,Cambria,,,http://www.townofcambria.com,Cambria,978775,36,063,36063
@@ -826,7 +826,7 @@ SWIS Code,Type Code,Type,County Name,City Name,Town Name,Village Name,2nd County
 292200,3,Town,Niagara,,Hartland,,,http://townofhartland.org/,Hartland,979054,36,063,36063
 292401,4,Village,Niagara,,Lewiston,Lewiston,,http://www.villageoflewiston.net/,Lewiston,2390939,36,063,36063
 292400,3,Town,Niagara,,Lewiston,,,http://www.townoflewiston.us/,Lewiston,979146,36,063,36063
-292600,3,Town,Niagara,,Lockport,,,http://elockport.com/town-rowSet.php,Lockport,979164,36,063,36063
+292600,3,Town,Niagara,,Lockport,,,http://elockport.com/town-index.php,Lockport,979164,36,063,36063
 292800,3,Town,Niagara,,Newfane,,,http://www.olcott-newfane.com,Newfane,979262,36,063,36063
 293000,3,Town,Niagara,,Niagara,,,http://www.townofniagara.com,Niagara,979275,36,063,36063
 293200,3,Town,Niagara,,Pendleton,,,http://www.pendletonny.us,Pendleton,979351,36,063,36063
@@ -947,8 +947,8 @@ SWIS Code,Type Code,Type,County Name,City Name,Town Name,Village Name,2nd County
 324200,3,Town,Ontario,,Richmond,,,http://townofrichmond.org/,Richmond,978648,36,069,36069
 324400,3,Town,Ontario,,Seneca,,,http://www.townofseneca.com,Seneca,979480,36,069,36069
 324600,3,Town,Ontario,,South Bristol,,,http://www.southbristolny.org,South Bristol,979506,36,069,36069
-324801,4,Village,Ontario,,Victor,Victor,,http://www.victorny.org/rowSet.aspx?NID=92,Victor,2391185,36,069,36069
-324800,3,Town,Ontario,,Victor,,,http://www.victorny.org/rowSet.aspx?NID=27,Victor,979584,36,069,36069
+324801,4,Village,Ontario,,Victor,Victor,,http://www.victorny.org/index.aspx?NID=92,Victor,2391185,36,069,36069
+324800,3,Town,Ontario,,Victor,,,http://www.victorny.org/index.aspx?NID=27,Victor,979584,36,069,36069
 325000,3,Town,Ontario,,West Bloomfield,,,http://townofwestbloomfield.org,West Bloomfield,979618,36,069,36069
 320000,1,County,Ontario,,,,,http://www.co.ontario.ny.us,,974133,36,069,36069
 330900,2,City,Orange,Middletown,,,,http://www.middletown-ny.com,Middletown,979217,36,071,36071
@@ -976,7 +976,7 @@ SWIS Code,Type Code,Type,County Name,City Name,Town Name,Village Name,2nd County
 334005,4,Village,Orange,,Monroe,Kiryas Joel,,http://www.orangecountygov.com/content/124/1362/1460/10182/10438/10684.aspx,Kiryas Joel,2390923,36,071,36071
 334001,4,Village,Orange,,Monroe,Monroe,,http://www.villageofmonroe.org,Monroe,2390990,36,071,36071
 334000,3,Town,Orange,,Monroe,,,http://www.monroeny.org,Monroe,979229,36,071,36071
-334203,4,Village,Orange,,Montgomery,Montgomery,,http://www.villageofmontgomery.org/rowSet.php/links.html,Montgomery,2390992,36,071,36071
+334203,4,Village,Orange,,Montgomery,Montgomery,,http://www.villageofmontgomery.org/index.php/links.html,Montgomery,2390992,36,071,36071
 334205,4,Village,Orange,,Montgomery,Walden,,http://www.villageofwalden.org,Walden,2391190,36,071,36071
 334200,3,Town,Orange,,Montgomery,,,http://www.townofmontgomery.com,Montgomery,979232,36,071,36071
 334401,4,Village,Orange,,Mount Hope,Otisville,,http://www.villageofotisville.com,Otisville,2391043,36,071,36071
@@ -1029,7 +1029,7 @@ SWIS Code,Type Code,Type,County Name,City Name,Town Name,Village Name,2nd County
 354200,3,Town,Oswego,,Oswego,,,http://www.townofoswego.com,Oswego,979325,36,075,36075
 354400,3,Town,Oswego,,Palermo,,,http://www.townofpalermo.com/,Palermo,979338,36,075,36075
 354601,4,Village,Oswego,,Parish,Parish,,http://www.villageofparish-ny.us,Parish,2391052,36,075,36075
-354600,3,Town,Oswego,,Parish,,,http://www.townofparish-ny.us/rowSet.shtml,Parish,979342,36,075,36075
+354600,3,Town,Oswego,,Parish,,,http://www.townofparish-ny.us/index.shtml,Parish,979342,36,075,36075
 354800,3,Town,Oswego,,Redfield,,,,Redfield,979410,36,075,36075
 355001,4,Village,Oswego,,Richland,Pulaski,,http://www.villagepulaski.org,Pulaski,2391084,36,075,36075
 355000,3,Town,Oswego,,Richland,,,http://www.townofrichland.org,Richland,979419,36,075,36075
@@ -1177,27 +1177,27 @@ SWIS Code,Type Code,Type,County Name,City Name,Town Name,Village Name,2nd County
 422600,3,Town,Schenectady,,Princetown,,,http://princetown.net,Princetown,979399,36,093,36093
 422800,3,Town,Schenectady,,Rotterdam,,,http://www.rotterdamny.org,Rotterdam,979437,36,093,36093
 420000,1,County,Schenectady,,,,,http://www.schenectadycounty.com,,974144,36,093,36093
-432000,3,Town,Schoharie,,Blenheim,,,http://www.schohariecounty-ny.gov/CountyWebSite/townble/rowSet.jsp,Blenheim,978738,36,095,36095
-432200,3,Town,Schoharie,,Broome,,,http://www.schohariecounty-ny.gov/CountyWebSite/townbro/rowSet.jsp,Broome,978760,36,095,36095
-432400,3,Town,Schoharie,,Carlisle,,,http://www.schohariecounty-ny.gov/CountyWebSite/towncar/rowSet.jsp,Carlisle,978791,36,095,36095
+432000,3,Town,Schoharie,,Blenheim,,,http://www.schohariecounty-ny.gov/CountyWebSite/townble/index.jsp,Blenheim,978738,36,095,36095
+432200,3,Town,Schoharie,,Broome,,,http://www.schohariecounty-ny.gov/CountyWebSite/townbro/index.jsp,Broome,978760,36,095,36095
+432400,3,Town,Schoharie,,Carlisle,,,http://www.schohariecounty-ny.gov/CountyWebSite/towncar/index.jsp,Carlisle,978791,36,095,36095
 432601,4,Village,Schoharie,,Cobleskill,Cobleskill,,http://www.schohariecounty-ny.gov/CountyWebSite/villcob/,Cobleskill,2391616,36,095,36095
-432600,3,Town,Schoharie,,Cobleskill,,,http://www.schohariecounty-ny.gov/CountyWebSite/towncob/rowSet.jsp,Cobleskill,978843,36,095,36095
-432800,3,Town,Schoharie,,Conesville,,,http://www.schohariecounty-ny.gov/CountyWebSite/towncon/rowSet.jsp,Conesville,978859,36,095,36095
-433001,4,Village,Schoharie,,Esperance,Esperance,,http://www.schohariecounty-ny.gov/CountyWebSite/villesp/rowSet.jsp,Esperance,2390828,36,095,36095
+432600,3,Town,Schoharie,,Cobleskill,,,http://www.schohariecounty-ny.gov/CountyWebSite/towncob/index.jsp,Cobleskill,978843,36,095,36095
+432800,3,Town,Schoharie,,Conesville,,,http://www.schohariecounty-ny.gov/CountyWebSite/towncon/index.jsp,Conesville,978859,36,095,36095
+433001,4,Village,Schoharie,,Esperance,Esperance,,http://www.schohariecounty-ny.gov/CountyWebSite/villesp/index.jsp,Esperance,2390828,36,095,36095
 433000,3,Town,Schoharie,,Esperance,,,http://www.townofesperance.org/,Esperance,978945,36,095,36095
-433200,3,Town,Schoharie,,Fulton,,,http://www.schohariecounty-ny.gov/CountyWebSite/townful/rowSet.jsp,Fulton,978980,36,095,36095
-433400,3,Town,Schoharie,,Gilboa,,,http://www.schohariecounty-ny.gov/CountyWebSite/towngil/rowSet.jsp,Gilboa,979001,36,095,36095
-433600,3,Town,Schoharie,,Jefferson,,,http://www.schohariecounty-ny.gov/CountyWebSite/townjef/rowSet.jsp,Jefferson,979106,36,095,36095
-433801,4,Village,Schoharie,,Middleburgh,Middleburgh,,http://www.schohariecounty-ny.gov/CountyWebSite/villmid/rowSet.jsp,Middleburgh,2390979,36,095,36095
-433800,3,Town,Schoharie,,Middleburgh,,,http://www.schohariecounty-ny.gov/CountyWebSite/townmid/rowSet.jsp,Middleburgh,979212,36,095,36095
-434001,4,Village,Schoharie,,Richmondville,Richmondville,,http://www.schohariecounty-ny.gov/CountyWebSite/villric/rowSet.jsp,Richmondville,2391095,36,095,36095
-434000,3,Town,Schoharie,,Richmondville,,,http://www.schohariecounty-ny.gov/CountyWebSite/townric/rowSet.jsp,Richmondville,979421,36,095,36095
-434201,4,Village,Schoharie,,Schoharie,Schoharie,,http://www.schohariecounty-ny.gov/CountyWebSite/villsch/rowSet.jsp,Schoharie,2391122,36,095,36095
-434200,3,Town,Schoharie,,Schoharie,,,http://www.schohariecounty-ny.gov/CountyWebSite/townsch/rowSet.jsp,Schoharie,979470,36,095,36095
-434400,3,Town,Schoharie,,Seward,,,http://www.schohariecounty-ny.gov/CountyWebSite/townsew/rowSet.jsp,Seward,979483,36,095,36095
-434601,4,Village,Schoharie,,Sharon,Sharon Springs,,http://www.schohariecounty-ny.gov/CountyWebSite/villsha/rowSet.jsp,Sharon Springs,2391128,36,095,36095
-434600,3,Town,Schoharie,,Sharon,,,http://www.schohariecounty-ny.gov/CountyWebSite/townsha/rowSet.jsp,Sharon,979485,36,095,36095
-434800,3,Town,Schoharie,,Summit,,,http://www.schohariecounty-ny.gov/CountyWebSite/townsum/rowSet.jsp,Summit,979537,36,095,36095
+433200,3,Town,Schoharie,,Fulton,,,http://www.schohariecounty-ny.gov/CountyWebSite/townful/index.jsp,Fulton,978980,36,095,36095
+433400,3,Town,Schoharie,,Gilboa,,,http://www.schohariecounty-ny.gov/CountyWebSite/towngil/index.jsp,Gilboa,979001,36,095,36095
+433600,3,Town,Schoharie,,Jefferson,,,http://www.schohariecounty-ny.gov/CountyWebSite/townjef/index.jsp,Jefferson,979106,36,095,36095
+433801,4,Village,Schoharie,,Middleburgh,Middleburgh,,http://www.schohariecounty-ny.gov/CountyWebSite/villmid/index.jsp,Middleburgh,2390979,36,095,36095
+433800,3,Town,Schoharie,,Middleburgh,,,http://www.schohariecounty-ny.gov/CountyWebSite/townmid/index.jsp,Middleburgh,979212,36,095,36095
+434001,4,Village,Schoharie,,Richmondville,Richmondville,,http://www.schohariecounty-ny.gov/CountyWebSite/villric/index.jsp,Richmondville,2391095,36,095,36095
+434000,3,Town,Schoharie,,Richmondville,,,http://www.schohariecounty-ny.gov/CountyWebSite/townric/index.jsp,Richmondville,979421,36,095,36095
+434201,4,Village,Schoharie,,Schoharie,Schoharie,,http://www.schohariecounty-ny.gov/CountyWebSite/villsch/index.jsp,Schoharie,2391122,36,095,36095
+434200,3,Town,Schoharie,,Schoharie,,,http://www.schohariecounty-ny.gov/CountyWebSite/townsch/index.jsp,Schoharie,979470,36,095,36095
+434400,3,Town,Schoharie,,Seward,,,http://www.schohariecounty-ny.gov/CountyWebSite/townsew/index.jsp,Seward,979483,36,095,36095
+434601,4,Village,Schoharie,,Sharon,Sharon Springs,,http://www.schohariecounty-ny.gov/CountyWebSite/villsha/index.jsp,Sharon Springs,2391128,36,095,36095
+434600,3,Town,Schoharie,,Sharon,,,http://www.schohariecounty-ny.gov/CountyWebSite/townsha/index.jsp,Sharon,979485,36,095,36095
+434800,3,Town,Schoharie,,Summit,,,http://www.schohariecounty-ny.gov/CountyWebSite/townsum/index.jsp,Summit,979537,36,095,36095
 435000,3,Town,Schoharie,,Wright,,,http://www.townofwright.com/,Wright,979658,36,095,36095
 430000,1,County,Schoharie,,,,,http://www.schohariecounty-ny.gov,,974145,36,095,36095
 442001,4,Village,Schuyler,,Catharine,Odessa,,,Odessa,2391033,36,097,36097
@@ -1303,7 +1303,7 @@ SWIS Code,Type Code,Type,County Name,City Name,Town Name,Village Name,2nd County
 405200,3,Town,St Lawrence,,Louisville,,,http://www.louisvillenewyork.com/,Louisville,979170,36,099,36099
 405400,3,Town,St Lawrence,,Macomb,,,,Macomb,979181,36,099,36099
 405600,3,Town,St Lawrence,,Madrid,,,http://townofmadrid.org,Madrid,979183,36,099,36099
-405800,3,Town,St Lawrence,,Massena,,,http://www.massenaworks.com/town/rowSet.asp,Massena,979205,36,099,36099
+405800,3,Town,St Lawrence,,Massena,,,http://www.massenaworks.com/town/index.asp,Massena,979205,36,099,36099
 406001,4,Village,St Lawrence,,Morristown,Morristown,,,Morristown,2390997,36,099,36099
 406000,3,Town,St Lawrence,,Morristown,,,http://www.townofmorristownny.org,Morristown,979240,36,099,36099
 406201,4,Village,St Lawrence,,Norfolk,Norwood,,http://www.norwoodny.org,Norwood,2391028,36,099,36099

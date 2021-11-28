@@ -225,12 +225,12 @@ public class TableTools {
      * @param timeZone a TimeZone constant relative to which DateTime data should be adjusted
      * @param delimiter a String value to use between printed values
      * @param out a PrintStream destination to which to print the data
-     * @param showIndex a boolean indicating whether to also print rowSet details
+     * @param showRowSet a boolean indicating whether to also print rowSet details
      * @param columns varargs of column names to display
      */
     public static void show(final Table source, final long maxRowCount, final TimeZone timeZone,
-            final String delimiter, final PrintStream out, final boolean showIndex, String... columns) {
-        TableShowTools.showInternal(source, 0, maxRowCount, timeZone, delimiter, out, showIndex, columns);
+            final String delimiter, final PrintStream out, final boolean showRowSet, String... columns) {
+        TableShowTools.showInternal(source, 0, maxRowCount, timeZone, delimiter, out, showRowSet, columns);
     }
 
     /**

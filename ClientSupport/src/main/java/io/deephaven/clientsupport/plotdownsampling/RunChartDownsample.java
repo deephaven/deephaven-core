@@ -112,10 +112,10 @@ public class RunChartDownsample implements Function<Table, Table> {
         //
         // baseTable.initializeWithSnapshot("downsample", swapListener, (prevRequested, beforeClock) -> {
         // final boolean usePrev = prevRequested && baseTable.isRefreshing();
-        // final TrackingWritableRowSet indexToUse = usePrev ? baseTable.build().prevCopy() : baseTable.build();
+        // final WritableRowSet rowSetToUse = usePrev ? baseTable.build().prevCopy() : baseTable.build();
         //
         // // process existing rows
-        // handleAdded(indexToUse, columnSourceToBin, getNanosPerPx(minBins, usePrev, indexToUse, columnSourceToBin),
+        // handleAdded(rowSetToUse, columnSourceToBin, getNanosPerPx(minBins, usePrev, rowSetToUse, columnSourceToBin),
         // valueColumnSource, states, usePrev);
         //
         // // construct the initial rowSet, table

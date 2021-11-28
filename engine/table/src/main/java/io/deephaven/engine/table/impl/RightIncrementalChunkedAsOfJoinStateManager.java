@@ -177,7 +177,7 @@ class RightIncrementalChunkedAsOfJoinStateManager
     /**
      * Each slot in the hash table has a 'cookie', which we reset by incrementing the cookie generation.  The cookie
      * allows us to rowSet into an array source that is passed in for each operation; serving as an intrusive set
-     * of modified states (we'll add relevant indices in the probe/build to an rowSet builder).
+     * of modified states (we'll add relevant indices in the probe/build to a rowSet builder).
      */
     private final LongArraySource cookieSource;
     private final LongArraySource overflowCookieSource;

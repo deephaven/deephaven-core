@@ -94,7 +94,7 @@ public interface WritableRowSet extends RowSet {
     /**
      * Modifies the RowSet by removing any keys not in the rowSetToIntersect argument.
      *
-     * @param rowSetToIntersect an RowSet with the keys to retain; any other keys not in rowSetToIntersect will be
+     * @param rowSetToIntersect a rowSet with the keys to retain; any other keys not in rowSetToIntersect will be
      *        removed.
      */
     void retain(RowSet rowSetToIntersect);

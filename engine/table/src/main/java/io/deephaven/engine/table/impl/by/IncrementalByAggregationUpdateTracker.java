@@ -190,7 +190,7 @@ class IncrementalByAggregationUpdateTracker {
     }
 
     /**
-     * Record that an rowSet key has been added to a state on initial build, to be applied in
+     * Record that a rowSet key has been added to a state on initial build, to be applied in
      * {@link #applyAddsAndMakeInitialRowSet(ObjectArraySource, ObjectArraySource, WritableRowRedirection)}
      *
      * @param cookie The last known cookie for the state
@@ -203,7 +203,7 @@ class IncrementalByAggregationUpdateTracker {
     }
 
     /**
-     * Record that an rowSet key has been removed from a state, to be applied in
+     * Record that a rowSet key has been removed from a state, to be applied in
      * {@link #applyRemovesToStates(ObjectArraySource, ObjectArraySource)}.
      *
      * @param cookie The last known cookie for the state
@@ -216,7 +216,7 @@ class IncrementalByAggregationUpdateTracker {
     }
 
     /**
-     * Record that an rowSet key has been shifted in a state, to be applied in
+     * Record that a rowSet key has been shifted in a state, to be applied in
      * {@link #applyShiftToStates(ObjectArraySource, ObjectArraySource, long, long, long)}.
      *
      * @param cookie The last known cookie for the state
@@ -231,7 +231,7 @@ class IncrementalByAggregationUpdateTracker {
     }
 
     /**
-     * Record that an rowSet key has been shifted in a state, already applied.
+     * Record that a rowSet key has been shifted in a state, already applied.
      *
      * @param cookie The last known cookie for the state
      * @param stateSlot The state's slot (in main table space)
@@ -242,7 +242,7 @@ class IncrementalByAggregationUpdateTracker {
     }
 
     /**
-     * Record that an rowSet key has been modified in a state.
+     * Record that a rowSet key has been modified in a state.
      *
      * @param cookie The last known cookie for the state
      * @param stateSlot The state's slot (in main table space)
@@ -256,7 +256,7 @@ class IncrementalByAggregationUpdateTracker {
     }
 
     /**
-     * Record that an rowSet key has been added to a state, to be applied in
+     * Record that a rowSet key has been added to a state, to be applied in
      * {@link #applyAddsToStates(ObjectArraySource, ObjectArraySource)}.
      *
      * @param cookie The last known cookie for the state

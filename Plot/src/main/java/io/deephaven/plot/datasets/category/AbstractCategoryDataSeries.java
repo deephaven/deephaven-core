@@ -205,7 +205,7 @@ public abstract class AbstractCategoryDataSeries extends AbstractDataSeries impl
     /**
      * Sets the default {@link Paint} for this dataset.
      *
-     * @param color rowSet of the color in the series color palette
+     * @param color index of the color in the series color palette
      * @return this CategoryDataSeries
      */
     public AbstractCategoryDataSeries seriesColor(final int color) {

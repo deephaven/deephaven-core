@@ -28,7 +28,7 @@ import java.util.Set;
 class TableShowTools {
 
     static void showInternal(Table source, long firstRow, long lastRowExclusive, TimeZone timeZone, String delimiter,
-            PrintStream out, boolean showIndex, String[] columns) {
+            PrintStream out, boolean showRowSet, String[] columns) {
         final QueryPerformanceNugget nugget = QueryPerformanceRecorder.getInstance().getNugget("TableTools.show()");
         try {
             if (columns.length == 0) {
@@ -41,7 +41,7 @@ class TableShowTools {
             final RowSet rowSet = source.getRowSet();
             int lineLen = 0;
             final Set<Integer> columnLimits = new HashSet<>();
-            if (showIndex) {
+            if (showRowSet) {
                 out.print("RowPosition");
                 out.print(delimiter);
                 out.print("     RowKey");
@@ -91,14 +91,14 @@ class TableShowTools {
                 if (ri < firstRow) {
                     continue;
                 }
-                if (showIndex) {
+                if (showRowSet) {
                     out.println();
                     positionPrinter.print(out, ri);
                     out.print(delimiter);
                     indexPrinter.print(out, key);
                 }
                 for (int ci = 0; ci < columns.length; ci++) {
-                    if (ci > 0 || showIndex) {
+                    if (ci > 0 || showRowSet) {
                         out.print(delimiter);
                     } else {
                         out.println();

@@ -180,7 +180,7 @@ class SnapshotState {
      *           it's table key, so that clients can map rows back into the tree structure.
      *
      * @param usePrev if the snapshot should use previous values.
-     * @param snapshotRowSet An rowSet containing the rows to copy from the source table.
+     * @param snapshotRowSet A rowSet containing the rows to copy from the source table.
      */
     void addToSnapshot(boolean usePrev, Table table, Object tableKey, TableMap tableMap, RowSet snapshotRowSet) {
         Assert.leq(copied + snapshotRowSet.size(), "dataOffset + snapshotRowSet.size()", actualViewportSize,

@@ -18,8 +18,8 @@ public class RspRowSequence extends RowSequenceAsChunkImpl {
     private RspArray arr;
     private long firstKey; // cached first key value or -1 if cache has not been populated yet.
     private long lastKey; // cached last key value or -1 if cache has not been populated yet.
-    private int startIdx; // span rowSet on arr for where our view start.
-    private int endIdx; // span rowSet on arr for where our view ends (inclusive).
+    private int startIdx; // spa rowSet on arr for where our view start.
+    private int endIdx; // spa rowSet on arr for where our view ends (inclusive).
     private long startOffset; // position offset inside the start span where our view starts.
     private long endOffset; // position offset inside the end span where our view ends (inclusive).
     private long cardBeforeStartIdx; // total cardinality in spans before startIdx.

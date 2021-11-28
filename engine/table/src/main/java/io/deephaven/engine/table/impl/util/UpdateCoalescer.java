@@ -24,7 +24,7 @@ public class UpdateCoalescer {
     public RowSetShiftData shifted;
     public ModifiedColumnSet modifiedColumnSet;
 
-    // This is an rowSet that represents which keys still exist in prevSpace for the agg update. It is necessary to
+    // This is a rowSet that represents which keys still exist in prevSpace for the agg update. It is necessary to
     // keep to ensure we make the correct selections when shift destinations overlap.
     private final WritableRowSet rowSet;
 

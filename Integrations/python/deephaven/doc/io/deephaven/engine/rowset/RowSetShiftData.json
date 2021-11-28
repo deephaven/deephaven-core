@@ -14,7 +14,7 @@
   "getEffectiveSizeClamped": "The number of keys affected by shift commands.\n\n:param clamp: (long) - the maximum size to return\n:return: (long) number of keys affected by shifts",
   "getEndRange": "Get the inclusive end offset of the idxth shift.\n\n:param idx: (int) - which pair to get offset for\n:return: (long) the offset",
   "getShiftDelta": "Get the absolute shift of the idxth shift.\n\n:param idx: (int) - which pair to get shift for\n:return: (long) the shift",
-  "intersect": "Intersects this RowSetShiftData against the provided RowSet.\n\n:param rowSet: (io.deephaven.engine.rowset.RowSet) - the rowSet to test for intersections (pre-shift keyspace)\n:return: (io.deephaven.engine.rowset.RowSetShiftData) an RowSetShiftData containing only non-empty shifts",
+  "intersect": "Intersects this RowSetShiftData against the provided RowSet.\n\n:param rowSet: (io.deephaven.engine.rowset.RowSet) - the rowSet to test for intersections (pre-shift keyspace)\n:return: (io.deephaven.engine.rowset.RowSetShiftData) a rowSetShiftData containing only non-empty shifts",
   "nonempty": "Queries whether this RowSetShiftData is non-empty (i.e. has at least one shift).\n\n:return: (boolean) true if the size() of this TrackingWritableRowSet greater than zero, false if the size is zero",
   "size": "The number of shifts embedded in the payload.\n\n:return: (int) the number of shifts",
   "toString": ":return: java.lang.String",

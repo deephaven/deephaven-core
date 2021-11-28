@@ -446,7 +446,7 @@ public class WritableRowSetImplTest extends TestCase {
 
     /**
      * Generate a subset of the keys in fullKeys up to maxPosition positions in using generator. Returns a pair
-     * containing the subset of fullKeys as an RowSet and the expected positions as a TLongList.
+     * containing the subset of fullKeys as a rowSet and the expected positions as a TLongList.
      */
     private Pair<RowSet, TLongList> generateSubset(long[] fullKeys, RowSet fullRowSet, int maxPosition,
             Random generator) {
@@ -1418,7 +1418,7 @@ public class WritableRowSetImplTest extends TestCase {
         }
         final WritableRowSet idx = result.build();
 
-        // we've got an rowSet which is split where we want it at this point
+        // we've got a rowSet which is split where we want it at this point
 
         // now let's nuke out the end of the second node
         for (int ii = 33; ii < 64; ++ii) {

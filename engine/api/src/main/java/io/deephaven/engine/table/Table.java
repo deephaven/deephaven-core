@@ -128,7 +128,7 @@ public interface Table extends
      * <p>
      * A stream table is a sequence of additions that represent rows newly received from a stream; on the cycle after
      * the stream table is refreshed the rows are removed. Note that this means any particular row of data (not to be
-     * confused with an rowSet key) never exists for more than one cycle.
+     * confused with a rowSet key) never exists for more than one cycle.
      * <p>
      * Most operations are supported as normal on stream tables, but aggregation operations are treated specially,
      * producing aggregate results that are valid over the entire observed stream from the time the operation is

@@ -184,7 +184,7 @@ public interface DataSeries extends Series, Serializable {
     /**
      * Sets the error bar {@link Paint} for this dataset.
      *
-     * @param color rowSet of the color in the series color palette
+     * @param color index of the color in the series color palette
      * @return this DataSeries
      */
     DataSeries errorBarColor(final int color);
@@ -202,7 +202,7 @@ public interface DataSeries extends Series, Serializable {
 
 
     /**
-     * Sets the point label for data point i from rowSet i of the input labels. Points outside of these indices are
+     * Sets the point label for data point i from index i of the input labels. Points outside of these indices are
      * unlabeled.
      *
      * @param label label
@@ -215,7 +215,7 @@ public interface DataSeries extends Series, Serializable {
 
 
     /**
-     * Sets the point shapes for data point i from rowSet i of the input labels. Points outside of these indices use
+     * Sets the point shapes for data point i from index i of the input labels. Points outside of these indices use
      * default shapes.
      *
      * @param shape shape
@@ -224,7 +224,7 @@ public interface DataSeries extends Series, Serializable {
     DataSeries pointShape(final String shape);
 
     /**
-     * Sets the point shapes for data point i from rowSet i of the input labels. Points outside of these indices use
+     * Sets the point shapes for data point i from index i of the input labels. Points outside of these indices use
      * default shapes.
      *
      * @param shape shape
@@ -247,7 +247,7 @@ public interface DataSeries extends Series, Serializable {
     /**
      * Defines the default line color.
      *
-     * @param color color palette rowSet
+     * @param color color palette index
      * @return this data series.
      */
     DataSeries lineColor(final int color);

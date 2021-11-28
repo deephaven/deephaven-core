@@ -60,17 +60,17 @@ public class IntervalXYDataSeriesArray extends XYDataSeriesArray
     /**
      * Creates an instance of IntervalXYDataSeriesArray with the specified data points.
      * <p>
-     * {@code startX}, {@code midX}, and {@code endX} at each rowSet define the location of a bar in the chart.
+     * {@code startX}, {@code midX}, and {@code endX} at each index define the location of a bar in the chart.
      *
      * @param axes axes displaying the plot
      * @param id data series id
      * @param name series name
-     * @param startX lowest x-coordinate of the bar at the given rowSet
-     * @param midX middle x-coordinate of the bar at the given rowSet
-     * @param endX highest x-coordinate of the bar at the given rowSet
-     * @param startY lowest y-coordinate of the bar at the given rowSet
-     * @param midY middle y-coordinate of the bar at the given rowSet
-     * @param endY highest y-coordinate of the bar at the given rowSet
+     * @param startX lowest x-coordinate of the bar at the given index
+     * @param midX middle x-coordinate of the bar at the given index
+     * @param endX highest x-coordinate of the bar at the given index
+     * @param startY lowest y-coordinate of the bar at the given index
+     * @param midY middle y-coordinate of the bar at the given index
+     * @param endY highest y-coordinate of the bar at the given index
      * @throws io.deephaven.base.verify.RequirementFailure {@code startX}, {@code midX}, {@code endX}, {@code startY},
      *         {@code midY}, and {@code endY} must not be null
      * @throws IllegalArgumentException {@code startX}, {@code midX}, {@code endX}, {@code startY}, {@code midY}, and

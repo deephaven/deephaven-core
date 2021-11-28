@@ -143,7 +143,7 @@ class IncrementalChunkedNaturalJoinStateManager
     // endmixin rehash
 
     // region extra variables
-    // we assume that our right indices are going to be unique; in which case we do not actually want to store an rowSet
+    // we assume that our right indices are going to be unique; in which case we do not actually want to store a rowSet
     // however, for inactive states, we must store the complete rowSet value, so that we can remove values from it in
     // case it does become active at some point.  If we have duplicate right hand side values, we store a reference
     // into this table

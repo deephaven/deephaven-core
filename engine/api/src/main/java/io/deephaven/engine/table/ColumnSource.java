@@ -65,7 +65,7 @@ public interface ColumnSource<T>
     /**
      * Compute grouping information for all keys present in this column source.
      *
-     * @return A map from distinct data values to an rowSet that contains those values
+     * @return A map from distinct data values to a rowSet that contains those values
      */
     Map<T, RowSet> getGroupToRange();
 
@@ -73,7 +73,7 @@ public interface ColumnSource<T>
      * Compute grouping information for (at least) all keys present in rowSet.
      *
      * @param rowSet The rowSet to consider
-     * @return A map from distinct data values to an rowSet that contains those values
+     * @return A map from distinct data values to a rowSet that contains those values
      */
     Map<T, RowSet> getGroupToRange(RowSet rowSet);
 

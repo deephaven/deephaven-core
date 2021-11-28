@@ -68,7 +68,7 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
      * Gathers
      *
      * @param keysToVisit       A search iterator over the enclosing table address space (which must have the same
-     *                          regions at the same masks), positioned at an rowSet key in this region. Used to
+     *                          regions at the same masks), positioned at a rowSet key in this region. Used to
      *                          identify regions to visit. Should be advanced to after this region as a side-effect.
      * @param knownKeys         An iterator over the previously-known rowSet keys, positioned at the first known key in
      *                          this region, or after the region's maximum key if no keys are known. Should be advanced

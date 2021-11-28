@@ -66,9 +66,9 @@ public class Future {
     }
 
     /**
-     * Gets the current rowSet set.
+     * Gets the current index set.
      *
-     * @return the current rowSet set.
+     * @return the current index set.
      */
     IndexSet getIndexSet() {
         return indexSet;

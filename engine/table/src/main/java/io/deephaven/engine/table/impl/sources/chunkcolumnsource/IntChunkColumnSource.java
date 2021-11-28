@@ -129,7 +129,7 @@ public class IntChunkColumnSource extends AbstractColumnSource<Integer> implemen
     }
 
     /**
-     * Given an rowSet within this column's address space; return the chunk that contains the rowSet.
+     * Given a rowSet within this column's address space; return the chunk that contains the rowSet.
      *
      * @param start the data rowSet to find the corresponding chunk for
      * @return the chunk rowSet within data and offsets
@@ -139,7 +139,7 @@ public class IntChunkColumnSource extends AbstractColumnSource<Integer> implemen
     }
 
     /**
-     * Given an rowSet within this column's address space; return the chunk that contains the rowSet.
+     * Given a rowSet within this column's address space; return the chunk that contains the rowSet.
      *
      * @param start      the data rowSet to find the corresponding chunk for
      * @param startChunk the first chunk that may possibly contain start

@@ -16,34 +16,34 @@ public interface OHLCDataSeriesInternal extends OHLCDataSeries, XYDataSeriesInte
     OHLCDataSeriesInternal copy(final AxesImpl axes);
 
     /**
-     * Gets the open value at rowSet {@code i}.
+     * Gets the open value at index {@code i}.
      *
-     * @param i rowSet
-     * @return open value at given rowSet
+     * @param i index
+     * @return open value at given index
      */
     double getOpen(int i);
 
     /**
-     * Gets the high value at rowSet {@code i}.
+     * Gets the high value at index {@code i}.
      *
-     * @param i rowSet
-     * @return high value at given rowSet
+     * @param i index
+     * @return high value at given index
      */
     double getHigh(int i);
 
     /**
-     * Gets the low value at rowSet {@code i}.
+     * Gets the low value at index {@code i}.
      *
-     * @param i rowSet
-     * @return low value at given rowSet
+     * @param i index
+     * @return low value at given index
      */
     double getLow(int i);
 
     /**
-     * Gets the close value at rowSet {@code i}.
+     * Gets the close value at index {@code i}.
      *
-     * @param i rowSet
-     * @return close value at given rowSet
+     * @param i index
+     * @return close value at given index
      */
     double getClose(int i);
 

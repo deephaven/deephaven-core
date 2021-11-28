@@ -82,8 +82,8 @@ public class Computer {
     /**
      * Adds new row indices to be used in the deferred calculation.
      *
-     * @param k rowSet to be added to the current rowSet set.
-     * @return future offset that combines a future with the relevant row rowSet to access result.
+     * @param k index to be added to the current index set.
+     * @return future offset that combines a future with the relevant row index to access result.
      */
     public FutureOffset compute(long k) {
 

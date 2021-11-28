@@ -10,7 +10,7 @@ import io.deephaven.plot.errors.PlotInfo;
 import java.io.Serializable;
 
 /**
- * Dataset where values can be retrieved via an integer rowSet.
+ * Dataset where values can be retrieved via an integer index.
  */
 public abstract class IndexableData<T> implements Serializable, PlotExceptionCause {
 
@@ -31,10 +31,10 @@ public abstract class IndexableData<T> implements Serializable, PlotExceptionCau
     public abstract int size();
 
     /**
-     * Gets the value at the given rowSet.
+     * Gets the value at the given index.
      *
-     * @param index rowSet
-     * @return value of this dataset at {@code rowSet}
+     * @param index index
+     * @return value of this dataset at {@code index}
      */
     public abstract T get(int index);
 

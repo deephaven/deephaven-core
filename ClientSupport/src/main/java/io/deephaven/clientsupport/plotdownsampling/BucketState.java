@@ -137,7 +137,7 @@ public class BucketState {
                             // all items are null, so we can mark this as valid
                             values[i].maxValueValid(offset, true);
                             values[i].minValueValid(offset, true);
-                            // for sanity's sake, also mark the max and min rowSet to be null
+                            // for sanity's sake, also mark the max and min index to be null
                             values[i].setMaxIndex(offset, QueryConstants.NULL_LONG);
                             values[i].setMinIndex(offset, QueryConstants.NULL_LONG);
                             return false;
@@ -241,7 +241,7 @@ public class BucketState {
             for (final ValueTracker tracker : values) {
                 // Nulls are not being tracked, so instead we will ask each column if it has only null values. If
                 // so, skip max/min in the constructed rowSet for this column, the first/last (and other column
-                // values) are sufficient for this column. If either max or min rowSet is null, the other must be as
+                // values) are sufficient for this column. If either max or min index is null, the other must be as
                 // well.
 
                 final long max = tracker.maxIndex(offset);

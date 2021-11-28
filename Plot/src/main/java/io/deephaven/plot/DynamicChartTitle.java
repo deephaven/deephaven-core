@@ -171,7 +171,7 @@ public abstract class DynamicChartTitle extends ChartTitle {
      * Gets the string value with handling nulls
      *
      * @param indexableData - indexed data source
-     * @param index - rowSet
+     * @param index - index
      * @return String value of the indexed item
      */
     private static String getStringValue(final IndexableData indexableData, final int index) {

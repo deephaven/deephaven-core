@@ -436,7 +436,7 @@ public class ConstructSnapshot {
 
     /**
      * Create a {@link InitialSnapshot snapshot} of the specified table using a set of requested columns and keys. Note
-     * that this method uses an rowSet that is in Key space, and that it is notification-oblivious, i.e. it makes no
+     * that this method uses a rowSet that is in Key space, and that it is notification-oblivious, i.e. it makes no
      * attempt to ensure that notifications are not missed.
      *
      * @param logIdentityObject An object used to prepend to log rows.
@@ -470,7 +470,7 @@ public class ConstructSnapshot {
 
     /**
      * Create a {@link InitialSnapshot snapshot} of the specified table using a set of requested columns and positions.
-     * Note that this method uses an rowSet that is in Position space, and that it is notification-oblivious, i.e. it
+     * Note that this method uses a rowSet that is in Position space, and that it is notification-oblivious, i.e. it
      * makes no attempt to ensure that notifications are not missed.
      *
      * @param logIdentityObject An object used to prepend to log rows.
@@ -527,7 +527,7 @@ public class ConstructSnapshot {
 
     /**
      * Create a {@link BarrageMessage snapshot} of the specified table using a set of requested columns and positions.
-     * Note that this method uses an rowSet that is in Position space, and that it is notification-oblivious, i.e. it
+     * Note that this method uses a rowSet that is in Position space, and that it is notification-oblivious, i.e. it
      * makes no attempt to ensure that notifications are not missed.
      *
      * @param logIdentityObject An object used to prepend to log rows.
@@ -546,7 +546,7 @@ public class ConstructSnapshot {
 
     /**
      * Create a {@link BarrageMessage snapshot} of the specified table using a set of requested columns and positions.
-     * Note that this method uses an rowSet that is in Position space.
+     * Note that this method uses a rowSet that is in Position space.
      *
      * @param logIdentityObject An object used to prepend to log rows.
      * @param table the table to snapshot.

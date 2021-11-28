@@ -1154,7 +1154,7 @@ class StaticChunkedByAggregationStateManager
             }
         }
         // region nullOverflowObjectSources
-        // NB: It's worth nulling out the overflowRowSetSource because if it's never re-used its sequential builder will never be swapped to an rowSet
+        // NB: It's worth nulling out the overflowRowSetSource because if it's never re-used its sequential builder will never be swapped to a rowSet
         for (int ii = 0; ii < locationsToNull.size(); ++ii) {
             overflowRowSetSource.set(locationsToNull.get(ii), EMPTY_VALUE);
         }

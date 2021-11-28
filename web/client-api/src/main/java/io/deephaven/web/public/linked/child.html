@@ -190,11 +190,11 @@
         // when this row is double clicked, select it, and notify any linked targets
         tr.ondblclick = e => {
           //rows appear to be 1-indexed, since the header row is counted
-          var rowSet = e.currentTarget.rowIndex - 1;
+          var index = e.currentTarget.rowIndex - 1;
           currentTable.getViewportData().then(viewportData => {
             links.forEach(link => {
               var linkedColumn = currentTable.findColumn(link.sourceColumn);
-              var data = viewportData.rows[rowSet].get(linkedColumn);
+              var data = viewportData.rows[index].get(linkedColumn);
               console.log("sending data to table");
               console.debug(data);
               try {
