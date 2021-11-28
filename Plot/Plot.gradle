@@ -1,7 +1,7 @@
 configurations {
     compile.extendsFrom dhPlot
 
-    testCompile.extendsFrom dhDbTest, fishIoTest
+    testCompile.extendsFrom fishIoTest
 }
 
 dependencies {
@@ -9,6 +9,9 @@ dependencies {
     compile project(':engine-table'),
             project(':engine-function'),
             project(':engine-tuple')
+
+    Classpaths.inheritGroovy(project, 'groovy', 'implementation')
+    Classpaths.inheritGroovy(project, 'groovy-json', 'implementation')
 
     compileOnly 'javax.inject:javax.inject:1'
 

@@ -5,8 +5,7 @@ plugins {
 evaluationDependsOn ':docker-runtime-base' // runtimeBase
 
 configurations {
-  //compile.extendsFrom dhDb
-  testCompile.extendsFrom dhDbTest, fishIoTest
+  testCompile.extendsFrom fishIoTest
 }
 
 test {

@@ -484,21 +484,15 @@ tasks.register('smoke') {
 ext {
     depAnnotations = 'com.intellij:annotations:5.1'
     depAllocation = 'com.google.code.java-allocation-instrumenter:java-allocation-instrumenter:2.0'
-    depAnt = 'ant:ant:1.6.5'
     depCommonsCodec = 'commons-codec:commons-codec:1.9'
     depCommonsCompress = 'org.apache.commons:commons-compress:1.8'
     depCommonsLang3 = 'org.apache.commons:commons-lang3:3.9'
     depCommonsNet = 'commons-net:commons-net:3.2'
     depCommonsEmail = 'org.apache.commons:commons-email:1.4'
     depCommonsIo = 'commons-io:commons-io:2.5'
-    depFormsRt = 'com.intellij:forms_rt:6.0.3'
     depJdom2 = 'org.jdom:jdom2:2.0.6'
     depLog4j = 'log4j:log4j:1.2.16'
-    depPacker = 'packer:packer:1.0'
     depTrove3 = 'net.sf.trove4j:trove4j:3.0.3'
-    depJanino = 'janino:janino:2.5.10'
-    //openJdkInternalMiscExt = openJdkInternalMisc
-    //openJdkInternalAccessExt = openJdkInternalAccess
 }
 
 tasks.wrapper {

@@ -16,6 +16,9 @@ dependencies {
             project(':extensions-kafka'),
             project(':extensions-parquet-table')
 
+    Classpaths.inheritGroovy(project, 'groovy', 'implementation')
+    Classpaths.inheritGroovy(project, 'groovy-json', 'implementation')
+
     runtime project(path: ':configs'),
             project(path: ':test-configs'),
             project(':extensions-kafka')

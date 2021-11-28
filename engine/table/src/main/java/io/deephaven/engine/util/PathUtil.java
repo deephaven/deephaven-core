@@ -3,9 +3,9 @@ package io.deephaven.engine.util;
 import io.deephaven.io.InputStreamFactory;
 import io.deephaven.io.streams.SevenZipInputStream;
 import io.deephaven.io.streams.SevenZipInputStream.Behavior;
+import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
 import org.apache.commons.compress.compressors.zstandard.ZstdCompressorInputStream;
-import org.apache.tools.tar.TarInputStream;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -66,8 +66,8 @@ public class PathUtil {
         return Files.newInputStream(path);
     }
 
-    private static TarInputStream untar(InputStream in) throws IOException {
-        final TarInputStream tarInputStream = new TarInputStream(in);
+    private static TarArchiveInputStream untar(InputStream in) throws IOException {
+        final TarArchiveInputStream tarInputStream = new TarArchiveInputStream(in);
         tarInputStream.getNextEntry();
         return tarInputStream;
     }
