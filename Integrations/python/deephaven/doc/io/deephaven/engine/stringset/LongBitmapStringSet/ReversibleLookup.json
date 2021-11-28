@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.engine.stringset.LongBitmapStringSet$ReversibleLookup",
- "methods": {
-  "get": "Forward lookup from the integral rowSet.\n\n:param index: long\n:return: (LongBitmapStringSet.ReversibleLookup.DATA_TYPE) the DATA_TYPE associated with the rowSet.",
-  "rget": "Reverse lookup of the DATA_TYPE.\n\n:param highestIndex: int\n:param value: LongBitmapStringSet.ReversibleLookup.DATA_TYPE\n:return: (int) the integral rowSet associated with the DATA_TYPE."
- },
- "path": "io.deephaven.engine.stringset.LongBitmapStringSet.ReversibleLookup",
- "typeName": "interface"
-}

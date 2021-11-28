@@ -656,13 +656,13 @@ public final class LongSegmentedSortedMultiset implements SegmentedSortedMultiSe
     //region Bounds search
 
     /**
-     * Return the lowest rowSet geq valuesToSearch.
+     * Return the lowest index geq valuesToSearch.
      *
      * @param valuesToSearch the values to search for searchValue in
-     * @param lo the first rowSet to search for
-     * @param hi one past the last rowSet to search in
+     * @param lo the first index to search for
+     * @param hi one past the last index to search in
      * @param searchValue the value to find
-     * @return the lowest rowSet that is greater than or equal to valuesToSearch
+     * @return the lowest index that is greater than or equal to valuesToSearch
      */
     private static int lowerBound(long [] valuesToSearch, int lo, int hi, long searchValue) {
         while (lo < hi) {
@@ -683,13 +683,13 @@ public final class LongSegmentedSortedMultiset implements SegmentedSortedMultiSe
     }
 
     /**
-     * Return the lowest rowSet geq valuesToSearch.
+     * Return the lowest index geq valuesToSearch.
      *
      * @param valuesToSearch the values to search for searchValue in
-     * @param lo the first rowSet to search for
-     * @param hi one past the last rowSet to search in
+     * @param lo the first index to search for
+     * @param hi one past the last index to search in
      * @param searchValue the value to find
-     * @return the lowest rowSet that is greater than or equal to valuesToSearch
+     * @return the lowest index that is greater than or equal to valuesToSearch
      */
     private static int gallopBound(LongChunk<? extends Attributes.Any> valuesToSearch, int lo, int hi, long searchValue) {
         while (lo < hi) {
@@ -710,13 +710,13 @@ public final class LongSegmentedSortedMultiset implements SegmentedSortedMultiSe
     }
 
     /**
-     * Return the lowest rowSet geq valuesToSearch.
+     * Return the lowest index geq valuesToSearch.
      *
      * @param valuesToSearch the values to search for searchValue in
-     * @param lo the first rowSet to search for
-     * @param hi one past the last rowSet to search in
+     * @param lo the first index to search for
+     * @param hi one past the last index to search in
      * @param searchValue the value to find
-     * @return the lowest rowSet that is greater than or equal to valuesToSearch
+     * @return the lowest index that is greater than or equal to valuesToSearch
      */
     private static int gallopBound(long [] valuesToSearch, int lo, int hi, long searchValue) {
         while (lo < hi) {
@@ -737,13 +737,13 @@ public final class LongSegmentedSortedMultiset implements SegmentedSortedMultiSe
     }
 
     /**
-     * Return the highest rowSet in valuesToSearch leq searchValue.
+     * Return the highest index in valuesToSearch leq searchValue.
      *
      * @param valuesToSearch the values to search for searchValue in
-     * @param lo the first rowSet to search for
-     * @param hi one past the last rowSet to search in
+     * @param lo the first index to search for
+     * @param hi one past the last index to search in
      * @param searchValue the value to find
-     * @return the highest rowSet that is less than or equal to valuesToSearch
+     * @return the highest index that is less than or equal to valuesToSearch
      */
     private static int upperBound(long [] valuesToSearch, int lo, int hi, long searchValue) {
         while (lo < hi) {
@@ -761,13 +761,13 @@ public final class LongSegmentedSortedMultiset implements SegmentedSortedMultiSe
     }
 
     /**
-     * Return the highest rowSet in valuesToSearch leq searchValue.
+     * Return the highest index in valuesToSearch leq searchValue.
      *
      * @param valuesToSearch the values to search for searchValue in
-     * @param lo the first rowSet to search for
-     * @param hi one past the last rowSet to search in
+     * @param lo the first index to search for
+     * @param hi one past the last index to search in
      * @param searchValue the value to find
-     * @return the highest rowSet that is less than or equal to valuesToSearch
+     * @return the highest index that is less than or equal to valuesToSearch
      */
     private static int upperBound(LongChunk<? extends Values> valuesToSearch, int lo, int hi, long searchValue) {
         while (lo < hi) {
@@ -785,13 +785,13 @@ public final class LongSegmentedSortedMultiset implements SegmentedSortedMultiSe
     }
 
     /**
-     * Return the lowest rowSet gt valuesToSearch.
+     * Return the lowest index gt valuesToSearch.
      *
      * @param valuesToSearch the values to search for searchValue in
-     * @param lo the first rowSet to search for
-     * @param hi one past the last rowSet to search in
+     * @param lo the first index to search for
+     * @param hi one past the last index to search in
      * @param searchValue the value to find
-     * @return the lowest rowSet that is greater than to valuesToSearch
+     * @return the lowest index that is greater than to valuesToSearch
      */
     private static int lowerBoundExclusive(long [] valuesToSearch, int lo, int hi, long searchValue) {
         while (lo < hi) {
@@ -2277,7 +2277,7 @@ public final class LongSegmentedSortedMultiset implements SegmentedSortedMultiSe
     @Override
     public long get(long i) {
         if(i < 0 || i > size()) {
-            throw new IllegalArgumentException("Illegal rowSet " + i + " current size: " + size());
+            throw new IllegalArgumentException("Illegal index " + i + " current size: " + size());
         }
 
         if(leafCount == 1) {
@@ -2291,7 +2291,7 @@ public final class LongSegmentedSortedMultiset implements SegmentedSortedMultiSe
             }
         }
 
-        throw new IllegalStateException("TrackingWritableRowSet " + i + " not found in this SSM");
+        throw new IllegalStateException("Index " + i + " not found in this SSM");
     }
 
     @Override

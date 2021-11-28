@@ -1,7 +1,0 @@
-{
- "className": "io.deephaven.kafka.ingest.KafkaIngesterException",
- "methods": {},
- "path": "io.deephaven.kafka.ingest.KafkaIngesterException",
- "text": "This exception is thrown when there is a failure to consume a Kafka record during Kafka to Deephaven ingestion.",
- "typeName": "class"
-}

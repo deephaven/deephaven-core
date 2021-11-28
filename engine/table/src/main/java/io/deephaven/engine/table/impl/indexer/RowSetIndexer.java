@@ -175,7 +175,7 @@ public class RowSetIndexer implements TrackingRowSet.Indexer {
      *        values are SmartKeys.
      * @param tupleSource The tuple factory for singular or compound keys
      * @return A map from keys to {@link RowSet}, for each of the {@code keys} present in the indexed RowSet's view of
-     * {@code tupleSource}
+     *         {@code tupleSource}
      */
     public Map<Object, RowSet> getGroupingForKeySet(final Set<Object> keys, final TupleSource tupleSource) {
         final Map<Object, RowSet> result = new LinkedHashMap<>();

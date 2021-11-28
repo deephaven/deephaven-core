@@ -17,9 +17,9 @@ public interface RowSetBuilderSequential extends TLongProcedure, LongRangeConsum
 
     /**
      * Hint to call, but if called, (a) should be called before providing any values, and (b) no value should be
-     * provided outside the domain. Implementations may be able to use this information to improve memory
-     * utilization. Either of the arguments may be given as {@link RowSet#NULL_ROW_KEY}, indicating that the respective
-     * value is not known.
+     * provided outside the domain. Implementations may be able to use this information to improve memory utilization.
+     * Either of the arguments may be given as {@link RowSet#NULL_ROW_KEY}, indicating that the respective value is not
+     * known.
      *
      * @param minRowKey The minimum row key to be provided, or {@link RowSet#NULL_ROW_KEY} if not known
      * @param maxRowKey The maximum row key to be provided, or {@link RowSet#NULL_ROW_KEY} if not known

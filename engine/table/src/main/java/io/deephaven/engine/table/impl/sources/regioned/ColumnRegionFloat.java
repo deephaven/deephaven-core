@@ -18,8 +18,8 @@ public interface ColumnRegionFloat<ATTR extends Any> extends ColumnRegion<ATTR> 
     /**
      * Get a single float from this region.
      *
-     * @param elementIndex Element (float) rowSet in the table's address space
-     * @return The float value at the specified element (float) rowSet
+     * @param elementIndex Element row key in the table's address space
+     * @return The float value at the specified element row key
      */
     float getFloat(long elementIndex);
 
@@ -27,9 +27,9 @@ public interface ColumnRegionFloat<ATTR extends Any> extends ColumnRegion<ATTR> 
      * Get a single float from this region.
      *
      * @param context      A {@link RegionContextHolder} to enable resource caching where suitable, with current
-     *                     region rowSet pointing to this region
-     * @param elementIndex Element (float) rowSet in the table's address space
-     * @return The float value at the specified element (float) rowSet
+     *                     region index pointing to this region
+     * @param elementIndex Element row key in the table's address space
+     * @return The float value at the specified element row key
      */
     default float getFloat(@NotNull final FillContext context, final long elementIndex) {
         return getFloat(elementIndex);

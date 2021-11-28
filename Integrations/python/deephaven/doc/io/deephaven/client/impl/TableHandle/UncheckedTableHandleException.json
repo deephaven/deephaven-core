@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.client.impl.TableHandle$UncheckedTableHandleException",
- "methods": {
-  "getCause": ":return: io.deephaven.client.impl.TableHandle.TableHandleException",
-  "handle": ":return: io.deephaven.client.impl.TableHandle"
- },
- "path": "io.deephaven.client.impl.TableHandle.UncheckedTableHandleException",
- "typeName": "class"
-}

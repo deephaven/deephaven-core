@@ -35,7 +35,7 @@ public class ObjectReverseSsaChecker implements SsaChecker {
 
         //noinspection unchecked
         try (final WritableObjectChunk<Object, Values> resultChunk = (WritableObjectChunk) ssa.asObjectChunk();
-             final WritableLongChunk<RowKeys> indexChunk = ssa.keyIndicesChunk()) {
+             final WritableLongChunk<RowKeys> indexChunk = ssa.rowKeysChunk()) {
 
             Assert.eq(valueChunk.size(), "valueChunk.size()", resultChunk.size(), "resultChunk.size()");
             Assert.eq(tableIndexChunk.size(), "tableIndexChunk.size()", indexChunk.size(), "indexChunk.size()");

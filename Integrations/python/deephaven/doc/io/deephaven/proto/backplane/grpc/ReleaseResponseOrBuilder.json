@@ -1,6 +1,0 @@
-{
- "className": "io.deephaven.proto.backplane.grpc.ReleaseResponseOrBuilder",
- "methods": {},
- "path": "io.deephaven.proto.backplane.grpc.ReleaseResponseOrBuilder",
- "typeName": "interface"
-}

@@ -1,7 +1,0 @@
-{
- "className": "io.deephaven.util.files.FileHelper$FileDeletionException",
- "methods": {},
- "path": "io.deephaven.util.files.FileHelper.FileDeletionException",
- "text": "Give callers of FileHelper.deleteRecursivelyOnNFS(File, Pattern) a better exception to catch.",
- "typeName": "class"
-}

@@ -1525,8 +1525,8 @@ class RightIncrementalChunkedAsOfJoinStateManager
         // the chunk of positions within our table
         final WritableLongChunk<RowKeys> tableLocationsChunk;
 
-        // the chunk of right indices that we read from the hash table, the empty right index is used as a sentinel that
-        // the state exists; otherwise when building from the left it is always null
+        // the chunk of right indices that we read from the hash table, the empty right index is used as a sentinel that the
+        // state exists; otherwise when building from the left it is always null
         // @WritableStateChunkType@ from \QWritableByteChunk<Values>\E
         final WritableByteChunk<Values> workingStateEntries;
 

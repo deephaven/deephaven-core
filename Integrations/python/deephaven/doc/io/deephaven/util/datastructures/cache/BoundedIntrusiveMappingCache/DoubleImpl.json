@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.util.datastructures.cache.BoundedIntrusiveMappingCache$DoubleImpl",
- "methods": {
-  "computeIfAbsent": ":param key: BoundedIntrusiveMappingCache.DoubleImpl.KEY_TYPE\n:param mapper: java.util.function.ToDoubleFunction<BoundedIntrusiveMappingCache.DoubleImpl.KEY_TYPE>\n:return: double"
- },
- "path": "io.deephaven.util.datastructures.cache.BoundedIntrusiveMappingCache.DoubleImpl",
- "typeName": "class"
-}

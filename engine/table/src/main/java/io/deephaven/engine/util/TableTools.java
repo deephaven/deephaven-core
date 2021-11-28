@@ -197,8 +197,8 @@ public class TableTools {
      * @param columns varargs of column names to display
      */
     public static void showWithRowSet(Table source, long maxRowCount, io.deephaven.engine.time.TimeZone timeZone,
-                                      PrintStream out,
-                                      String... columns) {
+            PrintStream out,
+            String... columns) {
         show(source, maxRowCount, timeZone, "|", out, true, columns);
     }
 
@@ -243,7 +243,7 @@ public class TableTools {
      * @param columns varargs of column names to display
      */
     public static void showWithRowSet(final Table source, final long firstRow, final long lastRow,
-                                      final String... columns) {
+            final String... columns) {
         TableShowTools.showInternal(source, firstRow, lastRow, io.deephaven.engine.time.TimeZone.TZ_DEFAULT, "|",
                 System.out, true, columns);
     }

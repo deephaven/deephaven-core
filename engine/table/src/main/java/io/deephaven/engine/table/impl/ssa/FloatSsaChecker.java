@@ -33,7 +33,7 @@ public class FloatSsaChecker implements SsaChecker {
 
         //noinspection unchecked
         try (final WritableFloatChunk<Values> resultChunk = (WritableFloatChunk) ssa.asFloatChunk();
-             final WritableLongChunk<RowKeys> indexChunk = ssa.keyIndicesChunk()) {
+             final WritableLongChunk<RowKeys> indexChunk = ssa.rowKeysChunk()) {
 
             Assert.eq(valueChunk.size(), "valueChunk.size()", resultChunk.size(), "resultChunk.size()");
             Assert.eq(tableIndexChunk.size(), "tableIndexChunk.size()", indexChunk.size(), "indexChunk.size()");

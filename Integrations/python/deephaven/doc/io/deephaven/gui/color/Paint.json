@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.gui.color.Paint",
- "methods": {
-  "javaColor": "Gets the Java object representative of this Paint.\n\n:return: (java.awt.Paint) Java object representative of this Paint"
- },
- "path": "io.deephaven.gui.color.Paint",
- "text": "Color abstraction.",
- "typeName": "interface"
-}

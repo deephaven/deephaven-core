@@ -128,7 +128,7 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
     }
 
     protected abstract void processPendingTable(Table table, boolean allowEdits,
-                                                RowSetChangeRecorder rowSetChangeRecorder, Consumer<String> errorNotifier);
+            RowSetChangeRecorder rowSetChangeRecorder, Consumer<String> errorNotifier);
 
     protected abstract void processPendingDelete(Table table, RowSetChangeRecorder rowSetChangeRecorder);
 

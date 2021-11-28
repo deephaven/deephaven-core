@@ -92,8 +92,8 @@ public class StreamFirstChunkedOperator extends BaseStreamFirstOrLastChunkedOper
 
     @Override
     public boolean addRowSet(final SingletonContext context,
-                             @NotNull final RowSet rowSet,
-                             final long destination) {
+            @NotNull final RowSet rowSet,
+            final long destination) {
         if (rowSet.isEmpty()) {
             return false;
         }
@@ -141,8 +141,8 @@ public class StreamFirstChunkedOperator extends BaseStreamFirstOrLastChunkedOper
 
     /**
      * <p>
-     * For each destination slot, map to the (first) source row key and copy source values to destination slots for
-     * all result columns.
+     * For each destination slot, map to the (first) source row key and copy source values to destination slots for all
+     * result columns.
      *
      * <p>
      * This implementation proceeds chunk-wise in the following manner:

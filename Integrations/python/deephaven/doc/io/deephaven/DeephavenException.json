@@ -1,7 +1,0 @@
-{
- "className": "io.deephaven.DeephavenException",
- "methods": {},
- "path": "io.deephaven.DeephavenException",
- "text": "The root of all Checked Deephaven exceptions.",
- "typeName": "class"
-}

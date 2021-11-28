@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.engine.util.GroovyExceptionWrapper",
- "methods": {
-  "maybeTranslateGroovyException": ":param original: java.lang.Throwable\n:return: java.lang.Throwable"
- },
- "path": "io.deephaven.engine.util.GroovyExceptionWrapper",
- "typeName": "class"
-}

@@ -18,8 +18,8 @@ public interface ColumnRegionInt<ATTR extends Any> extends ColumnRegion<ATTR> {
     /**
      * Get a single int from this region.
      *
-     * @param elementIndex Element (int) rowSet in the table's address space
-     * @return The int value at the specified element (int) rowSet
+     * @param elementIndex Element row key in the table's address space
+     * @return The int value at the specified element row key
      */
     int getInt(long elementIndex);
 
@@ -27,9 +27,9 @@ public interface ColumnRegionInt<ATTR extends Any> extends ColumnRegion<ATTR> {
      * Get a single int from this region.
      *
      * @param context      A {@link RegionContextHolder} to enable resource caching where suitable, with current
-     *                     region rowSet pointing to this region
-     * @param elementIndex Element (int) rowSet in the table's address space
-     * @return The int value at the specified element (int) rowSet
+     *                     region index pointing to this region
+     * @param elementIndex Element row key in the table's address space
+     * @return The int value at the specified element row key
      */
     default int getInt(@NotNull final FillContext context, final long elementIndex) {
         return getInt(elementIndex);

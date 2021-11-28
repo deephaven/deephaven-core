@@ -1,7 +1,0 @@
-{
- "className": "io.deephaven.engine.chunk.ChunkHelpers",
- "methods": {},
- "path": "io.deephaven.engine.chunk.ChunkHelpers",
- "text": "Implementation helpers for chunks.",
- "typeName": "class"
-}

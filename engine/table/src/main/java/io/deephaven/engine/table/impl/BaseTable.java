@@ -1405,8 +1405,8 @@ public abstract class BaseTable extends LivenessArtifact
      * </p>
      *
      * <p>
-     * This function is for use when the result table shares a RowSet; such that if this table is flat,
-     * the result table must also be flat.
+     * This function is for use when the result table shares a RowSet; such that if this table is flat, the result table
+     * must also be flat.
      * </p>
      *
      * @param result the table derived from this table

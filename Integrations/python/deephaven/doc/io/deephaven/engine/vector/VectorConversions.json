@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.engine.vector.VectorConversions",
- "methods": {
-  "nullSafeVectorToArray": "*Overload 1*  \n  :param vector: io.deephaven.engine.vector.BooleanVector\n  :return: java.lang.Boolean[]\n  \n*Overload 2*  \n  :param vector: io.deephaven.engine.vector.CharVector\n  :return: char[]\n  \n*Overload 3*  \n  :param vector: io.deephaven.engine.vector.ByteVector\n  :return: byte[]\n  \n*Overload 4*  \n  :param vector: io.deephaven.engine.vector.ShortVector\n  :return: short[]\n  \n*Overload 5*  \n  :param vector: io.deephaven.engine.vector.IntVector\n  :return: int[]\n  \n*Overload 6*  \n  :param vector: io.deephaven.engine.vector.LongVector\n  :return: long[]\n  \n*Overload 7*  \n  :param vector: io.deephaven.engine.vector.FloatVector\n  :return: float[]\n  \n*Overload 8*  \n  :param vector: io.deephaven.engine.vector.DoubleVector\n  :return: double[]\n  \n*Overload 9*  \n  Note: Java generics information - <T>\n  \n  :param vector: io.deephaven.engine.vector.ObjectVector<T>\n  :return: T[]"
- },
- "path": "io.deephaven.engine.vector.VectorConversions",
- "text": "Utility methods for converting vectors to native arrays. Used in formulas.",
- "typeName": "class"
-}

@@ -31,7 +31,7 @@ public class LongReverseSsaChecker implements SsaChecker {
 
         //noinspection unchecked
         try (final WritableLongChunk<Values> resultChunk = (WritableLongChunk) ssa.asLongChunk();
-             final WritableLongChunk<RowKeys> indexChunk = ssa.keyIndicesChunk()) {
+             final WritableLongChunk<RowKeys> indexChunk = ssa.rowKeysChunk()) {
 
             Assert.eq(valueChunk.size(), "valueChunk.size()", resultChunk.size(), "resultChunk.size()");
             Assert.eq(tableIndexChunk.size(), "tableIndexChunk.size()", indexChunk.size(), "indexChunk.size()");

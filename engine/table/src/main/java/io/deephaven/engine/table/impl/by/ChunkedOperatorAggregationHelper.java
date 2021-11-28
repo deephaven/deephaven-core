@@ -901,8 +901,8 @@ public class ChunkedOperatorAggregationHelper {
         private static class ModifySplitResult implements SafeCloseable {
 
             /**
-             * This is a partition of same-slot modifies for row keys that were not shifted. Needed for modifyChunk
-             * of input-modified operators that require indices, since they handle the shifted same-slot modifies in
+             * This is a partition of same-slot modifies for row keys that were not shifted. Needed for modifyChunk of
+             * input-modified operators that require indices, since they handle the shifted same-slot modifies in
              * shiftChunk.
              */
             @Nullable

@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.proto.backplane.grpc.TicketOrBuilder",
- "methods": {
-  "getTicket": "bytes ticket = 1;\n\n:return: (com.google.protobuf.ByteString) The ticket."
- },
- "path": "io.deephaven.proto.backplane.grpc.TicketOrBuilder",
- "typeName": "interface"
-}

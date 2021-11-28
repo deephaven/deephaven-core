@@ -231,7 +231,7 @@ public class ParallelDeferredGroupingProvider<DATA_TYPE> implements KeyRangeGrou
         if (lastKey - firstKey + 1 != locationRowSetInTable.size()) {
             /*
              * TODO (https://github.com/deephaven/deephaven-core/issues/816): This constraint is valid for all existing
-             *     formats that support grouping. Address when we integrate grouping/index tables.
+             * formats that support grouping. Address when we integrate grouping/index tables.
              */
             throw new IllegalArgumentException(
                     ParallelDeferredGroupingProvider.class + " only supports a single range per location");

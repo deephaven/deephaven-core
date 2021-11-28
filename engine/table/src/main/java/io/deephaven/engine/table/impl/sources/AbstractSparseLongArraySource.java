@@ -378,7 +378,7 @@ abstract public class AbstractSparseLongArraySource<T> extends SparseArrayColumn
 
     /**
     * Decides whether to record the previous value.
-    * @param key the RowSet to record
+    * @param key the row key to record
     * @return If the caller should record the previous value, returns prev inner block, the value
     * {@code prevBlocks.get(block0).get(block1).get(block2)}, which is non-null. Otherwise (if the caller should not
      * record values), returns null.

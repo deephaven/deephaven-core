@@ -18,8 +18,8 @@ public interface ColumnRegionDouble<ATTR extends Any> extends ColumnRegion<ATTR>
     /**
      * Get a single double from this region.
      *
-     * @param elementIndex Element (double) rowSet in the table's address space
-     * @return The double value at the specified element (double) rowSet
+     * @param elementIndex Element row key in the table's address space
+     * @return The double value at the specified element row key
      */
     double getDouble(long elementIndex);
 
@@ -27,9 +27,9 @@ public interface ColumnRegionDouble<ATTR extends Any> extends ColumnRegion<ATTR>
      * Get a single double from this region.
      *
      * @param context      A {@link RegionContextHolder} to enable resource caching where suitable, with current
-     *                     region rowSet pointing to this region
-     * @param elementIndex Element (double) rowSet in the table's address space
-     * @return The double value at the specified element (double) rowSet
+     *                     region index pointing to this region
+     * @param elementIndex Element row key in the table's address space
+     * @return The double value at the specified element row key
      */
     default double getDouble(@NotNull final FillContext context, final long elementIndex) {
         return getDouble(elementIndex);

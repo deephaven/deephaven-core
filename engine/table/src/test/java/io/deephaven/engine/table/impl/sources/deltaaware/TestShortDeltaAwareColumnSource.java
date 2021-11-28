@@ -172,7 +172,7 @@ public class TestShortDeltaAwareColumnSource {
         // We're going to get creative and pull down the data as two slices
         final int chunkSize = (int) (rowSet.size() / 2);
 
-        // So we'll also split the rowSet in half
+        // So we'll also split the RowSet in half
         final RowSet rowSet0 = rowSet.subSetByPositionRange(0, chunkSize);
         final RowSet rowSet1 = rowSet.subSetByPositionRange(chunkSize, rowSet.size());
 

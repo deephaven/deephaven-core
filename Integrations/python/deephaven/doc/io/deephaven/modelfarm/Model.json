@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.modelfarm.Model",
- "methods": {
-  "exec": "Execute the model on a new dataset.\n\n:param data: (Model.T) - data snapshot to execute the model on."
- },
- "path": "io.deephaven.modelfarm.Model",
- "text": "A data driven model.",
- "typeName": "interface"
-}

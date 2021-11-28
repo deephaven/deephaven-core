@@ -1,6 +1,0 @@
-{
- "className": "io.deephaven.engine.exceptions.NotSortableException",
- "methods": {},
- "path": "io.deephaven.engine.exceptions.NotSortableException",
- "typeName": "class"
-}

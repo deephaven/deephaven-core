@@ -34,17 +34,17 @@ class BigDecimalChunkedReAvgOperator implements IterativeChunkedAggregationOpera
 
     @Override
     public void addChunk(BucketedContext context, Chunk<? extends Values> values,
-                         LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations,
-                         IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
-                         WritableBooleanChunk<Values> stateModified) {
+            LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations,
+            IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+            WritableBooleanChunk<Values> stateModified) {
         doBucketedUpdate((ReAvgContext) context, destinations, startPositions, stateModified);
     }
 
     @Override
     public void removeChunk(BucketedContext context, Chunk<? extends Values> values,
-                            LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations,
-                            IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
-                            WritableBooleanChunk<Values> stateModified) {
+            LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations,
+            IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+            WritableBooleanChunk<Values> stateModified) {
         doBucketedUpdate((ReAvgContext) context, destinations, startPositions, stateModified);
     }
 
@@ -70,19 +70,19 @@ class BigDecimalChunkedReAvgOperator implements IterativeChunkedAggregationOpera
 
     @Override
     public boolean addChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values,
-                            LongChunk<? extends RowKeys> inputRowKeys, long destination) {
+            LongChunk<? extends RowKeys> inputRowKeys, long destination) {
         return updateResult(destination);
     }
 
     @Override
     public boolean removeChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values,
-                               LongChunk<? extends RowKeys> inputRowKeys, long destination) {
+            LongChunk<? extends RowKeys> inputRowKeys, long destination) {
         return updateResult(destination);
     }
 
     @Override
     public boolean modifyChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> previousValues,
-                               Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> postShiftRowKeys, long destination) {
+            Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> postShiftRowKeys, long destination) {
         return updateResult(destination);
     }
 

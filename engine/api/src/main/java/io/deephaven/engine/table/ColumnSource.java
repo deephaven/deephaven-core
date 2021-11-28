@@ -21,8 +21,8 @@ import java.util.Map;
  * A "source" for column data - allows cell values to be looked up by (long) keys.
  *
  * <p>
- * Note for implementors: All {@link ColumnSource} implementations must map {@link RowSet#NULL_ROW_KEY}
- * to a null value for all {@code get} and {@code getPrev} methods.
+ * Note for implementors: All {@link ColumnSource} implementations must map {@link RowSet#NULL_ROW_KEY} to a null value
+ * for all {@code get} and {@code getPrev} methods.
  */
 public interface ColumnSource<T>
         extends ChunkSource.WithPrev<Values>, ElementSource<T>, TupleSource<T>, Releasable {

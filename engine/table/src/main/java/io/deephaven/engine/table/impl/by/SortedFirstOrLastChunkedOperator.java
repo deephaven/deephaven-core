@@ -48,9 +48,9 @@ public class SortedFirstOrLastChunkedOperator implements IterativeChunkedAggrega
 
     @Override
     public void addChunk(BucketedContext bucketedContext, Chunk<? extends Values> values,
-                         LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations,
-                         IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
-                         WritableBooleanChunk<Values> stateModified) {
+            LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations,
+            IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+            WritableBooleanChunk<Values> stateModified) {
         final SortedFirstOrLastBucketedContext context = (SortedFirstOrLastBucketedContext) bucketedContext;
         final int inputSize = inputRowKeys.size();
 
@@ -75,9 +75,9 @@ public class SortedFirstOrLastChunkedOperator implements IterativeChunkedAggrega
 
     @Override
     public void removeChunk(BucketedContext bucketedContext, Chunk<? extends Values> values,
-                            LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations,
-                            IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
-                            WritableBooleanChunk<Values> stateModified) {
+            LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations,
+            IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+            WritableBooleanChunk<Values> stateModified) {
         final SortedFirstOrLastBucketedContext context = (SortedFirstOrLastBucketedContext) bucketedContext;
         final int inputSize = inputRowKeys.size();
 
@@ -159,10 +159,10 @@ public class SortedFirstOrLastChunkedOperator implements IterativeChunkedAggrega
 
     @Override
     public void shiftChunk(BucketedContext bucketedContext, Chunk<? extends Values> previousValues,
-                           Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> preShiftRowKeys,
-                           LongChunk<? extends RowKeys> postShiftRowKeys, IntChunk<RowKeys> destinations,
-                           IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
-                           WritableBooleanChunk<Values> stateModified) {
+            Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> preShiftRowKeys,
+            LongChunk<? extends RowKeys> postShiftRowKeys, IntChunk<RowKeys> destinations,
+            IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+            WritableBooleanChunk<Values> stateModified) {
         final SortedFirstOrLastBucketedContext context = (SortedFirstOrLastBucketedContext) bucketedContext;
         final int inputSize = newValues.size();
 
@@ -233,8 +233,8 @@ public class SortedFirstOrLastChunkedOperator implements IterativeChunkedAggrega
 
     @Override
     public void modifyRowKeys(BucketedContext context, LongChunk<? extends RowKeys> inputRowKeys,
-                              IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
-                              WritableBooleanChunk<Values> stateModified) {
+            IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+            WritableBooleanChunk<Values> stateModified) {
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
             final int slotSize = length.get(ii);
@@ -247,7 +247,7 @@ public class SortedFirstOrLastChunkedOperator implements IterativeChunkedAggrega
 
     @Override
     public boolean addChunk(SingletonContext singletonContext, int chunkSize, Chunk<? extends Values> values,
-                            LongChunk<? extends RowKeys> inputRowKeys, long destination) {
+            LongChunk<? extends RowKeys> inputRowKeys, long destination) {
         final SortedFirstOrLastSingletonContext context = (SortedFirstOrLastSingletonContext) singletonContext;
         final int inputSize = inputRowKeys.size();
 
@@ -262,7 +262,7 @@ public class SortedFirstOrLastChunkedOperator implements IterativeChunkedAggrega
 
     @Override
     public boolean removeChunk(SingletonContext singletonContext, int chunkSize, Chunk<? extends Values> values,
-                               LongChunk<? extends RowKeys> inputRowKeys, long destination) {
+            LongChunk<? extends RowKeys> inputRowKeys, long destination) {
         final SortedFirstOrLastSingletonContext context = (SortedFirstOrLastSingletonContext) singletonContext;
         final int inputSize = inputRowKeys.size();
 
@@ -277,7 +277,7 @@ public class SortedFirstOrLastChunkedOperator implements IterativeChunkedAggrega
 
     @Override
     public boolean modifyChunk(SingletonContext singletonContext, int chunkSize, Chunk<? extends Values> previousValues,
-                               Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> postShiftRowKeys, long destination) {
+            Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> postShiftRowKeys, long destination) {
         final SortedFirstOrLastSingletonContext context = (SortedFirstOrLastSingletonContext) singletonContext;
         final int inputSize = postShiftRowKeys.size();
 
@@ -314,8 +314,8 @@ public class SortedFirstOrLastChunkedOperator implements IterativeChunkedAggrega
 
     @Override
     public boolean shiftChunk(SingletonContext singletonContext, Chunk<? extends Values> previousValues,
-                              Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> preShiftRowKeys,
-                              LongChunk<? extends RowKeys> postShiftRowKeys, long destination) {
+            Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> preShiftRowKeys,
+            LongChunk<? extends RowKeys> postShiftRowKeys, long destination) {
         final SortedFirstOrLastSingletonContext context = (SortedFirstOrLastSingletonContext) singletonContext;
         final int inputSize = preShiftRowKeys.size();
 

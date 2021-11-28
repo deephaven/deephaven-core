@@ -188,8 +188,7 @@ public abstract class BaseTestByteTimSortKernel extends TestTimSortKernel {
             if (offsetsOut.size() > 0) {
                 // the secondary context is actually just bogus at this point, it is no longer parallel,
                 // what we need to do is fetch the things from that columnsource, but only the things needed to break
-                // ties, and then put them in chunks that would be parallel to the row key chunk based on offsetsOut and
-                // lengthsOut
+                // ties, and then put them in chunks that would be parallel to the rowSet chunk based on offsetsOut and lengthsOut
                 //
                 // after some consideration, I think the next stage of the sort is:
                 // (1) using the chunk of row keys that are relevant, build a second chunk that indicates their position
@@ -327,7 +326,7 @@ public abstract class BaseTestByteTimSortKernel extends TestTimSortKernel {
             final long javaIndex = javaTuples.get(ii).getSecondElement();
 
             TestCase.assertEquals("values[" + ii + "]", javaSorted, timSorted);
-            TestCase.assertEquals("rowKey[" + ii + "]", javaIndex, timIndex);
+            TestCase.assertEquals("rowKeys[" + ii + "]", javaIndex, timIndex);
         }
     }
 
@@ -339,7 +338,7 @@ public abstract class BaseTestByteTimSortKernel extends TestTimSortKernel {
 
         final WritableRowSet reconstructed = RowSetFactory.empty();
 
-        // make sure that each partition is a subset of the RowSet and is disjoint
+        // make sure that each partition is a subset of the rowSet and is disjoint
         for (int ii = 0; ii < results.length; ii++) {
             final RowSet partition = results[ii];
             TestCase.assertTrue("partition[" + ii + "].subsetOf(source)", partition.subsetOf(source));

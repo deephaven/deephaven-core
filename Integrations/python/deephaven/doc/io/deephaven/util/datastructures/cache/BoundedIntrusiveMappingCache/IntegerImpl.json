@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.util.datastructures.cache.BoundedIntrusiveMappingCache$IntegerImpl",
- "methods": {
-  "computeIfAbsent": ":param key: BoundedIntrusiveMappingCache.IntegerImpl.KEY_TYPE\n:param mapper: java.util.function.ToIntFunction<BoundedIntrusiveMappingCache.IntegerImpl.KEY_TYPE>\n:return: int"
- },
- "path": "io.deephaven.util.datastructures.cache.BoundedIntrusiveMappingCache.IntegerImpl",
- "text": "Mapping cache for Object->int mappings, with LRU eviction.",
- "typeName": "class"
-}

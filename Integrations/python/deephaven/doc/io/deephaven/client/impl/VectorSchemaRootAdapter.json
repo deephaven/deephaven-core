@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.client.impl.VectorSchemaRootAdapter",
- "methods": {
-  "of": "Convert a table into a FieldVector.\n\n:param table: (io.deephaven.qst.table.NewTable) - the table\n:param allocator: (org.apache.arrow.memory.BufferAllocator) - the allocator\n:return: (org.apache.arrow.vector.VectorSchemaRoot) the vector schema root"
- },
- "path": "io.deephaven.client.impl.VectorSchemaRootAdapter",
- "text": "Utilities for creating VectorSchemaRoot.",
- "typeName": "class"
-}

@@ -126,8 +126,8 @@ public interface Page<ATTR extends Any> extends PagingChunkSource<ATTR> {
     }
 
     /**
-     * Assuming {@code RowSequenceIterator} is position at its first row key on this page, consume all keys on this
-     * page and return the number of keys consumed.
+     * Assuming {@code RowSequenceIterator} is position at its first row key on this page, consume all keys on this page
+     * and return the number of keys consumed.
      *
      * @param RowSequenceIterator The iterator to advance
      */

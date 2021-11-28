@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.process.ProcessInfoStoreDBImpl",
- "methods": {
-  "put": ":param info: io.deephaven.process.ProcessInfo"
- },
- "path": "io.deephaven.process.ProcessInfoStoreDBImpl",
- "typeName": "class"
-}

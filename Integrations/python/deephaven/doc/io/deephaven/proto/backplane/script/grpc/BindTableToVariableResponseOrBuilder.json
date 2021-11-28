@@ -1,6 +1,0 @@
-{
- "className": "io.deephaven.proto.backplane.script.grpc.BindTableToVariableResponseOrBuilder",
- "methods": {},
- "path": "io.deephaven.proto.backplane.script.grpc.BindTableToVariableResponseOrBuilder",
- "typeName": "interface"
-}

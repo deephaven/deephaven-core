@@ -130,9 +130,9 @@ public final class GroupByChunkedOperator implements IterativeChunkedAggregation
 
     @Override
     public void modifyRowKeys(final BucketedContext context,
-                              @NotNull final LongChunk<? extends RowKeys> inputRowKeys,
-                              @NotNull final IntChunk<RowKeys> destinations, @NotNull final IntChunk<ChunkPositions> startPositions,
-                              @NotNull final IntChunk<ChunkLengths> length, @NotNull final WritableBooleanChunk<Values> stateModified) {
+            @NotNull final LongChunk<? extends RowKeys> inputRowKeys,
+            @NotNull final IntChunk<RowKeys> destinations, @NotNull final IntChunk<ChunkPositions> startPositions,
+            @NotNull final IntChunk<ChunkLengths> length, @NotNull final WritableBooleanChunk<Values> stateModified) {
         if (!stepValuesModified) {
             return;
         }
@@ -142,8 +142,8 @@ public final class GroupByChunkedOperator implements IterativeChunkedAggregation
 
     @Override
     public boolean addChunk(final SingletonContext singletonContext, final int chunkSize,
-                            final Chunk<? extends Values> values,
-                            @NotNull final LongChunk<? extends RowKeys> inputRowKeys, final long destination) {
+            final Chunk<? extends Values> values,
+            @NotNull final LongChunk<? extends RowKeys> inputRowKeys, final long destination) {
         Assert.eqNull(values, "values");
         someKeyHasAddsOrRemoves |= chunkSize > 0;
         // noinspection unchecked
@@ -160,8 +160,8 @@ public final class GroupByChunkedOperator implements IterativeChunkedAggregation
 
     @Override
     public boolean removeChunk(final SingletonContext singletonContext, final int chunkSize,
-                               final Chunk<? extends Values> values,
-                               @NotNull final LongChunk<? extends RowKeys> inputRowKeys, final long destination) {
+            final Chunk<? extends Values> values,
+            @NotNull final LongChunk<? extends RowKeys> inputRowKeys, final long destination) {
         Assert.eqNull(values, "values");
         someKeyHasAddsOrRemoves |= chunkSize > 0;
         // noinspection unchecked
@@ -194,7 +194,7 @@ public final class GroupByChunkedOperator implements IterativeChunkedAggregation
 
     @Override
     public boolean modifyRowKeys(final SingletonContext context, @NotNull final LongChunk<? extends RowKeys> rowKeys,
-                                 final long destination) {
+            final long destination) {
         if (!stepValuesModified) {
             return false;
         }

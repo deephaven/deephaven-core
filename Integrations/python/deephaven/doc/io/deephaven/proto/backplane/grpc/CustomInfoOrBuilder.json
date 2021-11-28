@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.proto.backplane.grpc.CustomInfoOrBuilder",
- "methods": {
-  "getType": "application-specific type to identify the purpose of this custom field reference\n \nstring type = 1;\n\n:return: (java.lang.String) The type.",
-  "getTypeBytes": "application-specific type to identify the purpose of this custom field reference\n \nstring type = 1;\n\n:return: (com.google.protobuf.ByteString) The bytes for type."
- },
- "path": "io.deephaven.proto.backplane.grpc.CustomInfoOrBuilder",
- "typeName": "interface"
-}

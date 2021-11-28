@@ -1,7 +1,0 @@
-{
- "className": "io.deephaven.parquet.table.layout.ParquetKeyValuePartitionedLayout",
- "methods": {},
- "path": "io.deephaven.parquet.table.layout.ParquetKeyValuePartitionedLayout",
- "text": "KeyValuePartitionLayout for Parquet data.",
- "typeName": "class"
-}

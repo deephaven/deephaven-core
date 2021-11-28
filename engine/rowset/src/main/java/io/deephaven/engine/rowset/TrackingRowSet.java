@@ -65,8 +65,8 @@ public interface TrackingRowSet extends RowSet {
     long lastRowKeyPrev();
 
     /**
-     * Returns the position in {@code [0..(size-1)]} where the row key is found in the previous value of this.
-     * If not found, then return {@code (-(position it would be) - 1)}, as in Array.binarySearch.
+     * Returns the position in {@code [0..(size-1)]} where the row key is found in the previous value of this. If not
+     * found, then return {@code (-(position it would be) - 1)}, as in Array.binarySearch.
      *
      * @param rowKey The row key to search for
      * @return A position from {@code [0..(size-1)]} if the row key was found. If the row key was not found, then

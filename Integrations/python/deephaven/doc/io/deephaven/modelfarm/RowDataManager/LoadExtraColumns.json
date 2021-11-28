@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.modelfarm.RowDataManager$LoadExtraColumns",
- "methods": {
-  "load": "Load data for extra columns.\n\n:param data: (RowDataManager.LoadExtraColumns.DATATYPE) - data structure to populate\n:param index: (long) - table index of the row to load data from\n:param usePrev: (boolean) - use data from the previous table update"
- },
- "path": "io.deephaven.modelfarm.RowDataManager.LoadExtraColumns",
- "text": "Interface for loading data for extra columns.",
- "typeName": "interface"
-}

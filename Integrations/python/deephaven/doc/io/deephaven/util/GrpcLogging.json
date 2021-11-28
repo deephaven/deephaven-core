@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.util.GrpcLogging",
- "methods": {
-  "setupFromBooleanProperty": ":param property: java.lang.String\n:param defaultValue: boolean\n:param shadowPath: java.lang.String"
- },
- "path": "io.deephaven.util.GrpcLogging",
- "typeName": "class"
-}

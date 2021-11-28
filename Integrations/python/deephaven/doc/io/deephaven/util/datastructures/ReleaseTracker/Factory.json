@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.util.datastructures.ReleaseTracker$Factory",
- "methods": {
-  "isMyType": ":param type: java.lang.Class\n:return: boolean",
-  "makeReleaseTracker": ":return: io.deephaven.util.datastructures.ReleaseTracker"
- },
- "path": "io.deephaven.util.datastructures.ReleaseTracker.Factory",
- "typeName": "interface"
-}

@@ -116,7 +116,7 @@ public class FloatStreamSortedFirstOrLastChunkedOperator extends CopyingPermuted
             final float value = values.get(chunkPos);
             final int comparison = FloatComparisons.compare(value, bestValue);
             // @formatter:off
-            // No need to compare relative indices. A stream's logical rowSet is always monotonically increasing.
+            // No need to compare relative row keys. A stream's logical row set is always monotonically increasing.
             final boolean better =
                     ( isFirst && comparison <  0) ||
                     (!isFirst && comparison >= 0)  ;

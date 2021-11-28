@@ -14,8 +14,7 @@ public interface ReverseLookup {
     long get(Object key);
 
     /**
-     * Gets the row key value where key previously in the table, or the no-entry-value if it is not found in the
-     * table.
+     * Gets the row key value where key previously in the table, or the no-entry-value if it is not found in the table.
      *
      * @param key a single object for a single column, or a {@link io.deephaven.datastructures.util.SmartKey} for
      *        multiple columns

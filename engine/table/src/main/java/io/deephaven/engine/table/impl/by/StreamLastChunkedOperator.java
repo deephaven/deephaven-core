@@ -62,8 +62,8 @@ public class StreamLastChunkedOperator extends CopyingPermutedStreamFirstOrLastC
 
     @Override
     public boolean addRowSet(final SingletonContext context,
-                             @NotNull final RowSet rowSet,
-                             final long destination) {
+            @NotNull final RowSet rowSet,
+            final long destination) {
         if (rowSet.isEmpty()) {
             return false;
         }

@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.util.datastructures.cache.BoundedIntrusiveMappingCache$FloatImpl",
- "methods": {
-  "computeIfAbsent": ":param key: BoundedIntrusiveMappingCache.FloatImpl.KEY_TYPE\n:param mapper: io.deephaven.util.datastructures.cache.BoundedIntrusiveMappingCache.ToFloatFunction<BoundedIntrusiveMappingCache.FloatImpl.KEY_TYPE>\n:return: float"
- },
- "path": "io.deephaven.util.datastructures.cache.BoundedIntrusiveMappingCache.FloatImpl",
- "typeName": "class"
-}

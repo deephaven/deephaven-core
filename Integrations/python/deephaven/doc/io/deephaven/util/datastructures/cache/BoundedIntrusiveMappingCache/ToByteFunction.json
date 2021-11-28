@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.util.datastructures.cache.BoundedIntrusiveMappingCache$ToByteFunction",
- "methods": {
-  "applyAsByte": ":param value: BoundedIntrusiveMappingCache.ToByteFunction.T\n:return: byte"
- },
- "path": "io.deephaven.util.datastructures.cache.BoundedIntrusiveMappingCache.ToByteFunction",
- "typeName": "interface"
-}

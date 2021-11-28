@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.proto.backplane.grpc.HandshakeRequestOrBuilder",
- "methods": {
-  "getAuthProtocol": "A defined protocol version.\n Deephaven's OSS protocols are as follows:\n - protocol = 0: most recent HandshakeResponse payload\n - protocol = 1: payload is BasicAuth\n \nsint32 auth_protocol = 1;\n\n:return: (int) The authProtocol.",
-  "getPayload": "Arbitrary auth/handshake info.\n \nbytes payload = 2;\n\n:return: (com.google.protobuf.ByteString) The payload."
- },
- "path": "io.deephaven.proto.backplane.grpc.HandshakeRequestOrBuilder",
- "typeName": "interface"
-}

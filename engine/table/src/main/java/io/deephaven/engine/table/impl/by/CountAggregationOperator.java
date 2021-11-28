@@ -20,9 +20,9 @@ class CountAggregationOperator implements IterativeChunkedAggregationOperator {
 
     @Override
     public void addChunk(BucketedContext context, Chunk<? extends Values> values,
-                         LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations,
-                         IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
-                         WritableBooleanChunk<Values> stateModified) {
+            LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations,
+            IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+            WritableBooleanChunk<Values> stateModified) {
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
             final long destination = destinations.get(startPosition);
@@ -35,9 +35,9 @@ class CountAggregationOperator implements IterativeChunkedAggregationOperator {
 
     @Override
     public void removeChunk(BucketedContext context, Chunk<? extends Values> values,
-                            LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations,
-                            IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
-                            WritableBooleanChunk<Values> stateModified) {
+            LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations,
+            IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+            WritableBooleanChunk<Values> stateModified) {
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
             final long destination = destinations.get(startPosition);
@@ -50,7 +50,7 @@ class CountAggregationOperator implements IterativeChunkedAggregationOperator {
 
     @Override
     public boolean addChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values,
-                            LongChunk<? extends RowKeys> inputRowKeys, long destination) {
+            LongChunk<? extends RowKeys> inputRowKeys, long destination) {
         final long oldCount = countColumnSource.getUnsafe(destination);
         countColumnSource.set(destination, NullSafeAddition.plusLong(oldCount, chunkSize));
         return true;
@@ -58,7 +58,7 @@ class CountAggregationOperator implements IterativeChunkedAggregationOperator {
 
     @Override
     public boolean removeChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values,
-                               LongChunk<? extends RowKeys> inputRowKeys, long destination) {
+            LongChunk<? extends RowKeys> inputRowKeys, long destination) {
         final long oldCount = countColumnSource.getUnsafe(destination);
         countColumnSource.set(destination, NullSafeAddition.minusLong(oldCount, chunkSize));
         return true;
@@ -74,7 +74,7 @@ class CountAggregationOperator implements IterativeChunkedAggregationOperator {
 
     @Override
     public boolean modifyChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> previousValues,
-                               Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> postShiftRowKeys, long destination) {
+            Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> postShiftRowKeys, long destination) {
         return false;
     }
 

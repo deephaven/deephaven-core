@@ -22,8 +22,8 @@ public interface TableLocationState {
     Object getStateLock();
 
     /**
-     * @return The (possibly-empty) {@link RowSet} of a table location, or {@code null} if RowSet information is
-     *         unknown or does not exist for this table location.
+     * @return The (possibly-empty) {@link RowSet} of a table location, or {@code null} if RowSet information is unknown
+     *         or does not exist for this table location.
      * @implNote This RowSet must not have any key larger than
      *           {@link RegionedColumnSource#ROW_KEY_TO_SUB_REGION_ROW_INDEX_MASK the region mask}.
      * @apiNote The returned RowSet will be a "copy", meaning the caller must {@link RowSet#close()} it when finished.

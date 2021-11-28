@@ -43,7 +43,7 @@ public class SortHelpers {
 
     /**
      * If we have more than this many entries per group, instead of creating a large flat row redirection, we create a
-     * row redirection that is composed of the group indices and an accumulated  cardinality cache. This can save a
+     * row redirection that is composed of the group indices and an accumulated cardinality cache. This can save a
      * significant amount of memory when the groups are large and storing them using our RowSet structure is more
      * efficient.
      */

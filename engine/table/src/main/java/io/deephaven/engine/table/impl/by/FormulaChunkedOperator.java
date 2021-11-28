@@ -149,9 +149,9 @@ class FormulaChunkedOperator implements IterativeChunkedAggregationOperator {
 
     @Override
     public void modifyRowKeys(final BucketedContext context,
-                              @NotNull final LongChunk<? extends Attributes.RowKeys> inputRowKeys,
-                              @NotNull final IntChunk<RowKeys> destinations, @NotNull final IntChunk<ChunkPositions> startPositions,
-                              @NotNull final IntChunk<ChunkLengths> length, @NotNull final WritableBooleanChunk<Values> stateModified) {
+            @NotNull final LongChunk<? extends Attributes.RowKeys> inputRowKeys,
+            @NotNull final IntChunk<RowKeys> destinations, @NotNull final IntChunk<ChunkPositions> startPositions,
+            @NotNull final IntChunk<ChunkLengths> length, @NotNull final WritableBooleanChunk<Values> stateModified) {
         if (delegateToBy) {
             groupBy.modifyRowKeys(context, inputRowKeys, destinations, startPositions, length, stateModified);
         }
@@ -159,8 +159,8 @@ class FormulaChunkedOperator implements IterativeChunkedAggregationOperator {
 
     @Override
     public boolean addChunk(final SingletonContext singletonContext, final int chunkSize,
-                            final Chunk<? extends Values> values,
-                            @NotNull final LongChunk<? extends RowKeys> inputRowKeys, final long destination) {
+            final Chunk<? extends Values> values,
+            @NotNull final LongChunk<? extends RowKeys> inputRowKeys, final long destination) {
         if (delegateToBy) {
             return groupBy.addChunk(singletonContext, chunkSize, values, inputRowKeys, destination);
         } else {
@@ -170,8 +170,8 @@ class FormulaChunkedOperator implements IterativeChunkedAggregationOperator {
 
     @Override
     public boolean removeChunk(final SingletonContext singletonContext, final int chunkSize,
-                               final Chunk<? extends Values> values,
-                               @NotNull final LongChunk<? extends Attributes.RowKeys> inputRowKeys, final long destination) {
+            final Chunk<? extends Values> values,
+            @NotNull final LongChunk<? extends Attributes.RowKeys> inputRowKeys, final long destination) {
         if (delegateToBy) {
             return groupBy.removeChunk(singletonContext, chunkSize, values, inputRowKeys, destination);
         } else {
@@ -208,8 +208,8 @@ class FormulaChunkedOperator implements IterativeChunkedAggregationOperator {
 
     @Override
     public boolean modifyRowKeys(final SingletonContext context,
-                                 @NotNull final LongChunk<? extends Attributes.RowKeys> rowKeys,
-                                 final long destination) {
+            @NotNull final LongChunk<? extends Attributes.RowKeys> rowKeys,
+            final long destination) {
         if (delegateToBy) {
             return groupBy.modifyRowKeys(context, rowKeys, destination);
         } else {
