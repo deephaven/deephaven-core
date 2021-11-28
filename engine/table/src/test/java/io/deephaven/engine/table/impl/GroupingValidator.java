@@ -17,7 +17,7 @@ import junit.framework.TestCase;
 import java.util.*;
 
 /**
- * This class listens to a table and on each update verifies that the groupings returned by the table's rowSet for a set
+ * This class listens to a table and on each update verifies that the groupings returned by the table's RowSet for a set
  * of columns are still valid. It is meant to be used as part of a unit test for incremental updates, to ensure that
  * stale groupings are not left between table updates.
  */

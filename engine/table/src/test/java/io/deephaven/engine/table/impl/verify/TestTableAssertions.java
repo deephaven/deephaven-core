@@ -69,7 +69,7 @@ public class TestTableAssertions {
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(test, i(9, 13, 18), stringCol("Plant", "Aaple", "DAFODIL", "Forsythia"),
                     intCol("Int", 10, 4, 0));
-            TableTools.showWithIndex(test);
+            TableTools.showWithRowSet(test);
             test.notifyListeners(i(9, 13, 18), i(), i());
         });
     }

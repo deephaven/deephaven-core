@@ -104,7 +104,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
                 UpdateGraphProcessor.DEFAULT.exclusiveLock()
                         .computeLocked(() -> source.treeTable("Sentinel", "Parent"));
         final String hierarchicalColumnName = getHierarchicalColumnName(treed);
-        TableTools.showWithIndex(treed);
+        TableTools.showWithRowSet(treed);
 
         assertEquals(2, treed.size());
 
@@ -113,21 +113,21 @@ public class QueryTableTreeTest extends QueryTableTestBase {
         final Table child1 = getChildTable(treed, treed, hierarchicalColumnName, 0);
         assertNotNull(child1);
 
-        TableTools.showWithIndex(child1);
+        TableTools.showWithRowSet(child1);
         assertEquals(2, child1.size());
         final Table gc1 = getChildTable(treed, child1, hierarchicalColumnName, 0);
-        TableTools.showWithIndex(gc1);
+        TableTools.showWithRowSet(gc1);
 
         assertNull(getChildTable(treed, child1, hierarchicalColumnName, 1));
 
         final Table child2 = getChildTable(treed, treed, hierarchicalColumnName, 1);
         assertNotNull(child2);
-        TableTools.showWithIndex(child2);
+        TableTools.showWithRowSet(child2);
         assertEquals(2, child2.size());
 
         assertNull(getChildTable(treed, child2, hierarchicalColumnName, 1));
         final Table gc2 = getChildTable(treed, child2, hierarchicalColumnName, 0);
-        TableTools.showWithIndex(gc2);
+        TableTools.showWithRowSet(gc2);
     }
 
     public void testConcurrentInstantiation() throws ExecutionException, InterruptedException {
@@ -467,20 +467,20 @@ public class QueryTableTreeTest extends QueryTableTestBase {
         final Table treed =
                 UpdateGraphProcessor.DEFAULT.exclusiveLock()
                         .computeLocked(() -> source.treeTable("Sentinel", "Parent"));
-        TableTools.showWithIndex(treed);
+        TableTools.showWithRowSet(treed);
 
         final String hierarchicalColumnName = getHierarchicalColumnName(treed);
         assertEquals(2, treed.size());
 
         final Table filtered = TreeTableFilter.filterTree(treed, "Sentinel in 6, 11, 14");
-        TableTools.showWithIndex(filtered);
+        TableTools.showWithRowSet(filtered);
         assertEquals(1, filtered.size());
 
         assertTrue(Arrays.equals(new int[] {NULL_INT, NULL_INT}, (int[]) treed.getColumn("Parent").getDirect()));
         final Table child1 = getChildTable(filtered, filtered, hierarchicalColumnName, 0);
         assertNotNull(child1);
 
-        TableTools.showWithIndex(child1);
+        TableTools.showWithRowSet(child1);
         assertEquals(1, child1.size());
     }
 
@@ -492,26 +492,26 @@ public class QueryTableTreeTest extends QueryTableTestBase {
         final Table treed =
                 UpdateGraphProcessor.DEFAULT.exclusiveLock()
                         .computeLocked(() -> source.treeTable("Sentinel", "Parent"));
-        TableTools.showWithIndex(treed);
+        TableTools.showWithRowSet(treed);
 
         final String hierarchicalColumnName = getHierarchicalColumnName(treed);
         assertEquals(2, treed.size());
 
         System.out.println("Filtered.");
         final Table filtered = TreeTableFilter.filterTree(treed, "Sentinel in 6, 11, 14");
-        TableTools.showWithIndex(filtered);
+        TableTools.showWithRowSet(filtered);
         assertEquals(1, filtered.size());
 
         assertTrue(Arrays.equals(new int[] {NULL_INT, NULL_INT}, (int[]) treed.getColumn("Parent").getDirect()));
         final Table child1 = getChildTable(filtered, filtered, hierarchicalColumnName, 0);
         assertNotNull(child1);
 
-        TableTools.showWithIndex(child1);
+        TableTools.showWithRowSet(child1);
         assertEquals(1, child1.size());
 
         final Table child2 = getChildTable(filtered, child1, hierarchicalColumnName, 0);
         assertNotNull(child2);
-        TableTools.showWithIndex(child2);
+        TableTools.showWithRowSet(child2);
         assertEquals(1, child1.size());
 
         assertNull(getChildTable(filtered, child2, hierarchicalColumnName, 0));
@@ -521,7 +521,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
         source.notifyListeners(i(10), i(), i());
         UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
         System.out.println("Modified.");
-        TableTools.showWithIndex(filtered);
+        TableTools.showWithRowSet(filtered);
         assertEquals(2, filtered.size());
 
         UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
@@ -529,7 +529,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
         source.notifyListeners(i(), i(), i(10));
         UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
         System.out.println("Modified.");
-        TableTools.showWithIndex(filtered);
+        TableTools.showWithRowSet(filtered);
         assertEquals(1, filtered.size());
 
 
@@ -538,7 +538,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
         source.notifyListeners(i(11), i(), i(10));
         UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
         System.out.println("Grand parent.");
-        TableTools.showWithIndex(filtered);
+        TableTools.showWithRowSet(filtered);
         assertEquals(2, filtered.size());
 
         UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
@@ -546,34 +546,34 @@ public class QueryTableTreeTest extends QueryTableTestBase {
         source.notifyListeners(i(), i(), i(11));
         UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
         System.out.println("Grand parent disappear.");
-        TableTools.showWithIndex(filtered);
+        TableTools.showWithRowSet(filtered);
         assertEquals(1, filtered.size());
 
         UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
         addToTable(source, i(12), col("Sentinel", 14), col("Parent", 13));
         source.notifyListeners(i(12), i(), i());
         UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
-        showWithIndex(source, 15);
+        TableTools.showWithRowSet(source, 15);
         System.out.println("Great grand parent appear.");
-        TableTools.showWithIndex(filtered);
+        TableTools.showWithRowSet(filtered);
         assertEquals(2, filtered.size());
 
         UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
         removeRows(source, i(1));
         source.notifyListeners(i(), i(1), i());
         UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
-        showWithIndex(source, 15);
+        TableTools.showWithRowSet(source, 15);
         System.out.println("2 removed.");
-        TableTools.showWithIndex(filtered);
+        TableTools.showWithRowSet(filtered);
         assertEquals(1, filtered.size());
 
         UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
         addToTable(source, i(1), col("Sentinel", 2), col("Parent", NULL_INT));
         source.notifyListeners(i(1), i(), i());
         UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
-        showWithIndex(source, 15);
+        TableTools.showWithRowSet(source, 15);
         System.out.println("2 resurrected.");
-        TableTools.showWithIndex(filtered);
+        TableTools.showWithRowSet(filtered);
         assertEquals(2, filtered.size());
     }
 
@@ -583,7 +583,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
 
         final Table treed = UpdateGraphProcessor.DEFAULT.exclusiveLock().computeLocked(() -> TreeTableOrphanPromoter
                 .promoteOrphans(source, "Sentinel", "Parent").treeTable("Sentinel", "Parent"));
-        TableTools.showWithIndex(treed);
+        TableTools.showWithRowSet(treed);
         assertEquals(3, treed.size());
 
         // add a parent, which will make something not an orphan
@@ -591,7 +591,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
         addToTable(source, i(5), col("Sentinel", 5), col("Parent", 1));
         source.notifyListeners(i(5), i(), i());
         UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
-        showWithIndex(treed);
+        TableTools.showWithRowSet(treed);
         assertEquals(2, treed.size());
 
         // swap two things
@@ -599,7 +599,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
         addToTable(source, i(0, 1), col("Sentinel", 2, 1), col("Parent", NULL_INT, NULL_INT));
         source.notifyListeners(i(), i(), i(0, 1));
         UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
-        showWithIndex(treed);
+        TableTools.showWithRowSet(treed);
         assertEquals(2, treed.size());
 
         // now remove a parent
@@ -607,7 +607,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
         removeRows(source, i(0, 1));
         source.notifyListeners(i(), i(0, 1), i());
         UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
-        showWithIndex(treed);
+        TableTools.showWithRowSet(treed);
         assertEquals(2, treed.size());
     }
 
@@ -999,14 +999,14 @@ public class QueryTableTreeTest extends QueryTableTestBase {
 
         if (RefreshingTableTestCase.printTableUpdates) {
             System.out.println("Original:");
-            TableTools.showWithIndex(table);
+            TableTools.showWithRowSet(table);
         }
 
         final Table prepared = table.update("ID=IDPair.getId()", "Parent=IDPair.getParent()").dropColumns("IDPair");
 
         if (RefreshingTableTestCase.printTableUpdates) {
             System.out.println("Original Prepared:");
-            TableTools.showWithIndex(prepared);
+            TableTools.showWithRowSet(prepared);
         }
 
         final EvalNuggetInterface en[] = new EvalNuggetInterface[] {
@@ -1016,7 +1016,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
 
                     @Override
                     public void show() {
-                        TableTools.showWithIndex(prepared);
+                        TableTools.showWithRowSet(prepared);
                     }
                 },
                 new TreeTableEvalNugget(prepared) {
@@ -1085,7 +1085,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
 
                     @Override
                     public void show() {
-                        TableTools.showWithIndex(prepared);
+                        TableTools.showWithRowSet(prepared);
                     }
                 },
                 new EvalNugget() {
@@ -1137,7 +1137,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
 
     private static void dumpRollup(Table root, TableMap childMap, boolean usePrev, String hierarchicalColumnName,
             String... labelColumns) {
-        TableTools.showWithIndex(usePrev ? prevTable(root) : root, 101);
+        TableTools.showWithRowSet(usePrev ? prevTable(root) : root, 101);
 
         final List<ColumnSource> labelSource =
                 Arrays.stream(labelColumns).map(root::getColumnSource).collect(Collectors.toList());
@@ -1206,7 +1206,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
                         new BigDecimalGenerator(BigInteger.valueOf(-1000), BigInteger.valueOf(1000), 5, 0.1)));
 
         System.out.println("Source Data:");
-        TableTools.showWithIndex(table);
+        TableTools.showWithRowSet(table);
 
         final Table rollup = UpdateGraphProcessor.DEFAULT.exclusiveLock()
                 .computeLocked(() -> table.rollup(comboAgg, "USym", "DateTime", "BoolCol", "BigIntCol", "BigDecCol"));
@@ -1233,7 +1233,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
         final Set<Object> children = new LinkedHashSet<>();
         final ColumnSource childSource = rollup.getColumnSource(columnName);
 
-        TableTools.showWithIndex(rollup);
+        TableTools.showWithRowSet(rollup);
 
         rollup.columnIterator(columnName).forEachRemaining(key -> {
             if (key == null) {
@@ -1320,7 +1320,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
                         new TstUtils.BigDecimalGenerator(BigInteger.valueOf(-1000), BigInteger.valueOf(1000), 5, 0.1)));
 
         System.out.println("Source Data:");
-        TableTools.showWithIndex(table);
+        TableTools.showWithRowSet(table);
 
         final Table rollup =
                 UpdateGraphProcessor.DEFAULT.exclusiveLock()
@@ -1328,7 +1328,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
 
         final Table fullBy = UpdateGraphProcessor.DEFAULT.exclusiveLock().computeLocked(() -> table.aggBy(comboAgg));
         System.out.println("Full By:");
-        TableTools.showWithIndex(fullBy);
+        TableTools.showWithRowSet(fullBy);
 
         System.out.println("Rollup Meta");
         TableTools.show(rollup.getMeta());
@@ -1584,7 +1584,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
         System.out.println("Removed Row 2, Rollup:");
         dumpRollup(rollup, "G1", "G2");
         System.out.println("Expected:");
-        TableTools.showWithIndex(fullBy);
+        TableTools.showWithRowSet(fullBy);
 
         final String diff2 = TableTools.diff(fullBy, rollupClean, 10, EnumSet.of(TableDiff.DiffItems.DoublesExact));
         assertEquals("", diff2);
@@ -1683,7 +1683,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
 
                     @Override
                     public void show() {
-                        TableTools.showWithIndex(table);
+                        TableTools.showWithRowSet(table);
                     }
                 },
                 new RollupEvalNugget(3, "USym", "Group") {
@@ -1833,7 +1833,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
             final RowSet newRowSet = builder.build();
             source.notifyListeners(newRowSet, i(), i());
 
-            // TableTools.showWithIndex(source.getSubTable(newRowSet));
+            // TableTools.showWithRowSet(source.getSubTable(newRowSet));
 
             UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
 

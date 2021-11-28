@@ -185,14 +185,14 @@ public abstract class AbstractTreeSnapshotImpl<INFO_TYPE extends HierarchicalTab
     }
 
     /**
-     * Check if a particular rowSet key is valid with respect to t.
+     * Check if a particular row key is valid with respect to t.
      *
      * @implNote This is used to allow for {@link TreeTableSnapshotImpl} to share {@link ReverseLookup RLLs} across all
      *           child tables.
      *
      * @param usePrev if previous values should be used while validating.
      * @param t The table to validate K with
-     * @param key The rowSet key to validate.
+     * @param key The row key to validate.
      * @return true if key is contained within t
      */
     abstract boolean isKeyValid(boolean usePrev, Table t, long key);

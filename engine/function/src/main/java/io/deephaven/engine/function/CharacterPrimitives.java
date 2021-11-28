@@ -210,7 +210,7 @@ public class CharacterPrimitives {
     /**
      * Returns the nth value from an array.
      *
-     * @param index rowSet of the value to return.
+     * @param index index of the value to return.
      * @param values values.
      * @return nth value from the array or null, if the rowSet is outside of the array's rowSet range.
      */
@@ -225,7 +225,7 @@ public class CharacterPrimitives {
     /**
      * Returns the nth value from an array.
      *
-     * @param index rowSet of the value to return.
+     * @param index index of the value to return.
      * @param values values.
      * @return nth value from the array or null, if the rowSet is outside of the array's rowSet range.
      */

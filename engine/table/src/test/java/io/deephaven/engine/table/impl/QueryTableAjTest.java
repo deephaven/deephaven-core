@@ -112,7 +112,7 @@ public class QueryTableAjTest {
 
         final Table result = left.aj(right, "Bucket,LeftStamp=RightStamp", "Sentinel");
         System.out.println("Result");
-        TableTools.showWithIndex(result);
+        TableTools.showWithRowSet(result);
         assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"),
                 result.getDefinition().getColumnNames());
 
@@ -120,7 +120,7 @@ public class QueryTableAjTest {
 
         final Table ltResult = left.aj(right, "Bucket,LeftStamp<RightStamp", "Sentinel");
         System.out.println("LT Result");
-        TableTools.showWithIndex(ltResult);
+        TableTools.showWithRowSet(ltResult);
         assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"),
                 ltResult.getDefinition().getColumnNames());
 
@@ -129,7 +129,7 @@ public class QueryTableAjTest {
 
         final Table reverseResult = left.raj(right, "Bucket,LeftStamp=RightStamp", "Sentinel");
         System.out.println("Reverse Result");
-        TableTools.showWithIndex(reverseResult);
+        TableTools.showWithRowSet(reverseResult);
         assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"),
                 reverseResult.getDefinition().getColumnNames());
 
@@ -138,7 +138,7 @@ public class QueryTableAjTest {
 
         final Table reverseResultGt = left.raj(right, "Bucket,LeftStamp>RightStamp", "Sentinel");
         System.out.println("Reverse Result GT");
-        TableTools.showWithIndex(reverseResultGt);
+        TableTools.showWithRowSet(reverseResultGt);
         assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"),
                 reverseResultGt.getDefinition().getColumnNames());
 
@@ -164,7 +164,7 @@ public class QueryTableAjTest {
 
         final Table result = left.aj(right, "Bucket,LeftStamp=RightStamp", "Sentinel");
         System.out.println("Result");
-        TableTools.showWithIndex(result);
+        TableTools.showWithRowSet(result);
         assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"),
                 result.getDefinition().getColumnNames());
 
@@ -172,7 +172,7 @@ public class QueryTableAjTest {
 
         final Table ltResult = left.aj(right, "Bucket,LeftStamp<RightStamp", "Sentinel");
         System.out.println("LT Result");
-        TableTools.showWithIndex(ltResult);
+        TableTools.showWithRowSet(ltResult);
         assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"),
                 ltResult.getDefinition().getColumnNames());
 
@@ -181,7 +181,7 @@ public class QueryTableAjTest {
 
         final Table reverseResult = left.raj(right, "Bucket,LeftStamp=RightStamp", "Sentinel");
         System.out.println("Reverse Result");
-        TableTools.showWithIndex(reverseResult);
+        TableTools.showWithRowSet(reverseResult);
         assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"),
                 reverseResult.getDefinition().getColumnNames());
 
@@ -189,7 +189,7 @@ public class QueryTableAjTest {
 
         final Table reverseResultGt = left.raj(right, "Bucket,LeftStamp>RightStamp", "Sentinel");
         System.out.println("Reverse Result GT");
-        TableTools.showWithIndex(reverseResultGt);
+        TableTools.showWithRowSet(reverseResultGt);
         assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"),
                 reverseResultGt.getDefinition().getColumnNames());
 
@@ -218,7 +218,7 @@ public class QueryTableAjTest {
 
         final Table result = left.aj(right, "Bucket,LeftStamp=RightStamp", "Sentinel");
         System.out.println("Result");
-        TableTools.showWithIndex(result);
+        TableTools.showWithRowSet(result);
         assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"),
                 result.getDefinition().getColumnNames());
 
@@ -226,7 +226,7 @@ public class QueryTableAjTest {
 
         final Table ltResult = left.aj(right, "Bucket,LeftStamp<RightStamp", "Sentinel");
         System.out.println("LT Result");
-        TableTools.showWithIndex(ltResult);
+        TableTools.showWithRowSet(ltResult);
         assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"),
                 ltResult.getDefinition().getColumnNames());
 
@@ -235,7 +235,7 @@ public class QueryTableAjTest {
 
         final Table reverseResult = left.raj(right, "Bucket,LeftStamp=RightStamp", "Sentinel");
         System.out.println("Reverse Result");
-        TableTools.showWithIndex(reverseResult);
+        TableTools.showWithRowSet(reverseResult);
         assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"),
                 reverseResult.getDefinition().getColumnNames());
 
@@ -243,7 +243,7 @@ public class QueryTableAjTest {
 
         final Table reverseResultGt = left.raj(right, "Bucket,LeftStamp>RightStamp", "Sentinel");
         System.out.println("Reverse Result GT");
-        TableTools.showWithIndex(reverseResultGt);
+        TableTools.showWithRowSet(reverseResultGt);
         assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"),
                 reverseResultGt.getDefinition().getColumnNames());
 
@@ -264,7 +264,7 @@ public class QueryTableAjTest {
 
         final Table result = left.aj(right, "Bucket,LeftStamp=RightStamp", "Sentinel");
         System.out.println("Result");
-        TableTools.showWithIndex(result);
+        TableTools.showWithRowSet(result);
         assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"),
                 result.getDefinition().getColumnNames());
 
@@ -322,7 +322,7 @@ public class QueryTableAjTest {
 
         final Table result = left.aj(right, "Bucket,LeftStamp=RightStamp", "Sentinel");
         System.out.println("Result");
-        TableTools.showWithIndex(result);
+        TableTools.showWithRowSet(result);
         assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"),
                 result.getDefinition().getColumnNames());
 
@@ -330,7 +330,7 @@ public class QueryTableAjTest {
 
         final Table ltResult = left.aj(right, "Bucket,LeftStamp<RightStamp", "Sentinel");
         System.out.println("LT Result");
-        TableTools.showWithIndex(ltResult);
+        TableTools.showWithRowSet(ltResult);
         assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"),
                 ltResult.getDefinition().getColumnNames());
 
@@ -339,7 +339,7 @@ public class QueryTableAjTest {
 
         final Table reverseResult = left.raj(right, "Bucket,LeftStamp=RightStamp", "Sentinel");
         System.out.println("Reverse Result");
-        TableTools.showWithIndex(reverseResult);
+        TableTools.showWithRowSet(reverseResult);
         assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"),
                 reverseResult.getDefinition().getColumnNames());
 
@@ -347,7 +347,7 @@ public class QueryTableAjTest {
 
         final Table reverseResultGt = left.raj(right, "Bucket,LeftStamp>RightStamp", "Sentinel");
         System.out.println("Reverse Result GT");
-        TableTools.showWithIndex(reverseResultGt);
+        TableTools.showWithRowSet(reverseResultGt);
         assertEquals(Arrays.asList("Bucket", "LeftStamp", "RightStamp", "Sentinel"),
                 reverseResultGt.getDefinition().getColumnNames());
 
@@ -378,7 +378,7 @@ public class QueryTableAjTest {
     private void doFloatTest(Table left, Table right, final String leftStamp, final String rightStamp) {
         final Table result = left.aj(right, leftStamp + "=" + rightStamp, "Sentinel");
         System.out.println("Result");
-        TableTools.showWithIndex(result);
+        TableTools.showWithRowSet(result);
         assertEquals(Arrays.asList("LeftStampD", "LeftStampF", rightStamp, "Sentinel"),
                 result.getDefinition().getColumnNames());
 
@@ -386,7 +386,7 @@ public class QueryTableAjTest {
 
         final Table ltResult = left.aj(right, leftStamp + "<" + rightStamp, "Sentinel");
         System.out.println("LT Result");
-        TableTools.showWithIndex(ltResult);
+        TableTools.showWithRowSet(ltResult);
         assertEquals(Arrays.asList("LeftStampD", "LeftStampF", rightStamp, "Sentinel"),
                 ltResult.getDefinition().getColumnNames());
 
@@ -394,7 +394,7 @@ public class QueryTableAjTest {
 
         final Table reverseResult = left.raj(right, leftStamp + "=" + rightStamp, "Sentinel");
         System.out.println("Reverse Result");
-        TableTools.showWithIndex(reverseResult);
+        TableTools.showWithRowSet(reverseResult);
         assertEquals(Arrays.asList("LeftStampD", "LeftStampF", rightStamp, "Sentinel"),
                 reverseResult.getDefinition().getColumnNames());
 
@@ -402,7 +402,7 @@ public class QueryTableAjTest {
 
         final Table reverseResultGt = left.raj(right, leftStamp + ">" + rightStamp, "Sentinel");
         System.out.println("Reverse Result GT");
-        TableTools.showWithIndex(reverseResultGt);
+        TableTools.showWithRowSet(reverseResultGt);
         assertEquals(Arrays.asList("LeftStampD", "LeftStampF", rightStamp, "Sentinel"),
                 reverseResultGt.getDefinition().getColumnNames());
 
@@ -865,9 +865,9 @@ public class QueryTableAjTest {
 
         if (RefreshingTableTestCase.printTableUpdates) {
             System.out.println("Left: ");
-            TableTools.showWithIndex(leftTable);
+            TableTools.showWithRowSet(leftTable);
             System.out.println("Right: ");
-            TableTools.showWithIndex(rightTable, 20);
+            TableTools.showWithRowSet(rightTable, 20);
         }
 
         // we compare our initial values to the static case; which we have a separate test for. This is meant to give
@@ -957,18 +957,18 @@ public class QueryTableAjTest {
                     + ", seed = " + seed + ", joinIncrement=" + joinIncrement);
             if (RefreshingTableTestCase.printTableUpdates) {
                 System.out.println("Left Table:" + leftTable.size());
-                showWithIndex(leftTable, 100);
+                TableTools.showWithRowSet(leftTable, 100);
                 System.out.println("Left Table (sorted):");
                 show(leftTable.update("TrackingWritableRowSet=k").sort("LeftStamp")
                         .moveColumnsUp("TrackingWritableRowSet"), 100);
                 System.out.println("Right Table:" + rightTable.size());
-                showWithIndex(rightTable, 100);
+                TableTools.showWithRowSet(rightTable, 100);
                 System.out.println("Right Table Sorted:" + rightSorted.size());
                 show(rightTable.update("TrackingWritableRowSet=k").sort("RightStamp")
                         .moveColumnsUp("TrackingWritableRowSet"), 100);
                 if (withReverse) {
                     System.out.println("Right Table (reversed):");
-                    showWithIndex(rightReversed, 100);
+                    TableTools.showWithRowSet(rightReversed, 100);
                 }
             }
             joinIncrement.step(leftSize, rightSize, leftTable, rightTable, leftColumnInfo, rightColumnInfo, en, random);
@@ -984,7 +984,7 @@ public class QueryTableAjTest {
                         : leftTable.silent().aj(rightTable.silent(), columnsToMatch, "RightSentinel");
         if (RefreshingTableTestCase.printTableUpdates) {
             System.out.println("Static: ");
-            TableTools.showWithIndex(staticResult);
+            TableTools.showWithRowSet(staticResult);
         }
 
         try (final SafeCloseable ignored = LivenessScopeStack.open()) {
@@ -996,7 +996,7 @@ public class QueryTableAjTest {
 
             if (RefreshingTableTestCase.printTableUpdates) {
                 System.out.println("Refreshing: ");
-                TableTools.showWithIndex(refreshingResult);
+                TableTools.showWithRowSet(refreshingResult);
             }
 
             assertTableEquals(staticResult, refreshingResult);
@@ -1103,9 +1103,9 @@ public class QueryTableAjTest {
                     + seed + ", joinIncrement=" + joinIncrement);
             if (RefreshingTableTestCase.printTableUpdates) {
                 System.out.println("Left Table:" + leftTable.size());
-                showWithIndex(leftTable, 100);
+                TableTools.showWithRowSet(leftTable, 100);
                 System.out.println("Right Table:" + rightTable.size());
-                showWithIndex(rightTable, 100);
+                TableTools.showWithRowSet(rightTable, 100);
             }
             joinIncrement.step(leftSize, rightSize, leftTable, rightTable, leftColumnInfo, rightColumnInfo, en, random);
         }
@@ -1151,9 +1151,9 @@ public class QueryTableAjTest {
                     + seed + ", joinIncrement=" + joinIncrement);
             if (RefreshingTableTestCase.printTableUpdates) {
                 System.out.println("Left Table:" + leftTable.size());
-                showWithIndex(leftTable, 100);
+                TableTools.showWithRowSet(leftTable, 100);
                 System.out.println("Right Table:" + rightTable.size());
-                showWithIndex(rightTable, 100);
+                TableTools.showWithRowSet(rightTable, 100);
             }
             joinIncrement.step(leftSize, rightSize, leftTable, rightTable, leftColumnInfo, rightColumnInfo, en, random);
         }
@@ -1235,17 +1235,17 @@ public class QueryTableAjTest {
 
         if (RefreshingTableTestCase.printTableUpdates) {
             System.out.println("Left:");
-            TableTools.showWithIndex(leftTable);
+            TableTools.showWithRowSet(leftTable);
             System.out.println("Right:");
             if (rightTable != null) {
-                TableTools.showWithIndex(rightTable);
+                TableTools.showWithRowSet(rightTable);
             } else {
                 System.out.println("null");
             }
             System.out.println("Result:");
-            TableTools.showWithIndex(result, 150, 170);
+            TableTools.showWithRowSet(result, 150, 170);
             System.out.println("Expected:");
-            TableTools.showWithIndex(expected, 150, 170);
+            TableTools.showWithRowSet(expected, 150, 170);
         }
 
         QueryScope.addParam("__rightStampExpected", null);
@@ -1301,13 +1301,13 @@ public class QueryTableAjTest {
             final Table static2ts = staticTwo.sort("Timestamp");
 
             for (final String column : columnNames) {
-                TableTools.showWithIndex(static2ts);
+                TableTools.showWithRowSet(static2ts);
                 final Table resultZk = staticOne.aj(staticTwo.sort(column), column,
                         "Extra=OtherTimestamp,Extra2=MyLong,Check=" + column);
-                TableTools.showWithIndex(resultZk);
+                TableTools.showWithRowSet(resultZk);
                 final Table resultTs = staticOne.aj(static2ts, column + ",Timestamp",
                         "Extra=OtherTimestamp,Extra2=MyLong,Check=" + column);
-                TableTools.showWithIndex(resultTs);
+                TableTools.showWithRowSet(resultTs);
             }
         } finally {
             QueryScope.addParam("random", null);
@@ -1358,9 +1358,9 @@ public class QueryTableAjTest {
                         + ", seed = " + seed + ", joinIncrement=" + joinIncrement);
                 if (RefreshingTableTestCase.printTableUpdates) {
                     System.out.println("Left Table:" + leftTable.size());
-                    showWithIndex(leftTable, 100);
+                    TableTools.showWithRowSet(leftTable, 100);
                     System.out.println("Right Table:" + rightTable.size());
-                    showWithIndex(rightTable, 100);
+                    TableTools.showWithRowSet(rightTable, 100);
                 }
                 joinIncrement.step(leftSize, rightSize, leftTable, rightTable, leftColumnInfo, rightColumnInfo, en,
                         random);

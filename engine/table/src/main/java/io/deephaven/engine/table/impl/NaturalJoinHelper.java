@@ -713,7 +713,7 @@ class NaturalJoinHelper {
             }
 
 
-            // but we might not need to update the redirection rowSet
+            // but we might not need to update the row redirection
             if (unchangedRedirection && (flag & NaturalJoinModifiedSlotTracker.FLAG_RIGHT_ADD) == 0) {
                 return;
             }
@@ -939,7 +939,7 @@ class NaturalJoinHelper {
                         // On removal, we could ask our modified slot tracker if, (i) our cookie is valid, and if so
                         // (ii) what the original right value was what the right value was
                         // [presuming we add that for right side point 1]. This would let us report our original
-                        // redirection rowSet as part of the jsm.removeLeft. We could then compare
+                        // row redirection as part of the jsm.removeLeft. We could then compare
                         // the old redirections to the new redirections, only lighting up allRightColumns if there was
                         // indeed a change.
                         result.modifiedColumnSet.setAll(allRightColumns);

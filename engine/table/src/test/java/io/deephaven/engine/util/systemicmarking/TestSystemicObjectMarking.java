@@ -21,7 +21,7 @@ public class TestSystemicObjectMarking extends RefreshingTableTestCase {
         final Table updated = UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> source.update("UC=Str.toUpperCase()"));
         final Table updated2 = SystemicObjectTracker.executeSystemically(false, () -> UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> source.update("LC=Str2.toLowerCase()")));
 
-        TableTools.showWithIndex(updated);
+        TableTools.showWithRowSet(updated);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(source, i(2, 3), c("Str", "c", "d"), c("Str2", "C", "D"));

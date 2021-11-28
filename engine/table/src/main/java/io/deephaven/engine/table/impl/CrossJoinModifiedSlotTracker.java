@@ -382,8 +382,8 @@ class CrossJoinModifiedSlotTracker {
             state.slotLocation = slot;
             state.cookie = getCookieFromPointer(pointer++);
 
-            state.leftRowSet = jsm.getLeftIndex(slot);
-            state.rightRowSet = jsm.getRightIndex(slot);
+            state.leftRowSet = jsm.getLeftRowSet(slot);
+            state.rightRowSet = jsm.getRightRowSet(slot);
 
             if (finishedRightProcessing) {
                 state.finalizedRight = true;

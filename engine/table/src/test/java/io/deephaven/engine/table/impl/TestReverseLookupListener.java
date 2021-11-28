@@ -52,7 +52,7 @@ public class TestReverseLookupListener extends RefreshingTableTestCase {
             source.notifyListeners(i(), i(), keysToSwap);
         });
 
-        TableTools.showWithIndex(source);
+        TableTools.showWithRowSet(source);
 
         assertEquals(2, reverseLookupListener.get("A"));
         assertEquals(4, reverseLookupListener.get("C"));

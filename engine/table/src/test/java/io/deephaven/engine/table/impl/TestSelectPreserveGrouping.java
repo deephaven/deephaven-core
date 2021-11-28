@@ -92,7 +92,7 @@ public class TestSelectPreserveGrouping extends QueryTableTestBase {
             ParquetTools.writeTable(x, dest);
 
             final Table readBack = ParquetTools.readTable(dest);
-            TableTools.showWithIndex(readBack);
+            TableTools.showWithRowSet(readBack);
 
             assertTrue(RowSetIndexer.of(readBack.getRowSet()).hasGrouping(readBack.getColumnSource("Sym")));
 

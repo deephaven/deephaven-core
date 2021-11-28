@@ -17,10 +17,10 @@ public interface ColorPalette {
     Color nextColor();
 
     /**
-     * Gets the {@link Color} at the {@code rowSet} in the palette.
+     * Gets the {@link Color} at the {@code index} in the palette.
      *
-     * @param index rowSet
-     * @return {@code rowSet}th {@link Color} in the palette.
+     * @param index index
+     * @return {@code index}th {@link Color} in the palette.
      */
     Color get(int index);
 }

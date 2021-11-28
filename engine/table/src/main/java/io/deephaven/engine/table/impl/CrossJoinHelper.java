@@ -86,7 +86,7 @@ public class CrossJoinHelper {
                     jsm.setTargetLoadFactor(control.getTargetLoadFactor());
 
                     // We can only build from right, because the left hand side does not permit us to nicely rehash as
-                    // we only have the redirection rowSet when building left and no way to reverse the lookup.
+                    // we only have the row redirection when building left and no way to reverse the lookup.
                     final TrackingWritableRowSet resultRowSet = jsm.buildFromRight(leftTable,
                             bucketingContext.leftSources, rightTable, bucketingContext.rightSources)
                             .toTracking();
@@ -123,7 +123,7 @@ public class CrossJoinHelper {
 
                         final RowSetBuilderRandom rmBuilder = RowSetFactory.builderRandom();
                         jsm.removeLeft(upstream.removed(), (stateSlot, leftKey) -> {
-                            final RowSet rightRowSet = jsm.getRightIndex(stateSlot);
+                            final RowSet rightRowSet = jsm.getRightRowSet(stateSlot);
                             if (rightRowSet.isNonempty()) {
                                 final long prevLeftOffset = leftKey << jsm.getPrevNumShiftBits();
                                 final long lastRightIndex = prevLeftOffset + rightRowSet.size() - 1;
@@ -153,7 +153,7 @@ public class CrossJoinHelper {
                         } else if (upstream.modified().isNonempty()) {
                             final RowSetBuilderSequential modBuilder = RowSetFactory.builderSequential();
                             upstream.modified().forAllRowKeys(ll -> {
-                                final RowSet rightRowSet = jsm.getRightIndexFromLeftIndex(ll);
+                                final RowSet rightRowSet = jsm.getRightRowSetFromLeftIndex(ll);
                                 if (rightRowSet.isNonempty()) {
                                     final long currResultOffset = ll << jsm.getNumShiftBits();
                                     modBuilder.appendRange(currResultOffset, currResultOffset + rightRowSet.size() - 1);
@@ -169,7 +169,7 @@ public class CrossJoinHelper {
 
                         final RowSetBuilderRandom addBuilder = RowSetFactory.builderRandom();
                         jsm.addLeft(upstream.added(), (stateSlot, leftKey) -> {
-                            final RowSet rightRowSet = jsm.getRightIndex(stateSlot);
+                            final RowSet rightRowSet = jsm.getRightRowSet(stateSlot);
                             if (rightRowSet.isNonempty()) {
                                 final long regionStart = leftKey << jsm.getNumShiftBits();
                                 addBuilder.addRange(regionStart, regionStart + rightRowSet.size() - 1);
@@ -488,7 +488,7 @@ public class CrossJoinHelper {
                                             tracker.getFinalSlotState(jsm.getTrackerCookie(slotFromLeftIndex));
 
                                     if (prevRightBits != currRightBits) {
-                                        final RowSet rightRowSet = jsm.getRightIndex(slotFromLeftIndex);
+                                        final RowSet rightRowSet = jsm.getRightRowSet(slotFromLeftIndex);
                                         if (rightRowSet.isNonempty()) {
                                             toInsertIntoResultIndex.appendRange(currOffset,
                                                     currOffset + rightRowSet.size() - 1);
@@ -554,7 +554,7 @@ public class CrossJoinHelper {
 
                                 // calculate modifications to result rowSet
                                 if (prevRightBits != currRightBits) {
-                                    final RowSet rightRowSet = jsm.getRightIndex(slotFromLeftIndex);
+                                    final RowSet rightRowSet = jsm.getRightRowSet(slotFromLeftIndex);
                                     if (rightRowSet.isNonempty()) {
                                         toInsertIntoResultIndex.appendRange(currOffset,
                                                 currOffset + rightRowSet.size() - 1);
@@ -736,7 +736,7 @@ public class CrossJoinHelper {
                             tracker.forAllModifiedSlots(slotState -> {
                                 // filter out slots that only have right shifts (these don't have downstream effects)
                                 if (slotState.rightChanged) {
-                                    leftChangedBuilder.addRowSet(jsm.getLeftIndex(slotState.slotLocation));
+                                    leftChangedBuilder.addRowSet(jsm.getLeftRowSet(slotState.slotLocation));
                                 }
                             });
 
@@ -761,7 +761,7 @@ public class CrossJoinHelper {
                             final CrossJoinModifiedSlotTracker.SlotState slotState =
                                     tracker.getFinalSlotState(jsm.getTrackerCookie(slot));
                             final TrackingRowSet rightRowSet =
-                                    slotState == null ? jsm.getRightIndex(slot) : slotState.rightRowSet;
+                                    slotState == null ? jsm.getRightRowSet(slot) : slotState.rightRowSet;
 
                             if (numRightBitsChanged) {
                                 if (rightRowSet.isNonempty()) {

@@ -87,7 +87,7 @@ public interface SegmentedSortedArray extends LongSizedDataStructure {
     int getNodeSize();
 
     /**
-     * Call the longConsumer for each of the long rowSet keys in this SegmentedSortedArray.
+     * Call the longConsumer for each of the long row keys in this SegmentedSortedArray.
      *
      * @param longConsumer the long consumer to call
      */

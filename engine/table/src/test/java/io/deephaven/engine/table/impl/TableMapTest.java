@@ -172,7 +172,7 @@ public class TableMapTest extends RefreshingTableTestCase {
 
         @Override
         public void show() {
-            TableTools.showWithIndex(originalTable);
+            TableTools.showWithRowSet(originalTable);
         }
     }
 
@@ -273,7 +273,7 @@ public class TableMapTest extends RefreshingTableTestCase {
                 sourceTable.notifyListeners(addRowSet, i(), i());
                 if (printTableUpdates) {
                     System.out.println("Source Table, iteration=" + iteration + ", added=" + addRowSet);
-                    TableTools.showWithIndex(sourceTable);
+                    TableTools.showWithRowSet(sourceTable);
                 }
             });
             TstUtils.validate("iteration = " + iteration, en);
@@ -502,8 +502,8 @@ public class TableMapTest extends RefreshingTableTestCase {
         pauseHelper2.pause();
 
         System.out.println("Before second cycle.");
-        TableTools.showWithIndex(sourceTable);
-        TableTools.showWithIndex(sourceTable2);
+        TableTools.showWithRowSet(sourceTable);
+        TableTools.showWithRowSet(sourceTable2);
 
         UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
         addToTable(sourceTable, i(4, 5), c("USym", "cc", "dd"), c("Sentinel", 40, 50));
@@ -529,7 +529,7 @@ public class TableMapTest extends RefreshingTableTestCase {
 
 
 
-        TableTools.showWithIndex(merged);
+        TableTools.showWithRowSet(merged);
     }
 
     public void testCrossDependencies2() {
@@ -582,7 +582,7 @@ public class TableMapTest extends RefreshingTableTestCase {
 
         UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
 
-        TableTools.showWithIndex(merged);
+        TableTools.showWithRowSet(merged);
     }
 
     public void testTableMapScope() {

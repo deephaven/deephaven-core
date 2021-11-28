@@ -367,14 +367,14 @@ public class CrossJoinRightColumnSource<T> extends AbstractColumnSource<T> imple
 
     private long redirect(long outerKey) {
         final long leftKey = crossJoinManager.getShifted(outerKey);
-        final RowSet rowSet = crossJoinManager.getRightIndexFromLeftIndex(leftKey);
+        final RowSet rowSet = crossJoinManager.getRightRowSetFromLeftIndex(leftKey);
         final long rightKey = crossJoinManager.getMasked(outerKey);
         return rowSet.get(rightKey);
     }
 
     private long redirectPrev(long outerKey) {
         final long leftKey = crossJoinManager.getPrevShifted(outerKey);
-        final TrackingRowSet rowSet = crossJoinManager.getRightIndexFromPrevLeftIndex(leftKey);
+        final TrackingRowSet rowSet = crossJoinManager.getRightRowSetFromPrevLeftIndex(leftKey);
         final long rightKey = crossJoinManager.getPrevMasked(outerKey);
         return rightIsLive ? rowSet.getPrev(rightKey) : rowSet.get(rightKey);
     }
@@ -517,10 +517,10 @@ public class CrossJoinRightColumnSource<T> extends AbstractColumnSource<T> imple
                     RowSet rightGroup;
                     if (usePrev) {
                         final TrackingRowSet fromTable =
-                                crossJoinManager.getRightIndexFromPrevLeftIndex(lastLeftIndex.getValue());
+                                crossJoinManager.getRightRowSetFromPrevLeftIndex(lastLeftIndex.getValue());
                         rightGroup = rightIsLive ? fromTable.prevCopy() : fromTable;
                     } else {
-                        rightGroup = crossJoinManager.getRightIndexFromLeftIndex(lastLeftIndex.getValue());
+                        rightGroup = crossJoinManager.getRightRowSetFromLeftIndex(lastLeftIndex.getValue());
                     }
 
                     final int alreadyWritten = postMapOffset.intValue();

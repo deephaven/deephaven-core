@@ -154,9 +154,9 @@ public class QueryTableJoinTest {
                 System.out.println("Simple Step i = " + step + ", leftSize=" + leftSize + ", rightSize=" + rightSize
                         + ", seed = " + seed);
                 System.out.println("Left Table:" + leftTable.size());
-                showWithIndex(leftTable, 100);
+                showWithRowSet(leftTable, 100);
                 System.out.println("Right Table:" + rightTable.size());
-                showWithIndex(rightTable, 100);
+                showWithRowSet(rightTable, 100);
             }
             joinIncrement.step(leftSize, rightSize, leftTable, rightTable, leftColumnInfo, rightColumnInfo, en, random);
         }
@@ -215,9 +215,9 @@ public class QueryTableJoinTest {
             if (printTableUpdates) {
                 System.out.println("Simple2 Step i = " + step + ", leftSize=" + leftSize + ", rightSize=" + rightSize);
                 System.out.println("Left Table:");
-                showWithIndex(leftTable);
+                showWithRowSet(leftTable);
                 System.out.println("Right Table:");
-                showWithIndex(rightTable);
+                showWithRowSet(rightTable);
             }
             joinIncrement.step(leftSize, rightSize, leftTable, rightTable, leftColumnInfo, rightColumnInfo, en, random);
         }
@@ -799,12 +799,12 @@ public class QueryTableJoinTest {
                 c("C1", "b", "a", "a", "a", "a", "b"),
                 c("I1", 78, 85, 96, 263, 474, 876));
 
-        TableTools.showWithIndex(leftQueryTable);
-        TableTools.showWithIndex(rightQueryTable);
+        showWithRowSet(leftQueryTable);
+        showWithRowSet(rightQueryTable);
         final Table sortedRightQueryTable = rightQueryTable.sort("I1");
-        TableTools.showWithIndex(sortedRightQueryTable);
+        showWithRowSet(sortedRightQueryTable);
         final Table result = leftQueryTable.aj(sortedRightQueryTable, "C1,I1", "LI1=I1,LC1=C1,Sentinel");
-        TableTools.showWithIndex(result);
+        showWithRowSet(result);
 
         assertEquals(100, result.getColumn("Sentinel").get(3));
         assertEquals(207, result.getColumn("LI1").get(3));
@@ -825,12 +825,12 @@ public class QueryTableJoinTest {
                 c("C1", "b", "a", "a", "a", "a", "b"),
                 c("I1", 78, 85, 96, 263, 474, 876));
 
-        TableTools.showWithIndex(leftQueryTable);
-        TableTools.showWithIndex(rightQueryTable);
+        showWithRowSet(leftQueryTable);
+        showWithRowSet(rightQueryTable);
         final Table sortedRightQueryTable = rightQueryTable.sort("I1");
-        TableTools.showWithIndex(sortedRightQueryTable);
+        showWithRowSet(sortedRightQueryTable);
         final Table result = leftQueryTable.aj(sortedRightQueryTable, "C1,I1", "LI1=I1,LC1=C1,Sentinel");
-        TableTools.showWithIndex(result);
+        showWithRowSet(result);
 
         assertEquals(80, result.getColumn("Sentinel").get(5));
         assertEquals(821, result.getColumn("LI1").get(5));
@@ -842,7 +842,7 @@ public class QueryTableJoinTest {
         Table lTable = testRefreshingTable(c("X", "a", "b", "c"));
         Table rTable = testRefreshingTable(c("Y", "x", "y"));
         Table result = lTable.join(rTable, "");
-        TableTools.showWithIndex(result);
+        showWithRowSet(result);
         assertEquals(6, result.size());
         assertEquals(2, result.getColumns().length);
         assertEquals("X", result.getColumns()[0].getName());
@@ -895,12 +895,12 @@ public class QueryTableJoinTest {
             assertEquals("Conflicting column names [String]", e.getMessage());
         }
 
-        TableTools.showWithIndex(table1);
-        TableTools.showWithIndex(table2);
+        showWithRowSet(table1);
+        showWithRowSet(table2);
 
         Table pairMatch = table1.leftJoin(table2, "String");
 
-        TableTools.showWithIndex(pairMatch);
+        showWithRowSet(pairMatch);
 
         assertEquals(3, pairMatch.size());
         assertEquals(3, pairMatch.getColumns().length);

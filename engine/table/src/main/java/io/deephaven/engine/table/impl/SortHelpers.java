@@ -42,10 +42,10 @@ public class SortHelpers {
             Configuration.getInstance().getBooleanWithDefault("QueryTable.sortBySymbolTable", true);
 
     /**
-     * If we have more than this many entries per group, instead of creating a large flat redirection
-     * TrackingWritableRowSet, we create a redirection rowSet that is composed of the group indices and an accumulated
-     * cardinality cache. This can save a significant amount of memory when the groups are large and storing them using
-     * our TrackingWritableRowSet structure is more efficient.
+     * If we have more than this many entries per group, instead of creating a large flat row redirection, we create a
+     * row redirection that is composed of the group indices and an accumulated  cardinality cache. This can save a
+     * significant amount of memory when the groups are large and storing them using our RowSet structure is more
+     * efficient.
      */
     public static int groupedRedirectionThreshold =
             Configuration.getInstance().getIntegerWithDefault("SortHelpers.groupedRedirectionThreshold", 32);
@@ -419,11 +419,10 @@ public class SortHelpers {
                 mappedValuesGeneric = mappedValues;
             }
 
-            // Fill a chunk that is Writable, and does not have an ordered tag with the rowSet keys that we are sorting,
-            // the
-            // rowSet would does something very similar inside of
-            // io.deephaven.engine.table.impl.util.RowSequence.asRowKeyChunk;
-            // but provides a LongChunk<OrderedRowKeys> as its return.
+            // Fill a chunk that is Writable, and does not have an ordered tag with the row keys that we are sorting,
+            // the RowSet would do something very similar inside of
+            // io.deephaven.engine.table.impl.util.RowSequence.asRowKeyChunk; but provides a LongChunk<OrderedRowKeys>
+            // as its return.
             final long[] rowKeysArray = new long[sortSize];
             final WritableLongChunk<RowKeys> rowKeys = WritableLongChunk.writableChunkWrap(rowKeysArray);
             rowSet.fillRowKeyChunk(rowKeys);
@@ -524,7 +523,7 @@ public class SortHelpers {
 
             return new ArraySortMapping(rowKeysArray);
         } else {
-            // create a grouped redirection rowSet
+            // create a grouped row redirection
             final long[] groupSize = new long[groupToRange.size()];
             final RowSet[] groupRowSet = new RowSet[groupToRange.size()];
 

@@ -100,8 +100,8 @@ public class TableTools {
      * @param source a Deephaven table object
      * @param columns varargs of column names to display
      */
-    public static void showWithIndex(Table source, String... columns) {
-        showWithIndex(source, 10, io.deephaven.engine.time.TimeZone.TZ_DEFAULT, System.out, columns);
+    public static void showWithRowSet(Table source, String... columns) {
+        showWithRowSet(source, 10, io.deephaven.engine.time.TimeZone.TZ_DEFAULT, System.out, columns);
     }
 
     /**
@@ -144,8 +144,8 @@ public class TableTools {
      * @param maxRowCount the number of rows to return
      * @param columns varargs of column names to display
      */
-    public static void showWithIndex(Table source, long maxRowCount, String... columns) {
-        showWithIndex(source, maxRowCount, io.deephaven.engine.time.TimeZone.TZ_DEFAULT, System.out, columns);
+    public static void showWithRowSet(Table source, long maxRowCount, String... columns) {
+        showWithRowSet(source, maxRowCount, io.deephaven.engine.time.TimeZone.TZ_DEFAULT, System.out, columns);
     }
 
     /**
@@ -196,9 +196,9 @@ public class TableTools {
      * @param out a PrintStream destination to which to print the data
      * @param columns varargs of column names to display
      */
-    public static void showWithIndex(Table source, long maxRowCount, io.deephaven.engine.time.TimeZone timeZone,
-            PrintStream out,
-            String... columns) {
+    public static void showWithRowSet(Table source, long maxRowCount, io.deephaven.engine.time.TimeZone timeZone,
+                                      PrintStream out,
+                                      String... columns) {
         show(source, maxRowCount, timeZone, "|", out, true, columns);
     }
 
@@ -212,7 +212,7 @@ public class TableTools {
      * @param out a PrintStream destination to which to print the data
      * @param columns varargs of column names to display
      */
-    public static void showWithIndex(Table source, long firstRow, long lastRow, PrintStream out, String... columns) {
+    public static void showWithRowSet(Table source, long firstRow, long lastRow, PrintStream out, String... columns) {
         TableShowTools.showInternal(source, firstRow, lastRow, io.deephaven.engine.time.TimeZone.TZ_DEFAULT, "|", out,
                 true, columns);
     }
@@ -234,7 +234,7 @@ public class TableTools {
     }
 
     /**
-     * Prints the first few rows of a table to standard output, and also prints the details of the rowSet and record
+     * Prints the first few rows of a table to standard output, and also prints the details of the row keys and row
      * positions that provided the values.
      *
      * @param source a Deephaven table object
@@ -242,7 +242,8 @@ public class TableTools {
      * @param lastRow the lastRow (exclusive) to display
      * @param columns varargs of column names to display
      */
-    public static void showWithIndex(final Table source, final long firstRow, final long lastRow, String... columns) {
+    public static void showWithRowSet(final Table source, final long firstRow, final long lastRow,
+                                      final String... columns) {
         TableShowTools.showInternal(source, firstRow, lastRow, io.deephaven.engine.time.TimeZone.TZ_DEFAULT, "|",
                 System.out, true, columns);
     }

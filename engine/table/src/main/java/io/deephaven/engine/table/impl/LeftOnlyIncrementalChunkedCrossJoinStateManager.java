@@ -67,7 +67,7 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
          * Invoke a callback that will allow external trackers to record changes to states in build or probe calls.
          *
          * @param stateSlot The state slot (in main table space)
-         * @param index     The probed rowSet key
+         * @param index     The probed index key
          */
         void invoke(long stateSlot, long index);
     }
@@ -275,7 +275,7 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
         if (!leftTable.isEmpty()) {
             addLeft(leftTable.getRowSet(), (slot, index) -> {
                 final long regionStart = index << getNumShiftBits();
-                final RowSet rightRowSet = getRightIndex(slot);
+                final RowSet rightRowSet = getRightRowSet(slot);
                 resultIndex.addRange(regionStart, regionStart + rightRowSet.size() - 1);
             });
         }
@@ -306,7 +306,7 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
                 for (int ii = 0; ii < pc.keyIndices.size(); ++ii) {
                     final long index = pc.keyIndices.get(ii);
                     final long slot = pc.mappedSlots.get(ii);
-                    final RowSet rightRowSet = getRightIndex(slot);
+                    final RowSet rightRowSet = getRightRowSet(slot);
                     if (rightRowSet.isNonempty()) {
                         leftIndexToSlot.putVoid(index, slot);
                         trackingCallback.invoke(slot, index);
@@ -341,11 +341,11 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
                     final long prevSlot = leftIndexToSlot.getPrev(prevKey);
                     final long currSlot = pc.mappedSlots.get(ii);
                     final long regionStart = currKey << getNumShiftBits();
-                    final RowSet currRowSet = getRightIndex(currSlot);
+                    final RowSet currRowSet = getRightRowSet(currSlot);
                     if (prevSlot == currSlot && currRowSet.isNonempty()) {
                         modBuilder.appendRange(regionStart, regionStart + currRowSet.size() - 1);
                     } else if (prevSlot != currSlot) {
-                        final RowSet prevRowSet = getRightIndex(prevSlot);
+                        final RowSet prevRowSet = getRightRowSet(prevSlot);
                         final long prevRegionStart = prevKey << getNumShiftBits();
                         if (currSlot == EMPTY_RIGHT_SLOT) {
                             leftIndexToSlot.removeVoid(currKey);
@@ -1719,7 +1719,7 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
     }
 
     // region extraction functions
-    public TrackingRowSet getRightIndex(long slot) {
+    public TrackingRowSet getRightRowSet(long slot) {
         TrackingRowSet retVal;
         if (isOverflowLocation(slot)) {
             retVal = overflowRightRowSetSource.get(hashLocationToOverflowLocation(slot));
@@ -1733,21 +1733,21 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
     }
 
     @Override
-    public TrackingRowSet getRightIndexFromLeftIndex(long leftIndex) {
+    public TrackingRowSet getRightRowSetFromLeftIndex(long leftIndex) {
         long slot = leftIndexToSlot.get(leftIndex);
         if (slot == RowSequence.NULL_ROW_KEY) {
             return RowSetFactory.empty().toTracking();
         }
-        return getRightIndex(slot);
+        return getRightRowSet(slot);
     }
 
     @Override
-    public TrackingRowSet getRightIndexFromPrevLeftIndex(long leftIndex) {
+    public TrackingRowSet getRightRowSetFromPrevLeftIndex(long leftIndex) {
         long slot = leftIndexToSlot.getPrev(leftIndex);
         if (slot == RowSequence.NULL_ROW_KEY) {
             return RowSetFactory.empty().toTracking();
         }
-        return getRightIndex(slot);
+        return getRightRowSet(slot);
     }
 
     public void validateKeySpaceSize() {

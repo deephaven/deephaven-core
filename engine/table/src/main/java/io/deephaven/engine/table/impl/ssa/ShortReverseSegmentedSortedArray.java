@@ -19,14 +19,14 @@ import java.util.function.LongConsumer;
 
 /**
  * For keeping track of incremental states of sorted values, we would ideally like to hold them in an Array or a Chunk;
- * with parallel rowSet keys.  However, if we just put them in an array we can not insert or remove values without
+ * with parallel row keys.  However, if we just put them in an array we can not insert or remove values without
  * unnecessarily shifting everything.
  *
  * The segmented array allows us to either insert or remove elements and only shift values in a "leaf" block and
  * possibly a "directory" block.  It can be thought of as similar to a single-level b+ tree with only keys.
  *
  * We must be totally ordered, which is accomplished by sorting on the short values, and then on the corresponding
- * rowSet key.
+ * row key.
  */
 public final class ShortReverseSegmentedSortedArray implements SegmentedSortedArray {
     final private int leafSize;

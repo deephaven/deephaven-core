@@ -23,7 +23,6 @@ import io.deephaven.engine.table.impl.util.*;
 import java.util.Arrays;
 import io.deephaven.engine.table.impl.sort.permute.IntPermuteKernel;
 // @StateChunkTypeEnum@ from \QObject\E
-import io.deephaven.engine.table.impl.sort.permute.ObjectPermuteKernel;
 import io.deephaven.engine.table.impl.util.compact.IntCompactKernel;
 import io.deephaven.engine.table.impl.util.compact.LongCompactKernel;
 // endmixin rehash
@@ -68,8 +67,8 @@ class RightIncrementalChunkedCrossJoinStateManager
          *
          * @param cookie    The last known cookie for state slot (in main table space)
          * @param stateSlot The state slot (in main table space)
-         * @param index     The probed rowSet key
-         * @param prevIndex The probed prev rowSet key (applicable only when prevIndex provided to build/probe otherwise RowSet.NULL_ROW_KEY)
+         * @param index     The probed row key
+         * @param prevIndex The probed prev row key (applicable only when prevIndex provided to build/probe otherwise RowSet.NULL_ROW_KEY)
          * @return The new cookie for the state
          */
         long invoke(long cookie, long stateSlot, long index, long prevIndex);
@@ -313,7 +312,7 @@ class RightIncrementalChunkedCrossJoinStateManager
         final RowSetBuilderSequential resultIndex = RowSetFactory.builderSequential();
         leftTable.getRowSet().forAllRowKeys(index -> {
             final long regionStart = index << getNumShiftBits();
-            final RowSet rightRowSet = getRightIndexFromLeftIndex(index);
+            final RowSet rightRowSet = getRightRowSetFromLeftIndex(index);
             if (rightRowSet.isNonempty()) {
                 resultIndex.appendRange(regionStart, regionStart + rightRowSet.size() - 1);
             }
@@ -2033,7 +2032,7 @@ class RightIncrementalChunkedCrossJoinStateManager
     }
 
     // region extraction functions
-    public TrackingWritableRowSet getRightIndex(long slot) {
+    public TrackingWritableRowSet getRightRowSet(long slot) {
         TrackingWritableRowSet retVal;
         if (isOverflowLocation(slot)) {
             retVal = overflowRightRowSetSource.get(hashLocationToOverflowLocation(slot));
@@ -2046,7 +2045,7 @@ class RightIncrementalChunkedCrossJoinStateManager
         return retVal;
     }
 
-    public TrackingRowSet getPrevRightIndex(long prevSlot) {
+    public TrackingRowSet getPrevRightRowSet(long prevSlot) {
         TrackingRowSet retVal;
         if (isOverflowLocation(prevSlot)) {
             retVal = overflowRightRowSetSource.getPrev(hashLocationToOverflowLocation(prevSlot));
@@ -2060,24 +2059,24 @@ class RightIncrementalChunkedCrossJoinStateManager
     }
 
     @Override
-    public TrackingRowSet getRightIndexFromLeftIndex(long leftIndex) {
+    public TrackingRowSet getRightRowSetFromLeftIndex(long leftIndex) {
         long slot = leftIndexToSlot.get(leftIndex);
         if (slot == RowSequence.NULL_ROW_KEY) {
             return RowSetFactory.empty().toTracking();
         }
-        return getRightIndex(slot);
+        return getRightRowSet(slot);
     }
 
     @Override
-    public TrackingRowSet getRightIndexFromPrevLeftIndex(long leftIndex) {
+    public TrackingRowSet getRightRowSetFromPrevLeftIndex(long leftIndex) {
         long slot = leftIndexToSlot.getPrev(leftIndex);
         if (slot == RowSequence.NULL_ROW_KEY) {
             return RowSetFactory.empty().toTracking();
         }
-        return getPrevRightIndex(slot);
+        return getPrevRightRowSet(slot);
     }
 
-    public TrackingWritableRowSet getLeftIndex(long slot) {
+    public TrackingWritableRowSet getLeftRowSet(long slot) {
         TrackingWritableRowSet retVal;
         final boolean isOverflow = isOverflowLocation(slot);
 

@@ -49,7 +49,7 @@ randomValues1 = emptyTable(size)
         );
 randomValues = randomValues1.where("MyLong=10").view("MyLong", "Timestamp")
 
-showWithIndex(randomValues, 1000)
+showWithRowSet(randomValues, 1000)
 
 
 void maybeAddValidator(ArrayList<TableUpdateValidator> list, String variable) {

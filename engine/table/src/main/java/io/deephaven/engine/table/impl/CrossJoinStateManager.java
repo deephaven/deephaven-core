@@ -3,9 +3,9 @@ package io.deephaven.engine.table.impl;
 import io.deephaven.engine.rowset.TrackingRowSet;
 
 public interface CrossJoinStateManager {
-    TrackingRowSet getRightIndexFromLeftIndex(long leftIndex);
+    TrackingRowSet getRightRowSetFromLeftIndex(long leftIndex);
 
-    TrackingRowSet getRightIndexFromPrevLeftIndex(long leftIndex);
+    TrackingRowSet getRightRowSetFromPrevLeftIndex(long leftIndex);
 
     long getShifted(long index);
     long getPrevShifted(long index);

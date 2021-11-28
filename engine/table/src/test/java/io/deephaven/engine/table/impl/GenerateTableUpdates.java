@@ -48,7 +48,7 @@ public class GenerateTableUpdates {
             System.out.println("Add: " + keysToAdd);
             try {
                 System.out.println("Updated Table:" + table.size());
-                TableTools.showWithIndex(table, 100);
+                TableTools.showWithRowSet(table, 100);
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
@@ -108,7 +108,7 @@ public class GenerateTableUpdates {
             System.out.println("Modify: " + keysToModify);
             try {
                 System.out.println("Updated Table: " + table.size());
-                TableTools.showWithIndex(table, 100);
+                TableTools.showWithRowSet(table, 100);
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
@@ -348,7 +348,7 @@ public class GenerateTableUpdates {
             System.out.println("ModifiedColumnSet: " + update.modifiedColumnSet());
             try {
                 System.out.println("Updated Table: " + table.size());
-                TableTools.showWithIndex(table, 100);
+                TableTools.showWithRowSet(table, 100);
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }

@@ -54,6 +54,6 @@ public class UpdateValidatorNugget implements EvalNuggetInterface {
     }
 
     public void show() {
-        TableTools.showWithIndex(originalValue, 100);
+        TableTools.showWithRowSet(originalValue, 100);
     }
 }

@@ -36,6 +36,7 @@ import org.junit.Test;
 import java.util.Arrays;
 import java.util.stream.Stream;
 
+import static io.deephaven.engine.util.TableTools.showWithRowSet;
 import static org.junit.Assert.*;
 
 /**
@@ -136,10 +137,10 @@ public class TestRedirectedColumnSource {
 
         final Table a = UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(
                 () -> qt.update("I2=3+IntVal", "BoolVal=ids6196_values[IntVal % ids6196_values.length]"));
-        TableTools.showWithIndex(a);
+        showWithRowSet(a);
         final Table b = UpdateGraphProcessor.DEFAULT.sharedLock()
                 .computeLocked(() -> a.naturalJoin(a, "I2=IntVal", "BoolVal2=BoolVal"));
-        TableTools.showWithIndex(b);
+        showWithRowSet(b);
 
         final TByteList byteList = new TByteArrayList(6);
         final ColumnSource reinterpretedB = b.getColumnSource("BoolVal2").reinterpret(byte.class);
@@ -165,7 +166,7 @@ public class TestRedirectedColumnSource {
 
         final Table c = UpdateGraphProcessor.DEFAULT.sharedLock()
                 .computeLocked(() -> a.naturalJoin(b, "I2=IntVal", "BoolVal3=BoolVal2"));
-        TableTools.showWithIndex(c);
+        showWithRowSet(c);
         final ColumnSource reinterpretedC = c.getColumnSource("BoolVal3").reinterpret(byte.class);
         byteList.clear();
         b.getRowSet().forAllRowKeys(x -> {
@@ -202,7 +203,7 @@ public class TestRedirectedColumnSource {
 
         final Table captured =
                 UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> TableTools.emptyTable(1).snapshot(c));
-        TableTools.showWithIndex(captured);
+        showWithRowSet(captured);
 
         UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
         TstUtils.addToTable(qt, RowSetFactory.flat(3), intCol("IntVal", 1, 2, 3));
@@ -211,13 +212,13 @@ public class TestRedirectedColumnSource {
         UpdateGraphProcessor.DEFAULT.flushAllNormalNotificationsForUnitTests();
 
         System.out.println("A:");
-        TableTools.showWithIndex(a);
+        showWithRowSet(a);
 
         // checks chunked
         System.out.println("C:");
-        TableTools.showWithIndex(c);
+        showWithRowSet(c);
         System.out.println("prev(C):");
-        TableTools.showWithIndex(prevTable(c));
+        showWithRowSet(prevTable(c));
 
         assertTableEquals(captured, prevTable(c));
 

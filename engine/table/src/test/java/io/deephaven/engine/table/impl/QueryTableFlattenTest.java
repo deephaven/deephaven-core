@@ -19,7 +19,7 @@ import java.io.IOException;
 import java.util.Random;
 
 import static io.deephaven.engine.util.TableTools.longCol;
-import static io.deephaven.engine.util.TableTools.showWithIndex;
+import static io.deephaven.engine.util.TableTools.showWithRowSet;
 import static io.deephaven.engine.table.impl.TstUtils.*;
 
 public class QueryTableFlattenTest extends QueryTableTestBase {
@@ -33,7 +33,7 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
                         new TstUtils.IntGenerator(10, 100, 0.1),
                         new TstUtils.SetGenerator<>(10.1, 20.1, 30.1)));
         if (printTableUpdates) {
-            showWithIndex(queryTable);
+            showWithRowSet(queryTable);
         }
         final EvalNuggetInterface en[] = new EvalNuggetInterface[] {
                 new FlatChecker(queryTable.flatten()),
@@ -256,7 +256,7 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
                     };
             validatorTable.listenForUpdates(validatorTableListener);
 
-            showWithIndex(sourceTable);
+            showWithRowSet(sourceTable);
         }
 
         void modAndValidate(final Runnable modTable, final RowSet added, final RowSet removed, final RowSet modified) {
@@ -268,7 +268,7 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
             ++updateCount;
 
             UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(modTable::run);
-            showWithIndex(sourceTable);
+            showWithRowSet(sourceTable);
 
             if (listener instanceof SimpleShiftObliviousListener) {
                 Assert.assertEquals(0, shifted.size());
@@ -330,7 +330,7 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
 
         @Override
         public void show() throws IOException {
-            TableTools.showWithIndex(t1);
+            showWithRowSet(t1);
         }
     }
 

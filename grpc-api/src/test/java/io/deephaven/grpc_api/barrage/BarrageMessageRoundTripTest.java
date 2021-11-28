@@ -236,7 +236,7 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
 
         private void showResult(final String label, final Table table) {
             System.out.println(label);
-            TableTools.showWithIndex(table, 100);
+            TableTools.showWithRowSet(table, 100);
         }
 
         public void show(QueryTable expected) {
@@ -268,9 +268,9 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
 
                 System.out.println("Recomputed Table (" + name + ") Differs:\n" + diffPair.getFirst()
                         + "\nRecomputed Table Rows [" + firstRow + ", " + lastRow + "]:");
-                TableTools.showWithIndex(expected, firstRow, lastRow + 1);
+                TableTools.showWithRowSet(expected, firstRow, lastRow + 1);
                 System.out.println("Replicated Table Rows [" + firstRow + ", " + lastRow + "]:");
-                TableTools.showWithIndex(toCheck, firstRow, lastRow + 1);
+                TableTools.showWithRowSet(toCheck, firstRow, lastRow + 1);
             }
         }
 

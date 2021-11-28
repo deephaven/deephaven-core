@@ -78,7 +78,7 @@ public interface ColumnSource<T>
     Map<T, RowSet> getGroupToRange(RowSet rowSet);
 
     /**
-     * Determine if this column source is immutable, meaning that the values at a given rowSet key never change.
+     * Determine if this column source is immutable, meaning that the values at a given row key never change.
      *
      * @return true if the values at a given rowSet of the column source never change, false otherwise
      */

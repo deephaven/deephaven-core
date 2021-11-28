@@ -308,7 +308,7 @@ public class FuzzerTest {
     private void addPrintListener(GroovyDeephavenSession session, final String variable, List<Object> hardReferences) {
         final Table table = (Table) session.getVariable(variable);
         System.out.println(variable);
-        TableTools.showWithIndex(table);
+        TableTools.showWithRowSet(table);
         System.out.println();
         if (table.isRefreshing()) {
             final FuzzerPrintListener listener = new FuzzerPrintListener(variable, table);

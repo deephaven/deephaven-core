@@ -1,7 +1,7 @@
 package io.deephaven.engine.table.impl;
 
 /**
- * For hierarchical table display, identify the row rowSet key that corresponds to a given logical key.
+ * For hierarchical table display, identify the row row key that corresponds to a given logical key.
  */
 public interface ReverseLookup {
     /**

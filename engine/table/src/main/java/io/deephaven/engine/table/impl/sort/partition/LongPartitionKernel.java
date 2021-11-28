@@ -132,8 +132,8 @@ public class LongPartitionKernel {
      * After we have created the context, we can determine what things are in a partition.
      *
      * @param context our context, containing the pivots
-     * @param indexKeys a chunk of rowSet keys to partition
-     * @param values  a chunk of values that go with the rowSet keys
+     * @param indexKeys a chunk of row keys to partition
+     * @param values  a chunk of values that go with the row keys
      */
     public static void partition(PartitionKernelContext context, LongChunk<RowKeys> indexKeys, LongChunk values) {
         final int accumulatedChunkSize = context.chunkSize;

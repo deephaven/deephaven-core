@@ -537,7 +537,7 @@ public class TestAggBy extends RefreshingTableTestCase {
         assertArrayEquals(new Object[] {"AAPL", 1L, 2L}, result.getRecord(0));
         assertArrayEquals(new Object[] {"AAPL", 2L, 2L}, countNulls.getRecord(0));
 
-        showWithIndex(dataTable, dataTable.size());
+        TableTools.showWithRowSet(dataTable, dataTable.size());
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(dataTable, i(1, 2, 11),
@@ -549,7 +549,7 @@ public class TestAggBy extends RefreshingTableTestCase {
             dataTable.notifyListeners(i(11), i(6), i(1, 2));
         });
 
-        showWithIndex(dataTable, dataTable.size());
+        TableTools.showWithRowSet(dataTable, dataTable.size());
 
         assertArrayEquals(new Object[] {"AAPL", 2L, 2L}, result.getRecord(0));
         assertArrayEquals(new Object[] {"SPY", 3L, 3L}, countNulls.getRecord(2));

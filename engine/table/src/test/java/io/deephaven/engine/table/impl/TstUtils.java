@@ -629,7 +629,7 @@ public class TstUtils {
         /**
          * Called after a key has been removed from the map.
          *
-         * @param key the rowSet key that was removed
+         * @param key the row key that was removed
          * @param removed the value that was removed
          */
         default void onRemove(long key, U removed) {}
@@ -2172,7 +2172,7 @@ public class TstUtils {
             final long lastRow = Math.max(10, diffPair.getSecond() + 5);
 
             try (final PrintStream ps = new PrintStream(baos, true, "UTF-8")) {
-                TableTools.showWithIndex(expected, firstRow, lastRow, ps);
+                TableTools.showWithRowSet(expected, firstRow, lastRow, ps);
             } catch (UnsupportedEncodingException e) {
                 throw new RuntimeException(e);
             }
@@ -2180,7 +2180,7 @@ public class TstUtils {
             baos.reset();
 
             try (final PrintStream ps = new PrintStream(baos, true, "UTF-8")) {
-                TableTools.showWithIndex(actual, firstRow, lastRow, ps);
+                TableTools.showWithRowSet(actual, firstRow, lastRow, ps);
             } catch (UnsupportedEncodingException e) {
                 throw new RuntimeException(e);
             }

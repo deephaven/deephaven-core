@@ -72,8 +72,8 @@ public class TestSyncTableFilter extends RefreshingTableTestCase {
             b.notifyListeners(i(10, 11), i(), i());
         });
 
-        TableTools.showWithIndex(fa);
-        TableTools.showWithIndex(fb);
+        showWithRowSet(fa);
+        showWithRowSet(fb);
 
         assertEquals("", TableTools.diff(fa, ex2a, 10));
         assertEquals("", TableTools.diff(fb, ex2b, 10));
@@ -123,8 +123,8 @@ public class TestSyncTableFilter extends RefreshingTableTestCase {
             a.notifyListeners(i(12, 13), i(), i());
         });
 
-        TableTools.showWithIndex(fa);
-        TableTools.showWithIndex(fb);
+        showWithRowSet(fa);
+        showWithRowSet(fb);
 
         assertEquals("", TableTools.diff(fa, ex2a, 10));
         assertEquals("", TableTools.diff(fb, ex2b, 10));
@@ -137,8 +137,8 @@ public class TestSyncTableFilter extends RefreshingTableTestCase {
             b.notifyListeners(i(12, 13), i(), i());
         });
 
-        TableTools.showWithIndex(fa);
-        TableTools.showWithIndex(fb);
+        showWithRowSet(fa);
+        showWithRowSet(fb);
 
         assertEquals("", TableTools.diff(fa, ex2a, 10));
         assertEquals("", TableTools.diff(fb, ex3b, 10));
@@ -149,8 +149,8 @@ public class TestSyncTableFilter extends RefreshingTableTestCase {
         });
 
         System.out.println("A advanced to 6");
-        TableTools.showWithIndex(fa);
-        TableTools.showWithIndex(fb);
+        showWithRowSet(fa);
+        showWithRowSet(fb);
 
         final Table ex4a = newTable(longCol("ID", 6), intCol("Sentinel", 112), col("Key", "a"));
         final Table ex4b = newTable(longCol("ID", 6), intCol("Sentinel", 210), col("Key", "a"));
@@ -204,8 +204,8 @@ public class TestSyncTableFilter extends RefreshingTableTestCase {
             b.notifyListeners(i(10, 11), i(), i());
         });
 
-        TableTools.showWithIndex(fa);
-        TableTools.showWithIndex(fb);
+        showWithRowSet(fa);
+        showWithRowSet(fb);
 
         assertEquals("", TableTools.diff(fa, ex2a, 10));
         assertEquals("", TableTools.diff(fb, ex2b, 10));
@@ -270,15 +270,15 @@ public class TestSyncTableFilter extends RefreshingTableTestCase {
         final Table ex3b = newTable(longCol("Ego", 4, 4, 5, 5), intCol("Sentinel", 205, 206, 207, 208),
                 col("Klyuch", "a", "a", "b", "c"));
 
-        TableTools.showWithIndex(fa);
-        TableTools.showWithIndex(fb);
+        showWithRowSet(fa);
+        showWithRowSet(fb);
 
         assertEquals("", TableTools.diff(fa, ex3a, 10));
         assertEquals("", TableTools.diff(fb, ex3b, 10));
 
 
         System.out.println("A before modfications.");
-        TableTools.showWithIndex(a, 30);
+        showWithRowSet(a, 30);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(a, i(20, 21), longCol("ID", 5, 5), intCol("Sentinel", 113, 114), col("Key", "c", "c"));
@@ -356,7 +356,7 @@ public class TestSyncTableFilter extends RefreshingTableTestCase {
         final Table sentSum =
                 UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> joined.update("SS=SBD+SentinelDoubled"));
 
-        TableTools.showWithIndex(sentSum);
+        showWithRowSet(sentSum);
 
         UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
         assertTrue(((BaseTable) sentSum).satisfied(LogicalClock.DEFAULT.currentStep()));
@@ -380,7 +380,7 @@ public class TestSyncTableFilter extends RefreshingTableTestCase {
 
         UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
 
-        TableTools.showWithIndex(sentSum);
+        showWithRowSet(sentSum);
         int[] actual = (int[]) sentSum.getColumn("SS").getDirect();
         int[] expected = new int[] {606, 610};
         assertEquals(expected, actual);
@@ -405,15 +405,15 @@ public class TestSyncTableFilter extends RefreshingTableTestCase {
                         .addTable("source2", source2, "ID", "Division").build());
         final Table s1f = bykey.get("source1");
         final Table s2f = bykey.get("source2");
-        TableTools.showWithIndex(s1f);
-        TableTools.showWithIndex(s2f);
+        showWithRowSet(s1f);
+        showWithRowSet(s2f);
 
         final TableMap filteredByPartition =
                 UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> new SyncTableFilter.Builder("ID")
                         .addTableMap("source1", sm1).addTableMap("source2", sm2, "ID").build());
         for (Object key : filteredByPartition.getKeySet()) {
             System.out.println(key);
-            TableTools.showWithIndex(filteredByPartition.get(key));
+            showWithRowSet(filteredByPartition.get(key));
         }
 
         final TableMap s1tm = new FilteredTableMap(filteredByPartition, sk -> ((SmartKey) sk).get(1).equals("source1"),
@@ -438,8 +438,8 @@ public class TestSyncTableFilter extends RefreshingTableTestCase {
         assertTableEquals(s1f, s1mergedSorted);
         assertTableEquals(s2f, s2mergedSorted);
 
-        TableTools.showWithIndex(s1f);
-        TableTools.showWithIndex(s2f);
+        showWithRowSet(s1f);
+        showWithRowSet(s2f);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(source2, i(12, 13), col("Division", "D", "E"), longCol("ID", 3, 3),
@@ -565,14 +565,14 @@ public class TestSyncTableFilter extends RefreshingTableTestCase {
 
             if (printTableUpdates) {
                 System.out.println("Source 1 (tm)");
-                TableTools.showWithIndex(s1merged);
+                showWithRowSet(s1merged);
                 System.out.println("Source 2 (tm)");
-                TableTools.showWithIndex(s2merged);
+                showWithRowSet(s2merged);
 
                 System.out.println("Source 1 Keyed (tm)");
-                TableTools.showWithIndex(s1KeyedMerged);
+                showWithRowSet(s1KeyedMerged);
                 System.out.println("Source 2 (tm)");
-                TableTools.showWithIndex(s2KeyedMerged);
+                showWithRowSet(s2KeyedMerged);
             }
 
             assertTableEquals(s1f, s1mergedSorted);

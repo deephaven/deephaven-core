@@ -250,7 +250,7 @@ public class AsOfJoinHelper {
 
                 if (leftGroupedSources != null) {
                     if (leftRowSet.size() != 1) {
-                        throw new IllegalStateException("Groupings should have exactly one rowSet key!");
+                        throw new IllegalStateException("Groupings should have exactly one row key!");
                     }
                     leftRowSet = leftGroupedSources.getSecond().get(leftRowSet.get(0));
                 }

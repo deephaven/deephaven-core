@@ -33,7 +33,7 @@ import java.util.Collection;
  *
  * <p>
  * To store the blocks, we use a multi-level page table like structure. Each entry that exists is complete, i.e. we
- * never reallocate partial blocks, we always allocate the complete block. The rowSet key is divided as follows:
+ * never reallocate partial blocks, we always allocate the complete block. The row key is divided as follows:
  * </p>
  * <table>
  * <tr>
@@ -115,7 +115,7 @@ public abstract class SparseArrayColumnSource<T>
     // the bitset size (64), so we have the additional constraint that LOG_BLOCK_SIZE >= LOG_INUSE_BITSET_SIZE.
 
     static {
-        // we must completely use the 63-bit address space of rowSet keys (negative numbers are defined to be null)
+        // we must completely use the 63-bit address space of row keys (negative numbers are defined to be null)
         Assert.eq(LOG_BLOCK_SIZE + LOG_BLOCK0_SIZE + LOG_BLOCK1_SIZE + LOG_BLOCK2_SIZE,
                 "LOG_BLOCK_SIZE + LOG_BLOCK0_SIZE + LOG_BLOCK1_SIZE + LOG_BLOCK2_SIZE", 63);
         Assert.geq(LOG_BLOCK_SIZE, "LOG_BLOCK_SIZE", LOG_INUSE_BITSET_SIZE);

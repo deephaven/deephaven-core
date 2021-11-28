@@ -321,10 +321,10 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
         UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
 
-        TableTools.showWithIndex(table);
-        TableTools.showWithIndex(filter1);
-        TableTools.showWithIndex(filter2);
-        TableTools.showWithIndex(filter3);
+        showWithRowSet(table);
+        showWithRowSet(filter1);
+        showWithRowSet(filter2);
+        showWithRowSet(filter3);
 
         TstUtils.assertTableEquals(testUpdate, filter1);
         TstUtils.assertTableEquals(testUpdate, filter2);
@@ -525,7 +525,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
         final Table chain3 = pool.submit(callable).get();
 
-        TableTools.showWithIndex(chain3);
+        showWithRowSet(chain3);
 
         TstUtils.assertTableEquals(tableStart, prevTable(chain1));
         TstUtils.assertTableEquals(tableStart, prevTable(chain2));
@@ -708,7 +708,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
         try {
             if (RefreshingTableTestCase.printTableUpdates) {
                 System.out.println("Input Table:\n");
-                TableTools.showWithIndex(table);
+                showWithRowSet(table);
             }
 
             for (numSteps.setValue(0); numSteps.intValue() < maxSteps; numSteps.increment()) {
@@ -975,9 +975,9 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
 
                 if (RefreshingTableTestCase.printTableUpdates) {
                     System.out.println("Input Table: (" + Objects.hashCode(table) + ")");
-                    TableTools.showWithIndex(table);
+                    showWithRowSet(table);
                     System.out.println("Standard Table: (" + Objects.hashCode(standard) + ")");
-                    TableTools.showWithIndex(standard);
+                    showWithRowSet(standard);
                     System.out.println("Verifying " + results.size() + " tables (size = " + standard.size() + ")");
                 }
 
@@ -989,7 +989,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
                                 checkTable.getAttribute("Type") +
                                 ", splitIndex=" + checkTable.getAttribute("SplitIndex") +
                                 ", hash=" + Objects.hashCode(checkTable));
-                        TableTools.showWithIndex(checkTable);
+                        showWithRowSet(checkTable);
                     }
                     TestCase.assertEquals("", diff);
                 }

@@ -105,7 +105,7 @@ public class TreeMapSource<T> extends AbstractColumnSource<T> {
     public synchronized T get(long index) {
         // If a test asks for a non-existent positive rowSet something is wrong.
         // We have to accept negative values, because e.g. a join may find no matching right key, in which case it
-        // has an empty redirection rowSet entry that just gets passed through to the inner column source as -1.
+        // has an empty row redirection entry that just gets passed through to the inner column source as -1.
         if (index >= 0 && !data.containsKey(index))
             throw new IllegalStateException("Asking for a non-existent key: " + index);
         return data.get(index);

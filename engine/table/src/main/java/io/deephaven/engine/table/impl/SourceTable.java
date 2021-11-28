@@ -47,7 +47,7 @@ public abstract class SourceTable extends RedefinableTable {
     final SourceTableComponentFactory componentFactory;
 
     /**
-     * A column source manager to maintain our column sources and define how our rowSet is updated.
+     * A column source manager to maintain our column sources and define how our RowSet is updated.
      */
     final ColumnSourceManager columnSourceManager;
 
@@ -67,12 +67,12 @@ public abstract class SourceTable extends RedefinableTable {
     private volatile boolean locationsInitialized;
 
     /**
-     * Whether we've done our initial location size fetches and initialized our rowSet.
+     * Whether we've done our initial location size fetches and initialized our RowSet.
      */
     private volatile boolean locationSizesInitialized;
 
     /**
-     * The rowSet that backs this table, shared with all child tables.
+     * The RowSet that backs this table, shared with all child tables.
      */
     private TrackingWritableRowSet rowSet;
 

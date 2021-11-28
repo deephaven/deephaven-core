@@ -11,7 +11,7 @@ import org.jetbrains.annotations.NotNull;
 public interface TupleExporter<TUPLE_TYPE> {
 
     /**
-     * Export a single element from the tuple, identified by its element rowSet, to the destination rowSet key of the
+     * Export a single element from the tuple, identified by its element rowSet, to the destination row key of the
      * supplied writable source.
      * <p>
      * For the empty tuple, this is unsupported.
@@ -23,7 +23,7 @@ public interface TupleExporter<TUPLE_TYPE> {
      * @param tuple The tuple to export an element from
      * @param elementIndex The element rowSet to export
      * @param writableSource The destination
-     * @param destinationIndexKey The destination rowSet key
+     * @param destinationIndexKey The destination row key
      */
     <ELEMENT_TYPE> void exportElement(TUPLE_TYPE tuple, int elementIndex,
             @NotNull WritableColumnSource<ELEMENT_TYPE> writableSource, long destinationIndexKey);

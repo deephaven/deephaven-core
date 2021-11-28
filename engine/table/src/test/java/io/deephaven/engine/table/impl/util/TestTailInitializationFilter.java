@@ -31,7 +31,7 @@ public class TestTailInitializationFilter extends RefreshingTableTestCase {
         final QueryTable input = TstUtils.testRefreshingTable(builder.build().toTracking(),
                 ColumnHolder.getDateTimeColumnHolder("Timestamp", false, data));
         final Table filtered = TailInitializationFilter.mostRecent(input, "Timestamp", "00:10:00");
-        TableTools.showWithIndex(filtered);
+        TableTools.showWithRowSet(filtered);
         assertEquals(44, filtered.size());
 
         final Table slice0_100_filtered = input.slice(0, 100).where("Timestamp >= '" + threshold1 + "'");

@@ -863,9 +863,9 @@ def showCommaDelimited(*args):
 
 
 @_passThrough
-def showWithIndex(*args):
+def showWithRowSet(*args):
     """
-    Prints the first few rows of a table to standard output, and also prints the details of the rowSet and record
+    Prints the first few rows of a table to standard output, and also prints the details of the row keys and row
      positions that provided the values.
     
     *Overload 1*  
@@ -898,7 +898,7 @@ def showWithIndex(*args):
       :param columns: (java.lang.String...) - varargs of column names to display
     """
     
-    return _java_type_.showWithIndex(*args)
+    return _java_type_.showWithRowSet(*args)
 
 
 @_passThrough

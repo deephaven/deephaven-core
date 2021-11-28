@@ -779,8 +779,8 @@ public class QueryTableTest extends QueryTableTestBase {
 
         Table geq1 = t.where("DV >= 1.0");
         Table geq1b = t.where("DV >= 1.0 && true");
-        TableTools.showWithIndex(geq1);
-        TableTools.showWithIndex(geq1b);
+        TableTools.showWithRowSet(geq1);
+        TableTools.showWithRowSet(geq1b);
 
         assertTableEquals(geq1b, geq1);
         assertTableEquals(TableTools.newTable(doubleCol("DV", 1.0, 2.0, Double.NaN, 6.0, Double.POSITIVE_INFINITY, 9.0),
@@ -799,8 +799,8 @@ public class QueryTableTest extends QueryTableTestBase {
 
         Table geq1 = t.where("LV >= 1");
         Table geq1b = t.where("LV >= 1 && true");
-        TableTools.showWithIndex(geq1);
-        TableTools.showWithIndex(geq1b);
+        TableTools.showWithRowSet(geq1);
+        TableTools.showWithRowSet(geq1b);
 
         assertTableEquals(geq1b, geq1);
         assertTableEquals(TableTools.newTable(longCol("LV", 1, 2, Long.MAX_VALUE, 6), intCol("IV", 1, 2, 4, 6)), geq1);
@@ -820,8 +820,8 @@ public class QueryTableTest extends QueryTableTestBase {
         Table geq1 = t.where("LV >= 1");
         Table geq1b = t.where("io.deephaven.util.compare.ObjectComparisons.geq(LV, java.math.BigInteger.ONE)");
         Table geq1c = t.where("LV >= java.math.BigInteger.ONE");
-        TableTools.showWithIndex(geq1);
-        TableTools.showWithIndex(geq1b);
+        TableTools.showWithRowSet(geq1);
+        TableTools.showWithRowSet(geq1b);
 
         assertTableEquals(geq1b, geq1);
         assertTableEquals(geq1c, geq1);
@@ -1182,7 +1182,7 @@ public class QueryTableTest extends QueryTableTestBase {
                 c("A", 3, 1, 2), c("B", "c", "a", "b"));
         final QueryTable left1 = testRefreshingTable(c("T", 1));
         final Table expected = right.naturalJoin(left1, "", "T");
-        TableTools.showWithIndex(expected);
+        TableTools.showWithRowSet(expected);
         final Table actual = left1.snapshot(right);
         assertTableEquals(expected, actual);
 
@@ -1763,7 +1763,7 @@ public class QueryTableTest extends QueryTableTestBase {
             addToTable(right, i(25, 75), c("A", 11, 34), c("B", "A", "Q"));
             right.notifyListeners(i(75), i(10, 20, 30), i(25));
         });
-        showWithIndex(snapshot, 50);
+        TableTools.showWithRowSet(snapshot, 50);
         assertEquals("", diff(snapshot, testRefreshingTable(
                 c("A", 3, 30, 1, 2, 50),
                 c("B", "c", "aa", "a", "b", "bc"),
@@ -1775,9 +1775,9 @@ public class QueryTableTest extends QueryTableTestBase {
             left2.notifyListeners(i(4, 5), i(), i());
         });
         System.out.println("Right Table:");
-        showWithIndex(right, 50);
+        TableTools.showWithRowSet(right, 50);
         System.out.println("Snapshot Table:");
-        showWithIndex(snapshot, 50);
+        TableTools.showWithRowSet(snapshot, 50);
 
         assertEquals("",
                 diff(snapshot, testRefreshingTable(c("A", 11, 50, 34), c("B", "A", "bc", "Q"), c("T", 8, 5, 8)), 10));
@@ -1872,7 +1872,7 @@ public class QueryTableTest extends QueryTableTestBase {
             addToTable(right, i(25, 75), c("A", 11, 34), c("B", "A", "Q"));
             right.notifyListeners(i(75), i(10, 20, 30), i(25));
         });
-        showWithIndex(snapshot, 50);
+        TableTools.showWithRowSet(snapshot, 50);
         assertEquals("", diff(snapshot, secondResult, 10));
         assertEquals(listener.getCount(), 0);
 
@@ -1910,7 +1910,7 @@ public class QueryTableTest extends QueryTableTestBase {
         assertTrue(listener.update.shifted().empty());
         listener.reset();
 
-        TableTools.showWithIndex(snapshot);
+        TableTools.showWithRowSet(snapshot);
         listener.close();
     }
 
@@ -1979,7 +1979,7 @@ public class QueryTableTest extends QueryTableTestBase {
                 });
                 if (modStamp) {
                     System.out.println("Snapshot Size: " + snapshot.size());
-                    showWithIndex(snapshot);
+                    TableTools.showWithRowSet(snapshot);
 
                     assertTableEquals(rightTable, snapshot.dropColumns("Stamp"));
 
@@ -2343,9 +2343,9 @@ public class QueryTableTest extends QueryTableTestBase {
         Assert.assertEquals("UngroupableColumnSources do not match!", "", diff2);
 
         final Table t4 = t1.update("Array=new int[]{19, 40}");
-        showWithIndex(t4);
+        TableTools.showWithRowSet(t4);
         final Table t5 = t4.ungroup();
-        showWithIndex(t5);
+        TableTools.showWithRowSet(t5);
 
         final Table t6 = table.update("Array=i%2==0?19:40");
         final String diff3 = diff(t5, t6, 10);
@@ -2416,7 +2416,7 @@ public class QueryTableTest extends QueryTableTestBase {
                         new ColumnHolder<>("Y", String[].class, String.class, false, new String[] {"f"}));
                 table.notifyListeners(i(bigIndex), i(), i());
             });
-            showWithIndex(t1);
+            TableTools.showWithRowSet(t1);
 
             if (errorListener.originalException() == null) {
                 fail("errorListener.originalException 1= null");
@@ -2463,7 +2463,7 @@ public class QueryTableTest extends QueryTableTestBase {
                         new String[] {"f", "g", "h", "i", "j", "k"}));
                 table.notifyListeners(i(9), i(), i());
             });
-            showWithIndex(t1);
+            TableTools.showWithRowSet(t1);
 
             assertEquals(Arrays.asList("X", "Y"), t1.getDefinition().getColumnNames());
             assertEquals(Arrays.asList(1, 1, 1, 2, 2, 3, 3, 3, 3, 3, 3),
@@ -2905,7 +2905,7 @@ public class QueryTableTest extends QueryTableTestBase {
             ((AbstractColumnSource<String>) symbol).setGroupToRange(gtr);
             final Table result =
                     t.whereIn(t.where("Truthiness=true"), "Symbol", "Timestamp");
-            TableTools.showWithIndex(result);
+            TableTools.showWithRowSet(result);
         });
     }
 

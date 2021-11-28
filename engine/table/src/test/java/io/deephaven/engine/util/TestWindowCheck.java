@@ -128,7 +128,7 @@ public class TestWindowCheck {
                 .computeLocked(() -> WindowCheck.addTimeWindowInternal(timeProvider, tableToCheck, "Timestamp",
                         DateTimeUtils.SECOND * 60, "InWindow", false));
 
-        TableTools.showWithIndex(windowed.first);
+        TableTools.showWithRowSet(windowed.first);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(windowed.second::run);
 

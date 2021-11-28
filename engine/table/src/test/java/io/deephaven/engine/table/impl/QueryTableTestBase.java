@@ -164,9 +164,9 @@ public abstract class QueryTableTestBase extends RefreshingTableTestCase {
         @Override
         public void show() {
             System.out.println(t1Name != null ? t1Name : t1);
-            TableTools.showWithIndex(t1);
+            TableTools.showWithRowSet(t1);
             System.out.println(t2Name != null ? t2Name : t2);
-            TableTools.showWithIndex(t2);
+            TableTools.showWithRowSet(t2);
         }
     }
 

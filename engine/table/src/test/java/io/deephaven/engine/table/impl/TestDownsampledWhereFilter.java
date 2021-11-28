@@ -35,8 +35,8 @@ public class TestDownsampledWhereFilter {
         Table standardWay =
                 table.updateView("TimeBin=upperBin(Timestamp, 60000000000)").lastBy("TimeBin").dropColumns("TimeBin");
 
-        TableTools.showWithIndex(downsampled);
-        TableTools.showWithIndex(standardWay);
+        TableTools.showWithRowSet(downsampled);
+        TableTools.showWithRowSet(standardWay);
 
         String diff = TableTools.diff(downsampled, standardWay, 10);
         TestCase.assertEquals("", diff);
@@ -59,8 +59,8 @@ public class TestDownsampledWhereFilter {
         Table standardWay =
                 table.updateView("TimeBin=lowerBin(Timestamp, 60000000000)").firstBy("TimeBin").dropColumns("TimeBin");
 
-        TableTools.showWithIndex(downsampled);
-        TableTools.showWithIndex(standardWay);
+        TableTools.showWithRowSet(downsampled);
+        TableTools.showWithRowSet(standardWay);
 
         String diff = TableTools.diff(downsampled, standardWay, 10);
         TestCase.assertEquals("", diff);

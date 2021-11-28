@@ -105,10 +105,10 @@ public class QueryTableSortTest extends QueryTableTestBase {
         final Table input =
                 newTable(c("C1", 2, 4, 2, 4), c("C2", '1', '1', '2', '2'), c("Witness", "a", "b", "c", "d"));
         System.out.println("Input:");
-        TableTools.showWithIndex(input);
+        showWithRowSet(input);
         result = input.sort("C1", "C2");
         System.out.println("Result:");
-        TableTools.showWithIndex(result);
+        showWithRowSet(result);
         assertEquals(Arrays.asList(2, 2, 4, 4), Arrays.asList(result.getColumn("C1").get(0, 4)));
         assertEquals(Arrays.asList('1', '2', '1', '2'), Arrays.asList(result.getColumn("C2").get(0, 4)));
         assertEquals(Arrays.asList("a", "c", "b", "d"), Arrays.asList(result.getColumn("Witness").get(0, 4)));
@@ -687,7 +687,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
         assertEquals(10, table.size());
 
         final Table symbolSorted = table.sort("Symbol");
-        TableTools.showWithIndex(symbolSorted);
+        showWithRowSet(symbolSorted);
 
         final TIntList sentinels = new TIntArrayList();
         symbolSorted.columnIterator("Sentinel").forEachRemaining(sentinel -> sentinels.add((int) sentinel));
@@ -695,13 +695,13 @@ public class QueryTableSortTest extends QueryTableTestBase {
         sentinels.clear();
 
         final Table tsSorted = table.sort("Timestamp");
-        TableTools.showWithIndex(tsSorted);
+        showWithRowSet(tsSorted);
         tsSorted.columnIterator("Sentinel").forEachRemaining(sentinel -> sentinels.add((int) sentinel));
         assertEquals("sentinels", new TIntArrayList(new int[] {0, 4, 8, 1, 5, 9, 2, 6, 3, 7}), sentinels);
         sentinels.clear();
 
         final Table boolSorted = table.sort("Truthiness");
-        TableTools.showWithIndex(boolSorted);
+        showWithRowSet(boolSorted);
         boolSorted.columnIterator("Sentinel").forEachRemaining(sentinel -> sentinels.add((int) sentinel));
         assertEquals("sentinels", new TIntArrayList(new int[] {2, 5, 8, 1, 4, 7, 0, 3, 6, 9}), sentinels);
         sentinels.clear();
@@ -720,7 +720,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
         refreshing.setRefreshing(true);
 
         final Table symbolSorted = refreshing.sort("Symbol");
-        TableTools.showWithIndex(symbolSorted);
+        showWithRowSet(symbolSorted);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             final RowSet added = table.getRowSet().subSetByPositionRange(4, 10);
@@ -728,7 +728,7 @@ public class QueryTableSortTest extends QueryTableTestBase {
             refreshing.notifyListeners(added, i(), i());
         });
 
-        TableTools.showWithIndex(symbolSorted);
+        showWithRowSet(symbolSorted);
 
         final TIntList sentinels = new TIntArrayList();
         symbolSorted.columnIterator("Sentinel").forEachRemaining(sentinel -> sentinels.add((int) sentinel));

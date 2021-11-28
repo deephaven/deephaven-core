@@ -58,9 +58,9 @@ public class QueryTableSelectUpdateTest {
         final QueryTable table = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
                 c("x", 1, 2, 3), c("y", 'a', 'b', 'c'));
 
-        showWithIndex(table);
+        TableTools.showWithRowSet(table);
         QueryTable table2 = (QueryTable) table.select("x = x * 2", "z = y");
-        showWithIndex(table2);
+        TableTools.showWithRowSet(table2);
 
         final Table table3 = table.update("q = i", "q = q + 1", "p = q+10");
         final ShiftObliviousListener table2Listener = base.newListenerWithGlobals(table2);
@@ -73,11 +73,11 @@ public class QueryTableSelectUpdateTest {
             addToTable(table, i(7, 9), c("x", 4, 5), c("y", 'd', 'e'));
             table.notifyListeners(i(7, 9), i(), i());
         });
-        showWithIndex(table);
-        showWithIndex(table2);
+        TableTools.showWithRowSet(table);
+        TableTools.showWithRowSet(table2);
         TestCase.assertEquals(5, table.size());
         TestCase.assertEquals(5, table2.size());
-        showWithIndex(table3);
+        TableTools.showWithRowSet(table3);
         TestCase.assertEquals(Arrays.asList(1, 2, 3, 4, 5), Arrays.asList(table3.getColumn("q").get(0, table3.size())));
         TestCase.assertEquals(Arrays.asList(11, 12, 13, 14, 15),
                 Arrays.asList(table3.getColumn("p").get(0, table3.size())));
@@ -331,9 +331,9 @@ public class QueryTableSelectUpdateTest {
             if (RefreshingTableTestCase.printTableUpdates) {
                 try {
                     System.out.println("Recomputed Value:");
-                    TableTools.showWithIndex(recomputedValue, 100);
+                    TableTools.showWithRowSet(recomputedValue, 100);
                     System.out.println("Iterative Value:");
-                    TableTools.showWithIndex(originalValue, 100);
+                    TableTools.showWithRowSet(originalValue, 100);
                 } catch (Exception ex) {
                     ex.printStackTrace();
                 }
@@ -389,9 +389,9 @@ public class QueryTableSelectUpdateTest {
                 checkInvert.forAllRowKeys(x -> recomputedBuilder.appendKey(recomputedValue.getRowSet().get(x)));
 
                 System.out.println("Original Sub Table: " + checkInvert);
-                TableTools.showWithIndex(originalValue.getSubTable(originalBuilder.build().toTracking()));
+                TableTools.showWithRowSet(originalValue.getSubTable(originalBuilder.build().toTracking()));
                 System.out.println("Recomputed Sub Table: " + checkInvert);
-                TableTools.showWithIndex(recomputedValue.getSubTable(recomputedBuilder.build().toTracking()));
+                TableTools.showWithRowSet(recomputedValue.getSubTable(recomputedBuilder.build().toTracking()));
             }
 
             Map<String, ? extends ColumnSource<?>> originalColumns = originalValue.getColumnSourceMap();
@@ -786,7 +786,7 @@ public class QueryTableSelectUpdateTest {
         final Table source = emptyTable(1000000).update("A=ii");
         final Table x = source.where("A%2==0");
         final Table xs = x.select();
-        TableTools.showWithIndex(xs);
+        TableTools.showWithRowSet(xs);
         assertTableEquals(x, xs);
         // overhead would be greater than 10%, so we expect a flat table
         TestCase.assertTrue(xs.isFlat());
@@ -795,7 +795,7 @@ public class QueryTableSelectUpdateTest {
         final Table x2 = source.where("A % 100 > 5");
         final Table x2s = x2.select();
         assertTableEquals(x2, x2s);
-        TableTools.showWithIndex(x2s);
+        TableTools.showWithRowSet(x2s);
         // overhead is only 5%, so we expect a pass-through rowSet
         TestCase.assertSame(x2s.getRowSet(), x2.getRowSet());
 
@@ -1073,7 +1073,7 @@ public class QueryTableSelectUpdateTest {
             addToTable(table, i(10, 20));
             table.notifyListeners(i(10, 20), i(), i());
         });
-        showWithIndex(table2);
+        TableTools.showWithRowSet(table2);
     }
 
     @Test
@@ -1104,10 +1104,10 @@ public class QueryTableSelectUpdateTest {
         final Table z = x.select("Q", "Q=Q");
         final Table w = x.select("Q=Q", "Q");
 
-        TableTools.showWithIndex(x);
-        TableTools.showWithIndex(y);
-        TableTools.showWithIndex(z);
-        TableTools.showWithIndex(w);
+        TableTools.showWithRowSet(x);
+        TableTools.showWithRowSet(y);
+        TableTools.showWithRowSet(z);
+        TableTools.showWithRowSet(w);
 
         TestCase.assertEquals("", TableTools.diff(x, y, 10));
         TestCase.assertEquals("", TableTools.diff(x, z, 10));

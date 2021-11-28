@@ -100,7 +100,7 @@ public class TestPartitionBy extends QueryTableTestBase {
 
         @Override
         public void show() {
-            showWithIndex(originalTable);
+            TableTools.showWithRowSet(originalTable);
 
         }
     }

@@ -140,7 +140,7 @@ public class QueryTableWhereTest {
         final Table table = TableTools.emptyTable(100000).update("Sym=ii%2==0 ? `AAPL` : `BANANA`", "II=ii").select();
         final Table filtered = table.where("Sym = (`AAPL`)");
         assertTableEquals(TableTools.emptyTable(50000).update("Sym=`AAPL`", "II=ii*2"), filtered);
-        TableTools.showWithIndex(filtered);
+        showWithRowSet(filtered);
     }
 
     @Test
@@ -212,7 +212,7 @@ public class QueryTableWhereTest {
         assertEquals(base.removed, i());
         assertEquals(base.modified, i());
 
-        TableTools.showWithIndex(table);
+        showWithRowSet(table);
         final Table usingStringArray = table.where(FilterOr.of(Filter.from("x%3 == 0", "y=='f'")));
         assertEquals("", diff(usingStringArray, testRefreshingTable(i(4, 6, 8).toTracking(),
                 c("x", 21, 3, 4), c("y", 'x', 'c', 'f')), 10));
@@ -351,7 +351,7 @@ public class QueryTableWhereTest {
             addToTable(setTable, i(7), c("X", "D"));
             setTable.notifyListeners(i(7), i(), i());
         });
-        showWithIndex(result);
+        showWithRowSet(result);
         assertEquals(5, result.size());
         assertEquals(asList("A", "B", "C", "D", "A"), asList((String[]) result.getColumn("X").getDirect()));
         assertEquals(1, resultInverse.size());
@@ -941,7 +941,7 @@ public class QueryTableWhereTest {
             array[ii] = DateTimeUtils.plus(startTime, 60_000_000_000L * ii);
         }
         final Table table = TableTools.newTable(col("DT", array));
-        TableTools.showWithIndex(table);
+        showWithRowSet(table);
 
         final Table sorted = table.sort("DT");
         final Table backwards = table.sort("DT");
@@ -963,19 +963,19 @@ public class QueryTableWhereTest {
             }
         }
         final Table table = TableTools.newTable(charCol("CH", array));
-        TableTools.showWithIndex(table);
+        showWithRowSet(table);
 
         final Table sorted = table.sort("CH");
         final Table backwards = table.sort("CH");
 
-        TableTools.showWithIndex(sorted);
+        showWithRowSet(sorted);
         System.out.println("Pivot: " + array[5]);
 
         final Table rangeFiltered = sorted.where("CH < '" + array[5] + "'");
         final Table standardFiltered = sorted.where("'" + array[5] + "' > CH");
 
-        TableTools.showWithIndex(rangeFiltered);
-        TableTools.showWithIndex(standardFiltered);
+        showWithRowSet(rangeFiltered);
+        showWithRowSet(standardFiltered);
         assertTableEquals(rangeFiltered, standardFiltered);
         assertTableEquals(backwards.where("CH < '" + array[5] + "'"), backwards.where("'" + array[5] + "' > CH"));
         assertTableEquals(backwards.where("CH <= '" + array[5] + "'"), backwards.where("'" + array[5] + "' >= CH"));

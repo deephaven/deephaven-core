@@ -40,7 +40,7 @@ public interface ColumnSourceManager {
     /**
      * Observe size changes in the previously added table locations, and update the managed column sources accordingly.
      * 
-     * @return The rowSet of added keys
+     * @return The RowSet of added keys
      */
     WritableRowSet refresh();
 

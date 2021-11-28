@@ -346,7 +346,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
         Assert.assertEquals(DateTime.class.getCanonicalName(), meta.getColumn("DataType").get(1));
 
         // make sure this doesn't crash
-        TableTools.showWithIndex(table);
+        showWithRowSet(table);
 
         // validate column1 (backed with DateTime objects)
         Assert.assertEquals(data[0], table.getColumn(0).get(0));
@@ -366,8 +366,8 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
     public void testSimpleDiffRegression() {
         final Table expected = emptyTable(1).update("Sym=`AXP`");
         final Table result = emptyTable(1).update("Sym=`BAC`");
-        TableTools.showWithIndex(expected);
-        TableTools.showWithIndex(result);
+        showWithRowSet(expected);
+        showWithRowSet(result);
         final String diffInfo = TableTools.diff(result, expected, 1);
         Assert.assertNotEquals(0, diffInfo.length());
     }
@@ -688,7 +688,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
         final QueryTable table2 = testRefreshingTable(i(0).toTracking(), c("Sentinel", 2));
         final Table result = TableTools.merge(table, table2);
 
-        TableTools.showWithIndex(result);
+        showWithRowSet(result);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(table, i(ONE_MILLION - 11), c("Sentinel", 1));
@@ -704,7 +704,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
             table.notifyListeners(update);
         });
 
-        TableTools.showWithIndex(result);
+        showWithRowSet(result);
     }
 
     @Test
@@ -755,7 +755,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
         final Table table1Filtered = table1.where("Sentinel == 1");
         final Table m2 = TableTools.merge(table1Filtered, table2);
 
-        TableTools.showWithIndex(m2);
+        showWithRowSet(m2);
 
         final Table expected = TableTools.newTable(intCol("Sentinel", 1, 3));
         assertTableEquals(expected, m2);
@@ -776,7 +776,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
             table1.notifyListeners(update);
         });
 
-        TableTools.showWithIndex(m2);
+        showWithRowSet(m2);
         assertTableEquals(expected, m2);
     }
 
@@ -857,7 +857,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
         Table table2 = testTable(i(2, 4, 8, 9).toTracking(), c("Key", "b", "c", "g", "h"))
                 .updateView("Sentinel=k");
         Table merged = TableTools.mergeSorted("Key", table1, table2);
-        TableTools.showWithIndex(merged);
+        showWithRowSet(merged);
 
         // noinspection ConstantConditions
         Table standardWay = TableTools.merge(table1, table2).sort("Key");
@@ -881,7 +881,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
         }
 
         Table merged = TableTools.mergeSorted("Key", tables);
-        TableTools.showWithIndex(merged);
+        showWithRowSet(merged);
 
         Table standardWay = TableTools.merge(tables).sort("Key");
 

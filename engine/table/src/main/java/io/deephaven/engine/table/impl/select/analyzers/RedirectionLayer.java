@@ -13,7 +13,7 @@ import org.apache.commons.lang3.mutable.MutableObject;
 import java.util.*;
 
 /**
- * A layer that maintains the redirection rowSet for future SelectColumnLayers.
+ * A layer that maintains the row redirection for future SelectColumnLayers.
  *
  * {@implNote This class is part of the Deephaven engine, and not intended for direct use.}
  */
@@ -45,7 +45,7 @@ final public class RedirectionLayer extends SelectAndViewAnalyzer {
     public void applyUpdate(TableUpdate upstream, RowSet toClear, UpdateHelper helper) {
         inner.applyUpdate(upstream, toClear, helper);
 
-        // we need to remove the removed values from our redirection rowSet, and add them to our free rowSet; so that
+        // we need to remove the removed values from our row redirection, and add them to our free rowSet; so that
         // updating tables will not consume more space over the course of a day for abandoned rows
         final RowSetBuilderRandom innerToFreeBuilder = RowSetFactory.builderRandom();
         upstream.removed().forAllRowKeys(key -> innerToFreeBuilder.addKey(rowRedirection.remove(key)));

@@ -27,9 +27,9 @@ public class FuzzerPrintListener extends InstrumentedTableUpdateListener {
         System.out.println("Description: " + description + ": " + table.size());
         System.out.println(upstream);
         if (rowCount > 0) {
-            TableTools.showWithIndex(table, rowCount);
+            TableTools.showWithRowSet(table, rowCount);
             System.out.println("Previous: " + table.getRowSet().prevCopy().size());
-            TableTools.showWithIndex(prevTable(table), rowCount);
+            TableTools.showWithRowSet(prevTable(table), rowCount);
         }
     }
 

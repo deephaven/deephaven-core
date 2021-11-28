@@ -61,7 +61,7 @@ public class PrintListener extends InstrumentedTableUpdateListener {
                 + ", Removed rows: " + upstream.removed().size() + ", Modified Rows: " + upstream.modified().size()
                 + ", Shifted Rows: " + upstream.shifted().getEffectiveSize() + "\nUpdate:" + upstream);
         if (rowCount > 0) {
-            TableTools.showWithIndex(table, rowCount);
+            TableTools.showWithRowSet(table, rowCount);
         }
     }
 

@@ -64,7 +64,7 @@ class StaticChunkedCrossJoinStateManager
          * Invoke a callback that will allow external trackers to record changes to states in build or probe calls.
          *
          * @param stateSlot The state slot (in main table space)
-         * @param index     The probed rowSet key
+         * @param index     The probed row key
          */
         void invoke(long stateSlot, long index);
     }
@@ -270,7 +270,7 @@ class StaticChunkedCrossJoinStateManager
             try (final ProbeContext pc = makeProbeContext(leftKeys, leftTable.size())) {
                 decorationProbe(pc, leftTable.getRowSet(), leftKeys, (slot, index) -> {
                     final long regionStart = index << getNumShiftBits();
-                    final RowSet rightRowSet = getRightIndex(slot);
+                    final RowSet rightRowSet = getRightRowSet(slot);
                     if (rightRowSet.isNonempty()) {
                         leftIndexToSlot.put(index, slot);
                         resultIndex.addRange(regionStart, regionStart + rightRowSet.size() - 1);
@@ -326,7 +326,7 @@ class StaticChunkedCrossJoinStateManager
         final RowSetBuilderSequential resultIndex = RowSetFactory.builderSequential();
         leftTable.getRowSet().forAllRowKeys(ii -> {
             final long regionStart = ii << getNumShiftBits();
-            final RowSet rightRowSet = getRightIndexFromLeftIndex(ii);
+            final RowSet rightRowSet = getRightRowSetFromLeftIndex(ii);
             if (rightRowSet.isNonempty()) {
                 resultIndex.appendRange(regionStart, regionStart + rightRowSet.size() - 1);
             }
@@ -1622,7 +1622,7 @@ class StaticChunkedCrossJoinStateManager
     }
 
     // region extraction functions
-    public TrackingRowSet getRightIndex(long slot) {
+    public TrackingRowSet getRightRowSet(long slot) {
         TrackingRowSet retVal;
         if (isOverflowLocation(slot)) {
             retVal = overflowRightRowSetSource.get(hashLocationToOverflowLocation(slot));
@@ -1636,18 +1636,18 @@ class StaticChunkedCrossJoinStateManager
     }
 
     @Override
-    public TrackingRowSet getRightIndexFromLeftIndex(long leftIndex) {
+    public TrackingRowSet getRightRowSetFromLeftIndex(long leftIndex) {
         long slot = leftIndexToSlot.get(leftIndex);
         if (slot == RowSequence.NULL_ROW_KEY) {
             return RowSetFactory.empty().toTracking();
         }
-        return getRightIndex(slot);
+        return getRightRowSet(slot);
     }
 
     @Override
-    public TrackingRowSet getRightIndexFromPrevLeftIndex(long leftIndex) {
+    public TrackingRowSet getRightRowSetFromPrevLeftIndex(long leftIndex) {
         // static has no prev
-        return getRightIndexFromLeftIndex(leftIndex);
+        return getRightRowSetFromLeftIndex(leftIndex);
     }
 
     private void validateKeySpaceSize(final QueryTable leftTable) {

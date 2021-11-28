@@ -22,7 +22,7 @@ public class TestColumnsToRowsTransform extends RefreshingTableTestCase {
         final Table in = TableTools.newTable(stringCol("Sym", "AAPL", "SPY"), intCol("Val1", 1, 2),
                 intCol("Val2", 3, 4), intCol("Val3", 5, 6));
         final Table out = ColumnsToRowsTransform.columnsToRows(in, "Name", "Value", "Val1", "Val2");
-        TableTools.showWithIndex(out);
+        showWithRowSet(out);
 
         final Table ex1 =
                 TableTools.newTable(stringCol("Sym", "AAPL", "AAPL", "SPY", "SPY"), intCol("Val3", 5, 5, 6, 6),
@@ -30,7 +30,7 @@ public class TestColumnsToRowsTransform extends RefreshingTableTestCase {
         assertTableEquals(ex1, out);
 
         final Table out2 = ColumnsToRowsTransform.columnsToRows(in, "Fribble", "Value", "Val1", "Val2", "Val3");
-        TableTools.showWithIndex(out2);
+        showWithRowSet(out2);
         final Table ex2 = TableTools.newTable(stringCol("Sym", "AAPL", "AAPL", "AAPL", "SPY", "SPY", "SPY"),
                 stringCol("Fribble", "Val1", "Val2", "Val3", "Val1", "Val2", "Val3"),
                 intCol("Value", 1, 3, 5, 2, 4, 6));
@@ -38,7 +38,7 @@ public class TestColumnsToRowsTransform extends RefreshingTableTestCase {
 
         final Table out3 = ColumnsToRowsTransform.columnsToRows(in, "Label", "Value",
                 new String[] {"First", "Second", "Third"}, new String[] {"Val1", "Val2", "Val3"});
-        TableTools.showWithIndex(out3);
+        showWithRowSet(out3);
 
         final int[] expected = {1, 3, 5, 2, 4, 6};
         final Table ex3 = TableTools.newTable(stringCol("Sym", "AAPL", "AAPL", "AAPL", "SPY", "SPY", "SPY"),
@@ -82,10 +82,10 @@ public class TestColumnsToRowsTransform extends RefreshingTableTestCase {
         TableTools.show(joined);
 
         final Table out = ColumnsToRowsTransform.columnsToRows(joined, "Name", "Value", "V1", "V2");
-        TableTools.showWithIndex(out);
+        showWithRowSet(out);
 
         final Table filtered = out.where("Sentinel=101 && Name=`V1` || Sentinel=102 && Name=`V2`");
-        TableTools.showWithIndex(filtered);
+        showWithRowSet(filtered);
 
         // noinspection unchecked
         final ColumnSource<Integer> valueSource = filtered.getColumnSource("Value");

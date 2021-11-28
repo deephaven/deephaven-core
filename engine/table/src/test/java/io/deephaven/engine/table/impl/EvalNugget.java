@@ -19,6 +19,8 @@ import java.io.StringWriter;
 import java.util.EnumSet;
 import java.util.function.Supplier;
 
+import static io.deephaven.engine.util.TableTools.showWithRowSet;
+
 public abstract class EvalNugget implements EvalNuggetInterface {
     public static EvalNugget from(Supplier<Table> makeTable) {
         return new EvalNugget() {
@@ -116,7 +118,7 @@ public abstract class EvalNugget implements EvalNuggetInterface {
 
     void showResult(String label, Table e) {
         System.out.println(label);
-        TableTools.showWithIndex(e, 100);
+        showWithRowSet(e, 100);
     }
 
     void checkDifferences(String msg, Table recomputed) {
@@ -152,9 +154,9 @@ public abstract class EvalNugget implements EvalNuggetInterface {
 
             System.out.println("Recomputed Table Differs:\n" + diffPair.getFirst() + "\nRecomputed Table Rows ["
                     + firstRow + ", " + lastRow + "]:");
-            TableTools.showWithIndex(recomputedForComparison, firstRow, lastRow + 1);
+            showWithRowSet(recomputedForComparison, firstRow, lastRow + 1);
             System.out.println("Incremental Table Rows [" + firstRow + ", " + lastRow + "]:");
-            TableTools.showWithIndex(originalForComparison, firstRow, lastRow + 1);
+            showWithRowSet(originalForComparison, firstRow, lastRow + 1);
 
             if (recomputedForComparison != recomputedTable) {
                 showResult("Recomputed Table (unmodified):", recomputedTable);

@@ -94,7 +94,7 @@ public class SortListener extends BaseTable.ListenerImpl {
     //
     // Allocate an array of size (removed.size() + modified.size()) and fill it with indexes (in the output
     // coordinate space) of the 'removed' and 'reordered-modified' sets. We obtain these indexes by doing a reverse
-    // mapping lookup. Call this array 'removedOutputKeys'. Note that we must also maintain our redirection rowSet
+    // mapping lookup. Call this array 'removedOutputKeys'. Note that we must also maintain our row redirection
     // states.
     //
     // == Initialization for the added set ==

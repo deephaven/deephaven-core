@@ -10,7 +10,7 @@ import io.deephaven.engine.table.impl.util.WritableRowRedirection;
  */
 public class JoinRowRedirection {
     /**
-     * A utility function that makes a redirection rowSet based on the type determined by the JoinControl.
+     * A utility function that makes a row redirection based on the type determined by the JoinControl.
      *
      * @param control the JoinControl that determines the redirection type
      * @param leftTable the left table of the join, which the join control examines and determines our result size

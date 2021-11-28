@@ -18,7 +18,7 @@ public class TestListenerFailure extends RefreshingTableTestCase {
         final Table updated =
                 UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> source.update("UC=Str.toUpperCase()"));
 
-        TableTools.showWithIndex(updated);
+        TableTools.showWithRowSet(updated);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(source, i(2, 3), TstUtils.c("Str", "C", "D"));
@@ -77,7 +77,7 @@ public class TestListenerFailure extends RefreshingTableTestCase {
         final QueryTable viewed = (QueryTable) source.updateView("UC=Str.toUpperCase()");
         final Table filtered = UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> viewed.where("UC=`A`"));
 
-        TableTools.showWithIndex(filtered);
+        TableTools.showWithRowSet(filtered);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(source, i(2, 3), TstUtils.c("Str", "C", "D"));

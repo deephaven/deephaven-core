@@ -154,7 +154,7 @@ public class TestRowSetIndexer extends RefreshingTableTestCase {
 
         if (RefreshingTableTestCase.printTableUpdates) {
             System.out.println("Initial QueryTable: ");
-            TableTools.showWithIndex(queryTable);
+            TableTools.showWithRowSet(queryTable);
         }
         for (numSteps.setValue(0); numSteps.intValue() < maxSteps; numSteps.increment()) {
             RefreshingTableTestCase.simulateShiftAwareStep("step == " + numSteps.intValue(), size, random, queryTable,

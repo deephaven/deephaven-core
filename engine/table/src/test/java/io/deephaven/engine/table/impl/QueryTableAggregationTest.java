@@ -742,7 +742,7 @@ public class QueryTableAggregationTest {
                         new BooleanGenerator(),
                         new IntGenerator(0, 100),
                         new DoubleGenerator(0, 100)));
-        TableTools.showWithIndex(table);
+        TableTools.showWithRowSet(table);
 
         final Set<String> firstSet = new HashSet<>();
         final Set<String> skSet = new HashSet<>();
@@ -1268,7 +1268,7 @@ public class QueryTableAggregationTest {
                 new BigDecimalGenerator(0.1)));
 
         if (RefreshingTableTestCase.printTableUpdates) {
-            TableTools.showWithIndex(queryTable);
+            TableTools.showWithRowSet(queryTable);
         }
 
         final Table result = queryTable.dropColumns("Sym").sumBy();
@@ -1343,7 +1343,7 @@ public class QueryTableAggregationTest {
                 new BooleanGenerator(0.4, 0.1)));
 
         if (RefreshingTableTestCase.printTableUpdates) {
-            TableTools.showWithIndex(queryTable);
+            TableTools.showWithRowSet(queryTable);
         }
 
         final Table result = queryTable.minBy();
@@ -1410,7 +1410,7 @@ public class QueryTableAggregationTest {
                 new BigDecimalGenerator(0.1)));
 
         if (RefreshingTableTestCase.printTableUpdates) {
-            TableTools.showWithIndex(queryTable);
+            TableTools.showWithRowSet(queryTable);
         }
 
         final Table result = queryTable.dropColumns("Sym").avgBy();
@@ -1465,7 +1465,7 @@ public class QueryTableAggregationTest {
                 new BigDecimalGenerator(0.1)));
 
         if (RefreshingTableTestCase.printTableUpdates) {
-            TableTools.showWithIndex(queryTable);
+            TableTools.showWithRowSet(queryTable);
         }
 
         final Table result = queryTable.dropColumns("Sym").varBy();
@@ -1478,7 +1478,7 @@ public class QueryTableAggregationTest {
         final Table resultKeyed = queryTable.varBy("Sym");
         final Table updateKeyedResult = queryTable.groupBy("Sym").update(Selectable.from(updates));
 
-        TableTools.showWithIndex(queryTable.where("Sym=`mjku`"));
+        TableTools.showWithRowSet(queryTable.where("Sym=`mjku`"));
         assertTableEquals(updateKeyedResult, resultKeyed, TableDiff.DiffItems.DoublesExact,
                 TableDiff.DiffItems.DoubleFraction);
     }
@@ -1515,7 +1515,7 @@ public class QueryTableAggregationTest {
                 new BigDecimalGenerator(0.1)));
 
         if (RefreshingTableTestCase.printTableUpdates) {
-            TableTools.showWithIndex(queryTable);
+            TableTools.showWithRowSet(queryTable);
         }
 
         final Table result = queryTable.dropColumns("Sym").stdBy();
@@ -1590,7 +1590,7 @@ public class QueryTableAggregationTest {
                 new BooleanGenerator(0.5, 0.1)));
 
         if (RefreshingTableTestCase.printTableUpdates) {
-            TableTools.showWithIndex(queryTable);
+            TableTools.showWithRowSet(queryTable);
         }
 
         final EvalNugget[] en = new EvalNugget[] {
@@ -1975,7 +1975,7 @@ public class QueryTableAggregationTest {
                         new TstUtils.BigDecimalGenerator()));
 
         if (RefreshingTableTestCase.printTableUpdates) {
-            TableTools.showWithIndex(queryTable);
+            TableTools.showWithRowSet(queryTable);
         }
 
         final String integerCmp =
@@ -2017,18 +2017,18 @@ public class QueryTableAggregationTest {
                     @Override
                     public void show() {
                         System.out.println("Big vs Double (var):");
-                        TableTools.showWithIndex(bigVsDoubleVar);
+                        TableTools.showWithRowSet(bigVsDoubleVar);
                         System.out.println("Double Comparison (var)");
-                        TableTools.showWithIndex(doubleComparisonVar);
+                        TableTools.showWithRowSet(doubleComparisonVar);
                     }
                 },
                 new TableComparator(doubleComparisonStd, trueForSyms) {
                     @Override
                     public void show() {
                         System.out.println("Big vs Double (std):");
-                        TableTools.showWithIndex(bigVsDoubleStd);
+                        TableTools.showWithRowSet(bigVsDoubleStd);
                         System.out.println("Double Comparison (std)");
-                        TableTools.showWithIndex(doubleComparisonStd);
+                        TableTools.showWithRowSet(doubleComparisonStd);
                     }
                 }
         };
@@ -2094,7 +2094,7 @@ public class QueryTableAggregationTest {
 
         if (RefreshingTableTestCase.printTableUpdates) {
             System.out.println("Original Source Table:");
-            TableTools.showWithIndex(queryTable);
+            TableTools.showWithRowSet(queryTable);
         }
 
 
@@ -2155,7 +2155,7 @@ public class QueryTableAggregationTest {
 
         if (RefreshingTableTestCase.printTableUpdates) {
             System.out.println("Original Source Table:");
-            TableTools.showWithIndex(queryTable);
+            TableTools.showWithRowSet(queryTable);
         }
 
 
@@ -2256,7 +2256,7 @@ public class QueryTableAggregationTest {
                         new DoubleGenerator(Double.MIN_NORMAL, Double.MIN_NORMAL, 0.05, 0.05),
                         new FloatGenerator(Float.MIN_NORMAL, Float.MIN_NORMAL, 0.05, 0.05)));
         if (RefreshingTableTestCase.printTableUpdates) {
-            showWithIndex(queryTable);
+            TableTools.showWithRowSet(queryTable);
         }
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
                 EvalNugget.from(() -> queryTable.maxBy("Sym").sort("Sym")),
@@ -2309,7 +2309,7 @@ public class QueryTableAggregationTest {
                         new IntGenerator(10, 100, 0.1),
                         new SetGenerator<>(10.1, 20.1, 30.1)));
         if (RefreshingTableTestCase.printTableUpdates) {
-            showWithIndex(queryTable);
+            TableTools.showWithRowSet(queryTable);
         }
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
                 new EvalNugget() {
@@ -2434,7 +2434,7 @@ public class QueryTableAggregationTest {
                         new FloatGenerator(0, 100.0f)));
         final Table withoutFloats = queryTable.dropColumns("floatCol");
         if (RefreshingTableTestCase.printTableUpdates) {
-            showWithIndex(queryTable);
+            TableTools.showWithRowSet(queryTable);
         }
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
                 EvalNugget.from(() -> queryTable.dropColumns("Sym").medianBy()),
@@ -2468,10 +2468,10 @@ public class QueryTableAggregationTest {
                         new FloatGenerator(0, 100.0f)));
 
         final Table aggregated = ApproximatePercentile.approximatePercentile(queryTable.dropColumns("Sym"), 0.99);
-        TableTools.showWithIndex(aggregated);
+        TableTools.showWithRowSet(aggregated);
 
         final Table aggregatedBySym = ApproximatePercentile.approximatePercentile(queryTable, 0.99, "Sym");
-        TableTools.showWithIndex(aggregatedBySym);
+        TableTools.showWithRowSet(aggregatedBySym);
 
         checkTableP99(queryTable, aggregated);
         for (final String sym : new String[] {"a", "b", "c", "d"}) {
@@ -2496,10 +2496,10 @@ public class QueryTableAggregationTest {
                         .add(0.99, "FP99");
         final Table aggregated =
                 ApproximatePercentile.approximatePercentiles(queryTable.dropColumns("Sym"), definition);
-        TableTools.showWithIndex(aggregated);
+        TableTools.showWithRowSet(aggregated);
 
         final Table aggregatedBySym = ApproximatePercentile.approximatePercentiles(queryTable, definition, "Sym");
-        TableTools.showWithIndex(aggregatedBySym);
+        TableTools.showWithRowSet(aggregatedBySym);
 
         checkTableComboPercentiles(queryTable, aggregated);
         for (final String sym : new String[] {"a", "b", "c", "d"}) {
@@ -2524,11 +2524,11 @@ public class QueryTableAggregationTest {
                         .setCompression(33);
         final Table aggregated =
                 ApproximatePercentile.approximatePercentiles(queryTable.dropColumns("Sym"), definition);
-        TableTools.showWithIndex(aggregated);
+        TableTools.showWithRowSet(aggregated);
 
         final Table aggregatedBySym =
                 ApproximatePercentile.approximatePercentiles(queryTable, definition.setCompression(100), "Sym");
-        TableTools.showWithIndex(aggregatedBySym);
+        TableTools.showWithRowSet(aggregatedBySym);
 
         final Table accumulated = aggregatedBySym.dropColumns("Sym").groupBy()
                 .update("Digest=io.deephaven.engine.table.impl.by.ApproximatePercentile.accumulateDigests(Digest)")
@@ -2750,15 +2750,15 @@ public class QueryTableAggregationTest {
                         "MyBigDecimal=java.math.BigDecimal.TEN.add(java.math.BigDecimal.valueOf(i))",
                         "MyBigInteger=java.math.BigInteger.ZERO.add(java.math.BigInteger.valueOf(i))");
 
-        TableTools.showWithIndex(table.getMeta());
-        TableTools.showWithIndex(table);
+        TableTools.showWithRowSet(table.getMeta());
+        TableTools.showWithRowSet(table);
 
         final Table median = table.medianBy();
         final Table percentile10 = by(table, new PercentileBySpecImpl(0.1));
         final Table percentile90 = by(table, new PercentileBySpecImpl(0.9));
-        TableTools.showWithIndex(median);
-        TableTools.showWithIndex(percentile10);
-        TableTools.showWithIndex(percentile90);
+        TableTools.showWithRowSet(median);
+        TableTools.showWithRowSet(percentile10);
+        TableTools.showWithRowSet(percentile90);
 
         final Map<String, Object[]> expectedResults = new HashMap<>();
         expectedResults.put("Timestamp",
@@ -3138,7 +3138,7 @@ public class QueryTableAggregationTest {
 
         final Table result = randomValues.medianBy("MyInt");
 
-        TableTools.showWithIndex(result);
+        TableTools.showWithRowSet(result);
 
         QueryScope.addParam("ids5942_scale", null);
     }
@@ -3154,7 +3154,7 @@ public class QueryTableAggregationTest {
 
         final Table result = randomValues.headBy(10, "MyInt");
 
-        TableTools.showWithIndex(result);
+        TableTools.showWithRowSet(result);
 
         QueryScope.addParam("ids5944_scale", null);
     }
@@ -3176,16 +3176,16 @@ public class QueryTableAggregationTest {
 
         assertTableEquals(newTable(col("Sentinel", 0)), last);
 
-        TableTools.showWithIndex(reversedFlat);
-        TableTools.showWithIndex(last);
+        TableTools.showWithRowSet(reversedFlat);
+        TableTools.showWithRowSet(last);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(table, i(2), intCol("Sentinel", 2));
             table.notifyListeners(i(2), i(), i());
         });
 
-        TableTools.showWithIndex(reversedFlat);
-        TableTools.showWithIndex(last);
+        TableTools.showWithRowSet(reversedFlat);
+        TableTools.showWithRowSet(last);
 
         assertTableEquals(newTable(col("Sentinel", 0)), last);
     }
@@ -3200,8 +3200,8 @@ public class QueryTableAggregationTest {
         final Table lastResult = table.lastBy("Bucket");
 
         System.out.println("Initial Result");
-        TableTools.showWithIndex(firstResult);
-        TableTools.showWithIndex(lastResult);
+        TableTools.showWithRowSet(firstResult);
+        TableTools.showWithRowSet(lastResult);
 
         TestCase.assertEquals(2, firstResult.size());
         TestCase.assertEquals(2, lastResult.size());
@@ -3218,8 +3218,8 @@ public class QueryTableAggregationTest {
         });
 
         System.out.println("First C");
-        TableTools.showWithIndex(firstResult);
-        TableTools.showWithIndex(lastResult);
+        TableTools.showWithRowSet(firstResult);
+        TableTools.showWithRowSet(lastResult);
 
         TestCase.assertEquals(1, firstResult.getColumn("Sentinel").getInt(0));
         TestCase.assertEquals(2, firstResult.getColumn("Sentinel").getInt(1));
@@ -3237,8 +3237,8 @@ public class QueryTableAggregationTest {
         });
 
         System.out.println("Fill in with C");
-        TableTools.showWithIndex(firstResult);
-        TableTools.showWithIndex(lastResult);
+        TableTools.showWithRowSet(firstResult);
+        TableTools.showWithRowSet(lastResult);
 
         TestCase.assertEquals(1, firstResult.getColumn("Sentinel").getInt(0));
         TestCase.assertEquals(2, firstResult.getColumn("Sentinel").getInt(1));
@@ -3265,11 +3265,11 @@ public class QueryTableAggregationTest {
         });
 
         System.out.println("Shift Complete");
-        TableTools.showWithIndex(table);
+        TableTools.showWithRowSet(table);
         System.out.println("First");
-        TableTools.showWithIndex(firstResult);
+        TableTools.showWithRowSet(firstResult);
         System.out.println("Last");
-        TableTools.showWithIndex(lastResult);
+        TableTools.showWithRowSet(lastResult);
 
         TestCase.assertEquals(1, firstResult.getColumn("Sentinel").getInt(0));
         TestCase.assertEquals(2, firstResult.getColumn("Sentinel").getInt(1));
@@ -3328,11 +3328,11 @@ public class QueryTableAggregationTest {
                 cG("Key", "a", "b", "c"), c("I", 2, 4, 6));
         final IncrementalReleaseFilter filter = new IncrementalReleaseFilter(0, 10);
         final Table byTable = table.where(filter).groupBy("Key");
-        TableTools.showWithIndex(byTable);
+        TableTools.showWithRowSet(byTable);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(filter::run);
 
-        TableTools.showWithIndex(byTable);
+        TableTools.showWithRowSet(byTable);
 
         assertTableEquals(table, byTable.ungroup());
     }
@@ -3475,7 +3475,7 @@ public class QueryTableAggregationTest {
         exposedLastBy.listenForUpdates(printListener);
 
         System.out.println("Starting:");
-        TableTools.showWithIndex(exposedLastBy);
+        TableTools.showWithRowSet(exposedLastBy);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(source, i(20), col("Key", "A"), col("Sentinel", 10));
@@ -3492,7 +3492,7 @@ public class QueryTableAggregationTest {
         });
 
         System.out.println("Shifted:");
-        TableTools.showWithIndex(exposedLastBy);
+        TableTools.showWithRowSet(exposedLastBy);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(source, i(20), col("Key", "A"), intCol("Sentinel", 20));
@@ -3500,7 +3500,7 @@ public class QueryTableAggregationTest {
         });
 
         System.out.println("Final:");
-        TableTools.showWithIndex(exposedLastBy);
+        TableTools.showWithRowSet(exposedLastBy);
 
         validator.validate();
     }

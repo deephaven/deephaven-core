@@ -43,16 +43,16 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
 
     /**
      * Check if this region can expose an alternate form as paired regions of {@code long} keys and {@code DATA_TYPE}
-     * values covering all of its rowSet keys in {@code keysToVisit}.
+     * values covering all of its row keys in {@code keysToVisit}.
      *
-     * <p>Both alternate regions must use the same or smaller rowSet key space as this one. Indices fetched from the
+     * <p>Both alternate regions must use the same or smaller row key space as this one. Indices fetched from the
      * keys region must represent valid element indices in the values region. Values regions must support
      * {@link #gatherDictionaryValuesIndex(RowSet.SearchIterator, RowSequence.Iterator, RowSetBuilderSequential)}.
      *
      * <p>Use {@link #getDictionaryKeysRegion()} to access the region of keys and {@link #getDictionaryValuesRegion()}
      * to access the region of values.
      *
-     * @param keysToVisit Iterator positioned at the first relevant rowSet key belonging to this region.
+     * @param keysToVisit Iterator positioned at the first relevant row key belonging to this region.
      *                    Will be advanced to <em>after</em> this region if {@code true} is returned.
      *                    No guarantee is made if {@code false} is returned.
      * @return A {@link RegionVisitResult} specifying {@code FAILED} if this region cannot supply a dictionary,
@@ -68,12 +68,12 @@ public interface ColumnRegionObject<DATA_TYPE, ATTR extends Any> extends ColumnR
      * Gathers
      *
      * @param keysToVisit       A search iterator over the enclosing table address space (which must have the same
-     *                          regions at the same masks), positioned at a rowSet key in this region. Used to
+     *                          regions at the same masks), positioned at a row key in this region. Used to
      *                          identify regions to visit. Should be advanced to after this region as a side-effect.
-     * @param knownKeys         An iterator over the previously-known rowSet keys, positioned at the first known key in
+     * @param knownKeys         An iterator over the previously-known row keys, positioned at the first known key in
      *                          this region, or after the region's maximum key if no keys are known. Should be advanced
      *                          to after this region as a side effect.
-     * @param sequentialBuilder Output builder; implementations should append ranges for rowSet keys not found in
+     * @param sequentialBuilder Output builder; implementations should append ranges for row keys not found in
      *                          {@code knownKeys}
      * @throws UnsupportedOperationException If this region is incapable of gathering its dictionary values rowSet
      * @return Whether {@code keysToVisit} has been exhausted

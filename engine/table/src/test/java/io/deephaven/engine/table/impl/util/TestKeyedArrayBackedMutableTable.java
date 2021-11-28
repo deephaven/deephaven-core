@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 
+import static io.deephaven.engine.util.TableTools.showWithRowSet;
 import static io.deephaven.engine.util.TableTools.stringCol;
 import static io.deephaven.engine.table.impl.TstUtils.assertTableEquals;
 
@@ -58,14 +59,14 @@ public class TestKeyedArrayBackedMutableTable {
 
         final Table input4 = TableTools.newTable(stringCol("Name", "George"), stringCol("Employer", "Cogswell"));
         handleDelayedRefresh(kabut, () -> mutableInputTable.add(input4));
-        TableTools.showWithIndex(kabut);
+        showWithRowSet(kabut);
 
         assertTableEquals(TableTools.merge(input, input3, input4).lastBy("Name"), kabut);
 
         final Table input5 =
                 TableTools.newTable(stringCol("Name", "George"), stringCol("Employer", "Spacely Sprockets"));
         handleDelayedRefresh(kabut, () -> mutableInputTable.add(input5));
-        TableTools.showWithIndex(kabut);
+        showWithRowSet(kabut);
 
         assertTableEquals(TableTools.merge(input, input3, input4, input5).lastBy("Name"), kabut);
 
@@ -77,13 +78,13 @@ public class TestKeyedArrayBackedMutableTable {
         final long sizeAfterDelete = kabut.size();
         TestCase.assertEquals(sizeBeforeDelete - 1, sizeAfterDelete);
 
-        TableTools.showWithIndex(kabut);
+        showWithRowSet(kabut);
 
         final Table expected = TableTools.merge(
                 TableTools.merge(input, input3, input4, input5).update("Deleted=false"),
                 delete1.update("Employer=(String)null", "Deleted=true"))
                 .lastBy("Name").where("Deleted=false").dropColumns("Deleted");
-        TableTools.showWithIndex(expected);
+        showWithRowSet(expected);
 
         assertTableEquals(expected, kabut);
     }

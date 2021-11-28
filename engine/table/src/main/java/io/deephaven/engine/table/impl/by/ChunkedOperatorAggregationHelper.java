@@ -901,27 +901,27 @@ public class ChunkedOperatorAggregationHelper {
         private static class ModifySplitResult implements SafeCloseable {
 
             /**
-             * This is a partition of same-slot modifies for rowSet keys that were not shifted. Needed for modifyChunk
+             * This is a partition of same-slot modifies for row keys that were not shifted. Needed for modifyChunk
              * of input-modified operators that require indices, since they handle the shifted same-slot modifies in
              * shiftChunk.
              */
             @Nullable
             private final RowSet unshiftedSameSlotIndices;
             /**
-             * This is all of same-slot modified, with rowSet keys in pre-shift space. Needed for modifyChunk of
+             * This is all of same-slot modified, with row keys in pre-shift space. Needed for modifyChunk of
              * input-modified operators that don't require indices.
              */
             @Nullable
             private final RowSet sameSlotIndicesPreShift;
             /**
-             * This is all of same-slot modified, with rowSet keys in post-shift space. Needed for modifyChunk of
+             * This is all of same-slot modified, with row keys in post-shift space. Needed for modifyChunk of
              * input-modified operators that don't require indices, and for modifyIndices of operators that require
              * indices but don't have any inputs modified.
              */
             @Nullable
             private final RowSet sameSlotIndicesPostShift;
             /**
-             * This is all key change modifies, with rowSet keys in post-shift space. Needed for addChunk to process key
+             * This is all key change modifies, with row keys in post-shift space. Needed for addChunk to process key
              * changes for all operators.
              */
             @NotNull

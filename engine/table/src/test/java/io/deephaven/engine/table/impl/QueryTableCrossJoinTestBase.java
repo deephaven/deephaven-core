@@ -343,11 +343,11 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         final Table chunkedCrossJoin = left.join(right, "sharedKey", numRightBitsToReserve);
         if (RefreshingTableTestCase.printTableUpdates) {
             System.out.println("Left Table (" + left.size() + " rows): ");
-            TableTools.showWithIndex(left, 100);
+            TableTools.showWithRowSet(left, 100);
             System.out.println("\nRight Table (" + right.size() + " rows): ");
-            TableTools.showWithIndex(right, 100);
+            TableTools.showWithRowSet(right, 100);
             System.out.println("\nCross Join Table (" + chunkedCrossJoin.size() + " rows): ");
-            TableTools.showWithIndex(chunkedCrossJoin, 100);
+            TableTools.showWithRowSet(chunkedCrossJoin, 100);
         }
 
         QueryTable.USE_CHUNKED_CROSS_JOIN = false;
@@ -493,9 +493,9 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
 
         if (RefreshingTableTestCase.printTableUpdates) {
             System.out.println("Left Ticking:");
-            TableTools.showWithIndex(leftTicking);
+            TableTools.showWithRowSet(leftTicking);
             System.out.println("Right Ticking:");
-            TableTools.showWithIndex(rightTicking);
+            TableTools.showWithRowSet(rightTicking);
         }
 
         final GenerateTableUpdates.SimulationProfile shiftingProfile = new GenerateTableUpdates.SimulationProfile();
@@ -555,13 +555,13 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
 
         if (RefreshingTableTestCase.printTableUpdates) {
             System.out.println("Left Ticking:");
-            TableTools.showWithIndex(leftTicking);
+            TableTools.showWithRowSet(leftTicking);
             System.out.println("Right Ticking:");
-            TableTools.showWithIndex(rightTicking);
+            TableTools.showWithRowSet(rightTicking);
             System.out.println("Left Static:");
-            TableTools.showWithIndex(leftStatic);
+            TableTools.showWithRowSet(leftStatic);
             System.out.println("Right Static:");
-            TableTools.showWithIndex(rightStatic);
+            TableTools.showWithRowSet(rightStatic);
         }
 
         for (numSteps.setValue(0); numSteps.intValue() < maxSteps; numSteps.increment()) {
@@ -633,9 +633,9 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
 
         if (RefreshingTableTestCase.printTableUpdates) {
             System.out.println("Left Ticking:");
-            TableTools.showWithIndex(leftTicking);
+            TableTools.showWithRowSet(leftTicking);
             System.out.println("Right Ticking:");
-            TableTools.showWithIndex(rightTicking);
+            TableTools.showWithRowSet(rightTicking);
         }
 
         for (numSteps.setValue(0); numSteps.intValue() < maxSteps; numSteps.increment()) {

@@ -53,7 +53,7 @@ public class QueryTableHugeSortTest {
 
             System.out.println("Duration " + duration + "ms");
 
-            TableTools.showWithIndex(sorted);
+            TableTools.showWithRowSet(sorted);
 
             QueryScope.addParam("runSize1", runSize1);
             QueryScope.addParam("runSize2", runSize2);
@@ -63,7 +63,7 @@ public class QueryTableHugeSortTest {
             final Table expected = TableTools.emptyTable(tableSize).updateView(
                     "SortCol=(byte)(ii < runSizePivot ? ii/runSize1 : ((ii - runSizePivot) / runSize2) + firstSmallRun)",
                     "Sentinel=(ii < runSizePivot) ? ((100 * (ii % runSize1)) + SortCol) : 100 * ((ii - runSizePivot) % runSize2) + SortCol");
-            TableTools.showWithIndex(expected);
+            TableTools.showWithRowSet(expected);
 
             assertTableEquals(expected, sorted);
         } finally {

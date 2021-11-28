@@ -115,7 +115,7 @@ public interface Page<ATTR extends Any> extends PagingChunkSource<ATTR> {
     }
 
     /**
-     * Assuming {@code RowSequenceIterator} is position at its first rowSet key on this page, consume all keys on this
+     * Assuming {@code RowSequenceIterator} is position at its first row key on this page, consume all keys on this
      * page.
      *
      * @param RowSequenceIterator The iterator to advance
@@ -126,7 +126,7 @@ public interface Page<ATTR extends Any> extends PagingChunkSource<ATTR> {
     }
 
     /**
-     * Assuming {@code RowSequenceIterator} is position at its first rowSet key on this page, consume all keys on this
+     * Assuming {@code RowSequenceIterator} is position at its first row key on this page, consume all keys on this
      * page and return the number of keys consumed.
      *
      * @param RowSequenceIterator The iterator to advance
@@ -137,7 +137,7 @@ public interface Page<ATTR extends Any> extends PagingChunkSource<ATTR> {
     }
 
     /**
-     * Assuming {@code searchIterator} is position at its first rowSet key on this page, consume all keys on this page.
+     * Assuming {@code searchIterator} is position at its first row key on this page, consume all keys on this page.
      *
      * @param searchIterator The iterator to advance
      * @return The result of {@link RowSet.SearchIterator#advance(long)}

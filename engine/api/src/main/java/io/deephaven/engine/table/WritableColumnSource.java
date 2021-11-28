@@ -56,10 +56,10 @@ public interface WritableColumnSource<T> extends ColumnSource<T>, ChunkSink<Valu
     }
 
     /**
-     * Ensure that this WritableColumnSource can accept rowSet keys in range {@code [0, capacity)}.
+     * Ensure that this WritableColumnSource can accept row keys in range {@code [0, capacity)}.
      *
      * @param capacity The new minimum capacity
-     * @param nullFilled Whether data should be "null-filled". If true, get operations at rowSet keys that have not been
+     * @param nullFilled Whether data should be "null-filled". If true, get operations at row keys that have not been
      *        set will return the appropriate null value; otherwise such gets produce undefined results.
      */
     void ensureCapacity(long capacity, boolean nullFilled);

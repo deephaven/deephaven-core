@@ -48,7 +48,7 @@ class TestTableTools(unittest.TestCase):
     def testTableBasics(self):
         """
         Test cases for table creation, and a few other basic table methods:
-            diff(), html(), show(), showCommaDelimited(), showWithIndex(), string(),
+            diff(), html(), show(), showCommaDelimited(), showWithRowSet(), string(),
             roundDecimalColumns(), roundDecimalColumnsExcept(), merge(), mergeSorted()
         """
 
@@ -81,12 +81,12 @@ class TestTableTools(unittest.TestCase):
             print("showCommaDelimited & row limit =")
             TableTools.showCommaDelimited(tab, 2, "intCol", "dblCol")
 
-        with self.subTest(msg="showWithIndex(Table, *cols)"):
-            print("showWithIndex =")
-            TableTools.showWithIndex(tab, "intCol", "dblCol")
-        with self.subTest(msg="showWithIndex(Table, 2, *cols)"):
-            print("showWithIndex & row limit =")
-            TableTools.showWithIndex(tab, 2, "intCol", "dblCol")
+        with self.subTest(msg="showWithRowSet(Table, *cols)"):
+            print("showWithRowSet =")
+            TableTools.showWithRowSet(tab, "intCol", "dblCol")
+        with self.subTest(msg="showWithRowSet(Table, 2, *cols)"):
+            print("showWithRowSet & row limit =")
+            TableTools.showWithRowSet(tab, 2, "intCol", "dblCol")
 
         with self.subTest(msg="string(Table, *cols)"):
             print("string =\n {}".format(TableTools.string(tab, "intCol", "dblCol")))

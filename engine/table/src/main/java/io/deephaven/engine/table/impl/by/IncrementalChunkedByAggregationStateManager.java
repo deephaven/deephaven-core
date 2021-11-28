@@ -69,7 +69,7 @@ class IncrementalChunkedByAggregationStateManager
          *
          * @param cookie    The current cookie for the state, or 0 on insert
          * @param stateSlot The state slot (in main table space)
-         * @param index     The built or probed rowSet key
+         * @param index     The built or probed row key
          * @return The new cookie for the state
          */
         long invoke(long cookie, int stateSlot, long index);

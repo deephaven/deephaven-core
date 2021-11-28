@@ -17,7 +17,7 @@ import org.junit.experimental.categories.Category;
 
 import static io.deephaven.engine.util.TableTools.diff;
 import static io.deephaven.engine.util.TableTools.emptyTable;
-import static io.deephaven.engine.util.TableTools.showWithIndex;
+import static io.deephaven.engine.util.TableTools.showWithRowSet;
 import static io.deephaven.engine.table.impl.TstUtils.*;
 import static io.deephaven.engine.table.impl.TstUtils.initColumnInfos;
 
@@ -343,7 +343,7 @@ public class QueryTableSliceTest extends QueryTableTestBase {
         for (int i = 0; i < steps; i++) {
             if (printTableUpdates) {
                 System.out.println("\n == Simple Step i = " + i);
-                showWithIndex(queryTable);
+                TableTools.showWithRowSet(queryTable);
             }
             simulateShiftAwareStep(ctxt + " step == " + i, size, random, queryTable, columnInfo, en);
         }

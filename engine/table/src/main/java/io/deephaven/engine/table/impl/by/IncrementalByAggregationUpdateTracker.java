@@ -39,7 +39,7 @@ import org.jetbrains.annotations.NotNull;
  * {@link TrackingWritableRowSet}</li>
  * <li>Update redirections from the previous {@link TrackingWritableRowSet} first key to the current
  * {@link TrackingWritableRowSet} first key, and from old slot to new slot where a state was moved or promoted in
- * rehash, accumulating rowSet keys in 3 random builders (for added, removed, and modified) and shifts in a pair of
+ * rehash, accumulating row keys in 3 random builders (for added, removed, and modified) and shifts in a pair of
  * parallel {@link WritableLongChunk}s for previous and current, using the following logic:
  * <ol>
  * <li>Non-empty to empty transitions as removes of the previous first key</li>
@@ -190,12 +190,12 @@ class IncrementalByAggregationUpdateTracker {
     }
 
     /**
-     * Record that a rowSet key has been added to a state on initial build, to be applied in
+     * Record that a row key has been added to a state on initial build, to be applied in
      * {@link #applyAddsAndMakeInitialRowSet(ObjectArraySource, ObjectArraySource, WritableRowRedirection)}
      *
      * @param cookie The last known cookie for the state
      * @param stateSlot The state's slot (in main table space)
-     * @param addedIndex The rowSet key that was added
+     * @param addedIndex The row key that was added
      * @return The new cookie for the state if it has changed
      */
     final long processInitialAdd(final long cookie, final int stateSlot, final long addedIndex) {
@@ -203,12 +203,12 @@ class IncrementalByAggregationUpdateTracker {
     }
 
     /**
-     * Record that a rowSet key has been removed from a state, to be applied in
+     * Record that a row key has been removed from a state, to be applied in
      * {@link #applyRemovesToStates(ObjectArraySource, ObjectArraySource)}.
      *
      * @param cookie The last known cookie for the state
      * @param stateSlot The state's slot (in main table space)
-     * @param removedIndex The rowSet key that was removed
+     * @param removedIndex The row key that was removed
      * @return The new cookie for the state if it has changed
      */
     final long processRemove(final long cookie, final int stateSlot, final long removedIndex) {
@@ -216,7 +216,7 @@ class IncrementalByAggregationUpdateTracker {
     }
 
     /**
-     * Record that a rowSet key has been shifted in a state, to be applied in
+     * Record that a row key has been shifted in a state, to be applied in
      * {@link #applyShiftToStates(ObjectArraySource, ObjectArraySource, long, long, long)}.
      *
      * @param cookie The last known cookie for the state
@@ -231,7 +231,7 @@ class IncrementalByAggregationUpdateTracker {
     }
 
     /**
-     * Record that a rowSet key has been shifted in a state, already applied.
+     * Record that a row key has been shifted in a state, already applied.
      *
      * @param cookie The last known cookie for the state
      * @param stateSlot The state's slot (in main table space)
@@ -242,7 +242,7 @@ class IncrementalByAggregationUpdateTracker {
     }
 
     /**
-     * Record that a rowSet key has been modified in a state.
+     * Record that a row key has been modified in a state.
      *
      * @param cookie The last known cookie for the state
      * @param stateSlot The state's slot (in main table space)
@@ -256,12 +256,12 @@ class IncrementalByAggregationUpdateTracker {
     }
 
     /**
-     * Record that a rowSet key has been added to a state, to be applied in
+     * Record that a row key has been added to a state, to be applied in
      * {@link #applyAddsToStates(ObjectArraySource, ObjectArraySource)}.
      *
      * @param cookie The last known cookie for the state
      * @param stateSlot The state's slot (in main table space)
-     * @param addedIndex The rowSet key that was added
+     * @param addedIndex The row key that was added
      * @return The new cookie for the state if it has changed
      */
     final long processAdd(final long cookie, final int stateSlot, final long addedIndex) {

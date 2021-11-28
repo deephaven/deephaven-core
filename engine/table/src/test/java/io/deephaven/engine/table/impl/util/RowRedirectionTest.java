@@ -50,7 +50,7 @@ public class RowRedirectionTest extends RefreshingTableTestCase {
     public void testContiguous() {
         final WritableRowRedirection rowRedirection = new ContiguousWritableRowRedirection(10);
 
-        // Fill redirection rowSet with values 100 + ii * 2
+        // Fill row redirection with values 100 + ii * 2
         for (int ii = 0; ii < 100; ++ii) {
             rowRedirection.put(ii, 100 + ii * 2);
         }

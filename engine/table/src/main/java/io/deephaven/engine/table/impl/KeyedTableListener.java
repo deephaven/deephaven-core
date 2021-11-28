@@ -97,14 +97,14 @@ public class KeyedTableListener {
 
             // Check if the key values have changed
             if (!currentKey.equals(prevKey)) {
-                // only want to remove the old key if it was pointing to this rowSet
+                // only want to remove the old key if it was pointing to this index
                 if (keyToIndexHashMap.get(prevKey) == next) {
                     keyToIndexHashMap.remove(prevKey);
                     indexToKeyHashMap.remove(next);
                     handleListeners(prevKey, next, KeyEvent.REMOVED);
                 }
 
-                // Check if this current key was used elsewhere and remove the rowSet->key mapping
+                // Check if this current key was used elsewhere and remove the index->key mapping
                 long otherIndex = keyToIndexHashMap.get(currentKey);
                 if (otherIndex != NO_ENTRY) {
                     indexToKeyHashMap.remove(otherIndex);

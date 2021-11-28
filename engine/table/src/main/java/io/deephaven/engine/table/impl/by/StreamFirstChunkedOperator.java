@@ -141,7 +141,7 @@ public class StreamFirstChunkedOperator extends BaseStreamFirstOrLastChunkedOper
 
     /**
      * <p>
-     * For each destination slot, map to the (first) source rowSet key and copy source values to destination slots for
+     * For each destination slot, map to the (first) source row key and copy source values to destination slots for
      * all result columns.
      *
      * <p>

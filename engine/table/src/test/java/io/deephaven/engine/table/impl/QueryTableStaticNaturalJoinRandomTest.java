@@ -192,9 +192,9 @@ public class QueryTableStaticNaturalJoinRandomTest extends QueryTableTestBase {
 
         if (DO_STATIC_JOIN_PRINT) {
             System.out.println("Left Table:");
-            TableTools.showWithIndex(leftJoinTable, 0, 10);
+            TableTools.showWithRowSet(leftJoinTable, 0, 10);
             System.out.println("Right Table:");
-            TableTools.showWithIndex(rightJoinTable, 10);
+            TableTools.showWithRowSet(rightJoinTable, 10);
         }
         final Table joined;
 
@@ -210,9 +210,9 @@ public class QueryTableStaticNaturalJoinRandomTest extends QueryTableTestBase {
 
         if (DO_STATIC_JOIN_PRINT) {
             System.out.println("Updated");
-            TableTools.showWithIndex(updated, 0, 10);
+            TableTools.showWithRowSet(updated, 0, 10);
             System.out.println("Joined");
-            TableTools.showWithIndex(joined, 0, 10);
+            TableTools.showWithRowSet(joined, 0, 10);
         }
 
 

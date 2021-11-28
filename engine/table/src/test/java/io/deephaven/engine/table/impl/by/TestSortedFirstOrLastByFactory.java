@@ -56,7 +56,7 @@ public class TestSortedFirstOrLastByFactory extends RefreshingTableTestCase {
                 new TstUtils.SetGenerator<>(10.1, 20.1, 30.1),
                 new TstUtils.SortedLongGenerator(0, Integer.MAX_VALUE)));
         if (printTableUpdates) {
-            showWithIndex(queryTable);
+            showWithRowSet(queryTable);
         }
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
                 EvalNugget.from(() -> SortedBy.sortedFirstBy(queryTable.update("x=Indices"), sortColumns)),
@@ -114,11 +114,11 @@ public class TestSortedFirstOrLastByFactory extends RefreshingTableTestCase {
         final FailureListener failureListenerBuck = new FailureListener();
         tuvbuck.getResultTable().listenForUpdates(failureListenerBuck);
 
-        TableTools.showWithIndex(sfb);
+        showWithRowSet(sfb);
         TestCase.assertEquals(2, sfb.getColumn("Sentinel").get(0));
         TestCase.assertEquals(2, bucketed.getColumn("Sentinel").get(0));
 
-        // this part is the original bug, if we didn't change the actual value of the redirection rowSet; because the
+        // this part is the original bug, if we didn't change the actual value of the row redirection; because the
         // shift modify combination left it at the same rowSet; we would not notice the mdoification
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             final TableUpdateImpl update = new TableUpdateImpl();
@@ -139,7 +139,7 @@ public class TestSortedFirstOrLastByFactory extends RefreshingTableTestCase {
         });
 
         System.out.println("Updated SFB");
-        TableTools.showWithIndex(sfb);
+        showWithRowSet(sfb);
         tuvsfb.deepValidation();
         tuvbuck.deepValidation();
 
@@ -164,7 +164,7 @@ public class TestSortedFirstOrLastByFactory extends RefreshingTableTestCase {
         });
 
         System.out.println("Shifted SFB");
-        TableTools.showWithIndex(sfb);
+        showWithRowSet(sfb);
         tuvsfb.deepValidation();
         TestCase.assertEquals(1, sfb.getColumn("Sentinel").get(0));
         tuvbuck.deepValidation();
@@ -191,7 +191,7 @@ public class TestSortedFirstOrLastByFactory extends RefreshingTableTestCase {
         });
 
         System.out.println("Shifted and Modified SFB");
-        TableTools.showWithIndex(sfb);
+        showWithRowSet(sfb);
         tuvsfb.deepValidation();
         TestCase.assertEquals(9, sfb.getColumn("Sentinel").get(0));
         tuvbuck.deepValidation();
@@ -218,7 +218,7 @@ public class TestSortedFirstOrLastByFactory extends RefreshingTableTestCase {
         });
 
         System.out.println("Shifted and Modified SFB");
-        TableTools.showWithIndex(sfb);
+        showWithRowSet(sfb);
         tuvsfb.deepValidation();
         TestCase.assertEquals(9, sfb.getColumn("Sentinel").get(0));
         tuvbuck.deepValidation();
@@ -245,7 +245,7 @@ public class TestSortedFirstOrLastByFactory extends RefreshingTableTestCase {
         });
 
         System.out.println("Shifted and Really Really Modified SFB");
-        TableTools.showWithIndex(sfb);
+        showWithRowSet(sfb);
         tuvsfb.deepValidation();
         TestCase.assertEquals(6, sfb.getColumn("Sentinel").get(0));
         tuvbuck.deepValidation();
@@ -272,7 +272,7 @@ public class TestSortedFirstOrLastByFactory extends RefreshingTableTestCase {
         });
 
         System.out.println("Shifted and Really Really Modified SFB");
-        TableTools.showWithIndex(sfb);
+        showWithRowSet(sfb);
         tuvsfb.deepValidation();
         TestCase.assertEquals(13, sfb.getColumn("Sentinel").get(0));
         tuvbuck.deepValidation();

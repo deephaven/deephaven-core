@@ -42,7 +42,7 @@ abstract class StaticNaturalJoinStateManager {
         switch (redirectionType) {
             case Contiguous: {
                 if (!leftTable.isFlat()) {
-                    throw new IllegalStateException("Left table is not flat for contiguous redirection rowSet build!");
+                    throw new IllegalStateException("Left table is not flat for contiguous row redirection build!");
                 }
                 // we can use an array, which is perfect for a small enough flat table
                 final long[] innerIndex = new long[leftTable.intSize("contiguous redirection build")];

@@ -165,7 +165,7 @@ class AsOfStampContext implements Context {
      *
      * @param leftRowSet the indices of the left values to stamp
      * @param rightRowSet the indices of the right values in this state
-     * @param rowRedirection the redirection rowSet to update
+     * @param rowRedirection the row redirection to update
      */
     void processEntry(RowSet leftRowSet, RowSet rightRowSet, WritableRowRedirection rowRedirection) {
         ensureRightCapacity(rightRowSet.intSize());
@@ -199,7 +199,7 @@ class AsOfStampContext implements Context {
      * @param leftRowSet the indices of the left values to stamp
      * @param rightStampChunk the right stamp values (already compacted)
      * @param rightKeyIndicesChunk the right key indices (already compacted)
-     * @param rowRedirection the redirection rowSet to update
+     * @param rowRedirection the row redirection to update
      */
     void processEntry(RowSet leftRowSet, Chunk<Values> rightStampChunk, LongChunk<RowKeys> rightKeyIndicesChunk,
             WritableRowRedirection rowRedirection) {
@@ -222,7 +222,7 @@ class AsOfStampContext implements Context {
         stampKernel.computeRedirections(leftStampChunk, rightStampChunk, rightKeyIndicesChunk, leftRedirections);
         for (int ii = 0; ii < leftKeyIndicesChunk.size(); ++ii) {
             final long rightKey = leftRedirections.get(ii);
-            // the redirection rowSet defaults to NULL_KEY so we do not need to put it in there
+            // the row redirection defaults to NULL_KEY so we do not need to put it in there
             if (rightKey != RowSequence.NULL_ROW_KEY) {
                 rowRedirection.putVoid(leftKeyIndicesChunk.get(ii), rightKey);
             }
