@@ -587,7 +587,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
                 // mark when the last indices are from, so that terminal notifications can make use of them if required
                 lastIndexClockStep = LogicalClock.DEFAULT.currentStep();
                 if (DEBUG) {
-                    try (final RowSet prevRowSet = parent.getRowSet().getPrevRowSet()) {
+                    try (final RowSet prevRowSet = parent.getRowSet().prevCopy()) {
                         log.info().append(logPrefix)
                                 .append("lastIndexClockStep=").append(lastIndexClockStep)
                                 .append(", upstream=").append(upstream).append(", shouldEnqueueDelta=")
@@ -671,7 +671,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
                 && rowSet.sizePrev() > 0) {
             final RowSetBuilderRandom scopedViewBuilder = RowSetFactory.builderRandom();
 
-            try (final RowSet prevRowSet = rowSet.getPrevRowSet()) {
+            try (final RowSet prevRowSet = rowSet.prevCopy()) {
                 for (final Subscription sub : activeSubscriptions) {
                     if (!sub.isViewport() || sub.pendingDelete) {
                         continue;

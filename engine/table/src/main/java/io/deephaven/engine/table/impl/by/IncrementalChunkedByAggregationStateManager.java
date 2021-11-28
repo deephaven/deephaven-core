@@ -23,7 +23,6 @@ import io.deephaven.engine.table.impl.util.*;
 import java.util.Arrays;
 import io.deephaven.engine.table.impl.sort.permute.IntPermuteKernel;
 // @StateChunkTypeEnum@ from \QObject\E
-import io.deephaven.engine.table.impl.sort.permute.ObjectPermuteKernel;
 import io.deephaven.engine.table.impl.util.compact.IntCompactKernel;
 import io.deephaven.engine.table.impl.util.compact.LongCompactKernel;
 // endmixin rehash
@@ -286,7 +285,7 @@ class IncrementalChunkedByAggregationStateManager
 
     void buildInitialTableFromPrevious(@NotNull final Table sourceTable, @NotNull final ColumnSource<?>[] keySources, @NotNull final IncrementalByAggregationUpdateTracker aggregationUpdateTracker) {
         final ColumnSource<?>[] prevKeySources;
-        try (final RowSet prevRowSet = sourceTable.getRowSet().getPrevRowSet()) {
+        try (final RowSet prevRowSet = sourceTable.getRowSet().prevCopy()) {
             if (prevRowSet.isEmpty()) {
                 return;
             }

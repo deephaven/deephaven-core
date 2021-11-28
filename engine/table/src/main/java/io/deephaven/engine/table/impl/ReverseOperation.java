@@ -11,7 +11,6 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.TableUpdateListener;
-import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.table.impl.sources.ReversedColumnSource;
 import io.deephaven.engine.table.impl.sources.UnionRedirection;
@@ -70,7 +69,7 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
 
     @Override
     public Result<QueryTable> initialize(boolean usePrev, long beforeClock) {
-        final RowSet rowSetToReverse = usePrev ? parent.getRowSet().getPrevRowSet() : parent.getRowSet();
+        final RowSet rowSetToReverse = usePrev ? parent.getRowSet().prevCopy() : parent.getRowSet();
         prevPivot = pivotPoint = computePivot(rowSetToReverse.lastRowKey());
         lastPivotChange = usePrev ? beforeClock - 1 : beforeClock;
 

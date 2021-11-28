@@ -2,9 +2,9 @@ package io.deephaven.engine.rowset;
 
 import gnu.trove.list.array.TLongArrayList;
 import io.deephaven.base.log.LogOutputAppendable;
+import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.datastructures.LongAbortableConsumer;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
-import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.PrimitiveIterator;
@@ -18,8 +18,10 @@ public interface RowSet extends RowSequence, LongSizedDataStructure, SafeCloseab
     void close();
 
     /**
-     * Make a new {@link WritableRowSet} with the same row keys as {@code this} that is safe for further mutation. The
-     * result will never be a {@link TrackingRowSet}; use {@link WritableRowSet#toTracking()} on the result as needed.
+     * Make a new {@link WritableRowSet} with the same row keys as {@code this} that is safe for further mutation. As in
+     * other operations that return a {@link WritableRowSet}, the result must be {@link #close() closed} by the caller
+     * when it is no longer needed. The result will never be a {@link TrackingRowSet}; use
+     * {@link WritableRowSet#toTracking()} on the result as needed.
      *
      * @return The copied {@link WritableRowSet}
      */
@@ -434,12 +436,12 @@ public interface RowSet extends RowSequence, LongSizedDataStructure, SafeCloseab
     WritableRowSet subSetForPositions(RowSet posRowSet);
 
     /**
-     * Returns the key at the given rank position.
+     * Returns the row key at the given row position.
      *
-     * @param pos a position in this RowSet between 0 and size() - 1
-     * @return the key at that rank.
+     * @param rowPosition A row position in this RowSet between {@code 0} and {@code size() - 1}.
+     * @return The row key at the supplied row position
      */
-    long get(long pos);
+    long get(long rowPosition);
 
     /**
      * Returns the sequence of (increasing) keys corresponding to the positions provided as input.

@@ -355,11 +355,11 @@ public class QueryTableSelectUpdateTest {
                 }
             } else {
                 RowSet sourceAddedPositions = sourceTable.getRowSet().invert(listener1.added);
-                RowSet sourceRemovedPositions = sourceTable.getRowSet().getPrevRowSet().invert(listener1.removed);
+                RowSet sourceRemovedPositions = sourceTable.getRowSet().prevCopy().invert(listener1.removed);
                 RowSet sourceModifiedPositions = sourceTable.getRowSet().invert(listener1.modified);
 
                 RowSet resultAddedPositions = originalValue.getRowSet().invert(listener2.added);
-                RowSet resultRemovedPositions = originalValue.getRowSet().getPrevRowSet().invert(listener2.removed);
+                RowSet resultRemovedPositions = originalValue.getRowSet().prevCopy().invert(listener2.removed);
                 RowSet resultModifiedPositions = originalValue.getRowSet().invert(listener2.modified);
 
                 if (!sourceAddedPositions.equals(resultAddedPositions)) {

@@ -203,7 +203,7 @@ public class SortListener extends BaseTable.ListenerImpl {
 
             // handle upstream shifts; note these never effect the sorted output keyspace
             final SortMappingAggregator mappingChanges = closer.add(new SortMappingAggregator());
-            try (final RowSet prevRowSet = parent.getRowSet().getPrevRowSet()) {
+            try (final RowSet prevRowSet = parent.getRowSet().prevCopy()) {
                 upstream.shifted().forAllInRowSet(prevRowSet, (key, delta) -> {
                     final long dst = reverseLookup.remove(key);
                     if (dst != REVERSE_LOOKUP_NO_ENTRY_VALUE) {

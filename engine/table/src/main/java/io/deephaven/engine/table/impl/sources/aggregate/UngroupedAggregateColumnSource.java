@@ -319,7 +319,7 @@ final class UngroupedAggregateColumnSource<DATA_TYPE> extends UngroupedColumnSou
                     final RowSet currRowSet = indexes.get(ii);
                     Assert.neqNull(currRowSet, "currRowSet");
                     final boolean usePrevIndex = usePrev && currRowSet.isTracking();
-                    final RowSet rowSet = usePrevIndex ? currRowSet.trackingCast().getPrevRowSet() : currRowSet;
+                    final RowSet rowSet = usePrevIndex ? currRowSet.trackingCast().prevCopy() : currRowSet;
                     try {
                         final int lengthFromThisIndex = sameIndexRunLengths.get(ii);
 

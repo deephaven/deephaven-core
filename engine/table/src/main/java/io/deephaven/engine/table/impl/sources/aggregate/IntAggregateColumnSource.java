@@ -64,7 +64,7 @@ public final class IntAggregateColumnSource extends BaseAggregateColumnSource<In
         for (int di = 0; di < size; ++di) {
             final RowSet groupRowSetPrev = groupRowSetPrevChunk.get(di);
             final RowSet groupRowSetToUse = groupRowSetPrev.isTracking()
-                    ? groupRowSetPrev.trackingCast().getPrevRowSet()
+                    ? groupRowSetPrev.trackingCast().prevCopy()
                     : groupRowSetPrev;
             typedDestination.set(di, new PrevIntVectorColumnWrapper(aggregatedSource, groupRowSetToUse));
         }

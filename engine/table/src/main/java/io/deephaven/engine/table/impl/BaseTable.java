@@ -738,7 +738,7 @@ public abstract class BaseTable extends LivenessArtifact
         final boolean currentMissingAdds = !update.added().subsetOf(getRowSet());
         final boolean currentMissingModifications = !update.modified().subsetOf(getRowSet());
         final boolean previousMissingRemovals;
-        try (final RowSet prevIndex = getRowSet().getPrevRowSet()) {
+        try (final RowSet prevIndex = getRowSet().prevCopy()) {
             previousMissingRemovals = !update.removed().subsetOf(prevIndex);
         }
         final boolean currentContainsRemovals;
@@ -775,8 +775,8 @@ public abstract class BaseTable extends LivenessArtifact
                     }
                 };
 
-                append.accept("build().getPrevRowSet=", getRowSet().getPrevRowSet());
-                append.accept("build()=", getRowSet().getPrevRowSet());
+                append.accept("build().prevCopy=", getRowSet().prevCopy());
+                append.accept("build()=", getRowSet().prevCopy());
                 append.accept("added=", update.added());
                 append.accept("removed=", update.removed());
                 append.accept("modified=", update.modified());
@@ -788,7 +788,7 @@ public abstract class BaseTable extends LivenessArtifact
         }
 
         // If we're still here, we know that things are off the rails, and we want to fire the assertion
-        final RowSet removalsMinusPrevious = update.removed().minus(getRowSet().getPrevRowSet());
+        final RowSet removalsMinusPrevious = update.removed().minus(getRowSet().prevCopy());
         final RowSet addedMinusCurrent = update.added().minus(getRowSet());
         final RowSet removedIntersectCurrent = update.removed().intersect(getRowSet());
         final RowSet modifiedMinusCurrent = update.modified().minus(getRowSet());
@@ -796,7 +796,7 @@ public abstract class BaseTable extends LivenessArtifact
         // Everything is messed up for this table, print out the indices in an easy to understand way
         final LogOutput logOutput = new LogOutputStringImpl()
                 .append("RowSet update error detected: ")
-                .append(LogOutput::nl).append("\t          previousIndex=").append(getRowSet().getPrevRowSet())
+                .append(LogOutput::nl).append("\t          previousIndex=").append(getRowSet().prevCopy())
                 .append(LogOutput::nl).append("\t           currentIndex=").append(getRowSet())
                 .append(LogOutput::nl).append("\t                  added=").append(update.added())
                 .append(LogOutput::nl).append("\t                removed=").append(update.removed())

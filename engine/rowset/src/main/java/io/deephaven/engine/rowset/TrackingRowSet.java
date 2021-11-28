@@ -1,6 +1,7 @@
 package io.deephaven.engine.rowset;
 
 import io.deephaven.engine.updategraph.LogicalClock;
+import io.deephaven.util.datastructures.LongSizedDataStructure;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.function.Function;
@@ -14,14 +15,53 @@ import java.util.function.Function;
  */
 public interface TrackingRowSet extends RowSet {
 
+    /**
+     * Get the size of this TrackingRowSet as of the end of the previous update graph cycle.
+     *
+     * @return The previous size
+     */
     long sizePrev();
 
-    WritableRowSet getPrevRowSet();
+    /**
+     * Get the size of this TrackingRowSet as of the end of the previous update graph cycle, constrained to be between
+     * {@code 0} and {@value Integer#MAX_VALUE}.
+     *
+     * @return The previous size, as an {@code int}
+     */
+    default int intSizePrev() {
+        return LongSizedDataStructure.intSize("TrackingRowSet.intSizePrev()", sizePrev());
+    }
 
-    long getPrev(long pos);
+    /**
+     * Get a copy of the value of this TrackingRowSet as of the end of the previous update graph cycle. As in other
+     * operations that return a {@link WritableRowSet}, the result must be {@link #close() closed} by the caller when it
+     * is no longer needed. The result will never be a {@link TrackingRowSet}; use {@link WritableRowSet#toTracking()}
+     * on the result as needed.
+     *
+     * @return A copy of the previous value
+     */
+    WritableRowSet prevCopy();
 
+    /**
+     * Same as {@code get(rowPosition)}, as of the end of the previous update graph cycle.
+     *
+     * @param rowPosition A row position in this RowSet between {@code 0} and {@code sizePrev() - 1}.
+     * @return The row key previously at the supplied row position
+     */
+    long getPrev(long rowPosition);
+
+    /**
+     * Same as {@code firstRowKey()}, as of the end of the previous update graph cycle.
+     *
+     * @return The previous first row key
+     */
     long firstRowKeyPrev();
 
+    /**
+     * Same as {@code lastRowKey()}, as of the end of the previous update graph cycle.
+     *
+     * @return The previous last row key
+     */
     long lastRowKeyPrev();
 
     /**

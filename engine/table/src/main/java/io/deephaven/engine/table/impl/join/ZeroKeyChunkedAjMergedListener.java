@@ -163,7 +163,7 @@ public class ZeroKeyChunkedAjMergedListener extends MergedListener {
                 final RowSetShiftData leftShifted = leftRecorder.getShifted();
                 if (leftShifted.nonempty()) {
                     // now we apply the left shifts, so that anything in our SSA is a relevant thing to stamp
-                    try (final RowSet prevRowSet = leftTable.getRowSet().getPrevRowSet()) {
+                    try (final RowSet prevRowSet = leftTable.getRowSet().prevCopy()) {
                         rowRedirection.applyShift(prevRowSet, leftShifted);
                     }
                     ChunkedAjUtils.bothIncrementalLeftSsaShift(leftShifted, leftSsa, leftRestampRemovals, leftTable,
@@ -219,15 +219,15 @@ public class ZeroKeyChunkedAjMergedListener extends MergedListener {
 
                     final RowSetShiftData rightShifted = rightRecorder.getShifted();
                     if (rightShifted.nonempty()) {
-                        try (final RowSet fullPrevRowSet = rightTable.getRowSet().getPrevRowSet();
-                                final RowSet previousToShift = fullPrevRowSet.minus(rightRestampRemovals);
-                                final SizedSafeCloseable<ColumnSource.FillContext> shiftFillContext =
+                        try (final RowSet fullPrevRowSet = rightTable.getRowSet().prevCopy();
+                             final RowSet previousToShift = fullPrevRowSet.minus(rightRestampRemovals);
+                             final SizedSafeCloseable<ColumnSource.FillContext> shiftFillContext =
                                         new SizedSafeCloseable<>(rightStampSource::makeFillContext);
-                                final SizedSafeCloseable<LongSortKernel<Values, RowKeys>> shiftSortContext =
+                             final SizedSafeCloseable<LongSortKernel<Values, RowKeys>> shiftSortContext =
                                         new SizedSafeCloseable<>(
                                                 sz -> LongSortKernel.makeContext(stampChunkType, order, sz, true));
-                                final SizedChunk<Values> shiftRightStampValues = new SizedChunk<>(stampChunkType);
-                                final SizedLongChunk<Attributes.RowKeys> shiftRightStampKeys = new SizedLongChunk<>()) {
+                             final SizedChunk<Values> shiftRightStampValues = new SizedChunk<>(stampChunkType);
+                             final SizedLongChunk<Attributes.RowKeys> shiftRightStampKeys = new SizedLongChunk<>()) {
                             final RowSetShiftData.Iterator sit = rightShifted.applyIterator();
                             while (sit.hasNext()) {
                                 sit.next();

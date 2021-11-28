@@ -206,7 +206,7 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
             return new Result<>(historicalSort(sortedKeys));
         }
         if (parent.isStream()) {
-            try (final RowSet prevIndex = usePrev ? parent.getRowSet().getPrevRowSet() : null) {
+            try (final RowSet prevIndex = usePrev ? parent.getRowSet().prevCopy() : null) {
                 final RowSet indexToUse = usePrev ? prevIndex : parent.getRowSet();
                 final SortHelpers.SortMapping sortedKeys =
                         SortHelpers.getSortedKeys(sortOrder, sortColumns, indexToUse, usePrev);
@@ -218,7 +218,7 @@ public class SortOperation implements QueryTable.MemoizableOperation<QueryTable>
             // reset the sort data structures that we share between invocations
             final Map<String, ColumnSource<?>> resultMap = new LinkedHashMap<>();
 
-            final RowSet rowSetToSort = usePrev ? closer.add(parent.getRowSet().getPrevRowSet()) : parent.getRowSet();
+            final RowSet rowSetToSort = usePrev ? closer.add(parent.getRowSet().prevCopy()) : parent.getRowSet();
 
             if (rowSetToSort.size() >= Integer.MAX_VALUE) {
                 throw new UnsupportedOperationException("Can not perform ticking sort for table larger than "

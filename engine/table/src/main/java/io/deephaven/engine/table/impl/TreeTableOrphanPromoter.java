@@ -327,7 +327,7 @@ public class TreeTableOrphanPromoter implements Function<Table, QueryTable> {
                                     removeChildren(upstream.getModifiedPreShift());
                                 }
 
-                                try (final WritableRowSet prevIndex = source.getRowSet().getPrevRowSet()) {
+                                try (final WritableRowSet prevIndex = source.getRowSet().prevCopy()) {
                                     prevIndex.remove(upstream.removed());
                                     if (modifiedInputColumns) {
                                         prevIndex.remove(upstream.getModifiedPreShift());

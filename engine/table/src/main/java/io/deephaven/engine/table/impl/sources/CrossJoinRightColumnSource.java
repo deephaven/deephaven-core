@@ -518,7 +518,7 @@ public class CrossJoinRightColumnSource<T> extends AbstractColumnSource<T> imple
                     if (usePrev) {
                         final TrackingRowSet fromTable =
                                 crossJoinManager.getRightIndexFromPrevLeftIndex(lastLeftIndex.getValue());
-                        rightGroup = rightIsLive ? fromTable.getPrevRowSet() : fromTable;
+                        rightGroup = rightIsLive ? fromTable.prevCopy() : fromTable;
                     } else {
                         rightGroup = crossJoinManager.getRightIndexFromLeftIndex(lastLeftIndex.getValue());
                     }

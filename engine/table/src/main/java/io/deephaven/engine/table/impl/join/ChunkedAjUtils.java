@@ -24,15 +24,15 @@ class ChunkedAjUtils {
         final ChunkType stampChunkType = stampSource.getChunkType();
         final SortingOrder sortOrder = leftSsa.isReversed() ? SortingOrder.Descending : SortingOrder.Ascending;
 
-        try (final RowSet fullPrevRowSet = table.getRowSet().getPrevRowSet();
-                final RowSet previousToShift = fullPrevRowSet.minus(restampRemovals);
-                final SizedSafeCloseable<ColumnSource.FillContext> shiftFillContext =
+        try (final RowSet fullPrevRowSet = table.getRowSet().prevCopy();
+             final RowSet previousToShift = fullPrevRowSet.minus(restampRemovals);
+             final SizedSafeCloseable<ColumnSource.FillContext> shiftFillContext =
                         new SizedSafeCloseable<>(stampSource::makeFillContext);
-                final SizedSafeCloseable<LongSortKernel<Values, RowKeys>> shiftSortContext =
+             final SizedSafeCloseable<LongSortKernel<Values, RowKeys>> shiftSortContext =
                         new SizedSafeCloseable<>(
                                 size -> LongSortKernel.makeContext(stampChunkType, sortOrder, size, true));
-                final SizedLongChunk<RowKeys> stampKeys = new SizedLongChunk<>();
-                final SizedChunk<Values> stampValues = new SizedChunk<>(stampChunkType)) {
+             final SizedLongChunk<RowKeys> stampKeys = new SizedLongChunk<>();
+             final SizedChunk<Values> stampValues = new SizedChunk<>(stampChunkType)) {
             final RowSetShiftData.Iterator sit = shiftData.applyIterator();
             while (sit.hasNext()) {
                 sit.next();

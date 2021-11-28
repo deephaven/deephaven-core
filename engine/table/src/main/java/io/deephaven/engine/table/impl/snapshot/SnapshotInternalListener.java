@@ -61,7 +61,7 @@ public class SnapshotInternalListener extends BaseTable.ListenerImpl {
         }
         final TrackingRowSet currentRowSet = snapshotTable.getRowSet();
         final long snapshotSize;
-        try (final RowSet prevRowSet = usePrev ? currentRowSet.getPrevRowSet() : null) {
+        try (final RowSet prevRowSet = usePrev ? currentRowSet.prevCopy() : null) {
             final RowSet snapshotRowSet = prevRowSet != null ? prevRowSet : currentRowSet;
             snapshotSize = snapshotRowSet.size();
             if (!snapshotRowSet.isEmpty()) {

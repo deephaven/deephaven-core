@@ -295,7 +295,7 @@ public class AsOfJoinHelper {
                     restampKeys = upstream.added();
                 }
 
-                try (final RowSet prevLeftRowSet = leftTable.getRowSet().getPrevRowSet()) {
+                try (final RowSet prevLeftRowSet = leftTable.getRowSet().prevCopy()) {
                     rowRedirection.applyShift(prevLeftRowSet, upstream.shifted());
                 }
 
@@ -693,8 +693,8 @@ public class AsOfJoinHelper {
 
                 // After all the removals are done, we do the shifts
                 if (upstream.shifted().nonempty()) {
-                    try (final RowSet fullPrevRowSet = rightTable.getRowSet().getPrevRowSet();
-                            final RowSet previousToShift = fullPrevRowSet.minus(restampRemovals)) {
+                    try (final RowSet fullPrevRowSet = rightTable.getRowSet().prevCopy();
+                         final RowSet previousToShift = fullPrevRowSet.minus(restampRemovals)) {
                         if (previousToShift.isNonempty()) {
                             try (final ResettableWritableLongChunk<RowKeys> leftKeyChunk =
                                     ResettableWritableLongChunk.makeResettableChunk();
@@ -1340,15 +1340,15 @@ public class AsOfJoinHelper {
             WritableChunk<Values> leftStampValues, WritableLongChunk<RowKeys> leftStampKeys,
             WritableRowRedirection rowRedirection, boolean disallowExactMatch) {
 
-        try (final RowSet fullPrevRowSet = table.getRowSet().getPrevRowSet();
-                final RowSet previousToShift = fullPrevRowSet.minus(restampRemovals);
-                final SizedSafeCloseable<ColumnSource.FillContext> shiftFillContext =
+        try (final RowSet fullPrevRowSet = table.getRowSet().prevCopy();
+             final RowSet previousToShift = fullPrevRowSet.minus(restampRemovals);
+             final SizedSafeCloseable<ColumnSource.FillContext> shiftFillContext =
                         new SizedSafeCloseable<>(stampSource::makeFillContext);
-                final SizedSafeCloseable<LongSortKernel<Values, RowKeys>> shiftSortKernel =
+             final SizedSafeCloseable<LongSortKernel<Values, RowKeys>> shiftSortKernel =
                         new SizedSafeCloseable<>(sz -> LongSortKernel.makeContext(stampSource.getChunkType(),
                                 ssa.isReversed() ? SortingOrder.Descending : SortingOrder.Ascending, sz, true));
-                final SizedChunk<Values> rightStampValues = new SizedChunk<>(stampSource.getChunkType());
-                final SizedLongChunk<RowKeys> rightStampKeys = new SizedLongChunk<>()) {
+             final SizedChunk<Values> rightStampValues = new SizedChunk<>(stampSource.getChunkType());
+             final SizedLongChunk<RowKeys> rightStampKeys = new SizedLongChunk<>()) {
 
             final RowSetShiftData.Iterator sit = shiftData.applyIterator();
             while (sit.hasNext()) {
@@ -1477,7 +1477,7 @@ public class AsOfJoinHelper {
                                         restampKeys = upstream.added();
                                     }
 
-                                    try (final RowSet prevLeftRowSet = leftTable.getRowSet().getPrevRowSet()) {
+                                    try (final RowSet prevLeftRowSet = leftTable.getRowSet().prevCopy()) {
                                         rowRedirection.applyShift(prevLeftRowSet, upstream.shifted());
                                     }
 

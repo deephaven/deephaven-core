@@ -6,12 +6,9 @@ import io.deephaven.engine.exceptions.UncheckedTableException;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.table.impl.select.WhereFilter;
-import io.deephaven.engine.table.impl.AbstractColumnSource;
-import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
 import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.chunk.WritableChunk;
 import io.deephaven.engine.chunk.WritableObjectChunk;
@@ -87,7 +84,7 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
         MutableBoolean anyRefreshing = new MutableBoolean(false);
 
         try (final SafeCloseableList closer = new SafeCloseableList()) {
-            final RowSet fullRowSet = usePrev ? closer.add(parent.getRowSet().getPrevRowSet()) : parent.getRowSet();
+            final RowSet fullRowSet = usePrev ? closer.add(parent.getRowSet().prevCopy()) : parent.getRowSet();
 
             final List<NotificationQueue.Dependency> dependencies = new ArrayList<>();
             final Map<String, ColumnSource<?>> newColumns = new LinkedHashMap<>(parent.getColumnSourceMap());
@@ -306,8 +303,8 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
         public void fillPrevChunk(@NotNull FillContext context,
                 @NotNull WritableChunk<? super Attributes.Values> destination, @NotNull RowSequence rowSequence) {
             try (final RowSet keysToCheck = rowSequence.asRowSet();
-                    final RowSet sourcePrev = source.getPrevRowSet();
-                    final RowSet intersection = keysToCheck.intersect(sourcePrev)) {
+                 final RowSet sourcePrev = source.prevCopy();
+                 final RowSet intersection = keysToCheck.intersect(sourcePrev)) {
                 fillChunkInternal(keysToCheck, intersection, rowSequence.intSize(), destination);
             }
         }

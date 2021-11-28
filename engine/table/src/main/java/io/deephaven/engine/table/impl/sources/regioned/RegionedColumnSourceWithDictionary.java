@@ -255,7 +255,7 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
                                 symbolTable = getStaticSymbolTable(sourceTable.getRowSet(), useLookupCaching);
                             } else {
                                 symbolTable = getStaticSymbolTable(
-                                        usePrev ? sourceTable.getRowSet().getPrevRowSet() : sourceTable.getRowSet(),
+                                        usePrev ? sourceTable.getRowSet().prevCopy() : sourceTable.getRowSet(),
                                         useLookupCaching);
                                 swapListener.setListenerAndResult(
                                         new SymbolTableUpdateListener(description, sourceTable, symbolTable),

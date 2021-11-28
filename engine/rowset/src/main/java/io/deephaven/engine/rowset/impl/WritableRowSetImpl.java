@@ -359,8 +359,8 @@ public class WritableRowSetImpl extends RowSequenceAsChunkImpl implements Writab
     }
 
     @Override
-    public final long get(final long pos) {
-        return innerSet.ixGet(pos);
+    public final long get(final long rowPosition) {
+        return innerSet.ixGet(rowPosition);
     }
 
     @Override

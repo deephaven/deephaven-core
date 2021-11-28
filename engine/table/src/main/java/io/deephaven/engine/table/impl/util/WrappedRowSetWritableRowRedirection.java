@@ -102,7 +102,7 @@ public class WrappedRowSetWritableRowRedirection implements WritableRowRedirecti
             @NotNull final RowSequence outerRowKeys) {
         final WritableLongChunk<RowKeys> indexPositions = ((FillContext) fillContext).indexPositions;
         outerRowKeys.fillRowKeyChunk(indexPositions);
-        try (final RowSet prevWrappedIndex = wrappedRowSet.getPrevRowSet()) {
+        try (final RowSet prevWrappedIndex = wrappedRowSet.prevCopy()) {
             prevWrappedIndex.getKeysForPositions(new LongChunkIterator(indexPositions),
                     new LongChunkAppender(innerRowKeys));
         }

@@ -47,7 +47,7 @@ public class RowSetShiftDataExpander implements SafeCloseable {
 
         try {
             // Compute added and removed using the old definitions explicitly.
-            try (final RowSet prevRowSet = sourceRowSet.getPrevRowSet()) {
+            try (final RowSet prevRowSet = sourceRowSet.prevCopy()) {
                 added = sourceRowSet.minus(prevRowSet);
                 removed = prevRowSet.minus(sourceRowSet);
             }
@@ -149,7 +149,7 @@ public class RowSetShiftDataExpander implements SafeCloseable {
         final boolean previousContainsAdds;
         final boolean previousMissingRemovals;
         final boolean previousMissingModifications;
-        try (final RowSet prevIndex = sourceRowSet.getPrevRowSet()) {
+        try (final RowSet prevIndex = sourceRowSet.prevCopy()) {
             previousContainsAdds = added.overlaps(prevIndex);
             previousMissingRemovals = !removed.subsetOf(prevIndex);
             previousMissingModifications = !modified.subsetOf(prevIndex);
@@ -188,8 +188,8 @@ public class RowSetShiftDataExpander implements SafeCloseable {
                     }
                 };
 
-                append.accept("build().getPrevRowSet=", sourceRowSet.getPrevRowSet());
-                append.accept("build()=", sourceRowSet.getPrevRowSet());
+                append.accept("build().prevCopy=", sourceRowSet.prevCopy());
+                append.accept("build()=", sourceRowSet.prevCopy());
                 append.accept("added=", added);
                 append.accept("removed=", removed);
                 append.accept("modified=", modified);
@@ -200,9 +200,9 @@ public class RowSetShiftDataExpander implements SafeCloseable {
         }
 
         // If we're still here, we know that things are off the rails, and we want to fire the assertion
-        final RowSet addedIntersectPrevious = added.intersect(sourceRowSet.getPrevRowSet());
-        final RowSet removalsMinusPrevious = removed.minus(sourceRowSet.getPrevRowSet());
-        final RowSet modifiedMinusPrevious = modified.minus(sourceRowSet.getPrevRowSet());
+        final RowSet addedIntersectPrevious = added.intersect(sourceRowSet.prevCopy());
+        final RowSet removalsMinusPrevious = removed.minus(sourceRowSet.prevCopy());
+        final RowSet modifiedMinusPrevious = modified.minus(sourceRowSet.prevCopy());
         final RowSet addedMinusCurrent = added.minus(sourceRowSet);
         final RowSet removedIntersectCurrent = removed.intersect(sourceRowSet);
         final RowSet modifiedMinusCurrent = modified.minus(sourceRowSet);
@@ -210,7 +210,7 @@ public class RowSetShiftDataExpander implements SafeCloseable {
         // Everything is messed up for this table, print out the indices in an easy to understand way
         final String indexUpdateErrorMessage = new LogOutputStringImpl()
                 .append("TrackingWritableRowSet update error detected: ")
-                .append(LogOutput::nl).append("\t          previousIndex=").append(sourceRowSet.getPrevRowSet())
+                .append(LogOutput::nl).append("\t          previousIndex=").append(sourceRowSet.prevCopy())
                 .append(LogOutput::nl).append("\t           currentIndex=").append(sourceRowSet)
                 .append(LogOutput::nl).append("\t         updateToExpand=").append(update)
                 .append(LogOutput::nl).append("\t         shifted.size()=").append(update.shifted().size())

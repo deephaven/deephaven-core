@@ -983,7 +983,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     }
 
     private static RowSet indexOrPrev(Table table, boolean usePrev) {
-        return usePrev ? table.getRowSet().getPrevRowSet() : table.getRowSet();
+        return usePrev ? table.getRowSet().prevCopy() : table.getRowSet();
     }
 
     private void testTreeTableIncremental(final int size, final long seed, final MutableInt numSteps) {

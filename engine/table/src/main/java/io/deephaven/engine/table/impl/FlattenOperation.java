@@ -96,7 +96,7 @@ public class FlattenOperation implements QueryTable.MemoizableOperation<QueryTab
         }
 
         downstream.added = rowSet.invert(upstream.added());
-        try (final RowSet prevRowSet = rowSet.getPrevRowSet()) {
+        try (final RowSet prevRowSet = rowSet.prevCopy()) {
             downstream.removed = prevRowSet.invert(upstream.removed());
         }
         final RowSetShiftData.Builder outShifted = new RowSetShiftData.Builder();

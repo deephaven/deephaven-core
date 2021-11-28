@@ -10,7 +10,6 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.TableUpdateListener;
-import io.deephaven.engine.table.impl.TableUpdateImpl;
 
 public class SliceLikeOperation implements QueryTable.Operation<QueryTable> {
 
@@ -93,7 +92,7 @@ public class SliceLikeOperation implements QueryTable.Operation<QueryTable> {
     public Result initialize(boolean usePrev, long beforeClock) {
         final TrackingRowSet resultRowSet;
         final TrackingRowSet parentRowSet = parent.getRowSet();
-        try (final WritableRowSet parentPrev = usePrev ? parentRowSet.getPrevRowSet() : null) {
+        try (final WritableRowSet parentPrev = usePrev ? parentRowSet.prevCopy() : null) {
             resultRowSet = computeSliceIndex(usePrev ? parentPrev : parentRowSet).toTracking();
         }
         // result table must be a sub-table so we can pass ModifiedColumnSet to listeners when possible

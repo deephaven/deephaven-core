@@ -30,7 +30,6 @@ import junit.framework.AssertionFailedError;
 import junit.framework.ComparisonFailure;
 import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableInt;
-import org.apache.tools.ant.taskdefs.condition.Not;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.ByteArrayOutputStream;
@@ -547,7 +546,7 @@ public class TstUtils {
     }
 
     public static Table prevTableColumnSources(Table table) {
-        final TrackingWritableRowSet rowSet = table.getRowSet().getPrevRowSet().toTracking();
+        final TrackingWritableRowSet rowSet = table.getRowSet().prevCopy().toTracking();
         final Map<String, ColumnSource<?>> columnSourceMap = new LinkedHashMap<>();
         table.getColumnSourceMap().forEach((k, cs) -> {
             columnSourceMap.put(k, new PrevColumnSource<>(cs));
@@ -556,7 +555,7 @@ public class TstUtils {
     }
 
     public static Table prevTable(Table table) {
-        final RowSet rowSet = table.getRowSet().getPrevRowSet();
+        final RowSet rowSet = table.getRowSet().prevCopy();
 
         final List<ColumnHolder<?>> cols = new ArrayList<>();
         for (Map.Entry<String, ? extends ColumnSource<?>> mapEntry : table.getColumnSourceMap().entrySet()) {
