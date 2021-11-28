@@ -233,7 +233,7 @@ public class AutoTuningIncrementalReleaseFilter extends BaseIncrementalReleaseFi
             nextSize = initialRelease;
         } else {
             final long cycleDuration = (cycleEnd.getNanos() - lastRefresh.getNanos());
-            final long targetCycle = UpdateGraphProcessor.DEFAULT.getTargetCycleIntervalMillis() * 1000 * 1000;
+            final long targetCycle = UpdateGraphProcessor.DEFAULT.getTargetCycleDurationMillis() * 1000 * 1000;
             final double rowsPerNanoSecond = ((double) nextSize) / cycleDuration;
             nextSize = Math.max((long) (rowsPerNanoSecond * targetCycle * targetFactor), 1L);
             if (verbose) {

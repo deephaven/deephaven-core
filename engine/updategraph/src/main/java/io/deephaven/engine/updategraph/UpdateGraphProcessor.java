@@ -51,12 +51,12 @@ import java.util.function.Supplier;
 /**
  * <p>
  * This class uses a thread (or pool of threads) to periodically update a set of monitored update sources at a specified
- * target cycle interval. The target cycle interval can be {@link #setTargetCycleIntervalMillis(long) configured} to
+ * target cycle interval. The target cycle interval can be {@link #setTargetCycleDurationMillis(long) configured} to
  * reduce or increase the run rate of the monitored sources.
  * <p>
  * This class can be configured via the following {@link Configuration} property
  * <ul>
- * <li>{@value DEFAULT_TARGET_CYCLE_INTERVAL_MILLIS_PROP}(optional)</i> - The default target cycle time in ms (1000 if
+ * <li>{@value DEFAULT_TARGET_CYCLE_DURATION_MILLIS_PROP}(optional)</i> - The default target cycle time in ms (1000 if
  * not defined)</li>
  * </ul>
  */
@@ -118,13 +118,13 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
     private String unitTestModeHolder = "none";
     private ExecutorService unitTestRefreshThreadPool;
 
-    private static final String DEFAULT_TARGET_CYCLE_INTERVAL_MILLIS_PROP =
+    private static final String DEFAULT_TARGET_CYCLE_DURATION_MILLIS_PROP =
             "UpdateGraphProcessor.targetCycleDurationMillis";
     private static final String MINIMUM_CYCLE_DURATION_TO_LOG_MILLIS_PROP =
             "UpdateGraphProcessor.minimumCycleDurationToLogMillis";
-    private final long DEFAULT_TARGET_CYCLE_INTERVAL_MILLIS =
-            Configuration.getInstance().getIntegerWithDefault(DEFAULT_TARGET_CYCLE_INTERVAL_MILLIS_PROP, 1000);
-    private volatile long targetCycleIntervalMillis = DEFAULT_TARGET_CYCLE_INTERVAL_MILLIS;
+    private final long DEFAULT_TARGET_CYCLE_DURATION_MILLIS =
+            Configuration.getInstance().getIntegerWithDefault(DEFAULT_TARGET_CYCLE_DURATION_MILLIS_PROP, 1000);
+    private volatile long targetCycleDurationMillis = DEFAULT_TARGET_CYCLE_DURATION_MILLIS;
     private final long minimumCycleDurationToLogNanos = TimeUnit.MILLISECONDS.toNanos(
             Configuration.getInstance().getIntegerWithDefault(MINIMUM_CYCLE_DURATION_TO_LOG_MILLIS_PROP, 25));
 
@@ -430,38 +430,40 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
 
     /**
      * <p>
-     * Set the target clock interval between run cycle starts.
+     * Set the target duration of an update cycle, including the updating phase and the idle phase.
+     * This is also the target interval between the start of one cycle and the start of the next.
      * <p>
-     * Can be reset to default via {@link #resetCycleInterval()}
+     * Can be reset to default via {@link #resetCycleDuration()}.
      *
-     * @implNote Any cycle interval < 0 will be clamped to 0.
+     * @implNote Any target cycle duration {@code < 0} will be clamped to 0.
      *
-     * @param cycleTime The target interval between refreshes in milliseconds
+     * @param targetCycleDurationMillis The target duration for update cycles in milliseconds
      */
-    public void setTargetCycleIntervalMillis(long cycleTime) {
-        targetCycleIntervalMillis = Math.max(cycleTime, 0);
+    public void setTargetCycleDurationMillis(final long targetCycleDurationMillis) {
+        this.targetCycleDurationMillis = Math.max(targetCycleDurationMillis, 0);
     }
 
     /**
-     * Get the target period between run cycles.
+     * Get the target duration of an update cycle, including the updating phase and the idle phase.
+     * This is also the target interval between the start of one cycle and the start of the next.
      *
-     * @return The {@link #setTargetCycleIntervalMillis(long) current} minimum cycle time
+     * @return The {@link #setTargetCycleDurationMillis(long) current} target cycle duration
      */
     @SuppressWarnings("unused")
-    public long getTargetCycleIntervalMillis() {
-        return targetCycleIntervalMillis;
+    public long getTargetCycleDurationMillis() {
+        return targetCycleDurationMillis;
     }
 
     /**
      * Resets the run cycle time to the default target configured via the
-     * {@value #DEFAULT_TARGET_CYCLE_INTERVAL_MILLIS_PROP} property.
+     * {@value #DEFAULT_TARGET_CYCLE_DURATION_MILLIS_PROP} property.
      *
-     * @implNote If the {@value #DEFAULT_TARGET_CYCLE_INTERVAL_MILLIS_PROP} property is not set, this value defaults to
+     * @implNote If the {@value #DEFAULT_TARGET_CYCLE_DURATION_MILLIS_PROP} property is not set, this value defaults to
      *           1000ms.
      */
     @SuppressWarnings("unused")
-    public void resetCycleInterval() {
-        targetCycleIntervalMillis = DEFAULT_TARGET_CYCLE_INTERVAL_MILLIS;
+    public void resetCycleDuration() {
+        targetCycleDurationMillis = DEFAULT_TARGET_CYCLE_DURATION_MILLIS;
     }
 
     /**
@@ -780,7 +782,7 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
         try {
             unitTestRefreshThreadPool.submit(() -> ensureUnlocked("unit test run pool thread", errors)).get();
         } catch (InterruptedException | ExecutionException e) {
-            errors.add("Failed to ensure UGP unlocked from unit test run thread pool: " + e.toString());
+            errors.add("Failed to ensure UGP unlocked from unit test run thread pool: " + e);
         }
         unitTestRefreshThreadPool.shutdownNow();
         try {
@@ -888,7 +890,7 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
     public void refreshUpdateSourceForUnitTests(@NotNull final Runnable updateSource) {
         Assert.assertion(unitTestMode, "unitTestMode");
         try {
-            unitTestRefreshThreadPool.submit(updateSource::run).get();
+            unitTestRefreshThreadPool.submit(updateSource).get();
         } catch (InterruptedException | ExecutionException e) {
             throw new UncheckedDeephavenException(e);
         }
@@ -1440,7 +1442,7 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
 
     /**
      * Iterate over all monitored tables and run them. This method also ensures that the loop runs no faster than
-     * {@link #getTargetCycleIntervalMillis() minimum cycle time}.
+     * {@link #getTargetCycleDurationMillis() minimum cycle time}.
      */
     private void refreshTablesAndFlushNotifications() {
         final Scheduler sched = CommBase.getScheduler();
@@ -1501,7 +1503,7 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
 
     /**
      * <p>
-     * Ensure that at least {@link #getTargetCycleIntervalMillis() minCycleTime} has passed before returning.
+     * Ensure that at least {@link #getTargetCycleDurationMillis() minCycleTime} has passed before returning.
      * </p>
      *
      * <p>
@@ -1518,7 +1520,7 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
      * @param timeSource The source of time that startTime was based on
      */
     private void waitForNextCycle(final long startTime, final Scheduler timeSource) {
-        long expectedEndTime = startTime + targetCycleIntervalMillis;
+        long expectedEndTime = startTime + targetCycleDurationMillis;
         if (minimumInterCycleSleep > 0) {
             expectedEndTime = Math.max(expectedEndTime, timeSource.currentTimeMillis() + minimumInterCycleSleep);
         }
@@ -1537,11 +1539,8 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
      * @param timeSource The source of time that startTime was based on
      */
     private void waitForEndTime(final long expectedEndTime, final Scheduler timeSource) {
-        while (timeSource.currentTimeMillis() < expectedEndTime) {
-            final long currentDelay = expectedEndTime - timeSource.currentTimeMillis();
-            if (currentDelay <= 0) {
-                return;
-            }
+        long remainingMillis;
+        while ((remainingMillis = expectedEndTime - timeSource.currentTimeMillis()) > 0) {
             if (refreshRequested.get()) {
                 return;
             }
@@ -1550,7 +1549,7 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
                     return;
                 }
                 try {
-                    refreshRequested.wait(currentDelay);
+                    refreshRequested.wait(remainingMillis);
                 } catch (final InterruptedException logAndIgnore) {
                     log.warn().append("Interrupted while waiting on refreshRequested. Ignoring: ").append(logAndIgnore)
                             .endl();
@@ -1564,7 +1563,7 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
      * end of the updates all {@link Notification notifications} will be flushed.
      */
     private void refreshAllTables() {
-        refreshRequested.set(true);
+        refreshRequested.set(false);
         doRefresh(() -> sources.forEach((final UpdateSourceRefreshNotification updateSourceNotification,
                 final Runnable unused) -> notificationProcessor.submit(updateSourceNotification)));
     }

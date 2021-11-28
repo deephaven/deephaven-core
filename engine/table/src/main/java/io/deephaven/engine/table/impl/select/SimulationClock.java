@@ -86,7 +86,7 @@ public class SimulationClock implements Clock {
      */
     public void start(final boolean maxSpeed) {
         if (maxSpeed) {
-            UpdateGraphProcessor.DEFAULT.setTargetCycleIntervalMillis(0);
+            UpdateGraphProcessor.DEFAULT.setTargetCycleDurationMillis(0);
         }
         if (!state.compareAndSet(State.NOT_STARTED, State.STARTED)) {
             throw new IllegalStateException(this + " already started");

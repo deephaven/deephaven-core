@@ -1067,7 +1067,7 @@ public class ConstructSnapshot {
                     // TODO: Optimization. If this exception is only used for cases when we can't use previous values,
                     // then we could simply wait for the source to become satisfied on this cycle, rather than
                     // waiting for the UGP lock. Likely requires work for all code that uses this pattern.
-                    log.info().append(logPrefix).append(" Disallowed UGP-less Snapshot Function took ")
+                    log.debug().append(logPrefix).append(" Disallowed UGP-less Snapshot Function took ")
                             .append(System.currentTimeMillis() - attemptStart).append("ms")
                             .append(", beforeClockValue=").append(beforeClockValue)
                             .append(", afterClockValue=").append(LogicalClock.DEFAULT.currentValue())
@@ -1092,12 +1092,12 @@ public class ConstructSnapshot {
                         caughtException = e;
                         snapshotSuccessful = true;
                     } else {
-                        log.info().append(logPrefix).append(" Suppressed exception from snapshot success function: ")
+                        log.debug().append(logPrefix).append(" Suppressed exception from snapshot success function: ")
                                 .append(e).endl();
                     }
                 }
                 attemptDurationMillis = System.currentTimeMillis() - attemptStart;
-                log.info().append(logPrefix).append(" UGP-less Snapshot Function took ")
+                log.debug().append(logPrefix).append(" UGP-less Snapshot Function took ")
                         .append(attemptDurationMillis).append("ms")
                         .append(", snapshotSuccessful=").append(snapshotSuccessful)
                         .append(", functionSuccessful=").append(functionSuccessful)

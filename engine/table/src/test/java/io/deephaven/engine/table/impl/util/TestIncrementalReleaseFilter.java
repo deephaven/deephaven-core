@@ -85,7 +85,7 @@ public class TestIncrementalReleaseFilter extends RefreshingTableTestCase {
 
     public void testAutoTune2() {
         // I just want to see commas in the output
-        UpdateGraphProcessor.DEFAULT.setTargetCycleIntervalMillis(100);
+        UpdateGraphProcessor.DEFAULT.setTargetCycleDurationMillis(100);
         final Table source = TableTools.emptyTable(1_000_000);
         TableTools.show(source);
 
@@ -103,7 +103,7 @@ public class TestIncrementalReleaseFilter extends RefreshingTableTestCase {
     }
 
     private int testAutoTuneCycle(int cycleTime) {
-        UpdateGraphProcessor.DEFAULT.setTargetCycleIntervalMillis(cycleTime);
+        UpdateGraphProcessor.DEFAULT.setTargetCycleDurationMillis(cycleTime);
         final Table source = TableTools.emptyTable(10_000);
         TableTools.show(source);
 
