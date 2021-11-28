@@ -124,7 +124,7 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
     }
 
     /**
-     * Get an input stream optionally position-space filtered using the provided rowSet.
+     * Get an input stream optionally position-space filtered using the provided RowSet.
      *
      * @param options the serializable options for this subscription
      * @param subset if provided, is a position-space filter of source data

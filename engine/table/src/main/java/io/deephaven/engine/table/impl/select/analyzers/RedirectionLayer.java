@@ -45,7 +45,7 @@ final public class RedirectionLayer extends SelectAndViewAnalyzer {
     public void applyUpdate(TableUpdate upstream, RowSet toClear, UpdateHelper helper) {
         inner.applyUpdate(upstream, toClear, helper);
 
-        // we need to remove the removed values from our row redirection, and add them to our free rowSet; so that
+        // we need to remove the removed values from our row redirection, and add them to our free RowSet; so that
         // updating tables will not consume more space over the course of a day for abandoned rows
         final RowSetBuilderRandom innerToFreeBuilder = RowSetFactory.builderRandom();
         upstream.removed().forAllRowKeys(key -> innerToFreeBuilder.addKey(rowRedirection.remove(key)));
@@ -101,8 +101,8 @@ final public class RedirectionLayer extends SelectAndViewAnalyzer {
         }
 
         if (upstream.added().isNonempty()) {
-            // added is non-empty, so can always remove at least one value from the rowSet (which must be >= 0);
-            // if there is no freeValue, this is safe because we'll just remove something from an empty rowSet
+            // added is non-empty, so can always remove at least one value from the RowSet (which must be >= 0);
+            // if there is no freeValue, this is safe because we'll just remove something from an empty RowSet
             // if there is a freeValue, we'll remove up to that
             // if there are not enough free values, we'll remove all the free values then beyond
             final MutableLong lastAllocated = new MutableLong(0);

@@ -659,7 +659,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
 
     @Test
     public void testMergeWithNestedShift() {
-        // Test that an outer shift properly shifts rowSet when inner shifts are also propagated to the rowSet.
+        // Test that an outer shift properly shifts RowSet when inner shifts are also propagated to the RowSet.
         final QueryTable table = testRefreshingTable(i(1).toTracking(), c("Sentinel", 1));
         // must be uncollapsable s.t. inner table shifts at the same time as outer table
         final Table m2 = TableTools.merge(table, table).updateView("Sentinel=Sentinel+1");
@@ -682,7 +682,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
 
     @Test
     public void testMergeWithShiftBoundary() {
-        // Test that an outer shift properly shifts rowSet when inner shifts are also propagated to the rowSet.
+        // Test that an outer shift properly shifts RowSet when inner shifts are also propagated to the RowSet.
         final int ONE_MILLION = 1024 * 1024;
         final QueryTable table = testRefreshingTable(i(ONE_MILLION - 1).toTracking(), c("Sentinel", 1));
         final QueryTable table2 = testRefreshingTable(i(0).toTracking(), c("Sentinel", 2));
@@ -709,7 +709,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
 
     @Test
     public void testMergeShiftsEmptyTable() {
-        // Test that an outer shift properly shifts rowSet when inner shifts are also propagated to the rowSet.
+        // Test that an outer shift properly shifts RowSet when inner shifts are also propagated to the RowSet.
         final QueryTable table = testRefreshingTable(i(1).toTracking(), c("Sentinel", 1));
         final QueryTable emptyTable = testRefreshingTable(i().toTracking(), TstUtils.<Integer>c("Sentinel"));
         final Table m2 = TableTools.merge(table, emptyTable, emptyTable).updateView("Sentinel=Sentinel+1");
@@ -782,7 +782,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
 
     @Test
     public void testMergeDeepShifts() {
-        // Test that an outer shift properly shifts rowSet when inner shifts are also propagated to the rowSet.
+        // Test that an outer shift properly shifts RowSet when inner shifts are also propagated to the RowSet.
         final QueryTable table = testRefreshingTable(i(1).toTracking(), c("Sentinel", 1));
         final QueryTable emptyTable = testRefreshingTable(i().toTracking(), TstUtils.<Integer>c("Sentinel"));
         final Table m2 = TableTools.merge(table, emptyTable, emptyTable, emptyTable, emptyTable, emptyTable)

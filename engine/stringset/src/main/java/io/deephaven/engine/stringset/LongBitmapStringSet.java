@@ -161,9 +161,9 @@ public class LongBitmapStringSet implements StringSet, Serializable {
     public interface ReversibleLookup<DATA_TYPE> {
 
         /**
-         * Forward lookup from the integral rowSet.
+         * Forward lookup from the integral index.
          * 
-         * @return the DATA_TYPE associated with the rowSet.
+         * @return the DATA_TYPE associated with the index.
          */
 
         DATA_TYPE get(long index);
@@ -171,7 +171,7 @@ public class LongBitmapStringSet implements StringSet, Serializable {
         /**
          * Reverse lookup of the DATA_TYPE.
          * 
-         * @return the integral rowSet associated with the DATA_TYPE.
+         * @return the integral index associated with the DATA_TYPE.
          */
 
         int rget(int highestIndex, DATA_TYPE value);

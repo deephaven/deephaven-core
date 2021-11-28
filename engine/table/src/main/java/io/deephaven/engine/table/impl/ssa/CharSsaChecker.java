@@ -28,7 +28,7 @@ public class CharSsaChecker implements SsaChecker {
 
         //noinspection unchecked
         try (final WritableCharChunk<Values> resultChunk = (WritableCharChunk) ssa.asCharChunk();
-             final WritableLongChunk<RowKeys> indexChunk = ssa.keyIndicesChunk()) {
+             final WritableLongChunk<RowKeys> indexChunk = ssa.rowKeysChunk()) {
 
             Assert.eq(valueChunk.size(), "valueChunk.size()", resultChunk.size(), "resultChunk.size()");
             Assert.eq(tableIndexChunk.size(), "tableIndexChunk.size()", indexChunk.size(), "indexChunk.size()");

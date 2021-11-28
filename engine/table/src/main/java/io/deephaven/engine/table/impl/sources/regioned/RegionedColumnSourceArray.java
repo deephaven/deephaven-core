@@ -93,7 +93,7 @@ abstract class RegionedColumnSourceArray<DATA_TYPE, ATTR extends Attributes.Valu
      * <em>This method is for unit testing purposes only!</em>
      *
      * @param region The region to add
-     * @return The rowSet assigned to the added region
+     * @return The index assigned to the added region
      */
     @Override
     @TestUseOnly
@@ -123,10 +123,10 @@ abstract class RegionedColumnSourceArray<DATA_TYPE, ATTR extends Attributes.Valu
     }
 
     /**
-     * Update the region at a given rowSet in this regioned column source. This is intended to be used by the region
+     * Update the region at a given index in this regioned column source. This is intended to be used by the region
      * suppliers in DeferredColumnRegion implementations.
      *
-     * @param regionIndex The region rowSet
+     * @param regionIndex The region index
      * @param region The new column region
      * @return The new column region, for method-chaining purposes
      */

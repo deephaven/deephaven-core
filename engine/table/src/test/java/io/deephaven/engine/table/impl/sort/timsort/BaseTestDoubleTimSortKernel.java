@@ -50,17 +50,17 @@ public abstract class BaseTestDoubleTimSortKernel extends TestTimSortKernel {
             doubleChunk = WritableDoubleChunk.makeWritableChunk(size);
             context = DoubleLongTimsortKernel.createContext(size);
 
-            prepareDoubleChunks(javaTuples, doubleChunk, indexKeys);
+            prepareDoubleChunks(javaTuples, doubleChunk, rowKeys);
         }
 
         @Override
         void run() {
-            DoubleLongTimsortKernel.sort(context, indexKeys, doubleChunk);
+            DoubleLongTimsortKernel.sort(context, rowKeys, doubleChunk);
         }
 
         @Override
         void check(List<DoubleLongTuple> expected) {
-            verify(expected.size(), expected, doubleChunk, indexKeys);
+            verify(expected.size(), expected, doubleChunk, rowKeys);
         }
     }
 
@@ -160,7 +160,7 @@ public abstract class BaseTestDoubleTimSortKernel extends TestTimSortKernel {
 
             secondarySortContext = io.deephaven.engine.table.impl.sort.timsort.LongLongTimsortKernel.createContext(size);
 
-            prepareMultiDoubleChunks(javaTuples, primaryChunk, secondaryChunk, indexKeys);
+            prepareMultiDoubleChunks(javaTuples, primaryChunk, secondaryChunk, rowKeys);
 
             secondaryColumnSource = new AbstractColumnSource.DefaultedImmutable<Long>(long.class) {
                 @Override
@@ -181,7 +181,7 @@ public abstract class BaseTestDoubleTimSortKernel extends TestTimSortKernel {
 
         @Override
         void run() {
-            DoubleLongTimsortKernel.sort(context, indexKeys, primaryChunk, offsets, lengths);
+            DoubleLongTimsortKernel.sort(context, rowKeys, primaryChunk, offsets, lengths);
             DoubleFindRunsKernel.findRuns(primaryChunk, offsets, lengths, offsetsOut, lengthsOut);
 //            dumpChunk(primaryChunk);
 //            dumpOffsets(offsetsOut, lengthsOut);
@@ -207,7 +207,7 @@ public abstract class BaseTestDoubleTimSortKernel extends TestTimSortKernel {
                     final int runLength = lengthsOut.get(ii);
 
                     for (int jj = 0; jj < runLength; ++jj) {
-                        indicesToFetch.add(indexKeys.get(runStart + jj));
+                        indicesToFetch.add(rowKeys.get(runStart + jj));
                         originalPositions.add(runStart +jj);
                     }
                 }
@@ -224,13 +224,13 @@ public abstract class BaseTestDoubleTimSortKernel extends TestTimSortKernel {
                 }
 
                 // and we can sort the stuff within the run now
-                LongLongTimsortKernel.sort(secondarySortContext, indexKeys, secondaryChunkPermuted, offsetsOut, lengthsOut);
+                LongLongTimsortKernel.sort(secondarySortContext, rowKeys, secondaryChunkPermuted, offsetsOut, lengthsOut);
             }
         }
 
         @Override
         void check(List<DoubleLongLongTuple> expected) {
-            verify(expected.size(), expected, primaryChunk, secondaryChunk, indexKeys);
+            verify(expected.size(), expected, primaryChunk, secondaryChunk, rowKeys);
         }
     }
 

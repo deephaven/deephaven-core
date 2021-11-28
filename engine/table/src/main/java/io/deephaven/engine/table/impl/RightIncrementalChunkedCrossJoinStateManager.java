@@ -137,7 +137,7 @@ class RightIncrementalChunkedCrossJoinStateManager
     private final ArrayBackedColumnSource<?> [] overflowKeySources;
     // the location of the next key in an overflow bucket
     private final IntegerArraySource overflowOverflowLocationSource = new IntegerArraySource();
-    // the overflow buckets for the right TrackingWritableRowSet
+    // the overflow buckets for the state source
     @HashTableAnnotations.OverflowStateColumnSource
     // @StateColumnSourceType@ from \QObjectArraySource<TrackingWritableRowSet>\E
     private final ObjectArraySource<TrackingWritableRowSet> overflowRightRowSetSource
@@ -160,7 +160,7 @@ class RightIncrementalChunkedCrossJoinStateManager
     // endmixin rehash
 
     // region extra variables
-    // maintain a mapping from left rowSet to its slot
+    // maintain a mapping from left index to its slot
     private final WritableRowRedirection leftIndexToSlot;
     private final WritableRowRedirection rightIndexToSlot;
     private final ColumnSource<?>[] leftKeySources;
@@ -537,7 +537,7 @@ class RightIncrementalChunkedCrossJoinStateManager
                             leftIndexToSlot.removeVoid(prevIndex);
                         }
                     } else if (preSlot != EMPTY_RIGHT_SLOT) {
-                        // note we must mark post shift rowSet as the modification
+                        // note we must mark post shift index as the modification
                         cookie = tracker.appendChunkModify(cookie, postSlot, index);
                     }
                     return cookie;
@@ -553,8 +553,8 @@ class RightIncrementalChunkedCrossJoinStateManager
         shifted.forAllInRowSet(filterIndex, (ii, delta) -> {
             final long slot = leftIndexToSlot.get(ii);
             if (slot == RowSequence.NULL_ROW_KEY) {
-                // This might happen if a rowSet is moving from one slot to another; we shift after removes but before
-                // the adds. We don't need to shift the slot that was related to this rowSet.
+                // This might happen if a RowSet is moving from one slot to another; we shift after removes but before
+                // the adds. We don't need to shift the slot that was related to this RowSet.
                 return;
             }
 
@@ -1409,7 +1409,7 @@ class RightIncrementalChunkedCrossJoinStateManager
                         // region promotion move
                         final long overflowLocation = bc.overflowLocationsAsKeyIndices.get(ii);
                         final long overflowHashLocation = overflowLocationToHashLocation(overflowLocation);
-                        // Right rowSet source move
+                        // Right RowSet source move
                         final TrackingWritableRowSet stateValueToMove = overflowRightRowSetSource.getUnsafe(overflowLocation);
                         rightRowSetSource.set(tableLocation, stateValueToMove);
                         stateValueToMove.forAllRowKeys(right -> {
@@ -1421,7 +1421,7 @@ class RightIncrementalChunkedCrossJoinStateManager
                         });
                         overflowRightRowSetSource.set(overflowLocation, EMPTY_RIGHT_VALUE);
 
-                        // Left rowSet source move
+                        // Left RowSet source move
                         final TrackingWritableRowSet leftRowSetValue = overflowLeftRowSetSource.getUnsafe(overflowLocation);
                         leftRowSetSource.set(tableLocation, leftRowSetValue);
                         overflowLeftRowSetSource.set(overflowLocation, null);
@@ -1699,7 +1699,7 @@ class RightIncrementalChunkedCrossJoinStateManager
         // the chunk of positions within our table
         final WritableLongChunk<RowKeys> tableLocationsChunk;
 
-        // the chunk of right indices that we read from the hash table, the empty right rowSet is used as a sentinel that the
+        // the chunk of right indices that we read from the hash table, the empty right index is used as a sentinel that the
         // state exists; otherwise when building from the left it is always null
         // @WritableStateChunkType@ from \QWritableObjectChunk<TrackingWritableRowSet,Values>\E
         final WritableObjectChunk<TrackingWritableRowSet,Values> workingStateEntries;

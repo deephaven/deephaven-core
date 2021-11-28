@@ -15,7 +15,7 @@ interface JoinKeyState {
 
     void removeRightIndices(RowSet rightIndices);
 
-    void modifyByRightIndices(RowSet rightRowSet);// Informs the state the right rowSet at that position was modified
+    void modifyByRightIndices(RowSet rightRowSet);// Informs the state the right RowSet at that position was modified
 
     /**
      * After the right side has been changed (all additions, modifications, removals, etc.) have been completed; each

@@ -7,7 +7,7 @@ import io.deephaven.engine.table.TableUpdate;
  * Calculate the size of the chunks needed to process an update.
  *
  * The assumption is that the operation processes removed, modified, and added values sequentially (not concurrently);
- * so the largest add/modified/removed rowSet is all that is needed at one time. The effective shifts size is also
+ * so the largest add/modified/removed RowSet is all that is needed at one time. The effective shifts size is also
  * included in the required update size.
  */
 public class UpdateSizeCalculator {

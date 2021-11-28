@@ -125,7 +125,7 @@ class IncrementalChunkedOperatorAggregationStateManager
     private final ArrayBackedColumnSource<?> [] overflowKeySources;
     // the location of the next key in an overflow bucket
     private final IntegerArraySource overflowOverflowLocationSource = new IntegerArraySource();
-    // the overflow buckets for the right TrackingWritableRowSet
+    // the overflow buckets for the state source
     @HashTableAnnotations.OverflowStateColumnSource
     // @StateColumnSourceType@ from \QIntegerArraySource\E
     private final IntegerArraySource overflowStateSource
@@ -1310,7 +1310,7 @@ class IncrementalChunkedOperatorAggregationStateManager
         // the chunk of positions within our table
         final WritableLongChunk<RowKeys> tableLocationsChunk;
 
-        // the chunk of right indices that we read from the hash table, the empty right rowSet is used as a sentinel that the
+        // the chunk of right indices that we read from the hash table, the empty right index is used as a sentinel that the
         // state exists; otherwise when building from the left it is always null
         // @WritableStateChunkType@ from \QWritableIntChunk<Values>\E
         final WritableIntChunk<Values> workingStateEntries;

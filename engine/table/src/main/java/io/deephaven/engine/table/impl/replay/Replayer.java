@@ -281,10 +281,10 @@ public class Replayer implements ReplayerInterface, Runnable {
     }
 
     /**
-     * Register the time column and rowSet from a new table to replay. Most users will use <code>replay</code>,
+     * Register the time column and row set from a new table to replay. Most users will use <code>replay</code>,
      * <code>replayGrouped</code>, or <code>replayGroupedLastBy</code> instead of this function.
      *
-     * @param rowSet table rowSet
+     * @param rowSet table row set
      * @param timestampSource column source containing time information.
      */
     public void registerTimeSource(RowSet rowSet, ColumnSource<DateTime> timestampSource) {

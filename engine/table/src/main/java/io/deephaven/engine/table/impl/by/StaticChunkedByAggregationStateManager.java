@@ -122,7 +122,7 @@ class StaticChunkedByAggregationStateManager
     private final ArrayBackedColumnSource<?> [] overflowKeySources;
     // the location of the next key in an overflow bucket
     private final IntegerArraySource overflowOverflowLocationSource = new IntegerArraySource();
-    // the overflow buckets for the right TrackingWritableRowSet
+    // the overflow buckets for the state source
     @HashTableAnnotations.OverflowStateColumnSource
     // @StateColumnSourceType@ from \QObjectArraySource<Object>\E
     private final ObjectArraySource<Object> overflowRowSetSource
@@ -475,7 +475,7 @@ class StaticChunkedByAggregationStateManager
              // endregion build initialization try
         ) {
             // region build initialization
-            // TrackingWritableRowSet keys extracted from the input rowSet, parallel to the sourceKeyChunks
+            // RowSet keys extracted from the input RowSet, parallel to the sourceKeyChunks
             final WritableLongChunk<OrderedRowKeys> sourceChunkIndexKeys = WritableLongChunk.makeWritableChunk(bc.chunkSize);
 
             // Result destination slots recorded during the build, parallel to the sourceKeyChunks and sourceChunkIndexKeys
@@ -1154,7 +1154,7 @@ class StaticChunkedByAggregationStateManager
             }
         }
         // region nullOverflowObjectSources
-        // NB: It's worth nulling out the overflowRowSetSource because if it's never re-used its sequential builder will never be swapped to a rowSet
+        // NB: It's worth nulling out the overflowRowSetSource because if it's never re-used its sequential builder will never be swapped to a RowSet
         for (int ii = 0; ii < locationsToNull.size(); ++ii) {
             overflowRowSetSource.set(locationsToNull.get(ii), EMPTY_VALUE);
         }

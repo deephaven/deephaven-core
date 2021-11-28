@@ -118,7 +118,7 @@ public class RunChartDownsample implements Function<Table, Table> {
         // handleAdded(rowSetToUse, columnSourceToBin, getNanosPerPx(minBins, usePrev, rowSetToUse, columnSourceToBin),
         // valueColumnSource, states, usePrev);
         //
-        // // construct the initial rowSet, table
+        // // construct the initial row set and table
         // //TODO copy def, columns that we actually need here
         // QueryTable resultTable = new QueryTable(buildIndexFromGroups(states), baseTable.getColumnSourceMap());
         // result.setValue(resultTable);
@@ -371,7 +371,7 @@ public class RunChartDownsample implements Function<Table, Table> {
 
                 Assert.assertion(this.rowSet.isEmpty(), "this.rowSet.empty()");
 
-                // notify downstream tables that the rowSet was swapped
+                // notify downstream tables that the row set was swapped
                 notifyResultTable(upstream, sourceTable.getRowSet());
             } else if (indexMode == IndexMode.DOWNSAMPLE && sourceTable.size() < key.bins) {
                 log.info().append("Switching from DOWNSAMPLE to PASSTHROUGH ").append(sourceTable.size())
@@ -390,7 +390,7 @@ public class RunChartDownsample implements Function<Table, Table> {
                 availableSlots.clear();// TODO optionally, clear out value trackers?
                 nextSlot = 1;
 
-                // notify downstream tables that the rowSet changed, add all missing rows from the source table, since
+                // notify downstream tables that the row set changed, add all missing rows from the source table, since
                 // we're un-downsampling
                 // TODO
                 final TableUpdate switchToPassThrough =
@@ -467,8 +467,8 @@ public class RunChartDownsample implements Function<Table, Table> {
                 handleAdded(context, usePrev, sourceTable.getRowSet());
                 if (VALIDATE) {
                     Consumer<BucketState> validate = state -> {
-                        // prebuild the rowSet so we can log details
-                        state.makeIndex();
+                        // prebuild the RowSet so we can log details
+                        state.makeRowSet();
 
                         // check that the state is sane
                         state.validate(usePrev, context, allYColumnIndexes);
@@ -727,7 +727,7 @@ public class RunChartDownsample implements Function<Table, Table> {
                                                                                      // empty indexes anyway
                         states.values().stream())
                         .reduce(RowSetFactory.builderRandom(), (builder, state) -> {
-                            builder.addRowSet(state.makeIndex());
+                            builder.addRowSet(state.makeRowSet());
                             return builder;
                         }, (b1, b2) -> {
                             b1.addRowSet(b2.build());
@@ -735,7 +735,7 @@ public class RunChartDownsample implements Function<Table, Table> {
                         }).build();
             }
             return states.values().stream().reduce(RowSetFactory.builderRandom(), (builder, state) -> {
-                builder.addRowSet(state.makeIndex());
+                builder.addRowSet(state.makeRowSet());
                 return builder;
             }, (b1, b2) -> {
                 b1.addRowSet(b2.build());

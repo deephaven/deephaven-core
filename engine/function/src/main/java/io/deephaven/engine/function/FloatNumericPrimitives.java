@@ -2027,11 +2027,11 @@ public class FloatNumericPrimitives {
     }
 
     /**
-     * Returns the first rowSet containing the value.
+     * Returns the first index containing the value.
      *
      * @param values values.
      * @param val value to search for.
-     * @return first rowSet containing the value or null, if the value is not present.
+     * @return first index containing the value or null, if the value is not present.
      */
     public static int firstIndexOf(float[] values, float val) {
         if( values == null) {
@@ -2042,11 +2042,11 @@ public class FloatNumericPrimitives {
     }
 
     /**
-     * Returns the first rowSet containing the value.
+     * Returns the first index containing the value.
      *
      * @param values values.
      * @param val    value to search for.
-     * @return first rowSet containing the value or null, if the value is not present.
+     * @return first index containing the value or null, if the value is not present.
      */
     public static int firstIndexOf(FloatVector values, float val) {
         if (values == null) {
@@ -2065,20 +2065,20 @@ public class FloatNumericPrimitives {
     }
 
     /**
-     * Returns the rowSet of the maximum value.
+     * Returns the index of the maximum value.
      *
      * @param values values.
-     * @return rowSet of the maximum value.
+     * @return index of the maximum value.
      */
     public static int indexOfMax(Float... values) {
         return indexOfMax(unbox(values));
     }
 
     /**
-     * Returns the rowSet of the maximum value.
+     * Returns the index of the maximum value.
      *
      * @param values values.
-     * @return rowSet of the maximum value.
+     * @return index of the maximum value.
      */
     public static int indexOfMax(float[] values) {
         if( values == null) {
@@ -2089,10 +2089,10 @@ public class FloatNumericPrimitives {
     }
 
     /**
-     * Returns the rowSet of the maximum value.
+     * Returns the index of the maximum value.
      *
      * @param values values.
-     * @return rowSet of the maximum value.
+     * @return index of the maximum value.
      */
     public static int indexOfMax(FloatVector values) {
         if (values == null) {
@@ -2115,20 +2115,20 @@ public class FloatNumericPrimitives {
     }
 
     /**
-     * Returns the rowSet of the minimum value.
+     * Returns the index of the minimum value.
      *
      * @param values values.
-     * @return rowSet of the minimum value.
+     * @return index of the minimum value.
      */
     public static int indexOfMin(Float... values) {
         return indexOfMin(unbox(values));
     }
 
     /**
-     * Returns the rowSet of the minimum value.
+     * Returns the index of the minimum value.
      *
      * @param values values.
-     * @return rowSet of the minimum value.
+     * @return index of the minimum value.
      */
     public static int indexOfMin(float[] values) {
         if( values == null) {
@@ -2139,10 +2139,10 @@ public class FloatNumericPrimitives {
     }
 
     /**
-     * Returns the rowSet of the minimum value.
+     * Returns the index of the minimum value.
      *
      * @param values values.
-     * @return rowSet of the minimum value.
+     * @return index of the minimum value.
      */
     public static int indexOfMin(FloatVector values) {
         if (values == null) {
@@ -2170,7 +2170,7 @@ public class FloatNumericPrimitives {
      * @param values sorted values to search.
      * @param key key to search for.
      * @param choiceWhenEquals algorithm used to resolve ties when performing a binary search.
-     * @return rowSet of the search key, if it is contained in the array; otherwise, the rowSet of where the key would be inserted.
+     * @return index of the search key, if it is contained in the array; otherwise, the index of where the key would be inserted.
      */
     public static int binSearchIndex(float[] values, float key, BinSearch choiceWhenEquals) {
         if( values == null) {
@@ -2186,7 +2186,7 @@ public class FloatNumericPrimitives {
      * @param values           sorted values to search.
      * @param key              key to search for.
      * @param choiceWhenEquals algorithm used to resolve ties when performing a binary search.
-     * @return rowSet of the search key, if it is contained in the array; otherwise, the rowSet of where the key would be inserted.
+     * @return index of the search key, if it is contained in the array; otherwise, the index of where the key would be inserted.
      */
     public static int binSearchIndex(FloatVector values, float key, BinSearch choiceWhenEquals) {
         int index = rawBinSearchIndex(values, key, choiceWhenEquals);
@@ -2207,7 +2207,7 @@ public class FloatNumericPrimitives {
      * @param values sorted values to search.
      * @param key key to search for.
      * @param choiceWhenEquals algorithm used to resolve ties when performing a binary search.
-     * @return rowSet of the search key, if it is contained in the array; otherwise, {@code (-(insertion point) - 1)}.
+     * @return index of the search key, if it is contained in the array; otherwise, {@code (-(insertion point) - 1)}.
      */
     public static int rawBinSearchIndex(float[] values, float key, BinSearch choiceWhenEquals) {
         if( values == null) {
@@ -2223,7 +2223,7 @@ public class FloatNumericPrimitives {
      * @param values           sorted values to search.
      * @param key              key to search for.
      * @param choiceWhenEquals algorithm used to resolve ties when performing a binary search.
-     * @return rowSet of the search key, if it is contained in the array; otherwise, {@code (-(insertion point) - 1)}.
+     * @return index of the search key, if it is contained in the array; otherwise, {@code (-(insertion point) - 1)}.
      */
     public static int rawBinSearchIndex(FloatVector values, float key, BinSearch choiceWhenEquals) {
         if (values == null || key == NULL_FLOAT) {

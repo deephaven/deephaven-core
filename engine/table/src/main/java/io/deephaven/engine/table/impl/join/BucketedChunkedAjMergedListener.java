@@ -245,7 +245,7 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                                 final RowSetShiftData shiftDataForSlot = leftShifted.intersect(shiftedRowSet);
 
                                 if ((state & ENTRY_RIGHT_MASK) == ENTRY_RIGHT_IS_EMPTY) {
-                                    // if the left is empty, we should be an rowSet entry rather than an SSA, and we can
+                                    // if the left is empty, we should be a RowSet entry rather than an SSA, and we can
                                     // not be empty, because we are responsive
                                     final WritableRowSet leftRowSet = asOfJoinStateManager.getLeftIndex(slot);
                                     shiftDataForSlot.apply(leftRowSet);
@@ -385,7 +385,7 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
                                 final RowSetShiftData shiftDataForSlot = rightShifted.intersect(shiftedRowSet);
 
                                 if (leftSsa == null) {
-                                    // if the left is empty, we should be an rowSet entry rather than an SSA, and we can
+                                    // if the left is empty, we should be a RowSet entry rather than an SSA, and we can
                                     // not be empty, because we are responsive
                                     final WritableRowSet rightRowSet = asOfJoinStateManager.getRightIndex(slot);
                                     shiftDataForSlot.apply(rightRowSet);

@@ -19,7 +19,7 @@ import org.jetbrains.annotations.NotNull;
 public class WrappedRowSetWritableRowRedirection implements WritableRowRedirection {
 
     /**
-     * {@link TrackingWritableRowSet} used to map from outer key (position in the rowSet) to inner key.
+     * {@link TrackingRowSet} used to map from outer key (position in the RowSet) to inner key.
      */
     private final TrackingRowSet wrappedRowSet;
 

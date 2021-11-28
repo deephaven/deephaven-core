@@ -47,7 +47,7 @@ public class StreamTableOperationsTest {
      * Execute a table operator.
      *
      * @param operator The operator to apply
-     * @param windowed Whether the stream table rowSet should be a sliding window (if {@code true}) or zero-based (if
+     * @param windowed Whether the stream table RowSet should be a sliding window (if {@code true}) or zero-based (if
      *        {@code false})
      * @param expectStreamResult Whether the result is expected to be a stream table
      */
@@ -63,7 +63,7 @@ public class StreamTableOperationsTest {
             streamInternalRowSet = null;
             streamSources = source.getColumnSourceMap();
         } else {
-            // Redirecting so we can present a zero-based TrackingWritableRowSet from the stream table
+            // Redirecting so we can present a zero-based RowSet from the stream table
             streamInternalRowSet = RowSetFactory.empty().toTracking();
             final WritableRowRedirection streamRedirections =
                     new WrappedRowSetWritableRowRedirection(streamInternalRowSet);

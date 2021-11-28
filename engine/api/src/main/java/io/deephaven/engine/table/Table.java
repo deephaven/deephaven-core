@@ -474,11 +474,11 @@ public interface Table extends
     Table moveColumnsDown(String... columnsToMove);
 
     /**
-     * Produce a new table with the specified columns moved to the specified {@code rowSet}. Column indices begin at 0.
+     * Produce a new table with the specified columns moved to the specified {@code index}. Column indices begin at 0.
      * Columns can be renamed with the usual syntax, i.e. {@code "NewColumnName=OldColumnName")}.
      *
-     * @param index The rowSet to which the specified columns should be moved
-     * @param columnsToMove The columns to move to the specified rowSet (and, optionally, to rename)
+     * @param index The index to which the specified columns should be moved
+     * @param columnsToMove The columns to move to the specified index (and, optionally, to rename)
      * @return The new table, with the columns rearranged as explained above
      */
     @ConcurrentMethod

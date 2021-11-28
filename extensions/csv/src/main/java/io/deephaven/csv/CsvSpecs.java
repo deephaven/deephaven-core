@@ -166,7 +166,7 @@ public abstract class CsvSpecs {
     /**
      * The header row flag. If {@code true}, the column names of the output table will be inferred from the first row of
      * the table. If {@code false}, the column names will be numbered numerically in the format "Column%d" with a
-     * 1-based rowSet.
+     * 1-based index.
      *
      * <p>
      * Note: if {@link #header()} is specified, it takes precedence over the column names that will be used.

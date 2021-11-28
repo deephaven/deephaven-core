@@ -215,7 +215,7 @@ public class FloatPrimitives {
      *
      * @param index index of the value to return.
      * @param values values.
-     * @return nth value from the array or null, if the rowSet is outside of the array's rowSet range.
+     * @return nth value from the array or null, if the index is outside of the array's index range.
      */
     static public float nth(int index, FloatVector values){
         if(index < 0 || index >= values.size()){
@@ -230,7 +230,7 @@ public class FloatPrimitives {
      *
      * @param index index of the value to return.
      * @param values values.
-     * @return nth value from the array or null, if the rowSet is outside of the array's rowSet range.
+     * @return nth value from the array or null, if the index is outside of the array's index range.
      */
     static public float nth(int index, float[] values){
         return nth(index, array(values));

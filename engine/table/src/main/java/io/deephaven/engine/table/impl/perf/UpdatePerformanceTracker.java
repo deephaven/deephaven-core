@@ -177,7 +177,7 @@ public class UpdatePerformanceTracker {
     private void finishInterval(final long intervalStartTimeMillis, final long intervalEndTimeMillis,
             final long intervalDurationNanos) {
         /*
-         * Visit all entry references. For entries that no longer exist: Remove by rowSet from the entry list. For
+         * Visit all entry references. For entries that no longer exist: Remove by index from the entry list. For
          * entries that still exist: If the entry had non-zero usage in this interval, add it to the report. Reset the
          * entry for the next interval.
          */

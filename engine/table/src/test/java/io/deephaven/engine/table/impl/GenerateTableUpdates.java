@@ -230,7 +230,7 @@ public class GenerateTableUpdates {
             update.shifted = shiftBuilder.build();
 
             // Compute what data needs to be removed otherwise the shift generated would be invalid. We must also update
-            // our cloned rowSet so we can pick appropriate added and modified sets.
+            // our copied RowSet so that we can pick appropriate added and modified sets.
             final int preShiftIndexSize = rowSet.intSize();
             update.shifted().apply((start, end, delta) -> {
                 // Remove any keys that are going to be splatted all over thanks to a shift.

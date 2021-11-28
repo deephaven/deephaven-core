@@ -141,7 +141,7 @@ public interface WritableRowRedirection extends RowRedirection {
     }
 
     /**
-     * Factory for producing MutableRowSets and their components.
+     * Factory for producing WritableRowSets and their components.
      */
     interface Factory {
         TLongLongMap createUnderlyingMapWithCapacity(int initialCapacity);

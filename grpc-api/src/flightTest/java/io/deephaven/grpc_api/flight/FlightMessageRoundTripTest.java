@@ -251,7 +251,7 @@ public class FlightMessageRoundTripTest {
         assertRoundTripDataEqual(TableTools.emptyTable(10).update("empty=\"\""));
         assertRoundTripDataEqual(TableTools.emptyTable(10).update("empty=0"));
 
-        // non-flat rowSet
+        // non-flat RowSet
         assertRoundTripDataEqual(TableTools.emptyTable(10).where("i % 2 == 0").update("I=i"));
 
         // all null values in columns

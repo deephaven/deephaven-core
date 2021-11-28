@@ -409,9 +409,9 @@ public class JsonKeyOrValueSerializer implements KeyOrValueSerializer<String> {
     }
 
     /**
-     * Process the given update rowSet and returns a list of JSON strings, reach representing one row of data.
+     * Process the given update RowSequence and returns a list of JSON strings, reach representing one row of data.
      *
-     * @param toProcess An TrackingWritableRowSet indicating which rows were involved
+     * @param toProcess An RowSequence indicating which rows were involved
      * @param previous True if this should be performed using the 'previous' data instead of current, as for removals.
      * @return A List of Strings containing all of the parsed update statements
      */

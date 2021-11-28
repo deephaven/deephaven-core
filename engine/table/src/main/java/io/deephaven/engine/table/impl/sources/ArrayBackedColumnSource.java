@@ -96,7 +96,7 @@ public abstract class ArrayBackedColumnSource<T>
     public static final int BLOCK_SIZE = 1 << LOG_BLOCK_SIZE;
 
     // The inUse calculations are confusing because there are actually three levels of indexing (where the third level
-    // is really a rowSet into a bitmask). In pseudocode:
+    // is really an index into a bitmask). In pseudocode:
     // bool inUse = prevInUse[block][indexWithinInUse][inUseBitIndex]
     // Or, in actual code
     // bool inUse = (prevInUse[block][indexWithinInUse] & maskWithinInUse) != 0

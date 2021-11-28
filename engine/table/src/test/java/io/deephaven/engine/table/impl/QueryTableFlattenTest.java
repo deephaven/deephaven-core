@@ -312,7 +312,7 @@ public class QueryTableFlattenTest extends QueryTableTestBase {
     }
 
     /**
-     * Makes sure that the rowSet of our table is actually contiguous.
+     * Makes sure that the row set of our table is actually contiguous.
      */
     protected static class FlatChecker implements EvalNuggetInterface {
         private Table t1;

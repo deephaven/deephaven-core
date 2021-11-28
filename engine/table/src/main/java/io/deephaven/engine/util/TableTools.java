@@ -94,7 +94,7 @@ public class TableTools {
     }
 
     /**
-     * Prints the first few rows of a table to standard output, and also prints the details of the rowSet and record
+     * Prints the first few rows of a table to standard output, and also prints the details of the row keys and row
      * positions that provided the values.
      *
      * @param source a Deephaven table object
@@ -137,7 +137,7 @@ public class TableTools {
     }
 
     /**
-     * Prints the first few rows of a table to standard output, and also prints the details of the rowSet and record
+     * Prints the first few rows of a table to standard output, and also prints the details of the row keys and row
      * positions that provided the values.
      *
      * @param source a Deephaven table object
@@ -187,7 +187,7 @@ public class TableTools {
     }
 
     /**
-     * Prints the first few rows of a table to standard output, and also prints the details of the rowSet and record
+     * Prints the first few rows of a table to standard output, and also prints the details of the row keys and row
      * positions that provided the values.
      *
      * @param source a Deephaven table object
@@ -203,7 +203,7 @@ public class TableTools {
     }
 
     /**
-     * Prints the first few rows of a table to standard output, and also prints the details of the rowSet and record
+     * Prints the first few rows of a table to standard output, and also prints the details of the row keys and row
      * positions that provided the values.
      *
      * @param source a Deephaven table object

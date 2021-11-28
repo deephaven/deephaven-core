@@ -1512,7 +1512,7 @@ public class TestConcurrentInstantiation extends QueryTableTestBase {
                         final String[] result1 = new String[size];
                         result.setValue(result1);
                         // on the first pass, we want to have an AAIOBE for the result1, which will occur, because 100ms
-                        // into this sleep; the rowSet size will increase by 1
+                        // into this sleep; the RowSet size will increase by 1
                         SleepUtil.sleep(1000);
 
                         // and make sure the terrible thing has happened

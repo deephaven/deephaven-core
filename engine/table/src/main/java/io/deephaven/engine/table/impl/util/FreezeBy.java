@@ -15,7 +15,7 @@ import java.util.Collection;
  * cycle, the newly added value is frozen in the output.
  *
  * Only one row per key is allowed in the input. This is because the operation can not determine which is the correct
- * row to freeze in cases where there are multiple rows per key. The freeze operation is not sensitive to rowSet changes
+ * row to freeze in cases where there are multiple rows per key. The freeze operation is not sensitive to RowSet changes
  * (e.g., adds, removes, modifies, shifts); whether a row is updated is based solely on (1) a key did not exist in the
  * input table at the start of the cycle and (2) it now exists in the input table. If the key did not exist, a frozen
  * copy is taken. If the key did exist, then no modifications occur.

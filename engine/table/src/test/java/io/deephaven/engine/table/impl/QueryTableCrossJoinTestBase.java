@@ -42,7 +42,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
     }
 
     public void testZeroKeyJoinBitExpansionOnAdd() {
-        // Looking to force our rowSet space to need more keys.
+        // Looking to force our row set space to need more keys.
         final QueryTable lTable = testRefreshingTable(c("X", "to-remove", "b", "c", "d"));
         removeRows(lTable, i(0)); // row @ 0 does not need outer shifting
         final QueryTable rTable = testRefreshingTable(longCol("Y"));
@@ -76,7 +76,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
     }
 
     public void testZeroKeyJoinBitExpansionOnBoundaryShift() {
-        // Looking to force our rowSet space to need more keys.
+        // Looking to force our row set space to need more keys.
         final QueryTable lTable = testRefreshingTable(c("X", "to-remove", "b", "c", "d"));
         removeRows(lTable, i(0)); // row @ 0 does not need outer shifting
         final QueryTable rTable = testRefreshingTable(longCol("Y"));
@@ -117,7 +117,7 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
     }
 
     public void testZeroKeyJoinBitExpansionWithInnerShift() {
-        // Looking to force our rowSet space to need more keys.
+        // Looking to force our row set space to need more keys.
         final QueryTable lTable = testRefreshingTable(c("X", "to-remove", "b", "c", "d"));
         removeRows(lTable, i(0)); // row @ 0 does not need outer shifting
         final QueryTable rTable = testRefreshingTable(longCol("Y"));

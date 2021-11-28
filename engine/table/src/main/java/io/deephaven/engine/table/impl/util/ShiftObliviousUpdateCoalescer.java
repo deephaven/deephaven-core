@@ -35,7 +35,7 @@ public class ShiftObliviousUpdateCoalescer {
 
     public void update(final RowSet addedOnUpdate, final RowSet removedOnUpdate,
             final RowSet modifiedOnUpdate) {
-        // Note: extract removes matching ranges from the source rowSet
+        // Note: extract removes matching ranges from the source RowSet
         try (final RowSet addedBack = this.removed.extract(addedOnUpdate);
                 final RowSet actuallyAdded = addedOnUpdate.minus(addedBack)) {
             this.added.insert(actuallyAdded);

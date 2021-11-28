@@ -38,7 +38,7 @@ public interface StreamingExternalizable {
      *
      * @param out The output
      * @param cachedWriters The cached writers
-     * @param itemIndex The rowSet into the cached writers for this item
+     * @param itemIndex The index into the cached writers for this item
      * @param item The item to write
      */
     static <ITEM_TYPE> void writeObjectElement(@NotNull final ObjectOutput out,
@@ -99,7 +99,7 @@ public interface StreamingExternalizable {
      *
      * @param in The input
      * @param cachedReaders The cached readers
-     * @param itemIndex The rowSet into the cached readers for this item
+     * @param itemIndex The index into the cached readers for this item
      */
     static <ITEM_TYPE> ITEM_TYPE readObjectElement(@NotNull final ObjectInput in,
             @NotNull TIntObjectMap<SerializationUtils.Reader> cachedReaders,

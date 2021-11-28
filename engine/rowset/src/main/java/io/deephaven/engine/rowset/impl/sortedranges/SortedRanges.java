@@ -1125,8 +1125,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         return overlapsRangeInternal(0, packedStart, packedEnd) == -1;
     }
 
-    // startIdx is the array position rowSet where to begin the search for packedStart.
-    // returns -1 if this array overlaps the provided range, or if it doesn't, returns the array position rowSet
+    // startIdx is the array position index where to begin the search for packedStart.
+    // returns -1 if this array overlaps the provided range, or if it doesn't, returns the array position index
     // where to begin a subsequent call for a later range that might overlap.
     private int overlapsRangeInternal(final int startIdx, final long packedStart, final long packedEnd) {
         final int iStart = absRawBinarySearch(packedStart, startIdx, count - 1);
@@ -1234,7 +1234,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
     // sar.first() <= start && end <= sar.last()
     // returns null if we exceed maxCapacity in the process of building the answer
     // (which can happen if you have, say, a big single range and retain a gazillion individual elements).
-    // Writes to iStartOut an array position rowSet into sar where to continue the intersection for ranges after
+    // Writes to iStartOut an array position index into sar where to continue the intersection for ranges after
     // the one provided.
     private static SortedRanges intersectRangeImplStep(
             SortedRanges out,
@@ -4103,7 +4103,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
             final long packedStart, final long packedEnd,
             final long start, final long end,
             final MutableInt iStartOut, final boolean writeCheck) {
-        // iStart will be adjusted to be the start rowSet of the positions to be eliminated from the array.
+        // iStart will be adjusted to be the start index of the positions to be eliminated from the array.
         if (iStart >= sar.count) {
             if (iStartOut != null) {
                 iStartOut.setValue(sar.count);
@@ -4177,7 +4177,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
         int i = iStart;
         boolean iNeg = iStartNeg;
         long iValue = iStartValue;
-        // iEndExclusive will be set to mark the end rowSet (exclusive) of the positions to be eliminated from the
+        // iEndExclusive will be set to mark the end index (exclusive) of the positions to be eliminated from the
         // array.
         int iEndExclusive = -1;
         while (true) {

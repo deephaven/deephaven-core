@@ -4,7 +4,6 @@ import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.TableUpdate;
-import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.ColumnSource;
 import gnu.trove.impl.Constants;
@@ -23,9 +22,9 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
 public class UpdatableTable extends QueryTable implements Runnable {
 
     /**
-     * Interface provided to updater functions that allows rowSet changes to be recorded for propagation.
+     * Interface provided to updater functions that allows RowSet changes to be recorded for propagation.
      */
-    public interface IndexChangeRecorder {
+    public interface RowSetChangeRecorder {
 
         /**
          * Flag key as an addition (or a modification if previously removed in this cycle). Must only be called in an
@@ -33,33 +32,33 @@ public class UpdatableTable extends QueryTable implements Runnable {
          *
          * @param key The key
          */
-        void addIndex(long key);
+        void addRowKey(long key);
 
         /**
          * Flag key as a removal (if it wasn't added on this cycle). Must only be called in an updater function.
          *
          * @param key The key
          */
-        void removeIndex(long key);
+        void removeRowKey(long key);
 
         /**
          * Flag key as an modification (unless it was added this cycle). Must only be called in an updater function.
          *
          * @param key The key
          */
-        void modifyIndex(long key);
+        void modifyRowKey(long key);
     }
 
     /**
      * Updater function interface.
      */
     @FunctionalInterface
-    public interface Updater extends Consumer<IndexChangeRecorder> {
+    public interface Updater extends Consumer<RowSetChangeRecorder> {
     }
 
     private final Updater updater;
 
-    private final IndexChangeRecorder indexChangeRecorder = new IndexChangeRecorderImpl();
+    private final RowSetChangeRecorder rowSetChangeRecorder = new RowSetChangeRecorderImpl();
 
     private final TLongSet addedSet =
             new TLongHashSet(Constants.DEFAULT_CAPACITY, Constants.DEFAULT_LOAD_FACTOR, NULL_LONG);
@@ -75,10 +74,10 @@ public class UpdatableTable extends QueryTable implements Runnable {
         this.updater = updater;
     }
 
-    private class IndexChangeRecorderImpl implements IndexChangeRecorder {
+    private class RowSetChangeRecorderImpl implements RowSetChangeRecorder {
 
         @Override
-        public void addIndex(final long key) {
+        public void addRowKey(final long key) {
             // if a key is removed and then added back before a run, it looks like it was modified
             if (removedSet.remove(key)) {
                 modifiedSet.add(key);
@@ -88,7 +87,7 @@ public class UpdatableTable extends QueryTable implements Runnable {
         }
 
         @Override
-        public void removeIndex(final long key) {
+        public void removeRowKey(final long key) {
             if (getRowSet().find(key) >= 0) {
                 removedSet.add(key);
             }
@@ -98,7 +97,7 @@ public class UpdatableTable extends QueryTable implements Runnable {
         }
 
         @Override
-        public void modifyIndex(final long key) {
+        public void modifyRowKey(final long key) {
             // if a key is added and then modified immediately, leave it as added
             if (!addedSet.contains(key)) {
                 modifiedSet.add(key);
@@ -118,7 +117,7 @@ public class UpdatableTable extends QueryTable implements Runnable {
 
     @Override
     public void run() {
-        updater.accept(indexChangeRecorder);
+        updater.accept(rowSetChangeRecorder);
 
         final RowSet added = setToIndex(addedSet);
         final RowSet removed = setToIndex(removedSet);

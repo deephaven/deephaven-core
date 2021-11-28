@@ -68,7 +68,7 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
 
     /**
      * <p>
-     * TrackingWritableRowSet to keep track of destinations with shifts.
+     * RowSet to keep track of destinations with shifts.
      * <p>
      * This exists in each cycle between {@link IterativeChunkedAggregationOperator#resetForStep(TableUpdate)} and
      * {@link IterativeChunkedAggregationOperator#propagateUpdates(TableUpdate, RowSet)}
@@ -216,10 +216,10 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
     }
 
     @Override
-    public void modifyIndices(final BucketedContext context,
-            @NotNull final LongChunk<? extends RowKeys> inputRowKeys,
-            @NotNull final IntChunk<RowKeys> destinations, @NotNull final IntChunk<ChunkPositions> startPositions,
-            @NotNull final IntChunk<ChunkLengths> length, @NotNull final WritableBooleanChunk<Values> stateModified) {
+    public void modifyRowKeys(final BucketedContext context,
+                              @NotNull final LongChunk<? extends RowKeys> inputRowKeys,
+                              @NotNull final IntChunk<RowKeys> destinations, @NotNull final IntChunk<ChunkPositions> startPositions,
+                              @NotNull final IntChunk<ChunkLengths> length, @NotNull final WritableBooleanChunk<Values> stateModified) {
         if (!stepValuesModified) {
             return;
         }
@@ -246,7 +246,7 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
     }
 
     @Override
-    public boolean addIndex(SingletonContext context, RowSet rowSet, long destination) {
+    public boolean addRowSet(SingletonContext context, RowSet rowSet, long destination) {
         return accumulateToIndex(addedRowSets, rowSet, destination);
     }
 
@@ -272,20 +272,20 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
     @Override
     public boolean shiftChunk(final SingletonContext singletonContext, final Chunk<? extends Values> previousValues,
             final Chunk<? extends Values> newValues,
-            @NotNull final LongChunk<? extends RowKeys> preInputRowKeys,
-            @NotNull final LongChunk<? extends RowKeys> postInputRowKeys,
+            @NotNull final LongChunk<? extends RowKeys> preShiftRowKeys,
+            @NotNull final LongChunk<? extends RowKeys> postShiftRowKeys,
             final long destination) {
         Assert.eqNull(previousValues, "previousValues");
         Assert.eqNull(newValues, "newValues");
-        if (appendShifts(preInputRowKeys, postInputRowKeys, 0, preInputRowKeys.size(), destination)) {
+        if (appendShifts(preShiftRowKeys, postShiftRowKeys, 0, preShiftRowKeys.size(), destination)) {
             stepShiftedDestinations.insert(destination);
         }
         return false;
     }
 
     @Override
-    public boolean modifyIndices(final SingletonContext context, @NotNull final LongChunk<? extends RowKeys> rowKeys,
-            final long destination) {
+    public boolean modifyRowKeys(final SingletonContext context, @NotNull final LongChunk<? extends RowKeys> rowKeys,
+                                 final long destination) {
         if (!stepValuesModified) {
             return false;
         }
@@ -344,7 +344,7 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
             }
             shiftDataBuilders.set(destination, builder = new RowSetShiftData.SmartCoalescingBuilder(preShiftKeys));
         }
-        // the polarity must be the same for shifted rowSet in our chunk, so we use the first one to identify the proper
+        // the polarity must be the same for shifted RowSet in our chunk, so we use the first one to identify the proper
         // polarity
         final boolean reversedPolarity = preShiftRowKeys.get(0) < postShiftRowKeys.get(0);
         if (reversedPolarity) {
@@ -925,12 +925,12 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
     }
 
     @Override
-    public boolean requiresIndices() {
+    public boolean requiresRowKeys() {
         return true;
     }
 
     @Override
-    public boolean unchunkedIndex() {
+    public boolean unchunkedRowSet() {
         return true;
     }
 }

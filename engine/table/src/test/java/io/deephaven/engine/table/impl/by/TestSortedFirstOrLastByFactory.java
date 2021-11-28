@@ -119,7 +119,7 @@ public class TestSortedFirstOrLastByFactory extends RefreshingTableTestCase {
         TestCase.assertEquals(2, bucketed.getColumn("Sentinel").get(0));
 
         // this part is the original bug, if we didn't change the actual value of the row redirection; because the
-        // shift modify combination left it at the same rowSet; we would not notice the mdoification
+        // shift modify combination left it at the same row key; we would not notice the mdoification
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             final TableUpdateImpl update = new TableUpdateImpl();
             update.added = RowSetFactory.fromKeys(0);

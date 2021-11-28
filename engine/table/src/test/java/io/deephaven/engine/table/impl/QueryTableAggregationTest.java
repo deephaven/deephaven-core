@@ -261,7 +261,7 @@ public class QueryTableAggregationTest {
                     "StrCol = Long.toString((long) (ii / 5))",
                     "IntCol = " + tableIndexName + " * 1_000_000 + i",
                     "TimeCol = ii % 100 == 0 ? null : plus(" + nowName + ", ii * 100)");
-            // Hide part of the table's rowSet from downstream, initially.
+            // Hide part of the table's row set from downstream, initially.
             result.getRowSet().writableCast().removeRange(mergeChunkMultiple, 2 * mergeChunkMultiple - 1);
             return result;
         }).toArray(QueryTable[]::new);

@@ -126,21 +126,21 @@ public class CharChunkColumnSource extends AbstractColumnSource<Character> imple
     }
 
     /**
-     * Given a rowSet within this column's address space; return the chunk that contains the rowSet.
+     * Given a row key within this column's address space; return the chunk index that contains the row key.
      *
-     * @param start the data rowSet to find the corresponding chunk for
-     * @return the chunk rowSet within data and offsets
+     * @param start the data row key to find the corresponding chunk for
+     * @return the chunk index within data and offsets
      */
     private int getChunkIndex(final long start) {
         return getChunkIndex(start, 0);
     }
 
     /**
-     * Given a rowSet within this column's address space; return the chunk that contains the rowSet.
+     * Given a row key within this column's address space; return the chunk index that contains the row key.
      *
-     * @param start      the data rowSet to find the corresponding chunk for
+     * @param start      the data row key to find the corresponding chunk for
      * @param startChunk the first chunk that may possibly contain start
-     * @return the chunk rowSet within data and offsets
+     * @return the chunk index within data and offsets
      */
 
     private int getChunkIndex(final long start, final int startChunk) {

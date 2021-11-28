@@ -17,8 +17,8 @@ public interface ColumnRegionByte<ATTR extends Any> extends ColumnRegion<ATTR> {
     /**
      * Get a single byte from this region.
      *
-     * @param elementIndex Element (byte) rowSet in the table's address space
-     * @return The byte value at the specified element (byte) rowSet
+     * @param elementIndex Element row key in the table's address space
+     * @return The byte value at the specified element row key
      */
     byte getByte(long elementIndex);
 
@@ -26,9 +26,9 @@ public interface ColumnRegionByte<ATTR extends Any> extends ColumnRegion<ATTR> {
      * Get a single byte from this region.
      *
      * @param context      A {@link RegionContextHolder} to enable resource caching where suitable, with current
-     *                     region rowSet pointing to this region
-     * @param elementIndex Element (byte) rowSet in the table's address space
-     * @return The byte value at the specified element (byte) rowSet
+     *                     region index pointing to this region
+     * @param elementIndex Element row key in the table's address space
+     * @return The byte value at the specified element row ket
      */
     default byte getByte(@NotNull final FillContext context, final long elementIndex) {
         return getByte(elementIndex);
@@ -38,7 +38,7 @@ public interface ColumnRegionByte<ATTR extends Any> extends ColumnRegion<ATTR> {
      * Get a range of bytes from this region. Implementations are not required to verify that the range specified is
      * meaningful.
      *
-     * @param firstElementIndex First element (byte) rowSet in the table's address space
+     * @param firstElementIndex First element row keyt in the table's address space
      * @param destination       Array to store results
      * @param destinationOffset Offset into {@code destination} to begin storing at
      * @param length            Number of bytes to get

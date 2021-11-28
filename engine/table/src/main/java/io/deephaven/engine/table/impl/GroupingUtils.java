@@ -31,8 +31,8 @@ public class GroupingUtils {
     /**
      * Get a map from unique, boxed values in this column to a long[2] range of keys.
      *
-     * @param rowSet The rowSet that defines the column along with the column source
-     * @param columnSource The column source that defines the column along with the rowSet
+     * @param rowSet The RowSet that defines the column along with the column source
+     * @param columnSource The column source that defines the column along with the RowSet
      * @return A new value to range map (i.e. grouping metadata)
      */
     public static <TYPE> Map<TYPE, long[]> getValueToRangeMap(@NotNull final TrackingRowSet rowSet,
@@ -62,32 +62,32 @@ public class GroupingUtils {
     }
 
     /**
-     * Consume all groups in a group-to-rowSet map.
+     * Consume all groups in a group-to-RowSet map.
      *
-     * @param groupToIndex The group-to-rowSet map to consume
+     * @param groupToRowSet The group-to-RowSet map to consume
      * @param groupConsumer Consumer for responsive groups
      */
-    public static <TYPE> void forEachGroup(@NotNull final Map<TYPE, RowSet> groupToIndex,
+    public static <TYPE> void forEachGroup(@NotNull final Map<TYPE, RowSet> groupToRowSet,
             @NotNull final BiConsumer<TYPE, WritableRowSet> groupConsumer) {
-        groupToIndex.entrySet().stream()
+        groupToRowSet.entrySet().stream()
                 .filter(kie -> kie.getValue().isNonempty())
                 .sorted(java.util.Comparator.comparingLong(kie -> kie.getValue().firstRowKey()))
                 .forEachOrdered(kie -> groupConsumer.accept(kie.getKey(), kie.getValue().copy()));
     }
 
     /**
-     * Convert a group-to-rowSet map to a pair of flat in-memory column sources, one for the keys and one for the
+     * Convert a group-to-RowSet map to a pair of flat in-memory column sources, one for the keys and one for the
      * indexes.
      *
-     * @param originalKeyColumnSource The key column source whose contents are reflected by the group-to-rowSet map
+     * @param originalKeyColumnSource The key column source whose contents are reflected by the group-to-RowSet map
      *        (used for typing, only)
-     * @param groupToIndex The group-to-rowSet map to convert
-     * @return A pair of a flat key column source and a flat rowSet column source
+     * @param groupToRowSet The group-to-RowSet map to convert
+     * @return A pair of a flat key column source and a flat RowSet column source
      */
     @SuppressWarnings("unused")
     public static <TYPE> Pair<ArrayBackedColumnSource<TYPE>, ObjectArraySource<TrackingWritableRowSet>> groupingToFlatSources(
-            @NotNull final ColumnSource<TYPE> originalKeyColumnSource, @NotNull final Map<TYPE, RowSet> groupToIndex) {
-        final int numGroups = groupToIndex.size();
+            @NotNull final ColumnSource<TYPE> originalKeyColumnSource, @NotNull final Map<TYPE, RowSet> groupToRowSet) {
+        final int numGroups = groupToRowSet.size();
         final ArrayBackedColumnSource<TYPE> resultKeyColumnSource = getMemoryColumnSource(
                 numGroups, originalKeyColumnSource.getType(), originalKeyColumnSource.getComponentType());
         final ObjectArraySource<TrackingWritableRowSet> resultIndexColumnSource =
@@ -95,7 +95,7 @@ public class GroupingUtils {
         resultIndexColumnSource.ensureCapacity(numGroups);
 
         final MutableInt processedGroupCount = new MutableInt(0);
-        forEachGroup(groupToIndex, (final TYPE key, final WritableRowSet rowSet) -> {
+        forEachGroup(groupToRowSet, (final TYPE key, final WritableRowSet rowSet) -> {
             final long groupIndex = processedGroupCount.longValue();
             resultKeyColumnSource.set(groupIndex, key);
             resultIndexColumnSource.set(groupIndex, rowSet.toTracking());
@@ -106,16 +106,16 @@ public class GroupingUtils {
     }
 
     /**
-     * Consume all responsive groups in a group-to-rowSet map.
+     * Consume all responsive groups in a group-to-RowSet map.
      *
-     * @param groupToIndex The group-to-rowSet map to consume
+     * @param groupToRowSet The group-to-RowSet map to consume
      * @param intersect Limit indices to values contained within intersect, eliminating empty result groups
      * @param groupConsumer Consumer for responsive groups
      */
-    public static <TYPE> void forEachResponsiveGroup(@NotNull final Map<TYPE, RowSet> groupToIndex,
+    public static <TYPE> void forEachResponsiveGroup(@NotNull final Map<TYPE, RowSet> groupToRowSet,
             @NotNull final RowSet intersect,
             @NotNull final BiConsumer<TYPE, WritableRowSet> groupConsumer) {
-        groupToIndex.entrySet().stream()
+        groupToRowSet.entrySet().stream()
                 .map(kie -> new Pair<>(kie.getKey(), kie.getValue().intersect(intersect)))
                 .filter(kip -> kip.getSecond().isNonempty())
                 .sorted(java.util.Comparator.comparingLong(kip -> kip.getSecond().firstRowKey()))
@@ -123,22 +123,22 @@ public class GroupingUtils {
     }
 
     /**
-     * Convert a group-to-rowSet map to a pair of flat in-memory column sources, one for the keys and one for the
+     * Convert a group-to-RowSet map to a pair of flat in-memory column sources, one for the keys and one for the
      * indexes.
      *
-     * @param originalKeyColumnSource The key column source whose contents are reflected by the group-to-rowSet map
+     * @param originalKeyColumnSource The key column source whose contents are reflected by the group-to-RowSet map
      *        (used for typing, only)
-     * @param groupToIndex The group-to-rowSet map to convert
+     * @param groupToRowSet The group-to-RowSet map to convert
      * @param intersect Limit returned indices to values contained within intersect
      * @param responsiveGroups Set to the number of responsive groups on exit
      * @return A pair of a flat key column source and a flat rowSet column source
      */
     public static <TYPE> Pair<ArrayBackedColumnSource<TYPE>, ObjectArraySource<TrackingWritableRowSet>> groupingToFlatSources(
             @NotNull final ColumnSource<TYPE> originalKeyColumnSource,
-            @NotNull final Map<TYPE, RowSet> groupToIndex,
+            @NotNull final Map<TYPE, RowSet> groupToRowSet,
             @NotNull final RowSet intersect,
             @NotNull final MutableInt responsiveGroups) {
-        final int numGroups = groupToIndex.size();
+        final int numGroups = groupToRowSet.size();
         final ArrayBackedColumnSource<TYPE> resultKeyColumnSource = getMemoryColumnSource(
                 numGroups, originalKeyColumnSource.getType(), originalKeyColumnSource.getComponentType());
         final ObjectArraySource<TrackingWritableRowSet> resultIndexColumnSource =
@@ -146,7 +146,7 @@ public class GroupingUtils {
         resultIndexColumnSource.ensureCapacity(numGroups);
 
         responsiveGroups.setValue(0);
-        forEachResponsiveGroup(groupToIndex, intersect, (final TYPE key, final WritableRowSet rowSet) -> {
+        forEachResponsiveGroup(groupToRowSet, intersect, (final TYPE key, final WritableRowSet rowSet) -> {
             final long groupIndex = responsiveGroups.longValue();
             resultKeyColumnSource.set(groupIndex, key);
             resultIndexColumnSource.set(groupIndex, rowSet.toTracking());

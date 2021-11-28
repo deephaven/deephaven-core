@@ -55,7 +55,7 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
     protected List<String> usedColumnArrays;
     protected boolean usesI; // uses the "i" variable which is an integer position for the row
     protected boolean usesII; // uses the "ii" variable which is the long position for the row
-    protected boolean usesK; // uses the "k" variable which is the long rowSet into a column source
+    protected boolean usesK; // uses the "k" variable which is the long row key into a column source
 
     /**
      * Create a formula column for the given formula string.

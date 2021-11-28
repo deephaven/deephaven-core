@@ -105,7 +105,7 @@ public class BucketState {
     }
 
     public void shift(final RowSetShiftData shiftData) {
-        // update the bucket's rowSet
+        // update the bucket's RowSet
         shiftData.apply(rowSet);
 
         if (trackNulls) {
@@ -187,7 +187,7 @@ public class BucketState {
         }
     }
 
-    public RowSet makeIndex() {
+    public RowSet makeRowSet() {
         if (cachedRowSet != null) {
             return cachedRowSet;
         }
@@ -240,7 +240,7 @@ public class BucketState {
         } else {
             for (final ValueTracker tracker : values) {
                 // Nulls are not being tracked, so instead we will ask each column if it has only null values. If
-                // so, skip max/min in the constructed rowSet for this column, the first/last (and other column
+                // so, skip max/min in the constructed RowSet for this column, the first/last (and other column
                 // values) are sufficient for this column. If either max or min index is null, the other must be as
                 // well.
 
@@ -315,7 +315,7 @@ public class BucketState {
                 }
             }
         }
-        Assert.eqTrue(makeIndex().subsetOf(rowSet), "makeIndex().subsetOf(rowSet)");
+        Assert.eqTrue(makeRowSet().subsetOf(rowSet), "makeRowSet().subsetOf(rowSet)");
     }
 
     public void close() {

@@ -47,7 +47,7 @@ public class StreamTableAggregationTest {
      * Execute a table operator ending in an aggregation.
      *
      * @param operator The operator to apply
-     * @param windowed Whether the stream table rowSet should be a sliding window (if {@code true}) or zero-based (if
+     * @param windowed Whether the stream table RowSet should be a sliding window (if {@code true}) or zero-based (if
      *        {@code false})
      */
     private void doOperatorTest(@NotNull final UnaryOperator<Table> operator, final boolean windowed) {
@@ -64,7 +64,7 @@ public class StreamTableAggregationTest {
             streamInternalRowSet = null;
             streamSources = source.getColumnSourceMap();
         } else {
-            // Redirecting so we can present a zero-based TrackingWritableRowSet from the stream table
+            // Redirecting so we can present a zero-based RowSet from the stream table
             streamInternalRowSet = RowSetFactory.empty().toTracking();
             final WritableRowRedirection streamRedirections =
                     new WrappedRowSetWritableRowRedirection(streamInternalRowSet);

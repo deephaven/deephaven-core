@@ -163,8 +163,8 @@ class AsOfStampContext implements Context {
     /**
      * Process a single stamp state, reading the values from the right stamp column.
      *
-     * @param leftRowSet the indices of the left values to stamp
-     * @param rightRowSet the indices of the right values in this state
+     * @param leftRowSet the row keys of the left values to stamp
+     * @param rightRowSet the row keys of the right values in this state
      * @param rowRedirection the row redirection to update
      */
     void processEntry(RowSet leftRowSet, RowSet rightRowSet, WritableRowRedirection rowRedirection) {
@@ -174,9 +174,9 @@ class AsOfStampContext implements Context {
     }
 
     /**
-     * Fill and and compact the values in the right rowSet into the rightKeyIndicesChunk and rightStampChunk.
+     * Fill and and compact the values in the right RowSet into the rightKeyIndicesChunk and rightStampChunk.
      *
-     * @param rightRowSet the indices of the right values to read and compact
+     * @param rightRowSet the row keys of the right values to read and compact
      * @param rightKeyIndicesChunk the output chunk of rightKeyIndices
      * @param rightStampChunk the output chunk of right stamp values
      */
@@ -196,7 +196,7 @@ class AsOfStampContext implements Context {
     /**
      * Process a single stamp state, using the supplied chunks
      *
-     * @param leftRowSet the indices of the left values to stamp
+     * @param leftRowSet the row keys of the left values to stamp
      * @param rightStampChunk the right stamp values (already compacted)
      * @param rightKeyIndicesChunk the right key indices (already compacted)
      * @param rowRedirection the row redirection to update
@@ -222,7 +222,7 @@ class AsOfStampContext implements Context {
         stampKernel.computeRedirections(leftStampChunk, rightStampChunk, rightKeyIndicesChunk, leftRedirections);
         for (int ii = 0; ii < leftKeyIndicesChunk.size(); ++ii) {
             final long rightKey = leftRedirections.get(ii);
-            // the row redirection defaults to NULL_KEY so we do not need to put it in there
+            // the row redirection defaults to NULL_ROW_KEY, so we do not need to put it in there
             if (rightKey != RowSequence.NULL_ROW_KEY) {
                 rowRedirection.putVoid(leftKeyIndicesChunk.get(ii), rightKey);
             }

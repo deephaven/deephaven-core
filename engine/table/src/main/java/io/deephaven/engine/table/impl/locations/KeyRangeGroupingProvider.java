@@ -6,7 +6,7 @@ import org.jetbrains.annotations.NotNull;
 
 /**
  * Interface for {@link GroupingProvider}s that operate on metadata derived from a {@link ColumnLocation} for a given
- * {@link TrackingWritableRowSet} key range.
+ * {@link RowSet} key range.
  */
 public interface KeyRangeGroupingProvider<DATA_TYPE> extends GroupingProvider<DATA_TYPE> {
 
@@ -14,7 +14,7 @@ public interface KeyRangeGroupingProvider<DATA_TYPE> extends GroupingProvider<DA
      * Add a column location for consideration when constructing groupings.
      * 
      * @param columnLocation The column location to add
-     * @param addedIndexInTable The location's rowSet in the table
+     * @param locationRowSetInTable The location's RowSet in the table
      */
-    void addSource(@NotNull ColumnLocation columnLocation, @NotNull RowSet locationIndexInTable);
+    void addSource(@NotNull ColumnLocation columnLocation, @NotNull RowSet locationRowSetInTable);
 }

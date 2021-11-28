@@ -164,7 +164,7 @@ class IncrementalChunkedByAggregationStateManager
     private final ArrayBackedColumnSource<?> [] overflowKeySources;
     // the location of the next key in an overflow bucket
     private final IntegerArraySource overflowOverflowLocationSource = new IntegerArraySource();
-    // the overflow buckets for the right TrackingWritableRowSet
+    // the overflow buckets for the state source
     @HashTableAnnotations.OverflowStateColumnSource
     // @StateColumnSourceType@ from \QObjectArraySource<TrackingWritableRowSet>\E
     private final ObjectArraySource<TrackingWritableRowSet> overflowRowSetSource
@@ -538,7 +538,7 @@ class IncrementalChunkedByAggregationStateManager
              // endregion build initialization try
         ) {
             // region build initialization
-            // TrackingWritableRowSet keys extracted from the input rowSet, parallel to the sourceKeyChunks
+            // Row keys extracted from the input RowSequence, parallel to the sourceKeyChunks
             final WritableLongChunk<OrderedRowKeys> sourceChunkIndexKeys = WritableLongChunk.makeWritableChunk(bc.chunkSize);
             // endregion build initialization
 
@@ -1285,7 +1285,7 @@ class IncrementalChunkedByAggregationStateManager
         // the chunk of positions within our table
         final WritableLongChunk<RowKeys> tableLocationsChunk;
 
-        // the chunk of right indices that we read from the hash table, the empty right rowSet is used as a sentinel that the
+        // the chunk of right indices that we read from the hash table, the empty right index is used as a sentinel that the
         // state exists; otherwise when building from the left it is always null
         // @WritableStateChunkType@ from \QWritableObjectChunk<TrackingWritableRowSet,Values>\E
         final WritableObjectChunk<TrackingWritableRowSet,Values> workingStateEntries;

@@ -179,7 +179,7 @@ public class QueryTable extends BaseTable {
     private static final double MAXIMUM_STATIC_SELECT_MEMORY_OVERHEAD =
             Configuration.getInstance().getDoubleWithDefault("QueryTable.maximumStaticSelectMemoryOverhead", 1.1);
 
-    // Should we track the entire rowSet of firstBy and lastBy operations.
+    // Whether we should track the entire RowSet of firstBy and lastBy operations
     @VisibleForTesting
     public static boolean TRACKED_LAST_BY =
             Configuration.getInstance().getBooleanWithDefault("QueryTable.trackLastBy", false);
@@ -199,7 +199,7 @@ public class QueryTable extends BaseTable {
     /**
      * Creates a new abstract table, inferring a definition but creating a new column source map.
      *
-     * @param rowSet The rowSet of the new table. Callers may need to {@link WritableRowSet#toTracking() convert}.
+     * @param rowSet The RowSet of the new table. Callers may need to {@link WritableRowSet#toTracking() convert}.
      * @param columns The column source map for the table, which will be copied into a new column source map
      */
     public QueryTable(TrackingRowSet rowSet, Map<String, ? extends ColumnSource<?>> columns) {
@@ -210,7 +210,7 @@ public class QueryTable extends BaseTable {
      * Creates a new abstract table, reusing a definition but creating a new column source map.
      *
      * @param definition The definition to use for this table
-     * @param rowSet The rowSet of the new table. Callers may need to {@link WritableRowSet#toTracking() convert}.
+     * @param rowSet The RowSet of the new table. Callers may need to {@link WritableRowSet#toTracking() convert}.
      * @param columns The column source map for the table, which will be copied into a new column source map
      */
     public QueryTable(TableDefinition definition, TrackingRowSet rowSet,
@@ -222,7 +222,7 @@ public class QueryTable extends BaseTable {
      * Creates a new abstract table, reusing a definition and column source map.
      *
      * @param definition The definition to use for this table
-     * @param rowSet The rowSet of the new table. Callers may need to {@link WritableRowSet#toTracking() convert}.
+     * @param rowSet The RowSet of the new table. Callers may need to {@link WritableRowSet#toTracking() convert}.
      * @param columns The column source map for the table, which is not copied.
      * @param modifiedColumnSet Optional {@link ModifiedColumnSet} that should be re-used if supplied
      */
@@ -1095,11 +1095,11 @@ public class QueryTable extends BaseTable {
         /**
          * Refilter relevant rows.
          *
-         * @param upstreamAdded rowSet of keys that were added upstream
-         * @param upstreamRemoved rowSet of keys that were removed
-         * @param upstreamModified rowSet of keys that were modified upstream
-         * @param shiftData sequence of shifts that apply to keyspace
-         * @param modifiedColumnSet the set of columns that have any changes to indices in {@code modified}
+         * @param upstreamAdded RowSet of keys that were added upstream
+         * @param upstreamRemoved RowSet of keys that were removed
+         * @param upstreamModified RowSet of keys that were modified upstream
+         * @param shiftData Sequence of shifts that apply to keyspace
+         * @param modifiedColumnSet The set of columns that have any changes to indices in {@code modified}
          */
         private void doRefilter(final RowSet upstreamAdded, final RowSet upstreamRemoved, final RowSet upstreamModified,
                 final RowSetShiftData shiftData, final ModifiedColumnSet modifiedColumnSet) {
@@ -3107,9 +3107,8 @@ public class QueryTable extends BaseTable {
             @Nullable final ModifiedColumnSet resultModifiedColumnSet,
             @NotNull final Object... parents) {
         return QueryPerformanceRecorder.withNugget("getSubTable", sizeForInstrumentation(), () -> {
-            // there is no operation check here, because partitionBy calls it internally; and the TrackingWritableRowSet
-            // results are
-            // not updated internally, but rather externally.
+            // there is no operation check here, because partitionBy calls it internally; and the RowSet
+            // results are not updated internally, but rather externally.
             final QueryTable result = new QueryTable(definition, rowSet, columns, resultModifiedColumnSet);
             for (Object parent : parents) {
                 result.addParentReference(parent);

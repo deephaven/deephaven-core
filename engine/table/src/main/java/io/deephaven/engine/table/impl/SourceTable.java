@@ -117,7 +117,7 @@ public abstract class SourceTable extends RedefinableTable {
     }
 
     /**
-     * Force this table to determine its initial state (available locations, size, rowSet) if it hasn't already done so.
+     * Force this table to determine its initial state (available locations, size, RowSet) if it hasn't already done so.
      */
     private void initialize() {
         initializeAvailableLocations();
@@ -217,8 +217,7 @@ public abstract class SourceTable extends RedefinableTable {
                 // NB: This class previously had functionality to notify "location listeners", but it was never used.
                 // Resurrect from git history if needed.
                 if (!locationSizesInitialized) {
-                    // We don't want to start polling size changes until the initial TrackingWritableRowSet has been
-                    // computed.
+                    // We don't want to start polling size changes until the initial RowSet has been computed.
                     return;
                 }
                 final boolean wasEmpty = rowSet.isEmpty();

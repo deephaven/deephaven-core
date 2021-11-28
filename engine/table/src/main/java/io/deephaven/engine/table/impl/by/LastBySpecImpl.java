@@ -27,7 +27,7 @@ public class LastBySpecImpl extends IterativeIndexSpec {
     }
 
     /**
-     * Sort the results by the original rowSet when aggregating on state.
+     * Sort the results by the original row key when aggregating on state.
      */
     @Override
     ReaggregatableStatefactory rollupFactory() {

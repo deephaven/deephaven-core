@@ -478,12 +478,12 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
     /**
      * Adds the provided (start, end) range, relative to the given key, to this array.
      *
-     * @param startPos the initial rowSet from which to start the search for k
+     * @param startPos the initial index from which to start the search for k
      * @param startHighBits the high bits of the start position for the range provided.
      * @param start the start position for the range provided.
      * @param startLowBits the low bits of the start of the range to add. 0 <= start < BLOCK_SIZE
      * @param endLowBits the low bits of the end (inclusive) of the range to add. 0 <= end < BLOCK_SIZE
-     * @return the rowSet of the span where the interval was added.
+     * @return the index of the span where the interval was added.
      */
     private int singleBlockAddRange(final int startPos, final long startHighBits, final long start,
             final int startLowBits, final int endLowBits) {
@@ -554,7 +554,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
      * @param k the key to use for the range provided.
      * @param start the start of the range to add. 0 <= start < BLOCK_SIZE
      * @param end the end (inclusive) of the range to add. 0 <= end < BLOCK_SIZE
-     * @return the rowSet of the span where the interval was added.
+     * @return the index of the span where the interval was added.
      */
     private int singleBlockAppendRange(final long kHigh, final long k, final int start, final int end) {
         final int endExclusive = end + 1;
@@ -630,7 +630,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
         return rb;
     }
 
-    // Figure out where to insert for k, starting from rowSet i
+    // Figure out where to insert for k, starting from index i
     private int getSetOrInsertIdx(final int startIdx, final long keyToInsert) {
         final Object startIdxSpan = spans[startIdx];
         final long startIdxSpanInfo = spanInfos[startIdx];

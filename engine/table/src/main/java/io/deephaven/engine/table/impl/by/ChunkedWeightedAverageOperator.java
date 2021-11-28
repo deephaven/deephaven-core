@@ -41,9 +41,9 @@ class ChunkedWeightedAverageOperator implements IterativeChunkedAggregationOpera
 
     @Override
     public void addChunk(BucketedContext bucketedContext, Chunk<? extends Values> values,
-            LongChunk<? extends RowKeys> inputIndices, IntChunk<RowKeys> destinations,
-            IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
-            WritableBooleanChunk<Values> stateModified) {
+                         LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations,
+                         IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+                         WritableBooleanChunk<Values> stateModified) {
         final Context context = (Context) bucketedContext;
         final DoubleChunk<? extends Values> doubleValues = context.toDoubleCast.cast(values);
         final DoubleChunk<? extends Values> weightValues = weightOperator.getAddedWeights();
@@ -57,9 +57,9 @@ class ChunkedWeightedAverageOperator implements IterativeChunkedAggregationOpera
 
     @Override
     public void removeChunk(BucketedContext bucketedContext, Chunk<? extends Values> values,
-            LongChunk<? extends RowKeys> inputIndices, IntChunk<RowKeys> destinations,
-            IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
-            WritableBooleanChunk<Values> stateModified) {
+                            LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations,
+                            IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+                            WritableBooleanChunk<Values> stateModified) {
         final Context context = (Context) bucketedContext;
         final DoubleChunk<? extends Values> doubleValues = context.prevToDoubleCast.cast(values);
         final DoubleChunk<? extends Values> weightValues = weightOperator.getRemovedWeights();
@@ -73,7 +73,7 @@ class ChunkedWeightedAverageOperator implements IterativeChunkedAggregationOpera
 
     @Override
     public void modifyChunk(BucketedContext bucketedContext, Chunk<? extends Values> previousValues,
-            Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> postShiftIndices,
+            Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> postShiftRowKeys,
             IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
             WritableBooleanChunk<Values> stateModified) {
         final Context context = (Context) bucketedContext;
@@ -90,7 +90,7 @@ class ChunkedWeightedAverageOperator implements IterativeChunkedAggregationOpera
 
     @Override
     public boolean addChunk(SingletonContext singletonContext, int chunkSize, Chunk<? extends Values> values,
-            LongChunk<? extends RowKeys> inputIndices, long destination) {
+                            LongChunk<? extends RowKeys> inputRowKeys, long destination) {
         final Context context = (Context) singletonContext;
         final DoubleChunk<? extends Values> doubleValues = context.toDoubleCast.cast(values);
         final DoubleChunk<? extends Values> weightValues = weightOperator.getAddedWeights();
@@ -99,7 +99,7 @@ class ChunkedWeightedAverageOperator implements IterativeChunkedAggregationOpera
 
     @Override
     public boolean removeChunk(SingletonContext singletonContext, int chunkSize, Chunk<? extends Values> values,
-            LongChunk<? extends RowKeys> inputIndices, long destination) {
+                               LongChunk<? extends RowKeys> inputRowKeys, long destination) {
         final Context context = (Context) singletonContext;
         final DoubleChunk<? extends Values> doubleValues = context.prevToDoubleCast.cast(values);
         final DoubleChunk<? extends Values> weightValues = weightOperator.getRemovedWeights();
@@ -108,7 +108,7 @@ class ChunkedWeightedAverageOperator implements IterativeChunkedAggregationOpera
 
     @Override
     public boolean modifyChunk(SingletonContext singletonContext, int chunkSize, Chunk<? extends Values> previousValues,
-            Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> postShiftIndices, long destination) {
+                               Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> postShiftRowKeys, long destination) {
         final Context context = (Context) singletonContext;
         final DoubleChunk<? extends Values> newDoubleValues = context.toDoubleCast.cast(newValues);
         final DoubleChunk<? extends Values> newWeightValues = weightOperator.getAddedWeights();

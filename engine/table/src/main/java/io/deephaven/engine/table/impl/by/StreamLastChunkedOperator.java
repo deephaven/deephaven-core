@@ -26,14 +26,14 @@ public class StreamLastChunkedOperator extends CopyingPermutedStreamFirstOrLastC
     }
 
     @Override
-    public final boolean unchunkedIndex() {
+    public final boolean unchunkedRowSet() {
         return true;
     }
 
     @Override
     public void addChunk(final BucketedContext context, // Unused
             final Chunk<? extends Values> values, // Unused
-            @NotNull final LongChunk<? extends RowKeys> inputIndices,
+            @NotNull final LongChunk<? extends RowKeys> inputRowKeys,
             @NotNull final IntChunk<Attributes.RowKeys> destinations,
             @NotNull final IntChunk<ChunkPositions> startPositions,
             @NotNull final IntChunk<ChunkLengths> length,
@@ -42,7 +42,7 @@ public class StreamLastChunkedOperator extends CopyingPermutedStreamFirstOrLastC
             final int startPosition = startPositions.get(ii);
             final int runLength = length.get(ii);
             final long destination = destinations.get(startPosition);
-            redirections.set(destination, inputIndices.get(startPosition + runLength - 1));
+            redirections.set(destination, inputRowKeys.get(startPosition + runLength - 1));
             stateModified.set(ii, true);
         }
     }
@@ -51,19 +51,19 @@ public class StreamLastChunkedOperator extends CopyingPermutedStreamFirstOrLastC
     public boolean addChunk(final SingletonContext context, // Unused
             final int chunkSize,
             final Chunk<? extends Values> values, // Unused
-            @NotNull final LongChunk<? extends RowKeys> inputIndices,
+            @NotNull final LongChunk<? extends RowKeys> inputRowKeys,
             final long destination) {
         if (chunkSize == 0) {
             return false;
         }
-        redirections.set(destination, inputIndices.get(chunkSize - 1));
+        redirections.set(destination, inputRowKeys.get(chunkSize - 1));
         return true;
     }
 
     @Override
-    public boolean addIndex(final SingletonContext context,
-            @NotNull final RowSet rowSet,
-            final long destination) {
+    public boolean addRowSet(final SingletonContext context,
+                             @NotNull final RowSet rowSet,
+                             final long destination) {
         if (rowSet.isEmpty()) {
             return false;
         }

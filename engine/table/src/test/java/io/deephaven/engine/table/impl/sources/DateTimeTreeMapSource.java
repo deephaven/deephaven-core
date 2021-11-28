@@ -43,9 +43,9 @@ public class DateTimeTreeMapSource extends AbstractColumnSource<DateTime>
     }
 
     /**
-     * Create a new DateTimeTreeMapSource with the given rowSet and data.
+     * Create a new DateTimeTreeMapSource with the given row set and data.
      *
-     * @param rowSet The row indexes for the initial data
+     * @param rowSet The row keys for the initial data
      * @param data The initial data
      */
     public DateTimeTreeMapSource(RowSet rowSet, long[] data) {

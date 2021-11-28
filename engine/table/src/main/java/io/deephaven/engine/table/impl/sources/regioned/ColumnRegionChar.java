@@ -15,8 +15,8 @@ public interface ColumnRegionChar<ATTR extends Any> extends ColumnRegion<ATTR> {
     /**
      * Get a single char from this region.
      *
-     * @param elementIndex Element (char) rowSet in the table's address space
-     * @return The char value at the specified element (char) rowSet
+     * @param elementIndex Element row key in the table's address space
+     * @return The char value at the specified element row key
      */
     char getChar(long elementIndex);
 
@@ -24,9 +24,9 @@ public interface ColumnRegionChar<ATTR extends Any> extends ColumnRegion<ATTR> {
      * Get a single char from this region.
      *
      * @param context      A {@link RegionContextHolder} to enable resource caching where suitable, with current
-     *                     region rowSet pointing to this region
-     * @param elementIndex Element (char) rowSet in the table's address space
-     * @return The char value at the specified element (char) rowSet
+     *                     region index pointing to this region
+     * @param elementIndex Element row key in the table's address space
+     * @return The char value at the specified element row key
      */
     default char getChar(@NotNull final FillContext context, final long elementIndex) {
         return getChar(elementIndex);

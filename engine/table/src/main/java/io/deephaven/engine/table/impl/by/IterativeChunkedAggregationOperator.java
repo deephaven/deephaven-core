@@ -5,18 +5,18 @@
 package io.deephaven.engine.table.impl.by;
 
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.engine.liveness.LivenessReferent;
-import io.deephaven.engine.table.ModifiedColumnSet;
-import io.deephaven.engine.table.TableListener;
-import io.deephaven.engine.table.TableUpdate;
-import io.deephaven.engine.table.impl.*;
-import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.chunk.*;
 import io.deephaven.engine.chunk.Attributes.ChunkLengths;
 import io.deephaven.engine.chunk.Attributes.ChunkPositions;
 import io.deephaven.engine.chunk.Attributes.RowKeys;
 import io.deephaven.engine.chunk.Attributes.Values;
+import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.ModifiedColumnSet;
+import io.deephaven.engine.table.TableListener;
+import io.deephaven.engine.table.TableUpdate;
+import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 
@@ -24,7 +24,7 @@ import java.util.Map;
 import java.util.function.UnaryOperator;
 
 /**
- * A chunked, iterative operator that processes indices and/or data from one input column to produce one or more output
+ * A chunked, iterative operator that processes row keys and/or data from one input column to produce one or more output
  * columns.
  */
 public interface IterativeChunkedAggregationOperator {
@@ -37,7 +37,7 @@ public interface IterativeChunkedAggregationOperator {
      *
      * @param context the operator-specific context
      * @param values a chunk of values to aggregate
-     * @param inputIndices the input indices, in post-shift space
+     * @param inputRowKeys the input row keys, in post-shift space
      * @param destinations the destinations in resultColumn to aggregate into, parallel with startPositions and length
      * @param startPositions the starting positions in the chunk for each destination
      * @param length the number of values in the chunk for each destination
@@ -45,7 +45,7 @@ public interface IterativeChunkedAggregationOperator {
      *        destination has been modified
      */
     void addChunk(BucketedContext context, Chunk<? extends Values> values,
-            LongChunk<? extends Attributes.RowKeys> inputIndices,
+            LongChunk<? extends Attributes.RowKeys> inputRowKeys,
             IntChunk<Attributes.RowKeys> destinations, IntChunk<ChunkPositions> startPositions,
             IntChunk<ChunkLengths> length,
             WritableBooleanChunk<Values> stateModified);
@@ -55,7 +55,7 @@ public interface IterativeChunkedAggregationOperator {
      *
      * @param context the operator-specific context
      * @param values a chunk of values that have been previously aggregated.
-     * @param inputIndices the input indices, in pre-shift space
+     * @param inputRowKeys the input row keys, in pre-shift space
      * @param destinations the destinations in resultColumn to remove the values from, parallel with startPositions and
      *        length
      * @param startPositions the starting positions in the chunk for each destination
@@ -64,19 +64,19 @@ public interface IterativeChunkedAggregationOperator {
      *        destination has been modified
      */
     void removeChunk(BucketedContext context, Chunk<? extends Values> values,
-            LongChunk<? extends Attributes.RowKeys> inputIndices,
+            LongChunk<? extends Attributes.RowKeys> inputRowKeys,
             IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
             WritableBooleanChunk<Values> stateModified);
 
     /**
      * Modify a chunk of data previously aggregated into the result columns using a parallel chunk of new values. Never
-     * includes modifies that have been shifted if {@link #requiresIndices()} returns true - those are handled in
+     * includes modifies that have been shifted if {@link #requiresRowKeys()} returns true - those are handled in
      * {@link #shiftChunk(BucketedContext, Chunk, Chunk, LongChunk, LongChunk, IntChunk, IntChunk, IntChunk, WritableBooleanChunk)}.
      *
      * @param context the operator-specific context
      * @param previousValues a chunk of values that have been previously aggregated
      * @param newValues a chunk of values to aggregate
-     * @param postShiftIndices the input indices, in post-shift space
+     * @param postShiftRowKeys the input row keys, in post-shift space
      * @param destinations the destinations in resultColumn to remove the values from, parallel with startPositions and
      *        length
      * @param startPositions the starting positions in the chunk for each destination
@@ -86,15 +86,15 @@ public interface IterativeChunkedAggregationOperator {
      */
     default void modifyChunk(BucketedContext context, Chunk<? extends Values> previousValues,
             Chunk<? extends Values> newValues,
-            LongChunk<? extends RowKeys> postShiftIndices,
+            LongChunk<? extends RowKeys> postShiftRowKeys,
             IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
             WritableBooleanChunk<Values> stateModified) {
         try (final WritableBooleanChunk<Values> addModified =
                 WritableBooleanChunk.makeWritableChunk(stateModified.size())) {
-            // There are no shifted indices here for any operators that care about indices, hence it is safe to remove
+            // There are no shifted row keys here for any operators that care about row keys, hence it is safe to remove
             // in "post-shift" space.
-            removeChunk(context, previousValues, postShiftIndices, destinations, startPositions, length, stateModified);
-            addChunk(context, newValues, postShiftIndices, destinations, startPositions, length, addModified);
+            removeChunk(context, previousValues, postShiftRowKeys, destinations, startPositions, length, stateModified);
+            addChunk(context, newValues, postShiftRowKeys, destinations, startPositions, length, addModified);
             for (int ii = 0; ii < stateModified.size(); ++ii) {
                 stateModified.set(ii, stateModified.get(ii) || addModified.get(ii));
             }
@@ -102,13 +102,13 @@ public interface IterativeChunkedAggregationOperator {
     }
 
     /**
-     * Called with shifted indices when {@link #requiresIndices()} returns true, including shifted same-slot modifies.
+     * Called with shifted row keys when {@link #requiresRowKeys()} returns true, including shifted same-slot modifies.
      *
      * @param context the operator-specific context
      * @param previousValues a chunk of values that have been previously aggregated.
      * @param newValues a chunk of values to aggregate
-     * @param preShiftIndices the input indices, in pre-shift space
-     * @param postShiftIndices the input indices, in post-shift space
+     * @param preShiftRowKeys the input row keys, in pre-shift space
+     * @param postShiftRowKeys the input row keys, in post-shift space
      * @param destinations the destinations in resultColumn to aggregate into, parallel with startPositions and length
      * @param startPositions the starting positions in the chunk for each destination
      * @param length the number of values in the chunk for each destination
@@ -117,8 +117,8 @@ public interface IterativeChunkedAggregationOperator {
      */
     default void shiftChunk(BucketedContext context, Chunk<? extends Values> previousValues,
             Chunk<? extends Values> newValues,
-            LongChunk<? extends Attributes.RowKeys> preShiftIndices,
-            LongChunk<? extends Attributes.RowKeys> postShiftIndices,
+            LongChunk<? extends Attributes.RowKeys> preShiftRowKeys,
+            LongChunk<? extends Attributes.RowKeys> postShiftRowKeys,
             IntChunk<Attributes.RowKeys> destinations, IntChunk<ChunkPositions> startPositions,
             IntChunk<ChunkLengths> length,
             WritableBooleanChunk<Values> stateModified) {
@@ -126,18 +126,18 @@ public interface IterativeChunkedAggregationOperator {
     }
 
     /**
-     * Called with the modified indices when {@link #requiresIndices()} returns true if our input columns have not
+     * Called with the modified row keys when {@link #requiresRowKeys()} returns true if our input columns have not
      * changed (or we have none).
      *
      * @param context the operator-specific context
-     * @param inputIndices the input indices, in post-shift space
+     * @param inputRowKeys the input row keys, in post-shift space
      * @param destinations the destinations in resultColumn to aggregate into, parallel with startPositions and length
      * @param startPositions the starting positions in the chunk for each destination
      * @param length the number of values in the chunk for each destination
      * @param stateModified a boolean output array, parallel to destinations, which is set to true if the corresponding
      *        destination has been modified
      */
-    default void modifyIndices(BucketedContext context, LongChunk<? extends RowKeys> inputIndices,
+    default void modifyRowKeys(BucketedContext context, LongChunk<? extends RowKeys> inputRowKeys,
             IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
             WritableBooleanChunk<Values> stateModified) {
         // we don't actually care
@@ -149,12 +149,12 @@ public interface IterativeChunkedAggregationOperator {
      * @param context the operator-specific context
      * @param chunkSize the size of the addition
      * @param values the values to aggregate
-     * @param inputIndices the input indices, in post-shift space
+     * @param inputRowKeys the input row keys, in post-shift space
      * @param destination the destination in the result columns
      * @return true if the state was modified, false otherwise
      */
     boolean addChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values,
-            LongChunk<? extends Attributes.RowKeys> inputIndices, long destination);
+            LongChunk<? extends Attributes.RowKeys> inputRowKeys, long destination);
 
     /**
      * Remove a chunk of data previously aggregated into the result columns.
@@ -162,32 +162,32 @@ public interface IterativeChunkedAggregationOperator {
      * @param context the operator-specific context
      * @param chunkSize the size of the removal
      * @param values the values to remove from the aggregation
-     * @param inputIndices the input indices, in pre-shift space
+     * @param inputRowKeys the input row keys, in pre-shift space
      * @param destination the destination in the result columns
      * @return true if the state was modified, false otherwise
      */
     boolean removeChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values,
-            LongChunk<? extends RowKeys> inputIndices, long destination);
+            LongChunk<? extends RowKeys> inputRowKeys, long destination);
 
     /**
      * Modify a chunk of data previously aggregated into the result columns using a parallel chunk of new values. Never
-     * includes modifies that have been shifted if {@link #requiresIndices()} returns true - those are handled in
+     * includes modifies that have been shifted if {@link #requiresRowKeys()} returns true - those are handled in
      * {@link #shiftChunk(SingletonContext, Chunk, Chunk, LongChunk, LongChunk, long)}.
      *
      * @param context the operator-specific context
      * @param chunkSize the size of the modification
      * @param previousValues a chunk of values that have been previously aggregated.
      * @param newValues a chunk of values to aggregate
-     * @param postShiftIndices the input indices, in post-shift space
+     * @param postShiftRowKeys the input row keys, in post-shift space
      * @return true if the state was modified, false otherwise
      */
     default boolean modifyChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> previousValues,
             Chunk<? extends Values> newValues,
-            LongChunk<? extends RowKeys> postShiftIndices, long destination) {
-        // There are no shifted indices here for any operators that care about indices, hence it is safe to remove in
+            LongChunk<? extends RowKeys> postShiftRowKeys, long destination) {
+        // There are no shifted row keys here for any operators that care about row keys, hence it is safe to remove in
         // "post-shift" space.
-        final boolean modifiedOld = removeChunk(context, chunkSize, previousValues, postShiftIndices, destination);
-        final boolean modifiedNew = addChunk(context, chunkSize, newValues, postShiftIndices, destination);
+        final boolean modifiedOld = removeChunk(context, chunkSize, previousValues, postShiftRowKeys, destination);
+        final boolean modifiedNew = addChunk(context, chunkSize, newValues, postShiftRowKeys, destination);
         return modifiedOld || modifiedNew;
     }
 
@@ -197,55 +197,55 @@ public interface IterativeChunkedAggregationOperator {
      * @param context the operator-specific context
      * @param previousValues a chunk of values that have been previously aggregated.
      * @param newValues a chunk of values to aggregate
-     * @param preShiftIndices the input indices, in pre-shift space
-     * @param postShiftIndices the input indices, in post-shift space
+     * @param preShiftRowKeys the input row keys, in pre-shift space
+     * @param postShiftRowKeys the input row keys, in post-shift space
      * @param destination the destination in the result columns
      * @return true if the result should be considered modified
      */
     default boolean shiftChunk(SingletonContext context, Chunk<? extends Values> previousValues,
             Chunk<? extends Values> newValues,
-            LongChunk<? extends RowKeys> preShiftIndices, LongChunk<? extends Attributes.RowKeys> postShiftIndices,
+            LongChunk<? extends RowKeys> preShiftRowKeys, LongChunk<? extends Attributes.RowKeys> postShiftRowKeys,
             long destination) {
         // we don't actually care
         return false;
     }
 
     /**
-     * Called with the modified indices when {@link #requiresIndices()} returns true if our input columns have not
+     * Called with the modified row keys when {@link #requiresRowKeys()} returns true if our input columns have not
      * changed (or we have none).
      *
      * @param context the operator-specific context
-     * @param indices the modified indices for a given destination, in post-shift space
+     * @param rowKeys the modified row keys for a given destination, in post-shift space
      * @param destination the destination that was modified
      * @return true if the result should be considered modified
      */
-    default boolean modifyIndices(SingletonContext context, LongChunk<? extends Attributes.RowKeys> indices,
+    default boolean modifyRowKeys(SingletonContext context, LongChunk<? extends Attributes.RowKeys> rowKeys,
             long destination) {
         return false;
     }
 
     /**
-     * Whether the operator requires indices. This implies that the operator must process shifts (i.e.
+     * Whether the operator requires row keys. This implies that the operator must process shifts (i.e.
      * {@link #shiftChunk}), and must observe modifications even when its input columns (if any) are not modified (i.e.
-     * {@link #modifyIndices}).
+     * {@link #modifyRowKeys}).
      *
-     * @return true if the operator requires indices, false otherwise
+     * @return true if the operator requires row keys, false otherwise
      */
-    default boolean requiresIndices() {
+    default boolean requiresRowKeys() {
         return false;
     }
 
 
     /**
-     * Whether the operator can deal with an unchunked TrackingWritableRowSet more efficiently than a chunked rowSet.
+     * Whether the operator can deal with an unchunked RowSet more efficiently than a chunked RowSet.
      *
-     * @return true if the operator can deal with unchunked indices, false otherwise
+     * @return true if the operator can deal with unchunked RowSets, false otherwise
      */
-    default boolean unchunkedIndex() {
+    default boolean unchunkedRowSet() {
         return false;
     }
 
-    default boolean addIndex(SingletonContext context, RowSet rowSet, long destination) {
+    default boolean addRowSet(SingletonContext context, RowSet rowSet, long destination) {
         throw new UnsupportedOperationException();
     }
 

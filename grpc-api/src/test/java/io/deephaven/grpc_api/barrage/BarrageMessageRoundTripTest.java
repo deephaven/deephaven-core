@@ -227,9 +227,8 @@ public class BarrageMessageRoundTripTest extends RefreshingTableTestCase {
 
             // Data should be identical and in-order.
             TstUtils.assertTableEquals(expected, toCheck);
-            // Since key-space needs to be kept the same, the indexes should also be identical between producer and
-            // consumer
-            // (not the indexes between expected and consumer; as the consumer maintains the entire rowSet).
+            // Since key-space needs to be kept the same, the RowSets should also be identical between producer and
+            // consumer (not the RowSets between expected and consumer; as the consumer maintains the entire RowSet).
             Assert.equals(barrageMessageProducer.getRowSet(), "barrageMessageProducer.build()",
                     barrageTable.getRowSet(), ".build()");
         }

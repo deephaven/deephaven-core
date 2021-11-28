@@ -23,8 +23,8 @@ public class ColumnIterator<TYPE> implements Iterator<TYPE> {
     /**
      * Create a new iterator.
      *
-     * @param rowSet rowSet for the column source
-     * @param columnSource column source
+     * @param rowSet The {@link RowSet} to iterate over
+     * @param columnSource The {@link ColumnSource} to fetch values from
      */
     public ColumnIterator(@NotNull final RowSet rowSet, @NotNull final ColumnSource<TYPE> columnSource) {
         this.columnSource = columnSource;

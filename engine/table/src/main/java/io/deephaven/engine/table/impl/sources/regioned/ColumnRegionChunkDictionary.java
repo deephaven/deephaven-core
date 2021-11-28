@@ -77,7 +77,7 @@ public class ColumnRegionChunkDictionary<DICT_TYPE, DATA_TYPE, ATTR extends Any>
     }
 
     @Override
-    public boolean gatherDictionaryValuesIndex(
+    public boolean gatherDictionaryValuesRowSet(
             @NotNull final RowSet.SearchIterator keysToVisit,
             @NotNull final RowSequence.Iterator knownKeys,
             @NotNull final RowSetBuilderSequential sequentialBuilder) {

@@ -10,7 +10,7 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * A Select filter that always returns an empty rowSet.
+ * A Select filter that always returns an empty RowSet.
  */
 public class WhereNoneFilter extends WhereFilterImpl {
 

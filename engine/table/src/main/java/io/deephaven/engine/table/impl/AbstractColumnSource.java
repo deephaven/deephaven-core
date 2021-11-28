@@ -188,10 +188,8 @@ public abstract class AbstractColumnSource<T> implements
         final Map<T, RowSet> groupToRange = getGroupToRange();
 
         // if we have a grouping we can use it to avoid iterating the entire subRange. The issue is that our grouping
-        // could be bigger than the rowSet we care about, by a very large margin. In this case we could be spinning
-        // on TrackingWritableRowSet intersect operations that are actually useless. This check says that if our
-        // subRange
-        // is smaller
+        // could be bigger than the RowSet we care about, by a very large margin. In this case we could be spinning
+        // on RowSet intersect operations that are actually useless. This check says that if our subRange is smaller
         // than the number of keys in our grouping, we should just fetch the keys instead and generate the grouping
         // from scratch.
         boolean useGroupToRange = (groupToRange != null) && (groupToRange.size() < subRange.size());

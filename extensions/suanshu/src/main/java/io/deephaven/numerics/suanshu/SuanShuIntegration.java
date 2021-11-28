@@ -1693,7 +1693,7 @@ public class SuanShuIntegration {
         /**
          * Gets the i<sup>th</sup> indexed (1-based) value from vector.
          *
-         * @param i 1-based rowSet
+         * @param i 1-based index
          * @return i<sup>th</sup> indexed (1-based) value
          */
         @Override
@@ -1933,7 +1933,7 @@ public class SuanShuIntegration {
         /**
          * Gets the row<sup>th</sup> indexed (1-based) row-vector from matrix.
          *
-         * @param row 1-based rowSet
+         * @param row 1-based index
          * @return vector at row<sup>th</sup> indexed (1-based)
          */
         @Override
@@ -1942,7 +1942,7 @@ public class SuanShuIntegration {
         /**
          * Gets the column<sup>th</sup> indexed (1-based) column-vector from matrix.
          *
-         * @param column 1-based rowSet
+         * @param column 1-based index
          * @return vector at column<sup>th</sup> indexed (1-based)
          */
         @Override
@@ -1953,8 +1953,8 @@ public class SuanShuIntegration {
          * Gets the value at row<sup>th</sup> indexed row (1-based) and column<sup>th</sup> indexed (1-based) column
          * from matrix.
          *
-         * @param row 1-based row-rowSet
-         * @param column 1-based column-rowSet
+         * @param row 1-based row-index
+         * @param column 1-based column-index
          * @return value at row<sup>th</sup> indexed row (1-based) and column<sup>th</sup> indexed (1-based) column
          */
         @Override

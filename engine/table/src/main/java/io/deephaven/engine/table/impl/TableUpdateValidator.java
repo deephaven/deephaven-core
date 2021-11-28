@@ -168,7 +168,7 @@ public class TableUpdateValidator implements QueryTable.Operation {
             rowSet.remove(upstream.removed());
             Arrays.stream(columnInfos).forEach((ci) -> ci.remove(upstream.removed()));
 
-            // shift columns first because they use tracking rowSet
+            // shift columns first because they use rowSet
             Arrays.stream(columnInfos).forEach((ci) -> upstream.shifted().apply(ci));
             upstream.shifted().apply(rowSet);
 

@@ -111,7 +111,7 @@ class IncrementalChunkedNaturalJoinStateManager
     // we are going to also reuse this for our state entry, so that we do not need additional storage
     @HashTableAnnotations.StateColumnSource
     // @StateColumnSourceType@ from LongArraySource
-    private final LongArraySource rightRowSetSource
+    private final LongArraySource rightIndexSource
             // @StateColumnSourceConstructor@ from LongArraySource\(\)
             = new LongArraySource();
 
@@ -120,10 +120,10 @@ class IncrementalChunkedNaturalJoinStateManager
     private final ArrayBackedColumnSource<?> [] overflowKeySources;
     // the location of the next key in an overflow bucket
     private final IntegerArraySource overflowOverflowLocationSource = new IntegerArraySource();
-    // the overflow buckets for the right TrackingWritableRowSet
+    // the overflow buckets for the state source
     @HashTableAnnotations.OverflowStateColumnSource
     // @StateColumnSourceType@ from LongArraySource
-    private final LongArraySource overflowRightRowSetSource
+    private final LongArraySource overflowRightIndexSource
             // @StateColumnSourceConstructor@ from LongArraySource\(\)
             = new LongArraySource();
 
@@ -143,15 +143,15 @@ class IncrementalChunkedNaturalJoinStateManager
     // endmixin rehash
 
     // region extra variables
-    // we assume that our right indices are going to be unique; in which case we do not actually want to store a rowSet
-    // however, for inactive states, we must store the complete rowSet value, so that we can remove values from it in
+    // we assume that our right indices are going to be unique; in which case we do not actually want to store a RowSet
+    // however, for inactive states, we must store the complete RowSet value, so that we can remove values from it in
     // case it does become active at some point.  If we have duplicate right hand side values, we store a reference
     // into this table
     private final ObjectArraySource<WritableRowSet> rightRowSetStorage;
     private int nextRightIndexLocation;
     private final WritableRowSet freeRightRowSetLocations = RowSetFactory.empty();
 
-    // we always store left rowSet values parallel to the keys; we may want to optimize for single left indices to avoid
+    // we always store left RowSet values parallel to the keys; we may want to optimize for single left indices to avoid
     // object allocation, but we do have fairly efficient single range indices at this point
     private final ObjectArraySource<WritableRowSet> leftRowSetSource;
     private final ObjectArraySource<WritableRowSet> overflowLeftRowSetource;
@@ -216,7 +216,7 @@ class IncrementalChunkedNaturalJoinStateManager
     }
 
     private void ensureCapacity(int tableSize) {
-        rightRowSetSource.ensureCapacity(tableSize);
+        rightIndexSource.ensureCapacity(tableSize);
         overflowLocationSource.ensureCapacity(tableSize);
         for (int ii = 0; ii < keyColumnCount; ++ii) {
             keySources[ii].ensureCapacity(tableSize);
@@ -237,7 +237,7 @@ class IncrementalChunkedNaturalJoinStateManager
         // endmixin rehash
         // altmixin rehash: final int newCapacity = nextOverflowLocation + locationsToAllocate;
         overflowOverflowLocationSource.ensureCapacity(newCapacity);
-        overflowRightRowSetSource.ensureCapacity(newCapacity);
+        overflowRightIndexSource.ensureCapacity(newCapacity);
         //noinspection ForLoopReplaceableByForEach
         for (int ii = 0; ii < overflowKeySources.length; ++ii) {
             overflowKeySources[ii].ensureCapacity(newCapacity);
@@ -313,7 +313,7 @@ class IncrementalChunkedNaturalJoinStateManager
      * Do we have multiple right indices for this value?
      *
      * @param existingRightIndex the value in our rightRowSet column source
-     * @return true if we should reference our rightIndexStorage column source
+     * @return true if we should reference our rightRowSetStorage column source
      */
     private boolean isDuplicateRightIndex(long existingRightIndex) {
         return existingRightIndex < DUPLICATE_RIGHT_VALUE;
@@ -321,29 +321,29 @@ class IncrementalChunkedNaturalJoinStateManager
 
     /**
      * Given a reference in our state source, {@code isDuplicateRightIndex(existingRightIndex) == true}, produce the
-     * location integer we can use to reference rightIndexStorage.
+     * location integer we can use to reference rightRowSetStorage.
      *
      * @param existingRightIndex an entry from our state source
-     * @return the location in rightIndexStorage
+     * @return the location in rightRowSetStorage
      */
     private long getRightIndexSlot(long existingRightIndex) {
         return -existingRightIndex - 1 + DUPLICATE_RIGHT_VALUE;
     }
 
     /**
-     * Given a location in rightIndexStorage, produce a reference for use in the rightRowSetSource
+     * Given a location in rightRowSetStorage, produce a reference for use in the rightIndexSource
      *
-     * @param rightIndexSlot a location in rightIndexStorage
-     * @return a reference to rightIndexStorage that can be recovered by calling getRightIndexSlot
+     * @param rightIndexSlot a location in rightRowSetStorage
+     * @return a reference to rightRowSetStorage that can be recovered by calling getRightIndexSlot
      */
     private long rightIndexSlotToStorage(long rightIndexSlot) {
         return DUPLICATE_RIGHT_VALUE - rightIndexSlot - 1;
     }
 
     private void addRightIndex(long tableLocation, long keyToAdd) {
-        final long existingRightIndex = rightRowSetSource.getUnsafe(tableLocation);
+        final long existingRightIndex = rightIndexSource.getUnsafe(tableLocation);
         if (existingRightIndex == NO_RIGHT_ENTRY_VALUE) {
-            rightRowSetSource.set(tableLocation, keyToAdd);
+            rightIndexSource.set(tableLocation, keyToAdd);
         }
         else if (isDuplicateRightIndex(existingRightIndex)) {
             final long rightIndexSlot = getRightIndexSlot(existingRightIndex);
@@ -351,24 +351,24 @@ class IncrementalChunkedNaturalJoinStateManager
             rowSetToUpdate.insert(keyToAdd);
         } else {
             final long rightIndexSlot = allocateRightIndexSlot();
-            rightRowSetSource.set(tableLocation, rightIndexSlotToStorage(rightIndexSlot));
+            rightIndexSource.set(tableLocation, rightIndexSlotToStorage(rightIndexSlot));
             rightRowSetStorage.set(rightIndexSlot, RowSetFactory.fromKeys(existingRightIndex, keyToAdd));
         }
     }
 
     private void removeRightIndex(long tableLocation, long keyToRemove) {
-        final long existingRightIndex = rightRowSetSource.getUnsafe(tableLocation);
+        final long existingRightIndex = rightIndexSource.getUnsafe(tableLocation);
         if (existingRightIndex == keyToRemove) {
-            rightRowSetSource.set(tableLocation, NO_RIGHT_ENTRY_VALUE);
+            rightIndexSource.set(tableLocation, NO_RIGHT_ENTRY_VALUE);
         } else {
-            removeFromDuplicateIndex(rightRowSetSource, tableLocation, keyToRemove, existingRightIndex);
+            removeFromDuplicateIndex(rightIndexSource, tableLocation, keyToRemove, existingRightIndex);
         }
     }
 
     private void shiftRightIndex(long tableLocation, long shiftedKey, long shiftDelta) {
-        final long existingRightIndex = rightRowSetSource.getUnsafe(tableLocation);
+        final long existingRightIndex = rightIndexSource.getUnsafe(tableLocation);
         if (existingRightIndex == shiftedKey - shiftDelta) {
-            rightRowSetSource.set(tableLocation, shiftedKey);
+            rightIndexSource.set(tableLocation, shiftedKey);
         } else {
             if (!isDuplicateRightIndex(existingRightIndex)) {
                 throw Assert.statementNeverExecuted("Existing Right TrackingWritableRowSet: " + existingRightIndex + ", shiftedKey" + shiftedKey + ", shiftDelta=" + shiftDelta + ", key=" + keyString(tableLocation));
@@ -395,18 +395,18 @@ class IncrementalChunkedNaturalJoinStateManager
     }
 
     private void removeRightIndexOverflow(long overflowLocation, long keyToRemove) {
-        final long existingRightIndex = overflowRightRowSetSource.getUnsafe(overflowLocation);
+        final long existingRightIndex = overflowRightIndexSource.getUnsafe(overflowLocation);
         if (existingRightIndex == keyToRemove) {
-            overflowRightRowSetSource.set(overflowLocation, NO_RIGHT_ENTRY_VALUE);
+            overflowRightIndexSource.set(overflowLocation, NO_RIGHT_ENTRY_VALUE);
         } else {
-            removeFromDuplicateIndex(overflowRightRowSetSource, overflowLocation, keyToRemove, existingRightIndex);
+            removeFromDuplicateIndex(overflowRightIndexSource, overflowLocation, keyToRemove, existingRightIndex);
         }
     }
 
     private void shiftRightIndexOverflow(long overflowLocation, long shiftedKey, long shiftDelta) {
-        final long existingRightIndex = overflowRightRowSetSource.getUnsafe(overflowLocation);
+        final long existingRightIndex = overflowRightIndexSource.getUnsafe(overflowLocation);
         if (existingRightIndex == shiftedKey - shiftDelta) {
-            overflowRightRowSetSource.set(overflowLocation, shiftedKey);
+            overflowRightIndexSource.set(overflowLocation, shiftedKey);
         } else {
             shiftDuplicateRightIndex(shiftedKey, shiftDelta, existingRightIndex);
         }
@@ -450,9 +450,9 @@ class IncrementalChunkedNaturalJoinStateManager
     }
 
     private void addRightIndexOverflow(long overflowLocation, long keyToAdd) {
-        final long existingRightIndex = overflowRightRowSetSource.getUnsafe(overflowLocation);
+        final long existingRightIndex = overflowRightIndexSource.getUnsafe(overflowLocation);
         if (existingRightIndex == NO_RIGHT_ENTRY_VALUE) {
-            overflowRightRowSetSource.set(overflowLocation, keyToAdd);
+            overflowRightIndexSource.set(overflowLocation, keyToAdd);
         }
         else if (isDuplicateRightIndex(existingRightIndex)) {
             final long rightIndexSlot = getRightIndexSlot(existingRightIndex);
@@ -460,21 +460,21 @@ class IncrementalChunkedNaturalJoinStateManager
             rowSetToUpdate.insert(keyToAdd);
         } else {
             final long rightIndexSlot = allocateRightIndexSlot();
-            overflowRightRowSetSource.set(overflowLocation, rightIndexSlotToStorage(rightIndexSlot));
+            overflowRightIndexSource.set(overflowLocation, rightIndexSlotToStorage(rightIndexSlot));
             rightRowSetStorage.set(rightIndexSlot, RowSetFactory.fromKeys(existingRightIndex, keyToAdd));
         }
     }
 
     private void addModifiedMain(NaturalJoinModifiedSlotTracker modifiedSlotTracker, long tableLocation, byte flag) {
         if (modifiedSlotTracker != null) {
-            final long originalIndex = rightRowSetSource.getUnsafe(tableLocation);
+            final long originalIndex = rightIndexSource.getUnsafe(tableLocation);
             modifiedTrackerCookieSource.set(tableLocation, modifiedSlotTracker.addMain(modifiedTrackerCookieSource.getUnsafe(tableLocation), tableLocation, originalIndex, flag));
         }
     }
 
     private void addModifiedOverflow(NaturalJoinModifiedSlotTracker modifiedSlotTracker, long overflowLocation, byte flag) {
         if (modifiedSlotTracker != null) {
-            final long originalIndex = overflowRightRowSetSource.getUnsafe(overflowLocation);
+            final long originalIndex = overflowRightIndexSource.getUnsafe(overflowLocation);
             overflowModifiedTrackerCookieSource.set(overflowLocation, modifiedSlotTracker.addOverflow(overflowModifiedTrackerCookieSource.getUnsafe(overflowLocation), overflowLocation, originalIndex, flag));
         }
     }
@@ -624,7 +624,7 @@ class IncrementalChunkedNaturalJoinStateManager
             sourceIndexKeys = WritableLongChunk.makeWritableChunk(chunkSize);
             // endregion build context constructor
             sortContext = LongIntTimsortKernel.createContext(chunkSize);
-            stateSourceFillContext = rightRowSetSource.makeFillContext(chunkSize);
+            stateSourceFillContext = rightIndexSource.makeFillContext(chunkSize);
             overflowFillContext = overflowLocationSource.makeFillContext(chunkSize);
             overflowOverflowFillContext = overflowOverflowLocationSource.makeFillContext(chunkSize);
             hashChunk = WritableIntChunk.makeWritableChunk(chunkSize);
@@ -649,7 +649,7 @@ class IncrementalChunkedNaturalJoinStateManager
             overflowLocations = WritableIntChunk.makeWritableChunk(chunkSize);
             // mixin rehash
             rehashLocations = WritableLongChunk.makeWritableChunk(chunkSize);
-            overflowStateSourceFillContext = overflowRightRowSetSource.makeFillContext(chunkSize);
+            overflowStateSourceFillContext = overflowRightIndexSource.makeFillContext(chunkSize);
             overflowLocationsToMigrate = WritableIntChunk.makeWritableChunk(chunkSize);
             overflowLocationsAsKeyIndices = WritableLongChunk.makeWritableChunk(chunkSize);
             shouldMoveBucket = WritableBooleanChunk.makeWritableChunk(chunkSize);
@@ -792,7 +792,7 @@ class IncrementalChunkedNaturalJoinStateManager
                 fillKeys(bc.workingFillContexts, bc.workingKeyChunks, bc.tableLocationsChunk);
 
                 // and the corresponding states, if a value is null, we've found our insertion point
-                rightRowSetSource.fillChunkUnordered(bc.stateSourceFillContext, bc.workingStateEntries, bc.tableLocationsChunk);
+                rightIndexSource.fillChunkUnordered(bc.stateSourceFillContext, bc.workingStateEntries, bc.tableLocationsChunk);
 
                 // find things that exist
                 // @StateChunkIdentityName@ from LongChunk
@@ -851,11 +851,11 @@ class IncrementalChunkedNaturalJoinStateManager
                     // region main insert
                     final long keyToAdd = bc.sourceIndexKeys.get(firstChunkPositionForHashLocation);
                     if (isLeftSide) {
-                        rightRowSetSource.set(currentHashLocation, NO_RIGHT_ENTRY_VALUE);
+                        rightIndexSource.set(currentHashLocation, NO_RIGHT_ENTRY_VALUE);
                         addLeftIndex(currentHashLocation, keyToAdd);
                         workingLeftRedirections.set(firstChunkPositionForHashLocation, NO_RIGHT_ENTRY_VALUE);
                     } else {
-                        rightRowSetSource.set(currentHashLocation, keyToAdd);
+                        rightIndexSource.set(currentHashLocation, keyToAdd);
                         // there was no left hand side, so we should not worry about modifying it
                     }
                     // endregion main insert
@@ -1020,14 +1020,14 @@ class IncrementalChunkedNaturalJoinStateManager
                             final long keyToAdd = bc.sourceIndexKeys.get(chunkPosition);
                             if (isLeftSide) {
                                 workingLeftRedirections.set(chunkPosition, NO_RIGHT_ENTRY_VALUE);
-                                // we set the right rowSet to indicate it is empty, but exists
+                                // we set the right RowSet to indicate it is empty, but exists
                                 rightValue = NO_RIGHT_ENTRY_VALUE;
                                 addLeftIndexOverflow(allocatedOverflowLocation, keyToAdd);
                             } else {
                                 rightValue = keyToAdd;
                                 // we are inserting the value, so there is no left hand side to care about
                             }
-                            overflowRightRowSetSource.set(allocatedOverflowLocation, rightValue);
+                            overflowRightIndexSource.set(allocatedOverflowLocation, rightValue);
                             // endregion build overflow insert
 
                             // mixin rehash
@@ -1155,7 +1155,7 @@ class IncrementalChunkedNaturalJoinStateManager
 
             // now rehash the main entries
 
-            rightRowSetSource.fillChunkUnordered(bc.stateSourceFillContext, bc.workingStateEntries, bc.rehashLocations);
+            rightIndexSource.fillChunkUnordered(bc.stateSourceFillContext, bc.workingStateEntries, bc.rehashLocations);
             // @StateChunkIdentityName@ from LongChunk
             LongChunkEquals.notEqual(bc.workingStateEntries, EMPTY_RIGHT_VALUE, bc.shouldMoveBucket);
 
@@ -1188,9 +1188,9 @@ class IncrementalChunkedNaturalJoinStateManager
                     }
 
                     // @StateValueType@ from long
-                    final long stateValueToMove = rightRowSetSource.getUnsafe(oldHashLocation);
-                    rightRowSetSource.set(newHashLocation, stateValueToMove);
-                    rightRowSetSource.set(oldHashLocation, EMPTY_RIGHT_VALUE);
+                    final long stateValueToMove = rightIndexSource.getUnsafe(oldHashLocation);
+                    rightIndexSource.set(newHashLocation, stateValueToMove);
+                    rightIndexSource.set(oldHashLocation, EMPTY_RIGHT_VALUE);
                     // region rehash move values
                     final WritableRowSet oldLeftRowSetValue = leftRowSetSource.get(oldHashLocation);
                     leftRowSetSource.set(newHashLocation, oldLeftRowSetValue);
@@ -1235,7 +1235,7 @@ class IncrementalChunkedNaturalJoinStateManager
                 // now fetch the overflow key values
                 fillOverflowKeys(bc.overflowContexts, bc.workingKeyChunks, bc.overflowLocationsAsKeyIndices);
                 // and their state values
-                overflowRightRowSetSource.fillChunkUnordered(bc.overflowStateSourceFillContext, bc.workingStateEntries, bc.overflowLocationsAsKeyIndices);
+                overflowRightIndexSource.fillChunkUnordered(bc.overflowStateSourceFillContext, bc.workingStateEntries, bc.overflowLocationsAsKeyIndices);
                 // and where their next pointer is
                 overflowOverflowLocationSource.fillChunkUnordered(bc.overflowOverflowFillContext, bc.overflowLocationsToMigrate, bc.overflowLocationsAsKeyIndices);
 
@@ -1327,9 +1327,9 @@ class IncrementalChunkedNaturalJoinStateManager
              final SafeCloseableArray ignored2 = new SafeCloseableArray<>(keyChunks);
              // @StateChunkName@ from LongChunk
              final WritableLongChunk stateChunk = WritableLongChunk.makeWritableChunk(maxSize);
-             final ChunkSource.FillContext fillContext = rightRowSetSource.makeFillContext(maxSize)) {
+             final ChunkSource.FillContext fillContext = rightIndexSource.makeFillContext(maxSize)) {
 
-            rightRowSetSource.fillChunk(fillContext, stateChunk, RowSetFactory.flat(tableHashPivot));
+            rightIndexSource.fillChunk(fillContext, stateChunk, RowSetFactory.flat(tableHashPivot));
 
             ChunkUtils.fillInOrder(positions);
 
@@ -1412,7 +1412,7 @@ class IncrementalChunkedNaturalJoinStateManager
     // mixin allowUpdateWriteThroughState
     // @WritableStateChunkType@ from WritableLongChunk<Values>
     private void updateWriteThroughState(ResettableWritableLongChunk<Values> writeThroughState, long firstPosition, long expectedLastPosition) {
-        final long firstBackingChunkPosition = rightRowSetSource.resetWritableChunkToBackingStore(writeThroughState, firstPosition);
+        final long firstBackingChunkPosition = rightIndexSource.resetWritableChunkToBackingStore(writeThroughState, firstPosition);
         if (firstBackingChunkPosition != firstPosition) {
             throw new IllegalStateException("ArrayBackedColumnSources have different block sizes!");
         }
@@ -1593,7 +1593,7 @@ class IncrementalChunkedNaturalJoinStateManager
         // the chunk of positions within our table
         final WritableLongChunk<RowKeys> tableLocationsChunk;
 
-        // the chunk of right indices that we read from the hash table, the empty right rowSet is used as a sentinel that the
+        // the chunk of right indices that we read from the hash table, the empty right index is used as a sentinel that the
         // state exists; otherwise when building from the left it is always null
         // @WritableStateChunkType@ from WritableLongChunk<Values>
         final WritableLongChunk<Values> workingStateEntries;
@@ -1648,7 +1648,7 @@ class IncrementalChunkedNaturalJoinStateManager
             // region probe context constructor
             keyIndices = WritableLongChunk.makeWritableChunk(chunkSize);
             // endregion probe context constructor
-            stateSourceFillContext = rightRowSetSource.makeFillContext(chunkSize);
+            stateSourceFillContext = rightIndexSource.makeFillContext(chunkSize);
             overflowFillContext = overflowLocationSource.makeFillContext(chunkSize);
             overflowOverflowFillContext = overflowOverflowLocationSource.makeFillContext(chunkSize);
             hashChunk = WritableIntChunk.makeWritableChunk(chunkSize);
@@ -1799,7 +1799,7 @@ class IncrementalChunkedNaturalJoinStateManager
                 // - otherwise we check for equality; if we are equal, we have found our thing to set
                 //   (or to complain if we are already set)
                 // - if we are not equal, then we are an overflow block
-                rightRowSetSource.fillChunkUnordered(pc.stateSourceFillContext, pc.workingStateEntries, pc.tableLocationsChunk);
+                rightIndexSource.fillChunkUnordered(pc.stateSourceFillContext, pc.workingStateEntries, pc.tableLocationsChunk);
 
                 // @StateChunkIdentityName@ from LongChunk
                 LongChunkEquals.notEqual(pc.workingStateEntries, EMPTY_RIGHT_VALUE, pc.equalValues);
@@ -2029,9 +2029,9 @@ class IncrementalChunkedNaturalJoinStateManager
     public long getRightIndex(long slot) {
         final long rightIndex;
         if (isOverflowLocation(slot)) {
-            rightIndex = overflowRightRowSetSource.getUnsafe(hashLocationToOverflowLocation(slot));
+            rightIndex = overflowRightIndexSource.getUnsafe(hashLocationToOverflowLocation(slot));
         } else {
-            rightIndex = rightRowSetSource.getUnsafe(slot);
+            rightIndex = rightIndexSource.getUnsafe(slot);
         }
 
         if (isDuplicateRightIndex(rightIndex)) {
@@ -2117,10 +2117,10 @@ class IncrementalChunkedNaturalJoinStateManager
     private long getStateValue(LongArraySource hashSlots, long locationInHashSlots) {
         final long hashSlot = hashSlots.getUnsafe(locationInHashSlots);
         if (isOverflowLocation(hashSlot)) {
-            return overflowRightRowSetSource.getUnsafe(hashLocationToOverflowLocation(hashSlot));
+            return overflowRightIndexSource.getUnsafe(hashLocationToOverflowLocation(hashSlot));
         }
         else {
-            return rightRowSetSource.getUnsafe(hashSlot);
+            return rightIndexSource.getUnsafe(hashSlot);
         }
     }
     // endregion getStateValue
@@ -2185,8 +2185,8 @@ class IncrementalChunkedNaturalJoinStateManager
             }
         }
 
-        try (final ColumnSource.FillContext fillContext = rightRowSetSource.makeFillContext(tableSize)) {
-            rightRowSetSource.fillChunk(fillContext, stateChunk, tableLocations);
+        try (final ColumnSource.FillContext fillContext = rightIndexSource.makeFillContext(tableSize)) {
+            rightIndexSource.fillChunk(fillContext, stateChunk, tableLocations);
         }
         try (final ColumnSource.FillContext fillContext = overflowLocationSource.makeFillContext(tableSize)) {
             overflowLocationSource.fillChunk(fillContext, overflowLocationChunk, tableLocations);
@@ -2194,8 +2194,8 @@ class IncrementalChunkedNaturalJoinStateManager
         try (final ColumnSource.FillContext fillContext = overflowOverflowLocationSource.makeFillContext(nextOverflowLocation)) {
             overflowOverflowLocationSource.fillChunk(fillContext, overflowOverflowLocationChunk, overflowLocations);
         }
-        try (final ColumnSource.FillContext fillContext = overflowRightRowSetSource.makeFillContext(nextOverflowLocation)) {
-            overflowRightRowSetSource.fillChunk(fillContext, overflowStateChunk, overflowLocations);
+        try (final ColumnSource.FillContext fillContext = overflowRightIndexSource.makeFillContext(nextOverflowLocation)) {
+            overflowRightIndexSource.fillChunk(fillContext, overflowStateChunk, overflowLocations);
         }
 
         for (int ii = 0; ii < tableSize; ++ii) {

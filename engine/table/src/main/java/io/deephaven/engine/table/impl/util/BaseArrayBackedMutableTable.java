@@ -63,19 +63,19 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
 
     static void processInitial(Table initialTable, BaseArrayBackedMutableTable result) {
         final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
-        result.processPendingTable(initialTable, true, new IndexChangeRecorder() {
+        result.processPendingTable(initialTable, true, new RowSetChangeRecorder() {
             @Override
-            public void addIndex(long key) {
+            public void addRowKey(long key) {
                 builder.appendKey(key);
             }
 
             @Override
-            public void removeIndex(long key) {
+            public void removeRowKey(long key) {
                 throw new UnsupportedOperationException();
             }
 
             @Override
-            public void modifyIndex(long key) {
+            public void modifyRowKey(long key) {
                 throw new UnsupportedOperationException();
             }
         }, (e) -> {
@@ -102,13 +102,13 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
                 onPendingChange == null ? () -> UpdateGraphProcessor.DEFAULT.requestRefresh() : onPendingChange;
     }
 
-    private void processPending(IndexChangeRecorder indexChangeRecorder) {
+    private void processPending(RowSetChangeRecorder rowSetChangeRecorder) {
         synchronized (pendingChanges) {
             for (PendingChange pendingChange : pendingChanges) {
                 if (pendingChange.delete) {
-                    processPendingDelete(pendingChange.table, indexChangeRecorder);
+                    processPendingDelete(pendingChange.table, rowSetChangeRecorder);
                 } else {
-                    processPendingTable(pendingChange.table, pendingChange.allowEdits, indexChangeRecorder,
+                    processPendingTable(pendingChange.table, pendingChange.allowEdits, rowSetChangeRecorder,
                             (e) -> pendingChange.error = e);
                 }
                 pendingProcessed = pendingChange.sequence;
@@ -128,9 +128,9 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
     }
 
     protected abstract void processPendingTable(Table table, boolean allowEdits,
-            IndexChangeRecorder indexChangeRecorder, Consumer<String> errorNotifier);
+                                                RowSetChangeRecorder rowSetChangeRecorder, Consumer<String> errorNotifier);
 
-    protected abstract void processPendingDelete(Table table, IndexChangeRecorder indexChangeRecorder);
+    protected abstract void processPendingDelete(Table table, RowSetChangeRecorder rowSetChangeRecorder);
 
     protected abstract String getDefaultDescription();
 
@@ -140,8 +140,8 @@ abstract class BaseArrayBackedMutableTable extends UpdatableTable {
         private BaseArrayBackedMutableTable baseArrayBackedMutableTable;
 
         @Override
-        public void accept(IndexChangeRecorder indexChangeRecorder) {
-            baseArrayBackedMutableTable.processPending(indexChangeRecorder);
+        public void accept(RowSetChangeRecorder rowSetChangeRecorder) {
+            baseArrayBackedMutableTable.processPending(rowSetChangeRecorder);
         }
 
         public void setThis(BaseArrayBackedMutableTable keyedArrayBackedMutableTable) {

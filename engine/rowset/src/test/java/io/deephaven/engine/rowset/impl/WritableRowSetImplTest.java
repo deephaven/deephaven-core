@@ -446,7 +446,7 @@ public class WritableRowSetImplTest extends TestCase {
 
     /**
      * Generate a subset of the keys in fullKeys up to maxPosition positions in using generator. Returns a pair
-     * containing the subset of fullKeys as a rowSet and the expected positions as a TLongList.
+     * containing the subset of fullKeys as a RowSet and the expected positions as a TLongList.
      */
     private Pair<RowSet, TLongList> generateSubset(long[] fullKeys, RowSet fullRowSet, int maxPosition,
             Random generator) {
@@ -501,7 +501,7 @@ public class WritableRowSetImplTest extends TestCase {
     }
 
     /**
-     * For each run of the rowSet, flip a coin to determine if it is included; then randomly select a start and end
+     * For each run of the RowSet, flip a coin to determine if it is included; then randomly select a start and end
      * within each range.
      */
     private Pair<RowSet, TLongList> generateSubsetMethod2(@SuppressWarnings("unused") long[] fullKeys,
@@ -1418,7 +1418,7 @@ public class WritableRowSetImplTest extends TestCase {
         }
         final WritableRowSet idx = result.build();
 
-        // we've got a rowSet which is split where we want it at this point
+        // we've got a RowSet which is split where we want it at this point
 
         // now let's nuke out the end of the second node
         for (int ii = 33; ii < 64; ++ii) {
@@ -1554,8 +1554,8 @@ public class WritableRowSetImplTest extends TestCase {
         // doCutDown(indexStrings);
     }
 
-    // This method will take one range out of one the rowSet and run the test. If we find a range we can take out and
-    // still get a failure, recursively try again, so that we have a minimal set of rowSet ranges that actually produce
+    // This method will take one range out of the RowSet and run the test. If we find a range we can take out and
+    // still get a failure, recursively try again, so that we have a minimal set of row key ranges that actually produce
     // a failure for us. We don't need it during normal testing, so it is unused.
     @SuppressWarnings("unused")
     private void doCutDown(String[] indexStrings) {

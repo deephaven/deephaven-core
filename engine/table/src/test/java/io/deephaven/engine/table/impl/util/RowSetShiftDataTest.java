@@ -438,7 +438,7 @@ public class RowSetShiftDataTest {
         return sequentialBuilder.build();
     }
 
-    // These tests don't actually need / desire an underlying rowSet.
+    // These tests don't actually need / desire an underlying RowSet.
     private RowSetShiftData.Builder newBuilder() {
         return new RowSetShiftData.Builder();
     }

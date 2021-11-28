@@ -50,17 +50,17 @@ public abstract class BaseTestByteTimSortKernel extends TestTimSortKernel {
             byteChunk = WritableByteChunk.makeWritableChunk(size);
             context = ByteLongTimsortKernel.createContext(size);
 
-            prepareByteChunks(javaTuples, byteChunk, indexKeys);
+            prepareByteChunks(javaTuples, byteChunk, rowKeys);
         }
 
         @Override
         void run() {
-            ByteLongTimsortKernel.sort(context, indexKeys, byteChunk);
+            ByteLongTimsortKernel.sort(context, rowKeys, byteChunk);
         }
 
         @Override
         void check(List<ByteLongTuple> expected) {
-            verify(expected.size(), expected, byteChunk, indexKeys);
+            verify(expected.size(), expected, byteChunk, rowKeys);
         }
     }
 
@@ -99,17 +99,17 @@ public abstract class BaseTestByteTimSortKernel extends TestTimSortKernel {
 
             context = BytePartitionKernel.createContext(rowSet, columnSource, chunkSize, nPartitions, preserveEquality);
 
-            prepareByteChunks(javaTuples, valuesChunk, indexKeys);
+            prepareByteChunks(javaTuples, valuesChunk, rowKeys);
         }
 
         @Override
         public void run() {
-            BytePartitionKernel.partition(context, indexKeys, valuesChunk);
+            BytePartitionKernel.partition(context, rowKeys, valuesChunk);
         }
 
         @Override
         void check(List<ByteLongTuple> expected) {
-            verifyPartition(context, rowSet, expected.size(), expected, valuesChunk, indexKeys, columnSource);
+            verifyPartition(context, rowSet, expected.size(), expected, valuesChunk, rowKeys, columnSource);
         }
     }
 
@@ -160,7 +160,7 @@ public abstract class BaseTestByteTimSortKernel extends TestTimSortKernel {
 
             secondarySortContext = io.deephaven.engine.table.impl.sort.timsort.LongLongTimsortKernel.createContext(size);
 
-            prepareMultiByteChunks(javaTuples, primaryChunk, secondaryChunk, indexKeys);
+            prepareMultiByteChunks(javaTuples, primaryChunk, secondaryChunk, rowKeys);
 
             secondaryColumnSource = new AbstractColumnSource.DefaultedImmutable<Long>(long.class) {
                 @Override
@@ -181,22 +181,23 @@ public abstract class BaseTestByteTimSortKernel extends TestTimSortKernel {
 
         @Override
         void run() {
-            ByteLongTimsortKernel.sort(context, indexKeys, primaryChunk, offsets, lengths);
+            ByteLongTimsortKernel.sort(context, rowKeys, primaryChunk, offsets, lengths);
             ByteFindRunsKernel.findRuns(primaryChunk, offsets, lengths, offsetsOut, lengthsOut);
 //            dumpChunk(primaryChunk);
 //            dumpOffsets(offsetsOut, lengthsOut);
             if (offsetsOut.size() > 0) {
                 // the secondary context is actually just bogus at this point, it is no longer parallel,
                 // what we need to do is fetch the things from that columnsource, but only the things needed to break
-                // ties, and then put them in chunks that would be parallel to the rowSet chunk based on offsetsOut and lengthsOut
+                // ties, and then put them in chunks that would be parallel to the row key chunk based on offsetsOut and
+                // lengthsOut
                 //
                 // after some consideration, I think the next stage of the sort is:
                 // (1) using the chunk of row keys that are relevant, build a second chunk that indicates their position
-                // (2) use the LongTimsortKernel to sort by the row key; using the position keys as our as our "indexKeys"
-                //     argument.  The sorted row keys can be used as input to a rowSet builder for filling a chunk.
-                // (3) After the chunk of secondary keys is filled, the second sorted indexKeys (really positions that
+                // (2) use the LongTimsortKernel to sort by the row key; using the position keys as our as our "rowKeys"
+                //     argument.  The sorted row keys can be used as input to a RowSet builder for filling a chunk.
+                // (3) After the chunk of secondary keys is filled, the second sorted rowKeys (really positions that
                 //     we care about), will then be used to permute the resulting chunk into a parallel chunk
-                //     to our actual indexKeys.
+                //     to our actual rowKeys.
                 // (4) We can call this kernel; and do the sub region sorts
 
                 indicesToFetch.setSize(0);
@@ -207,7 +208,7 @@ public abstract class BaseTestByteTimSortKernel extends TestTimSortKernel {
                     final int runLength = lengthsOut.get(ii);
 
                     for (int jj = 0; jj < runLength; ++jj) {
-                        indicesToFetch.add(indexKeys.get(runStart + jj));
+                        indicesToFetch.add(rowKeys.get(runStart + jj));
                         originalPositions.add(runStart +jj);
                     }
                 }
@@ -224,28 +225,28 @@ public abstract class BaseTestByteTimSortKernel extends TestTimSortKernel {
                 }
 
                 // and we can sort the stuff within the run now
-                LongLongTimsortKernel.sort(secondarySortContext, indexKeys, secondaryChunkPermuted, offsetsOut, lengthsOut);
+                LongLongTimsortKernel.sort(secondarySortContext, rowKeys, secondaryChunkPermuted, offsetsOut, lengthsOut);
             }
         }
 
         @Override
         void check(List<ByteLongLongTuple> expected) {
-            verify(expected.size(), expected, primaryChunk, secondaryChunk, indexKeys);
+            verify(expected.size(), expected, primaryChunk, secondaryChunk, rowKeys);
         }
     }
 
-    static private void prepareByteChunks(List<ByteLongTuple> javaTuples, WritableByteChunk valueChunk, WritableLongChunk<RowKeys> indexKeys) {
+    static private void prepareByteChunks(List<ByteLongTuple> javaTuples, WritableByteChunk valueChunk, WritableLongChunk<RowKeys> rowKeys) {
         for (int ii = 0; ii < javaTuples.size(); ++ii) {
             valueChunk.set(ii, javaTuples.get(ii).getFirstElement());
-            indexKeys.set(ii, javaTuples.get(ii).getSecondElement());
+            rowKeys.set(ii, javaTuples.get(ii).getSecondElement());
         }
     }
 
-    static private void prepareMultiByteChunks(List<ByteLongLongTuple> javaTuples, WritableByteChunk valueChunk, WritableLongChunk secondaryChunk, WritableLongChunk<RowKeys> indexKeys) {
+    static private void prepareMultiByteChunks(List<ByteLongLongTuple> javaTuples, WritableByteChunk valueChunk, WritableLongChunk secondaryChunk, WritableLongChunk<RowKeys> rowKeys) {
         for (int ii = 0; ii < javaTuples.size(); ++ii) {
             valueChunk.set(ii, javaTuples.get(ii).getFirstElement());
             secondaryChunk.set(ii, javaTuples.get(ii).getSecondElement());
-            indexKeys.set(ii, javaTuples.get(ii).getThirdElement());
+            rowKeys.set(ii, javaTuples.get(ii).getThirdElement());
         }
     }
 
@@ -314,7 +315,7 @@ public abstract class BaseTestByteTimSortKernel extends TestTimSortKernel {
         return javaTuples;
     }
 
-    static private void verify(int size, List<ByteLongTuple> javaTuples, ByteChunk byteChunk, LongChunk indexKeys) {
+    static private void verify(int size, List<ByteLongTuple> javaTuples, ByteChunk byteChunk, LongChunk rowKeys) {
 //        System.out.println("Verify: " + javaTuples);
 //        dumpChunk(valuesChunk);
 
@@ -322,15 +323,15 @@ public abstract class BaseTestByteTimSortKernel extends TestTimSortKernel {
             final byte timSorted = byteChunk.get(ii);
             final byte javaSorted = javaTuples.get(ii).getFirstElement();
 
-            final long timIndex = indexKeys.get(ii);
+            final long timIndex = rowKeys.get(ii);
             final long javaIndex = javaTuples.get(ii).getSecondElement();
 
             TestCase.assertEquals("values[" + ii + "]", javaSorted, timSorted);
-            TestCase.assertEquals("rowSet[" + ii + "]", javaIndex, timIndex);
+            TestCase.assertEquals("rowKey[" + ii + "]", javaIndex, timIndex);
         }
     }
 
-    static private void verifyPartition(BytePartitionKernel.PartitionKernelContext context, RowSet source, int size, List<ByteLongTuple> javaTuples, ByteChunk byteChunk, LongChunk indexKeys, ColumnSource<Byte> columnSource) {
+    static private void verifyPartition(BytePartitionKernel.PartitionKernelContext context, RowSet source, int size, List<ByteLongTuple> javaTuples, ByteChunk byteChunk, LongChunk rowKeys, ColumnSource<Byte> columnSource) {
 
         final ByteLongTuple [] pivots = context.getPivots();
 
@@ -338,7 +339,7 @@ public abstract class BaseTestByteTimSortKernel extends TestTimSortKernel {
 
         final WritableRowSet reconstructed = RowSetFactory.empty();
 
-        // make sure that each partition is a subset of the rowSet and is disjoint
+        // make sure that each partition is a subset of the RowSet and is disjoint
         for (int ii = 0; ii < results.length; ii++) {
             final RowSet partition = results[ii];
             TestCase.assertTrue("partition[" + ii + "].subsetOf(source)", partition.subsetOf(source));
@@ -404,27 +405,27 @@ public abstract class BaseTestByteTimSortKernel extends TestTimSortKernel {
 //            final byte timSorted = valuesChunk.get(ii);
 //            final byte javaSorted = javaTuples.get(ii).getFirstElement();
 //
-//            final long timIndex = indexKeys.get(ii);
+//            final long timIndex = rowKeys.get(ii);
 //            final long javaIndex = javaTuples.get(ii).getSecondElement();
 //
 //            TestCase.assertEquals("values[" + ii + "]", javaSorted, timSorted);
-//            TestCase.assertEquals("rowSet[" + ii + "]", javaIndex, timIndex);
+//            TestCase.assertEquals("rowKeys[" + ii + "]", javaIndex, timIndex);
 //        }
     }
 
-    static private void verify(int size, List<ByteLongLongTuple> javaTuples, ByteChunk primaryChunk, LongChunk secondaryChunk, LongChunk<RowKeys> indexKeys) {
+    static private void verify(int size, List<ByteLongLongTuple> javaTuples, ByteChunk primaryChunk, LongChunk secondaryChunk, LongChunk<RowKeys> rowKeys) {
 //        System.out.println("Verify: " + javaTuples);
-//        dumpChunks(primaryChunk, indexKeys);
+//        dumpChunks(primaryChunk, rowKeys);
 
         for (int ii = 0; ii < size; ++ii) {
             final byte timSortedPrimary = primaryChunk.get(ii);
             final byte javaSorted = javaTuples.get(ii).getFirstElement();
 
-            final long timIndex = indexKeys.get(ii);
+            final long timIndex = rowKeys.get(ii);
             final long javaIndex = javaTuples.get(ii).getThirdElement();
 
             TestCase.assertEquals("values[" + ii + "]", javaSorted, timSortedPrimary);
-            TestCase.assertEquals("rowSet[" + ii + "]", javaIndex, timIndex);
+            TestCase.assertEquals("rowKeys[" + ii + "]", javaIndex, timIndex);
         }
     }
 

@@ -13,7 +13,7 @@ import java.util.Arrays;
 
 /**
  * The GroupedWritableRowRedirection is intended for situations where you have several Indices that represent contiguous
- * rows of your output table and a flat output rowSet.
+ * rows of your output table and a flat output RowSet.
  *
  * When sorting a table by its grouping column, instead of using a large contiguous WritableRowRedirection, we simply
  * store the row sets for each group and the accumulated cardinality. We then binary search in the accumulated
@@ -32,7 +32,7 @@ public class GroupedWritableRowRedirection implements WritableRowRedirection {
      */
     private final long[] groupSizes;
     /**
-     * The actual TrackingWritableRowSet for each group; parallel with groupSizes.
+     * The actual RowSet for each group; parallel with groupSizes.
      */
     private final RowSet[] groups;
 

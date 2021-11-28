@@ -57,7 +57,7 @@ import java.util.Collection;
  * <td>25-8</td>
  * </tr>
  * <tr>
- * <td>TrackingWritableRowSet Within Block</td>
+ * <td>Index Within Block</td>
  * <td>8</td>
  * <td>7-0</td>
  * </tr>

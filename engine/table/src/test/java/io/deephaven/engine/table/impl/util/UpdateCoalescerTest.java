@@ -178,7 +178,7 @@ public class UpdateCoalescerTest {
     @Test
     public void testShiftOverlapWithEntireEmptyShift() {
         final TableUpdateImpl[] up = newEmptyUpdates(2);
-        // original rowSet does not include this value, so it is unambiguous
+        // original RowSet does not include this value, so it is unambiguous
         up[0].shifted = newShiftDataByTriplets(0, 0, +1); // write 0 to 1
         up[1].shifted = newShiftDataByTriplets(2, 2, -1); // write 2 to 1
 

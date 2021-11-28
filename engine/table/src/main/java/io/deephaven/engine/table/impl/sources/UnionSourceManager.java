@@ -288,8 +288,8 @@ public class UnionSourceManager {
                         rowSet.remove(newRemoved);
                     }
                 } else {
-                    // If the shiftDelta is non-zero we have already updated the rowSet above (because we used the new
-                    // rowSet),
+                    // If the shiftDelta is non-zero we have already updated the RowSet above (because we used the new
+                    // RowSet),
                     // otherwise we need to apply the removals (adjusted by the table's starting key)
                     updateRemovedBuilder.appendRowSequenceWithOffset(listener.getRemoved(),
                             unionRedirection.prevStartOfIndices[tableId]);
@@ -303,7 +303,7 @@ public class UnionSourceManager {
                     final long currCardinality = unionRedirection.startOfIndices[tableId + 1] - currOffset;
                     shiftedBuilder.appendShiftData(shiftData, offset, prevCardinality, currOffset, currCardinality);
 
-                    // if the entire table was shifted, we've already applied the rowSet update
+                    // if the entire table was shifted, we've already applied the RowSet update
                     if (shiftDelta == 0) {
                         // it is possible that shifts occur outside of our reserved keyspace for this table; we must
                         // protect from shifting keys that belong to other tables by clipping the shift space
@@ -345,7 +345,7 @@ public class UnionSourceManager {
             update.modified = updateModifiedBuilder.build();
             update.shifted = shiftedBuilder.build();
 
-            // Finally add the new keys to the rowSet in post-shift key-space.
+            // Finally add the new keys to the RowSet in post-shift key-space.
             try (RowSet shiftRemoveRowSet = shiftRemoveBuilder.build();
                     RowSet shiftAddedRowSet = shiftAddedBuilder.build()) {
                 rowSet.remove(shiftRemoveRowSet);

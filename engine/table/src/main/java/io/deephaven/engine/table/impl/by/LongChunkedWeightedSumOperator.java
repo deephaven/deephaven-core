@@ -38,7 +38,7 @@ class LongChunkedWeightedSumOperator implements IterativeChunkedAggregationOpera
     }
 
     @Override
-    public void addChunk(BucketedContext bucketedContext, Chunk<? extends Values> values, LongChunk<? extends RowKeys> inputIndices, IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length, WritableBooleanChunk<Values> stateModified) {
+    public void addChunk(BucketedContext bucketedContext, Chunk<? extends Values> values, LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length, WritableBooleanChunk<Values> stateModified) {
         final Context context = (Context)bucketedContext;
         final LongChunk<? extends Values> doubleValues = context.toLongCast.apply(values);
         final LongChunk<? extends Values> weightValues = weightOperator.getAddedWeights();
@@ -50,7 +50,7 @@ class LongChunkedWeightedSumOperator implements IterativeChunkedAggregationOpera
     }
 
     @Override
-    public void removeChunk(BucketedContext bucketedContext, Chunk<? extends Values> values, LongChunk<? extends RowKeys> inputIndices, IntChunk<Attributes.RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length, WritableBooleanChunk<Values> stateModified) {
+    public void removeChunk(BucketedContext bucketedContext, Chunk<? extends Values> values, LongChunk<? extends RowKeys> inputRowKeys, IntChunk<Attributes.RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length, WritableBooleanChunk<Values> stateModified) {
         final Context context = (Context)bucketedContext;
         final LongChunk<? extends Values> doubleValues = context.prevToLongCast.apply(values);
         final LongChunk<? extends Values> weightValues = weightOperator.getRemovedWeights();
@@ -62,7 +62,7 @@ class LongChunkedWeightedSumOperator implements IterativeChunkedAggregationOpera
     }
 
     @Override
-    public void modifyChunk(BucketedContext bucketedContext, Chunk<? extends Values> previousValues, Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> postShiftIndices, IntChunk<Attributes.RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length, WritableBooleanChunk<Values> stateModified) {
+    public void modifyChunk(BucketedContext bucketedContext, Chunk<? extends Values> previousValues, Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> postShiftRowKeys, IntChunk<Attributes.RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length, WritableBooleanChunk<Values> stateModified) {
         final Context context = (Context)bucketedContext;
         final LongChunk<? extends Values> prevDoubleValues = context.prevToLongCast.apply(previousValues);
         final LongChunk<? extends Values> prevWeightValues = weightOperator.getRemovedWeights();
@@ -75,7 +75,7 @@ class LongChunkedWeightedSumOperator implements IterativeChunkedAggregationOpera
     }
 
     @Override
-    public boolean addChunk(SingletonContext singletonContext, int chunkSize, Chunk<? extends Values> values, LongChunk<? extends RowKeys> inputIndices, long destination) {
+    public boolean addChunk(SingletonContext singletonContext, int chunkSize, Chunk<? extends Values> values, LongChunk<? extends RowKeys> inputRowKeys, long destination) {
         final Context context = (Context)singletonContext;
         final LongChunk<? extends Values> doubleValues = context.toLongCast.apply(values);
         final LongChunk<? extends Values> weightValues = weightOperator.getAddedWeights();
@@ -83,7 +83,7 @@ class LongChunkedWeightedSumOperator implements IterativeChunkedAggregationOpera
     }
 
     @Override
-    public boolean removeChunk(SingletonContext singletonContext, int chunkSize, Chunk<? extends Values> values, LongChunk<? extends RowKeys> inputIndices, long destination) {
+    public boolean removeChunk(SingletonContext singletonContext, int chunkSize, Chunk<? extends Values> values, LongChunk<? extends RowKeys> inputRowKeys, long destination) {
         final Context context = (Context)singletonContext;
         final LongChunk<? extends Values> doubleValues = context.prevToLongCast.apply(values);
         final LongChunk<? extends Values> weightValues = weightOperator.getRemovedWeights();
@@ -91,7 +91,7 @@ class LongChunkedWeightedSumOperator implements IterativeChunkedAggregationOpera
     }
 
     @Override
-    public boolean modifyChunk(SingletonContext singletonContext, int chunkSize, Chunk<? extends Values> previousValues, Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> postShiftIndices, long destination) {
+    public boolean modifyChunk(SingletonContext singletonContext, int chunkSize, Chunk<? extends Values> previousValues, Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> postShiftRowKeys, long destination) {
         final Context context = (Context)singletonContext;
         final LongChunk<? extends Values> newDoubleValues = context.toLongCast.apply(newValues);
         final LongChunk<? extends Values> newWeightValues = weightOperator.getAddedWeights();

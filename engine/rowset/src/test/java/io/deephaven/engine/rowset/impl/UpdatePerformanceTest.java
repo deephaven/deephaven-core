@@ -38,7 +38,7 @@ public class UpdatePerformanceTest {
         Factory getFactory();
 
         // Since tests will run multiple times, and creation time is high (higher than individual operations),
-        // we create the base rowSet one and copy it before every run of update.
+        // we create the base RowSet once and copy it before every run of update.
         void cloneBase();
 
         TstValues.Builder baseBuilder();

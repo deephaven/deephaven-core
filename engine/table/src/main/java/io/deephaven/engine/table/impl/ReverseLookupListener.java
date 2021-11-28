@@ -25,7 +25,7 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
- * Maintains a map from key column values to their rowSet.
+ * Maintains a map from key column values to their row key.
  *
  * This allows you to quickly find a row based on a unique key on a ticking table, without the need for searching the
  * entire table.
@@ -282,7 +282,7 @@ public class ReverseLookupListener extends LivenessArtifact
     /**
      * Gets the key for a given row.
      * 
-     * @param row the rowSet value to retrieve the key for
+     * @param row the row key value to retrieve the key for
      * @return an individual object or SmartKey for multi-column keys
      */
     protected Object getKey(long row) {
@@ -292,7 +292,7 @@ public class ReverseLookupListener extends LivenessArtifact
     /**
      * Gets the previous key for a given row.
      * 
-     * @param row the rowSet value to retrieve the previous key for
+     * @param row the row key value to retrieve the previous key for
      * @return an individual object or SmartKey for multi-column keys
      */
     private Object getPrevKey(long row) {

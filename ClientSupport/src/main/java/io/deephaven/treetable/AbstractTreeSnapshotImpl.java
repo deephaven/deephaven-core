@@ -477,7 +477,7 @@ public abstract class AbstractTreeSnapshotImpl<INFO_TYPE extends HierarchicalTab
     private void compute(final boolean usePrev, final TableDetails current, @NotNull final SnapshotState state) {
         if (current == null) {
             ConstructSnapshot.failIfConcurrentAttemptInconsistent();
-            // If this happens that means that the child table has gone away between when we computed the child rowSet,
+            // If this happens that means that the child table has gone away between when we computed the child RowSet,
             // and now.
             // which means the LogicalClock has ticked, and the snapshot is going to fail, so we'll abort mission now.
             Assert.neqNull(current, "Child table ticked away during computation");
@@ -533,7 +533,7 @@ public abstract class AbstractTreeSnapshotImpl<INFO_TYPE extends HierarchicalTab
                 final Object tableKey = usePrev ? columnSource.getPrev(expandedRow) : columnSource.get(expandedRow);
                 final TableDetails child = tablesByKey.get(tableKey);
 
-                // If the expanded row doesn't exist in the current table rowSet, something at a higher level is broken.
+                // If the expanded row doesn't exist in the current table RowSet, something at a higher level is broken.
                 final long expandedPosition = currentRowSet.find(expandedRow);
 
                 if (expandedPosition < 0) {
@@ -562,9 +562,9 @@ public abstract class AbstractTreeSnapshotImpl<INFO_TYPE extends HierarchicalTab
                     Assert.lt(state.skippedRows, "state.skippedRows", firstViewportRow, "firstViewportRow");
                 }
 
-                // Finally, we need to shift the rowSet of the viewport start wrt to this table, by the number of row's
-                // we've skipped, less the current position
-                // because the current position has already been accounted for in state.skippedRows
+                // Finally, we need to shift the row position of the viewport start wrt to this table, by the number of
+                // rows we've skipped, less the current position because the current position has already been accounted
+                // for in state.skippedRows
                 final long newTarget = firstViewportRow - state.skippedRows + currentPosition;
                 if (newTarget >= currentRowSet.size()) {
                     vkUpper = Long.MAX_VALUE;
@@ -575,12 +575,10 @@ public abstract class AbstractTreeSnapshotImpl<INFO_TYPE extends HierarchicalTab
         }
 
         // When we get to here, we've found the table and row in that table where the viewport begins, so should start
-        // accumulating
-        // by table rowSet.
+        // accumulating by table RowSet.
 
         // There were no more expanded children, so we need to skip the remaining rows in our table, or up to the
-        // viewport row
-        // whichever comes first.
+        // viewport row whichever comes first.
         if (state.skippedRows < firstViewportRow) {
             final long remaining = firstViewportRow - state.skippedRows;
             if (remaining >= currentRowSet.size() - currentPosition) {
@@ -613,7 +611,7 @@ public abstract class AbstractTreeSnapshotImpl<INFO_TYPE extends HierarchicalTab
             state.consumed++;
 
             if (nextExpansion == currentIndexKey) {
-                // Copy everything so far, and start a new rowSet.
+                // Copy everything so far, and start a new RowSet.
                 state.addToSnapshot(usePrev, curTable, current.getKey(), curTableMap, sequentialBuilder.build());
                 sequentialBuilder = RowSetFactory.builderSequential();
 
@@ -648,12 +646,12 @@ public abstract class AbstractTreeSnapshotImpl<INFO_TYPE extends HierarchicalTab
 
     /**
      * Use the {@link ReverseLookup} provided by the specific implementation to locate where client-expanded rows have
-     * moved within the table, and return a rowSet of these rows.
+     * moved within the table, and return a RowSet of these rows.
      *
      * @param usePrev If we should use previous values
      * @param t The table to look in
      * @param childKeys The keys of the child tables to find
-     * @return A rowSet containing the rows that represent the indices of the tables indicated in childKeys, if they
+     * @return A RowSet containing the rows that represent the indices of the tables indicated in childKeys, if they
      *         still exist.
      */
     private RowSet getExpandedIndex(boolean usePrev, Table t, Set<Object> childKeys) {

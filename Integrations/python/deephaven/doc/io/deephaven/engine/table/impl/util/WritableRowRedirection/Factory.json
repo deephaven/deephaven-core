@@ -5,6 +5,6 @@
   "createUnderlyingMapWithCapacity": ":param initialCapacity: int\n:return: gnu.trove.map.TLongLongMap"
  },
  "path": "io.deephaven.engine.table.impl.util.WritableRowRedirection.Factory",
- "text": "Factory for producing MutableRowSets and their components.",
+ "text": "Factory for producing WritableRowSets and their components.",
  "typeName": "interface"
 }

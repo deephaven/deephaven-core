@@ -135,7 +135,7 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
     private final ArrayBackedColumnSource<?> [] overflowKeySources;
     // the location of the next key in an overflow bucket
     private final IntegerArraySource overflowOverflowLocationSource = new IntegerArraySource();
-    // the overflow buckets for the right TrackingWritableRowSet
+    // the overflow buckets for the state source
     @HashTableAnnotations.OverflowStateColumnSource
     // @StateColumnSourceType@ from \QObjectArraySource<TrackingWritableRowSet>\E
     private final ObjectArraySource<TrackingWritableRowSet> overflowRightRowSetSource
@@ -158,7 +158,7 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
     // endmixin rehash
 
     // region extra variables
-    // maintain a mapping from left rowSet to its slot
+    // maintain a mapping from left index to its slot
     private final WritableRowRedirection leftIndexToSlot;
     private final ColumnSource<?>[] leftKeySources;
     private final long EMPTY_RIGHT_SLOT = Long.MIN_VALUE;
@@ -354,7 +354,8 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
                         }
 
                         if (prevRowSet.isNonempty()) {
-                            // note: removes are in old key space, but we have already shifted our resultRowSet after processing upstream removals
+                            // note: removes are in old key space, but we have already shifted our result RowSet after
+                            // processing upstream removals
                             rmBuilder.appendRange(prevRegionStart, prevRegionStart + prevRowSet.size() - 1);
                             rmResultBuilder.appendRange(regionStart, regionStart + prevRowSet.size() - 1);
                         }
@@ -1381,8 +1382,8 @@ class LeftOnlyIncrementalChunkedCrossJoinStateManager
         // the chunk of positions within our table
         final WritableLongChunk<RowKeys> tableLocationsChunk;
 
-        // the chunk of right indices that we read from the hash table, the empty right rowSet is used as a sentinel that the
-        // state exists; otherwise when building from the left it is always null
+        // the chunk of right indices that we read from the hash table, the empty right index is used as a sentinel
+        // that the state exists; otherwise when building from the left it is always null
         // @WritableStateChunkType@ from \QWritableObjectChunk<TrackingWritableRowSet,Values>\E
         final WritableObjectChunk<TrackingWritableRowSet,Values> workingStateEntries;
 

@@ -17,8 +17,8 @@ import java.util.function.BiConsumer;
 public class SortedRangesRowSequence extends RowSequenceAsChunkImpl {
     private static final boolean DEBUG = SortedRanges.DEBUG;
     private SortedRanges sar;
-    private int startIdx; // end-of-range position rowSet to the first key of this OK.
-    private int endIdx; // end-of-range position rowSet to the last key of this OK.
+    private int startIdx; // end-of-range position index to the first key of this OK.
+    private int endIdx; // end-of-range position index to the last key of this OK.
     private long startPos; // position offset of our start in the parent sorted array.
     private long startOffset; // offset into range pointed by startIdx; note this is <= 0.
     private long endOffset; // offset into range pointed by endIdx; note this is <= 0.

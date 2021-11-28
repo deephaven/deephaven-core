@@ -373,14 +373,14 @@ public class TstUtils {
         Assert.assertion(size <= sourceRowSet.size(), "size <= sourceRowSet.size()", size, "size", sourceRowSet,
                 "sourceRowSet.size()");
 
-        // generate an array that is the size of our rowSet, then shuffle it, and those are the positions we'll pick
+        // generate an array that is the size of our RowSet, then shuffle it, and those are the positions we'll pick
         final Integer[] positions = new Integer[(int) sourceRowSet.size()];
         for (int ii = 0; ii < positions.length; ++ii) {
             positions[ii] = ii;
         }
         Collections.shuffle(Arrays.asList(positions), random);
 
-        // now create a rowSet with each of our selected positions
+        // now create a RowSet with each of our selected positions
         final RowSetBuilderRandom resultBuilder = RowSetFactory.builderRandom();
         for (int ii = 0; ii < size; ++ii) {
             resultBuilder.addKey(sourceRowSet.get(positions[ii]));

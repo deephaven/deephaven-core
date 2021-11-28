@@ -30,7 +30,7 @@ public class RandomGroupingBuilder<DATA_TYPE> {
      * @param firstKey The first key in the range
      * @param lastKey The last key in the range
      */
-    public void addGrouping(@Nullable DATA_TYPE value, long firstKey, long lastKey) {
+    public void addToGrouping(@Nullable DATA_TYPE value, long firstKey, long lastKey) {
         // if we've already created the groupToIndex, then our groupToIndexBuilder is going to be in a bad state
         Require.eqNull(groupToIndex, "groupToIndex");
         Require.neqNull(groupToIndexBuilder, "groupToIndexBuilder");
@@ -45,7 +45,7 @@ public class RandomGroupingBuilder<DATA_TYPE> {
      *
      * @return A mapping from grouping value to its matching RowSet
      */
-    public Map<DATA_TYPE, RowSet> getGroupToIndex() {
+    public Map<DATA_TYPE, RowSet> getGrouping() {
         if (groupToIndex != null) {
             return groupToIndex;
         }

@@ -54,8 +54,8 @@ public interface SymbolTableSource<SYMBOL_TYPE> extends ColumnSource<SYMBOL_TYPE
      * <p>
      * The result will be refreshing if {@code table} {@link Table#isRefreshing() is refreshing}.
      *
-     * @param sourceTable The {@link QueryTable} whose {@link TrackingWritableRowSet} keys must be mappable via the
-     *        result {@link Table}'s identifier column
+     * @param sourceTable The {@link QueryTable} whose row keys must be mappable via the result {@link Table}'s
+     *                   identifier column
      * @param useLookupCaching Hint whether symbol lookups performed to generate the symbol table should apply caching.
      *        Implementations may ignore this hint.
      * @return The symbol table

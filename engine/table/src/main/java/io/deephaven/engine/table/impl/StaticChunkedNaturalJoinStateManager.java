@@ -81,7 +81,7 @@ class StaticChunkedNaturalJoinStateManager
     private final ArrayBackedColumnSource<?> [] overflowKeySources;
     // the location of the next key in an overflow bucket
     private final IntegerArraySource overflowOverflowLocationSource = new IntegerArraySource();
-    // the overflow buckets for the right TrackingWritableRowSet
+    // the overflow buckets for the state source
     @HashTableAnnotations.OverflowStateColumnSource
     // @StateColumnSourceType@ from \QLongArraySource\E
     private final LongArraySource overflowRightRowSetSource
@@ -647,7 +647,7 @@ class StaticChunkedNaturalJoinStateManager
                             final long rightValue;
                             if (isLeftSide) {
                                 sourceChunkLeftHashSlots.set(chunkPosition, overflowLocationToHashLocation(allocatedOverflowLocation));
-                                // we set the right rowSet to indicate it is empty, but exists
+                                // we set the right RowSet to indicate it is empty, but exists
                                 rightValue = NO_RIGHT_ENTRY_VALUE;
                             } else {
                                 rightValue = rightSourceIndexKeys.get(chunkPosition);
@@ -849,7 +849,7 @@ class StaticChunkedNaturalJoinStateManager
         // the chunk of positions within our table
         final WritableLongChunk<RowKeys> tableLocationsChunk;
 
-        // the chunk of right indices that we read from the hash table, the empty right rowSet is used as a sentinel that the
+        // the chunk of right indices that we read from the hash table, the empty right index is used as a sentinel that the
         // state exists; otherwise when building from the left it is always null
         // @WritableStateChunkType@ from \QWritableLongChunk<Values>\E
         final WritableLongChunk<Values> workingStateEntries;

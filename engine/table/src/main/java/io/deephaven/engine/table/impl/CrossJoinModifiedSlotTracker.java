@@ -60,7 +60,7 @@ class CrossJoinModifiedSlotTracker {
         final SizedLongChunk<RowKeys> keyChunk = new SizedLongChunk<>();
         RowSetBuilderRandom indexBuilder = RowSetFactory.builderRandom();
 
-        long lastIndex = 0; // if added/removed/modified have been shifted then this is the left-rowSet for the shift
+        long lastIndex = 0; // if added/removed/modified have been shifted then this is the left-index for the shift
         WritableRowSet rightAdded;
         WritableRowSet rightRemoved;
         WritableRowSet rightModified;
@@ -136,7 +136,7 @@ class CrossJoinModifiedSlotTracker {
 
             rightChanged = keyChunk.size() > 0;
 
-            // finalize right rowSet; transform from right rowSet to downstream offset
+            // finalize right RowSet; transform from right RowSet to downstream offset
             final RowSetBuilderSequential innerAdded = RowSetFactory.builderSequential();
             final RowSetBuilderSequential innerRemoved = RowSetFactory.builderSequential();
 
@@ -165,7 +165,7 @@ class CrossJoinModifiedSlotTracker {
                 }
             }
 
-            // make our right rowSet be what it needs to be
+            // make our right RowSet be what it needs to be
             final long oldRightSize = rightRowSet.size();
             try (final RowSet added = innerAdded.build();
                     final RowSet removed = innerRemoved.build()) {
@@ -428,7 +428,7 @@ class CrossJoinModifiedSlotTracker {
         return getSlotState(cookie, slot).appendToBuilder(leftIndex).cookie;
     }
 
-    // Right shifts cannot be applied until after the removes are applied to the slot's right rowSet. So, we ensure that
+    // Right shifts cannot be applied until after the removes are applied to the slot's right RowSet. So, we ensure that
     // a tracker-slot is allocated for each slot affected by a shift, and apply the shifts later.
     long needsRightShift(final long cookie, final long slot) {
         return getSlotState(cookie, slot).needsRightShift().cookie;

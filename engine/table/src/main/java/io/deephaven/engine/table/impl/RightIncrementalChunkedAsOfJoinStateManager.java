@@ -125,7 +125,7 @@ class RightIncrementalChunkedAsOfJoinStateManager
     private final ArrayBackedColumnSource<?> [] overflowKeySources;
     // the location of the next key in an overflow bucket
     private final IntegerArraySource overflowOverflowLocationSource = new IntegerArraySource();
-    // the overflow buckets for the right TrackingWritableRowSet
+    // the overflow buckets for the state source
     @HashTableAnnotations.OverflowStateColumnSource
     // @StateColumnSourceType@ from \QByteArraySource\E
     private final ByteArraySource overflowStateSource
@@ -164,9 +164,9 @@ class RightIncrementalChunkedAsOfJoinStateManager
     private static final byte ENTRY_INITIAL_STATE_RIGHT = ENTRY_LEFT_IS_EMPTY|ENTRY_RIGHT_IS_BUILDER;
 
     /**
-     * We use our side source to originally build the rowSet using builders.  When a state is activated (meaning we
+     * We use our side source to originally build the RowSet using builders.  When a state is activated (meaning we
      * have a corresponding entry for it on the other side); we'll turn it into an SSA.  If we have updates for an
-     * inactive state, then we turn it into an WritableRowSet. The entry state tells us what we have on each side, using
+     * inactive state, then we turn it into a WritableRowSet. The entry state tells us what we have on each side, using
      * a nibble for the left and a nibble for the right.
      */
     private final ObjectArraySource<Object> leftSideSource;
@@ -176,8 +176,8 @@ class RightIncrementalChunkedAsOfJoinStateManager
 
     /**
      * Each slot in the hash table has a 'cookie', which we reset by incrementing the cookie generation.  The cookie
-     * allows us to rowSet into an array source that is passed in for each operation; serving as an intrusive set
-     * of modified states (we'll add relevant indices in the probe/build to a rowSet builder).
+     * allows us to index into an array source that is passed in for each operation; serving as an intrusive set
+     * of modified states (we'll add relevant indices in the probe/build to a RowSet builder).
      */
     private final LongArraySource cookieSource;
     private final LongArraySource overflowCookieSource;
@@ -337,7 +337,7 @@ class RightIncrementalChunkedAsOfJoinStateManager
     }
 
     /**
-     * Returns true if this is the first left rowSet added to this slot.
+     * Returns true if this is the first left RowSet added to this slot.
      */
     private void addLeftIndexOverflow(long overflowLocation, long keyToAdd, byte currentState) {
         final boolean isEmpty = (currentState & ENTRY_LEFT_MASK) == ENTRY_LEFT_IS_EMPTY;
@@ -1525,8 +1525,8 @@ class RightIncrementalChunkedAsOfJoinStateManager
         // the chunk of positions within our table
         final WritableLongChunk<RowKeys> tableLocationsChunk;
 
-        // the chunk of right indices that we read from the hash table, the empty right rowSet is used as a sentinel that the
-        // state exists; otherwise when building from the left it is always null
+        // the chunk of right indices that we read from the hash table, the empty right index is used as a sentinel that
+        // the state exists; otherwise when building from the left it is always null
         // @WritableStateChunkType@ from \QWritableByteChunk<Values>\E
         final WritableByteChunk<Values> workingStateEntries;
 
@@ -1865,7 +1865,7 @@ class RightIncrementalChunkedAsOfJoinStateManager
     }
 
     /**
-     * When we get the left rowSet out of our source (after a build or probe); we do it by pulling a sequential builder
+     * When we get the left RowSet out of our source (after a build or probe); we do it by pulling a sequential builder
      * and then calling build().  We also null out the value in the column source, thus freeing the builder's
      * memory.
      *

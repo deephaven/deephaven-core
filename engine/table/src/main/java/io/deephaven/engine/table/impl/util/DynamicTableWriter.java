@@ -706,7 +706,7 @@ public class DynamicTableWriter implements TableWriter {
             ensureCapacity(row);
             setterMap.values().forEach((x) -> x.setRow(row));
 
-            // The row has been committed during set, we just need to insert the rowSet into the table
+            // The row has been committed during set, we just need to insert the row keys into the table
             if (doFlush) {
                 DynamicTableWriter.this.addRangeToTableIndex(lastCommittedRow + 1, row);
                 lastCommittedRow = row;

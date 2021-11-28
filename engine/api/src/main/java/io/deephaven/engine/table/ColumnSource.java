@@ -9,7 +9,6 @@ import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.chunk.ChunkType;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 
@@ -22,7 +21,7 @@ import java.util.Map;
  * A "source" for column data - allows cell values to be looked up by (long) keys.
  *
  * <p>
- * Note for implementors: All {@link ColumnSource} implementations must map {@link TrackingWritableRowSet#NULL_ROW_KEY}
+ * Note for implementors: All {@link ColumnSource} implementations must map {@link RowSet#NULL_ROW_KEY}
  * to a null value for all {@code get} and {@code getPrev} methods.
  */
 public interface ColumnSource<T>
@@ -65,22 +64,22 @@ public interface ColumnSource<T>
     /**
      * Compute grouping information for all keys present in this column source.
      *
-     * @return A map from distinct data values to a rowSet that contains those values
+     * @return A map from distinct data values to a RowSet that contains those values
      */
     Map<T, RowSet> getGroupToRange();
 
     /**
      * Compute grouping information for (at least) all keys present in rowSet.
      *
-     * @param rowSet The rowSet to consider
-     * @return A map from distinct data values to a rowSet that contains those values
+     * @param rowSet The RowSet to consider
+     * @return A map from distinct data values to a RowSet that contains those values
      */
     Map<T, RowSet> getGroupToRange(RowSet rowSet);
 
     /**
      * Determine if this column source is immutable, meaning that the values at a given row key never change.
      *
-     * @return true if the values at a given rowSet of the column source never change, false otherwise
+     * @return true if the values at a given row key of the column source never change, false otherwise
      */
     boolean isImmutable();
 

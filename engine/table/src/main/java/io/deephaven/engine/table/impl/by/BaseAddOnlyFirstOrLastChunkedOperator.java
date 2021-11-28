@@ -40,15 +40,15 @@ abstract class BaseAddOnlyFirstOrLastChunkedOperator implements IterativeChunked
 
     @Override
     public void removeChunk(BucketedContext bucketedContext, Chunk<? extends Values> values,
-            LongChunk<? extends RowKeys> inputIndices, IntChunk<RowKeys> destinations,
-            IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
-            WritableBooleanChunk<Values> stateModified) {
+                            LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations,
+                            IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+                            WritableBooleanChunk<Values> stateModified) {
         throw new UnsupportedOperationException();
     }
 
     @Override
     public void modifyChunk(BucketedContext bucketedContext, Chunk<? extends Values> previousValues,
-            Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> postShiftIndices,
+            Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> postShiftRowKeys,
             IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
             WritableBooleanChunk<Values> stateModified) {
         // we have no inputs, so should never get here
@@ -57,43 +57,43 @@ abstract class BaseAddOnlyFirstOrLastChunkedOperator implements IterativeChunked
 
     @Override
     public void shiftChunk(BucketedContext bucketedContext, Chunk<? extends Values> previousValues,
-            Chunk<? extends Values> newValues, LongChunk<? extends Attributes.RowKeys> preShiftIndices,
-            LongChunk<? extends RowKeys> postShiftIndices, IntChunk<RowKeys> destinations,
-            IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
-            WritableBooleanChunk<Values> stateModified) {
+                           Chunk<? extends Values> newValues, LongChunk<? extends Attributes.RowKeys> preShiftRowKeys,
+                           LongChunk<? extends RowKeys> postShiftRowKeys, IntChunk<RowKeys> destinations,
+                           IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+                           WritableBooleanChunk<Values> stateModified) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void modifyIndices(BucketedContext context, LongChunk<? extends RowKeys> inputIndices,
-            IntChunk<Attributes.RowKeys> destinations, IntChunk<ChunkPositions> startPositions,
-            IntChunk<ChunkLengths> length,
-            WritableBooleanChunk<Values> stateModified) {
+    public void modifyRowKeys(BucketedContext context, LongChunk<? extends RowKeys> inputRowKeys,
+                              IntChunk<Attributes.RowKeys> destinations, IntChunk<ChunkPositions> startPositions,
+                              IntChunk<ChunkLengths> length,
+                              WritableBooleanChunk<Values> stateModified) {
         throw new UnsupportedOperationException();
     }
 
     @Override
     public boolean removeChunk(SingletonContext singletonContext, int chunkSize, Chunk<? extends Values> values,
-            LongChunk<? extends Attributes.RowKeys> inputIndices, long destination) {
+                               LongChunk<? extends Attributes.RowKeys> inputRowKeys, long destination) {
         throw new UnsupportedOperationException();
     }
 
     @Override
     public boolean modifyChunk(SingletonContext singletonContext, int chunkSize, Chunk<? extends Values> previousValues,
-            Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> postShiftIndices, long destination) {
+                               Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> postShiftRowKeys, long destination) {
         // we have no inputs, so should never get here
         throw new IllegalStateException();
     }
 
     @Override
     public boolean shiftChunk(SingletonContext singletonContext, Chunk<? extends Values> previousValues,
-            Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> preInputIndices,
-            LongChunk<? extends RowKeys> postInputIndices, long destination) {
+                              Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> preShiftRowKeys,
+                              LongChunk<? extends RowKeys> postShiftRowKeys, long destination) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public boolean modifyIndices(SingletonContext context, LongChunk<? extends RowKeys> indices, long destination) {
+    public boolean modifyRowKeys(SingletonContext context, LongChunk<? extends RowKeys> rowKeys, long destination) {
         throw new UnsupportedOperationException();
     }
 
@@ -113,7 +113,7 @@ abstract class BaseAddOnlyFirstOrLastChunkedOperator implements IterativeChunked
     }
 
     @Override
-    public boolean requiresIndices() {
+    public boolean requiresRowKeys() {
         return true;
     }
 }

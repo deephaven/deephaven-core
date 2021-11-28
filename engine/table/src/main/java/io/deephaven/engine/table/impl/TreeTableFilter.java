@@ -29,7 +29,7 @@ import static io.deephaven.engine.table.Table.PREPARED_RLL_ATTRIBUTE;
 /**
  * Apply filters, preserving parents.
  *
- * The TreeTableFilter takes a TreeTable and SelectFilters as input. The original source table is filtered and any
+ * The TreeTableFilter takes a TreeTable and WhereFilters as input. The original source table is filtered and any
  * matching rows are included; as well as their ancestors. The result table is then converted into a tree table using
  * the original parameters.
  */
@@ -70,15 +70,15 @@ public class TreeTableFilter implements Function<Table, Table>, MemoizedOperatio
         private final QueryTable source;
 
         /**
-         * The complete rowSet of our result table.
+         * The complete RowSet of our result table.
          */
         private TrackingWritableRowSet resultRowSet;
         /**
-         * The rowSet of values that match our desired filter.
+         * The RowSet of values that match our desired filter.
          */
         private WritableRowSet valuesRowSet;
         /**
-         * The rowSet of ancestors of matching values.
+         * The RowSet of ancestors of matching values.
          */
         private WritableRowSet parentRowSet;
         /**
@@ -230,7 +230,7 @@ public class TreeTableFilter implements Function<Table, Table>, MemoizedOperatio
                 final long parentKey =
                         usePrev ? reverseLookupListener.getPrev(parentValue) : reverseLookupListener.get(parentValue);
                 if (parentKey != reverseLookupListener.getNoEntryValue()) {
-                    // then we should have it in our rowSet
+                    // then we should have it in our RowSet
                     builder.addKey(parentKey);
                     final long position = parentRowSet.find(parentKey);
                     if (position < 0) {

@@ -64,7 +64,7 @@ abstract class RegionedColumnSourceBase<DATA_TYPE, ATTR extends Attributes.Value
      * <em>This method is for unit testing purposes only!</em>
      *
      * @param region The region to add
-     * @return The rowSet assigned to the added region
+     * @return The index assigned to the added region
      */
     @SuppressWarnings("UnusedReturnValue")
     @TestUseOnly

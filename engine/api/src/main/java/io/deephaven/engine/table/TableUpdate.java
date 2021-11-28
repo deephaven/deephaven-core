@@ -60,12 +60,12 @@ public interface TableUpdate extends LogOutputAppendable {
     }
 
     /**
-     * @return a cached copy of the modified rowSet in pre-shift keyspace
+     * @return a cached copy of the modified RowSet in pre-shift keyspace
      */
     RowSet getModifiedPreShift();
 
     /**
-     * This helper iterates through the modified rowSet and supplies both the pre-shift and post-shift keys per row.
+     * This helper iterates through the modified RowSet and supplies both the pre-shift and post-shift keys per row.
      *
      * @param consumer a consumer to feed the modified pre-shift and post-shift key values to.
      */
@@ -103,7 +103,7 @@ public interface TableUpdate extends LogOutputAppendable {
     RowSetShiftData shifted();
 
     /**
-     * the set of columns that might have changed for rows in the {@code modified()} rowSet
+     * the set of columns that might have changed for rows in the {@code modified()} RowSet
      */
     ModifiedColumnSet modifiedColumnSet();
 }

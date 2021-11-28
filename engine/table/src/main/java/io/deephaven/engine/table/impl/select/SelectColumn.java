@@ -50,9 +50,9 @@ public interface SelectColumn extends Selectable {
     List<String> initInputs(Table table);
 
     /**
-     * Initialize the column from the provided set of underlying columns and rowSet.
+     * Initialize the column from the provided set of underlying columns and row set.
      *
-     * @param rowSet the base rowSet
+     * @param rowSet the base row set
      * @param columnsOfInterest the input columns
      *
      * @return a list of columns on which the result of this is dependent
@@ -122,7 +122,7 @@ public interface SelectColumn extends Selectable {
     MatchPair getMatchPair();
 
     /**
-     * Create a new {@link WritableColumnSource} with sufficient capacity for the rows in the rowSet.
+     * Create a new {@link WritableColumnSource} with sufficient capacity for the rows in the row set.
      *
      * @param size The number of rows to allocate
      *

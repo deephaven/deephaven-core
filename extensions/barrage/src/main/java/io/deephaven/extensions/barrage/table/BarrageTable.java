@@ -222,7 +222,7 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
             serverColumns = update.snapshotColumns == null ? null : (BitSet) update.snapshotColumns.clone();
         }
 
-        // make sure that these rowSet updates make some sense compared with each other, and our current view of the
+        // make sure that these RowSet updates make some sense compared with each other, and our current view of the
         // table
         final WritableRowSet currentRowSet = getRowSet().writableCast();
         final boolean mightBeInitialSnapshot = currentRowSet.isEmpty() && update.isSnapshot;
@@ -311,7 +311,7 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
 
             if (update.isSnapshot && !mightBeInitialSnapshot) {
                 // This applies to viewport or subscribed column changes; after the first snapshot later snapshots can't
-                // change the rowSet. In this case, we apply the data from the snapshot to local column sources but
+                // change the RowSet. In this case, we apply the data from the snapshot to local column sources but
                 // otherwise cannot communicate this change to listeners.
                 return coalescer;
             }

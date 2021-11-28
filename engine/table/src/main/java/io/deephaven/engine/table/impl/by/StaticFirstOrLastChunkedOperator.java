@@ -18,22 +18,22 @@ public class StaticFirstOrLastChunkedOperator extends BaseAddOnlyFirstOrLastChun
 
     @Override
     public void addChunk(BucketedContext bucketedContext, Chunk<? extends Values> values,
-            LongChunk<? extends Attributes.RowKeys> inputIndices, IntChunk<RowKeys> destinations,
-            IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
-            WritableBooleanChunk<Values> stateModified) {
+                         LongChunk<? extends Attributes.RowKeys> inputRowKeys, IntChunk<RowKeys> destinations,
+                         IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+                         WritableBooleanChunk<Values> stateModified) {
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
             final int runLength = length.get(ii);
             final long destination = destinations.get(startPosition);
 
-            stateModified.set(ii, addChunk(inputIndices, startPosition, runLength, destination));
+            stateModified.set(ii, addChunk(inputRowKeys, startPosition, runLength, destination));
         }
     }
 
     @Override
     public boolean addChunk(SingletonContext singletonContext, int chunkSize, Chunk<? extends Values> values,
-            LongChunk<? extends Attributes.RowKeys> inputIndices, long destination) {
-        return addChunk(inputIndices, 0, inputIndices.size(), destination);
+                            LongChunk<? extends Attributes.RowKeys> inputRowKeys, long destination) {
+        return addChunk(inputRowKeys, 0, inputRowKeys.size(), destination);
     }
 
     private boolean addChunk(LongChunk<? extends RowKeys> indices, int start, int length, long destination) {
@@ -58,7 +58,7 @@ public class StaticFirstOrLastChunkedOperator extends BaseAddOnlyFirstOrLastChun
     }
 
     @Override
-    public boolean addIndex(SingletonContext context, RowSet rowSet, long destination) {
+    public boolean addRowSet(SingletonContext context, RowSet rowSet, long destination) {
         if (rowSet.isEmpty()) {
             return false;
         }
@@ -69,7 +69,7 @@ public class StaticFirstOrLastChunkedOperator extends BaseAddOnlyFirstOrLastChun
     }
 
     @Override
-    public boolean unchunkedIndex() {
+    public boolean unchunkedRowSet() {
         return true;
     }
 }

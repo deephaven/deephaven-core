@@ -72,7 +72,7 @@ import org.jetbrains.annotations.NotNull;
 // deltaChunk = {d5, d9, d15}
 //
 // To get these values back in the right spot, we analyze baselineKeysBs and deltaKeysBS. We take advantage of the
-// property that these two sets do not intersect; furthermore, that their union is the original rowSet requested by
+// property that these two sets do not intersect; furthermore, that their union is the original RowSequence requested by
 // the caller. To do this, we simply count the number of consecutive (not necessarily adjacent) baseline items not
 // interrupted by delta; and likewise the number of consecutive (not necessarily adjacent) delta items not
 // interrupted by baseline. In our example:
@@ -488,9 +488,9 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
 
     /**
      * @param index The key to look up.
-     * @return The rowSet, translated into delta space, that the caller should use, or -1 if the caller should use the
-     *         original rowSet in baseline space. Will return -1 if either startTrackingPrevValues() has not been called
-     *         yet, or if the rowSet does not exist in the deltaRows.
+     * @return The row key, translated into delta space, that the caller should use, or -1 if the caller should use the
+     *         original row key in baseline space. Will return -1 if either startTrackingPrevValues() has not been
+     *         called yet, or if the row key does not exist in the deltaRows.
      */
     private long lookupIndexInDeltaSpace(final long index) {
         assertIndexValid(index);
@@ -503,8 +503,8 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
     /**
      * @param index The key to look up.
      * @return If we're not tracking previous values yet, simply return the key (note 1). Otherwise, if the key already
-     *         exists in the 'deltaRows' set, return its rowSet. Otherwise allocate a new element of the deltaRows set
-     *         and return that rowSet.
+     *         exists in the 'deltaRows' set, return its index. Otherwise allocate a new element of the deltaRows set
+     *         and return that index.
      */
     private long lookupOrCreateIndexInDeltaSpace(final long index) {
         assertIndexValid(index);

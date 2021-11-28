@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * The table {@link Table#select} or {@link Table#update} and operations produce sparse sources as of Treasure. If you
- * have a sparse rowSet, that means that you can have many blocks which only actually contain one or very few elements.
+ * have a sparse RowSet, that means that you can have many blocks which only actually contain one or very few elements.
  * The {@link #clampSelectOverhead(Table, double)} method is intended to precede a select or update operation, to limit
  * the amount of memory overhead allowed. For tables that are relatively dense, the original indices are preserved. If
  * the overhead exceeds the allowable factor, then the table is flattened before passing updates to select. Once a table

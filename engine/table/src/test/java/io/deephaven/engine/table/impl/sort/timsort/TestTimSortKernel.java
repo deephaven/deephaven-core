@@ -44,10 +44,10 @@ public abstract class TestTimSortKernel {
     }
 
     abstract static class SortKernelStuff<T> {
-        final WritableLongChunk<RowKeys> indexKeys;
+        final WritableLongChunk<RowKeys> rowKeys;
 
         SortKernelStuff(int size) {
-            indexKeys = WritableLongChunk.makeWritableChunk(size);
+            rowKeys = WritableLongChunk.makeWritableChunk(size);
         }
 
         abstract void run();
@@ -56,10 +56,10 @@ public abstract class TestTimSortKernel {
     }
 
     abstract static class PartitionKernelStuff<T> {
-        final WritableLongChunk<RowKeys> indexKeys;
+        final WritableLongChunk<RowKeys> rowKeys;
 
         PartitionKernelStuff(int size) {
-            indexKeys = WritableLongChunk.makeWritableChunk(size);
+            rowKeys = WritableLongChunk.makeWritableChunk(size);
         }
 
         abstract void run();

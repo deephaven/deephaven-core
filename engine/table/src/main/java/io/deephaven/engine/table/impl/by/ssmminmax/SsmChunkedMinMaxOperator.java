@@ -93,9 +93,9 @@ public class SsmChunkedMinMaxOperator implements IterativeChunkedAggregationOper
 
     @Override
     public void addChunk(BucketedContext bucketedContext, Chunk<? extends Values> values,
-            LongChunk<? extends RowKeys> inputIndices, IntChunk<RowKeys> destinations,
-            IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
-            WritableBooleanChunk<Values> stateModified) {
+                         LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations,
+                         IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+                         WritableBooleanChunk<Values> stateModified) {
         final BucketSsmMinMaxContext context = (BucketSsmMinMaxContext) bucketedContext;
 
         context.valueCopy.setSize(values.size());
@@ -128,9 +128,9 @@ public class SsmChunkedMinMaxOperator implements IterativeChunkedAggregationOper
 
     @Override
     public void removeChunk(BucketedContext bucketedContext, Chunk<? extends Values> values,
-            LongChunk<? extends RowKeys> inputIndices, IntChunk<RowKeys> destinations,
-            IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
-            WritableBooleanChunk<Values> stateModified) {
+                            LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations,
+                            IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+                            WritableBooleanChunk<Values> stateModified) {
         final BucketSsmMinMaxContext context = (BucketSsmMinMaxContext) bucketedContext;
 
         context.valueCopy.setSize(values.size());
@@ -166,7 +166,7 @@ public class SsmChunkedMinMaxOperator implements IterativeChunkedAggregationOper
 
     @Override
     public void modifyChunk(BucketedContext bucketedContext, Chunk<? extends Values> preValues,
-            Chunk<? extends Values> postValues, LongChunk<? extends RowKeys> postShiftIndices,
+            Chunk<? extends Values> postValues, LongChunk<? extends RowKeys> postShiftRowKeys,
             IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
             WritableBooleanChunk<Values> stateModified) {
         final BucketSsmMinMaxContext context = (BucketSsmMinMaxContext) bucketedContext;
@@ -234,7 +234,7 @@ public class SsmChunkedMinMaxOperator implements IterativeChunkedAggregationOper
 
     @Override
     public boolean addChunk(SingletonContext singletonContext, int chunkSize, Chunk<? extends Values> values,
-            LongChunk<? extends RowKeys> inputIndices, long destination) {
+                            LongChunk<? extends RowKeys> inputRowKeys, long destination) {
         final SsmMinMaxContext context = (SsmMinMaxContext) singletonContext;
 
         context.valueCopy.setSize(values.size());
@@ -249,7 +249,7 @@ public class SsmChunkedMinMaxOperator implements IterativeChunkedAggregationOper
 
     @Override
     public boolean removeChunk(SingletonContext singletonContext, int chunkSize, Chunk<? extends Values> values,
-            LongChunk<? extends RowKeys> inputIndices, long destination) {
+                               LongChunk<? extends RowKeys> inputRowKeys, long destination) {
         final SsmMinMaxContext context = (SsmMinMaxContext) singletonContext;
 
         context.valueCopy.setSize(values.size());
@@ -268,7 +268,7 @@ public class SsmChunkedMinMaxOperator implements IterativeChunkedAggregationOper
 
     @Override
     public boolean modifyChunk(SingletonContext singletonContext, int chunkSize, Chunk<? extends Values> preValues,
-            Chunk<? extends Values> postValues, LongChunk<? extends RowKeys> postShiftIndices, long destination) {
+                               Chunk<? extends Values> postValues, LongChunk<? extends RowKeys> postShiftRowKeys, long destination) {
         final SsmMinMaxContext context = (SsmMinMaxContext) singletonContext;
 
         context.valueCopy.setSize(preValues.size());
@@ -398,23 +398,23 @@ public class SsmChunkedMinMaxOperator implements IterativeChunkedAggregationOper
 
         @Override
         public void addChunk(BucketedContext context, Chunk<? extends Values> values,
-                LongChunk<? extends RowKeys> inputIndices, IntChunk<RowKeys> destinations,
-                IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
-                WritableBooleanChunk<Values> stateModified) {
+                             LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations,
+                             IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+                             WritableBooleanChunk<Values> stateModified) {
             updateBucketed(destinations, startPositions, stateModified);
         }
 
         @Override
         public void removeChunk(BucketedContext context, Chunk<? extends Values> values,
-                LongChunk<? extends RowKeys> inputIndices, IntChunk<RowKeys> destinations,
-                IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
-                WritableBooleanChunk<Values> stateModified) {
+                                LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations,
+                                IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+                                WritableBooleanChunk<Values> stateModified) {
             updateBucketed(destinations, startPositions, stateModified);
         }
 
         @Override
         public void modifyChunk(BucketedContext context, Chunk<? extends Values> previousValues,
-                Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> postShiftIndices,
+                Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> postShiftRowKeys,
                 IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions,
                 IntChunk<ChunkLengths> length, WritableBooleanChunk<Values> stateModified) {
             updateBucketed(destinations, startPositions, stateModified);
@@ -432,20 +432,20 @@ public class SsmChunkedMinMaxOperator implements IterativeChunkedAggregationOper
 
         @Override
         public boolean addChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values,
-                LongChunk<? extends RowKeys> inputIndices, long destination) {
+                                LongChunk<? extends RowKeys> inputRowKeys, long destination) {
             return updateSingleton(destination);
         }
 
 
         @Override
         public boolean removeChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values,
-                LongChunk<? extends RowKeys> inputIndices, long destination) {
+                                   LongChunk<? extends RowKeys> inputRowKeys, long destination) {
             return updateSingleton(destination);
         }
 
         @Override
         public boolean modifyChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> previousValues,
-                Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> postShiftIndices, long destination) {
+                                   Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> postShiftRowKeys, long destination) {
             return updateSingleton(destination);
         }
 

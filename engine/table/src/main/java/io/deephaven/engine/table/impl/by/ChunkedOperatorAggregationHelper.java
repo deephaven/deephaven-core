@@ -497,7 +497,7 @@ public class ChunkedOperatorAggregationHelper {
                                     od.operatorsWithoutModifiedInputColumnsThatRequireIndices);
 
                             if (od.anyOperatorWithModifiedInputColumnsIgnoresIndices) {
-                                // Do shifted same-key modifies for rowSet-only and modified-input operators that don't
+                                // Do shifted same-key modifies for RowSet-only and modified-input operators that don't
                                 // require indices
                                 try (final RowSet removeIndex =
                                         keysModified ? unshiftedSameSlotModifies.union(split.keyChangeIndicesPostShift)
@@ -512,7 +512,7 @@ public class ChunkedOperatorAggregationHelper {
                                             od.operatorsThatRequireIndices);
                                 }
                             } else if (ac.requiresIndices()) {
-                                // Do shifted same-key modifies for rowSet-only operators
+                                // Do shifted same-key modifies for RowSet-only operators
                                 try (final WritableRowSet shiftedSameSlotModifiesPost =
                                         upstream.modified().minus(unshiftedSameSlotModifies)) {
                                     if (keysModified) {
@@ -750,7 +750,7 @@ public class ChunkedOperatorAggregationHelper {
                 setFalse(modifiedSlots, runStarts.size());
 
                 for (int oi = 0; oi < ac.size(); ++oi) {
-                    if (!ac.operators[oi].requiresIndices()) {
+                    if (!ac.operators[oi].requiresRowKeys()) {
                         continue;
                     }
                     if (!firstOperator) {
@@ -823,7 +823,7 @@ public class ChunkedOperatorAggregationHelper {
                         }
 
                         if (operatorsToProcessIndicesOnly[oi]) {
-                            ac.operators[oi].modifyIndices(bucketedContexts[oi], permutedKeyIndices, slots, runStarts,
+                            ac.operators[oi].modifyRowKeys(bucketedContexts[oi], permutedKeyIndices, slots, runStarts,
                                     runLengths, firstOperator ? modifiedSlots : slotsModifiedByOperator);
                         } else /* operatorsToProcess[oi] */ {
                             final int inputSlot = ac.inputSlot(oi);
@@ -883,7 +883,7 @@ public class ChunkedOperatorAggregationHelper {
                             setFalse(slotsModifiedByOperator, runStarts.size());
                         }
 
-                        ac.operators[oi].modifyIndices(bucketedContexts[oi], permutedKeyIndices, slots, runStarts,
+                        ac.operators[oi].modifyRowKeys(bucketedContexts[oi], permutedKeyIndices, slots, runStarts,
                                 runLengths, firstOperator ? modifiedSlots : slotsModifiedByOperator);
 
                         anyOperatorModified = updateModificationState(modifiedOperators, modifiedSlots,
@@ -915,7 +915,7 @@ public class ChunkedOperatorAggregationHelper {
             private final RowSet sameSlotIndicesPreShift;
             /**
              * This is all of same-slot modified, with row keys in post-shift space. Needed for modifyChunk of
-             * input-modified operators that don't require indices, and for modifyIndices of operators that require
+             * input-modified operators that don't require indices, and for modifyRowKeys of operators that require
              * indices but don't have any inputs modified.
              */
             @Nullable
@@ -1133,7 +1133,7 @@ public class ChunkedOperatorAggregationHelper {
                 @NotNull final ModifiedColumnSet[] operatorInputUpstreamModifiedColumnSets) {
             operatorsThatRequireIndices = new boolean[ac.size()];
             for (int oi = 0; oi < ac.size(); ++oi) {
-                operatorsThatRequireIndices[oi] = ac.operators[oi].requiresIndices();
+                operatorsThatRequireIndices[oi] = ac.operators[oi].requiresRowKeys();
             }
 
             operatorsWithModifiedInputColumns = new boolean[ac.size()];
@@ -1148,11 +1148,11 @@ public class ChunkedOperatorAggregationHelper {
                     if (updateUpstreamModifiedColumnSet.containsAny(operatorInputUpstreamModifiedColumnSets[oi])) {
                         operatorsWithModifiedInputColumns[oi] = true;
                         anyOperatorHasModifiedInputColumnsTemp = true;
-                        if (!ac.operators[oi].requiresIndices()) {
+                        if (!ac.operators[oi].requiresRowKeys()) {
                             operatorsWithModifiedInputColumnsThatIgnoreIndices[oi] = true;
                             anyOperatorWithModifiedInputColumnsIgnoresIndicesTemp = true;
                         }
-                    } else if (ac.operators[oi].requiresIndices()) {
+                    } else if (ac.operators[oi].requiresRowKeys()) {
                         operatorsWithoutModifiedInputColumnsThatRequireIndices[oi] = true;
                         anyOperatorWithoutModifiedInputColumnsRequiresIndicesTemp = true;
                     }
@@ -1419,7 +1419,7 @@ public class ChunkedOperatorAggregationHelper {
                 for (int ii = 0; ii < responsiveGroups; ++ii) {
                     final RowSet rowSet = groupKeyIndexTable.second.get(ii);
                     for (int oi = 0; oi < ac.size(); ++oi) {
-                        ac.operators[oi].addIndex(operatorContexts[oi], rowSet, ii);
+                        ac.operators[oi].addRowSet(operatorContexts[oi], rowSet, ii);
                     }
                 }
             } else {
@@ -1707,7 +1707,7 @@ public class ChunkedOperatorAggregationHelper {
                                                     modifiedOperators);
 
                                             if (od.anyOperatorWithModifiedInputColumnsIgnoresIndices) {
-                                                // Do shifted modifies for rowSet-only and modified-input operators that
+                                                // Do shifted modifies for RowSet-only and modified-input operators that
                                                 // don't require indices
                                                 try (final RowSet shiftedModifiesPost =
                                                         upstream.modified().minus(unshiftedModifies);
@@ -1721,7 +1721,7 @@ public class ChunkedOperatorAggregationHelper {
                                                             modifiedOperators);
                                                 }
                                             } else if (ac.requiresIndices()) {
-                                                // Do shifted modifies for rowSet-only operators
+                                                // Do shifted modifies for RowSet-only operators
                                                 try (final RowSet shiftedModifiesPost =
                                                         upstream.modified().minus(unshiftedModifies)) {
                                                     doIndexOnlyNoKeyModifications(shiftedModifiesPost, ac, opContexts,
@@ -1853,7 +1853,7 @@ public class ChunkedOperatorAggregationHelper {
 
                 for (int ii = 0; ii < ac.size(); ++ii) {
                     if (operatorsToProcessIndicesOnly[ii]) {
-                        modifiedOperators[ii] |= ac.operators[ii].modifyIndices(opContexts[ii], postKeyIndices, 0);
+                        modifiedOperators[ii] |= ac.operators[ii].modifyRowKeys(opContexts[ii], postKeyIndices, 0);
                         continue;
                     }
                     if (operatorsToProcess[ii]) {
@@ -1890,7 +1890,7 @@ public class ChunkedOperatorAggregationHelper {
                 final LongChunk<OrderedRowKeys> postKeyIndices = postChunkOk.asRowKeyChunk();
                 for (int ii = 0; ii < ac.size(); ++ii) {
                     if (operatorsToProcessIndicesOnly[ii]) {
-                        modifiedOperators[ii] |= ac.operators[ii].modifyIndices(opContexts[ii], postKeyIndices, 0);
+                        modifiedOperators[ii] |= ac.operators[ii].modifyRowKeys(opContexts[ii], postKeyIndices, 0);
                     }
                 }
             }

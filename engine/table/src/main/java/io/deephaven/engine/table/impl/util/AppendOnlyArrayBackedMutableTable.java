@@ -87,13 +87,13 @@ public class AppendOnlyArrayBackedMutableTable extends BaseArrayBackedMutableTab
     }
 
     @Override
-    protected void processPendingTable(Table table, boolean allowEdits, IndexChangeRecorder indexChangeRecorder,
+    protected void processPendingTable(Table table, boolean allowEdits, RowSetChangeRecorder rowSetChangeRecorder,
             Consumer<String> errorNotifier) {
         try (final RowSet addRowSet = table.getRowSet().copy()) {
             final long firstRow = nextRow;
             final long lastRow = firstRow + addRowSet.intSize() - 1;
             try (final RowSequence destinations = RowSequenceFactory.forRange(firstRow, lastRow)) {
-                destinations.forAllRowKeys(indexChangeRecorder::addIndex);
+                destinations.forAllRowKeys(rowSetChangeRecorder::addRowKey);
                 nextRow = lastRow + 1;
 
                 final SharedContext sharedContext = SharedContext.makeSharedContext();
@@ -117,7 +117,7 @@ public class AppendOnlyArrayBackedMutableTable extends BaseArrayBackedMutableTab
     }
 
     @Override
-    protected void processPendingDelete(Table table, IndexChangeRecorder indexChangeRecorder) {
+    protected void processPendingDelete(Table table, RowSetChangeRecorder rowSetChangeRecorder) {
         throw new UnsupportedOperationException("Table doesn't support delete operation");
     }
 

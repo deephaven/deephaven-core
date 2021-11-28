@@ -9,7 +9,7 @@ import io.deephaven.configuration.Configuration;
 /**
  * A BuilderRandom type that uses a priority queue of ranges.
  *
- * Each range entered into the TrackingWritableRowSet is stored in a priority queue, backed by two long arrays. One
+ * Each range entered into the RowSet is stored in a priority queue, backed by two long arrays. One
  * array contains the start elements, the second array contains the end elements. The priority function is the start
  * element.
  *
@@ -28,7 +28,7 @@ public class RangePriorityQueueBuilder {
     /** The range end keys, slot 0 is unused; (invariant: end.length == start.length). */
     private long[] end;
 
-    /** The rowSet of the last entered value in start/end. */
+    /** The row key of the last entered value in start/end. */
     private int lastEntered = -1;
 
     /**
@@ -62,7 +62,7 @@ public class RangePriorityQueueBuilder {
 
     /**
      *
-     * Returns our internal queue size. This is not necessarily the size of the resulting rowSet.
+     * Returns our internal queue size. This is not necessarily the size of the resulting RowSet.
      */
     public int size() {
         return size;

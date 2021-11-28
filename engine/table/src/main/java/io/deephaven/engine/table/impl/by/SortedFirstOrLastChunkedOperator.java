@@ -48,14 +48,14 @@ public class SortedFirstOrLastChunkedOperator implements IterativeChunkedAggrega
 
     @Override
     public void addChunk(BucketedContext bucketedContext, Chunk<? extends Values> values,
-            LongChunk<? extends RowKeys> inputIndices, IntChunk<RowKeys> destinations,
-            IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
-            WritableBooleanChunk<Values> stateModified) {
+                         LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations,
+                         IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+                         WritableBooleanChunk<Values> stateModified) {
         final SortedFirstOrLastBucketedContext context = (SortedFirstOrLastBucketedContext) bucketedContext;
-        final int inputSize = inputIndices.size();
+        final int inputSize = inputRowKeys.size();
 
         context.sortedIndices.setSize(inputSize);
-        context.sortedIndices.copyFromTypedChunk(inputIndices, 0, 0, inputSize);
+        context.sortedIndices.copyFromTypedChunk(inputRowKeys, 0, 0, inputSize);
         context.sortedValues.setSize(inputSize);
         context.sortedValues.copyFromChunk(values, 0, 0, inputSize);
         context.longSortKernel.sort(context.sortedIndices, context.sortedValues, startPositions, length);
@@ -75,14 +75,14 @@ public class SortedFirstOrLastChunkedOperator implements IterativeChunkedAggrega
 
     @Override
     public void removeChunk(BucketedContext bucketedContext, Chunk<? extends Values> values,
-            LongChunk<? extends RowKeys> inputIndices, IntChunk<RowKeys> destinations,
-            IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
-            WritableBooleanChunk<Values> stateModified) {
+                            LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations,
+                            IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+                            WritableBooleanChunk<Values> stateModified) {
         final SortedFirstOrLastBucketedContext context = (SortedFirstOrLastBucketedContext) bucketedContext;
-        final int inputSize = inputIndices.size();
+        final int inputSize = inputRowKeys.size();
 
         context.sortedIndices.setSize(inputSize);
-        context.sortedIndices.copyFromTypedChunk(inputIndices, 0, 0, inputSize);
+        context.sortedIndices.copyFromTypedChunk(inputRowKeys, 0, 0, inputSize);
         context.sortedValues.setSize(inputSize);
         context.sortedValues.copyFromChunk(values, 0, 0, inputSize);
         context.longSortKernel.sort(context.sortedIndices, context.sortedValues, startPositions, length);
@@ -102,14 +102,14 @@ public class SortedFirstOrLastChunkedOperator implements IterativeChunkedAggrega
 
     @Override
     public void modifyChunk(BucketedContext bucketedContext, Chunk<? extends Values> previousValues,
-            Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> postShiftIndices,
+            Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> postShiftRowKeys,
             IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
             WritableBooleanChunk<Values> stateModified) {
         final SortedFirstOrLastBucketedContext context = (SortedFirstOrLastBucketedContext) bucketedContext;
-        final int inputSize = postShiftIndices.size();
+        final int inputSize = postShiftRowKeys.size();
 
         context.sortedIndices.setSize(inputSize);
-        context.sortedIndices.copyFromTypedChunk(postShiftIndices, 0, 0, inputSize);
+        context.sortedIndices.copyFromTypedChunk(postShiftRowKeys, 0, 0, inputSize);
         context.sortedValues.setSize(inputSize);
         context.sortedValues.copyFromChunk(previousValues, 0, 0, inputSize);
         context.longSortKernel.sort(context.sortedIndices, context.sortedValues, startPositions, length);
@@ -128,7 +128,7 @@ public class SortedFirstOrLastChunkedOperator implements IterativeChunkedAggrega
             ssa.remove(valuesSlice, indexSlice);
         }
 
-        context.sortedIndices.copyFromTypedChunk(postShiftIndices, 0, 0, inputSize);
+        context.sortedIndices.copyFromTypedChunk(postShiftRowKeys, 0, 0, inputSize);
         context.sortedValues.copyFromChunk(newValues, 0, 0, inputSize);
         context.longSortKernel.sort(context.sortedIndices, context.sortedValues, startPositions, length);
 
@@ -152,17 +152,17 @@ public class SortedFirstOrLastChunkedOperator implements IterativeChunkedAggrega
                 stateModified.set(ii, true);
             } else {
                 stateModified.set(ii,
-                        hasRedirection(postShiftIndices, newValue, startPosition, startPosition + runLength));
+                        hasRedirection(postShiftRowKeys, newValue, startPosition, startPosition + runLength));
             }
         }
     }
 
     @Override
     public void shiftChunk(BucketedContext bucketedContext, Chunk<? extends Values> previousValues,
-            Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> preShiftIndices,
-            LongChunk<? extends RowKeys> postShiftIndices, IntChunk<RowKeys> destinations,
-            IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
-            WritableBooleanChunk<Values> stateModified) {
+                           Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> preShiftRowKeys,
+                           LongChunk<? extends RowKeys> postShiftRowKeys, IntChunk<RowKeys> destinations,
+                           IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+                           WritableBooleanChunk<Values> stateModified) {
         final SortedFirstOrLastBucketedContext context = (SortedFirstOrLastBucketedContext) bucketedContext;
         final int inputSize = newValues.size();
 
@@ -176,7 +176,7 @@ public class SortedFirstOrLastChunkedOperator implements IterativeChunkedAggrega
         context.intSortKernel.sort(context.sortedPositions, context.sortedValues, startPositions, length);
 
         // now permute the indices according to sortedPosition
-        LongPermuteKernel.permuteInput(preShiftIndices, context.sortedPositions, sortedPreIndices);
+        LongPermuteKernel.permuteInput(preShiftRowKeys, context.sortedPositions, sortedPreIndices);
 
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
@@ -194,7 +194,7 @@ public class SortedFirstOrLastChunkedOperator implements IterativeChunkedAggrega
         ChunkUtils.fillInOrder(context.sortedPositions);
         context.sortedValues.copyFromChunk(newValues, 0, 0, inputSize);
         context.intSortKernel.sort(context.sortedPositions, context.sortedValues, startPositions, length);
-        LongPermuteKernel.permuteInput(postShiftIndices, context.sortedPositions, context.sortedPostIndices);
+        LongPermuteKernel.permuteInput(postShiftRowKeys, context.sortedPositions, context.sortedPostIndices);
 
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
@@ -211,17 +211,17 @@ public class SortedFirstOrLastChunkedOperator implements IterativeChunkedAggrega
             final long newValue = isFirst ? ssa.getFirst() : ssa.getLast();
             final long oldValue = redirections.getAndSetUnsafe(destination, newValue);
             final boolean changed = newValue != oldValue;
-            // if we just shifted something, then this is not a true modification (and modifyIndices will catch it
+            // if we just shifted something, then this is not a true modification (and modifyRowKeys will catch it
             // later);
-            // if on the other hand, our rowSet changed, then we must mark the state as modified
+            // if on the other hand, our row key changed, then we must mark the state as modified
             final int chunkLocationOfRelevance = isFirst ? startPosition : startPosition + runLength - 1;
             final long chunkNewValue = context.sortedPostIndices.get(chunkLocationOfRelevance);
             if (chunkNewValue == newValue) {
                 final int chunkIndex =
-                        binarySearch(postShiftIndices, chunkNewValue, startPosition, startPosition + runLength);
-                final long chunkOldValue = preShiftIndices.get(chunkIndex);
-                // if the rowSet was modified, then we must set modification to true; otherwise we depend on the
-                // modifyIndices call to catch if the row was modified
+                        binarySearch(postShiftRowKeys, chunkNewValue, startPosition, startPosition + runLength);
+                final long chunkOldValue = preShiftRowKeys.get(chunkIndex);
+                // if the row key was modified, then we must set modification to true; otherwise we depend on the
+                // modifyRowKeys call to catch if the row was modified
                 if (chunkOldValue != oldValue) {
                     stateModified.set(ii, true);
                 }
@@ -232,26 +232,26 @@ public class SortedFirstOrLastChunkedOperator implements IterativeChunkedAggrega
     }
 
     @Override
-    public void modifyIndices(BucketedContext context, LongChunk<? extends RowKeys> inputIndices,
-            IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
-            WritableBooleanChunk<Values> stateModified) {
+    public void modifyRowKeys(BucketedContext context, LongChunk<? extends RowKeys> inputRowKeys,
+                              IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+                              WritableBooleanChunk<Values> stateModified) {
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
             final int slotSize = length.get(ii);
             final long destination = destinations.get(startPosition);
 
             final long redirectedRow = redirections.getUnsafe(destination);
-            stateModified.set(ii, hasRedirection(inputIndices, redirectedRow, startPosition, startPosition + slotSize));
+            stateModified.set(ii, hasRedirection(inputRowKeys, redirectedRow, startPosition, startPosition + slotSize));
         }
     }
 
     @Override
     public boolean addChunk(SingletonContext singletonContext, int chunkSize, Chunk<? extends Values> values,
-            LongChunk<? extends RowKeys> inputIndices, long destination) {
+                            LongChunk<? extends RowKeys> inputRowKeys, long destination) {
         final SortedFirstOrLastSingletonContext context = (SortedFirstOrLastSingletonContext) singletonContext;
-        final int inputSize = inputIndices.size();
+        final int inputSize = inputRowKeys.size();
 
-        context.sortedIndices.copyFromTypedChunk(inputIndices, 0, 0, inputSize);
+        context.sortedIndices.copyFromTypedChunk(inputRowKeys, 0, 0, inputSize);
         context.sortedValues.copyFromChunk(values, 0, 0, inputSize);
         context.sortedIndices.setSize(inputSize);
         context.sortedValues.setSize(inputSize);
@@ -262,11 +262,11 @@ public class SortedFirstOrLastChunkedOperator implements IterativeChunkedAggrega
 
     @Override
     public boolean removeChunk(SingletonContext singletonContext, int chunkSize, Chunk<? extends Values> values,
-            LongChunk<? extends RowKeys> inputIndices, long destination) {
+                               LongChunk<? extends RowKeys> inputRowKeys, long destination) {
         final SortedFirstOrLastSingletonContext context = (SortedFirstOrLastSingletonContext) singletonContext;
-        final int inputSize = inputIndices.size();
+        final int inputSize = inputRowKeys.size();
 
-        context.sortedIndices.copyFromTypedChunk(inputIndices, 0, 0, inputSize);
+        context.sortedIndices.copyFromTypedChunk(inputRowKeys, 0, 0, inputSize);
         context.sortedValues.copyFromChunk(values, 0, 0, inputSize);
         context.sortedIndices.setSize(inputSize);
         context.sortedValues.setSize(inputSize);
@@ -277,11 +277,11 @@ public class SortedFirstOrLastChunkedOperator implements IterativeChunkedAggrega
 
     @Override
     public boolean modifyChunk(SingletonContext singletonContext, int chunkSize, Chunk<? extends Values> previousValues,
-            Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> postShiftIndices, long destination) {
+                               Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> postShiftRowKeys, long destination) {
         final SortedFirstOrLastSingletonContext context = (SortedFirstOrLastSingletonContext) singletonContext;
-        final int inputSize = postShiftIndices.size();
+        final int inputSize = postShiftRowKeys.size();
 
-        context.sortedIndices.copyFromTypedChunk(postShiftIndices, 0, 0, inputSize);
+        context.sortedIndices.copyFromTypedChunk(postShiftRowKeys, 0, 0, inputSize);
         context.sortedValues.copyFromChunk(previousValues, 0, 0, inputSize);
         context.sortedIndices.setSize(inputSize);
         context.sortedValues.setSize(inputSize);
@@ -291,7 +291,7 @@ public class SortedFirstOrLastChunkedOperator implements IterativeChunkedAggrega
         final SegmentedSortedArray ssa = ssaForSlot(destination);
         ssa.remove(context.sortedValues, context.sortedIndices);
 
-        context.sortedIndices.copyFromTypedChunk(postShiftIndices, 0, 0, inputSize);
+        context.sortedIndices.copyFromTypedChunk(postShiftRowKeys, 0, 0, inputSize);
         context.sortedValues.copyFromChunk(newValues, 0, 0, inputSize);
         context.sortedIndices.setSize(inputSize);
         context.sortedValues.setSize(inputSize);
@@ -309,15 +309,15 @@ public class SortedFirstOrLastChunkedOperator implements IterativeChunkedAggrega
         }
 
         // if we have modified the critical value in our modification; we are modified
-        return hasRedirection(postShiftIndices, newValue, 0, inputSize);
+        return hasRedirection(postShiftRowKeys, newValue, 0, inputSize);
     }
 
     @Override
     public boolean shiftChunk(SingletonContext singletonContext, Chunk<? extends Values> previousValues,
-            Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> preInputIndices,
-            LongChunk<? extends RowKeys> postInputIndices, long destination) {
+                              Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> preShiftRowKeys,
+                              LongChunk<? extends RowKeys> postShiftRowKeys, long destination) {
         final SortedFirstOrLastSingletonContext context = (SortedFirstOrLastSingletonContext) singletonContext;
-        final int inputSize = preInputIndices.size();
+        final int inputSize = preShiftRowKeys.size();
 
         context.sortedPositions.setSize(inputSize);
         ChunkUtils.fillInOrder(context.sortedPositions);
@@ -327,7 +327,7 @@ public class SortedFirstOrLastChunkedOperator implements IterativeChunkedAggrega
 
         // now permute the indices according to sortedPosition
         context.sortedIndices.setSize(inputSize);
-        LongPermuteKernel.permuteInput(preInputIndices, context.sortedPositions, context.sortedIndices);
+        LongPermuteKernel.permuteInput(preShiftRowKeys, context.sortedPositions, context.sortedIndices);
 
         final SegmentedSortedArray ssa = ssaForSlot(destination);
         ssa.remove(context.sortedValues, context.sortedIndices);
@@ -337,7 +337,7 @@ public class SortedFirstOrLastChunkedOperator implements IterativeChunkedAggrega
         context.intSortKernel.sort(context.sortedPositions, context.sortedValues);
 
         // now permute the indices according to sortedPosition
-        LongPermuteKernel.permuteInput(postInputIndices, context.sortedPositions, context.sortedIndices);
+        LongPermuteKernel.permuteInput(postShiftRowKeys, context.sortedPositions, context.sortedIndices);
         ssa.insert(context.sortedValues, context.sortedIndices);
 
         final long newValue = isFirst ? ssa.getFirst() : ssa.getLast();
@@ -352,10 +352,10 @@ public class SortedFirstOrLastChunkedOperator implements IterativeChunkedAggrega
 
         if (chunkNewValue == newValue) {
             // We are the new value; we need to determine if we were also the old value
-            final int newChunkIndex = binarySearch(postInputIndices, chunkNewValue, 0, inputSize);
-            final long oldChunkValue = preInputIndices.get(newChunkIndex);
-            // if the rowSet changed, then we are modified; for cases where the rowSet did not change, then we are
-            // depending on the modifyIndices call to catch this row's modification
+            final int newChunkIndex = binarySearch(postShiftRowKeys, chunkNewValue, 0, inputSize);
+            final long oldChunkValue = preShiftRowKeys.get(newChunkIndex);
+            // if the row key changed, then we are modified; for cases where the row key did not change, then we are
+            // depending on the modifyRowKeys call to catch this row's modification
             return oldChunkValue != oldValue;
         }
 
@@ -364,13 +364,13 @@ public class SortedFirstOrLastChunkedOperator implements IterativeChunkedAggrega
     }
 
     @Override
-    public boolean modifyIndices(SingletonContext context, LongChunk<? extends RowKeys> indices, long destination) {
-        if (indices.size() == 0) {
+    public boolean modifyRowKeys(SingletonContext context, LongChunk<? extends RowKeys> rowKeys, long destination) {
+        if (rowKeys.size() == 0) {
             return false;
         }
         final long redirectedRow = redirections.getUnsafe(destination);
         // if indices contains redirectedRow, the we are modified, otherwise not
-        return hasRedirection(indices, redirectedRow, 0, indices.size());
+        return hasRedirection(rowKeys, redirectedRow, 0, rowKeys.size());
     }
 
     private static boolean hasRedirection(LongChunk<? extends RowKeys> indices, long redirectedRow, int lo, int hi) {
@@ -446,7 +446,7 @@ public class SortedFirstOrLastChunkedOperator implements IterativeChunkedAggrega
     }
 
     @Override
-    public boolean requiresIndices() {
+    public boolean requiresRowKeys() {
         return true;
     }
 

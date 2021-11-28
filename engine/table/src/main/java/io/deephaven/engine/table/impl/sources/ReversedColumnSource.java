@@ -16,7 +16,7 @@ import org.jetbrains.annotations.NotNull;
 
 /**
  * This column source wraps another column source, and returns the values in the opposite order. It must be paired with
- * a ReverseOperation (that can be shared among reversed column sources) that implements the rowSet transformations for
+ * a ReverseOperation (that can be shared among reversed column sources) that implements the RowSet transformations for
  * this source.
  */
 public class ReversedColumnSource<T> extends AbstractColumnSource<T> {

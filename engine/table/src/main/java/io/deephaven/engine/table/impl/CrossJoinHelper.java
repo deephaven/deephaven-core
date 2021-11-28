@@ -29,8 +29,8 @@ import java.util.function.LongConsumer;
  * Implementation for chunk-oriented aggregation operations, including {@link Table#join}.
  */
 public class CrossJoinHelper {
-    // Note: This would be >= 16 to get efficient performance from TrackingWritableRowSet#insert and
-    // TrackingWritableRowSet#shiftInPlace. However, it is
+    // Note: This would be >= 16 to get efficient performance from WritableRowSet#insert and
+    // WritableRowSet#shiftInPlace. However, it is
     // very costly for joins of many small groups for the default to be so high.
     public static final int DEFAULT_NUM_RIGHT_BITS_TO_RESERVE = Configuration.getInstance()
             .getIntegerForClassWithDefault(CrossJoinHelper.class, "numRightBitsToReserve", 10);
@@ -256,7 +256,7 @@ public class CrossJoinHelper {
                                         upstreamRight.modifiedColumnSet().containsAny(rightKeyColumns), tracker);
                             }
 
-                            // space needed for right rowSet might have changed, let's verify we have enough keyspace
+                            // space needed for right RowSet might have changed, let's verify we have enough keyspace
                             jsm.validateKeySpaceSize();
 
                             // We must finalize all known slots, so that left accumulation does not mix with right
@@ -314,7 +314,7 @@ public class CrossJoinHelper {
 
                                 try (final WritableRowSet toRemove = RowSetFactory.empty()) {
                                     // This could use a sequential builder, however, since we are always appending
-                                    // non-overlapping containers, inserting into a rowSet is actually rather
+                                    // non-overlapping containers, inserting into a RowSet is actually rather
                                     // efficient.
                                     leftIndexToVisitForRightRm.forAllRowKeys(ii -> {
                                         final long prevOffset = ii << prevRightBits;
@@ -336,7 +336,7 @@ public class CrossJoinHelper {
                             }
                         }
 
-                        // note rows to shift might have no shifts but still need result rowSet updated
+                        // note rows to shift might have no shifts but still need result RowSet updated
                         final RowSet rowsToShift;
                         final boolean mustCloseRowsToShift;
 
@@ -386,7 +386,7 @@ public class CrossJoinHelper {
                             }
 
                             if (!allRowsShift) {
-                                // removals might generate shifts, so let's add those to our rowSet
+                                // removals might generate shifts, so let's add those to our RowSet
                                 final RowSetBuilderRandom rmsToVisit = RowSetFactory.builderRandom();
                                 tracker.forAllModifiedSlots(slotState -> {
                                     if (slotState.leftRowSet.size() > 0 && slotState.rightRemoved.isNonempty()) {
@@ -402,7 +402,7 @@ public class CrossJoinHelper {
                             rowsToShift = RowSetFactory.empty();
                         }
 
-                        // Generate shift data; build up result rowSet changes for all but added left
+                        // Generate shift data; build up result RowSet changes for all but added left
                         final long prevCardinality = 1L << prevRightBits;
                         final long currCardinality = 1L << currRightBits;
                         final RowSetShiftData.Builder shiftBuilder = new RowSetShiftData.Builder();
@@ -478,7 +478,7 @@ public class CrossJoinHelper {
                                         // JSM data structures,
                                         // they won't have a properly mapped slot. They will be added to their new slot
                                         // after we
-                                        // generate-downstream shifts. The result rowSet is also updated for these rows
+                                        // generate-downstream shifts. The result RowSet is also updated for these rows
                                         // in
                                         // the left-rm/left-add code paths. This code path should only be hit when
                                         // prevRightBits != currRightBits.
@@ -543,7 +543,7 @@ public class CrossJoinHelper {
                                     // data structures,
                                     // they won't have a properly mapped slot. They will be added to their new slot
                                     // after we
-                                    // generate-downstream shifts. The result rowSet is also updated for these rows in
+                                    // generate-downstream shifts. The result RowSet is also updated for these rows in
                                     // the left-rm/left-add code paths. This code path should only be hit when
                                     // prevRightBits != currRightBits.
                                     return;
@@ -552,7 +552,7 @@ public class CrossJoinHelper {
                                 final CrossJoinModifiedSlotTracker.SlotState slotState =
                                         tracker.getFinalSlotState(jsm.getTrackerCookie(slotFromLeftIndex));
 
-                                // calculate modifications to result rowSet
+                                // calculate modifications to result RowSet
                                 if (prevRightBits != currRightBits) {
                                     final RowSet rightRowSet = jsm.getRightRowSet(slotFromLeftIndex);
                                     if (rightRowSet.isNonempty()) {
@@ -585,7 +585,7 @@ public class CrossJoinHelper {
                                 }
                             });
                         } else if (leftChanged && upstreamLeft.shifted().nonempty()) {
-                            // upstream-left-shift our result rowSet, and build downstream shifts
+                            // upstream-left-shift our result RowSet, and build downstream shifts
                             try (final RowSequence.Iterator rsIt = resultRowSet.getRowSequenceIterator()) {
                                 for (int idx = 0; idx < upstreamLeft.shifted().size(); ++idx) {
                                     final long beginRange = upstreamLeft.shifted().getBeginRange(idx) << prevRightBits;
@@ -717,7 +717,7 @@ public class CrossJoinHelper {
                         }
                         tracker.finalizeRightProcessing();
 
-                        // space needed for right rowSet might have changed, let's verify we have enough keyspace
+                        // space needed for right RowSet might have changed, let's verify we have enough keyspace
                         jsm.validateKeySpaceSize();
 
                         final int prevRightBits = jsm.getPrevNumShiftBits();
@@ -728,7 +728,7 @@ public class CrossJoinHelper {
                         if (numRightBitsChanged) {
                             // Must touch all left keys.
                             leftChanged = leftTable.getRowSet();
-                            // Must rebuild entire result rowSet.
+                            // Must rebuild entire result RowSet.
                             resultRowSet.clear();
                         } else {
                             final RowSetBuilderRandom leftChangedBuilder = RowSetFactory.builderRandom();
@@ -950,7 +950,7 @@ public class CrossJoinHelper {
                     boolean moreLeftPrev = advanceIterator(leftPrevIter);
                     boolean moreLeftCurr = advanceIterator(leftCurrIter);
 
-                    // It is more efficient to completely rebuild this rowSet, than to modify each row to right mapping.
+                    // It is more efficient to completely rebuild this RowSet, than to modify each row to right mapping.
                     resultRowSet.clear();
 
                     final long prevCardinality = 1L << prevRightBits;
@@ -970,7 +970,7 @@ public class CrossJoinHelper {
                             continue;
                         }
 
-                        // Note: Pre-existing row was not removed, therefore there must be an entry in curr rowSet.
+                        // Note: Pre-existing row was not removed, therefore there must be an entry in curr RowSet.
                         Assert.eqTrue(moreLeftCurr, "moreLeftCurr");
                         long currCurrIdx = leftCurrIter.currentValue();
                         long currResultOffset = currCurrIdx << currRightBits;

@@ -148,7 +148,7 @@ public class ObjectPrimitives {
      *
      * @param index index of the value to return.
      * @param values values.
-     * @return nth value from the array or null, if the rowSet is outside of the array's rowSet range.
+     * @return nth value from the array or null, if the index is outside of the array's index range.
      */
     static public <T> T nth(int index, ObjectVector<T> values) {
         if (index < 0 || index >= values.size()) {
@@ -255,7 +255,7 @@ public class ObjectPrimitives {
      * @param values sorted values to search.
      * @param key key to search for.
      * @param choiceWhenEquals algorithm used to resolve ties when performing a binary search.
-     * @return rowSet of the search key, if it is contained in the array; otherwise, the rowSet of where the key would be inserted.
+     * @return index of the search key, if it is contained in the array; otherwise, the index of where the key would be inserted.
      */
     static public <T extends Comparable<? super T>> int binSearchIndex(ObjectVector<T> values, T key, BinSearch choiceWhenEquals) {
         int index = rawBinSearchIndex(values, key, choiceWhenEquals);
@@ -276,7 +276,7 @@ public class ObjectPrimitives {
      * @param values sorted values to search.
      * @param key key to search for.
      * @param choiceWhenEquals algorithm used to resolve ties when performing a binary search.
-     * @return rowSet of the search key, if it is contained in the array; otherwise, {@code (-(insertion point) - 1)}.
+     * @return index of the search key, if it is contained in the array; otherwise, {@code (-(insertion point) - 1)}.
      */
     static public <T extends Comparable<? super T>> int rawBinSearchIndex(ObjectVector<T> values, T key, BinSearch choiceWhenEquals) {
         if (values == null || key == null) {

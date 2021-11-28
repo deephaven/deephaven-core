@@ -15,7 +15,7 @@ public interface InputTableRowSetter {
      * {@link #setRows(Table, int[], Map[], InputTableStatusListener)} to be notified of asynchronous results.
      *
      * @param table The table to use as the previous value source
-     * @param row The row rowSet to set
+     * @param row The row key to set
      * @param values A map of column name to value to set.
      */
     default void setRow(Table table, int row, Map<String, Object> values) {
@@ -29,7 +29,7 @@ public interface InputTableRowSetter {
      * {@link #setRows(Table, int[], Map[], InputTableStatusListener)} to be notified of asynchronous results.
      *
      * @param table The table to use as the previous value source
-     * @param rowArray The row indices to update.
+     * @param rowArray The row keys to update.
      * @param valueArray The new values.
      */
     default void setRows(Table table, int[] rowArray, Map<String, Object>[] valueArray) {
@@ -42,7 +42,7 @@ public interface InputTableRowSetter {
      * success/failure
      *
      * @param table The table to use as the previous value source
-     * @param rowArray The row indices to update.
+     * @param rowArray The row keys to update.
      * @param valueArray The new values.
      * @param listener The listener to notify on asynchronous results.
      */

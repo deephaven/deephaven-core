@@ -26,7 +26,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * Manage column sources made up of regions in their own rowSet address space.
+ * Manage column sources made up of regions in their own row key address space.
  */
 public class RegionedColumnSourceManager implements ColumnSourceManager {
 
@@ -419,7 +419,7 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
         /**
          * Update column groupings, if appropriate.
          *
-         * @param locationAddedRowSetInTable The added rowSet, in the table's address space
+         * @param locationAddedRowSetInTable The added RowSet, in the table's address space
          */
         private void updateGrouping(@NotNull final RowSet locationAddedRowSetInTable) {
             if (definition.isGrouping()) {

@@ -25,11 +25,11 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 /**
- * A simpler version of {@link Table#select} that is guaranteed to preserve the original table's rowSet.
+ * A simpler version of {@link Table#select} that is guaranteed to preserve the original table's RowSet.
  *
  * <p>
  * Like select, the sparseSelected table's columns will be materialized in memory. Unlike select(), sparseSelect
- * guarantees the original Table's rowSet is preserved. Formula columns are not supported, only the names of columns to
+ * guarantees the original Table's RowSet is preserved. Formula columns are not supported, only the names of columns to
  * copy into the output table. This means that each output column is independent of every other output column, which
  * enables column-level parallelism.
  * </p>

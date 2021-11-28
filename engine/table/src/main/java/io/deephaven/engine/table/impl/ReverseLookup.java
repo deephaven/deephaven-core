@@ -1,26 +1,26 @@
 package io.deephaven.engine.table.impl;
 
 /**
- * For hierarchical table display, identify the row row key that corresponds to a given logical key.
+ * For hierarchical table display, identify the row key that corresponds to a given logical key.
  */
 public interface ReverseLookup {
     /**
-     * Gets the rowSet value where key exists in the table, or the no-entry-value if it is not found in the table.
+     * Gets the row key value where key exists in the table, or the no-entry-value if it is not found in the table.
      *
      * @param key a single object for a single column, or a {@link io.deephaven.datastructures.util.SmartKey} for
      *        multiple columns
-     * @return the row rowSet where key exists in the table
+     * @return the row key where key exists in the table
      */
     long get(Object key);
 
     /**
-     * Gets the rowSet value where key previously in the table, or the no-entry-value if it is was not found in the
+     * Gets the row key value where key previously in the table, or the no-entry-value if it is not found in the
      * table.
      *
      * @param key a single object for a single column, or a {@link io.deephaven.datastructures.util.SmartKey} for
      *        multiple columns
      *
-     * @return the row rowSet where key previously existed in the table
+     * @return the row key where key previously existed in the table
      */
     long getPrev(Object key);
 

@@ -61,9 +61,9 @@ public interface RowSequence extends SafeCloseable, LongSizedDataStructure {
     RowSequence getRowSequenceByKeyRange(long startRowKeyInclusive, long endRowKeyInclusive);
 
     /**
-     * Get an {@link RowSet} representation of this {@code RowSequence}.
+     * Get a {@link RowSet} representation of this {@code RowSequence}.
      *
-     * @return An {@link RowSet} representation for the same row keys in the same order
+     * @return A {@link RowSet} representation for the same row keys in the same order
      * @apiNote If you use the result across clock ticks, you may observe inconsistencies.
      * @apiNote You must not mutate the result.
      * @apiNote You must {@link SafeCloseable#close() close} the result.

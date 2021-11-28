@@ -572,51 +572,51 @@ public class TestFormulaColumn {
 
     //// ---- These are just different versions of check():
 
-    private void check(int index, String formulaString, Object expectedResult) {
+    private void check(int rowKey, String formulaString, Object expectedResult) {
         FormulaColumn formulaColumn = initCheck(formulaString);
-        Object result = formulaColumn.getDataView().get(index);
+        Object result = formulaColumn.getDataView().get(rowKey);
         assertEquals(expectedResult, result);
     }
 
-    private void check(int index, String formulaString, byte expectedResult) {
+    private void check(int rowKey, String formulaString, byte expectedResult) {
         FormulaColumn formulaColumn = initCheck(formulaString);
-        byte result = formulaColumn.getDataView().getByte(index);
+        byte result = formulaColumn.getDataView().getByte(rowKey);
         assertEquals(expectedResult, result);
     }
 
-    private void check(int index, String formulaString, short expectedResult) {
+    private void check(int rowKey, String formulaString, short expectedResult) {
         FormulaColumn formulaColumn = initCheck(formulaString);
-        short result = formulaColumn.getDataView().getShort(index);
+        short result = formulaColumn.getDataView().getShort(rowKey);
         assertEquals(expectedResult, result);
     }
 
-    private void check(int index, String formulaString, char expectedResult) {
+    private void check(int rowKey, String formulaString, char expectedResult) {
         FormulaColumn formulaColumn = initCheck(formulaString);
-        char result = formulaColumn.getDataView().getChar(index);
+        char result = formulaColumn.getDataView().getChar(rowKey);
         assertEquals(expectedResult, result);
     }
 
-    private void check(int index, String formulaString, int expectedResult) {
+    private void check(int rowKey, String formulaString, int expectedResult) {
         FormulaColumn formulaColumn = initCheck(formulaString);
-        int result = formulaColumn.getDataView().getInt(index);
+        int result = formulaColumn.getDataView().getInt(rowKey);
         assertEquals(expectedResult, result);
     }
 
-    private void check(int index, String formulaString, long expectedResult) {
+    private void check(int rowKey, String formulaString, long expectedResult) {
         FormulaColumn formulaColumn = initCheck(formulaString);
-        long result = formulaColumn.getDataView().getLong(index);
+        long result = formulaColumn.getDataView().getLong(rowKey);
         assertEquals(expectedResult, result);
     }
 
-    private void check(int index, String formulaString, float expectedResult) {
+    private void check(int rowKey, String formulaString, float expectedResult) {
         FormulaColumn formulaColumn = initCheck(formulaString);
-        float result = formulaColumn.getDataView().getFloat(index);
+        float result = formulaColumn.getDataView().getFloat(rowKey);
         assertEquals(expectedResult, result);
     }
 
-    private void check(int index, String formulaString, double expectedResult) {
+    private void check(int rowKey, String formulaString, double expectedResult) {
         FormulaColumn formulaColumn = initCheck(formulaString);
-        double result = formulaColumn.getDataView().getDouble(index);
+        double result = formulaColumn.getDataView().getDouble(rowKey);
         assertEquals(expectedResult, result);
     }
 
@@ -661,27 +661,27 @@ public class TestFormulaColumn {
      *
      * @param formulaString The formula to check
      * @param expectedResult The expected result. Must be a boxed type (e.g. {@link Integer}, {@link Character}, etc.
-     * @param index The rowSet to check
+     * @param rowKey The rowKey to check
      */
-    private void checkPrimitive(int index, String formulaString, Object expectedResult) {
+    private void checkPrimitive(int rowKey, String formulaString, Object expectedResult) {
         Class<?> unboxedType = expectedResult == null ? null : TypeUtils.getUnboxedType(expectedResult.getClass());
 
         if (unboxedType == byte.class) {
-            check(index, formulaString, ((Number) expectedResult).byteValue());
+            check(rowKey, formulaString, ((Number) expectedResult).byteValue());
         } else if (unboxedType == short.class) {
-            check(index, formulaString, ((Number) expectedResult).shortValue());
+            check(rowKey, formulaString, ((Number) expectedResult).shortValue());
         } else if (unboxedType == char.class) {
-            check(index, formulaString, ((Character) expectedResult).charValue());
+            check(rowKey, formulaString, ((Character) expectedResult).charValue());
         } else if (unboxedType == int.class) {
-            check(index, formulaString, ((Number) expectedResult).intValue());
+            check(rowKey, formulaString, ((Number) expectedResult).intValue());
         } else if (unboxedType == long.class) {
-            check(index, formulaString, ((Number) expectedResult).longValue());
+            check(rowKey, formulaString, ((Number) expectedResult).longValue());
         } else if (unboxedType == float.class) {
-            check(index, formulaString, ((Number) expectedResult).floatValue());
+            check(rowKey, formulaString, ((Number) expectedResult).floatValue());
         } else if (unboxedType == double.class) {
-            check(index, formulaString, ((Number) expectedResult).doubleValue());
+            check(rowKey, formulaString, ((Number) expectedResult).doubleValue());
         } else {
-            check(index, formulaString, expectedResult);
+            check(rowKey, formulaString, expectedResult);
         }
     }
 
@@ -689,17 +689,17 @@ public class TestFormulaColumn {
         checkExpectingException(0, formulaString);
     }
 
-    private void checkExpectingException(int index, String formulaString) {
-        checkExpectingException(index, null, formulaString);
+    private void checkExpectingException(int rowKey, String formulaString) {
+        checkExpectingException(rowKey, null, formulaString);
     }
 
     /**
-     * @param index The rowSet of {@link #testDataTable} at which {@code formulaString} should be evaluateds
+     * @param rowKey The row key of {@link #testDataTable} at which {@code formulaString} should be evaluateds
      * @param exceptionTypeToExpect Expect an exception of this type, and not of any other (i.e. runtime or compilation)
      *        exception. If null, any {@code Exception} is expected.
      * @param formulaString The formula to evaluate
      */
-    private void checkExpectingException(int index, Class<? extends Exception> exceptionTypeToExpect,
+    private void checkExpectingException(int rowKey, Class<? extends Exception> exceptionTypeToExpect,
             String formulaString) {
 
         final boolean expectSpecificInspection = exceptionTypeToExpect != null;
@@ -710,7 +710,7 @@ public class TestFormulaColumn {
         Exception theException = null;
 
         try {
-            check(index, formulaString, null);
+            check(rowKey, formulaString, null);
         } catch (Exception ex) {
             theException = ex;
 
@@ -734,16 +734,16 @@ public class TestFormulaColumn {
         checkExpectingParseException(0, formulaString);
     }
 
-    private void checkExpectingParseException(int index, String formulaString) {
-        checkExpectingException(index, QueryLanguageParseException.class, formulaString);
+    private void checkExpectingParseException(int rowKey, String formulaString) {
+        checkExpectingException(rowKey, QueryLanguageParseException.class, formulaString);
     }
 
     private void checkExpectingEvaluationException(String formulaString) {
         checkExpectingEvaluationException(0, formulaString);
     }
 
-    private void checkExpectingEvaluationException(int index, String formulaString) {
-        checkExpectingException(index, FormulaEvaluationException.class, formulaString);
+    private void checkExpectingEvaluationException(int rowKey, String formulaString) {
+        checkExpectingException(rowKey, FormulaEvaluationException.class, formulaString);
     }
 
     /**

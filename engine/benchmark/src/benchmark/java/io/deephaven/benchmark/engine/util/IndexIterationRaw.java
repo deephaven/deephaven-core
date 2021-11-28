@@ -24,15 +24,15 @@ import java.util.concurrent.TimeUnit;
 @Fork(1)
 public class IndexIterationRaw {
 
-    // Generate rowSet as ranges and as individual position
-    // Build and rowSet for it
+    // Generate RowSet as ranges and as individual position
+    // Build a RowSet for it
     // Generate 4 double arrays
     // Have chunk fetching:
     // - using RowSequence, range, direct,
     // - using fetched long chunk range/direct,
-    // - iteration over array of indices/ranges with chunk get,
-    // - direct iteration over array of indices/ranges
-    // - iteration over RowSet by elements or by ranges
+    // - iteration over array of keys/ranges with chunk get,
+    // - direct iteration over array of keys/ranges
+    // - iteration over RowSet by keys or by ranges
     // - Params: spars
 
     @Param({/* 100", "10000", */ "1000000", "10000000"})

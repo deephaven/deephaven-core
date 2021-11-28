@@ -158,8 +158,8 @@ public class QueryTableTest extends QueryTableTestBase {
     /**
      * Confirm that the system behaves correctly with select validation and the new "flatten" code QueryTable#select().
      * Prior to the change that fixed this, "validateSelect" would cause the SelectColumn to get associated with one
-     * rowSet, but then select() would want to flatten that rowSet, so a later initDef would try to associate it with a
-     * different rowSet, and then the assertion would fail at AbstractFormulaColumn.java:86. The simple fix is that
+     * RowSet, but then select() would want to flatten that RowSet, so a later initDef would try to associate it with a
+     * different RowSet, and then the assertion would fail at AbstractFormulaColumn.java:86. The simple fix is that
      * validateSelect() should copy its select columns before using them and then throw away the copies.
      */
     public void testIds6760() {
@@ -2974,7 +2974,7 @@ public class QueryTableTest extends QueryTableTestBase {
                 // undefined, B) it must have been created AFTER any of its dependencies may have ticked this cycle and
                 // C) the table is not allowed to tick this cycle.
 
-                // The specific scenario we are trying to catch is when the parent re-uses data structures (i.e. rowSet)
+                // The specific scenario we are trying to catch is when the parent re-uses data structures (i.e. RowSet)
                 // from its parent, which have valid prev values, but the prev values must not be used during the first
                 // cycle.
                 final Thread offugp = new Thread(() -> ft.setValue((QueryTable) nj.getValue().flatten()));
@@ -3122,7 +3122,7 @@ public class QueryTableTest extends QueryTableTestBase {
         // .sumBy()
         //
         // The exception we were getting was: java.lang.IllegalArgumentException: keys argument has elements not in the
-        // rowSet
+        // row set
         //
         final Table t0 = newTable(byteCol("Q", (byte) 0));
         final QueryTable t1 = TstUtils.testRefreshingTable(i().toTracking(), intCol("T"));

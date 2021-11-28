@@ -93,12 +93,12 @@ public abstract class AbstractTableLocation
     /**
      * See TableLocationState for documentation of values.
      *
-     * @param index The new rowSet. Ownership passes to this location; callers should {@link RowSet#copy() copy} it if
+     * @param rowSet The new RowSet. Ownership passes to this location; callers should {@link RowSet#copy() copy} it if
      *        necessary.
      * @param lastModifiedTimeMillis The new lastModificationTimeMillis
      */
-    public final void handleUpdate(final RowSet index, final long lastModifiedTimeMillis) {
-        if (state.setValues(index, lastModifiedTimeMillis) && supportsSubscriptions()) {
+    public final void handleUpdate(final RowSet rowSet, final long lastModifiedTimeMillis) {
+        if (state.setValues(rowSet, lastModifiedTimeMillis) && supportsSubscriptions()) {
             deliverUpdateNotification();
         }
     }

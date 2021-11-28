@@ -53,10 +53,10 @@ public class IndexedDataColumn<TYPE> implements DataColumn<TYPE> {
     /**
      * This is intended as a unit test helper. It is not recommended for inexpert use.
      * 
-     * @param rowSet The rowSet
+     * @param rowSet The RowSet
      * @param columnSource The column source
      * @return A data column with previous values for the supplied column source, according to the previous version of
-     *         the rowSet
+     *         the RowSet
      */
     public static <TYPE> IndexedDataColumn<TYPE> makePreviousColumn(@NotNull final TrackingRowSet rowSet,
             @NotNull final ColumnSource<TYPE> columnSource) {

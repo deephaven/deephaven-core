@@ -11,7 +11,7 @@ import org.jetbrains.annotations.NotNull;
 public interface TupleExporter<TUPLE_TYPE> {
 
     /**
-     * Export a single element from the tuple, identified by its element rowSet, to the destination row key of the
+     * Export a single element from the tuple, identified by its element index, to the destination row key of the
      * supplied writable source.
      * <p>
      * For the empty tuple, this is unsupported.
@@ -21,7 +21,7 @@ public interface TupleExporter<TUPLE_TYPE> {
      * For doubles and longer, this will copy the specified element without any unnecessary boxing.
      *
      * @param tuple The tuple to export an element from
-     * @param elementIndex The element rowSet to export
+     * @param elementIndex The element index to export
      * @param writableSource The destination
      * @param destinationIndexKey The destination row key
      */
@@ -29,7 +29,7 @@ public interface TupleExporter<TUPLE_TYPE> {
             @NotNull WritableColumnSource<ELEMENT_TYPE> writableSource, long destinationIndexKey);
 
     /**
-     * Export a single element from the tuple, identified by its element rowSet, to an Object
+     * Export a single element from the tuple, identified by its element index, to an Object
      * 
      * <p>
      * For the empty tuple, this is unsupported.
@@ -39,12 +39,12 @@ public interface TupleExporter<TUPLE_TYPE> {
      * For doubles and longer, this will copy the specified element without any unnecessary boxing.
      *
      * @param tuple The tuple to export an element from
-     * @param elementIndex The element rowSet to export
+     * @param elementIndex The element index to export
      */
     Object exportElement(TUPLE_TYPE tuple, int elementIndex);
 
     /**
-     * Export a single element from the tuple, identified by its element rowSet, to an Object. If the tuple has been
+     * Export a single element from the tuple, identified by its element index, to an Object. If the tuple has been
      * internally reinterpreted, return the reinterpreted value.
      *
      * <p>
@@ -55,7 +55,7 @@ public interface TupleExporter<TUPLE_TYPE> {
      * For doubles and longer, this will copy the specified element without any unnecessary boxing.
      *
      * @param tuple The tuple to export an element from
-     * @param elementIndex The element rowSet to export
+     * @param elementIndex The element index to export
      */
     default Object exportElementReinterpreted(TUPLE_TYPE tuple, int elementIndex) {
         return exportElement(tuple, elementIndex);

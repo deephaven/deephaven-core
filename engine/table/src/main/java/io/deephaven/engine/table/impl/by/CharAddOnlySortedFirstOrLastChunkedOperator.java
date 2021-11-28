@@ -40,7 +40,7 @@ public class CharAddOnlySortedFirstOrLastChunkedOperator extends BaseAddOnlyFirs
     @Override
     public void addChunk(final BucketedContext bucketedContext, // Unused
                          @NotNull final Chunk<? extends Values> values,
-                         @NotNull final LongChunk<? extends RowKeys> inputIndices,
+                         @NotNull final LongChunk<? extends RowKeys> inputRowKeys,
                          @NotNull final IntChunk<RowKeys> destinations,
                          @NotNull final IntChunk<ChunkPositions> startPositions,
                          @NotNull final IntChunk<ChunkLengths> length,
@@ -50,7 +50,7 @@ public class CharAddOnlySortedFirstOrLastChunkedOperator extends BaseAddOnlyFirs
             final int startPosition = startPositions.get(ii);
             final int runLength = length.get(ii);
             final long destination = destinations.get(startPosition);
-            stateModified.set(ii, addChunk(typedValues, inputIndices, startPosition, runLength, destination));
+            stateModified.set(ii, addChunk(typedValues, inputRowKeys, startPosition, runLength, destination));
         }
     }
 
@@ -58,9 +58,9 @@ public class CharAddOnlySortedFirstOrLastChunkedOperator extends BaseAddOnlyFirs
     public boolean addChunk(final SingletonContext singletonContext, // Unused
                             final int chunkSize,
                             @NotNull final Chunk<? extends Values> values,
-                            @NotNull final LongChunk<? extends RowKeys> inputIndices,
+                            @NotNull final LongChunk<? extends RowKeys> inputRowKeys,
                             final long destination) {
-        return addChunk(values.asCharChunk(), inputIndices, 0, inputIndices.size(), destination);
+        return addChunk(values.asCharChunk(), inputRowKeys, 0, inputRowKeys.size(), destination);
     }
 
     private boolean addChunk(@NotNull final CharChunk<? extends Values> values,

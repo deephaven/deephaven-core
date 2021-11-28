@@ -166,12 +166,12 @@ public interface OrderedLongSet {
     RspBitmap ixToRspOnNew();
 
     /**
-     * Invert the given rowSet.
+     * Invert the given OrderedLongSet.
      *
      * @param keys OrderedLongSet of keys to invert
      * @param maximumPosition the largest position to add to indexBuilder, inclusive
      *
-     * @return the inverse of rowSet
+     * @return the inverse of {@code keys}
      */
     OrderedLongSet ixInvertOnNew(OrderedLongSet keys, long maximumPosition);
 

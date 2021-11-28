@@ -125,7 +125,7 @@ public class WindowCheck {
             int pos;
             /** the timestamp */
             long nanos;
-            /** the rowSet within the source (and result) table */
+            /** the row key within the source (and result) table */
             long index;
 
             Entry(long index, long timestamp) {
@@ -210,7 +210,7 @@ public class WindowCheck {
                 // TODO: improve performance with getChunk
                 // TODO: reinterpret inWindowColumnSource so that it compares longs instead of objects
 
-                // figure out for all the modified indices if the timestamp or rowSet changed
+                // figure out for all the modified row keys if the timestamp or row key changed
                 upstream.forAllModified((oldIndex, newIndex) -> {
                     final DateTime currentTimestamp = inWindowColumnSource.timeStampSource.get(newIndex);
                     final DateTime prevTimestamp = inWindowColumnSource.timeStampSource.getPrev(oldIndex);
@@ -283,7 +283,7 @@ public class WindowCheck {
         /**
          * If the value of the timestamp is within the window, insert it into the queue and map.
          *
-         * @param index the rowSet inserted into the table
+         * @param index the row key inserted into the table
          */
         private void addIndex(long index) {
             final DateTime currentTimestamp = inWindowColumnSource.timeStampSource.get(index);
@@ -300,7 +300,7 @@ public class WindowCheck {
         /**
          * If the keys are in the window, remove them from the map and queue.
          *
-         * @param rowSet the indices to remove
+         * @param rowSet the row keys to remove
          */
         private void removeIndex(final RowSet rowSet) {
             rowSet.forAllRowKeys((final long key) -> {

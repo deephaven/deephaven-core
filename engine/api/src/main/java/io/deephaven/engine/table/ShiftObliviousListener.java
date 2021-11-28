@@ -32,7 +32,7 @@ public interface ShiftObliviousListener extends TableListener {
     NotificationQueue.Notification getNotification(RowSet added, RowSet removed, RowSet modified);
 
     /**
-     * Sets the rowSet for the initial data.
+     * Sets the RowSet for the initial data.
      *
      * @param initialImage initial image
      */

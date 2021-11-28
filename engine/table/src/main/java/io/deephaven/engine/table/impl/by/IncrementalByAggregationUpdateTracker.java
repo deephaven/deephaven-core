@@ -49,7 +49,7 @@ import org.jetbrains.annotations.NotNull;
  * <lI>All other changes as modifies if first key is unchanged, else paired removes and adds if first key changed</lI>
  * </ol>
  * </li>
- * <li>Sort the shift chunks by the previous keys, accumulate shifts into an {@link RowSetShiftData.Builder}</li>
+ * <li>Sort the shift chunks by the previous keys, accumulate shifts into a {@link RowSetShiftData.Builder}</li>
  * </ol>
  *
  * <p>
@@ -221,7 +221,7 @@ class IncrementalByAggregationUpdateTracker {
      *
      * @param cookie The last known cookie for the state
      * @param stateSlot The state's slot (in main table space)
-     * @param unusedShiftedIndex Unused shifted rowSet argument, so we can use a method reference with the right
+     * @param unusedShiftedIndex Unused shifted row key argument, so we can use a method reference with the right
      *        signature
      * @return The new cookie for the state if it has changed
      */
@@ -246,7 +246,7 @@ class IncrementalByAggregationUpdateTracker {
      *
      * @param cookie The last known cookie for the state
      * @param stateSlot The state's slot (in main table space)
-     * @param unusedModifiedIndex Unused modified rowSet argument, so we can use a method reference with the right
+     * @param unusedModifiedIndex Unused modified row key argument, so we can use a method reference with the right
      *        signature
      * @return The new cookie for the state if it has changed
      */
@@ -388,7 +388,7 @@ class IncrementalByAggregationUpdateTracker {
             rowRedirection.putVoid(stateFirstKey, slot);
             resultBuilder.addKey(stateFirstKey);
         }
-        // NB: We should not need to initialize previous value here, as the result rowSet was computed with no
+        // NB: We should not need to initialize previous value here, as the result RowSet was computed with no
         // mutations.
         return resultBuilder.build().toTracking();
     }

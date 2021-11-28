@@ -465,9 +465,9 @@ public class ModifiedColumnSet {
     }
 
     /**
-     * Marks specifically the column with the given rowSet as dirty.
+     * Marks specifically the column with the given index as dirty.
      *
-     * @param columnIndex column rowSet to mark dirty
+     * @param columnIndex column index to mark dirty
      */
     public void setColumnWithIndex(int columnIndex) {
         dirtyColumns.set(columnIndex);
@@ -476,8 +476,8 @@ public class ModifiedColumnSet {
     /**
      * Marks specifically a range of adjacent columns. Start is inclusive, end is exclusive; like the BitSet API.
      *
-     * @param columnStart start column rowSet to mark dirty
-     * @param columnEndExclusive end column rowSet to mark dirty
+     * @param columnStart start column index to mark dirty
+     * @param columnEndExclusive end column index to mark dirty
      */
     public void setColumnsInIndexRange(int columnStart, int columnEndExclusive) {
         dirtyColumns.set(columnStart, columnEndExclusive);

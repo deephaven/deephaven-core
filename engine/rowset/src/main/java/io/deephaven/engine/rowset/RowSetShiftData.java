@@ -622,9 +622,9 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
         }
 
         /**
-         * Gets the last rowSet assigned to a shift.
+         * Gets the last row key assigned to a shift.
          *
-         * @return The greatest rowSet assigned to a shift or -1 if no shifts exist yet.
+         * @return The greatest row key assigned to a shift or -1 if no shifts exist yet.
          */
         public long lastShiftEnd() {
             return shiftData.size() > 0 ? shiftData.getEndRange(shiftData.size() - 1) : -1;
@@ -659,7 +659,7 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
                 return;
             }
 
-            // If previous shift has different sign than shiftDelta, we must add current rowSet to split run into chunks
+            // If previous shift has different sign than shiftDelta, we must add current index to split run into chunks
             if ((shiftData.getShiftDelta(prevIdx) < 0 ? -1 : 1) * shiftDelta < 0) {
                 shiftData.polaritySwapIndices.add(shiftData.size() - 1); // note the -1 excludes the new range
             }
@@ -728,7 +728,7 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
             long watermarkKey = 0; // id space of source table
 
             // These bounds seem weird. We are going to insert a shift for the keyspace prior to the shift with
-            // rowSet sidx. Thus, the first and last sidx are to cover shifting via `indexSpaceInserted` on the
+            // index sidx. Thus, the first and last sidx are to cover shifting via `indexSpaceInserted` on the
             // outside of shifts. Note that we use the knowledge/contract that shift data is ordered by key.
             final int innerSize = innerShiftData.size();
             for (int sidx = 0; sidx < innerSize + 1; ++sidx) {
@@ -855,7 +855,7 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
         /**
          * The next key after our last shift range. We record this value so that if two subsequent shifts have the same
          * delta, but do not include the intervening key we do not permit coalescing. If there is no intervening key, we
-         * permit coalescing. RowSet.NULL_KEY indicates there is no intervening key of interest.
+         * permit coalescing. {@link RowSet#NULL_ROW_KEY} indicates there is no intervening key of interest.
          */
         private long interveningKey = RowSequence.NULL_ROW_KEY;
 
@@ -1114,8 +1114,8 @@ public final class RowSetShiftData implements Serializable, LogOutputAppendable 
 
     /**
      * This method creates two parallel RowSet structures that contain postShiftRowSet keys affected by shifts. The two
-     * RowSets have the same size. An element at position k in the first rowSet is the pre-shift key for the same row
-     * whose post-shift key is at position k in the second rowSet.
+     * RowSets have the same size. An element at position k in the first RowSet is the pre-shift key for the same row
+     * whose post-shift key is at position k in the second RowSet.
      *
      * @param postShiftRowSet The RowSet of keys that were shifted in post-shift keyspace. It should not contain rows
      *        that did not exist prior to the shift.

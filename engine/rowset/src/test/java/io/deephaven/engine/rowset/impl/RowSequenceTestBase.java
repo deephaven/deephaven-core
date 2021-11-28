@@ -515,7 +515,7 @@ public abstract class RowSequenceTestBase {
             assertChunksEqual(expectedIndices, rowSequence.asRowKeyChunk());
             // Check Ordered Ranges Chunk
             assertChunksEqual(expectedRanges, rowSequence.asRowKeyRangesChunk());
-            // Check TrackingWritableRowSet
+            // Check RowSet
             final MutableInt idx = new MutableInt(0);
             final RowSet ix = rowSequence.asRowSet();
             assertTrue(msg, ix.forEachRowKey((value) -> {

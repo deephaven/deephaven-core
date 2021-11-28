@@ -42,7 +42,7 @@ class AggregationContext {
     final String[][] inputNames;
 
     /**
-     * Does any operator require indices? See {@link IterativeChunkedAggregationOperator#requiresIndices()}.
+     * Does any operator require indices? See {@link IterativeChunkedAggregationOperator#requiresRowKeys()}.
      */
     private final boolean requiresIndices;
 
@@ -69,7 +69,7 @@ class AggregationContext {
     private final AggregationContextTransformer[] transformers;
 
     /**
-     * For a given operator rowSet, the first slot that the column exists in. If the value in rowSet oi is equal to oi,
+     * For a given operator index, the first slot that the column exists in. If the value in index oi is equal to oi,
      * then we will read from this column. If the value is not equal to oi (because it is -1 for a null column or a
      * value less than oi), we will reuse an already read value.
      */
@@ -93,9 +93,9 @@ class AggregationContext {
         this.inputColumns = inputColumns;
         this.transformers = transformers;
         this.addedBackModified = addedBackModified;
-        requiresIndices = Arrays.stream(this.operators).anyMatch(IterativeChunkedAggregationOperator::requiresIndices);
+        requiresIndices = Arrays.stream(this.operators).anyMatch(IterativeChunkedAggregationOperator::requiresRowKeys);
         requiresInputs = Arrays.stream(this.inputColumns).anyMatch(Objects::nonNull);
-        unchunkedIndices = Arrays.stream(this.operators).allMatch(IterativeChunkedAggregationOperator::unchunkedIndex);
+        unchunkedIndices = Arrays.stream(this.operators).allMatch(IterativeChunkedAggregationOperator::unchunkedRowSet);
         // noinspection unchecked
         resultColumns = merge(Arrays.stream(this.operators).map(IterativeChunkedAggregationOperator::getResultColumns)
                 .toArray(Map[]::new));
@@ -154,7 +154,7 @@ class AggregationContext {
 
     boolean requiresIndices(boolean[] columnsToProcess) {
         for (int ii = 0; ii < columnsToProcess.length; ++ii) {
-            if (operators[ii].requiresIndices()) {
+            if (operators[ii].requiresRowKeys()) {
                 return true;
             }
         }
@@ -374,7 +374,7 @@ class AggregationContext {
         final boolean[] toInitialize = new boolean[size()];
         if (requiresIndices() && upstream.shifted().nonempty()) {
             for (int ii = 0; ii < size(); ++ii) {
-                if (operators[ii].requiresIndices()) {
+                if (operators[ii].requiresRowKeys()) {
                     toInitialize[ii] = true;
                 }
             }
@@ -382,7 +382,7 @@ class AggregationContext {
 
         if (upstream.modified().isNonempty()) {
             for (int ii = 0; ii < size(); ++ii) {
-                if (operators[ii].requiresIndices()) {
+                if (operators[ii].requiresRowKeys()) {
                     toInitialize[ii] = true;
                 } else {
                     toInitialize[ii] |= modifiedColumns[ii];

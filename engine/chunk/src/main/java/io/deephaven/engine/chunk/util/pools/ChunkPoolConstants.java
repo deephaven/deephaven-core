@@ -22,10 +22,10 @@ final class ChunkPoolConstants {
     }
 
     /**
-     * Get the rowSet of the pool to remove a chunk from.
+     * Get the index of the pool to remove a chunk from.
      *
      * @param minimumChunkCapacity A lower bound on the result chunk capacity
-     * @return The pool rowSet, or -1 if no pool should be used
+     * @return The pool index, or -1 if no pool should be used
      */
     static int getPoolIndexForTake(final int minimumChunkCapacity) {
         if (minimumChunkCapacity == 0) {
@@ -40,10 +40,10 @@ final class ChunkPoolConstants {
     }
 
     /**
-     * Get the rowSet of the pool to return a chunk to.
+     * Get the index of the pool to return a chunk to.
      *
      * @param actualChunkCapacity The chunk's actual capacity
-     * @return The pool rowSet, or -1 if the chunk should not be returned to any pool
+     * @return The pool index, or -1 if the chunk should not be returned to any pool
      */
     static int getPoolIndexForGive(final int actualChunkCapacity) {
         if (Integer.bitCount(actualChunkCapacity) != 1) {

@@ -2144,11 +2144,11 @@ public class ByteNumericPrimitives {
     }
 
     /**
-     * Returns the first rowSet containing the value.
+     * Returns the first index containing the value.
      *
      * @param values values.
      * @param val value to search for.
-     * @return first rowSet containing the value or null, if the value is not present.
+     * @return first index containing the value or null, if the value is not present.
      */
     public static int firstIndexOf(byte[] values, byte val) {
         if (values == null) {
@@ -2159,11 +2159,11 @@ public class ByteNumericPrimitives {
     }
 
     /**
-     * Returns the first rowSet containing the value.
+     * Returns the first index containing the value.
      *
      * @param values values.
      * @param val value to search for.
-     * @return first rowSet containing the value or null, if the value is not present.
+     * @return first index containing the value or null, if the value is not present.
      */
     public static int firstIndexOf(ByteVector values, byte val) {
         if (values == null) {
@@ -2182,10 +2182,10 @@ public class ByteNumericPrimitives {
     }
 
     /**
-     * Returns the rowSet of the maximum value.
+     * Returns the index of the maximum value.
      *
      * @param values values.
-     * @return rowSet of the maximum value.
+     * @return index of the maximum value.
      */
     public static int indexOfMax(Byte... values) {
         if (values == null) {
@@ -2208,10 +2208,10 @@ public class ByteNumericPrimitives {
     }
 
     /**
-     * Returns the rowSet of the maximum value.
+     * Returns the index of the maximum value.
      *
      * @param values values.
-     * @return rowSet of the maximum value.
+     * @return index of the maximum value.
      */
     public static int indexOfMax(byte[] values) {
         if (values == null) {
@@ -2222,10 +2222,10 @@ public class ByteNumericPrimitives {
     }
 
     /**
-     * Returns the rowSet of the maximum value.
+     * Returns the index of the maximum value.
      *
      * @param values values.
-     * @return rowSet of the maximum value.
+     * @return index of the maximum value.
      */
     public static int indexOfMax(ByteVector values) {
         if (values == null) {
@@ -2248,10 +2248,10 @@ public class ByteNumericPrimitives {
     }
 
     /**
-     * Returns the rowSet of the minimum value.
+     * Returns the index of the minimum value.
      *
      * @param values values.
-     * @return rowSet of the minimum value.
+     * @return index of the minimum value.
      */
     public static int indexOfMin(Byte... values) {
         if (values == null) {
@@ -2274,10 +2274,10 @@ public class ByteNumericPrimitives {
     }
 
     /**
-     * Returns the rowSet of the minimum value.
+     * Returns the index of the minimum value.
      *
      * @param values values.
-     * @return rowSet of the minimum value.
+     * @return index of the minimum value.
      */
     public static int indexOfMin(byte[] values) {
         if (values == null) {
@@ -2288,10 +2288,10 @@ public class ByteNumericPrimitives {
     }
 
     /**
-     * Returns the rowSet of the minimum value.
+     * Returns the index of the minimum value.
      *
      * @param values values.
-     * @return rowSet of the minimum value.
+     * @return index of the minimum value.
      */
     public static int indexOfMin(ByteVector values) {
         if (values == null) {
@@ -2319,7 +2319,7 @@ public class ByteNumericPrimitives {
      * @param values           sorted values to search.
      * @param key              key to search for.
      * @param choiceWhenEquals algorithm used to resolve ties when performing a binary search.
-     * @return rowSet of the search key, if it is contained in the array; otherwise, the rowSet immediately before where the key would be inserted.
+     * @return index of the search key, if it is contained in the array; otherwise, the index immediately before where the key would be inserted.
      */
     public static int binSearchIndex(byte[] values, byte key, BinSearch choiceWhenEquals) {
         if (values == null) {
@@ -2335,7 +2335,7 @@ public class ByteNumericPrimitives {
      * @param values           sorted values to search.
      * @param key              key to search for.
      * @param choiceWhenEquals algorithm used to resolve ties when performing a binary search.
-     * @return rowSet of the search key, if it is contained in the array; otherwise, the rowSet immediately before where the key would be inserted.
+     * @return index of the search key, if it is contained in the array; otherwise, the index immediately before where the key would be inserted.
      */
     public static int binSearchIndex(ByteVector values, byte key, BinSearch choiceWhenEquals) {
         int index = rawBinSearchIndex(values, key, choiceWhenEquals);
@@ -2356,7 +2356,7 @@ public class ByteNumericPrimitives {
      * @param values sorted values to search.
      * @param key key to search for.
      * @param choiceWhenEquals algorithm used to resolve ties when performing a binary search.
-     * @return rowSet of the search key, if it is contained in the array; otherwise, {@code (-(insertion point) - 1)}.
+     * @return index of the search key, if it is contained in the array; otherwise, {@code (-(insertion point) - 1)}.
      */
     public static int rawBinSearchIndex(byte[] values, byte key, BinSearch choiceWhenEquals) {
         if (values == null) {
@@ -2372,7 +2372,7 @@ public class ByteNumericPrimitives {
      * @param values sorted values to search.
      * @param key key to search for.
      * @param choiceWhenEquals algorithm used to resolve ties when performing a binary search.
-     * @return rowSet of the search key, if it is contained in the array; otherwise, {@code (-(insertion point) - 1)}.
+     * @return index of the search key, if it is contained in the array; otherwise, {@code (-(insertion point) - 1)}.
      */
     public static int rawBinSearchIndex(ByteVector values, byte key, BinSearch choiceWhenEquals) {
         if (values == null || key == NULL_BYTE) {

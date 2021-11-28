@@ -81,7 +81,7 @@ public class RowSetShiftDataExpander implements SafeCloseable {
                 modified.insert(addedByShift);
             }
 
-            // remove all rows we define as added (i.e. modified rows that were actually shifted into a new rowSet)
+            // remove all rows we define as added (i.e. modified rows that were actually shifted into a new row key)
             try (final RowSet absoluteModified = update.removed().intersect(update.added())) {
                 modified.insert(absoluteModified);
             }
@@ -92,27 +92,27 @@ public class RowSetShiftDataExpander implements SafeCloseable {
     }
 
     /**
-     * Fetch the resulting rowSet of added values.
+     * Fetch the resulting RowSet of added values.
      * 
-     * @return added rowSet
+     * @return added RowSet
      */
     public RowSet getAdded() {
         return added;
     }
 
     /**
-     * Fetch the resulting rowSet of removed values.
+     * Fetch the resulting RowSet of removed values.
      * 
-     * @return removed rowSet
+     * @return removed RowSet
      */
     public RowSet getRemoved() {
         return removed;
     }
 
     /**
-     * Fetch the resulting rowSet of modified values.
+     * Fetch the resulting RowSet of modified values.
      * 
-     * @return modified rowSet
+     * @return modified RowSet
      */
     public RowSet getModified() {
         return modified;
@@ -143,7 +143,7 @@ public class RowSetShiftDataExpander implements SafeCloseable {
      * Perform backwards compatible validation checks.
      * 
      * @param update The update originally passed at construction time, used only for logging debug info on error
-     * @param sourceRowSet The underlying rowSet that apply to added/removed/modified
+     * @param sourceRowSet The underlying RowSet that applies to added/removed/modified
      */
     public void validate(final TableUpdate update, final TrackingRowSet sourceRowSet) {
         final boolean previousContainsAdds;

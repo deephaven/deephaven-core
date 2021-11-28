@@ -132,7 +132,7 @@ class StaticChunkedCrossJoinStateManager
     private final ArrayBackedColumnSource<?> [] overflowKeySources;
     // the location of the next key in an overflow bucket
     private final IntegerArraySource overflowOverflowLocationSource = new IntegerArraySource();
-    // the overflow buckets for the right TrackingWritableRowSet
+    // the overflow buckets for the state source
     @HashTableAnnotations.OverflowStateColumnSource
     // @StateColumnSourceType@ from \QObjectArraySource<TrackingWritableRowSet>\E
     private final ObjectArraySource<TrackingWritableRowSet> overflowRightRowSetSource
@@ -168,8 +168,8 @@ class StaticChunkedCrossJoinStateManager
                                               // endregion constructor arguments
     ) {
         // region super
-        // on a static build, we can use minimum number of right bits since we compute the largest right rowSet on construction
-        // and the left doesn't tick; so we will do rowSet related work exactly once
+        // on a static build, we can use minimum number of right bits since we compute the largest right RowSet on
+        // construction and the left doesn't tick; so we will do RowSet related work exactly once
         super(1);
         // endregion super
         keyColumnCount = tableKeySources.length;
@@ -1328,7 +1328,7 @@ class StaticChunkedCrossJoinStateManager
         // the chunk of positions within our table
         final WritableLongChunk<RowKeys> tableLocationsChunk;
 
-        // the chunk of right indices that we read from the hash table, the empty right rowSet is used as a sentinel that the
+        // the chunk of right indices that we read from the hash table, the empty right index is used as a sentinel that the
         // state exists; otherwise when building from the left it is always null
         // @WritableStateChunkType@ from \QWritableObjectChunk<TrackingWritableRowSet,Values>\E
         final WritableObjectChunk<TrackingWritableRowSet,Values> workingStateEntries;

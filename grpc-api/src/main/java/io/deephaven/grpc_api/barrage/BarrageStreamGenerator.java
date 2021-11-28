@@ -498,7 +498,7 @@ public class BarrageStreamGenerator implements
 
         final int rowsAddedOffset;
         if (isSnapshot && !view.isInitialSnapshot) {
-            // client's don't need/want to receive the full rowSet on every snapshot
+            // client's don't need/want to receive the full RowSet on every snapshot
             rowsAddedOffset = EmptyIndexGenerator.INSTANCE.addToFlatBuffer(metadata);
         } else {
             rowsAddedOffset = rowsAdded.addToFlatBuffer(metadata);
@@ -592,7 +592,7 @@ public class BarrageStreamGenerator implements
         }
 
         /**
-         * Appends the intersection of the viewport and the originally provided rowSet.
+         * Appends the intersection of the viewport and the originally provided RowSet.
          *
          * @param viewport the key-space version of the viewport
          * @param builder the flatbuffer builder

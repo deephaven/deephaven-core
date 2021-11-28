@@ -37,10 +37,10 @@ public class DeferredColumnRegionObject<DATA_TYPE, ATTR extends Any>
     }
 
     @Override
-    public boolean gatherDictionaryValuesIndex(@NotNull final RowSet.SearchIterator keysToVisit,
-                                               @NotNull final RowSequence.Iterator knownKeys,
-                                               @NotNull final RowSetBuilderSequential sequentialBuilder) {
-        return getResultRegion().gatherDictionaryValuesIndex(keysToVisit, knownKeys, sequentialBuilder);
+    public boolean gatherDictionaryValuesRowSet(@NotNull final RowSet.SearchIterator keysToVisit,
+                                                @NotNull final RowSequence.Iterator knownKeys,
+                                                @NotNull final RowSetBuilderSequential sequentialBuilder) {
+        return getResultRegion().gatherDictionaryValuesRowSet(keysToVisit, knownKeys, sequentialBuilder);
     }
 
     @Override

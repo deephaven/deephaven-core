@@ -26,7 +26,7 @@ public class TableUpdateImpl implements TableUpdate {
 
     public ModifiedColumnSet modifiedColumnSet;
 
-    // Cached version of prevModified rowSet.
+    // Cached version of prevModified RowSet.
     private volatile WritableRowSet prevModified;
 
     // Field updater for refCount, so we can avoid creating an {@link java.util.concurrent.atomic.AtomicInteger} for

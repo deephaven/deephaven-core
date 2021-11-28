@@ -125,7 +125,7 @@ public class KeyedArrayBackedMutableTable extends BaseArrayBackedMutableTable {
     }
 
     @Override
-    protected void processPendingTable(Table table, boolean allowEdits, IndexChangeRecorder indexChangeRecorder,
+    protected void processPendingTable(Table table, boolean allowEdits, RowSetChangeRecorder rowSetChangeRecorder,
             Consumer<String> errorNotifier) {
         final ChunkSource<Attributes.Values> keySource = makeKeySource(table);
         final int chunkCapacity = table.intSize();
@@ -151,10 +151,10 @@ public class KeyedArrayBackedMutableTable extends BaseArrayBackedMutableTable {
                     } else if (isDeletedRowNumber(rowNumber)) {
                         rowNumber = deletedRowNumberToRowNumber(rowNumber);
                         keyToRowMap.put(key, rowNumber);
-                        indexChangeRecorder.addIndex(rowNumber);
+                        rowSetChangeRecorder.addRowKey(rowNumber);
                         destinations.set(ii, rowNumber);
                     } else if (allowEdits) {
-                        indexChangeRecorder.modifyIndex(rowNumber);
+                        rowSetChangeRecorder.modifyRowKey(rowNumber);
                         destinations.set(ii, rowNumber);
                     } else {
                         // invalid edit
@@ -173,7 +173,7 @@ public class KeyedArrayBackedMutableTable extends BaseArrayBackedMutableTable {
             }
 
             for (long ii = nextRow; ii < rowToInsert; ++ii) {
-                indexChangeRecorder.addIndex(ii);
+                rowSetChangeRecorder.addRowKey(ii);
             }
             nextRow = rowToInsert;
 
@@ -196,7 +196,7 @@ public class KeyedArrayBackedMutableTable extends BaseArrayBackedMutableTable {
     }
 
     @Override
-    protected void processPendingDelete(Table table, IndexChangeRecorder indexChangeRecorder) {
+    protected void processPendingDelete(Table table, RowSetChangeRecorder rowSetChangeRecorder) {
         final ChunkSource<Attributes.Values> keySource = makeKeySource(table);
         final int chunkCapacity = table.intSize();
 
@@ -215,7 +215,7 @@ public class KeyedArrayBackedMutableTable extends BaseArrayBackedMutableTable {
                     final Object key = boxed.get(ii);
                     long rowNumber = keyToRowMap.get(key);
                     if (rowNumber != keyToRowMap.getNoEntryValue() && !isDeletedRowNumber(rowNumber)) {
-                        indexChangeRecorder.removeIndex(rowNumber);
+                        rowSetChangeRecorder.removeRowKey(rowNumber);
                         destinations.add(rowNumber);
                         keyToRowMap.put(key, rowNumberToDeletedRowNumber(rowNumber));
                     }

@@ -24,17 +24,17 @@ public class FormulaTestUtil {
     static final int[] BASE_VALUES = new int[] {0, 65, QueryConstants.NULL_INT};
     static final int QUERYSCOPE_OBJ_BASE_VALUE = 42;
     /**
-     * The rowSet of the row (within {@link #BASE_VALUES} that contains zeroes.
+     * The index of the row (within {@link #BASE_VALUES} that contains zeroes.
      */
     static final int ZERO_ROW_INDEX = 0;
     /**
-     * The rowSet of the row (within {@link #BASE_VALUES} that contains null values.
+     * The index of the row (within {@link #BASE_VALUES} that contains null values.
      */
     static final int NULL_ROW_INDEX = 2;
     public static QueryScope pythonScope;
 
     /**
-     * Cast {@code BASE_VALUES[rowSet]} to the appropriate primitive type, then box it and return it.
+     * Cast {@code BASE_VALUES[index]} to the appropriate primitive type, then box it and return it.
      */
     @SuppressWarnings("RedundantCast")
     static Object getBoxedBaseVal(int index, Class<?> type) {

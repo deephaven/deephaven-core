@@ -61,7 +61,7 @@ public class TableLocationStateHolder implements TableLocationState {
     /**
      * Set all state values.
      *
-     * @param rowSet The new rowSet. Ownership passes to this holder; callers should {@link RowSet#copy() copy} it if
+     * @param rowSet The new RowSet. Ownership passes to this holder; callers should {@link RowSet#copy() copy} it if
      *        necessary.
      * @param lastModifiedTimeMillis The new modification time
      * @return Whether any of the values changed

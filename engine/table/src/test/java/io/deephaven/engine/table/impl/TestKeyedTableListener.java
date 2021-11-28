@@ -171,7 +171,7 @@ public class TestKeyedTableListener extends BaseCachedJMockTestCase {
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             final RowSet newModified = TstUtils.i(2);
-            // Add to table on an existing rowSet is a modify
+            // Add to table on an existing row key is a modify
             TstUtils.addToTable(table, newModified, TstUtils.c("Key1", "C"), TstUtils.c("Key2", 4),
                     TstUtils.c("Data", 6.0));
             table.notifyListeners(noAdded.copy(), noRemoved.copy(), newModified);
@@ -212,7 +212,7 @@ public class TestKeyedTableListener extends BaseCachedJMockTestCase {
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             final RowSet newModified = TstUtils.i(1, 2);
-            // Add to table on an existing rowSet is a modify
+            // Add to table on an existing row key is a modify
             TstUtils.addToTable(table, newModified, TstUtils.c("Key1", "C", "D"), TstUtils.c("Key2", 3, 4),
                     TstUtils.c("Data", 3.0, 4.0));
             table.notifyListeners(noAdded.copy(), noRemoved.copy(), newModified);

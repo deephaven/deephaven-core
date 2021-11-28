@@ -46,7 +46,7 @@ public class StreamFirstChunkedOperator extends BaseStreamFirstOrLastChunkedOper
     }
 
     @Override
-    public final boolean unchunkedIndex() {
+    public final boolean unchunkedRowSet() {
         return true;
     }
 
@@ -64,7 +64,7 @@ public class StreamFirstChunkedOperator extends BaseStreamFirstOrLastChunkedOper
     @Override
     public void addChunk(final BucketedContext context, // Unused
             final Chunk<? extends Values> values, // Unused
-            @NotNull final LongChunk<? extends RowKeys> inputIndices,
+            @NotNull final LongChunk<? extends RowKeys> inputRowKeys,
             @NotNull final IntChunk<RowKeys> destinations,
             @NotNull final IntChunk<ChunkPositions> startPositions,
             final IntChunk<ChunkLengths> length, // Unused
@@ -72,7 +72,7 @@ public class StreamFirstChunkedOperator extends BaseStreamFirstOrLastChunkedOper
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
             final long destination = destinations.get(startPosition);
-            if (maybeAssignFirst(destination, inputIndices.get(startPosition))) {
+            if (maybeAssignFirst(destination, inputRowKeys.get(startPosition))) {
                 stateModified.set(ii, true);
             }
         }
@@ -82,18 +82,18 @@ public class StreamFirstChunkedOperator extends BaseStreamFirstOrLastChunkedOper
     public boolean addChunk(final SingletonContext context, // Unused
             final int chunkSize,
             final Chunk<? extends Values> values, // Unused
-            @NotNull final LongChunk<? extends RowKeys> inputIndices,
+            @NotNull final LongChunk<? extends RowKeys> inputRowKeys,
             final long destination) {
         if (chunkSize == 0) {
             return false;
         }
-        return maybeAssignFirst(destination, inputIndices.get(0));
+        return maybeAssignFirst(destination, inputRowKeys.get(0));
     }
 
     @Override
-    public boolean addIndex(final SingletonContext context,
-            @NotNull final RowSet rowSet,
-            final long destination) {
+    public boolean addRowSet(final SingletonContext context,
+                             @NotNull final RowSet rowSet,
+                             final long destination) {
         if (rowSet.isEmpty()) {
             return false;
         }

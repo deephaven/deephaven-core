@@ -27,8 +27,8 @@ import java.util.Map;
  * The table will run by regenerating the full values (using the tableGenerator Function passed in). The resultant
  * table's values are copied into the result table and appropriate listener notifications are fired.
  *
- * All of the rows in the output table are modified on every tick, even if no actual changes occurred. The output table
- * also has a contiguous rowSet.
+ * All the rows in the output table are modified on every tick, even if no actual changes occurred. The output table
+ * also has a contiguous RowSet.
  *
  * The generator function must produce a V2 table, and the table definition must not change between invocations.
  *

@@ -119,9 +119,9 @@ public class StreamToTableAdapter implements SafeCloseable, StreamConsumer, Runn
     }
 
     /**
-     * Return the ChunkType for a given column rowSet.
+     * Return the ChunkType for a given column index.
      *
-     * @param idx the column rowSet to get the ChunkType for
+     * @param idx the column index to get the ChunkType for
      * @return the ChunkType for the specified column
      */
     public ChunkType chunkTypeForIndex(int idx) {
@@ -291,7 +291,7 @@ public class StreamToTableAdapter implements SafeCloseable, StreamConsumer, Runn
         }
 
         streamPublisher.flush();
-        // Switch columns, update rowSet, deliver notification
+        // Switch columns, update RowSet, deliver notification
 
         final long oldSize = rowSet.size();
         final long newSize;

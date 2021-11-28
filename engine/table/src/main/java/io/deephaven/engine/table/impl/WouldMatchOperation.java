@@ -391,7 +391,7 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
         }
 
         /**
-         * Update the internal rowSet with the upstream {@link TableUpdateImpl}. If the column was recomputed, return an
+         * Update the internal RowSet with the upstream {@link TableUpdateImpl}. If the column was recomputed, return an
          * optional containing rows that were modified.
          *
          * @param added the set of added rows in the update
@@ -421,7 +421,7 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
                 source.remove(modPreShift);
             }
 
-            // Shift the rowSet
+            // Shift the RowSet
             shift.apply(source);
 
             if (doRecompute) {
@@ -456,7 +456,7 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
                 final WritableRowSet refiltered =
                         toClose.add(filter.filter(table.getRowSet().copy(), table.getRowSet(), table, false));
 
-                // This is just Xor, but there is no TrackingWritableRowSet op for that
+                // This is just Xor, but there is no RowSet op for that
                 final RowSet newlySet = toClose.add(refiltered.minus(source));
                 final RowSet justCleared = toClose.add(source.minus(refiltered));
                 rowsChanged = toClose.add(newlySet.union(justCleared))

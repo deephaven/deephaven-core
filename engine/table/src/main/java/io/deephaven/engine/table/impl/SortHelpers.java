@@ -212,7 +212,7 @@ public class SortHelpers {
     static private final SortMapping EMPTY_SORT_MAPPING = new ArraySortMapping(CollectionUtil.ZERO_LENGTH_LONG_ARRAY);
 
     /**
-     * Note that if usePrev is true, then rowSetToSort is the previous rowSet; not the current rowSet, and we should not
+     * Note that if usePrev is true, then rowSetToSort is the previous RowSet; not the current RowSet, and we should not
      * need to call prevCopy.
      */
     static SortMapping getSortedKeys(SortingOrder[] order, ColumnSource<Comparable<?>>[] columnsToSortBy,
@@ -221,7 +221,7 @@ public class SortHelpers {
     }
 
     /**
-     * Note that if usePrev is true, then rowSetToSort is the previous rowSet; not the current rowSet, and we should not
+     * Note that if usePrev is true, then rowSetToSort is the previous RowSet; not the current RowSet, and we should not
      * need to call prevCopy.
      */
     static SortMapping getSortedKeys(SortingOrder[] order, ColumnSource<Comparable<?>>[] columnsToSortBy,
@@ -420,7 +420,7 @@ public class SortHelpers {
             }
 
             // Fill a chunk that is Writable, and does not have an ordered tag with the row keys that we are sorting,
-            // the RowSet would do something very similar inside of
+            // the RowSet would do something very similar inside
             // io.deephaven.engine.table.impl.util.RowSequence.asRowKeyChunk; but provides a LongChunk<OrderedRowKeys>
             // as its return.
             final long[] rowKeysArray = new long[sortSize];

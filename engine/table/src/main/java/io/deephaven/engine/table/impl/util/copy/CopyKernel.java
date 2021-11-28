@@ -50,16 +50,16 @@ public interface CopyKernel {
 
     class Utils {
         /**
-         * Returns the rowSet of the first bit that is set to {@code true} that occurs on or after the specified
-         * starting rowSet and up to but not including the specified word rowSet.
+         * Returns the index of the first bit that is set to {@code true} that occurs on or after the specified
+         * starting index and up to but not including the specified word rowSet.
          * <p>
          * If no such bit exists then {@code endIndex} is returned.
          *
          * @param words the bitset data array
-         * @param fromIndex the rowSet to start checking from (inclusive)
-         * @param endIndex the rowSet to stop checking from (exclusive)
+         * @param fromIndex the index to start checking from (inclusive)
+         * @param endIndex the index to stop checking from (exclusive)
          * @param flipWords if true return first false bit set instead of the first true bit set
-         * @return the rowSet of the next set bit, any value {@code >= endIndex} is returned if no such bit exists
+         * @return the index of the next set bit, any value {@code >= endIndex} is returned if no such bit exists
          */
         static int nextSetBit(long[] words, int fromIndex, int endIndex, boolean flipWords) {
             if (fromIndex >= endIndex) {

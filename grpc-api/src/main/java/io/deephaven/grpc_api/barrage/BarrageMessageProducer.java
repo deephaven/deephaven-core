@@ -248,7 +248,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
     private final ColumnSource<?>[] sourceColumns; // might be reinterpreted
     private final BitSet objectColumns = new BitSet();
 
-    // We keep this rowSet in-sync with deltas being propagated to subscribers.
+    // We keep this RowSet in-sync with deltas being propagated to subscribers.
     private final WritableRowSet propagationRowSet;
 
     /**
@@ -264,7 +264,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
     private final WritableColumnSource<?>[] deltaColumns;
 
     /**
-     * This is the last step on which the UGP-synced rowSet was updated. This is used only for consistency checking
+     * This is the last step on which the UGP-synced RowSet was updated. This is used only for consistency checking
      * between our initial creation and subsequent updates.
      */
     private long lastIndexClockStep = 0;
@@ -658,14 +658,14 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
             }
         } else {
             // we have new viewport subscriptions and we are actively fetching snapshots so there is no data to record
-            // however we must record the rowSet updates or else the propagationRowSet will be out of sync
+            // however we must record the RowSet updates or else the propagationRowSet will be out of sync
             addsToRecord = RowSetFactory.empty();
             modsToRecord = RowSetFactory.empty();
         }
 
         // Note: viewports are in position space, inserted and removed rows may cause the keyspace for a given viewport
-        // to shift. Let's compute which rows are being scoped into view. If current rowSet is empty, we have nothing to
-        // store. If prev rowSet is empty, all rows are new and are already in addsToRecord.
+        // to shift. Let's compute which rows are being scoped into view. If current RowSet is empty, we have nothing to
+        // store. If prev RowSet is empty, all rows are new and are already in addsToRecord.
         if (activeViewport != null && (upstream.added().isNonempty() || upstream.removed().isNonempty())
                 && rowSet.isNonempty()
                 && rowSet.sizePrev() > 0) {
@@ -1488,7 +1488,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
             }
         }
 
-        // Update our propagation rowSet.
+        // Update our propagation RowSet.
         propagationRowSet.remove(downstream.rowsRemoved);
         downstream.shifted.apply(propagationRowSet);
         propagationRowSet.insert(downstream.rowsAdded);

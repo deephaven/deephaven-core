@@ -239,7 +239,7 @@ public class AggregationHelper {
 
         // TODO: Consider selecting the hash inputTable sources, in order to truncate them to size and improve density
 
-        // Compute result rowSet and redirection to hash slots
+        // Compute result RowSet and redirection to hash slots
         final TrackingRowSet resultRowSet = RowSetFactory.flat(numGroups).toTracking();
         final WritableRowRedirection resultIndexToHashSlot =
                 new IntColumnSourceWritableRowRedirection(groupIndexToHashSlot);
@@ -309,7 +309,7 @@ public class AggregationHelper {
                                 updateTracker);
 
                     }
-                    // Compute result rowSet and redirection to hash slots
+                    // Compute result RowSet and redirection to hash slots
                     final WritableRowRedirection resultIndexToHashSlot =
                             WritableRowRedirectionLockFree.FACTORY.createRowRedirection(updateTracker.size());
                     final TrackingWritableRowSet resultRowSet = updateTracker.applyAddsAndMakeInitialRowSet(

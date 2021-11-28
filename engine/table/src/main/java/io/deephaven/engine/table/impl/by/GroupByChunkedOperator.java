@@ -59,13 +59,13 @@ public final class GroupByChunkedOperator implements IterativeChunkedAggregation
 
     @Override
     public void addChunk(final BucketedContext bucketedContext, final Chunk<? extends Values> values,
-            @NotNull final LongChunk<? extends RowKeys> inputIndices,
+            @NotNull final LongChunk<? extends RowKeys> inputRowKeys,
             @NotNull final IntChunk<RowKeys> destinations, @NotNull final IntChunk<ChunkPositions> startPositions,
             @NotNull final IntChunk<ChunkLengths> length, @NotNull final WritableBooleanChunk<Values> stateModified) {
         Assert.eqNull(values, "values");
         someKeyHasAddsOrRemoves |= startPositions.size() > 0;
         // noinspection unchecked
-        final LongChunk<OrderedRowKeys> inputIndicesAsOrdered = (LongChunk<OrderedRowKeys>) inputIndices;
+        final LongChunk<OrderedRowKeys> inputIndicesAsOrdered = (LongChunk<OrderedRowKeys>) inputRowKeys;
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
             final int runLength = length.get(ii);
@@ -78,13 +78,13 @@ public final class GroupByChunkedOperator implements IterativeChunkedAggregation
 
     @Override
     public void removeChunk(final BucketedContext bucketedContext, final Chunk<? extends Values> values,
-            @NotNull final LongChunk<? extends RowKeys> inputIndices,
+            @NotNull final LongChunk<? extends RowKeys> inputRowKeys,
             @NotNull final IntChunk<RowKeys> destinations, @NotNull final IntChunk<ChunkPositions> startPositions,
             @NotNull final IntChunk<ChunkLengths> length, @NotNull final WritableBooleanChunk<Values> stateModified) {
         Assert.eqNull(values, "values");
         someKeyHasAddsOrRemoves |= startPositions.size() > 0;
         // noinspection unchecked
-        final LongChunk<OrderedRowKeys> inputIndicesAsOrdered = (LongChunk<OrderedRowKeys>) inputIndices;
+        final LongChunk<OrderedRowKeys> inputIndicesAsOrdered = (LongChunk<OrderedRowKeys>) inputRowKeys;
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
             final int runLength = length.get(ii);
@@ -98,7 +98,7 @@ public final class GroupByChunkedOperator implements IterativeChunkedAggregation
     @Override
     public void modifyChunk(final BucketedContext bucketedContext, final Chunk<? extends Values> previousValues,
             final Chunk<? extends Values> newValues,
-            @NotNull final LongChunk<? extends RowKeys> postShiftIndices,
+            @NotNull final LongChunk<? extends RowKeys> postShiftRowKeys,
             @NotNull final IntChunk<RowKeys> destinations, @NotNull final IntChunk<ChunkPositions> startPositions,
             @NotNull final IntChunk<ChunkLengths> length, @NotNull final WritableBooleanChunk<Values> stateModified) {
         // We have no inputs, so we should never get here.
@@ -108,16 +108,16 @@ public final class GroupByChunkedOperator implements IterativeChunkedAggregation
     @Override
     public void shiftChunk(final BucketedContext bucketedContext, final Chunk<? extends Values> previousValues,
             final Chunk<? extends Values> newValues,
-            @NotNull final LongChunk<? extends RowKeys> preShiftIndices,
-            @NotNull final LongChunk<? extends RowKeys> postShiftIndices,
+            @NotNull final LongChunk<? extends RowKeys> preShiftRowKeys,
+            @NotNull final LongChunk<? extends RowKeys> postShiftRowKeys,
             @NotNull final IntChunk<RowKeys> destinations, @NotNull final IntChunk<ChunkPositions> startPositions,
             @NotNull final IntChunk<ChunkLengths> length, @NotNull final WritableBooleanChunk<Values> stateModified) {
         Assert.eqNull(previousValues, "previousValues");
         Assert.eqNull(newValues, "newValues");
         // noinspection unchecked
-        final LongChunk<OrderedRowKeys> preShiftIndicesAsOrdered = (LongChunk<OrderedRowKeys>) preShiftIndices;
+        final LongChunk<OrderedRowKeys> preShiftIndicesAsOrdered = (LongChunk<OrderedRowKeys>) preShiftRowKeys;
         // noinspection unchecked
-        final LongChunk<OrderedRowKeys> postShiftIndicesAsOrdered = (LongChunk<OrderedRowKeys>) postShiftIndices;
+        final LongChunk<OrderedRowKeys> postShiftIndicesAsOrdered = (LongChunk<OrderedRowKeys>) postShiftRowKeys;
 
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
@@ -129,10 +129,10 @@ public final class GroupByChunkedOperator implements IterativeChunkedAggregation
     }
 
     @Override
-    public void modifyIndices(final BucketedContext context,
-            @NotNull final LongChunk<? extends RowKeys> inputIndices,
-            @NotNull final IntChunk<RowKeys> destinations, @NotNull final IntChunk<ChunkPositions> startPositions,
-            @NotNull final IntChunk<ChunkLengths> length, @NotNull final WritableBooleanChunk<Values> stateModified) {
+    public void modifyRowKeys(final BucketedContext context,
+                              @NotNull final LongChunk<? extends RowKeys> inputRowKeys,
+                              @NotNull final IntChunk<RowKeys> destinations, @NotNull final IntChunk<ChunkPositions> startPositions,
+                              @NotNull final IntChunk<ChunkLengths> length, @NotNull final WritableBooleanChunk<Values> stateModified) {
         if (!stepValuesModified) {
             return;
         }
@@ -142,17 +142,17 @@ public final class GroupByChunkedOperator implements IterativeChunkedAggregation
 
     @Override
     public boolean addChunk(final SingletonContext singletonContext, final int chunkSize,
-            final Chunk<? extends Values> values,
-            @NotNull final LongChunk<? extends RowKeys> inputIndices, final long destination) {
+                            final Chunk<? extends Values> values,
+                            @NotNull final LongChunk<? extends RowKeys> inputRowKeys, final long destination) {
         Assert.eqNull(values, "values");
         someKeyHasAddsOrRemoves |= chunkSize > 0;
         // noinspection unchecked
-        addChunk((LongChunk<OrderedRowKeys>) inputIndices, 0, chunkSize, destination);
+        addChunk((LongChunk<OrderedRowKeys>) inputRowKeys, 0, chunkSize, destination);
         return true;
     }
 
     @Override
-    public boolean addIndex(SingletonContext context, RowSet rowSet, long destination) {
+    public boolean addRowSet(SingletonContext context, RowSet rowSet, long destination) {
         someKeyHasAddsOrRemoves |= rowSet.isNonempty();
         addRowsToSlot(rowSet, destination);
         return true;
@@ -160,19 +160,19 @@ public final class GroupByChunkedOperator implements IterativeChunkedAggregation
 
     @Override
     public boolean removeChunk(final SingletonContext singletonContext, final int chunkSize,
-            final Chunk<? extends Values> values,
-            @NotNull final LongChunk<? extends RowKeys> inputIndices, final long destination) {
+                               final Chunk<? extends Values> values,
+                               @NotNull final LongChunk<? extends RowKeys> inputRowKeys, final long destination) {
         Assert.eqNull(values, "values");
         someKeyHasAddsOrRemoves |= chunkSize > 0;
         // noinspection unchecked
-        removeChunk((LongChunk<OrderedRowKeys>) inputIndices, 0, chunkSize, destination);
+        removeChunk((LongChunk<OrderedRowKeys>) inputRowKeys, 0, chunkSize, destination);
         return true;
     }
 
     @Override
     public boolean modifyChunk(final SingletonContext singletonContext, final int chunkSize,
             final Chunk<? extends Values> previousValues, final Chunk<? extends Values> newValues,
-            @NotNull final LongChunk<? extends RowKeys> postShiftIndices,
+            @NotNull final LongChunk<? extends RowKeys> postShiftRowKeys,
             final long destination) {
         // We have no inputs, so we should never get here.
         throw new IllegalStateException();
@@ -181,25 +181,25 @@ public final class GroupByChunkedOperator implements IterativeChunkedAggregation
     @Override
     public boolean shiftChunk(final SingletonContext singletonContext, final Chunk<? extends Values> previousValues,
             final Chunk<? extends Values> newValues,
-            @NotNull final LongChunk<? extends RowKeys> preInputIndices,
-            @NotNull final LongChunk<? extends RowKeys> postInputIndices,
+            @NotNull final LongChunk<? extends RowKeys> preShiftRowKeys,
+            @NotNull final LongChunk<? extends RowKeys> postShiftRowKeys,
             final long destination) {
         Assert.eqNull(previousValues, "previousValues");
         Assert.eqNull(newValues, "newValues");
         // noinspection unchecked
-        doShift((LongChunk<OrderedRowKeys>) preInputIndices, (LongChunk<OrderedRowKeys>) postInputIndices, 0,
-                preInputIndices.size(), destination);
+        doShift((LongChunk<OrderedRowKeys>) preShiftRowKeys, (LongChunk<OrderedRowKeys>) postShiftRowKeys, 0,
+                preShiftRowKeys.size(), destination);
         return false;
     }
 
     @Override
-    public boolean modifyIndices(final SingletonContext context, @NotNull final LongChunk<? extends RowKeys> indices,
-            final long destination) {
+    public boolean modifyRowKeys(final SingletonContext context, @NotNull final LongChunk<? extends RowKeys> rowKeys,
+                                 final long destination) {
         if (!stepValuesModified) {
             return false;
         }
-        someKeyHasModifies |= indices.size() > 0;
-        return indices.size() != 0;
+        someKeyHasModifies |= rowKeys.size() > 0;
+        return rowKeys.size() != 0;
     }
 
     private void addChunk(@NotNull final LongChunk<OrderedRowKeys> indices, final int start, final int length,
@@ -344,12 +344,12 @@ public final class GroupByChunkedOperator implements IterativeChunkedAggregation
     }
 
     @Override
-    public boolean requiresIndices() {
+    public boolean requiresRowKeys() {
         return true;
     }
 
     @Override
-    public boolean unchunkedIndex() {
+    public boolean unchunkedRowSet() {
         return true;
     }
 }

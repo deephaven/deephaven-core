@@ -74,7 +74,7 @@ public abstract class ValueTracker {
 
     // May contain any non-negative value, or NULL_LONG if there is no value. We track NULL_LONG in cases where we
     // aren't tracking which indexes are null, so we know that the entire bucket contains nulls and we should only
-    // include first/last row key in the bucket's total rowSet. This being null is not the same as the value being
+    // include first/last row key in the bucket's total row set. This being null is not the same as the value being
     // invalid.
     private final LongArraySource indexes = new LongArraySource();
 
@@ -104,7 +104,7 @@ public abstract class ValueTracker {
      *               the actual position in the underlying array sources
      * @param rowKey the row key in the original table of the specified value. If the current given value is interesting
      *                 in some way, record this using setMinIndex/setMaxIndex so we can construct the full downsampled
-     *                 table rowSet later
+     *                 table row set later
      * @param valuesChunk the chunk that we're currently examining
      * @param indexInChunk the index in the chunk that we're currently examining
      */
@@ -115,7 +115,7 @@ public abstract class ValueTracker {
      * considered to be interesting, mark this offset as invalid, so that we can rescan later to find the next
      * interesting value.
      * @param offset the offset of the bucket state to use
-     * @param rowKey the rowSet in the original table.
+     * @param rowKey the row key in the original table.
      */
     public final void remove(final int offset, final long rowKey) {
         if (rowKey == maxIndex(offset)) {
@@ -147,7 +147,7 @@ public abstract class ValueTracker {
      *               the actual position in the underlying array sources
      * @param rowKey the row key in the original table of the specified value. If the current given value is interesting
      *                 in some way, record this using setMinIndex/setMaxIndex so we can construct the full downsampled
-     *                 table rowSet later
+     *                 table row set later
      * @param valuesChunk the chunk that we're currently examining
      * @param chunkIndex the index in the chunk that we're currently examining
      */

@@ -984,15 +984,15 @@ public class AsOfJoinHelper {
             for (int slotIndex = 0; slotIndex < slotCount; ++slotIndex) {
                 final long slot = slots.getLong(slotIndex);
 
-                // if either initial state is empty, we would prefer to leave things as a rowSet rather than process
+                // if either initial state is empty, we would prefer to leave things as a RowSet rather than process
                 // them into an ssa
                 final byte state = asOfJoinStateManager.getState(slot);
-                if ((state
-                        & RightIncrementalChunkedAsOfJoinStateManager.ENTRY_RIGHT_MASK) == RightIncrementalChunkedAsOfJoinStateManager.ENTRY_RIGHT_IS_EMPTY) {
+                if ((state & RightIncrementalChunkedAsOfJoinStateManager.ENTRY_RIGHT_MASK)
+                        == RightIncrementalChunkedAsOfJoinStateManager.ENTRY_RIGHT_IS_EMPTY) {
                     continue;
                 }
-                if ((state
-                        & RightIncrementalChunkedAsOfJoinStateManager.ENTRY_LEFT_MASK) == RightIncrementalChunkedAsOfJoinStateManager.ENTRY_LEFT_IS_EMPTY) {
+                if ((state & RightIncrementalChunkedAsOfJoinStateManager.ENTRY_LEFT_MASK)
+                        == RightIncrementalChunkedAsOfJoinStateManager.ENTRY_LEFT_IS_EMPTY) {
                     continue;
                 }
 

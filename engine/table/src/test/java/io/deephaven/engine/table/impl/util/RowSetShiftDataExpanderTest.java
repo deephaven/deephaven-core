@@ -18,8 +18,8 @@ public class RowSetShiftDataExpanderTest {
 
     /**
      * These tests names have a few qualities worth defining: - Major Shift: shift with no overlap in keyspace before
-     * and after (i.e. modified rowSet from shift alone is empty) - Minor Shift: shift with overlap in keyspace before
-     * and after (i.e. modified rowSet from shift alone is non-empty) - Inner Shift: shift occurs with valid elements
+     * and after (i.e. modified RowSet from shift alone is empty) - Minor Shift: shift with overlap in keyspace before
+     * and after (i.e. modified RowSet from shift alone is non-empty) - Inner Shift: shift occurs with valid elements
      * below and above keyspace both before and after - NoAdd / NoRm: Other than the shift, either the added or removed
      * (respectively) indexes will be empty. - WithGaps: There will be a gap on the leading edges of the shift. (need to
      * carefully categorize items near gap) - Modified Inner/Outer: Rows inside/outside of a shift were modified. -
@@ -493,7 +493,7 @@ public class RowSetShiftDataExpanderTest {
     }
 
     /**
-     * 1. Add initial rowSet state to {@code sourceRowSet}. 2. Setup added/removed/modified/shifted as inputs to
+     * 1. Add initial RowSet state to {@code sourceRowSet}. 2. Setup added/removed/modified/shifted as inputs to
      * RowSetShiftDataExpander. 3. Modify expected output ranges to expectAdded / expectRemoved / expectModified. 4.
      * Profit by letting @Before / @After clear context and run validate automagically.
      */

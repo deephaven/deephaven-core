@@ -215,7 +215,7 @@ public class LongPrimitives {
      *
      * @param index index of the value to return.
      * @param values values.
-     * @return nth value from the array or null, if the rowSet is outside of the array's rowSet range.
+     * @return nth value from the array or null, if the index is outside of the array's index range.
      */
     static public long nth(int index, LongVector values){
         if(index < 0 || index >= values.size()){
@@ -230,7 +230,7 @@ public class LongPrimitives {
      *
      * @param index index of the value to return.
      * @param values values.
-     * @return nth value from the array or null, if the rowSet is outside of the array's rowSet range.
+     * @return nth value from the array or null, if the index is outside of the array's index range.
      */
     static public long nth(int index, long[] values){
         return nth(index, array(values));

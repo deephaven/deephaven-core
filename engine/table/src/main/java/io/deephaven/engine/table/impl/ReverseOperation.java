@@ -24,7 +24,7 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
     private QueryTable resultTable;
     private ModifiedColumnSet.Transformer mcsTransformer;
 
-    // minimum pivot is rowSet container size -- this guarantees that we only generate container shifts
+    // minimum pivot is RowSet container size -- this guarantees that we only generate container shifts
     private static final long MINIMUM_PIVOT = UnionRedirection.CHUNK_MULTIPLE;
     // since we are using highest one bit, this should be a power of two
     private static final int PIVOT_GROWTH_FACTOR = 4;
@@ -124,7 +124,7 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
         downstream.removed = transform(upstream.removed());
         rowSet.remove(downstream.removed());
 
-        // transform shifted and apply to our rowSet
+        // transform shifted and apply to our RowSet
         final long newShift =
                 (parentRowSet.lastRowKey() > pivotPoint) ? computePivot(parentRowSet.lastRowKey()) - pivotPoint : 0;
         if (upstream.shifted().nonempty() || newShift > 0) {
@@ -223,20 +223,20 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
     }
 
     /**
-     * Transform an outer (reversed) rowSet to the inner (unreversed) rowSet, or vice versa.
+     * Transform an outer (reversed) RowSet to the inner (unreversed) RowSet, or vice versa.
      *
-     * @param rowSetToTransform the outer rowSet
-     * @return the corresponding inner rowSet
+     * @param rowSetToTransform the outer RowSet
+     * @return the corresponding inner RowSet
      */
     public WritableRowSet transform(final RowSet rowSetToTransform) {
         return transform(rowSetToTransform, false);
     }
 
     /**
-     * Transform an outer (reversed) rowSet to the inner (unreversed) rowSet as of the previous cycle, or vice versa.
+     * Transform an outer (reversed) RowSet to the inner (unreversed) RowSet as of the previous cycle, or vice versa.
      *
-     * @param outerRowSet the outer rowSet
-     * @return the corresponding inner rowSet
+     * @param outerRowSet the outer RowSet
+     * @return the corresponding inner RowSet
      */
     public WritableRowSet transformPrev(final RowSet outerRowSet) {
         return transform(outerRowSet, true);
@@ -262,20 +262,20 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
     }
 
     /**
-     * Transform an outer (reversed) rowSet to the inner (unreversed) rowSet, or vice versa.
+     * Transform an outer (reversed) RowSet to the inner (unreversed) RowSet, or vice versa.
      *
-     * @param outerIndex the outer rowSet
-     * @return the corresponding inner rowSet
+     * @param outerIndex the outer RowSet
+     * @return the corresponding inner RowSet
      */
     public long transform(long outerIndex) {
         return (outerIndex < 0) ? outerIndex : pivotPoint - outerIndex;
     }
 
     /**
-     * Transform an outer (reversed) rowSet to the inner (unreversed) rowSet as of the previous cycle, or vice versa.
+     * Transform an outer (reversed) RowSet to the inner (unreversed) RowSet as of the previous cycle, or vice versa.
      *
-     * @param outerIndex the outer rowSet
-     * @return the corresponding inner rowSet
+     * @param outerIndex the outer RowSet
+     * @return the corresponding inner RowSet
      */
     public long transformPrev(long outerIndex) {
         return (outerIndex < 0) ? outerIndex : getPivotPrev() - outerIndex;

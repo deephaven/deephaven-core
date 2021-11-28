@@ -107,34 +107,34 @@ public class SortListener extends BaseTable.ListenerImpl {
     // comparison keeps key ordering stable.
     //
     // Make a parallel array to 'addedInputKeys'; call it 'addedOutputKeys'. The entries in this array indicate the
-    // key rowSet in the "output" space _at_ which we want to insert an element. The calculation used is sensitive to
+    // row key in the "output" space _at_ which we want to insert an element. The calculation used is sensitive to
     // whether we are operating in the forward or backward direction. The calculation used is:
     //
     // Scanning forward, find the rightmost key value in the table that is <= the key value being added. If we are
-    // operating in the reverse direction, the rowSet of the found key is the exact key rowSet to use. On the other
-    // hand, if we are moving in the forward direction, we adjust it by adding 1 to that rowSet.
+    // operating in the reverse direction, the row key of the found key is the exact row key to use. On the other
+    // hand, if we are moving in the forward direction, we adjust it by adding 1 to that row key.
     //
-    // For output indices >= the median, we want to operate in the forward direction. For output indices < median,
+    // For output row keys >= the median, we want to operate in the forward direction. For output row keys < median,
     // we want to operate in the reverse direction.
     //
     // Example of existing table:
-    // output indexes: 10 20 21 40 50 51 52
+    // output row keys : 10 20 21 40 50 51 52
     // input values: C E I I I O U
     //
     // Note that the median of this table is 40.
     //
     // Values to add (note these have already been sorted thanks to the code above):
-    // B: highest <= key doesn't exist (start of table is a special case), so at-key-rowSet is 9 and direction is
+    // B: highest <= key doesn't exist (start of table is a special case), so at-key-rowKey is 9 and direction is
     // reverse
     // (this will occupy an empty slot at 9)
-    // C: highest <= key is C at 10, before the median, so at-key-rowSet is 10 and dir is reverse (this will push the
+    // C: highest <= key is C at 10, before the median, so at-key-rowKey is 10 and dir is reverse (this will push the
     // existing C to the left)
-    // D: highest <= key is C at 10, before median, at-key-rowSet 10, reverse, pushes C to the left
-    // E: highest <= key is E at 20, before median, at-key-rowSet 20, reverse, pushes E to the left
-    // I: highest <= key is I at 50, after median, at-key-rowSet 51 (recall the +1 rule), forward, pushes O to the right
-    // J: highest <= key is I at 50, after median, at-key-rowSet 51, forward, pushes O to the right
-    // O: highest <= key is O at 51, after median, at-key-rowSet 52, forward, pushes U to the right
-    // Z: highest <= key is U at 52, after median, at-key-rowSet 53, forward, occupies an empty slot at 53.
+    // D: highest <= key is C at 10, before median, at-key-rowKey 10, reverse, pushes C to the left
+    // E: highest <= key is E at 20, before median, at-key-rowKey 20, reverse, pushes E to the left
+    // I: highest <= key is I at 50, after median, at-key-rowKey 51 (recall the +1 rule), forward, pushes O to the right
+    // J: highest <= key is I at 50, after median, at-key-rowKey 51, forward, pushes O to the right
+    // O: highest <= key is O at 51, after median, at-key-rowKey 52, forward, pushes U to the right
+    // Z: highest <= key is U at 52, after median, at-key-rowKey 53, forward, occupies an empty slot at 53.
     //
     // (End example)
     //
@@ -163,7 +163,7 @@ public class SortListener extends BaseTable.ListenerImpl {
     //
     // There is one final piece to the logic. Threaded throughout the loop there is code that has to do with
     // "spreading" elements when they get overcrowded. The general approach is to watch for a run greater than
-    // "maximumRunLength", a value defined below. (A run is a contiguous sequence in the rowSet where we have had to
+    // "maximumRunLength", a value defined below. (A run is a contiguous sequence in the RowSet where we have had to
     // move every key. For example, if there are 300 contiguous keys and we inserted a single key at the beginning,
     // this would be a run of 300 even though the backlog never got larger than size 1). We compute up front whether or
     // not we will have a large run, and if so, we start spreading as soon as we start placing elements. Additionally,
@@ -345,7 +345,7 @@ public class SortListener extends BaseTable.ListenerImpl {
                 mcsTransformer.clearAndTransform(upstream.modifiedColumnSet(), downstream.modifiedColumnSet());
             }
 
-            // Update the final result rowSet.
+            // Update the final result RowSet.
             resultRowSet.insert(downstream.added());
 
             result.notifyListeners(downstream);
@@ -359,7 +359,7 @@ public class SortListener extends BaseTable.ListenerImpl {
     }
 
     /**
-     * @param added The resulting added rowSet
+     * @param added The resulting added RowSet
      * @param shifted The resulting shift data
      * @param start Start position
      * @param qs Queue state -- containing the view on the various keys arrays, directions, etc.
@@ -432,20 +432,19 @@ public class SortListener extends BaseTable.ListenerImpl {
             // determine if we must be in spreading mode
             final long maxRunKey = desiredOutputKey + maximumRunLength * qs.direction;
 
-            // note: this is an (over) approximation of cardinality since binarySearch will give any rowSet if exists
+            // note: this is an (over) approximation of cardinality since binarySearch will give any index if exists
             long addedMaxIdx;
             if (qs.direction == -1) {
-                addedMaxIdx =
-                        qs.twiddleIfNegative(Arrays.binarySearch(qs.addedOutputKeys, 0, qs.addedCurrent, maxRunKey));
+                addedMaxIdx = qs.twiddleIfNegative(
+                        Arrays.binarySearch(qs.addedOutputKeys, 0, qs.addedCurrent, maxRunKey));
             } else {
                 addedMaxIdx = qs.twiddleIfNegative(
                         Arrays.binarySearch(qs.addedOutputKeys, qs.addedCurrent, qs.addedEnd, maxRunKey));
             }
 
-            // note: if TrackingWritableRowSet.SearchIterator had an O(1) method to get pos we should prefer that over
-            // TrackingWritableRowSet#find,
-            // turn maxRunKey into an advancing iterator (similar to gapEvictionIter), and also use that method to
-            // compute sizeToShift
+            // note: if RowSet.SearchIterator had an O(1) method to get pos we should prefer that over RowSet#find, turn
+            // maxRunKey into an advancing iterator (similar to gapEvictionIter), and also use that method to compute
+            // sizeToShift
             final long backMaxIdx = qs.twiddleIfNegative(resultRowSet.find(maxRunKey));
 
             long sizeToAdd = qs.direction * (addedMaxIdx - qs.addedCurrent);
@@ -868,9 +867,9 @@ public class SortListener extends BaseTable.ListenerImpl {
         // We provide a view on these various arrays
         final long[] addedOutputKeys;
         final long[] addedInputKeys;
-        // The rowSet for the current element of added(Input,Output)Indices
+        // The row key for the current element of added(Input,Output)Keys
         int addedCurrent;
-        // The exclusive end rowSet for the added(Input,Output)Indices
+        // The exclusive end row key for the added(Input,Output)Keys
         final int addedEnd;
 
         QueueState(int direction, long[] addedOutputKeys, long[] addedInputKeys, int addedCurrent, int addedEnd) {
@@ -892,7 +891,7 @@ public class SortListener extends BaseTable.ListenerImpl {
             return a < b;
         }
 
-        // This manipulates binarySearch results to yield the exclusive rowSet.
+        // This manipulates binarySearch results to yield the exclusive index.
         private long twiddleIfNegative(long a) {
             if (direction == -1) {
                 return (a < 0) ? (~a) - 1 : a;

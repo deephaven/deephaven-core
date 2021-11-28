@@ -119,7 +119,7 @@ class StaticChunkedAsOfJoinStateManager
     private final ArrayBackedColumnSource<?> [] overflowKeySources;
     // the location of the next key in an overflow bucket
     private final IntegerArraySource overflowOverflowLocationSource = new IntegerArraySource();
-    // the overflow buckets for the right TrackingWritableRowSet
+    // the overflow buckets for the state source
     @HashTableAnnotations.OverflowStateColumnSource
     // @StateColumnSourceType@ from \QByteArraySource\E
     private final ByteArraySource overflowStateSource
@@ -280,14 +280,14 @@ class StaticChunkedAsOfJoinStateManager
     }
 
     /**
-     * Returns true if this is the first left rowSet added to this slot.
+     * Returns true if this is the first left row key added to this slot.
      */
     private boolean addLeftIndex(long tableLocation, long keyToAdd) {
         return addIndex(leftRowSetSource, tableLocation, keyToAdd);
     }
 
     /**
-     * Returns true if this is the first left rowSet added to this slot.
+     * Returns true if this is the first left row key added to this slot.
      */
     private boolean addLeftIndexOverflow(long overflowLocation, long keyToAdd) {
         return addIndex(overflowLeftRowSetSource, overflowLocation, keyToAdd);
@@ -1372,7 +1372,7 @@ class StaticChunkedAsOfJoinStateManager
         // the chunk of positions within our table
         final WritableLongChunk<RowKeys> tableLocationsChunk;
 
-        // the chunk of right indices that we read from the hash table, the empty right rowSet is used as a sentinel that the
+        // the chunk of right indices that we read from the hash table, the empty right index is used as a sentinel that the
         // state exists; otherwise when building from the left it is always null
         // @WritableStateChunkType@ from \QWritableByteChunk<Values>\E
         final WritableByteChunk<Values> workingStateEntries;
@@ -1701,7 +1701,7 @@ class StaticChunkedAsOfJoinStateManager
     }
 
     /**
-     * When we get the left rowSet out of our source (after a build or probe); we do it by pulling a sequential builder
+     * When we get the left RowSet out of our source (after a build or probe); we do it by pulling a sequential builder
      * and then calling build().  We also null out the value in the column source, thus freeing the builder's
      * memory.
      *
@@ -1709,7 +1709,7 @@ class StaticChunkedAsOfJoinStateManager
      * left refreshing case.
      *
      * @param slot the slot in the table (either positive for a main slot, or negative for overflow)
-     * @return the TrackingWritableRowSet for this slot
+     * @return the RowSet for this slot
      */
     RowSet getLeftIndex(long slot) {
         final RowSetBuilderSequential builder;

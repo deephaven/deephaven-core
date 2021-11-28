@@ -10,7 +10,7 @@ import java.io.Serializable;
 import java.util.Arrays;
 
 /**
- * This class manages the constituent Tables for a UnionColumnSource, so that we can map from an outer (merged) rowSet
+ * This class manages the constituent Tables for a UnionColumnSource, so that we can map from an outer (merged) RowSet
  * into the appropriate segment of a component table.
  */
 public class UnionRedirection implements Serializable {
@@ -39,19 +39,19 @@ public class UnionRedirection implements Serializable {
     // how many tables have been added to this redirection
     private int size = 0;
 
-    // the start of our outer rowSet for this entry, the end of the current entry (+ 1) is in the next table
+    // the start of our outer RowSet for this entry, the end of the current entry (+ 1) is in the next table
     long[] startOfIndices = new long[INITIAL_SIZE];
 
-    // the start of our outer prev rowSet for this entry, the end of the current entry (+ 1) is in the next table
+    // the start of our outer prev RowSet for this entry, the end of the current entry (+ 1) is in the next table
     long[] prevStartOfIndices = new long[INITIAL_SIZE];
 
     // copy of prevStartOfIndices to be updated during the UGP cycle and swapped as a terminal notification
     long[] prevStartOfIndicesAlt = new long[INITIAL_SIZE];
 
     /**
-     * Fetch the table id for a given rowSet.
+     * Fetch the table id for a given row key.
      * 
-     * @param index the rowSet to lookup
+     * @param index the row key to lookup
      * @return table id of where to find content
      */
     int tidForIndex(long index) {
@@ -74,9 +74,9 @@ public class UnionRedirection implements Serializable {
     }
 
     /**
-     * Fetch the table id for a given rowSet.
+     * Fetch the table id for a given row key.
      * 
-     * @param index the rowSet to lookup
+     * @param index the row key to lookup
      * @return table id of where to find content
      */
     int tidForPrevIndex(long index) {

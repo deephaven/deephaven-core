@@ -796,10 +796,10 @@ public class QueryTableSelectUpdateTest {
         final Table x2s = x2.select();
         assertTableEquals(x2, x2s);
         TableTools.showWithRowSet(x2s);
-        // overhead is only 5%, so we expect a pass-through rowSet
+        // overhead is only 5%, so we expect a pass-through RowSet
         TestCase.assertSame(x2s.getRowSet(), x2.getRowSet());
 
-        // simulation of two partitions, we want to keep the rowSet
+        // simulation of two partitions, we want to keep the RowSet
         final Table x3 = source.where("A < 250000 || A > 750000");
         final Table x3s = x3.select();
         assertTableEquals(x3, x3s);

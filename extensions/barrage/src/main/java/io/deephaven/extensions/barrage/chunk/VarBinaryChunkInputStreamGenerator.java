@@ -274,7 +274,7 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
             final MutableLong payloadLen = new MutableLong();
             subset.forAllRowKeyRanges((s, e) -> {
                 try {
-                    // we have already int-size verified all rows in the rowSet
+                    // we have already int-size verified all rows in the RowSet
                     final int startOffset = myOffsets.get((int) s);
                     final int endOffset = myOffsets.get((int) e + 1);
                     dos.write(myBytes, startOffset, endOffset - startOffset);

@@ -224,7 +224,7 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
             try (final RowSet.SearchIterator keysToVisit = sourceIndex.searchIterator()) {
                 keysToVisit.nextLong(); // Safe, since sourceIndex must be non-empty
                 do {
-                    dictionaryColumn.lookupRegion(keysToVisit.currentValue()).gatherDictionaryValuesIndex(keysToVisit,
+                    dictionaryColumn.lookupRegion(keysToVisit.currentValue()).gatherDictionaryValuesRowSet(keysToVisit,
                             RowSequenceFactory.EMPTY_ITERATOR, symbolTableIndexBuilder);
                 } while (keysToVisit.hasNext());
             }
@@ -305,7 +305,7 @@ class RegionedColumnSourceWithDictionary<DATA_TYPE>
                     final RowSequence.Iterator knownKeys = symbolTable.getRowSet().getRowSequenceIterator()) {
                 keysToVisit.nextLong(); // Safe, since sourceIndex must be non-empty
                 do {
-                    dictionaryColumn.lookupRegion(keysToVisit.currentValue()).gatherDictionaryValuesIndex(keysToVisit,
+                    dictionaryColumn.lookupRegion(keysToVisit.currentValue()).gatherDictionaryValuesRowSet(keysToVisit,
                             knownKeys, symbolTableAddedBuilder);
                 } while (keysToVisit.hasNext());
             }

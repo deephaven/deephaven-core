@@ -623,9 +623,9 @@ public abstract class BaseTable extends LivenessArtifact
      * Initiate update delivery to this table's listeners. Will notify direct listeners before completing, and enqueue
      * notifications for all other listeners.
      *
-     * @param added rowSet Row keys added to the table
-     * @param removed rowSet Row keys removed from the table
-     * @param modified rowSet Row keys modified in the table.
+     * @param added Row keys added to the table
+     * @param removed Row keys removed from the table
+     * @param modified Row keys modified in the table.
      */
     public final void notifyListeners(RowSet added, RowSet removed, RowSet modified) {
         notifyListeners(new TableUpdateImpl(added, removed, modified, RowSetShiftData.EMPTY,
@@ -1405,7 +1405,7 @@ public abstract class BaseTable extends LivenessArtifact
      * </p>
      *
      * <p>
-     * This function is for use when the result table shares an TrackingWritableRowSet; such that if this table is flat,
+     * This function is for use when the result table shares a RowSet; such that if this table is flat,
      * the result table must also be flat.
      * </p>
      *
