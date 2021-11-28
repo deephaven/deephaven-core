@@ -303,8 +303,8 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
         public void fillPrevChunk(@NotNull FillContext context,
                 @NotNull WritableChunk<? super Attributes.Values> destination, @NotNull RowSequence rowSequence) {
             try (final RowSet keysToCheck = rowSequence.asRowSet();
-                 final RowSet sourcePrev = source.prevCopy();
-                 final RowSet intersection = keysToCheck.intersect(sourcePrev)) {
+                    final RowSet sourcePrev = source.prevCopy();
+                    final RowSet intersection = keysToCheck.intersect(sourcePrev)) {
                 fillChunkInternal(keysToCheck, intersection, rowSequence.intSize(), destination);
             }
         }

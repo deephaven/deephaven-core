@@ -73,13 +73,13 @@ public class CharacterByteColumnTupleSource extends AbstractTupleSource<CharByte
 
     @SuppressWarnings("unchecked")
     @Override
-    public final <ELEMENT_TYPE> void exportElement(@NotNull final CharByteTuple tuple, final int elementIndex, @NotNull final WritableColumnSource<ELEMENT_TYPE> writableSource, final long destinationIndexKey) {
+    public final <ELEMENT_TYPE> void exportElement(@NotNull final CharByteTuple tuple, final int elementIndex, @NotNull final WritableColumnSource<ELEMENT_TYPE> writableSource, final long destinationRowKey) {
         if (elementIndex == 0) {
-            writableSource.set(destinationIndexKey, tuple.getFirstElement());
+            writableSource.set(destinationRowKey, tuple.getFirstElement());
             return;
         }
         if (elementIndex == 1) {
-            writableSource.set(destinationIndexKey, tuple.getSecondElement());
+            writableSource.set(destinationRowKey, tuple.getSecondElement());
             return;
         }
         throw new IndexOutOfBoundsException("Invalid element index " + elementIndex + " for export");

@@ -837,7 +837,7 @@ def show(*args):
       :param timeZone: (io.deephaven.engine.time.TimeZone) - a TimeZone constant relative to which DateTime data should be adjusted
       :param delimiter: (java.lang.String) - a String value to use between printed values
       :param out: (java.io.PrintStream) - a PrintStream destination to which to print the data
-      :param showIndex: (boolean) - a boolean indicating whether to also print rowSet details
+      :param showRowSet: (boolean) - a boolean indicating whether to also print rowSet details
       :param columns: (java.lang.String...) - varargs of column names to display
     """
     

@@ -1,7 +1,7 @@
 {
  "className": "io.deephaven.plot.datasets.data.IndexableDataWithDefault",
  "methods": {
-  "get": "Gets the value at the given rowSet.\n\n:param index: (int) - rowSet\n:return: (IndexableDataWithDefault.T) value of this dataset at rowSet",
+  "get": "Gets the value at the given index.\n\n:param index: (int) - index\n:return: (IndexableDataWithDefault.T) value of this dataset at index",
   "getDefaultValue": "Gets the default value for this dataset.\n\n:return: (IndexableDataWithDefault.T) default value for this dataset",
   "set": "Sets this datasets values equal to the values in another dataset.\n\n:param data: (io.deephaven.plot.datasets.data.IndexableDataWithDefault<IndexableDataWithDefault.T>) - dataset to get values from.",
   "setDefault": "Defines the default value for this dataset.\n\n:param v: (IndexableDataWithDefault.T) - value",

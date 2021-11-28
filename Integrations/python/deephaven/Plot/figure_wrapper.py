@@ -799,12 +799,12 @@ class FigureWrapper(object):
           :param index: (int) - index from the Figure's grid to remove. The index starts at 0 in the upper left hand corner of the
                   grid and increases going left to right, top to bottom. E.g. for a 2x2 Figure, the indices would be [0, 1]
                   [2, 3].
-          :return: (io.deephaven.engine.plot.Figure) selected Chart
+          :return: (io.deephaven.plot.Figure) selected Chart
           
         *Overload 2*  
           :param rowNum: (int) - row index in this Figure's grid. The row index starts at 0.
           :param colNum: (int) - column index in this Figure's grid. The column index starts at 0.
-          :return: (io.deephaven.engine.plot.Figure) selected Chart
+          :return: (io.deephaven.plot.Figure) selected Chart
         """
         
         return FigureWrapper(figure=self.figure.chart(*args))
@@ -922,7 +922,7 @@ class FigureWrapper(object):
         
         *Overload 1*  
           :param color: (int) - index of the color in the series color palette
-          :return: (io.deephaven.engine.plot.Figure) this DataSeries
+          :return: (io.deephaven.plot.Figure) this DataSeries
           
         *Overload 2*  
           :param color: int

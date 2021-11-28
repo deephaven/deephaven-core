@@ -5,6 +5,6 @@
   "toString": ":return: java.lang.String"
  },
  "path": "io.deephaven.engine.table.impl.by.FirstBySpecImpl",
- "text": "State factory for firstBy using an InterativeIndexState to create a redirection TrackingWritableRowSet.",
+ "text": "State factory for firstBy using an InterativeIndexState to create a RowRedirection.",
  "typeName": "class"
 }

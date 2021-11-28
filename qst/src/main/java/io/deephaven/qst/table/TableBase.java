@@ -432,7 +432,8 @@ public abstract class TableBase implements TableSpec {
         for (String groupByColumn : groupByColumns) {
             builder.addColumns(Selectable.parse(groupByColumn));
         }
-        return builder.addAggregations(aggregation).build();    }
+        return builder.addAggregations(aggregation).build();
+    }
 
     @Override
     public final AggregationTable aggBy(Aggregation aggregation, Collection<? extends Selectable> groupByColumns) {

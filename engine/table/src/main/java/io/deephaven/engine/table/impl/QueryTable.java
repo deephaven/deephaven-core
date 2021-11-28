@@ -441,7 +441,7 @@ public class QueryTable extends BaseTable {
     }
 
     // TODO (https://github.com/deephaven/deephaven-core/issues/991): Make this private, and clean up everything that
-    //                                                                uses the AggregationFactory as a specifier.
+    // uses the AggregationFactory as a specifier.
     public Table rollup(AggregationFactory aggregationFactory, boolean includeConstituents, SelectColumn... columns) {
         if (isStream() && includeConstituents) {
             throw streamUnsupported("rollup with included constituents");
@@ -694,7 +694,7 @@ public class QueryTable extends BaseTable {
     }
 
     // TODO (https://github.com/deephaven/deephaven-core/issues/991): Make this private, and clean up everything that
-    //                                                                uses the AggregationFactory as a specifier.
+    // uses the AggregationFactory as a specifier.
     public Table by(final AggregationSpec inputAggregationSpec, final SelectColumn... groupByColumns) {
         return memoizeResult(MemoizedOperationKey.by(inputAggregationSpec, groupByColumns),
                 () -> byNoMemo(inputAggregationSpec, groupByColumns));
@@ -1700,7 +1700,7 @@ public class QueryTable extends BaseTable {
             // - create parallel arrays of pre-shift-keys and post-shift-keys so we can move them in chunks
 
             try (final WritableRowSet toClear = dependent.rowSet.prevCopy();
-                 final SelectAndViewAnalyzer.UpdateHelper updateHelper =
+                    final SelectAndViewAnalyzer.UpdateHelper updateHelper =
                             new SelectAndViewAnalyzer.UpdateHelper(dependent.rowSet, upstream)) {
                 toClear.remove(dependent.rowSet);
                 analyzer.applyUpdate(upstream, toClear, updateHelper);

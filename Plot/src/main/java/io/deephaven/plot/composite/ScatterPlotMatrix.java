@@ -105,8 +105,8 @@ public class ScatterPlotMatrix extends FigureImpl implements PlotExceptionCause 
     /**
      * Sets the point size of the plot at index {@code plotIndex}.
      *
-     * The index starts at 0 in the upper left hand corner of the grid and increases going left to right, top to
-     * bottom. E.g. for a 2x2 ScatterPlotMatrix, the indices would be [0, 1] [2, 3]
+     * The index starts at 0 in the upper left hand corner of the grid and increases going left to right, top to bottom.
+     * E.g. for a 2x2 ScatterPlotMatrix, the indices would be [0, 1] [2, 3]
      *
      * @param plotIndex index
      * @param factor point size
@@ -119,8 +119,8 @@ public class ScatterPlotMatrix extends FigureImpl implements PlotExceptionCause 
     /**
      * Sets the point size of the plot at index {@code plotIndex}.
      *
-     * The index starts at 0 in the upper left hand corner of the grid and increases going left to right, top to
-     * bottom. E.g. for a 2x2 ScatterPlotMatrix, the indices would be [0, 1] [2, 3]
+     * The index starts at 0 in the upper left hand corner of the grid and increases going left to right, top to bottom.
+     * E.g. for a 2x2 ScatterPlotMatrix, the indices would be [0, 1] [2, 3]
      *
      * @param plotIndex index
      * @param factor point size
@@ -133,8 +133,8 @@ public class ScatterPlotMatrix extends FigureImpl implements PlotExceptionCause 
     /**
      * Sets the point size of the plot at index {@code plotIndex}.
      *
-     * The index starts at 0 in the upper left hand corner of the grid and increases going left to right, top to
-     * bottom. E.g. for a 2x2 ScatterPlotMatrix, the indices would be [0, 1] [2, 3]
+     * The index starts at 0 in the upper left hand corner of the grid and increases going left to right, top to bottom.
+     * E.g. for a 2x2 ScatterPlotMatrix, the indices would be [0, 1] [2, 3]
      *
      * @param plotIndex index
      * @param factor point size
@@ -157,8 +157,8 @@ public class ScatterPlotMatrix extends FigureImpl implements PlotExceptionCause 
     /**
      * Sets the point size of the plot at index {@code plotIndex}.
      *
-     * The index starts at 0 in the upper left hand corner of the grid and increases going left to right, top to
-     * bottom. E.g. for a 2x2 ScatterPlotMatrix, the indices would be [0, 1] [2, 3]
+     * The index starts at 0 in the upper left hand corner of the grid and increases going left to right, top to bottom.
+     * E.g. for a 2x2 ScatterPlotMatrix, the indices would be [0, 1] [2, 3]
      *
      * @param plotIndex index
      * @param factor point size
@@ -247,8 +247,8 @@ public class ScatterPlotMatrix extends FigureImpl implements PlotExceptionCause 
     /**
      * Sets the point size of plot i as the factor in {@code factors} at index i.
      *
-     * The index starts at 0 in the upper left hand corner of the grid and increases going left to right, top to
-     * bottom. E.g. for a 2x2 ScatterPlotMatrix, the indices would be [0, 1] [2, 3]
+     * The index starts at 0 in the upper left hand corner of the grid and increases going left to right, top to bottom.
+     * E.g. for a 2x2 ScatterPlotMatrix, the indices would be [0, 1] [2, 3]
      *
      * @throws io.deephaven.base.verify.RequirementFailure {@code factors} must not be null. The number of
      *         {@code factors} must be equal to the number of plots.
@@ -271,8 +271,8 @@ public class ScatterPlotMatrix extends FigureImpl implements PlotExceptionCause 
     /**
      * Sets the point size of plot i as the factor in {@code factors} at index i.
      *
-     * The index starts at 0 in the upper left hand corner of the grid and increases going left to right, top to
-     * bottom. E.g. for a 2x2 ScatterPlotMatrix, the indices would be [0, 1] [2, 3]
+     * The index starts at 0 in the upper left hand corner of the grid and increases going left to right, top to bottom.
+     * E.g. for a 2x2 ScatterPlotMatrix, the indices would be [0, 1] [2, 3]
      *
      * @throws io.deephaven.base.verify.RequirementFailure {@code factors} must not be null. The number of
      *         {@code factors} must be equal to the number of plots.
@@ -286,8 +286,8 @@ public class ScatterPlotMatrix extends FigureImpl implements PlotExceptionCause 
     /**
      * Sets the point size of plot i as the factor in {@code factors} at index i.
      *
-     * The index starts at 0 in the upper left hand corner of the grid and increases going left to right, top to
-     * bottom. E.g. for a 2x2 ScatterPlotMatrix, the indices would be [0, 1] [2, 3]
+     * The index starts at 0 in the upper left hand corner of the grid and increases going left to right, top to bottom.
+     * E.g. for a 2x2 ScatterPlotMatrix, the indices would be [0, 1] [2, 3]
      *
      * @throws io.deephaven.base.verify.RequirementFailure {@code factors} must not be null. The number of
      *         {@code factors} must be equal to the number of plots.
@@ -301,8 +301,8 @@ public class ScatterPlotMatrix extends FigureImpl implements PlotExceptionCause 
     /**
      * Sets the point size of plot i as the factor in {@code factors} at index i.
      *
-     * The index starts at 0 in the upper left hand corner of the grid and increases going left to right, top to
-     * bottom. E.g. for a 2x2 ScatterPlotMatrix, the indices would be [0, 1] [2, 3]
+     * The index starts at 0 in the upper left hand corner of the grid and increases going left to right, top to bottom.
+     * E.g. for a 2x2 ScatterPlotMatrix, the indices would be [0, 1] [2, 3]
      *
      * @throws io.deephaven.base.verify.RequirementFailure {@code factors} must not be null. The number of
      *         {@code factors} must be equal to the number of plots.
@@ -316,8 +316,8 @@ public class ScatterPlotMatrix extends FigureImpl implements PlotExceptionCause 
     /**
      * Sets the point size of plot i as the factor in {@code factors} at index i.
      *
-     * The index starts at 0 in the upper left hand corner of the grid and increases going left to right, top to
-     * bottom. E.g. for a 2x2 ScatterPlotMatrix, the indices would be [0, 1] [2, 3]
+     * The index starts at 0 in the upper left hand corner of the grid and increases going left to right, top to bottom.
+     * E.g. for a 2x2 ScatterPlotMatrix, the indices would be [0, 1] [2, 3]
      *
      * @throws io.deephaven.base.verify.RequirementFailure {@code factors} must not be null. The number of
      *         {@code factors} must be equal to the number of plots.

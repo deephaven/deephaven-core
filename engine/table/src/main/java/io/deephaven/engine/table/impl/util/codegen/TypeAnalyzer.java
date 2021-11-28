@@ -61,9 +61,9 @@ public class TypeAnalyzer {
     public final String asWritableChunkMethodName;
 
     private TypeAnalyzer(final Class type, final Class enginePrimitiveType, final String typeString,
-                         final String chunkTypeString,
-                         final String readChunkVariableType, final String writableChunkVariableType,
-                         final String asReadChunkMethodName, final String asWritableChunkMethodName) {
+            final String chunkTypeString,
+            final String readChunkVariableType, final String writableChunkVariableType,
+            final String asReadChunkMethodName, final String asWritableChunkMethodName) {
         this.type = type;
         this.enginePrimitiveType = enginePrimitiveType;
         this.typeString = typeString;

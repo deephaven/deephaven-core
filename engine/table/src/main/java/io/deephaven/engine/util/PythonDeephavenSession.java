@@ -38,8 +38,8 @@ import java.util.stream.Collectors;
 /**
  * A ScriptSession that uses a JPy cpython interpreter internally.
  *
- * This is used for applications or the console; Python code running remotely uses WorkerPythonEnvironment for
- * it's supporting structures.
+ * This is used for applications or the console; Python code running remotely uses WorkerPythonEnvironment for it's
+ * supporting structures.
  */
 public class PythonDeephavenSession extends AbstractScriptSession implements ScriptSession {
     private static final Logger log = LoggerFactory.getLogger(PythonDeephavenSession.class);

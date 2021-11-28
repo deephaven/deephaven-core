@@ -11,9 +11,8 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
  *
  * The colors are the named colors commonly supported by HTML browsers.
  *
- * Methods and colors moved from DBColorUtil to here. They are left in ColorUtil
- * for backward compatibility.
- * TODO (deephaven/deephaven-core/issues/175): Move this to a new module and package
+ * Methods and colors moved from DBColorUtil to here. They are left in ColorUtil for backward compatibility. TODO
+ * (deephaven/deephaven-core/issues/175): Move this to a new module and package
  */
 public enum Colors {
     // @formatter:off
@@ -364,7 +363,9 @@ public enum Colors {
      * @return formatting long of the input color
      */
     public static long toLong(final Color color) {
-        return color == null ? 0 : backgroundForegroundAuto(color.javaColor().getRed(), color.javaColor().getGreen(), color.javaColor().getBlue());
+        return color == null ? 0
+                : backgroundForegroundAuto(color.javaColor().getRed(), color.javaColor().getGreen(),
+                        color.javaColor().getBlue());
     }
 
     /**
@@ -379,8 +380,7 @@ public enum Colors {
     }
 
     /**
-     * Creates a table format encoding with background color equal to the input RGB
-     * and unformatted foreground.
+     * Creates a table format encoding with background color equal to the input RGB and unformatted foreground.
      *
      * @param r red component
      * @param g green component
@@ -402,8 +402,7 @@ public enum Colors {
     }
 
     /**
-     * Creates a table format encoding with foreground color equal to the input RGB
-     * and unformatted background.
+     * Creates a table format encoding with foreground color equal to the input RGB and unformatted background.
      *
      * @param r red component
      * @param g green component
@@ -447,8 +446,8 @@ public enum Colors {
     }
 
     /**
-     * Creates a table format encoding with specified background color
-     * and automatically chosen contrasting foreground color.
+     * Creates a table format encoding with specified background color and automatically chosen contrasting foreground
+     * color.
      *
      * @param bgr red component of the background color
      * @param bgg green component of the background color
@@ -469,42 +468,39 @@ public enum Colors {
     }
 
     /**
-     * Creates a table format encoding for the heat map at {@code value}.
-     * A contrasting foreground color is automatically chosen.
+     * Creates a table format encoding for the heat map at {@code value}. A contrasting foreground color is
+     * automatically chosen.
      *
      * @param value determines the color used by its location in the heat map's range
      * @param min minimum value of the heat map range
      * @param max maximum value of the heat map range
      * @param bg1 background color at or below the minimum value of the heat map
      * @param bg2 background color at or above the maximum value of the heat map
-     * @return table format encoding with background color and auto-generated foreground color
-     *                  determined by a heat map
+     * @return table format encoding with background color and auto-generated foreground color determined by a heat map
      */
-    public static long heatmap(double value, double min, double max, long bg1, long bg2){
-        if (value<=min){
+    public static long heatmap(double value, double min, double max, long bg1, long bg2) {
+        if (value <= min) {
             return bg1;
-        }
-        else if (value>=max){
+        } else if (value >= max) {
             return bg2;
-        }
-        else{
-            double pert = (value-min)/(max-min);
+        } else {
+            double pert = (value - min) / (max - min);
 
-            long r1=(bg1 >> 48) & 0xFF;
-            long g1=(bg1 >> 40) & 0xFF;
-            long b1=(bg1 >> 32) & 0xFF;
+            long r1 = (bg1 >> 48) & 0xFF;
+            long g1 = (bg1 >> 40) & 0xFF;
+            long b1 = (bg1 >> 32) & 0xFF;
 
-            long r2=(bg2 >> 48) & 0xFF;
-            long g2=(bg2 >> 40) & 0xFF;
-            long b2=(bg2 >> 32) & 0xFF;
+            long r2 = (bg2 >> 48) & 0xFF;
+            long g2 = (bg2 >> 40) & 0xFF;
+            long b2 = (bg2 >> 32) & 0xFF;
 
-            return bgfga((long)(r1+pert*(r2-r1)), (long)(g1+pert*(g2-g1)), (long)(b1+pert*(b2-b1)));
+            return bgfga((long) (r1 + pert * (r2 - r1)), (long) (g1 + pert * (g2 - g1)),
+                    (long) (b1 + pert * (b2 - b1)));
         }
     }
 
     /**
-     * Creates a table format encoding with specified foreground color
-     * and unformatted background.
+     * Creates a table format encoding with specified foreground color and unformatted background.
      *
      * @param value determines the color used by its location in the heat map's range
      * @param min minimum value of the heat map range
@@ -513,40 +509,37 @@ public enum Colors {
      * @param fg2 foreground color at or above the maximum value of the heat map
      * @return table format encoding with foreground color determined by a heat map
      */
-    public static long heatmapForeground(double value, double min, double max, long fg1, long fg2){
-        if (value<=min){
+    public static long heatmapForeground(double value, double min, double max, long fg1, long fg2) {
+        if (value <= min) {
             return fg1;
-        }
-        else if (value>=max){
+        } else if (value >= max) {
             return fg2;
-        }
-        else{
-            double pert = (value-min)/(max-min);
+        } else {
+            double pert = (value - min) / (max - min);
 
-            long r1=(fg1 >> 16) & 0xFF;
-            long g1=(fg1 >> 8) & 0xFF;
-            long b1=(fg1) & 0xFF;
+            long r1 = (fg1 >> 16) & 0xFF;
+            long g1 = (fg1 >> 8) & 0xFF;
+            long b1 = (fg1) & 0xFF;
 
-            long r2=(fg2 >> 16) & 0xFF;
-            long g2=(fg2 >> 8) & 0xFF;
-            long b2=(fg2) & 0xFF;
+            long r2 = (fg2 >> 16) & 0xFF;
+            long g2 = (fg2 >> 8) & 0xFF;
+            long b2 = (fg2) & 0xFF;
 
-            return fg((long)(r1+pert*(r2-r1)), (long)(g1+pert*(g2-g1)), (long)(b1+pert*(b2-b1)));
+            return fg((long) (r1 + pert * (r2 - r1)), (long) (g1 + pert * (g2 - g1)), (long) (b1 + pert * (b2 - b1)));
         }
     }
 
     /**
      * Convenience method for {@link #heatmapForeground(double, double, double, long, long)}
      */
-    public static long heatmapFg(double value, double min, double max, long fg1, long fg2){
+    public static long heatmapFg(double value, double min, double max, long fg1, long fg2) {
         return heatmapForeground(value, min, max, fg1, fg2);
     }
 
-    //------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    // ------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
     /**
-     * Creates a table format encoding with specified background color
-     * and an unformatted foreground.
+     * Creates a table format encoding with specified background color and an unformatted foreground.
      *
      * @param color color encoding
      * @return table format encoding with specified background color and unformatted foreground
@@ -563,8 +556,7 @@ public enum Colors {
     }
 
     /**
-     * Creates a table format encoding with specified foreground color
-     * and unformatted background.
+     * Creates a table format encoding with specified foreground color and unformatted background.
      *
      * @param color color encoding
      * @return table format encoding with specified foreground color and unformatted background

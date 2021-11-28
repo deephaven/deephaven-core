@@ -430,8 +430,8 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
 
     /**
      * <p>
-     * Set the target duration of an update cycle, including the updating phase and the idle phase.
-     * This is also the target interval between the start of one cycle and the start of the next.
+     * Set the target duration of an update cycle, including the updating phase and the idle phase. This is also the
+     * target interval between the start of one cycle and the start of the next.
      * <p>
      * Can be reset to default via {@link #resetCycleDuration()}.
      *
@@ -444,8 +444,8 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
     }
 
     /**
-     * Get the target duration of an update cycle, including the updating phase and the idle phase.
-     * This is also the target interval between the start of one cycle and the start of the next.
+     * Get the target duration of an update cycle, including the updating phase and the idle phase. This is also the
+     * target interval between the start of one cycle and the start of the next.
      *
      * @return The {@link #setTargetCycleDurationMillis(long) current} target cycle duration
      */

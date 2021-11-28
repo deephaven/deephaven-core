@@ -21,14 +21,14 @@ import org.jetbrains.annotations.NotNull;
  * <p>
  * {@link io.deephaven.engine.table.impl.SourceTable source tables} can be thought of a tree of partitions with
  * {@link io.deephaven.engine.table.impl.locations.TableLocation table locations} at the leaf nodes. When building the
- * {@link RowSet} for such a {@link Table table}, we statically partition the  available element address space from
- * [0, {@value Long#MAX_VALUE} <i>(2^63-1)</i>].
+ * {@link RowSet} for such a {@link Table table}, we statically partition the available element address space from [0,
+ * {@value Long#MAX_VALUE} <i>(2^63-1)</i>].
  *
  * <p>
  * We constrain the size at these leaf nodes in order to support a partitioning of the element address space into region
  * index and sub-region row index. In order to make the calculations as inexpensive as possible, this is done by
- * assigning {@link #REGION_INDEX_ADDRESS_BITS some bits} of each row key (element address) to the region index, and
- * the {@link #SUB_REGION_ROW_INDEX_ADDRESS_BITS remaining bits} to the sub-region row index.
+ * assigning {@link #REGION_INDEX_ADDRESS_BITS some bits} of each row key (element address) to the region index, and the
+ * {@link #SUB_REGION_ROW_INDEX_ADDRESS_BITS remaining bits} to the sub-region row index.
  *
  * <p>
  * This type of address space allocation allows very cheap O(1) element access. Denser alternatives tend to introduce

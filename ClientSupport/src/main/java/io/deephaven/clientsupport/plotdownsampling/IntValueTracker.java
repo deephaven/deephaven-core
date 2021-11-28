@@ -128,7 +128,8 @@ public final class IntValueTracker extends ValueTracker {
     public void validate(int offset, long rowKey, Chunk<? extends Attributes.Values> valuesChunk, int indexInChunk, @Nullable RowSet nulls) {
         int val = valuesChunk.asIntChunk().get(indexInChunk);
         if (val == NULL_INT) {
-            // can't check if our min/max is valid, or anything about positions, only can confirm that this rowSet is in nulls
+            // can't check if our min/max is valid, or anything about positions, only can confirm that this rowKey is in
+            // nulls
             if (nulls != null) {
                 Assert.eqTrue(nulls.containsRange(rowKey, rowKey), "nulls.containsRange(rowIndex, rowIndex)");
             }

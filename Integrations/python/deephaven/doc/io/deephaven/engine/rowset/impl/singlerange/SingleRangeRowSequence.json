@@ -1,7 +1,7 @@
 {
  "className": "io.deephaven.engine.rowset.impl.singlerange.SingleRangeRowSequence",
  "methods": {
-  "asRowSet": "Get a rowSet representation of this RowSequence.\n\n:return: (io.deephaven.engine.rowset.RowSet) A rowSet representation for the same row keys in the same order",
+  "asRowSet": "Get an RowSet representation of this RowSequence.\n\n:return: (io.deephaven.engine.rowset.RowSet) An RowSet representation for the same row keys in the same order",
   "copy": ":return: io.deephaven.engine.rowset.impl.singlerange.SingleRangeRowSequence",
   "fillRowKeyChunk": "Fill the supplied WritableLongChunk with individual row keys from this RowSequence.\n \n The chunk's capacity is assumed to be big enough.\n\n:param chunkToFill: (io.deephaven.engine.chunk.WritableLongChunk<? extendsio.deephaven.engine.chunk.Attributes.RowKeys>) - A chunk to fill with individual row keys",
   "fillRowKeyRangesChunk": "Fill the supplied WritableLongChunk with row key ranges from this RowSequence.\n \n The chunk's capacity is assumed to be big enough.\n\n:param chunkToFill: (io.deephaven.engine.chunk.WritableLongChunk<io.deephaven.engine.chunk.Attributes.OrderedRowKeyRanges>) - A chunk to fill with row key ranges",

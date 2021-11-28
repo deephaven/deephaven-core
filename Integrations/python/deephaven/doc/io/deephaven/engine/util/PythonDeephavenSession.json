@@ -16,6 +16,6 @@
   "unwrapObject": "Asks the session to remove any wrapping that exists on scoped objects so that clients can fetch them. Defaults to\n returning the object itself.\n\n:param object: (java.lang.Object) - the scoped object\n:return: (java.lang.Object) an obj which can be consumed by a client"
  },
  "path": "io.deephaven.engine.util.PythonDeephavenSession",
- "text": "A ScriptSession that uses a JPy cpython interpreter internally.\n\n This is used for applications or the console; Python code running remotely uses WorkerPythonEnvironment for\n it's supporting structures.",
+ "text": "A ScriptSession that uses a JPy cpython interpreter internally.\n\n This is used for applications or the console; Python code running remotely uses WorkerPythonEnvironment for it's\n supporting structures.",
  "typeName": "class"
 }

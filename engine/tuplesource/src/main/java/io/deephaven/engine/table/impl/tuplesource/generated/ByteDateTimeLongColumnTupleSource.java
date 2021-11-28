@@ -83,17 +83,17 @@ public class ByteDateTimeLongColumnTupleSource extends AbstractTupleSource<ByteL
 
     @SuppressWarnings("unchecked")
     @Override
-    public final <ELEMENT_TYPE> void exportElement(@NotNull final ByteLongLongTuple tuple, final int elementIndex, @NotNull final WritableColumnSource<ELEMENT_TYPE> writableSource, final long destinationIndexKey) {
+    public final <ELEMENT_TYPE> void exportElement(@NotNull final ByteLongLongTuple tuple, final int elementIndex, @NotNull final WritableColumnSource<ELEMENT_TYPE> writableSource, final long destinationRowKey) {
         if (elementIndex == 0) {
-            writableSource.set(destinationIndexKey, tuple.getFirstElement());
+            writableSource.set(destinationRowKey, tuple.getFirstElement());
             return;
         }
         if (elementIndex == 1) {
-            writableSource.set(destinationIndexKey, (ELEMENT_TYPE) DateTimeUtils.nanosToTime(tuple.getSecondElement()));
+            writableSource.set(destinationRowKey, (ELEMENT_TYPE) DateTimeUtils.nanosToTime(tuple.getSecondElement()));
             return;
         }
         if (elementIndex == 2) {
-            writableSource.set(destinationIndexKey, tuple.getThirdElement());
+            writableSource.set(destinationRowKey, tuple.getThirdElement());
             return;
         }
         throw new IndexOutOfBoundsException("Invalid element index " + elementIndex + " for export");

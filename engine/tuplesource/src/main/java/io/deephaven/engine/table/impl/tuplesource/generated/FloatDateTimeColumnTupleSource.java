@@ -75,13 +75,13 @@ public class FloatDateTimeColumnTupleSource extends AbstractTupleSource<FloatLon
 
     @SuppressWarnings("unchecked")
     @Override
-    public final <ELEMENT_TYPE> void exportElement(@NotNull final FloatLongTuple tuple, final int elementIndex, @NotNull final WritableColumnSource<ELEMENT_TYPE> writableSource, final long destinationIndexKey) {
+    public final <ELEMENT_TYPE> void exportElement(@NotNull final FloatLongTuple tuple, final int elementIndex, @NotNull final WritableColumnSource<ELEMENT_TYPE> writableSource, final long destinationRowKey) {
         if (elementIndex == 0) {
-            writableSource.set(destinationIndexKey, tuple.getFirstElement());
+            writableSource.set(destinationRowKey, tuple.getFirstElement());
             return;
         }
         if (elementIndex == 1) {
-            writableSource.set(destinationIndexKey, (ELEMENT_TYPE) DateTimeUtils.nanosToTime(tuple.getSecondElement()));
+            writableSource.set(destinationRowKey, (ELEMENT_TYPE) DateTimeUtils.nanosToTime(tuple.getSecondElement()));
             return;
         }
         throw new IndexOutOfBoundsException("Invalid element index " + elementIndex + " for export");

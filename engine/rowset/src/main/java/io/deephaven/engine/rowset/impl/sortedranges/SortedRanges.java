@@ -704,7 +704,7 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
                 final MutableLong outData,
                 final SortedRanges sar,
                 final RowSetUtils.Comparator comp, final int startPos) { // startPos points to the beginning of a
-                                                                        // range.
+                                                                         // range.
             final long endPosUnpackedData = sar.unpackedGet(sar.count - 1);
             final long endPosUnpackedValue = Math.abs(endPosUnpackedData);
             int c = comp.directionToTargetFrom(endPosUnpackedValue);

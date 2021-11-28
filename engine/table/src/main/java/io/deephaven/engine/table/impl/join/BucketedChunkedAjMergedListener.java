@@ -217,8 +217,8 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
             if (leftShifted.nonempty()) {
 
                 try (final RowSet fullPrevRowSet = leftTable.getRowSet().prevCopy();
-                     final RowSet previousToShift = fullPrevRowSet.minus(leftRestampRemovals);
-                     final RowSet relevantShift = getRelevantShifts(leftShifted, previousToShift)) {
+                        final RowSet previousToShift = fullPrevRowSet.minus(leftRestampRemovals);
+                        final RowSet relevantShift = getRelevantShifts(leftShifted, previousToShift)) {
                     // now we apply the left shifts, so that anything in our SSA is a relevant thing to stamp
                     rowRedirection.applyShift(previousToShift, leftShifted);
 
@@ -352,8 +352,8 @@ public class BucketedChunkedAjMergedListener extends MergedListener {
 
             if (rightShifted.nonempty()) {
                 try (final RowSet fullPrevRowSet = rightTable.getRowSet().prevCopy();
-                     final RowSet previousToShift = fullPrevRowSet.minus(rightRestampRemovals);
-                     final RowSet relevantShift = getRelevantShifts(rightShifted, previousToShift)) {
+                        final RowSet previousToShift = fullPrevRowSet.minus(rightRestampRemovals);
+                        final RowSet relevantShift = getRelevantShifts(rightShifted, previousToShift)) {
 
                     if (relevantShift.isNonempty()) {
                         try (final SizedSafeCloseable<ColumnSource.FillContext> rightShiftFillContext =
