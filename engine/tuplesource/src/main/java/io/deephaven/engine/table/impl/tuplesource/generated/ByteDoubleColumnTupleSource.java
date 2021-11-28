@@ -40,18 +40,18 @@ public class ByteDoubleColumnTupleSource extends AbstractTupleSource<ByteDoubleT
     }
 
     @Override
-    public final ByteDoubleTuple createTuple(final long indexKey) {
+    public final ByteDoubleTuple createTuple(final long rowKey) {
         return new ByteDoubleTuple(
-                columnSource1.getByte(indexKey),
-                columnSource2.getDouble(indexKey)
+                columnSource1.getByte(rowKey),
+                columnSource2.getDouble(rowKey)
         );
     }
 
     @Override
-    public final ByteDoubleTuple createPreviousTuple(final long indexKey) {
+    public final ByteDoubleTuple createPreviousTuple(final long rowKey) {
         return new ByteDoubleTuple(
-                columnSource1.getPrevByte(indexKey),
-                columnSource2.getPrevDouble(indexKey)
+                columnSource1.getPrevByte(rowKey),
+                columnSource2.getPrevDouble(rowKey)
         );
     }
 

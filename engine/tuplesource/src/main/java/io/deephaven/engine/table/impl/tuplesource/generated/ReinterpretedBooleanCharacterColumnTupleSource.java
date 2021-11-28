@@ -41,18 +41,18 @@ public class ReinterpretedBooleanCharacterColumnTupleSource extends AbstractTupl
     }
 
     @Override
-    public final ByteCharTuple createTuple(final long indexKey) {
+    public final ByteCharTuple createTuple(final long rowKey) {
         return new ByteCharTuple(
-                columnSource1.getByte(indexKey),
-                columnSource2.getChar(indexKey)
+                columnSource1.getByte(rowKey),
+                columnSource2.getChar(rowKey)
         );
     }
 
     @Override
-    public final ByteCharTuple createPreviousTuple(final long indexKey) {
+    public final ByteCharTuple createPreviousTuple(final long rowKey) {
         return new ByteCharTuple(
-                columnSource1.getPrevByte(indexKey),
-                columnSource2.getPrevChar(indexKey)
+                columnSource1.getPrevByte(rowKey),
+                columnSource2.getPrevChar(rowKey)
         );
     }
 

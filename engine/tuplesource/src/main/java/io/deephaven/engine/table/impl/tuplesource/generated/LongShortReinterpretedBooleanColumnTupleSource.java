@@ -45,20 +45,20 @@ public class LongShortReinterpretedBooleanColumnTupleSource extends AbstractTupl
     }
 
     @Override
-    public final LongShortByteTuple createTuple(final long indexKey) {
+    public final LongShortByteTuple createTuple(final long rowKey) {
         return new LongShortByteTuple(
-                columnSource1.getLong(indexKey),
-                columnSource2.getShort(indexKey),
-                columnSource3.getByte(indexKey)
+                columnSource1.getLong(rowKey),
+                columnSource2.getShort(rowKey),
+                columnSource3.getByte(rowKey)
         );
     }
 
     @Override
-    public final LongShortByteTuple createPreviousTuple(final long indexKey) {
+    public final LongShortByteTuple createPreviousTuple(final long rowKey) {
         return new LongShortByteTuple(
-                columnSource1.getPrevLong(indexKey),
-                columnSource2.getPrevShort(indexKey),
-                columnSource3.getPrevByte(indexKey)
+                columnSource1.getPrevLong(rowKey),
+                columnSource2.getPrevShort(rowKey),
+                columnSource3.getPrevByte(rowKey)
         );
     }
 

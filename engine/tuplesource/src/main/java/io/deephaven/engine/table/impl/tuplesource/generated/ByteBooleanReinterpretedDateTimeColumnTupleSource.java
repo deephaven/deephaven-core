@@ -47,20 +47,20 @@ public class ByteBooleanReinterpretedDateTimeColumnTupleSource extends AbstractT
     }
 
     @Override
-    public final ByteByteLongTuple createTuple(final long indexKey) {
+    public final ByteByteLongTuple createTuple(final long rowKey) {
         return new ByteByteLongTuple(
-                columnSource1.getByte(indexKey),
-                BooleanUtils.booleanAsByte(columnSource2.getBoolean(indexKey)),
-                columnSource3.getLong(indexKey)
+                columnSource1.getByte(rowKey),
+                BooleanUtils.booleanAsByte(columnSource2.getBoolean(rowKey)),
+                columnSource3.getLong(rowKey)
         );
     }
 
     @Override
-    public final ByteByteLongTuple createPreviousTuple(final long indexKey) {
+    public final ByteByteLongTuple createPreviousTuple(final long rowKey) {
         return new ByteByteLongTuple(
-                columnSource1.getPrevByte(indexKey),
-                BooleanUtils.booleanAsByte(columnSource2.getPrevBoolean(indexKey)),
-                columnSource3.getPrevLong(indexKey)
+                columnSource1.getPrevByte(rowKey),
+                BooleanUtils.booleanAsByte(columnSource2.getPrevBoolean(rowKey)),
+                columnSource3.getPrevLong(rowKey)
         );
     }
 

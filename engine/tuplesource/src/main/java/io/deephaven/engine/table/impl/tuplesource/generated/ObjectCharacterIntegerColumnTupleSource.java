@@ -44,20 +44,20 @@ public class ObjectCharacterIntegerColumnTupleSource extends AbstractTupleSource
     }
 
     @Override
-    public final ObjectCharIntTuple createTuple(final long indexKey) {
+    public final ObjectCharIntTuple createTuple(final long rowKey) {
         return new ObjectCharIntTuple(
-                columnSource1.get(indexKey),
-                columnSource2.getChar(indexKey),
-                columnSource3.getInt(indexKey)
+                columnSource1.get(rowKey),
+                columnSource2.getChar(rowKey),
+                columnSource3.getInt(rowKey)
         );
     }
 
     @Override
-    public final ObjectCharIntTuple createPreviousTuple(final long indexKey) {
+    public final ObjectCharIntTuple createPreviousTuple(final long rowKey) {
         return new ObjectCharIntTuple(
-                columnSource1.getPrev(indexKey),
-                columnSource2.getPrevChar(indexKey),
-                columnSource3.getPrevInt(indexKey)
+                columnSource1.getPrev(rowKey),
+                columnSource2.getPrevChar(rowKey),
+                columnSource3.getPrevInt(rowKey)
         );
     }
 

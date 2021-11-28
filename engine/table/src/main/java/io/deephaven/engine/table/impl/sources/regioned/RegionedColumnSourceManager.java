@@ -127,21 +127,21 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
 
     @Override
     public synchronized WritableRowSet refresh() {
-        final RowSetBuilderSequential addedIndexBuilder = RowSetFactory.builderSequential();
+        final RowSetBuilderSequential addedRowSetBuilder = RowSetFactory.builderSequential();
         for (final IncludedTableLocationEntry entry : orderedIncludedTableLocations) { // Ordering matters, since we're
                                                                                        // using a sequential builder.
-            entry.pollUpdates(addedIndexBuilder);
+            entry.pollUpdates(addedRowSetBuilder);
         }
         Collection<EmptyTableLocationEntry> entriesToInclude = null;
         for (final Iterator<EmptyTableLocationEntry> iterator = emptyTableLocations.iterator(); iterator.hasNext();) {
             final EmptyTableLocationEntry nonexistentEntry = iterator.next();
             nonexistentEntry.refresh();
-            final RowSet locationIndex = nonexistentEntry.location.getRowSet();
-            if (locationIndex != null) {
-                if (locationIndex.isEmpty()) {
-                    locationIndex.close();
+            final RowSet locationRowSet = nonexistentEntry.location.getRowSet();
+            if (locationRowSet != null) {
+                if (locationRowSet.isEmpty()) {
+                    locationRowSet.close();
                 } else {
-                    nonexistentEntry.initialIndex = locationIndex;
+                    nonexistentEntry.initialRowSet = locationRowSet;
                     (entriesToInclude == null ? entriesToInclude = new TreeSet<>() : entriesToInclude)
                             .add(nonexistentEntry);
                     iterator.remove();
@@ -153,13 +153,13 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
                 final IncludedTableLocationEntry entry = new IncludedTableLocationEntry(entryToInclude);
                 includedTableLocations.add(entry);
                 orderedIncludedTableLocations.add(entry);
-                entry.processInitial(addedIndexBuilder, entryToInclude.initialIndex);
+                entry.processInitial(addedRowSetBuilder, entryToInclude.initialRowSet);
             }
         }
         if (!isRefreshing) {
             emptyTableLocations.clear();
         }
-        return addedIndexBuilder.build();
+        return addedRowSetBuilder.build();
     }
 
     @Override
@@ -210,7 +210,7 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
         private final TableLocation location;
         private final TableLocationUpdateSubscriptionBuffer subscriptionBuffer;
 
-        private RowSet initialIndex;
+        private RowSet initialRowSet;
 
         private EmptyTableLocationEntry(@NotNull final TableLocation location) {
             this.location = location;
@@ -262,30 +262,30 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
         private final List<ColumnLocationState> columnLocationStates = new ArrayList<>();
 
         /**
-         * TrackingWritableRowSet in the region's space, not the table's space.
+         * RowSet in the region's space, not the table's space.
          */
-        private RowSet indexAtLastUpdate;
+        private RowSet rowSetAtLastUpdate;
 
         private IncludedTableLocationEntry(final EmptyTableLocationEntry nonexistentEntry) {
             this.location = nonexistentEntry.location;
             this.subscriptionBuffer = nonexistentEntry.subscriptionBuffer;
         }
 
-        private void processInitial(final RowSetBuilderSequential addedIndexBuilder, final RowSet initialIndex) {
-            Assert.neqNull(initialIndex, "initialIndex");
-            Assert.eqTrue(initialIndex.isNonempty(), "initialIndex.isNonempty()");
-            Assert.eqNull(indexAtLastUpdate, "indexAtLastUpdate");
-            if (initialIndex.lastRowKey() > RegionedColumnSource.ELEMENT_INDEX_TO_SUB_REGION_ELEMENT_INDEX_MASK) {
+        private void processInitial(final RowSetBuilderSequential addedRowSetBuilder, final RowSet initialRowSet) {
+            Assert.neqNull(initialRowSet, "initialRowSet");
+            Assert.eqTrue(initialRowSet.isNonempty(), "initialRowSet.isNonempty()");
+            Assert.eqNull(rowSetAtLastUpdate, "rowSetAtLastUpdate");
+            if (initialRowSet.lastRowKey() > RegionedColumnSource.ROW_KEY_TO_SUB_REGION_ROW_INDEX_MASK) {
                 throw new TableDataException(String.format(
                         "Location %s has initial last key %#016X, larger than maximum supported key %#016X",
-                        location, initialIndex.lastRowKey(),
-                        RegionedColumnSource.ELEMENT_INDEX_TO_SUB_REGION_ELEMENT_INDEX_MASK));
+                        location, initialRowSet.lastRowKey(),
+                        RegionedColumnSource.ROW_KEY_TO_SUB_REGION_ROW_INDEX_MASK));
             }
 
-            final long regionFirstKey = RegionedColumnSource.getFirstElementIndex(regionIndex);
-            initialIndex.forAllRowKeyRanges((subRegionFirstKey, subRegionLastKey) -> addedIndexBuilder
+            final long regionFirstKey = RegionedColumnSource.getFirstRowKey(regionIndex);
+            initialRowSet.forAllRowKeyRanges((subRegionFirstKey, subRegionLastKey) -> addedRowSetBuilder
                     .appendRange(regionFirstKey + subRegionFirstKey, regionFirstKey + subRegionLastKey));
-            RowSet addIndexInTable = null;
+            RowSet addRowSetInTable = null;
             try {
                 for (final ColumnDefinition columnDefinition : columnDefinitions) {
                     // noinspection unchecked
@@ -297,75 +297,75 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
                     state.regionAllocated(regionIndex);
                     if (state.needToUpdateGrouping()) {
                         state.updateGrouping(
-                                addIndexInTable == null ? addIndexInTable = initialIndex.shift(regionFirstKey)
-                                        : addIndexInTable);
+                                addRowSetInTable == null ? addRowSetInTable = initialRowSet.shift(regionFirstKey)
+                                        : addRowSetInTable);
                     }
                 }
             } finally {
-                if (addIndexInTable != null) {
-                    addIndexInTable.close();
+                if (addRowSetInTable != null) {
+                    addRowSetInTable.close();
                 }
             }
-            indexAtLastUpdate = initialIndex;
+            rowSetAtLastUpdate = initialRowSet;
         }
 
-        private void pollUpdates(final RowSetBuilderSequential addedIndexBuilder) {
+        private void pollUpdates(final RowSetBuilderSequential addedRowSetBuilder) {
             Assert.neqNull(subscriptionBuffer, "subscriptionBuffer"); // Effectively, this is asserting "isRefreshing".
             if (!subscriptionBuffer.processPending()) {
                 return;
             }
-            final RowSet updateIndex = location.getRowSet();
+            final RowSet updateRowSet = location.getRowSet();
             try {
-                if (updateIndex == null) {
+                if (updateRowSet == null) {
                     // This should be impossible - the subscription buffer transforms a transition to null into a
                     // pending exception
                     throw new TableDataException(
                             "Location " + location + " is no longer available, data has been removed");
                 }
-                if (!indexAtLastUpdate.subsetOf(updateIndex)) { // Bad change
+                if (!rowSetAtLastUpdate.subsetOf(updateRowSet)) { // Bad change
                     // noinspection ThrowableNotThrown
                     Assert.statementNeverExecuted(
-                            "TrackingWritableRowSet keys removed at location " + location + ": "
-                                    + indexAtLastUpdate.minus(updateIndex));
+                            "Row keys removed at location " + location + ": "
+                                    + rowSetAtLastUpdate.minus(updateRowSet));
                 }
-                if (indexAtLastUpdate.size() == updateIndex.size()) {
+                if (rowSetAtLastUpdate.size() == updateRowSet.size()) {
                     // Nothing to do
                     return;
                 }
-                if (updateIndex.lastRowKey() > RegionedColumnSource.ELEMENT_INDEX_TO_SUB_REGION_ELEMENT_INDEX_MASK) {
+                if (updateRowSet.lastRowKey() > RegionedColumnSource.ROW_KEY_TO_SUB_REGION_ROW_INDEX_MASK) {
                     throw new TableDataException(String.format(
                             "Location %s has updated last key %#016X, larger than maximum supported key %#016X",
-                            location, updateIndex.lastRowKey(),
-                            RegionedColumnSource.ELEMENT_INDEX_TO_SUB_REGION_ELEMENT_INDEX_MASK));
+                            location, updateRowSet.lastRowKey(),
+                            RegionedColumnSource.ROW_KEY_TO_SUB_REGION_ROW_INDEX_MASK));
                 }
 
                 if (log.isDebugEnabled()) {
                     log.debug().append("LOCATION_SIZE_CHANGE:").append(location.toString())
-                            .append(",FROM:").append(indexAtLastUpdate.size())
-                            .append(",TO:").append(updateIndex.size()).endl();
+                            .append(",FROM:").append(rowSetAtLastUpdate.size())
+                            .append(",TO:").append(updateRowSet.size()).endl();
                 }
-                try (final RowSet addedIndex = updateIndex.minus(indexAtLastUpdate)) {
-                    final long regionFirstKey = RegionedColumnSource.getFirstElementIndex(regionIndex);
-                    addedIndex.forAllRowKeyRanges((subRegionFirstKey, subRegionLastKey) -> addedIndexBuilder
+                try (final RowSet addedRowSet = updateRowSet.minus(rowSetAtLastUpdate)) {
+                    final long regionFirstKey = RegionedColumnSource.getFirstRowKey(regionIndex);
+                    addedRowSet.forAllRowKeyRanges((subRegionFirstKey, subRegionLastKey) -> addedRowSetBuilder
                             .appendRange(regionFirstKey + subRegionFirstKey, regionFirstKey + subRegionLastKey));
-                    RowSet addIndexInTable = null;
+                    RowSet addRowSetInTable = null;
                     try {
                         for (final ColumnLocationState state : columnLocationStates) {
                             if (state.needToUpdateGrouping()) {
                                 state.updateGrouping(
-                                        addIndexInTable == null ? addIndexInTable = updateIndex.shift(regionFirstKey)
-                                                : addIndexInTable);
+                                        addRowSetInTable == null ? addRowSetInTable = updateRowSet.shift(regionFirstKey)
+                                                : addRowSetInTable);
                             }
                         }
                     } finally {
-                        if (addIndexInTable != null) {
-                            addIndexInTable.close();
+                        if (addRowSetInTable != null) {
+                            addRowSetInTable.close();
                         }
                     }
                 }
             } finally {
-                indexAtLastUpdate.close();
-                indexAtLastUpdate = updateIndex;
+                rowSetAtLastUpdate.close();
+                rowSetAtLastUpdate = updateRowSet;
             }
         }
 
@@ -419,9 +419,9 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
         /**
          * Update column groupings, if appropriate.
          *
-         * @param locationAddedIndexInTable The added rowSet, in the table's address space
+         * @param locationAddedRowSetInTable The added rowSet, in the table's address space
          */
-        private void updateGrouping(@NotNull final RowSet locationAddedIndexInTable) {
+        private void updateGrouping(@NotNull final RowSet locationAddedRowSetInTable) {
             if (definition.isGrouping()) {
                 Assert.eqTrue(isGroupingEnabled, "isGroupingEnabled");
                 GroupingProvider groupingProvider = source.getGroupingProvider();
@@ -431,22 +431,22 @@ public class RegionedColumnSourceManager implements ColumnSourceManager {
                     source.setGroupingProvider(groupingProvider);
                 }
                 if (groupingProvider instanceof KeyRangeGroupingProvider) {
-                    ((KeyRangeGroupingProvider) groupingProvider).addSource(location, locationAddedIndexInTable);
+                    ((KeyRangeGroupingProvider) groupingProvider).addSource(location, locationAddedRowSetInTable);
                 }
             } else if (definition.isPartitioning()) {
                 final DeferredGroupingColumnSource<T> partitioningColumnSource = source;
-                Map<T, RowSet> columnPartitionToIndex = partitioningColumnSource.getGroupToRange();
-                if (columnPartitionToIndex == null) {
-                    columnPartitionToIndex = new LinkedHashMap<>();
-                    partitioningColumnSource.setGroupToRange(columnPartitionToIndex);
+                Map<T, RowSet> columnPartitionToRowSet = partitioningColumnSource.getGroupToRange();
+                if (columnPartitionToRowSet == null) {
+                    columnPartitionToRowSet = new LinkedHashMap<>();
+                    partitioningColumnSource.setGroupToRange(columnPartitionToRowSet);
                 }
                 final T columnPartitionValue =
                         location.getTableLocation().getKey().getPartitionValue(definition.getName());
-                final RowSet current = columnPartitionToIndex.get(columnPartitionValue);
+                final RowSet current = columnPartitionToRowSet.get(columnPartitionValue);
                 if (current == null) {
-                    columnPartitionToIndex.put(columnPartitionValue, locationAddedIndexInTable.copy());
+                    columnPartitionToRowSet.put(columnPartitionValue, locationAddedRowSetInTable.copy());
                 } else {
-                    current.writableCast().insert(locationAddedIndexInTable);
+                    current.writableCast().insert(locationAddedRowSetInTable);
                 }
             }
         }

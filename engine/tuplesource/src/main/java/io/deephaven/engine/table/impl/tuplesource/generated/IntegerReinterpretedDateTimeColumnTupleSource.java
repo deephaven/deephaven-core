@@ -42,18 +42,18 @@ public class IntegerReinterpretedDateTimeColumnTupleSource extends AbstractTuple
     }
 
     @Override
-    public final IntLongTuple createTuple(final long indexKey) {
+    public final IntLongTuple createTuple(final long rowKey) {
         return new IntLongTuple(
-                columnSource1.getInt(indexKey),
-                columnSource2.getLong(indexKey)
+                columnSource1.getInt(rowKey),
+                columnSource2.getLong(rowKey)
         );
     }
 
     @Override
-    public final IntLongTuple createPreviousTuple(final long indexKey) {
+    public final IntLongTuple createPreviousTuple(final long rowKey) {
         return new IntLongTuple(
-                columnSource1.getPrevInt(indexKey),
-                columnSource2.getPrevLong(indexKey)
+                columnSource1.getPrevInt(rowKey),
+                columnSource2.getPrevLong(rowKey)
         );
     }
 

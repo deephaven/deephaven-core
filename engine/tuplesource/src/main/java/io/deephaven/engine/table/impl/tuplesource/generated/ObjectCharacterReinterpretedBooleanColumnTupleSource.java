@@ -45,20 +45,20 @@ public class ObjectCharacterReinterpretedBooleanColumnTupleSource extends Abstra
     }
 
     @Override
-    public final ObjectCharByteTuple createTuple(final long indexKey) {
+    public final ObjectCharByteTuple createTuple(final long rowKey) {
         return new ObjectCharByteTuple(
-                columnSource1.get(indexKey),
-                columnSource2.getChar(indexKey),
-                columnSource3.getByte(indexKey)
+                columnSource1.get(rowKey),
+                columnSource2.getChar(rowKey),
+                columnSource3.getByte(rowKey)
         );
     }
 
     @Override
-    public final ObjectCharByteTuple createPreviousTuple(final long indexKey) {
+    public final ObjectCharByteTuple createPreviousTuple(final long rowKey) {
         return new ObjectCharByteTuple(
-                columnSource1.getPrev(indexKey),
-                columnSource2.getPrevChar(indexKey),
-                columnSource3.getPrevByte(indexKey)
+                columnSource1.getPrev(rowKey),
+                columnSource2.getPrevChar(rowKey),
+                columnSource3.getPrevByte(rowKey)
         );
     }
 

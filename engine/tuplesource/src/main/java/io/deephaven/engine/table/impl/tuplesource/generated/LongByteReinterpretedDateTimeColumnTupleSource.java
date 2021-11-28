@@ -45,20 +45,20 @@ public class LongByteReinterpretedDateTimeColumnTupleSource extends AbstractTupl
     }
 
     @Override
-    public final LongByteLongTuple createTuple(final long indexKey) {
+    public final LongByteLongTuple createTuple(final long rowKey) {
         return new LongByteLongTuple(
-                columnSource1.getLong(indexKey),
-                columnSource2.getByte(indexKey),
-                columnSource3.getLong(indexKey)
+                columnSource1.getLong(rowKey),
+                columnSource2.getByte(rowKey),
+                columnSource3.getLong(rowKey)
         );
     }
 
     @Override
-    public final LongByteLongTuple createPreviousTuple(final long indexKey) {
+    public final LongByteLongTuple createPreviousTuple(final long rowKey) {
         return new LongByteLongTuple(
-                columnSource1.getPrevLong(indexKey),
-                columnSource2.getPrevByte(indexKey),
-                columnSource3.getPrevLong(indexKey)
+                columnSource1.getPrevLong(rowKey),
+                columnSource2.getPrevByte(rowKey),
+                columnSource3.getPrevLong(rowKey)
         );
     }
 

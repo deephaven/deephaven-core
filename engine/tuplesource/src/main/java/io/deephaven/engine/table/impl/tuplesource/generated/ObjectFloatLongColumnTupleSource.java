@@ -44,20 +44,20 @@ public class ObjectFloatLongColumnTupleSource extends AbstractTupleSource<Object
     }
 
     @Override
-    public final ObjectFloatLongTuple createTuple(final long indexKey) {
+    public final ObjectFloatLongTuple createTuple(final long rowKey) {
         return new ObjectFloatLongTuple(
-                columnSource1.get(indexKey),
-                columnSource2.getFloat(indexKey),
-                columnSource3.getLong(indexKey)
+                columnSource1.get(rowKey),
+                columnSource2.getFloat(rowKey),
+                columnSource3.getLong(rowKey)
         );
     }
 
     @Override
-    public final ObjectFloatLongTuple createPreviousTuple(final long indexKey) {
+    public final ObjectFloatLongTuple createPreviousTuple(final long rowKey) {
         return new ObjectFloatLongTuple(
-                columnSource1.getPrev(indexKey),
-                columnSource2.getPrevFloat(indexKey),
-                columnSource3.getPrevLong(indexKey)
+                columnSource1.getPrev(rowKey),
+                columnSource2.getPrevFloat(rowKey),
+                columnSource3.getPrevLong(rowKey)
         );
     }
 

@@ -46,20 +46,20 @@ public class ReinterpretedBooleanBooleanDateTimeColumnTupleSource extends Abstra
     }
 
     @Override
-    public final ByteByteLongTuple createTuple(final long indexKey) {
+    public final ByteByteLongTuple createTuple(final long rowKey) {
         return new ByteByteLongTuple(
-                columnSource1.getByte(indexKey),
-                BooleanUtils.booleanAsByte(columnSource2.getBoolean(indexKey)),
-                DateTimeUtils.nanos(columnSource3.get(indexKey))
+                columnSource1.getByte(rowKey),
+                BooleanUtils.booleanAsByte(columnSource2.getBoolean(rowKey)),
+                DateTimeUtils.nanos(columnSource3.get(rowKey))
         );
     }
 
     @Override
-    public final ByteByteLongTuple createPreviousTuple(final long indexKey) {
+    public final ByteByteLongTuple createPreviousTuple(final long rowKey) {
         return new ByteByteLongTuple(
-                columnSource1.getPrevByte(indexKey),
-                BooleanUtils.booleanAsByte(columnSource2.getPrevBoolean(indexKey)),
-                DateTimeUtils.nanos(columnSource3.getPrev(indexKey))
+                columnSource1.getPrevByte(rowKey),
+                BooleanUtils.booleanAsByte(columnSource2.getPrevBoolean(rowKey)),
+                DateTimeUtils.nanos(columnSource3.getPrev(rowKey))
         );
     }
 

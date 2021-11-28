@@ -43,20 +43,20 @@ public class DoubleDoubleIntegerColumnTupleSource extends AbstractTupleSource<Do
     }
 
     @Override
-    public final DoubleDoubleIntTuple createTuple(final long indexKey) {
+    public final DoubleDoubleIntTuple createTuple(final long rowKey) {
         return new DoubleDoubleIntTuple(
-                columnSource1.getDouble(indexKey),
-                columnSource2.getDouble(indexKey),
-                columnSource3.getInt(indexKey)
+                columnSource1.getDouble(rowKey),
+                columnSource2.getDouble(rowKey),
+                columnSource3.getInt(rowKey)
         );
     }
 
     @Override
-    public final DoubleDoubleIntTuple createPreviousTuple(final long indexKey) {
+    public final DoubleDoubleIntTuple createPreviousTuple(final long rowKey) {
         return new DoubleDoubleIntTuple(
-                columnSource1.getPrevDouble(indexKey),
-                columnSource2.getPrevDouble(indexKey),
-                columnSource3.getPrevInt(indexKey)
+                columnSource1.getPrevDouble(rowKey),
+                columnSource2.getPrevDouble(rowKey),
+                columnSource3.getPrevInt(rowKey)
         );
     }
 

@@ -29,12 +29,12 @@ enum EmptyTupleSource implements TupleSource<EmptyTuple>, DefaultChunkSource.Wit
     }
 
     @Override
-    public EmptyTuple createTuple(final long indexKey) {
+    public EmptyTuple createTuple(final long rowKey) {
         return EmptyTuple.INSTANCE;
     }
 
     @Override
-    public EmptyTuple createPreviousTuple(final long indexKey) {
+    public EmptyTuple createPreviousTuple(final long rowKey) {
         return EmptyTuple.INSTANCE;
     }
 

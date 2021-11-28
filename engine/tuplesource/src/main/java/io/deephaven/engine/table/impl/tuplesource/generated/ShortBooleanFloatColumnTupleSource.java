@@ -45,20 +45,20 @@ public class ShortBooleanFloatColumnTupleSource extends AbstractTupleSource<Shor
     }
 
     @Override
-    public final ShortByteFloatTuple createTuple(final long indexKey) {
+    public final ShortByteFloatTuple createTuple(final long rowKey) {
         return new ShortByteFloatTuple(
-                columnSource1.getShort(indexKey),
-                BooleanUtils.booleanAsByte(columnSource2.getBoolean(indexKey)),
-                columnSource3.getFloat(indexKey)
+                columnSource1.getShort(rowKey),
+                BooleanUtils.booleanAsByte(columnSource2.getBoolean(rowKey)),
+                columnSource3.getFloat(rowKey)
         );
     }
 
     @Override
-    public final ShortByteFloatTuple createPreviousTuple(final long indexKey) {
+    public final ShortByteFloatTuple createPreviousTuple(final long rowKey) {
         return new ShortByteFloatTuple(
-                columnSource1.getPrevShort(indexKey),
-                BooleanUtils.booleanAsByte(columnSource2.getPrevBoolean(indexKey)),
-                columnSource3.getPrevFloat(indexKey)
+                columnSource1.getPrevShort(rowKey),
+                BooleanUtils.booleanAsByte(columnSource2.getPrevBoolean(rowKey)),
+                columnSource3.getPrevFloat(rowKey)
         );
     }
 

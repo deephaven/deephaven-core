@@ -323,12 +323,12 @@ public class TestRegionedColumnSourceManager extends RefreshingTableTestCase {
                     }));
                 }
                 newExpectedRowSet.insertRange(
-                        RegionedColumnSource.getFirstElementIndex(regionIndex),
-                        RegionedColumnSource.getFirstElementIndex(regionIndex) + size - 1);
+                        RegionedColumnSource.getFirstRowKey(regionIndex),
+                        RegionedColumnSource.getFirstRowKey(regionIndex) + size - 1);
                 expectedPartitioningColumnGrouping.computeIfAbsent(cp, cpk -> RowSetFactory.empty())
                         .insertRange(
-                                RegionedColumnSource.getFirstElementIndex(regionIndex),
-                                RegionedColumnSource.getFirstElementIndex(regionIndex) + size - 1);
+                                RegionedColumnSource.getFirstRowKey(regionIndex),
+                                RegionedColumnSource.getFirstRowKey(regionIndex) + size - 1);
             }
         });
         expectedAddedRowSet = newExpectedRowSet.minus(expectedRowSet);

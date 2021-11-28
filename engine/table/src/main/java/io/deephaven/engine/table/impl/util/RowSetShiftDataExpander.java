@@ -163,7 +163,7 @@ public class RowSetShiftDataExpander implements SafeCloseable {
             return;
         }
 
-        // Excuse the sloppiness in TrackingWritableRowSet closing after this point, we're planning to crash the process
+        // Excuse the sloppiness in RowSet closing after this point, we're planning to crash the process
         // anyway...
 
         String serializedIndices = null;
@@ -209,7 +209,7 @@ public class RowSetShiftDataExpander implements SafeCloseable {
 
         // Everything is messed up for this table, print out the indices in an easy to understand way
         final String indexUpdateErrorMessage = new LogOutputStringImpl()
-                .append("TrackingWritableRowSet update error detected: ")
+                .append("RowSet update error detected: ")
                 .append(LogOutput::nl).append("\t          previousIndex=").append(sourceRowSet.prevCopy())
                 .append(LogOutput::nl).append("\t           currentIndex=").append(sourceRowSet)
                 .append(LogOutput::nl).append("\t         updateToExpand=").append(update)
@@ -228,7 +228,7 @@ public class RowSetShiftDataExpander implements SafeCloseable {
         log.error().append(indexUpdateErrorMessage).endl();
 
         if (serializedIndices != null) {
-            log.error().append("TrackingWritableRowSet update error detected: serialized data=")
+            log.error().append("RowSet update error detected: serialized data=")
                     .append(serializedIndices).endl();
         }
 

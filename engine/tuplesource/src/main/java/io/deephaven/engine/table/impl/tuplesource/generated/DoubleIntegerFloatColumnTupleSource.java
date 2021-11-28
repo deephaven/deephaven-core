@@ -44,20 +44,20 @@ public class DoubleIntegerFloatColumnTupleSource extends AbstractTupleSource<Dou
     }
 
     @Override
-    public final DoubleIntFloatTuple createTuple(final long indexKey) {
+    public final DoubleIntFloatTuple createTuple(final long rowKey) {
         return new DoubleIntFloatTuple(
-                columnSource1.getDouble(indexKey),
-                columnSource2.getInt(indexKey),
-                columnSource3.getFloat(indexKey)
+                columnSource1.getDouble(rowKey),
+                columnSource2.getInt(rowKey),
+                columnSource3.getFloat(rowKey)
         );
     }
 
     @Override
-    public final DoubleIntFloatTuple createPreviousTuple(final long indexKey) {
+    public final DoubleIntFloatTuple createPreviousTuple(final long rowKey) {
         return new DoubleIntFloatTuple(
-                columnSource1.getPrevDouble(indexKey),
-                columnSource2.getPrevInt(indexKey),
-                columnSource3.getPrevFloat(indexKey)
+                columnSource1.getPrevDouble(rowKey),
+                columnSource2.getPrevInt(rowKey),
+                columnSource3.getPrevFloat(rowKey)
         );
     }
 

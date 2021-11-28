@@ -46,20 +46,20 @@ public class ByteFloatReinterpretedDateTimeColumnTupleSource extends AbstractTup
     }
 
     @Override
-    public final ByteFloatLongTuple createTuple(final long indexKey) {
+    public final ByteFloatLongTuple createTuple(final long rowKey) {
         return new ByteFloatLongTuple(
-                columnSource1.getByte(indexKey),
-                columnSource2.getFloat(indexKey),
-                columnSource3.getLong(indexKey)
+                columnSource1.getByte(rowKey),
+                columnSource2.getFloat(rowKey),
+                columnSource3.getLong(rowKey)
         );
     }
 
     @Override
-    public final ByteFloatLongTuple createPreviousTuple(final long indexKey) {
+    public final ByteFloatLongTuple createPreviousTuple(final long rowKey) {
         return new ByteFloatLongTuple(
-                columnSource1.getPrevByte(indexKey),
-                columnSource2.getPrevFloat(indexKey),
-                columnSource3.getPrevLong(indexKey)
+                columnSource1.getPrevByte(rowKey),
+                columnSource2.getPrevFloat(rowKey),
+                columnSource3.getPrevLong(rowKey)
         );
     }
 

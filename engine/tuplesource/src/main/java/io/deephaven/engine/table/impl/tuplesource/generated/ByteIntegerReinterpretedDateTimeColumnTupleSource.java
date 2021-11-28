@@ -46,20 +46,20 @@ public class ByteIntegerReinterpretedDateTimeColumnTupleSource extends AbstractT
     }
 
     @Override
-    public final ByteIntLongTuple createTuple(final long indexKey) {
+    public final ByteIntLongTuple createTuple(final long rowKey) {
         return new ByteIntLongTuple(
-                columnSource1.getByte(indexKey),
-                columnSource2.getInt(indexKey),
-                columnSource3.getLong(indexKey)
+                columnSource1.getByte(rowKey),
+                columnSource2.getInt(rowKey),
+                columnSource3.getLong(rowKey)
         );
     }
 
     @Override
-    public final ByteIntLongTuple createPreviousTuple(final long indexKey) {
+    public final ByteIntLongTuple createPreviousTuple(final long rowKey) {
         return new ByteIntLongTuple(
-                columnSource1.getPrevByte(indexKey),
-                columnSource2.getPrevInt(indexKey),
-                columnSource3.getPrevLong(indexKey)
+                columnSource1.getPrevByte(rowKey),
+                columnSource2.getPrevInt(rowKey),
+                columnSource3.getPrevLong(rowKey)
         );
     }
 

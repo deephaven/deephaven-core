@@ -42,20 +42,20 @@ public class DoubleDoubleDoubleColumnTupleSource extends AbstractTupleSource<Dou
     }
 
     @Override
-    public final DoubleDoubleDoubleTuple createTuple(final long indexKey) {
+    public final DoubleDoubleDoubleTuple createTuple(final long rowKey) {
         return new DoubleDoubleDoubleTuple(
-                columnSource1.getDouble(indexKey),
-                columnSource2.getDouble(indexKey),
-                columnSource3.getDouble(indexKey)
+                columnSource1.getDouble(rowKey),
+                columnSource2.getDouble(rowKey),
+                columnSource3.getDouble(rowKey)
         );
     }
 
     @Override
-    public final DoubleDoubleDoubleTuple createPreviousTuple(final long indexKey) {
+    public final DoubleDoubleDoubleTuple createPreviousTuple(final long rowKey) {
         return new DoubleDoubleDoubleTuple(
-                columnSource1.getPrevDouble(indexKey),
-                columnSource2.getPrevDouble(indexKey),
-                columnSource3.getPrevDouble(indexKey)
+                columnSource1.getPrevDouble(rowKey),
+                columnSource2.getPrevDouble(rowKey),
+                columnSource3.getPrevDouble(rowKey)
         );
     }
 

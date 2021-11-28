@@ -44,20 +44,20 @@ public class ShortDoubleLongColumnTupleSource extends AbstractTupleSource<ShortD
     }
 
     @Override
-    public final ShortDoubleLongTuple createTuple(final long indexKey) {
+    public final ShortDoubleLongTuple createTuple(final long rowKey) {
         return new ShortDoubleLongTuple(
-                columnSource1.getShort(indexKey),
-                columnSource2.getDouble(indexKey),
-                columnSource3.getLong(indexKey)
+                columnSource1.getShort(rowKey),
+                columnSource2.getDouble(rowKey),
+                columnSource3.getLong(rowKey)
         );
     }
 
     @Override
-    public final ShortDoubleLongTuple createPreviousTuple(final long indexKey) {
+    public final ShortDoubleLongTuple createPreviousTuple(final long rowKey) {
         return new ShortDoubleLongTuple(
-                columnSource1.getPrevShort(indexKey),
-                columnSource2.getPrevDouble(indexKey),
-                columnSource3.getPrevLong(indexKey)
+                columnSource1.getPrevShort(rowKey),
+                columnSource2.getPrevDouble(rowKey),
+                columnSource3.getPrevLong(rowKey)
         );
     }
 

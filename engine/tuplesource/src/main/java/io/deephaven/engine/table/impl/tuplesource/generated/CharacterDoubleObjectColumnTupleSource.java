@@ -44,20 +44,20 @@ public class CharacterDoubleObjectColumnTupleSource extends AbstractTupleSource<
     }
 
     @Override
-    public final CharDoubleObjectTuple createTuple(final long indexKey) {
+    public final CharDoubleObjectTuple createTuple(final long rowKey) {
         return new CharDoubleObjectTuple(
-                columnSource1.getChar(indexKey),
-                columnSource2.getDouble(indexKey),
-                columnSource3.get(indexKey)
+                columnSource1.getChar(rowKey),
+                columnSource2.getDouble(rowKey),
+                columnSource3.get(rowKey)
         );
     }
 
     @Override
-    public final CharDoubleObjectTuple createPreviousTuple(final long indexKey) {
+    public final CharDoubleObjectTuple createPreviousTuple(final long rowKey) {
         return new CharDoubleObjectTuple(
-                columnSource1.getPrevChar(indexKey),
-                columnSource2.getPrevDouble(indexKey),
-                columnSource3.getPrev(indexKey)
+                columnSource1.getPrevChar(rowKey),
+                columnSource2.getPrevDouble(rowKey),
+                columnSource3.getPrev(rowKey)
         );
     }
 

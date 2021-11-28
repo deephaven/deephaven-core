@@ -44,20 +44,20 @@ public class ByteIntegerObjectColumnTupleSource extends AbstractTupleSource<Byte
     }
 
     @Override
-    public final ByteIntObjectTuple createTuple(final long indexKey) {
+    public final ByteIntObjectTuple createTuple(final long rowKey) {
         return new ByteIntObjectTuple(
-                columnSource1.getByte(indexKey),
-                columnSource2.getInt(indexKey),
-                columnSource3.get(indexKey)
+                columnSource1.getByte(rowKey),
+                columnSource2.getInt(rowKey),
+                columnSource3.get(rowKey)
         );
     }
 
     @Override
-    public final ByteIntObjectTuple createPreviousTuple(final long indexKey) {
+    public final ByteIntObjectTuple createPreviousTuple(final long rowKey) {
         return new ByteIntObjectTuple(
-                columnSource1.getPrevByte(indexKey),
-                columnSource2.getPrevInt(indexKey),
-                columnSource3.getPrev(indexKey)
+                columnSource1.getPrevByte(rowKey),
+                columnSource2.getPrevInt(rowKey),
+                columnSource3.getPrev(rowKey)
         );
     }
 

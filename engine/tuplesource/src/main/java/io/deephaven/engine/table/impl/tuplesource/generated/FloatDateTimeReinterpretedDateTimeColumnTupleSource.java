@@ -46,20 +46,20 @@ public class FloatDateTimeReinterpretedDateTimeColumnTupleSource extends Abstrac
     }
 
     @Override
-    public final FloatLongLongTuple createTuple(final long indexKey) {
+    public final FloatLongLongTuple createTuple(final long rowKey) {
         return new FloatLongLongTuple(
-                columnSource1.getFloat(indexKey),
-                DateTimeUtils.nanos(columnSource2.get(indexKey)),
-                columnSource3.getLong(indexKey)
+                columnSource1.getFloat(rowKey),
+                DateTimeUtils.nanos(columnSource2.get(rowKey)),
+                columnSource3.getLong(rowKey)
         );
     }
 
     @Override
-    public final FloatLongLongTuple createPreviousTuple(final long indexKey) {
+    public final FloatLongLongTuple createPreviousTuple(final long rowKey) {
         return new FloatLongLongTuple(
-                columnSource1.getPrevFloat(indexKey),
-                DateTimeUtils.nanos(columnSource2.getPrev(indexKey)),
-                columnSource3.getPrevLong(indexKey)
+                columnSource1.getPrevFloat(rowKey),
+                DateTimeUtils.nanos(columnSource2.getPrev(rowKey)),
+                columnSource3.getPrevLong(rowKey)
         );
     }
 

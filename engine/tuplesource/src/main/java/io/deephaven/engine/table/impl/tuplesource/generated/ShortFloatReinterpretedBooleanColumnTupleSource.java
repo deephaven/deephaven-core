@@ -45,20 +45,20 @@ public class ShortFloatReinterpretedBooleanColumnTupleSource extends AbstractTup
     }
 
     @Override
-    public final ShortFloatByteTuple createTuple(final long indexKey) {
+    public final ShortFloatByteTuple createTuple(final long rowKey) {
         return new ShortFloatByteTuple(
-                columnSource1.getShort(indexKey),
-                columnSource2.getFloat(indexKey),
-                columnSource3.getByte(indexKey)
+                columnSource1.getShort(rowKey),
+                columnSource2.getFloat(rowKey),
+                columnSource3.getByte(rowKey)
         );
     }
 
     @Override
-    public final ShortFloatByteTuple createPreviousTuple(final long indexKey) {
+    public final ShortFloatByteTuple createPreviousTuple(final long rowKey) {
         return new ShortFloatByteTuple(
-                columnSource1.getPrevShort(indexKey),
-                columnSource2.getPrevFloat(indexKey),
-                columnSource3.getPrevByte(indexKey)
+                columnSource1.getPrevShort(rowKey),
+                columnSource2.getPrevFloat(rowKey),
+                columnSource3.getPrevByte(rowKey)
         );
     }
 

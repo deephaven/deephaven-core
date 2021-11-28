@@ -44,20 +44,20 @@ public class IntegerFloatShortColumnTupleSource extends AbstractTupleSource<IntF
     }
 
     @Override
-    public final IntFloatShortTuple createTuple(final long indexKey) {
+    public final IntFloatShortTuple createTuple(final long rowKey) {
         return new IntFloatShortTuple(
-                columnSource1.getInt(indexKey),
-                columnSource2.getFloat(indexKey),
-                columnSource3.getShort(indexKey)
+                columnSource1.getInt(rowKey),
+                columnSource2.getFloat(rowKey),
+                columnSource3.getShort(rowKey)
         );
     }
 
     @Override
-    public final IntFloatShortTuple createPreviousTuple(final long indexKey) {
+    public final IntFloatShortTuple createPreviousTuple(final long rowKey) {
         return new IntFloatShortTuple(
-                columnSource1.getPrevInt(indexKey),
-                columnSource2.getPrevFloat(indexKey),
-                columnSource3.getPrevShort(indexKey)
+                columnSource1.getPrevInt(rowKey),
+                columnSource2.getPrevFloat(rowKey),
+                columnSource3.getPrevShort(rowKey)
         );
     }
 

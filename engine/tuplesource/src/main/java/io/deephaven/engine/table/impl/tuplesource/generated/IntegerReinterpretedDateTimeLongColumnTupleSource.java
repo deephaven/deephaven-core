@@ -45,20 +45,20 @@ public class IntegerReinterpretedDateTimeLongColumnTupleSource extends AbstractT
     }
 
     @Override
-    public final IntLongLongTuple createTuple(final long indexKey) {
+    public final IntLongLongTuple createTuple(final long rowKey) {
         return new IntLongLongTuple(
-                columnSource1.getInt(indexKey),
-                columnSource2.getLong(indexKey),
-                columnSource3.getLong(indexKey)
+                columnSource1.getInt(rowKey),
+                columnSource2.getLong(rowKey),
+                columnSource3.getLong(rowKey)
         );
     }
 
     @Override
-    public final IntLongLongTuple createPreviousTuple(final long indexKey) {
+    public final IntLongLongTuple createPreviousTuple(final long rowKey) {
         return new IntLongLongTuple(
-                columnSource1.getPrevInt(indexKey),
-                columnSource2.getPrevLong(indexKey),
-                columnSource3.getPrevLong(indexKey)
+                columnSource1.getPrevInt(rowKey),
+                columnSource2.getPrevLong(rowKey),
+                columnSource3.getPrevLong(rowKey)
         );
     }
 

@@ -44,20 +44,20 @@ public class ByteIntegerCharacterColumnTupleSource extends AbstractTupleSource<B
     }
 
     @Override
-    public final ByteIntCharTuple createTuple(final long indexKey) {
+    public final ByteIntCharTuple createTuple(final long rowKey) {
         return new ByteIntCharTuple(
-                columnSource1.getByte(indexKey),
-                columnSource2.getInt(indexKey),
-                columnSource3.getChar(indexKey)
+                columnSource1.getByte(rowKey),
+                columnSource2.getInt(rowKey),
+                columnSource3.getChar(rowKey)
         );
     }
 
     @Override
-    public final ByteIntCharTuple createPreviousTuple(final long indexKey) {
+    public final ByteIntCharTuple createPreviousTuple(final long rowKey) {
         return new ByteIntCharTuple(
-                columnSource1.getPrevByte(indexKey),
-                columnSource2.getPrevInt(indexKey),
-                columnSource3.getPrevChar(indexKey)
+                columnSource1.getPrevByte(rowKey),
+                columnSource2.getPrevInt(rowKey),
+                columnSource3.getPrevChar(rowKey)
         );
     }
 

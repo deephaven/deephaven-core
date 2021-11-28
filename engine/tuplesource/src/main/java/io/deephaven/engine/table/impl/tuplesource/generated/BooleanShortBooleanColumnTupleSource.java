@@ -44,20 +44,20 @@ public class BooleanShortBooleanColumnTupleSource extends AbstractTupleSource<By
     }
 
     @Override
-    public final ByteShortByteTuple createTuple(final long indexKey) {
+    public final ByteShortByteTuple createTuple(final long rowKey) {
         return new ByteShortByteTuple(
-                BooleanUtils.booleanAsByte(columnSource1.getBoolean(indexKey)),
-                columnSource2.getShort(indexKey),
-                BooleanUtils.booleanAsByte(columnSource3.getBoolean(indexKey))
+                BooleanUtils.booleanAsByte(columnSource1.getBoolean(rowKey)),
+                columnSource2.getShort(rowKey),
+                BooleanUtils.booleanAsByte(columnSource3.getBoolean(rowKey))
         );
     }
 
     @Override
-    public final ByteShortByteTuple createPreviousTuple(final long indexKey) {
+    public final ByteShortByteTuple createPreviousTuple(final long rowKey) {
         return new ByteShortByteTuple(
-                BooleanUtils.booleanAsByte(columnSource1.getPrevBoolean(indexKey)),
-                columnSource2.getPrevShort(indexKey),
-                BooleanUtils.booleanAsByte(columnSource3.getPrevBoolean(indexKey))
+                BooleanUtils.booleanAsByte(columnSource1.getPrevBoolean(rowKey)),
+                columnSource2.getPrevShort(rowKey),
+                BooleanUtils.booleanAsByte(columnSource3.getPrevBoolean(rowKey))
         );
     }
 

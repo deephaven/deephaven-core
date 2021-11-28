@@ -44,20 +44,20 @@ public class IntegerObjectLongColumnTupleSource extends AbstractTupleSource<IntO
     }
 
     @Override
-    public final IntObjectLongTuple createTuple(final long indexKey) {
+    public final IntObjectLongTuple createTuple(final long rowKey) {
         return new IntObjectLongTuple(
-                columnSource1.getInt(indexKey),
-                columnSource2.get(indexKey),
-                columnSource3.getLong(indexKey)
+                columnSource1.getInt(rowKey),
+                columnSource2.get(rowKey),
+                columnSource3.getLong(rowKey)
         );
     }
 
     @Override
-    public final IntObjectLongTuple createPreviousTuple(final long indexKey) {
+    public final IntObjectLongTuple createPreviousTuple(final long rowKey) {
         return new IntObjectLongTuple(
-                columnSource1.getPrevInt(indexKey),
-                columnSource2.getPrev(indexKey),
-                columnSource3.getPrevLong(indexKey)
+                columnSource1.getPrevInt(rowKey),
+                columnSource2.getPrev(rowKey),
+                columnSource3.getPrevLong(rowKey)
         );
     }
 

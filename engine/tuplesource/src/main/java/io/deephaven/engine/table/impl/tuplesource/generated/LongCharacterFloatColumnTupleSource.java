@@ -44,20 +44,20 @@ public class LongCharacterFloatColumnTupleSource extends AbstractTupleSource<Lon
     }
 
     @Override
-    public final LongCharFloatTuple createTuple(final long indexKey) {
+    public final LongCharFloatTuple createTuple(final long rowKey) {
         return new LongCharFloatTuple(
-                columnSource1.getLong(indexKey),
-                columnSource2.getChar(indexKey),
-                columnSource3.getFloat(indexKey)
+                columnSource1.getLong(rowKey),
+                columnSource2.getChar(rowKey),
+                columnSource3.getFloat(rowKey)
         );
     }
 
     @Override
-    public final LongCharFloatTuple createPreviousTuple(final long indexKey) {
+    public final LongCharFloatTuple createPreviousTuple(final long rowKey) {
         return new LongCharFloatTuple(
-                columnSource1.getPrevLong(indexKey),
-                columnSource2.getPrevChar(indexKey),
-                columnSource3.getPrevFloat(indexKey)
+                columnSource1.getPrevLong(rowKey),
+                columnSource2.getPrevChar(rowKey),
+                columnSource3.getPrevFloat(rowKey)
         );
     }
 

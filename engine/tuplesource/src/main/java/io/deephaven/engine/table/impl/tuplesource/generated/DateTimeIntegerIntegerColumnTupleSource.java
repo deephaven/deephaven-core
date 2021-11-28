@@ -45,20 +45,20 @@ public class DateTimeIntegerIntegerColumnTupleSource extends AbstractTupleSource
     }
 
     @Override
-    public final LongIntIntTuple createTuple(final long indexKey) {
+    public final LongIntIntTuple createTuple(final long rowKey) {
         return new LongIntIntTuple(
-                DateTimeUtils.nanos(columnSource1.get(indexKey)),
-                columnSource2.getInt(indexKey),
-                columnSource3.getInt(indexKey)
+                DateTimeUtils.nanos(columnSource1.get(rowKey)),
+                columnSource2.getInt(rowKey),
+                columnSource3.getInt(rowKey)
         );
     }
 
     @Override
-    public final LongIntIntTuple createPreviousTuple(final long indexKey) {
+    public final LongIntIntTuple createPreviousTuple(final long rowKey) {
         return new LongIntIntTuple(
-                DateTimeUtils.nanos(columnSource1.getPrev(indexKey)),
-                columnSource2.getPrevInt(indexKey),
-                columnSource3.getPrevInt(indexKey)
+                DateTimeUtils.nanos(columnSource1.getPrev(rowKey)),
+                columnSource2.getPrevInt(rowKey),
+                columnSource3.getPrevInt(rowKey)
         );
     }
 

@@ -44,20 +44,20 @@ public class BooleanIntegerIntegerColumnTupleSource extends AbstractTupleSource<
     }
 
     @Override
-    public final ByteIntIntTuple createTuple(final long indexKey) {
+    public final ByteIntIntTuple createTuple(final long rowKey) {
         return new ByteIntIntTuple(
-                BooleanUtils.booleanAsByte(columnSource1.getBoolean(indexKey)),
-                columnSource2.getInt(indexKey),
-                columnSource3.getInt(indexKey)
+                BooleanUtils.booleanAsByte(columnSource1.getBoolean(rowKey)),
+                columnSource2.getInt(rowKey),
+                columnSource3.getInt(rowKey)
         );
     }
 
     @Override
-    public final ByteIntIntTuple createPreviousTuple(final long indexKey) {
+    public final ByteIntIntTuple createPreviousTuple(final long rowKey) {
         return new ByteIntIntTuple(
-                BooleanUtils.booleanAsByte(columnSource1.getPrevBoolean(indexKey)),
-                columnSource2.getPrevInt(indexKey),
-                columnSource3.getPrevInt(indexKey)
+                BooleanUtils.booleanAsByte(columnSource1.getPrevBoolean(rowKey)),
+                columnSource2.getPrevInt(rowKey),
+                columnSource3.getPrevInt(rowKey)
         );
     }
 

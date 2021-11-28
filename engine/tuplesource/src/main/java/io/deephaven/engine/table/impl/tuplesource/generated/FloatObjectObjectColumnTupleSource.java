@@ -43,20 +43,20 @@ public class FloatObjectObjectColumnTupleSource extends AbstractTupleSource<Floa
     }
 
     @Override
-    public final FloatObjectObjectTuple createTuple(final long indexKey) {
+    public final FloatObjectObjectTuple createTuple(final long rowKey) {
         return new FloatObjectObjectTuple(
-                columnSource1.getFloat(indexKey),
-                columnSource2.get(indexKey),
-                columnSource3.get(indexKey)
+                columnSource1.getFloat(rowKey),
+                columnSource2.get(rowKey),
+                columnSource3.get(rowKey)
         );
     }
 
     @Override
-    public final FloatObjectObjectTuple createPreviousTuple(final long indexKey) {
+    public final FloatObjectObjectTuple createPreviousTuple(final long rowKey) {
         return new FloatObjectObjectTuple(
-                columnSource1.getPrevFloat(indexKey),
-                columnSource2.getPrev(indexKey),
-                columnSource3.getPrev(indexKey)
+                columnSource1.getPrevFloat(rowKey),
+                columnSource2.getPrev(rowKey),
+                columnSource3.getPrev(rowKey)
         );
     }
 

@@ -45,20 +45,20 @@ public class ReinterpretedDateTimeReinterpretedDateTimeIntegerColumnTupleSource 
     }
 
     @Override
-    public final LongLongIntTuple createTuple(final long indexKey) {
+    public final LongLongIntTuple createTuple(final long rowKey) {
         return new LongLongIntTuple(
-                columnSource1.getLong(indexKey),
-                columnSource2.getLong(indexKey),
-                columnSource3.getInt(indexKey)
+                columnSource1.getLong(rowKey),
+                columnSource2.getLong(rowKey),
+                columnSource3.getInt(rowKey)
         );
     }
 
     @Override
-    public final LongLongIntTuple createPreviousTuple(final long indexKey) {
+    public final LongLongIntTuple createPreviousTuple(final long rowKey) {
         return new LongLongIntTuple(
-                columnSource1.getPrevLong(indexKey),
-                columnSource2.getPrevLong(indexKey),
-                columnSource3.getPrevInt(indexKey)
+                columnSource1.getPrevLong(rowKey),
+                columnSource2.getPrevLong(rowKey),
+                columnSource3.getPrevInt(rowKey)
         );
     }
 

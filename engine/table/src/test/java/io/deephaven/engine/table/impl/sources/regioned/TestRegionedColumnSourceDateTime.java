@@ -74,19 +74,19 @@ public class TestRegionedColumnSourceDateTime
 
         // noinspection ConstantConditions
         assertLookup(0L, 0, TEST_DATES[0], false, false);
-        assertLookup(RegionedColumnSource.getLastElementIndex(0), 0, TEST_DATES[1], false, false);
+        assertLookup(RegionedColumnSource.getLastRowKey(0), 0, TEST_DATES[1], false, false);
 
-        assertLookup(RegionedColumnSource.getFirstElementIndex(1) + 1, 1, TEST_DATES[2], false, false);
-        assertLookup(RegionedColumnSource.getLastElementIndex(1) - 1, 1, TEST_DATES[3], false, false);
+        assertLookup(RegionedColumnSource.getFirstRowKey(1) + 1, 1, TEST_DATES[2], false, false);
+        assertLookup(RegionedColumnSource.getLastRowKey(1) - 1, 1, TEST_DATES[3], false, false);
 
-        assertLookup(RegionedColumnSource.getFirstElementIndex(4) + 2, 4, TEST_DATES[4], false, false);
-        assertLookup(RegionedColumnSource.getLastElementIndex(4) - 2, 4, TEST_DATES[5], false, false);
+        assertLookup(RegionedColumnSource.getFirstRowKey(4) + 2, 4, TEST_DATES[4], false, false);
+        assertLookup(RegionedColumnSource.getLastRowKey(4) - 2, 4, TEST_DATES[5], false, false);
 
-        assertLookup(RegionedColumnSource.getFirstElementIndex(8) + 3, 8, TEST_DATES[6], false, false);
-        assertLookup(RegionedColumnSource.getLastElementIndex(8) - 3, 8, TEST_DATES[7], false, false);
+        assertLookup(RegionedColumnSource.getFirstRowKey(8) + 3, 8, TEST_DATES[6], false, false);
+        assertLookup(RegionedColumnSource.getLastRowKey(8) - 3, 8, TEST_DATES[7], false, false);
 
-        assertLookup(RegionedColumnSource.getFirstElementIndex(9) + 4, 9, TEST_DATES[8], false, false);
-        assertLookup(RegionedColumnSource.getLastElementIndex(9) - 4, 9, TEST_DATES[9], false, false);
+        assertLookup(RegionedColumnSource.getFirstRowKey(9) + 4, 9, TEST_DATES[8], false, false);
+        assertLookup(RegionedColumnSource.getLastRowKey(9) - 4, 9, TEST_DATES[9], false, false);
     }
 
     @Override
@@ -95,19 +95,19 @@ public class TestRegionedColumnSourceDateTime
 
         // noinspection ConstantConditions
         assertLookup(0L, 0, TEST_DATES[0], true, false);
-        assertLookup(RegionedColumnSource.getLastElementIndex(0), 0, TEST_DATES[1], true, false);
+        assertLookup(RegionedColumnSource.getLastRowKey(0), 0, TEST_DATES[1], true, false);
 
-        assertLookup(RegionedColumnSource.getFirstElementIndex(1) + 1, 1, TEST_DATES[2], true, false);
-        assertLookup(RegionedColumnSource.getLastElementIndex(1) - 1, 1, TEST_DATES[3], true, false);
+        assertLookup(RegionedColumnSource.getFirstRowKey(1) + 1, 1, TEST_DATES[2], true, false);
+        assertLookup(RegionedColumnSource.getLastRowKey(1) - 1, 1, TEST_DATES[3], true, false);
 
-        assertLookup(RegionedColumnSource.getFirstElementIndex(4) + 2, 4, TEST_DATES[4], true, false);
-        assertLookup(RegionedColumnSource.getLastElementIndex(4) - 2, 4, TEST_DATES[5], true, false);
+        assertLookup(RegionedColumnSource.getFirstRowKey(4) + 2, 4, TEST_DATES[4], true, false);
+        assertLookup(RegionedColumnSource.getLastRowKey(4) - 2, 4, TEST_DATES[5], true, false);
 
-        assertLookup(RegionedColumnSource.getFirstElementIndex(8) + 3, 8, TEST_DATES[6], true, false);
-        assertLookup(RegionedColumnSource.getLastElementIndex(8) - 3, 8, TEST_DATES[7], true, false);
+        assertLookup(RegionedColumnSource.getFirstRowKey(8) + 3, 8, TEST_DATES[6], true, false);
+        assertLookup(RegionedColumnSource.getLastRowKey(8) - 3, 8, TEST_DATES[7], true, false);
 
-        assertLookup(RegionedColumnSource.getFirstElementIndex(9) + 4, 9, TEST_DATES[8], true, false);
-        assertLookup(RegionedColumnSource.getLastElementIndex(9) - 4, 9, TEST_DATES[9], true, false);
+        assertLookup(RegionedColumnSource.getFirstRowKey(9) + 4, 9, TEST_DATES[8], true, false);
+        assertLookup(RegionedColumnSource.getLastRowKey(9) - 4, 9, TEST_DATES[9], true, false);
     }
 
     @Test
@@ -116,19 +116,19 @@ public class TestRegionedColumnSourceDateTime
 
         // noinspection ConstantConditions
         assertLookup(0L, 0, TEST_DATES[0], false, true);
-        assertLookup(RegionedColumnSource.getLastElementIndex(0), 0, TEST_DATES[1], false, true);
+        assertLookup(RegionedColumnSource.getLastRowKey(0), 0, TEST_DATES[1], false, true);
 
-        assertLookup(RegionedColumnSource.getFirstElementIndex(1) + 1, 1, TEST_DATES[2], false, true);
-        assertLookup(RegionedColumnSource.getLastElementIndex(1) - 1, 1, TEST_DATES[3], false, true);
+        assertLookup(RegionedColumnSource.getFirstRowKey(1) + 1, 1, TEST_DATES[2], false, true);
+        assertLookup(RegionedColumnSource.getLastRowKey(1) - 1, 1, TEST_DATES[3], false, true);
 
-        assertLookup(RegionedColumnSource.getFirstElementIndex(4) + 2, 4, TEST_DATES[4], false, true);
-        assertLookup(RegionedColumnSource.getLastElementIndex(4) - 2, 4, TEST_DATES[5], false, true);
+        assertLookup(RegionedColumnSource.getFirstRowKey(4) + 2, 4, TEST_DATES[4], false, true);
+        assertLookup(RegionedColumnSource.getLastRowKey(4) - 2, 4, TEST_DATES[5], false, true);
 
-        assertLookup(RegionedColumnSource.getFirstElementIndex(8) + 3, 8, TEST_DATES[6], false, true);
-        assertLookup(RegionedColumnSource.getLastElementIndex(8) - 3, 8, TEST_DATES[7], false, true);
+        assertLookup(RegionedColumnSource.getFirstRowKey(8) + 3, 8, TEST_DATES[6], false, true);
+        assertLookup(RegionedColumnSource.getLastRowKey(8) - 3, 8, TEST_DATES[7], false, true);
 
-        assertLookup(RegionedColumnSource.getFirstElementIndex(9) + 4, 9, TEST_DATES[8], false, true);
-        assertLookup(RegionedColumnSource.getLastElementIndex(9) - 4, 9, TEST_DATES[9], false, true);
+        assertLookup(RegionedColumnSource.getFirstRowKey(9) + 4, 9, TEST_DATES[8], false, true);
+        assertLookup(RegionedColumnSource.getLastRowKey(9) - 4, 9, TEST_DATES[9], false, true);
     }
 
     @Test
@@ -137,18 +137,18 @@ public class TestRegionedColumnSourceDateTime
 
         // noinspection ConstantConditions
         assertLookup(0L, 0, TEST_DATES[0], true, true);
-        assertLookup(RegionedColumnSource.getLastElementIndex(0), 0, TEST_DATES[1], true, true);
+        assertLookup(RegionedColumnSource.getLastRowKey(0), 0, TEST_DATES[1], true, true);
 
-        assertLookup(RegionedColumnSource.getFirstElementIndex(1) + 1, 1, TEST_DATES[2], true, true);
-        assertLookup(RegionedColumnSource.getLastElementIndex(1) - 1, 1, TEST_DATES[3], true, true);
+        assertLookup(RegionedColumnSource.getFirstRowKey(1) + 1, 1, TEST_DATES[2], true, true);
+        assertLookup(RegionedColumnSource.getLastRowKey(1) - 1, 1, TEST_DATES[3], true, true);
 
-        assertLookup(RegionedColumnSource.getFirstElementIndex(4) + 2, 4, TEST_DATES[4], true, true);
-        assertLookup(RegionedColumnSource.getLastElementIndex(4) - 2, 4, TEST_DATES[5], true, true);
+        assertLookup(RegionedColumnSource.getFirstRowKey(4) + 2, 4, TEST_DATES[4], true, true);
+        assertLookup(RegionedColumnSource.getLastRowKey(4) - 2, 4, TEST_DATES[5], true, true);
 
-        assertLookup(RegionedColumnSource.getFirstElementIndex(8) + 3, 8, TEST_DATES[6], true, true);
-        assertLookup(RegionedColumnSource.getLastElementIndex(8) - 3, 8, TEST_DATES[7], true, true);
+        assertLookup(RegionedColumnSource.getFirstRowKey(8) + 3, 8, TEST_DATES[6], true, true);
+        assertLookup(RegionedColumnSource.getLastRowKey(8) - 3, 8, TEST_DATES[7], true, true);
 
-        assertLookup(RegionedColumnSource.getFirstElementIndex(9) + 4, 9, TEST_DATES[8], true, true);
-        assertLookup(RegionedColumnSource.getLastElementIndex(9) - 4, 9, TEST_DATES[9], true, true);
+        assertLookup(RegionedColumnSource.getFirstRowKey(9) + 4, 9, TEST_DATES[8], true, true);
+        assertLookup(RegionedColumnSource.getLastRowKey(9) - 4, 9, TEST_DATES[9], true, true);
     }
 }

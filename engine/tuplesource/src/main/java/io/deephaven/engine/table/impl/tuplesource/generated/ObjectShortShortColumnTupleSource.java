@@ -43,20 +43,20 @@ public class ObjectShortShortColumnTupleSource extends AbstractTupleSource<Objec
     }
 
     @Override
-    public final ObjectShortShortTuple createTuple(final long indexKey) {
+    public final ObjectShortShortTuple createTuple(final long rowKey) {
         return new ObjectShortShortTuple(
-                columnSource1.get(indexKey),
-                columnSource2.getShort(indexKey),
-                columnSource3.getShort(indexKey)
+                columnSource1.get(rowKey),
+                columnSource2.getShort(rowKey),
+                columnSource3.getShort(rowKey)
         );
     }
 
     @Override
-    public final ObjectShortShortTuple createPreviousTuple(final long indexKey) {
+    public final ObjectShortShortTuple createPreviousTuple(final long rowKey) {
         return new ObjectShortShortTuple(
-                columnSource1.getPrev(indexKey),
-                columnSource2.getPrevShort(indexKey),
-                columnSource3.getPrevShort(indexKey)
+                columnSource1.getPrev(rowKey),
+                columnSource2.getPrevShort(rowKey),
+                columnSource3.getPrevShort(rowKey)
         );
     }
 

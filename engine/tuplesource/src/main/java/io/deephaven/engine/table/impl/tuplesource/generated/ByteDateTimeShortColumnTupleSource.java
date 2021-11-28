@@ -46,20 +46,20 @@ public class ByteDateTimeShortColumnTupleSource extends AbstractTupleSource<Byte
     }
 
     @Override
-    public final ByteLongShortTuple createTuple(final long indexKey) {
+    public final ByteLongShortTuple createTuple(final long rowKey) {
         return new ByteLongShortTuple(
-                columnSource1.getByte(indexKey),
-                DateTimeUtils.nanos(columnSource2.get(indexKey)),
-                columnSource3.getShort(indexKey)
+                columnSource1.getByte(rowKey),
+                DateTimeUtils.nanos(columnSource2.get(rowKey)),
+                columnSource3.getShort(rowKey)
         );
     }
 
     @Override
-    public final ByteLongShortTuple createPreviousTuple(final long indexKey) {
+    public final ByteLongShortTuple createPreviousTuple(final long rowKey) {
         return new ByteLongShortTuple(
-                columnSource1.getPrevByte(indexKey),
-                DateTimeUtils.nanos(columnSource2.getPrev(indexKey)),
-                columnSource3.getPrevShort(indexKey)
+                columnSource1.getPrevByte(rowKey),
+                DateTimeUtils.nanos(columnSource2.getPrev(rowKey)),
+                columnSource3.getPrevShort(rowKey)
         );
     }
 

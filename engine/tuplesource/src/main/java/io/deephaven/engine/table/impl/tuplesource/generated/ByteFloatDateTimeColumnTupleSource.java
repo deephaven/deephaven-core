@@ -46,20 +46,20 @@ public class ByteFloatDateTimeColumnTupleSource extends AbstractTupleSource<Byte
     }
 
     @Override
-    public final ByteFloatLongTuple createTuple(final long indexKey) {
+    public final ByteFloatLongTuple createTuple(final long rowKey) {
         return new ByteFloatLongTuple(
-                columnSource1.getByte(indexKey),
-                columnSource2.getFloat(indexKey),
-                DateTimeUtils.nanos(columnSource3.get(indexKey))
+                columnSource1.getByte(rowKey),
+                columnSource2.getFloat(rowKey),
+                DateTimeUtils.nanos(columnSource3.get(rowKey))
         );
     }
 
     @Override
-    public final ByteFloatLongTuple createPreviousTuple(final long indexKey) {
+    public final ByteFloatLongTuple createPreviousTuple(final long rowKey) {
         return new ByteFloatLongTuple(
-                columnSource1.getPrevByte(indexKey),
-                columnSource2.getPrevFloat(indexKey),
-                DateTimeUtils.nanos(columnSource3.getPrev(indexKey))
+                columnSource1.getPrevByte(rowKey),
+                columnSource2.getPrevFloat(rowKey),
+                DateTimeUtils.nanos(columnSource3.getPrev(rowKey))
         );
     }
 

@@ -46,20 +46,20 @@ public class CharacterFloatReinterpretedDateTimeColumnTupleSource extends Abstra
     }
 
     @Override
-    public final CharFloatLongTuple createTuple(final long indexKey) {
+    public final CharFloatLongTuple createTuple(final long rowKey) {
         return new CharFloatLongTuple(
-                columnSource1.getChar(indexKey),
-                columnSource2.getFloat(indexKey),
-                columnSource3.getLong(indexKey)
+                columnSource1.getChar(rowKey),
+                columnSource2.getFloat(rowKey),
+                columnSource3.getLong(rowKey)
         );
     }
 
     @Override
-    public final CharFloatLongTuple createPreviousTuple(final long indexKey) {
+    public final CharFloatLongTuple createPreviousTuple(final long rowKey) {
         return new CharFloatLongTuple(
-                columnSource1.getPrevChar(indexKey),
-                columnSource2.getPrevFloat(indexKey),
-                columnSource3.getPrevLong(indexKey)
+                columnSource1.getPrevChar(rowKey),
+                columnSource2.getPrevFloat(rowKey),
+                columnSource3.getPrevLong(rowKey)
         );
     }
 

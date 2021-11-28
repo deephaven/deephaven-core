@@ -45,20 +45,20 @@ public class ReinterpretedBooleanCharacterBooleanColumnTupleSource extends Abstr
     }
 
     @Override
-    public final ByteCharByteTuple createTuple(final long indexKey) {
+    public final ByteCharByteTuple createTuple(final long rowKey) {
         return new ByteCharByteTuple(
-                columnSource1.getByte(indexKey),
-                columnSource2.getChar(indexKey),
-                BooleanUtils.booleanAsByte(columnSource3.getBoolean(indexKey))
+                columnSource1.getByte(rowKey),
+                columnSource2.getChar(rowKey),
+                BooleanUtils.booleanAsByte(columnSource3.getBoolean(rowKey))
         );
     }
 
     @Override
-    public final ByteCharByteTuple createPreviousTuple(final long indexKey) {
+    public final ByteCharByteTuple createPreviousTuple(final long rowKey) {
         return new ByteCharByteTuple(
-                columnSource1.getPrevByte(indexKey),
-                columnSource2.getPrevChar(indexKey),
-                BooleanUtils.booleanAsByte(columnSource3.getPrevBoolean(indexKey))
+                columnSource1.getPrevByte(rowKey),
+                columnSource2.getPrevChar(rowKey),
+                BooleanUtils.booleanAsByte(columnSource3.getPrevBoolean(rowKey))
         );
     }
 

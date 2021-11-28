@@ -46,20 +46,20 @@ public class BooleanDateTimeShortColumnTupleSource extends AbstractTupleSource<B
     }
 
     @Override
-    public final ByteLongShortTuple createTuple(final long indexKey) {
+    public final ByteLongShortTuple createTuple(final long rowKey) {
         return new ByteLongShortTuple(
-                BooleanUtils.booleanAsByte(columnSource1.getBoolean(indexKey)),
-                DateTimeUtils.nanos(columnSource2.get(indexKey)),
-                columnSource3.getShort(indexKey)
+                BooleanUtils.booleanAsByte(columnSource1.getBoolean(rowKey)),
+                DateTimeUtils.nanos(columnSource2.get(rowKey)),
+                columnSource3.getShort(rowKey)
         );
     }
 
     @Override
-    public final ByteLongShortTuple createPreviousTuple(final long indexKey) {
+    public final ByteLongShortTuple createPreviousTuple(final long rowKey) {
         return new ByteLongShortTuple(
-                BooleanUtils.booleanAsByte(columnSource1.getPrevBoolean(indexKey)),
-                DateTimeUtils.nanos(columnSource2.getPrev(indexKey)),
-                columnSource3.getPrevShort(indexKey)
+                BooleanUtils.booleanAsByte(columnSource1.getPrevBoolean(rowKey)),
+                DateTimeUtils.nanos(columnSource2.getPrev(rowKey)),
+                columnSource3.getPrevShort(rowKey)
         );
     }
 

@@ -59,7 +59,7 @@ public class TreeMapSource<T> extends AbstractColumnSource<T> {
         }
         if (rowSet.size() != vs.length) {
             throw new IllegalArgumentException(
-                    "TrackingWritableRowSet=" + rowSet + ", data(" + vs.length + ")=" + Arrays.toString(vs));
+                    "RowSet=" + rowSet + ", data(" + vs.length + ")=" + Arrays.toString(vs));
         }
 
         rowSet.forAllRowKeys(new LongConsumer() {

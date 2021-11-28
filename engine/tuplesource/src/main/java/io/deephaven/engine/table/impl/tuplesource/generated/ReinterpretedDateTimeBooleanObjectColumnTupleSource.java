@@ -46,20 +46,20 @@ public class ReinterpretedDateTimeBooleanObjectColumnTupleSource extends Abstrac
     }
 
     @Override
-    public final LongByteObjectTuple createTuple(final long indexKey) {
+    public final LongByteObjectTuple createTuple(final long rowKey) {
         return new LongByteObjectTuple(
-                columnSource1.getLong(indexKey),
-                BooleanUtils.booleanAsByte(columnSource2.getBoolean(indexKey)),
-                columnSource3.get(indexKey)
+                columnSource1.getLong(rowKey),
+                BooleanUtils.booleanAsByte(columnSource2.getBoolean(rowKey)),
+                columnSource3.get(rowKey)
         );
     }
 
     @Override
-    public final LongByteObjectTuple createPreviousTuple(final long indexKey) {
+    public final LongByteObjectTuple createPreviousTuple(final long rowKey) {
         return new LongByteObjectTuple(
-                columnSource1.getPrevLong(indexKey),
-                BooleanUtils.booleanAsByte(columnSource2.getPrevBoolean(indexKey)),
-                columnSource3.getPrev(indexKey)
+                columnSource1.getPrevLong(rowKey),
+                BooleanUtils.booleanAsByte(columnSource2.getPrevBoolean(rowKey)),
+                columnSource3.getPrev(rowKey)
         );
     }
 

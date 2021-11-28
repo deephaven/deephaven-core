@@ -46,20 +46,20 @@ public class DateTimeDoubleReinterpretedDateTimeColumnTupleSource extends Abstra
     }
 
     @Override
-    public final LongDoubleLongTuple createTuple(final long indexKey) {
+    public final LongDoubleLongTuple createTuple(final long rowKey) {
         return new LongDoubleLongTuple(
-                DateTimeUtils.nanos(columnSource1.get(indexKey)),
-                columnSource2.getDouble(indexKey),
-                columnSource3.getLong(indexKey)
+                DateTimeUtils.nanos(columnSource1.get(rowKey)),
+                columnSource2.getDouble(rowKey),
+                columnSource3.getLong(rowKey)
         );
     }
 
     @Override
-    public final LongDoubleLongTuple createPreviousTuple(final long indexKey) {
+    public final LongDoubleLongTuple createPreviousTuple(final long rowKey) {
         return new LongDoubleLongTuple(
-                DateTimeUtils.nanos(columnSource1.getPrev(indexKey)),
-                columnSource2.getPrevDouble(indexKey),
-                columnSource3.getPrevLong(indexKey)
+                DateTimeUtils.nanos(columnSource1.getPrev(rowKey)),
+                columnSource2.getPrevDouble(rowKey),
+                columnSource3.getPrevLong(rowKey)
         );
     }
 

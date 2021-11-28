@@ -40,18 +40,18 @@ public class FloatShortColumnTupleSource extends AbstractTupleSource<FloatShortT
     }
 
     @Override
-    public final FloatShortTuple createTuple(final long indexKey) {
+    public final FloatShortTuple createTuple(final long rowKey) {
         return new FloatShortTuple(
-                columnSource1.getFloat(indexKey),
-                columnSource2.getShort(indexKey)
+                columnSource1.getFloat(rowKey),
+                columnSource2.getShort(rowKey)
         );
     }
 
     @Override
-    public final FloatShortTuple createPreviousTuple(final long indexKey) {
+    public final FloatShortTuple createPreviousTuple(final long rowKey) {
         return new FloatShortTuple(
-                columnSource1.getPrevFloat(indexKey),
-                columnSource2.getPrevShort(indexKey)
+                columnSource1.getPrevFloat(rowKey),
+                columnSource2.getPrevShort(rowKey)
         );
     }
 

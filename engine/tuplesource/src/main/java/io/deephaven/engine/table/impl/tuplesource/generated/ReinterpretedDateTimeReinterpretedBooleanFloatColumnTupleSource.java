@@ -47,20 +47,20 @@ public class ReinterpretedDateTimeReinterpretedBooleanFloatColumnTupleSource ext
     }
 
     @Override
-    public final LongByteFloatTuple createTuple(final long indexKey) {
+    public final LongByteFloatTuple createTuple(final long rowKey) {
         return new LongByteFloatTuple(
-                columnSource1.getLong(indexKey),
-                columnSource2.getByte(indexKey),
-                columnSource3.getFloat(indexKey)
+                columnSource1.getLong(rowKey),
+                columnSource2.getByte(rowKey),
+                columnSource3.getFloat(rowKey)
         );
     }
 
     @Override
-    public final LongByteFloatTuple createPreviousTuple(final long indexKey) {
+    public final LongByteFloatTuple createPreviousTuple(final long rowKey) {
         return new LongByteFloatTuple(
-                columnSource1.getPrevLong(indexKey),
-                columnSource2.getPrevByte(indexKey),
-                columnSource3.getPrevFloat(indexKey)
+                columnSource1.getPrevLong(rowKey),
+                columnSource2.getPrevByte(rowKey),
+                columnSource3.getPrevFloat(rowKey)
         );
     }
 

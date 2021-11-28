@@ -46,20 +46,20 @@ public class ShortObjectReinterpretedDateTimeColumnTupleSource extends AbstractT
     }
 
     @Override
-    public final ShortObjectLongTuple createTuple(final long indexKey) {
+    public final ShortObjectLongTuple createTuple(final long rowKey) {
         return new ShortObjectLongTuple(
-                columnSource1.getShort(indexKey),
-                columnSource2.get(indexKey),
-                columnSource3.getLong(indexKey)
+                columnSource1.getShort(rowKey),
+                columnSource2.get(rowKey),
+                columnSource3.getLong(rowKey)
         );
     }
 
     @Override
-    public final ShortObjectLongTuple createPreviousTuple(final long indexKey) {
+    public final ShortObjectLongTuple createPreviousTuple(final long rowKey) {
         return new ShortObjectLongTuple(
-                columnSource1.getPrevShort(indexKey),
-                columnSource2.getPrev(indexKey),
-                columnSource3.getPrevLong(indexKey)
+                columnSource1.getPrevShort(rowKey),
+                columnSource2.getPrev(rowKey),
+                columnSource3.getPrevLong(rowKey)
         );
     }
 

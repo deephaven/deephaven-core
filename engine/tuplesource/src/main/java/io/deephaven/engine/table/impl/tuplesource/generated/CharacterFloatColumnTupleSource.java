@@ -40,18 +40,18 @@ public class CharacterFloatColumnTupleSource extends AbstractTupleSource<CharFlo
     }
 
     @Override
-    public final CharFloatTuple createTuple(final long indexKey) {
+    public final CharFloatTuple createTuple(final long rowKey) {
         return new CharFloatTuple(
-                columnSource1.getChar(indexKey),
-                columnSource2.getFloat(indexKey)
+                columnSource1.getChar(rowKey),
+                columnSource2.getFloat(rowKey)
         );
     }
 
     @Override
-    public final CharFloatTuple createPreviousTuple(final long indexKey) {
+    public final CharFloatTuple createPreviousTuple(final long rowKey) {
         return new CharFloatTuple(
-                columnSource1.getPrevChar(indexKey),
-                columnSource2.getPrevFloat(indexKey)
+                columnSource1.getPrevChar(rowKey),
+                columnSource2.getPrevFloat(rowKey)
         );
     }
 

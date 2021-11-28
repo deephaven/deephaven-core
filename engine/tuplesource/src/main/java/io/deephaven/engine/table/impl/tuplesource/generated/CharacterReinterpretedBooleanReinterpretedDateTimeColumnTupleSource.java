@@ -47,20 +47,20 @@ public class CharacterReinterpretedBooleanReinterpretedDateTimeColumnTupleSource
     }
 
     @Override
-    public final CharByteLongTuple createTuple(final long indexKey) {
+    public final CharByteLongTuple createTuple(final long rowKey) {
         return new CharByteLongTuple(
-                columnSource1.getChar(indexKey),
-                columnSource2.getByte(indexKey),
-                columnSource3.getLong(indexKey)
+                columnSource1.getChar(rowKey),
+                columnSource2.getByte(rowKey),
+                columnSource3.getLong(rowKey)
         );
     }
 
     @Override
-    public final CharByteLongTuple createPreviousTuple(final long indexKey) {
+    public final CharByteLongTuple createPreviousTuple(final long rowKey) {
         return new CharByteLongTuple(
-                columnSource1.getPrevChar(indexKey),
-                columnSource2.getPrevByte(indexKey),
-                columnSource3.getPrevLong(indexKey)
+                columnSource1.getPrevChar(rowKey),
+                columnSource2.getPrevByte(rowKey),
+                columnSource3.getPrevLong(rowKey)
         );
     }
 

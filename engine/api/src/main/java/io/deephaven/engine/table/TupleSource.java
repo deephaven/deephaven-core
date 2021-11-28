@@ -18,20 +18,20 @@ public interface TupleSource<TUPLE_TYPE> extends TupleExporter<TUPLE_TYPE>, Chun
     List<ColumnSource> getColumnSources();
 
     /**
-     * Create a tuple for key column values at the supplied rowSet key.
+     * Create a tuple for key column values at the supplied row key.
      *
-     * @param indexKey The rowSet key
+     * @param rowKey The row key
      * @return The resulting tuple
      */
-    TUPLE_TYPE createTuple(final long indexKey);
+    TUPLE_TYPE createTuple(long rowKey);
 
     /**
-     * Create a tuple for previous key column values at the supplied rowSet key.
+     * Create a tuple for previous key column values at the supplied row key.
      *
-     * @param indexKey The rowSet key
+     * @param rowKey The row key
      * @return The resulting tuple
      */
-    TUPLE_TYPE createPreviousTuple(final long indexKey);
+    TUPLE_TYPE createPreviousTuple(long rowKey);
 
     /**
      * Create a tuple for the supplied (boxed) values.
@@ -39,7 +39,7 @@ public interface TupleSource<TUPLE_TYPE> extends TupleExporter<TUPLE_TYPE>, Chun
      * @param values The values
      * @return The resulting tuple
      */
-    TUPLE_TYPE createTupleFromValues(@NotNull final Object... values);
+    TUPLE_TYPE createTupleFromValues(@NotNull Object... values);
 
     /**
      * Create a tuple for the supplied reinterpreted values.

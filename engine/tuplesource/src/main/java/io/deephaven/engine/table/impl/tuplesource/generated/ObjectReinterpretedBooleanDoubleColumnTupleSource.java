@@ -45,20 +45,20 @@ public class ObjectReinterpretedBooleanDoubleColumnTupleSource extends AbstractT
     }
 
     @Override
-    public final ObjectByteDoubleTuple createTuple(final long indexKey) {
+    public final ObjectByteDoubleTuple createTuple(final long rowKey) {
         return new ObjectByteDoubleTuple(
-                columnSource1.get(indexKey),
-                columnSource2.getByte(indexKey),
-                columnSource3.getDouble(indexKey)
+                columnSource1.get(rowKey),
+                columnSource2.getByte(rowKey),
+                columnSource3.getDouble(rowKey)
         );
     }
 
     @Override
-    public final ObjectByteDoubleTuple createPreviousTuple(final long indexKey) {
+    public final ObjectByteDoubleTuple createPreviousTuple(final long rowKey) {
         return new ObjectByteDoubleTuple(
-                columnSource1.getPrev(indexKey),
-                columnSource2.getPrevByte(indexKey),
-                columnSource3.getPrevDouble(indexKey)
+                columnSource1.getPrev(rowKey),
+                columnSource2.getPrevByte(rowKey),
+                columnSource3.getPrevDouble(rowKey)
         );
     }
 

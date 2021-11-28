@@ -43,20 +43,20 @@ public class ShortShortLongColumnTupleSource extends AbstractTupleSource<ShortSh
     }
 
     @Override
-    public final ShortShortLongTuple createTuple(final long indexKey) {
+    public final ShortShortLongTuple createTuple(final long rowKey) {
         return new ShortShortLongTuple(
-                columnSource1.getShort(indexKey),
-                columnSource2.getShort(indexKey),
-                columnSource3.getLong(indexKey)
+                columnSource1.getShort(rowKey),
+                columnSource2.getShort(rowKey),
+                columnSource3.getLong(rowKey)
         );
     }
 
     @Override
-    public final ShortShortLongTuple createPreviousTuple(final long indexKey) {
+    public final ShortShortLongTuple createPreviousTuple(final long rowKey) {
         return new ShortShortLongTuple(
-                columnSource1.getPrevShort(indexKey),
-                columnSource2.getPrevShort(indexKey),
-                columnSource3.getPrevLong(indexKey)
+                columnSource1.getPrevShort(rowKey),
+                columnSource2.getPrevShort(rowKey),
+                columnSource3.getPrevLong(rowKey)
         );
     }
 

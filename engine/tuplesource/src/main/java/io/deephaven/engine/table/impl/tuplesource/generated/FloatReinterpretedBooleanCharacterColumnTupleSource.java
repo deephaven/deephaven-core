@@ -45,20 +45,20 @@ public class FloatReinterpretedBooleanCharacterColumnTupleSource extends Abstrac
     }
 
     @Override
-    public final FloatByteCharTuple createTuple(final long indexKey) {
+    public final FloatByteCharTuple createTuple(final long rowKey) {
         return new FloatByteCharTuple(
-                columnSource1.getFloat(indexKey),
-                columnSource2.getByte(indexKey),
-                columnSource3.getChar(indexKey)
+                columnSource1.getFloat(rowKey),
+                columnSource2.getByte(rowKey),
+                columnSource3.getChar(rowKey)
         );
     }
 
     @Override
-    public final FloatByteCharTuple createPreviousTuple(final long indexKey) {
+    public final FloatByteCharTuple createPreviousTuple(final long rowKey) {
         return new FloatByteCharTuple(
-                columnSource1.getPrevFloat(indexKey),
-                columnSource2.getPrevByte(indexKey),
-                columnSource3.getPrevChar(indexKey)
+                columnSource1.getPrevFloat(rowKey),
+                columnSource2.getPrevByte(rowKey),
+                columnSource3.getPrevChar(rowKey)
         );
     }
 

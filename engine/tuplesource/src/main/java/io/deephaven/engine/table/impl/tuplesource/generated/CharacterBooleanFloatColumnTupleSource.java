@@ -45,20 +45,20 @@ public class CharacterBooleanFloatColumnTupleSource extends AbstractTupleSource<
     }
 
     @Override
-    public final CharByteFloatTuple createTuple(final long indexKey) {
+    public final CharByteFloatTuple createTuple(final long rowKey) {
         return new CharByteFloatTuple(
-                columnSource1.getChar(indexKey),
-                BooleanUtils.booleanAsByte(columnSource2.getBoolean(indexKey)),
-                columnSource3.getFloat(indexKey)
+                columnSource1.getChar(rowKey),
+                BooleanUtils.booleanAsByte(columnSource2.getBoolean(rowKey)),
+                columnSource3.getFloat(rowKey)
         );
     }
 
     @Override
-    public final CharByteFloatTuple createPreviousTuple(final long indexKey) {
+    public final CharByteFloatTuple createPreviousTuple(final long rowKey) {
         return new CharByteFloatTuple(
-                columnSource1.getPrevChar(indexKey),
-                BooleanUtils.booleanAsByte(columnSource2.getPrevBoolean(indexKey)),
-                columnSource3.getPrevFloat(indexKey)
+                columnSource1.getPrevChar(rowKey),
+                BooleanUtils.booleanAsByte(columnSource2.getPrevBoolean(rowKey)),
+                columnSource3.getPrevFloat(rowKey)
         );
     }
 

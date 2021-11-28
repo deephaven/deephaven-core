@@ -45,20 +45,20 @@ public class ObjectReinterpretedBooleanFloatColumnTupleSource extends AbstractTu
     }
 
     @Override
-    public final ObjectByteFloatTuple createTuple(final long indexKey) {
+    public final ObjectByteFloatTuple createTuple(final long rowKey) {
         return new ObjectByteFloatTuple(
-                columnSource1.get(indexKey),
-                columnSource2.getByte(indexKey),
-                columnSource3.getFloat(indexKey)
+                columnSource1.get(rowKey),
+                columnSource2.getByte(rowKey),
+                columnSource3.getFloat(rowKey)
         );
     }
 
     @Override
-    public final ObjectByteFloatTuple createPreviousTuple(final long indexKey) {
+    public final ObjectByteFloatTuple createPreviousTuple(final long rowKey) {
         return new ObjectByteFloatTuple(
-                columnSource1.getPrev(indexKey),
-                columnSource2.getPrevByte(indexKey),
-                columnSource3.getPrevFloat(indexKey)
+                columnSource1.getPrev(rowKey),
+                columnSource2.getPrevByte(rowKey),
+                columnSource3.getPrevFloat(rowKey)
         );
     }
 

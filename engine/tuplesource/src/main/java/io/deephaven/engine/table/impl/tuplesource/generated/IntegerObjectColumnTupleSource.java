@@ -40,18 +40,18 @@ public class IntegerObjectColumnTupleSource extends AbstractTupleSource<IntObjec
     }
 
     @Override
-    public final IntObjectTuple createTuple(final long indexKey) {
+    public final IntObjectTuple createTuple(final long rowKey) {
         return new IntObjectTuple(
-                columnSource1.getInt(indexKey),
-                columnSource2.get(indexKey)
+                columnSource1.getInt(rowKey),
+                columnSource2.get(rowKey)
         );
     }
 
     @Override
-    public final IntObjectTuple createPreviousTuple(final long indexKey) {
+    public final IntObjectTuple createPreviousTuple(final long rowKey) {
         return new IntObjectTuple(
-                columnSource1.getPrevInt(indexKey),
-                columnSource2.getPrev(indexKey)
+                columnSource1.getPrevInt(rowKey),
+                columnSource2.getPrev(rowKey)
         );
     }
 

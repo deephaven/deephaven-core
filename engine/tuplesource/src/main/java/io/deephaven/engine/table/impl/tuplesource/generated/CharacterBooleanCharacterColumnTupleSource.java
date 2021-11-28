@@ -44,20 +44,20 @@ public class CharacterBooleanCharacterColumnTupleSource extends AbstractTupleSou
     }
 
     @Override
-    public final CharByteCharTuple createTuple(final long indexKey) {
+    public final CharByteCharTuple createTuple(final long rowKey) {
         return new CharByteCharTuple(
-                columnSource1.getChar(indexKey),
-                BooleanUtils.booleanAsByte(columnSource2.getBoolean(indexKey)),
-                columnSource3.getChar(indexKey)
+                columnSource1.getChar(rowKey),
+                BooleanUtils.booleanAsByte(columnSource2.getBoolean(rowKey)),
+                columnSource3.getChar(rowKey)
         );
     }
 
     @Override
-    public final CharByteCharTuple createPreviousTuple(final long indexKey) {
+    public final CharByteCharTuple createPreviousTuple(final long rowKey) {
         return new CharByteCharTuple(
-                columnSource1.getPrevChar(indexKey),
-                BooleanUtils.booleanAsByte(columnSource2.getPrevBoolean(indexKey)),
-                columnSource3.getPrevChar(indexKey)
+                columnSource1.getPrevChar(rowKey),
+                BooleanUtils.booleanAsByte(columnSource2.getPrevBoolean(rowKey)),
+                columnSource3.getPrevChar(rowKey)
         );
     }
 

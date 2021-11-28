@@ -45,20 +45,20 @@ public class DoubleDateTimeDoubleColumnTupleSource extends AbstractTupleSource<D
     }
 
     @Override
-    public final DoubleLongDoubleTuple createTuple(final long indexKey) {
+    public final DoubleLongDoubleTuple createTuple(final long rowKey) {
         return new DoubleLongDoubleTuple(
-                columnSource1.getDouble(indexKey),
-                DateTimeUtils.nanos(columnSource2.get(indexKey)),
-                columnSource3.getDouble(indexKey)
+                columnSource1.getDouble(rowKey),
+                DateTimeUtils.nanos(columnSource2.get(rowKey)),
+                columnSource3.getDouble(rowKey)
         );
     }
 
     @Override
-    public final DoubleLongDoubleTuple createPreviousTuple(final long indexKey) {
+    public final DoubleLongDoubleTuple createPreviousTuple(final long rowKey) {
         return new DoubleLongDoubleTuple(
-                columnSource1.getPrevDouble(indexKey),
-                DateTimeUtils.nanos(columnSource2.getPrev(indexKey)),
-                columnSource3.getPrevDouble(indexKey)
+                columnSource1.getPrevDouble(rowKey),
+                DateTimeUtils.nanos(columnSource2.getPrev(rowKey)),
+                columnSource3.getPrevDouble(rowKey)
         );
     }
 

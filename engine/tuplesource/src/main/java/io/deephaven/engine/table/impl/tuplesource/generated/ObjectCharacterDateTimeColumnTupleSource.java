@@ -45,20 +45,20 @@ public class ObjectCharacterDateTimeColumnTupleSource extends AbstractTupleSourc
     }
 
     @Override
-    public final ObjectCharLongTuple createTuple(final long indexKey) {
+    public final ObjectCharLongTuple createTuple(final long rowKey) {
         return new ObjectCharLongTuple(
-                columnSource1.get(indexKey),
-                columnSource2.getChar(indexKey),
-                DateTimeUtils.nanos(columnSource3.get(indexKey))
+                columnSource1.get(rowKey),
+                columnSource2.getChar(rowKey),
+                DateTimeUtils.nanos(columnSource3.get(rowKey))
         );
     }
 
     @Override
-    public final ObjectCharLongTuple createPreviousTuple(final long indexKey) {
+    public final ObjectCharLongTuple createPreviousTuple(final long rowKey) {
         return new ObjectCharLongTuple(
-                columnSource1.getPrev(indexKey),
-                columnSource2.getPrevChar(indexKey),
-                DateTimeUtils.nanos(columnSource3.getPrev(indexKey))
+                columnSource1.getPrev(rowKey),
+                columnSource2.getPrevChar(rowKey),
+                DateTimeUtils.nanos(columnSource3.getPrev(rowKey))
         );
     }
 

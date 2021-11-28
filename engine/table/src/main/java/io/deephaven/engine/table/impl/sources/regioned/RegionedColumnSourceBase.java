@@ -20,9 +20,9 @@ abstract class RegionedColumnSourceBase<DATA_TYPE, ATTR extends Attributes.Value
     static {
         PARAMETERS =
                 new RegionedPageStore.Parameters(Long.MAX_VALUE, MAXIMUM_REGION_COUNT, REGION_CAPACITY_IN_ELEMENTS);
-        Assert.eq(PARAMETERS.regionMask, "parameters.regionMask", ELEMENT_INDEX_TO_SUB_REGION_ELEMENT_INDEX_MASK,
+        Assert.eq(PARAMETERS.regionMask, "parameters.regionMask", ROW_KEY_TO_SUB_REGION_ROW_INDEX_MASK,
                 "ELEMENT_INDEX_TO_SUB_REGION_ELEMENT_INDEX_MASK");
-        Assert.eq(PARAMETERS.regionMaskNumBits, "parameters.regionMaskNumBits", SUB_REGION_ELEMENT_INDEX_ADDRESS_BITS,
+        Assert.eq(PARAMETERS.regionMaskNumBits, "parameters.regionMaskNumBits", SUB_REGION_ROW_INDEX_ADDRESS_BITS,
                 "SUB_REGION_ELEMENT_INDEX_ADDRESS_BITS");
     }
 

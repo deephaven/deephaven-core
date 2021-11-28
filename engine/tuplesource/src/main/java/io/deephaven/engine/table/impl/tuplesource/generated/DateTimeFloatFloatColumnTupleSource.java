@@ -45,20 +45,20 @@ public class DateTimeFloatFloatColumnTupleSource extends AbstractTupleSource<Lon
     }
 
     @Override
-    public final LongFloatFloatTuple createTuple(final long indexKey) {
+    public final LongFloatFloatTuple createTuple(final long rowKey) {
         return new LongFloatFloatTuple(
-                DateTimeUtils.nanos(columnSource1.get(indexKey)),
-                columnSource2.getFloat(indexKey),
-                columnSource3.getFloat(indexKey)
+                DateTimeUtils.nanos(columnSource1.get(rowKey)),
+                columnSource2.getFloat(rowKey),
+                columnSource3.getFloat(rowKey)
         );
     }
 
     @Override
-    public final LongFloatFloatTuple createPreviousTuple(final long indexKey) {
+    public final LongFloatFloatTuple createPreviousTuple(final long rowKey) {
         return new LongFloatFloatTuple(
-                DateTimeUtils.nanos(columnSource1.getPrev(indexKey)),
-                columnSource2.getPrevFloat(indexKey),
-                columnSource3.getPrevFloat(indexKey)
+                DateTimeUtils.nanos(columnSource1.getPrev(rowKey)),
+                columnSource2.getPrevFloat(rowKey),
+                columnSource3.getPrevFloat(rowKey)
         );
     }
 

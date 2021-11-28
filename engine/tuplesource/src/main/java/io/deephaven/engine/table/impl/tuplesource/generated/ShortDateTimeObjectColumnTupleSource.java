@@ -45,20 +45,20 @@ public class ShortDateTimeObjectColumnTupleSource extends AbstractTupleSource<Sh
     }
 
     @Override
-    public final ShortLongObjectTuple createTuple(final long indexKey) {
+    public final ShortLongObjectTuple createTuple(final long rowKey) {
         return new ShortLongObjectTuple(
-                columnSource1.getShort(indexKey),
-                DateTimeUtils.nanos(columnSource2.get(indexKey)),
-                columnSource3.get(indexKey)
+                columnSource1.getShort(rowKey),
+                DateTimeUtils.nanos(columnSource2.get(rowKey)),
+                columnSource3.get(rowKey)
         );
     }
 
     @Override
-    public final ShortLongObjectTuple createPreviousTuple(final long indexKey) {
+    public final ShortLongObjectTuple createPreviousTuple(final long rowKey) {
         return new ShortLongObjectTuple(
-                columnSource1.getPrevShort(indexKey),
-                DateTimeUtils.nanos(columnSource2.getPrev(indexKey)),
-                columnSource3.getPrev(indexKey)
+                columnSource1.getPrevShort(rowKey),
+                DateTimeUtils.nanos(columnSource2.getPrev(rowKey)),
+                columnSource3.getPrev(rowKey)
         );
     }
 

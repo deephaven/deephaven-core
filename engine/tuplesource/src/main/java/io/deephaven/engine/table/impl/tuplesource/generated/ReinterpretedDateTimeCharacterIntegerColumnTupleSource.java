@@ -46,20 +46,20 @@ public class ReinterpretedDateTimeCharacterIntegerColumnTupleSource extends Abst
     }
 
     @Override
-    public final LongCharIntTuple createTuple(final long indexKey) {
+    public final LongCharIntTuple createTuple(final long rowKey) {
         return new LongCharIntTuple(
-                columnSource1.getLong(indexKey),
-                columnSource2.getChar(indexKey),
-                columnSource3.getInt(indexKey)
+                columnSource1.getLong(rowKey),
+                columnSource2.getChar(rowKey),
+                columnSource3.getInt(rowKey)
         );
     }
 
     @Override
-    public final LongCharIntTuple createPreviousTuple(final long indexKey) {
+    public final LongCharIntTuple createPreviousTuple(final long rowKey) {
         return new LongCharIntTuple(
-                columnSource1.getPrevLong(indexKey),
-                columnSource2.getPrevChar(indexKey),
-                columnSource3.getPrevInt(indexKey)
+                columnSource1.getPrevLong(rowKey),
+                columnSource2.getPrevChar(rowKey),
+                columnSource3.getPrevInt(rowKey)
         );
     }
 

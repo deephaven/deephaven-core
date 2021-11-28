@@ -46,20 +46,20 @@ public class ObjectReinterpretedDateTimeCharacterColumnTupleSource extends Abstr
     }
 
     @Override
-    public final ObjectLongCharTuple createTuple(final long indexKey) {
+    public final ObjectLongCharTuple createTuple(final long rowKey) {
         return new ObjectLongCharTuple(
-                columnSource1.get(indexKey),
-                columnSource2.getLong(indexKey),
-                columnSource3.getChar(indexKey)
+                columnSource1.get(rowKey),
+                columnSource2.getLong(rowKey),
+                columnSource3.getChar(rowKey)
         );
     }
 
     @Override
-    public final ObjectLongCharTuple createPreviousTuple(final long indexKey) {
+    public final ObjectLongCharTuple createPreviousTuple(final long rowKey) {
         return new ObjectLongCharTuple(
-                columnSource1.getPrev(indexKey),
-                columnSource2.getPrevLong(indexKey),
-                columnSource3.getPrevChar(indexKey)
+                columnSource1.getPrev(rowKey),
+                columnSource2.getPrevLong(rowKey),
+                columnSource3.getPrevChar(rowKey)
         );
     }
 

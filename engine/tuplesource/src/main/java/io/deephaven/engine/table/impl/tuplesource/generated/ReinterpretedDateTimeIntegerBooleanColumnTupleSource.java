@@ -47,20 +47,20 @@ public class ReinterpretedDateTimeIntegerBooleanColumnTupleSource extends Abstra
     }
 
     @Override
-    public final LongIntByteTuple createTuple(final long indexKey) {
+    public final LongIntByteTuple createTuple(final long rowKey) {
         return new LongIntByteTuple(
-                columnSource1.getLong(indexKey),
-                columnSource2.getInt(indexKey),
-                BooleanUtils.booleanAsByte(columnSource3.getBoolean(indexKey))
+                columnSource1.getLong(rowKey),
+                columnSource2.getInt(rowKey),
+                BooleanUtils.booleanAsByte(columnSource3.getBoolean(rowKey))
         );
     }
 
     @Override
-    public final LongIntByteTuple createPreviousTuple(final long indexKey) {
+    public final LongIntByteTuple createPreviousTuple(final long rowKey) {
         return new LongIntByteTuple(
-                columnSource1.getPrevLong(indexKey),
-                columnSource2.getPrevInt(indexKey),
-                BooleanUtils.booleanAsByte(columnSource3.getPrevBoolean(indexKey))
+                columnSource1.getPrevLong(rowKey),
+                columnSource2.getPrevInt(rowKey),
+                BooleanUtils.booleanAsByte(columnSource3.getPrevBoolean(rowKey))
         );
     }
 

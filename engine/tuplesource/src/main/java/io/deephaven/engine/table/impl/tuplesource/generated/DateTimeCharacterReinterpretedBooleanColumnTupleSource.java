@@ -47,20 +47,20 @@ public class DateTimeCharacterReinterpretedBooleanColumnTupleSource extends Abst
     }
 
     @Override
-    public final LongCharByteTuple createTuple(final long indexKey) {
+    public final LongCharByteTuple createTuple(final long rowKey) {
         return new LongCharByteTuple(
-                DateTimeUtils.nanos(columnSource1.get(indexKey)),
-                columnSource2.getChar(indexKey),
-                columnSource3.getByte(indexKey)
+                DateTimeUtils.nanos(columnSource1.get(rowKey)),
+                columnSource2.getChar(rowKey),
+                columnSource3.getByte(rowKey)
         );
     }
 
     @Override
-    public final LongCharByteTuple createPreviousTuple(final long indexKey) {
+    public final LongCharByteTuple createPreviousTuple(final long rowKey) {
         return new LongCharByteTuple(
-                DateTimeUtils.nanos(columnSource1.getPrev(indexKey)),
-                columnSource2.getPrevChar(indexKey),
-                columnSource3.getPrevByte(indexKey)
+                DateTimeUtils.nanos(columnSource1.getPrev(rowKey)),
+                columnSource2.getPrevChar(rowKey),
+                columnSource3.getPrevByte(rowKey)
         );
     }
 

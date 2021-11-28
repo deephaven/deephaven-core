@@ -46,20 +46,20 @@ public class ReinterpretedDateTimeIntegerFloatColumnTupleSource extends Abstract
     }
 
     @Override
-    public final LongIntFloatTuple createTuple(final long indexKey) {
+    public final LongIntFloatTuple createTuple(final long rowKey) {
         return new LongIntFloatTuple(
-                columnSource1.getLong(indexKey),
-                columnSource2.getInt(indexKey),
-                columnSource3.getFloat(indexKey)
+                columnSource1.getLong(rowKey),
+                columnSource2.getInt(rowKey),
+                columnSource3.getFloat(rowKey)
         );
     }
 
     @Override
-    public final LongIntFloatTuple createPreviousTuple(final long indexKey) {
+    public final LongIntFloatTuple createPreviousTuple(final long rowKey) {
         return new LongIntFloatTuple(
-                columnSource1.getPrevLong(indexKey),
-                columnSource2.getPrevInt(indexKey),
-                columnSource3.getPrevFloat(indexKey)
+                columnSource1.getPrevLong(rowKey),
+                columnSource2.getPrevInt(rowKey),
+                columnSource3.getPrevFloat(rowKey)
         );
     }
 

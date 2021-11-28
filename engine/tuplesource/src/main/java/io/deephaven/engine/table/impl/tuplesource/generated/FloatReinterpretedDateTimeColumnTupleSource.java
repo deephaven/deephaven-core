@@ -42,18 +42,18 @@ public class FloatReinterpretedDateTimeColumnTupleSource extends AbstractTupleSo
     }
 
     @Override
-    public final FloatLongTuple createTuple(final long indexKey) {
+    public final FloatLongTuple createTuple(final long rowKey) {
         return new FloatLongTuple(
-                columnSource1.getFloat(indexKey),
-                columnSource2.getLong(indexKey)
+                columnSource1.getFloat(rowKey),
+                columnSource2.getLong(rowKey)
         );
     }
 
     @Override
-    public final FloatLongTuple createPreviousTuple(final long indexKey) {
+    public final FloatLongTuple createPreviousTuple(final long rowKey) {
         return new FloatLongTuple(
-                columnSource1.getPrevFloat(indexKey),
-                columnSource2.getPrevLong(indexKey)
+                columnSource1.getPrevFloat(rowKey),
+                columnSource2.getPrevLong(rowKey)
         );
     }
 

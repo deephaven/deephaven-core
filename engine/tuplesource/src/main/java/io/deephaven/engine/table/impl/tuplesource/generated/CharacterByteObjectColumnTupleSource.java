@@ -44,20 +44,20 @@ public class CharacterByteObjectColumnTupleSource extends AbstractTupleSource<Ch
     }
 
     @Override
-    public final CharByteObjectTuple createTuple(final long indexKey) {
+    public final CharByteObjectTuple createTuple(final long rowKey) {
         return new CharByteObjectTuple(
-                columnSource1.getChar(indexKey),
-                columnSource2.getByte(indexKey),
-                columnSource3.get(indexKey)
+                columnSource1.getChar(rowKey),
+                columnSource2.getByte(rowKey),
+                columnSource3.get(rowKey)
         );
     }
 
     @Override
-    public final CharByteObjectTuple createPreviousTuple(final long indexKey) {
+    public final CharByteObjectTuple createPreviousTuple(final long rowKey) {
         return new CharByteObjectTuple(
-                columnSource1.getPrevChar(indexKey),
-                columnSource2.getPrevByte(indexKey),
-                columnSource3.getPrev(indexKey)
+                columnSource1.getPrevChar(rowKey),
+                columnSource2.getPrevByte(rowKey),
+                columnSource3.getPrev(rowKey)
         );
     }
 

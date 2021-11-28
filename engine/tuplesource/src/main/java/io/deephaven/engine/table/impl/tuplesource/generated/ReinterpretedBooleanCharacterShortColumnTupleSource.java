@@ -45,20 +45,20 @@ public class ReinterpretedBooleanCharacterShortColumnTupleSource extends Abstrac
     }
 
     @Override
-    public final ByteCharShortTuple createTuple(final long indexKey) {
+    public final ByteCharShortTuple createTuple(final long rowKey) {
         return new ByteCharShortTuple(
-                columnSource1.getByte(indexKey),
-                columnSource2.getChar(indexKey),
-                columnSource3.getShort(indexKey)
+                columnSource1.getByte(rowKey),
+                columnSource2.getChar(rowKey),
+                columnSource3.getShort(rowKey)
         );
     }
 
     @Override
-    public final ByteCharShortTuple createPreviousTuple(final long indexKey) {
+    public final ByteCharShortTuple createPreviousTuple(final long rowKey) {
         return new ByteCharShortTuple(
-                columnSource1.getPrevByte(indexKey),
-                columnSource2.getPrevChar(indexKey),
-                columnSource3.getPrevShort(indexKey)
+                columnSource1.getPrevByte(rowKey),
+                columnSource2.getPrevChar(rowKey),
+                columnSource3.getPrevShort(rowKey)
         );
     }
 

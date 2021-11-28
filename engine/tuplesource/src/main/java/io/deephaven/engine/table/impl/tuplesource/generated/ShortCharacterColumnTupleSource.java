@@ -40,18 +40,18 @@ public class ShortCharacterColumnTupleSource extends AbstractTupleSource<ShortCh
     }
 
     @Override
-    public final ShortCharTuple createTuple(final long indexKey) {
+    public final ShortCharTuple createTuple(final long rowKey) {
         return new ShortCharTuple(
-                columnSource1.getShort(indexKey),
-                columnSource2.getChar(indexKey)
+                columnSource1.getShort(rowKey),
+                columnSource2.getChar(rowKey)
         );
     }
 
     @Override
-    public final ShortCharTuple createPreviousTuple(final long indexKey) {
+    public final ShortCharTuple createPreviousTuple(final long rowKey) {
         return new ShortCharTuple(
-                columnSource1.getPrevShort(indexKey),
-                columnSource2.getPrevChar(indexKey)
+                columnSource1.getPrevShort(rowKey),
+                columnSource2.getPrevChar(rowKey)
         );
     }
 

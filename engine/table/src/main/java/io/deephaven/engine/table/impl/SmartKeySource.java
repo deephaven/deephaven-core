@@ -59,27 +59,27 @@ public final class SmartKeySource extends AbstractColumnSource<SmartKey>
     }
 
     @Override
-    public final SmartKey createTuple(final long indexKey) {
-        if (indexKey == RowSequence.NULL_ROW_KEY) {
+    public final SmartKey createTuple(final long rowKey) {
+        if (rowKey == RowSequence.NULL_ROW_KEY) {
             return null;
         }
         final int length = columnSources.length;
         final Object[] columnValues = new Object[length];
         for (int csi = 0; csi < length; ++csi) {
-            columnValues[csi] = columnSources[csi].get(indexKey);
+            columnValues[csi] = columnSources[csi].get(rowKey);
         }
         return new SmartKey(columnValues);
     }
 
     @Override
-    public final SmartKey createPreviousTuple(final long indexKey) {
-        if (indexKey == RowSequence.NULL_ROW_KEY) {
+    public final SmartKey createPreviousTuple(final long rowKey) {
+        if (rowKey == RowSequence.NULL_ROW_KEY) {
             return null;
         }
         final int length = columnSources.length;
         final Object[] columnValues = new Object[length];
         for (int csi = 0; csi < length; ++csi) {
-            columnValues[csi] = columnSources[csi].getPrev(indexKey);
+            columnValues[csi] = columnSources[csi].getPrev(rowKey);
         }
         return new SmartKey(columnValues);
     }

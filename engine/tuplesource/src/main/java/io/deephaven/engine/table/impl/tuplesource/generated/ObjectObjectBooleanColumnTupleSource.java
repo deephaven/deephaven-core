@@ -42,20 +42,20 @@ public class ObjectObjectBooleanColumnTupleSource extends AbstractTupleSource<Ob
     }
 
     @Override
-    public final ObjectObjectByteTuple createTuple(final long indexKey) {
+    public final ObjectObjectByteTuple createTuple(final long rowKey) {
         return new ObjectObjectByteTuple(
-                columnSource1.get(indexKey),
-                columnSource2.get(indexKey),
-                BooleanUtils.booleanAsByte(columnSource3.getBoolean(indexKey))
+                columnSource1.get(rowKey),
+                columnSource2.get(rowKey),
+                BooleanUtils.booleanAsByte(columnSource3.getBoolean(rowKey))
         );
     }
 
     @Override
-    public final ObjectObjectByteTuple createPreviousTuple(final long indexKey) {
+    public final ObjectObjectByteTuple createPreviousTuple(final long rowKey) {
         return new ObjectObjectByteTuple(
-                columnSource1.getPrev(indexKey),
-                columnSource2.getPrev(indexKey),
-                BooleanUtils.booleanAsByte(columnSource3.getPrevBoolean(indexKey))
+                columnSource1.getPrev(rowKey),
+                columnSource2.getPrev(rowKey),
+                BooleanUtils.booleanAsByte(columnSource3.getPrevBoolean(rowKey))
         );
     }
 

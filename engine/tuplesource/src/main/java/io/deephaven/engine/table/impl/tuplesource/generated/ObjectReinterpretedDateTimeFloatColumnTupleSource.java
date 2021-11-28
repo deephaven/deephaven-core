@@ -46,20 +46,20 @@ public class ObjectReinterpretedDateTimeFloatColumnTupleSource extends AbstractT
     }
 
     @Override
-    public final ObjectLongFloatTuple createTuple(final long indexKey) {
+    public final ObjectLongFloatTuple createTuple(final long rowKey) {
         return new ObjectLongFloatTuple(
-                columnSource1.get(indexKey),
-                columnSource2.getLong(indexKey),
-                columnSource3.getFloat(indexKey)
+                columnSource1.get(rowKey),
+                columnSource2.getLong(rowKey),
+                columnSource3.getFloat(rowKey)
         );
     }
 
     @Override
-    public final ObjectLongFloatTuple createPreviousTuple(final long indexKey) {
+    public final ObjectLongFloatTuple createPreviousTuple(final long rowKey) {
         return new ObjectLongFloatTuple(
-                columnSource1.getPrev(indexKey),
-                columnSource2.getPrevLong(indexKey),
-                columnSource3.getPrevFloat(indexKey)
+                columnSource1.getPrev(rowKey),
+                columnSource2.getPrevLong(rowKey),
+                columnSource3.getPrevFloat(rowKey)
         );
     }
 

@@ -46,20 +46,20 @@ public class ShortFloatReinterpretedDateTimeColumnTupleSource extends AbstractTu
     }
 
     @Override
-    public final ShortFloatLongTuple createTuple(final long indexKey) {
+    public final ShortFloatLongTuple createTuple(final long rowKey) {
         return new ShortFloatLongTuple(
-                columnSource1.getShort(indexKey),
-                columnSource2.getFloat(indexKey),
-                columnSource3.getLong(indexKey)
+                columnSource1.getShort(rowKey),
+                columnSource2.getFloat(rowKey),
+                columnSource3.getLong(rowKey)
         );
     }
 
     @Override
-    public final ShortFloatLongTuple createPreviousTuple(final long indexKey) {
+    public final ShortFloatLongTuple createPreviousTuple(final long rowKey) {
         return new ShortFloatLongTuple(
-                columnSource1.getPrevShort(indexKey),
-                columnSource2.getPrevFloat(indexKey),
-                columnSource3.getPrevLong(indexKey)
+                columnSource1.getPrevShort(rowKey),
+                columnSource2.getPrevFloat(rowKey),
+                columnSource3.getPrevLong(rowKey)
         );
     }
 

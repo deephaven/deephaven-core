@@ -46,20 +46,20 @@ public class CharacterDateTimeReinterpretedDateTimeColumnTupleSource extends Abs
     }
 
     @Override
-    public final CharLongLongTuple createTuple(final long indexKey) {
+    public final CharLongLongTuple createTuple(final long rowKey) {
         return new CharLongLongTuple(
-                columnSource1.getChar(indexKey),
-                DateTimeUtils.nanos(columnSource2.get(indexKey)),
-                columnSource3.getLong(indexKey)
+                columnSource1.getChar(rowKey),
+                DateTimeUtils.nanos(columnSource2.get(rowKey)),
+                columnSource3.getLong(rowKey)
         );
     }
 
     @Override
-    public final CharLongLongTuple createPreviousTuple(final long indexKey) {
+    public final CharLongLongTuple createPreviousTuple(final long rowKey) {
         return new CharLongLongTuple(
-                columnSource1.getPrevChar(indexKey),
-                DateTimeUtils.nanos(columnSource2.getPrev(indexKey)),
-                columnSource3.getPrevLong(indexKey)
+                columnSource1.getPrevChar(rowKey),
+                DateTimeUtils.nanos(columnSource2.getPrev(rowKey)),
+                columnSource3.getPrevLong(rowKey)
         );
     }
 

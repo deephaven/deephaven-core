@@ -45,20 +45,20 @@ public class DoubleDoubleReinterpretedDateTimeColumnTupleSource extends Abstract
     }
 
     @Override
-    public final DoubleDoubleLongTuple createTuple(final long indexKey) {
+    public final DoubleDoubleLongTuple createTuple(final long rowKey) {
         return new DoubleDoubleLongTuple(
-                columnSource1.getDouble(indexKey),
-                columnSource2.getDouble(indexKey),
-                columnSource3.getLong(indexKey)
+                columnSource1.getDouble(rowKey),
+                columnSource2.getDouble(rowKey),
+                columnSource3.getLong(rowKey)
         );
     }
 
     @Override
-    public final DoubleDoubleLongTuple createPreviousTuple(final long indexKey) {
+    public final DoubleDoubleLongTuple createPreviousTuple(final long rowKey) {
         return new DoubleDoubleLongTuple(
-                columnSource1.getPrevDouble(indexKey),
-                columnSource2.getPrevDouble(indexKey),
-                columnSource3.getPrevLong(indexKey)
+                columnSource1.getPrevDouble(rowKey),
+                columnSource2.getPrevDouble(rowKey),
+                columnSource3.getPrevLong(rowKey)
         );
     }
 

@@ -44,20 +44,20 @@ public class BooleanReinterpretedBooleanReinterpretedBooleanColumnTupleSource ex
     }
 
     @Override
-    public final ByteByteByteTuple createTuple(final long indexKey) {
+    public final ByteByteByteTuple createTuple(final long rowKey) {
         return new ByteByteByteTuple(
-                BooleanUtils.booleanAsByte(columnSource1.getBoolean(indexKey)),
-                columnSource2.getByte(indexKey),
-                columnSource3.getByte(indexKey)
+                BooleanUtils.booleanAsByte(columnSource1.getBoolean(rowKey)),
+                columnSource2.getByte(rowKey),
+                columnSource3.getByte(rowKey)
         );
     }
 
     @Override
-    public final ByteByteByteTuple createPreviousTuple(final long indexKey) {
+    public final ByteByteByteTuple createPreviousTuple(final long rowKey) {
         return new ByteByteByteTuple(
-                BooleanUtils.booleanAsByte(columnSource1.getPrevBoolean(indexKey)),
-                columnSource2.getPrevByte(indexKey),
-                columnSource3.getPrevByte(indexKey)
+                BooleanUtils.booleanAsByte(columnSource1.getPrevBoolean(rowKey)),
+                columnSource2.getPrevByte(rowKey),
+                columnSource3.getPrevByte(rowKey)
         );
     }
 

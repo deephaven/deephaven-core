@@ -42,21 +42,21 @@ final class MultiColumnTupleSource implements TupleSource<ArrayTuple>, DefaultCh
     }
 
     @Override
-    public final ArrayTuple createTuple(final long indexKey) {
+    public final ArrayTuple createTuple(final long rowKey) {
         final int length = columnSources.length;
         final Object columnValues[] = new Object[length];
         for (int csi = 0; csi < length; ++csi) {
-            columnValues[csi] = columnSources[csi].get(indexKey);
+            columnValues[csi] = columnSources[csi].get(rowKey);
         }
         return new ArrayTuple(columnValues);
     }
 
     @Override
-    public final ArrayTuple createPreviousTuple(final long indexKey) {
+    public final ArrayTuple createPreviousTuple(final long rowKey) {
         final int length = columnSources.length;
         final Object columnValues[] = new Object[length];
         for (int csi = 0; csi < length; ++csi) {
-            columnValues[csi] = columnSources[csi].getPrev(indexKey);
+            columnValues[csi] = columnSources[csi].getPrev(rowKey);
         }
         return new ArrayTuple(columnValues);
     }

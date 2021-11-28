@@ -46,20 +46,20 @@ public class ShortReinterpretedDateTimeCharacterColumnTupleSource extends Abstra
     }
 
     @Override
-    public final ShortLongCharTuple createTuple(final long indexKey) {
+    public final ShortLongCharTuple createTuple(final long rowKey) {
         return new ShortLongCharTuple(
-                columnSource1.getShort(indexKey),
-                columnSource2.getLong(indexKey),
-                columnSource3.getChar(indexKey)
+                columnSource1.getShort(rowKey),
+                columnSource2.getLong(rowKey),
+                columnSource3.getChar(rowKey)
         );
     }
 
     @Override
-    public final ShortLongCharTuple createPreviousTuple(final long indexKey) {
+    public final ShortLongCharTuple createPreviousTuple(final long rowKey) {
         return new ShortLongCharTuple(
-                columnSource1.getPrevShort(indexKey),
-                columnSource2.getPrevLong(indexKey),
-                columnSource3.getPrevChar(indexKey)
+                columnSource1.getPrevShort(rowKey),
+                columnSource2.getPrevLong(rowKey),
+                columnSource3.getPrevChar(rowKey)
         );
     }
 

@@ -44,20 +44,20 @@ public class CharacterLongDoubleColumnTupleSource extends AbstractTupleSource<Ch
     }
 
     @Override
-    public final CharLongDoubleTuple createTuple(final long indexKey) {
+    public final CharLongDoubleTuple createTuple(final long rowKey) {
         return new CharLongDoubleTuple(
-                columnSource1.getChar(indexKey),
-                columnSource2.getLong(indexKey),
-                columnSource3.getDouble(indexKey)
+                columnSource1.getChar(rowKey),
+                columnSource2.getLong(rowKey),
+                columnSource3.getDouble(rowKey)
         );
     }
 
     @Override
-    public final CharLongDoubleTuple createPreviousTuple(final long indexKey) {
+    public final CharLongDoubleTuple createPreviousTuple(final long rowKey) {
         return new CharLongDoubleTuple(
-                columnSource1.getPrevChar(indexKey),
-                columnSource2.getPrevLong(indexKey),
-                columnSource3.getPrevDouble(indexKey)
+                columnSource1.getPrevChar(rowKey),
+                columnSource2.getPrevLong(rowKey),
+                columnSource3.getPrevDouble(rowKey)
         );
     }
 

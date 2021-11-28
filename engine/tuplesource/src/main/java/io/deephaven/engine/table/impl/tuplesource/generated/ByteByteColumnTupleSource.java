@@ -39,18 +39,18 @@ public class ByteByteColumnTupleSource extends AbstractTupleSource<ByteByteTuple
     }
 
     @Override
-    public final ByteByteTuple createTuple(final long indexKey) {
+    public final ByteByteTuple createTuple(final long rowKey) {
         return new ByteByteTuple(
-                columnSource1.getByte(indexKey),
-                columnSource2.getByte(indexKey)
+                columnSource1.getByte(rowKey),
+                columnSource2.getByte(rowKey)
         );
     }
 
     @Override
-    public final ByteByteTuple createPreviousTuple(final long indexKey) {
+    public final ByteByteTuple createPreviousTuple(final long rowKey) {
         return new ByteByteTuple(
-                columnSource1.getPrevByte(indexKey),
-                columnSource2.getPrevByte(indexKey)
+                columnSource1.getPrevByte(rowKey),
+                columnSource2.getPrevByte(rowKey)
         );
     }
 

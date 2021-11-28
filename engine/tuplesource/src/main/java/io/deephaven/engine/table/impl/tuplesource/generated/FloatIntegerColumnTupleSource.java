@@ -40,18 +40,18 @@ public class FloatIntegerColumnTupleSource extends AbstractTupleSource<FloatIntT
     }
 
     @Override
-    public final FloatIntTuple createTuple(final long indexKey) {
+    public final FloatIntTuple createTuple(final long rowKey) {
         return new FloatIntTuple(
-                columnSource1.getFloat(indexKey),
-                columnSource2.getInt(indexKey)
+                columnSource1.getFloat(rowKey),
+                columnSource2.getInt(rowKey)
         );
     }
 
     @Override
-    public final FloatIntTuple createPreviousTuple(final long indexKey) {
+    public final FloatIntTuple createPreviousTuple(final long rowKey) {
         return new FloatIntTuple(
-                columnSource1.getPrevFloat(indexKey),
-                columnSource2.getPrevInt(indexKey)
+                columnSource1.getPrevFloat(rowKey),
+                columnSource2.getPrevInt(rowKey)
         );
     }
 

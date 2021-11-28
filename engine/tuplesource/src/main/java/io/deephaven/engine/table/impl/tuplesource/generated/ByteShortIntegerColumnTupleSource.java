@@ -44,20 +44,20 @@ public class ByteShortIntegerColumnTupleSource extends AbstractTupleSource<ByteS
     }
 
     @Override
-    public final ByteShortIntTuple createTuple(final long indexKey) {
+    public final ByteShortIntTuple createTuple(final long rowKey) {
         return new ByteShortIntTuple(
-                columnSource1.getByte(indexKey),
-                columnSource2.getShort(indexKey),
-                columnSource3.getInt(indexKey)
+                columnSource1.getByte(rowKey),
+                columnSource2.getShort(rowKey),
+                columnSource3.getInt(rowKey)
         );
     }
 
     @Override
-    public final ByteShortIntTuple createPreviousTuple(final long indexKey) {
+    public final ByteShortIntTuple createPreviousTuple(final long rowKey) {
         return new ByteShortIntTuple(
-                columnSource1.getPrevByte(indexKey),
-                columnSource2.getPrevShort(indexKey),
-                columnSource3.getPrevInt(indexKey)
+                columnSource1.getPrevByte(rowKey),
+                columnSource2.getPrevShort(rowKey),
+                columnSource3.getPrevInt(rowKey)
         );
     }
 

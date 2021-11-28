@@ -44,20 +44,20 @@ public class FloatReinterpretedBooleanReinterpretedBooleanColumnTupleSource exte
     }
 
     @Override
-    public final FloatByteByteTuple createTuple(final long indexKey) {
+    public final FloatByteByteTuple createTuple(final long rowKey) {
         return new FloatByteByteTuple(
-                columnSource1.getFloat(indexKey),
-                columnSource2.getByte(indexKey),
-                columnSource3.getByte(indexKey)
+                columnSource1.getFloat(rowKey),
+                columnSource2.getByte(rowKey),
+                columnSource3.getByte(rowKey)
         );
     }
 
     @Override
-    public final FloatByteByteTuple createPreviousTuple(final long indexKey) {
+    public final FloatByteByteTuple createPreviousTuple(final long rowKey) {
         return new FloatByteByteTuple(
-                columnSource1.getPrevFloat(indexKey),
-                columnSource2.getPrevByte(indexKey),
-                columnSource3.getPrevByte(indexKey)
+                columnSource1.getPrevFloat(rowKey),
+                columnSource2.getPrevByte(rowKey),
+                columnSource3.getPrevByte(rowKey)
         );
     }
 

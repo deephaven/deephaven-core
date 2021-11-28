@@ -62,7 +62,7 @@ class ParquetTableLocation extends AbstractTableLocation {
                 .toArray(RowGroup[]::new);
         final long maxRowCount = Arrays.stream(rowGroups).mapToLong(RowGroup::getNum_rows).max().orElse(0L);
         regionParameters = new RegionedPageStore.Parameters(
-                RegionedColumnSource.ELEMENT_INDEX_TO_SUB_REGION_ELEMENT_INDEX_MASK, rowGroupCount, maxRowCount);
+                RegionedColumnSource.ROW_KEY_TO_SUB_REGION_ROW_INDEX_MASK, rowGroupCount, maxRowCount);
 
         parquetColumnNameToPath = new HashMap<>();
         for (final ColumnDescriptor column : parquetFileReader.getSchema().getColumns()) {

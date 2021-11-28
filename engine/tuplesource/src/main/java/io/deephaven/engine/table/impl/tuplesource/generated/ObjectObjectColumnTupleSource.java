@@ -38,18 +38,18 @@ public class ObjectObjectColumnTupleSource extends AbstractTupleSource<ObjectObj
     }
 
     @Override
-    public final ObjectObjectTuple createTuple(final long indexKey) {
+    public final ObjectObjectTuple createTuple(final long rowKey) {
         return new ObjectObjectTuple(
-                columnSource1.get(indexKey),
-                columnSource2.get(indexKey)
+                columnSource1.get(rowKey),
+                columnSource2.get(rowKey)
         );
     }
 
     @Override
-    public final ObjectObjectTuple createPreviousTuple(final long indexKey) {
+    public final ObjectObjectTuple createPreviousTuple(final long rowKey) {
         return new ObjectObjectTuple(
-                columnSource1.getPrev(indexKey),
-                columnSource2.getPrev(indexKey)
+                columnSource1.getPrev(rowKey),
+                columnSource2.getPrev(rowKey)
         );
     }
 

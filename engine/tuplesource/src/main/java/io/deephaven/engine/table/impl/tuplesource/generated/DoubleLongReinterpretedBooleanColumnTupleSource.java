@@ -45,20 +45,20 @@ public class DoubleLongReinterpretedBooleanColumnTupleSource extends AbstractTup
     }
 
     @Override
-    public final DoubleLongByteTuple createTuple(final long indexKey) {
+    public final DoubleLongByteTuple createTuple(final long rowKey) {
         return new DoubleLongByteTuple(
-                columnSource1.getDouble(indexKey),
-                columnSource2.getLong(indexKey),
-                columnSource3.getByte(indexKey)
+                columnSource1.getDouble(rowKey),
+                columnSource2.getLong(rowKey),
+                columnSource3.getByte(rowKey)
         );
     }
 
     @Override
-    public final DoubleLongByteTuple createPreviousTuple(final long indexKey) {
+    public final DoubleLongByteTuple createPreviousTuple(final long rowKey) {
         return new DoubleLongByteTuple(
-                columnSource1.getPrevDouble(indexKey),
-                columnSource2.getPrevLong(indexKey),
-                columnSource3.getPrevByte(indexKey)
+                columnSource1.getPrevDouble(rowKey),
+                columnSource2.getPrevLong(rowKey),
+                columnSource3.getPrevByte(rowKey)
         );
     }
 

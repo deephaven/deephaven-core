@@ -45,20 +45,20 @@ public class ReinterpretedBooleanIntegerBooleanColumnTupleSource extends Abstrac
     }
 
     @Override
-    public final ByteIntByteTuple createTuple(final long indexKey) {
+    public final ByteIntByteTuple createTuple(final long rowKey) {
         return new ByteIntByteTuple(
-                columnSource1.getByte(indexKey),
-                columnSource2.getInt(indexKey),
-                BooleanUtils.booleanAsByte(columnSource3.getBoolean(indexKey))
+                columnSource1.getByte(rowKey),
+                columnSource2.getInt(rowKey),
+                BooleanUtils.booleanAsByte(columnSource3.getBoolean(rowKey))
         );
     }
 
     @Override
-    public final ByteIntByteTuple createPreviousTuple(final long indexKey) {
+    public final ByteIntByteTuple createPreviousTuple(final long rowKey) {
         return new ByteIntByteTuple(
-                columnSource1.getPrevByte(indexKey),
-                columnSource2.getPrevInt(indexKey),
-                BooleanUtils.booleanAsByte(columnSource3.getPrevBoolean(indexKey))
+                columnSource1.getPrevByte(rowKey),
+                columnSource2.getPrevInt(rowKey),
+                BooleanUtils.booleanAsByte(columnSource3.getPrevBoolean(rowKey))
         );
     }
 

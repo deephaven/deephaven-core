@@ -45,20 +45,20 @@ public class ReinterpretedDateTimeLongShortColumnTupleSource extends AbstractTup
     }
 
     @Override
-    public final LongLongShortTuple createTuple(final long indexKey) {
+    public final LongLongShortTuple createTuple(final long rowKey) {
         return new LongLongShortTuple(
-                columnSource1.getLong(indexKey),
-                columnSource2.getLong(indexKey),
-                columnSource3.getShort(indexKey)
+                columnSource1.getLong(rowKey),
+                columnSource2.getLong(rowKey),
+                columnSource3.getShort(rowKey)
         );
     }
 
     @Override
-    public final LongLongShortTuple createPreviousTuple(final long indexKey) {
+    public final LongLongShortTuple createPreviousTuple(final long rowKey) {
         return new LongLongShortTuple(
-                columnSource1.getPrevLong(indexKey),
-                columnSource2.getPrevLong(indexKey),
-                columnSource3.getPrevShort(indexKey)
+                columnSource1.getPrevLong(rowKey),
+                columnSource2.getPrevLong(rowKey),
+                columnSource3.getPrevShort(rowKey)
         );
     }
 

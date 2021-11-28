@@ -58,7 +58,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static io.deephaven.parquet.table.ParquetTableWriter.*;
-import static io.deephaven.engine.table.impl.sources.regioned.RegionedColumnSource.ELEMENT_INDEX_TO_SUB_REGION_ELEMENT_INDEX_MASK;
+import static io.deephaven.engine.table.impl.sources.regioned.RegionedColumnSource.ROW_KEY_TO_SUB_REGION_ROW_INDEX_MASK;
 
 final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLocation {
 
@@ -182,16 +182,16 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
             return (METADATA_TYPE) new MetaDataTableFactory(
                     ColumnChunkPageStore.<Values>create(
                             pageCache.castAttr(), groupingKeyReader,
-                            ELEMENT_INDEX_TO_SUB_REGION_ELEMENT_INDEX_MASK,
+                            ROW_KEY_TO_SUB_REGION_ROW_INDEX_MASK,
                             makeToPage(columnTypes.get(GROUPING_KEY), ParquetInstructions.EMPTY,
                                     GROUPING_KEY, groupingKeyReader, columnDefinition)).pageStore,
                     ColumnChunkPageStore.<UnorderedRowKeys>create(
                             pageCache.castAttr(), beginPosReader,
-                            ELEMENT_INDEX_TO_SUB_REGION_ELEMENT_INDEX_MASK,
+                            ROW_KEY_TO_SUB_REGION_ROW_INDEX_MASK,
                             makeToPage(columnTypes.get(BEGIN_POS), ParquetInstructions.EMPTY, BEGIN_POS,
                                     beginPosReader, FIRST_KEY_COL_DEF)).pageStore,
                     ColumnChunkPageStore.<UnorderedRowKeys>create(pageCache.castAttr(), endPosReader,
-                            ELEMENT_INDEX_TO_SUB_REGION_ELEMENT_INDEX_MASK,
+                            ROW_KEY_TO_SUB_REGION_ROW_INDEX_MASK,
                             makeToPage(columnTypes.get(END_POS), ParquetInstructions.EMPTY, END_POS,
                                     beginPosReader, LAST_KEY_COL_DEF)).pageStore).get();
         } catch (IOException e) {

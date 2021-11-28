@@ -40,18 +40,18 @@ public class LongIntegerColumnTupleSource extends AbstractTupleSource<LongIntTup
     }
 
     @Override
-    public final LongIntTuple createTuple(final long indexKey) {
+    public final LongIntTuple createTuple(final long rowKey) {
         return new LongIntTuple(
-                columnSource1.getLong(indexKey),
-                columnSource2.getInt(indexKey)
+                columnSource1.getLong(rowKey),
+                columnSource2.getInt(rowKey)
         );
     }
 
     @Override
-    public final LongIntTuple createPreviousTuple(final long indexKey) {
+    public final LongIntTuple createPreviousTuple(final long rowKey) {
         return new LongIntTuple(
-                columnSource1.getPrevLong(indexKey),
-                columnSource2.getPrevInt(indexKey)
+                columnSource1.getPrevLong(rowKey),
+                columnSource2.getPrevInt(rowKey)
         );
     }
 

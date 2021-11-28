@@ -44,20 +44,20 @@ public class FloatReinterpretedBooleanFloatColumnTupleSource extends AbstractTup
     }
 
     @Override
-    public final FloatByteFloatTuple createTuple(final long indexKey) {
+    public final FloatByteFloatTuple createTuple(final long rowKey) {
         return new FloatByteFloatTuple(
-                columnSource1.getFloat(indexKey),
-                columnSource2.getByte(indexKey),
-                columnSource3.getFloat(indexKey)
+                columnSource1.getFloat(rowKey),
+                columnSource2.getByte(rowKey),
+                columnSource3.getFloat(rowKey)
         );
     }
 
     @Override
-    public final FloatByteFloatTuple createPreviousTuple(final long indexKey) {
+    public final FloatByteFloatTuple createPreviousTuple(final long rowKey) {
         return new FloatByteFloatTuple(
-                columnSource1.getPrevFloat(indexKey),
-                columnSource2.getPrevByte(indexKey),
-                columnSource3.getPrevFloat(indexKey)
+                columnSource1.getPrevFloat(rowKey),
+                columnSource2.getPrevByte(rowKey),
+                columnSource3.getPrevFloat(rowKey)
         );
     }
 

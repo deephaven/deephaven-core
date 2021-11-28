@@ -45,20 +45,20 @@ public class ReinterpretedDateTimeLongCharacterColumnTupleSource extends Abstrac
     }
 
     @Override
-    public final LongLongCharTuple createTuple(final long indexKey) {
+    public final LongLongCharTuple createTuple(final long rowKey) {
         return new LongLongCharTuple(
-                columnSource1.getLong(indexKey),
-                columnSource2.getLong(indexKey),
-                columnSource3.getChar(indexKey)
+                columnSource1.getLong(rowKey),
+                columnSource2.getLong(rowKey),
+                columnSource3.getChar(rowKey)
         );
     }
 
     @Override
-    public final LongLongCharTuple createPreviousTuple(final long indexKey) {
+    public final LongLongCharTuple createPreviousTuple(final long rowKey) {
         return new LongLongCharTuple(
-                columnSource1.getPrevLong(indexKey),
-                columnSource2.getPrevLong(indexKey),
-                columnSource3.getPrevChar(indexKey)
+                columnSource1.getPrevLong(rowKey),
+                columnSource2.getPrevLong(rowKey),
+                columnSource3.getPrevChar(rowKey)
         );
     }
 

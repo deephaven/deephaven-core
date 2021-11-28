@@ -46,20 +46,20 @@ public class ReinterpretedDateTimeByteCharacterColumnTupleSource extends Abstrac
     }
 
     @Override
-    public final LongByteCharTuple createTuple(final long indexKey) {
+    public final LongByteCharTuple createTuple(final long rowKey) {
         return new LongByteCharTuple(
-                columnSource1.getLong(indexKey),
-                columnSource2.getByte(indexKey),
-                columnSource3.getChar(indexKey)
+                columnSource1.getLong(rowKey),
+                columnSource2.getByte(rowKey),
+                columnSource3.getChar(rowKey)
         );
     }
 
     @Override
-    public final LongByteCharTuple createPreviousTuple(final long indexKey) {
+    public final LongByteCharTuple createPreviousTuple(final long rowKey) {
         return new LongByteCharTuple(
-                columnSource1.getPrevLong(indexKey),
-                columnSource2.getPrevByte(indexKey),
-                columnSource3.getPrevChar(indexKey)
+                columnSource1.getPrevLong(rowKey),
+                columnSource2.getPrevByte(rowKey),
+                columnSource3.getPrevChar(rowKey)
         );
     }
 

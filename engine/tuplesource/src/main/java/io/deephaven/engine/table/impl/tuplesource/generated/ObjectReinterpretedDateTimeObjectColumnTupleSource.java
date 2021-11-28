@@ -45,20 +45,20 @@ public class ObjectReinterpretedDateTimeObjectColumnTupleSource extends Abstract
     }
 
     @Override
-    public final ObjectLongObjectTuple createTuple(final long indexKey) {
+    public final ObjectLongObjectTuple createTuple(final long rowKey) {
         return new ObjectLongObjectTuple(
-                columnSource1.get(indexKey),
-                columnSource2.getLong(indexKey),
-                columnSource3.get(indexKey)
+                columnSource1.get(rowKey),
+                columnSource2.getLong(rowKey),
+                columnSource3.get(rowKey)
         );
     }
 
     @Override
-    public final ObjectLongObjectTuple createPreviousTuple(final long indexKey) {
+    public final ObjectLongObjectTuple createPreviousTuple(final long rowKey) {
         return new ObjectLongObjectTuple(
-                columnSource1.getPrev(indexKey),
-                columnSource2.getPrevLong(indexKey),
-                columnSource3.getPrev(indexKey)
+                columnSource1.getPrev(rowKey),
+                columnSource2.getPrevLong(rowKey),
+                columnSource3.getPrev(rowKey)
         );
     }
 

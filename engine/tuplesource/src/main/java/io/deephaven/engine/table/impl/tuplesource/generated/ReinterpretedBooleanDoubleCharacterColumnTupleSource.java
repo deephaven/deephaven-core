@@ -45,20 +45,20 @@ public class ReinterpretedBooleanDoubleCharacterColumnTupleSource extends Abstra
     }
 
     @Override
-    public final ByteDoubleCharTuple createTuple(final long indexKey) {
+    public final ByteDoubleCharTuple createTuple(final long rowKey) {
         return new ByteDoubleCharTuple(
-                columnSource1.getByte(indexKey),
-                columnSource2.getDouble(indexKey),
-                columnSource3.getChar(indexKey)
+                columnSource1.getByte(rowKey),
+                columnSource2.getDouble(rowKey),
+                columnSource3.getChar(rowKey)
         );
     }
 
     @Override
-    public final ByteDoubleCharTuple createPreviousTuple(final long indexKey) {
+    public final ByteDoubleCharTuple createPreviousTuple(final long rowKey) {
         return new ByteDoubleCharTuple(
-                columnSource1.getPrevByte(indexKey),
-                columnSource2.getPrevDouble(indexKey),
-                columnSource3.getPrevChar(indexKey)
+                columnSource1.getPrevByte(rowKey),
+                columnSource2.getPrevDouble(rowKey),
+                columnSource3.getPrevChar(rowKey)
         );
     }
 

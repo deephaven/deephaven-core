@@ -42,20 +42,20 @@ public class IntegerIntegerIntegerColumnTupleSource extends AbstractTupleSource<
     }
 
     @Override
-    public final IntIntIntTuple createTuple(final long indexKey) {
+    public final IntIntIntTuple createTuple(final long rowKey) {
         return new IntIntIntTuple(
-                columnSource1.getInt(indexKey),
-                columnSource2.getInt(indexKey),
-                columnSource3.getInt(indexKey)
+                columnSource1.getInt(rowKey),
+                columnSource2.getInt(rowKey),
+                columnSource3.getInt(rowKey)
         );
     }
 
     @Override
-    public final IntIntIntTuple createPreviousTuple(final long indexKey) {
+    public final IntIntIntTuple createPreviousTuple(final long rowKey) {
         return new IntIntIntTuple(
-                columnSource1.getPrevInt(indexKey),
-                columnSource2.getPrevInt(indexKey),
-                columnSource3.getPrevInt(indexKey)
+                columnSource1.getPrevInt(rowKey),
+                columnSource2.getPrevInt(rowKey),
+                columnSource3.getPrevInt(rowKey)
         );
     }
 

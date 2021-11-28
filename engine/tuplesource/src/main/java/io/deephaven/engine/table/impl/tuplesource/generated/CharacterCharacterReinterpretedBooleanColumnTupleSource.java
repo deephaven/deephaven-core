@@ -44,20 +44,20 @@ public class CharacterCharacterReinterpretedBooleanColumnTupleSource extends Abs
     }
 
     @Override
-    public final CharCharByteTuple createTuple(final long indexKey) {
+    public final CharCharByteTuple createTuple(final long rowKey) {
         return new CharCharByteTuple(
-                columnSource1.getChar(indexKey),
-                columnSource2.getChar(indexKey),
-                columnSource3.getByte(indexKey)
+                columnSource1.getChar(rowKey),
+                columnSource2.getChar(rowKey),
+                columnSource3.getByte(rowKey)
         );
     }
 
     @Override
-    public final CharCharByteTuple createPreviousTuple(final long indexKey) {
+    public final CharCharByteTuple createPreviousTuple(final long rowKey) {
         return new CharCharByteTuple(
-                columnSource1.getPrevChar(indexKey),
-                columnSource2.getPrevChar(indexKey),
-                columnSource3.getPrevByte(indexKey)
+                columnSource1.getPrevChar(rowKey),
+                columnSource2.getPrevChar(rowKey),
+                columnSource3.getPrevByte(rowKey)
         );
     }
 

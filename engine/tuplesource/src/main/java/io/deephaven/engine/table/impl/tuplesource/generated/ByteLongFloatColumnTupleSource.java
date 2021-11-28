@@ -44,20 +44,20 @@ public class ByteLongFloatColumnTupleSource extends AbstractTupleSource<ByteLong
     }
 
     @Override
-    public final ByteLongFloatTuple createTuple(final long indexKey) {
+    public final ByteLongFloatTuple createTuple(final long rowKey) {
         return new ByteLongFloatTuple(
-                columnSource1.getByte(indexKey),
-                columnSource2.getLong(indexKey),
-                columnSource3.getFloat(indexKey)
+                columnSource1.getByte(rowKey),
+                columnSource2.getLong(rowKey),
+                columnSource3.getFloat(rowKey)
         );
     }
 
     @Override
-    public final ByteLongFloatTuple createPreviousTuple(final long indexKey) {
+    public final ByteLongFloatTuple createPreviousTuple(final long rowKey) {
         return new ByteLongFloatTuple(
-                columnSource1.getPrevByte(indexKey),
-                columnSource2.getPrevLong(indexKey),
-                columnSource3.getPrevFloat(indexKey)
+                columnSource1.getPrevByte(rowKey),
+                columnSource2.getPrevLong(rowKey),
+                columnSource3.getPrevFloat(rowKey)
         );
     }
 

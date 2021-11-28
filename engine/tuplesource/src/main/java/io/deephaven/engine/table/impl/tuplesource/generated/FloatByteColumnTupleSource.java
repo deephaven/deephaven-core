@@ -40,18 +40,18 @@ public class FloatByteColumnTupleSource extends AbstractTupleSource<FloatByteTup
     }
 
     @Override
-    public final FloatByteTuple createTuple(final long indexKey) {
+    public final FloatByteTuple createTuple(final long rowKey) {
         return new FloatByteTuple(
-                columnSource1.getFloat(indexKey),
-                columnSource2.getByte(indexKey)
+                columnSource1.getFloat(rowKey),
+                columnSource2.getByte(rowKey)
         );
     }
 
     @Override
-    public final FloatByteTuple createPreviousTuple(final long indexKey) {
+    public final FloatByteTuple createPreviousTuple(final long rowKey) {
         return new FloatByteTuple(
-                columnSource1.getPrevFloat(indexKey),
-                columnSource2.getPrevByte(indexKey)
+                columnSource1.getPrevFloat(rowKey),
+                columnSource2.getPrevByte(rowKey)
         );
     }
 

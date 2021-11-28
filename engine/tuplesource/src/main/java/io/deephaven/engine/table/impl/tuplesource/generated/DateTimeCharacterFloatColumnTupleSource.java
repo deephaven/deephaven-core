@@ -46,20 +46,20 @@ public class DateTimeCharacterFloatColumnTupleSource extends AbstractTupleSource
     }
 
     @Override
-    public final LongCharFloatTuple createTuple(final long indexKey) {
+    public final LongCharFloatTuple createTuple(final long rowKey) {
         return new LongCharFloatTuple(
-                DateTimeUtils.nanos(columnSource1.get(indexKey)),
-                columnSource2.getChar(indexKey),
-                columnSource3.getFloat(indexKey)
+                DateTimeUtils.nanos(columnSource1.get(rowKey)),
+                columnSource2.getChar(rowKey),
+                columnSource3.getFloat(rowKey)
         );
     }
 
     @Override
-    public final LongCharFloatTuple createPreviousTuple(final long indexKey) {
+    public final LongCharFloatTuple createPreviousTuple(final long rowKey) {
         return new LongCharFloatTuple(
-                DateTimeUtils.nanos(columnSource1.getPrev(indexKey)),
-                columnSource2.getPrevChar(indexKey),
-                columnSource3.getPrevFloat(indexKey)
+                DateTimeUtils.nanos(columnSource1.getPrev(rowKey)),
+                columnSource2.getPrevChar(rowKey),
+                columnSource3.getPrevFloat(rowKey)
         );
     }
 

@@ -46,20 +46,20 @@ public class FloatBooleanDateTimeColumnTupleSource extends AbstractTupleSource<F
     }
 
     @Override
-    public final FloatByteLongTuple createTuple(final long indexKey) {
+    public final FloatByteLongTuple createTuple(final long rowKey) {
         return new FloatByteLongTuple(
-                columnSource1.getFloat(indexKey),
-                BooleanUtils.booleanAsByte(columnSource2.getBoolean(indexKey)),
-                DateTimeUtils.nanos(columnSource3.get(indexKey))
+                columnSource1.getFloat(rowKey),
+                BooleanUtils.booleanAsByte(columnSource2.getBoolean(rowKey)),
+                DateTimeUtils.nanos(columnSource3.get(rowKey))
         );
     }
 
     @Override
-    public final FloatByteLongTuple createPreviousTuple(final long indexKey) {
+    public final FloatByteLongTuple createPreviousTuple(final long rowKey) {
         return new FloatByteLongTuple(
-                columnSource1.getPrevFloat(indexKey),
-                BooleanUtils.booleanAsByte(columnSource2.getPrevBoolean(indexKey)),
-                DateTimeUtils.nanos(columnSource3.getPrev(indexKey))
+                columnSource1.getPrevFloat(rowKey),
+                BooleanUtils.booleanAsByte(columnSource2.getPrevBoolean(rowKey)),
+                DateTimeUtils.nanos(columnSource3.getPrev(rowKey))
         );
     }
 

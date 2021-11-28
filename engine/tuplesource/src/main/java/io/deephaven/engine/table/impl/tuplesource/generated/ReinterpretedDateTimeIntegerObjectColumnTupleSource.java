@@ -46,20 +46,20 @@ public class ReinterpretedDateTimeIntegerObjectColumnTupleSource extends Abstrac
     }
 
     @Override
-    public final LongIntObjectTuple createTuple(final long indexKey) {
+    public final LongIntObjectTuple createTuple(final long rowKey) {
         return new LongIntObjectTuple(
-                columnSource1.getLong(indexKey),
-                columnSource2.getInt(indexKey),
-                columnSource3.get(indexKey)
+                columnSource1.getLong(rowKey),
+                columnSource2.getInt(rowKey),
+                columnSource3.get(rowKey)
         );
     }
 
     @Override
-    public final LongIntObjectTuple createPreviousTuple(final long indexKey) {
+    public final LongIntObjectTuple createPreviousTuple(final long rowKey) {
         return new LongIntObjectTuple(
-                columnSource1.getPrevLong(indexKey),
-                columnSource2.getPrevInt(indexKey),
-                columnSource3.getPrev(indexKey)
+                columnSource1.getPrevLong(rowKey),
+                columnSource2.getPrevInt(rowKey),
+                columnSource3.getPrev(rowKey)
         );
     }
 

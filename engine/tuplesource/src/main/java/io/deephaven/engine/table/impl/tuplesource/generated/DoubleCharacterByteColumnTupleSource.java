@@ -44,20 +44,20 @@ public class DoubleCharacterByteColumnTupleSource extends AbstractTupleSource<Do
     }
 
     @Override
-    public final DoubleCharByteTuple createTuple(final long indexKey) {
+    public final DoubleCharByteTuple createTuple(final long rowKey) {
         return new DoubleCharByteTuple(
-                columnSource1.getDouble(indexKey),
-                columnSource2.getChar(indexKey),
-                columnSource3.getByte(indexKey)
+                columnSource1.getDouble(rowKey),
+                columnSource2.getChar(rowKey),
+                columnSource3.getByte(rowKey)
         );
     }
 
     @Override
-    public final DoubleCharByteTuple createPreviousTuple(final long indexKey) {
+    public final DoubleCharByteTuple createPreviousTuple(final long rowKey) {
         return new DoubleCharByteTuple(
-                columnSource1.getPrevDouble(indexKey),
-                columnSource2.getPrevChar(indexKey),
-                columnSource3.getPrevByte(indexKey)
+                columnSource1.getPrevDouble(rowKey),
+                columnSource2.getPrevChar(rowKey),
+                columnSource3.getPrevByte(rowKey)
         );
     }
 

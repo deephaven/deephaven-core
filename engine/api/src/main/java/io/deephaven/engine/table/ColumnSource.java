@@ -118,13 +118,13 @@ public interface ColumnSource<T>
     }
 
     @Override
-    default T createTuple(final long indexKey) {
-        return get(indexKey);
+    default T createTuple(final long rowKey) {
+        return get(rowKey);
     }
 
     @Override
-    default T createPreviousTuple(final long indexKey) {
-        return getPrev(indexKey);
+    default T createPreviousTuple(final long rowKey) {
+        return getPrev(rowKey);
     }
 
     @Override

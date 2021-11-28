@@ -46,20 +46,20 @@ public class ReinterpretedDateTimeIntegerDoubleColumnTupleSource extends Abstrac
     }
 
     @Override
-    public final LongIntDoubleTuple createTuple(final long indexKey) {
+    public final LongIntDoubleTuple createTuple(final long rowKey) {
         return new LongIntDoubleTuple(
-                columnSource1.getLong(indexKey),
-                columnSource2.getInt(indexKey),
-                columnSource3.getDouble(indexKey)
+                columnSource1.getLong(rowKey),
+                columnSource2.getInt(rowKey),
+                columnSource3.getDouble(rowKey)
         );
     }
 
     @Override
-    public final LongIntDoubleTuple createPreviousTuple(final long indexKey) {
+    public final LongIntDoubleTuple createPreviousTuple(final long rowKey) {
         return new LongIntDoubleTuple(
-                columnSource1.getPrevLong(indexKey),
-                columnSource2.getPrevInt(indexKey),
-                columnSource3.getPrevDouble(indexKey)
+                columnSource1.getPrevLong(rowKey),
+                columnSource2.getPrevInt(rowKey),
+                columnSource3.getPrevDouble(rowKey)
         );
     }
 
