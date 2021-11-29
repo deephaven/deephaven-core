@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.engine.table.impl.TupleSourceFactory$TupleSourceCreator",
+ "methods": {
+  "makeTupleSource": "See TupleSourceFactory.makeTupleSource(ColumnSource[]).\n\n:param columnSources: io.deephaven.engine.table.ColumnSource...\n:return: io.deephaven.engine.table.TupleSource"
+ },
+ "path": "io.deephaven.engine.table.impl.TupleSourceFactory.TupleSourceCreator",
+ "typeName": "interface"
+}

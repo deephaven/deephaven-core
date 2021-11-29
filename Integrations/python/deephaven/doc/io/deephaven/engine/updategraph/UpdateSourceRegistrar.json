@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.engine.updategraph.UpdateSourceRegistrar",
+ "methods": {
+  "addSource": "Add a source to this registrar.\n\n:param updateSource: (java.lang.Runnable) - The table to add",
+  "removeSource": "Remove a source from this registrar.\n\n:param updateSource: (java.lang.Runnable) - The table to remove",
+  "requestRefresh": "Request that the next update cycle begin as soon as practicable."
+ },
+ "path": "io.deephaven.engine.updategraph.UpdateSourceRegistrar",
+ "text": "Common interface for classes that can register and de-register update sources.",
+ "typeName": "interface"
+}

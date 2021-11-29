@@ -1,0 +1,6 @@
+{
+ "className": "io.deephaven.engine.table.impl.DeferredViewTable$TableReference$TableAndRemainingFilters",
+ "methods": {},
+ "path": "io.deephaven.engine.table.impl.DeferredViewTable.TableReference.TableAndRemainingFilters",
+ "typeName": "class"
+}

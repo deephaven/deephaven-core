@@ -1,0 +1,13 @@
+{
+ "className": "io.deephaven.util.compare.DoubleComparisons",
+ "methods": {
+  "compare": ":param lhs: double\n:param rhs: double\n:return: int",
+  "eq": ":param lhs: double\n:param rhs: double\n:return: boolean",
+  "geq": ":param lhs: double\n:param rhs: double\n:return: boolean",
+  "gt": ":param lhs: double\n:param rhs: double\n:return: boolean",
+  "leq": ":param lhs: double\n:param rhs: double\n:return: boolean",
+  "lt": ":param lhs: double\n:param rhs: double\n:return: boolean"
+ },
+ "path": "io.deephaven.util.compare.DoubleComparisons",
+ "typeName": "class"
+}

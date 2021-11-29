@@ -1,0 +1,12 @@
+{
+ "className": "io.deephaven.plot.PlotStyle",
+ "methods": {
+  "plotStyle": "Returns the requested plot style.\n\n:param style: (java.lang.String) - case insensitive style name\n:return: (io.deephaven.plot.PlotStyle) PlotStyle with the given name",
+  "plotStyleNames": "Returns the names of available plot styles.\n\n:return: (java.lang.String[]) array of the PlotStyle names",
+  "valueOf": "Returns the enum constant of this type with the specified name.\nThe string must match exactly an identifier used to declare an\nenum constant in this type.  (Extraneous whitespace characters are \nnot permitted.)\n\n:param name: (java.lang.String) - the name of the enum constant to be returned.\n:return: (io.deephaven.plot.PlotStyle) the enum constant with the specified name",
+  "values": "Returns an array containing the constants of this enum type, in\nthe order they are declared.\n\n:return: (io.deephaven.plot.PlotStyle[]) an array containing the constants of this enum type, in the order they are declared"
+ },
+ "path": "io.deephaven.plot.PlotStyle",
+ "text": "The style of a plot (e.g. line, bar, etc.).",
+ "typeName": "enum"
+}

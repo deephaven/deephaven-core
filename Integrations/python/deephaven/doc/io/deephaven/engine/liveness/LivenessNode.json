@@ -1,0 +1,7 @@
+{
+ "className": "io.deephaven.engine.liveness.LivenessNode",
+ "methods": {},
+ "path": "io.deephaven.engine.liveness.LivenessNode",
+ "text": "A LivenessReferent that is also a LivenessManager, transitively enforcing liveness on its referents.",
+ "typeName": "interface"
+}

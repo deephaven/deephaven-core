@@ -1,7 +1,7 @@
 
 """
 The AggregationFactory combines one or more aggregations into an AggregationSpec for use internally by the
- implementation of Table.aggBy(java.util.Collection<? extends io.deephaven.api.agg.Aggregation>, java.util.Collection<? extends io.deephaven.api.Selectable>).
+ implementation of Table.aggBy(io.deephaven.api.agg.Aggregation).
 
  
  The intended use of this class is to call the AggCombo(AggregationElement...) method with a set of

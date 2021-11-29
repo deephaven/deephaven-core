@@ -1,0 +1,13 @@
+{
+ "className": "io.deephaven.engine.table.impl.CrossJoinStateManager",
+ "methods": {
+  "getMasked": ":param index: long\n:return: long",
+  "getPrevMasked": ":param index: long\n:return: long",
+  "getPrevShifted": ":param index: long\n:return: long",
+  "getRightRowSetFromLeftIndex": ":param leftIndex: long\n:return: io.deephaven.engine.rowset.TrackingRowSet",
+  "getRightRowSetFromPrevLeftIndex": ":param leftIndex: long\n:return: io.deephaven.engine.rowset.TrackingRowSet",
+  "getShifted": ":param index: long\n:return: long"
+ },
+ "path": "io.deephaven.engine.table.impl.CrossJoinStateManager",
+ "typeName": "interface"
+}

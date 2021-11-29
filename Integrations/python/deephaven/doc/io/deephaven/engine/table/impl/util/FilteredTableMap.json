@@ -1,0 +1,7 @@
+{
+ "className": "io.deephaven.engine.table.impl.util.FilteredTableMap",
+ "methods": {},
+ "path": "io.deephaven.engine.table.impl.util.FilteredTableMap",
+ "text": "A TableMap that filters and optionally transforms the keys of another TableMap.",
+ "typeName": "class"
+}

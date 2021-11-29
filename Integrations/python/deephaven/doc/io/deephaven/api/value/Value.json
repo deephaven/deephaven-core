@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.api.value.Value",
+ "methods": {
+  "of": ":param value: long\n:return: io.deephaven.api.value.Value",
+  "walk": "Note: Java generics information - <V extends io.deephaven.api.value.Value.Visitor>\n\n:param visitor: V\n:return: V"
+ },
+ "path": "io.deephaven.api.value.Value",
+ "text": "Represents a value.",
+ "typeName": "interface"
+}

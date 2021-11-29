@@ -1,0 +1,13 @@
+{
+ "className": "io.deephaven.engine.table.impl.TreeTableFilter",
+ "methods": {
+  "apply": ":param table: io.deephaven.engine.table.Table\n:return: io.deephaven.engine.table.Table",
+  "filterTree": "*Overload 1*  \n  :param tree: io.deephaven.engine.table.Table\n  :param filters: java.lang.String...\n  :return: io.deephaven.engine.table.Table\n  \n*Overload 2*  \n  :param tree: io.deephaven.engine.table.Table\n  :param filters: io.deephaven.engine.table.impl.select.WhereFilter[]\n  :return: io.deephaven.engine.table.Table",
+  "getMemoKey": ":return: io.deephaven.engine.table.impl.MemoizedOperationKey",
+  "rawFilterTree": "*Overload 1*  \n  :param tree: io.deephaven.engine.table.Table\n  :param filters: java.lang.String...\n  :return: io.deephaven.engine.table.Table\n  \n*Overload 2*  \n  :param tree: io.deephaven.engine.table.Table\n  :param filters: io.deephaven.engine.table.impl.select.WhereFilter[]\n  :return: io.deephaven.engine.table.Table",
+  "toTreeTable": ":param rawTable: io.deephaven.engine.table.Table\n:param originalTree: io.deephaven.engine.table.Table\n:return: io.deephaven.engine.table.Table"
+ },
+ "path": "io.deephaven.engine.table.impl.TreeTableFilter",
+ "text": "Apply filters, preserving parents.\n\n The TreeTableFilter takes a TreeTable and WhereFilters as input. The original source table is filtered and any\n matching rows are included; as well as their ancestors. The result table is then converted into a tree table using\n the original parameters.",
+ "typeName": "class"
+}

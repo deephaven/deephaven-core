@@ -1,0 +1,13 @@
+{
+ "className": "io.deephaven.plot.datasets.category.AbstractSwappableTableBasedCategoryDataSeries",
+ "methods": {
+  "pointColor": "Sets the point color. Unspecified points use the default color.\n\nNote: Java generics information - <COLOR extends io.deephaven.gui.color.Paint>\n\n:param colors: (java.util.function.Function<java.lang.Comparable,COLOR>) - function from data points to their Paints\n:return: (io.deephaven.plot.datasets.category.CategoryDataSeries) this CategoryDataSeries",
+  "pointColorByY": "Sets the point color for a data point based upon the y-value.\n\nNote: Java generics information - <T extends io.deephaven.gui.color.Paint>\n\n:param colors: (java.util.function.Function<java.lang.Double,T>) - function from the y-value of data points to Paint\n:return: (io.deephaven.plot.datasets.category.CategoryDataSeries) this DataSeries",
+  "pointColorInteger": "Sets the point color. Unspecified points use the default color.\n\nNote: Java generics information - <COLOR extends java.lang.Integer>\n\n:param colors: (java.util.function.Function<java.lang.Comparable,COLOR>) - function from data points to the index of the color palette\n:return: (io.deephaven.plot.datasets.category.CategoryDataSeries) this CategoryDataSeries",
+  "pointLabel": "Sets the point label for data point i from index i of the input labels. Points outside of these indices are\n unlabeled.\n\nNote: Java generics information - <LABEL>\n\n:param labels: (java.util.function.Function<java.lang.Comparable,LABEL>) - function used to determine point labels\n:return: (io.deephaven.plot.datasets.category.CategoryDataSeries) this CategoryDataSeries",
+  "pointShape": "Sets the point shapes for data point i from index i of the input labels. Points outside of these indices use\n default shapes.\n\n:param shapes: (java.util.function.Function<java.lang.Comparable,java.lang.String>) - function used to determine point shapes\n:return: (io.deephaven.plot.datasets.category.CategoryDataSeries) this CategoryDataSeries",
+  "pointSize": "Sets the point size. A scale factor of 1 is the default size. A scale factor of 2 is 2x the default size.\n Unspecified points use the default size.\n\nNote: Java generics information - <NUMBER extends java.lang.Number>\n\n:param factors: (java.util.function.Function<java.lang.Comparable,NUMBER>) - function used to set sizes of data points\n:return: (io.deephaven.plot.datasets.category.CategoryDataSeries) this CategoryDataSeries"
+ },
+ "path": "io.deephaven.plot.datasets.category.AbstractSwappableTableBasedCategoryDataSeries",
+ "typeName": "class"
+}

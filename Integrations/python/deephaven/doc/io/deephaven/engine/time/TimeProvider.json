@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.time.TimeProvider",
+ "methods": {
+  "currentTime": ":return: io.deephaven.engine.time.DateTime"
+ },
+ "path": "io.deephaven.engine.time.TimeProvider",
+ "text": "Interface for providing the current time.",
+ "typeName": "interface"
+}

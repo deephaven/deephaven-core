@@ -1,0 +1,20 @@
+{
+ "className": "io.deephaven.engine.util.config.MutableInputTable",
+ "methods": {
+  "add": "Write newData to this table. This method will block until the rows are added. Added rows with keys that match\n existing rows will instead replace those rows, if supported.\n\n:param newData: (io.deephaven.engine.table.Table) - the data to write to this table",
+  "canEdit": "Queries whether this MutableInputTable is editable in the current context.\n\n:return: (boolean) true if this MutableInputTable may be edited, false otherwise TODO (deephaven/deephaven-core/issues/255):\n         Add AuthContext and whatever else is appropriate",
+  "delete": "Delete the keys contained in the parameter table from this input table. This method will block until rows are\n deleted.\n\n*Overload 1*  \n  :param table: (io.deephaven.engine.table.Table) - The rows to delete.\n  \n*Overload 2*  \n  :param table: (io.deephaven.engine.table.Table) - The rows to delete.\n  :param rowSet: io.deephaven.engine.rowset.TrackingRowSet",
+  "getDescription": "Return a user-readable description of this MutableInputTable.\n\n:return: (java.lang.String) a description of this input table",
+  "getKeyNames": "Gets the names of the key columns.\n\n:return: (java.util.List<java.lang.String>) a list with the names of the key columns of this input table",
+  "getTable": "Returns a Deephaven table that contains the current data for this MutableInputTable.\n\n:return: (io.deephaven.engine.table.Table) the current data in this MutableInputTable.",
+  "getTableDefinition": "Get the underlying Table definition (which includes the names and types of all of the columns).\n\n:return: (io.deephaven.engine.table.TableDefinition) the TableDefinition for our user-visible table",
+  "getValueNames": "Gets the names of the value columns. By default, any column not marked as a key column is a value column.\n\n:return: (java.util.List<java.lang.String>) a list with the names of the value columns of this input table",
+  "hasColumn": "Returns true if the specified column exists in this MutableInputTable.\n\n:param columnName: (java.lang.String) - the column to interrogate\n:return: (boolean) true if columnName exists in this MutableInputTable",
+  "isKey": "Returns true if the specified column is a key.\n\n:param columnName: (java.lang.String) - the column to interrogate\n:return: (boolean) true if columnName is a key column, false otherwise",
+  "validateAddOrModify": "Helper to check if a table is compatible with this table, so that it could be added as contents.\n\n:param tableToApply: (io.deephaven.engine.table.Table) - the table to check if it can used to add or modify this input table",
+  "validateDelete": "Validates that the given table definition is suitable to be passed to delete(Table).\n\n:param tableToDelete: (io.deephaven.engine.table.Table) - the definition of the table to delete"
+ },
+ "path": "io.deephaven.engine.util.config.MutableInputTable",
+ "text": "A minimal interface for mutable shared tables, providing the ability to write to the table instance this is attached\n to. MutableInputTable instances are set on the table as an attribute.\n\n Implementations of this interface will make their own guarantees about how atomically changes will be applied and\n what operations they support.",
+ "typeName": "interface"
+}

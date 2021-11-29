@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.engine.table.impl.InstrumentedTableUpdateListenerAdapter",
+ "methods": {
+  "canExecute": ":param step: long\n:return: boolean",
+  "onFailureInternal": "Called when the source table produces an error\n\n:param originalException: (java.lang.Throwable) - the original throwable that caused this error\n:param sourceEntry: (io.deephaven.engine.table.TableListener.Entry) - the performance tracker entry that was active when the error occurred",
+  "onUpdate": "Process notification of table changes.\n\n:param upstream: (io.deephaven.engine.table.TableUpdate) - The set of upstream table updates."
+ },
+ "path": "io.deephaven.engine.table.impl.InstrumentedTableUpdateListenerAdapter",
+ "text": "This class is used for ShiftAwareListeners that represent \"leaf\" nodes in the update propagation tree.\n\n It provides an optional retention cache, to prevent listeners from being garbage collected.\n\n For creating internally ticking table nodes, instead use BaseTable.ListenerImpl",
+ "typeName": "class"
+}

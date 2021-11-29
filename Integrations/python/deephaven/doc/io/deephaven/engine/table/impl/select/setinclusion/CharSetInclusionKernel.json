@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.engine.table.impl.select.setinclusion.CharSetInclusionKernel",
+ "methods": {
+  "matchValues": ":param values: io.deephaven.engine.chunk.Chunk<io.deephaven.engine.chunk.Attributes.Values>\n:param matches: io.deephaven.engine.chunk.WritableBooleanChunk"
+ },
+ "path": "io.deephaven.engine.table.impl.select.setinclusion.CharSetInclusionKernel",
+ "typeName": "class"
+}

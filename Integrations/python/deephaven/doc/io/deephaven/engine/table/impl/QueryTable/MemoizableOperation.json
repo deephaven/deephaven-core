@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.engine.table.impl.QueryTable$MemoizableOperation",
+ "methods": {
+  "getMemoizedOperationKey": ":return: (io.deephaven.engine.table.impl.MemoizedOperationKey) the key that should be used to memoize off of"
+ },
+ "path": "io.deephaven.engine.table.impl.QueryTable.MemoizableOperation",
+ "typeName": "interface"
+}

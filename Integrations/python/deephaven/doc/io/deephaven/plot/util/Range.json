@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.plot.util.Range",
+ "methods": {
+  "getMax": "Gets the max value of the range\n\n:return: (double) max of the range",
+  "getMin": "Gets the min value of the range\n\n:return: (double) min of the range",
+  "inRange": "Determine if a value is in the range.\n\n:param d: (double) - determine if this value is in the range\n:return: (boolean) true if the value is in the range; false otherwise."
+ },
+ "path": "io.deephaven.plot.util.Range",
+ "text": "Continuous range.",
+ "typeName": "class"
+}

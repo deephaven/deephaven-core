@@ -1,0 +1,12 @@
+{
+ "className": "io.deephaven.uri.StructuredUri",
+ "methods": {
+  "target": "Wraps up this URI as a remote URI.\n\n:param target: (io.deephaven.uri.DeephavenTarget) - the target\n:return: (io.deephaven.uri.RemoteUri) the remote URI",
+  "toString": "The URI string.\n\n:return: (java.lang.String) the URI string",
+  "toURI": "The URI.\n\n:return: (java.net.URI) the URI.",
+  "walk": "Note: Java generics information - <V extends io.deephaven.uri.StructuredUri.Visitor>\n\n:param visitor: V\n:return: V"
+ },
+ "path": "io.deephaven.uri.StructuredUri",
+ "text": "A structured URI is an object which can be represented in serialized form as a URI; and subsequently, can be\n deserialized back into the same object.",
+ "typeName": "interface"
+}

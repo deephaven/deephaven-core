@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.plot.axistransformations.AxisTransformLambda",
+ "methods": {
+  "inverseTransform": "Transforms a point in Axis space to dataset space.\n\n:param axisValue: (double) - Axis space data point\n:return: (double) corresponding value in dataset space",
+  "isVisible": "Gets whether a data point is visible in the plot.\n\n:param dataValue: (double) - data point\n:return: (boolean) whether dataValue is visible in the plot",
+  "transform": "Transforms a data point to Axis space.\n\n:param dataValue: (double) - data point\n:return: (double) corresponding value in Axis space"
+ },
+ "path": "io.deephaven.plot.axistransformations.AxisTransformLambda",
+ "text": "Transformations from dataset space to axis space and back.\n\n Axis space refers to how data is displayed in the chart. For example, if the transform from dataset space to axis\n space was defined as x^0.5, the dataset values 1, 4, and 9 would be plotted as 1, 2, and 3,] creating a square root\n axis scale.",
+ "typeName": "class"
+}

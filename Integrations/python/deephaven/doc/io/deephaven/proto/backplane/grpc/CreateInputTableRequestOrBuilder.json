@@ -1,0 +1,19 @@
+{
+ "className": "io.deephaven.proto.backplane.grpc.CreateInputTableRequestOrBuilder",
+ "methods": {
+  "getDefinitionCase": ":return: io.deephaven.proto.backplane.grpc.CreateInputTableRequest.DefinitionCase",
+  "getKind": "Specifies what type of input table to create.\n \n.io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind kind = 4;\n\n:return: (io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind) The kind.",
+  "getKindOrBuilder": "Specifies what type of input table to create.\n \n.io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind kind = 4;\n\n:return: io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKindOrBuilder",
+  "getResultId": ".io.deephaven.proto.backplane.grpc.Ticket result_id = 1;\n\n:return: (io.deephaven.proto.backplane.grpc.Ticket) The resultId.",
+  "getResultIdOrBuilder": ".io.deephaven.proto.backplane.grpc.Ticket result_id = 1;\n\n:return: io.deephaven.proto.backplane.grpc.TicketOrBuilder",
+  "getSchema": "Schema as described in Arrow Message.fbs::Message. Optional, either this or source_table_id must be specified.\n \nbytes schema = 3;\n\n:return: (com.google.protobuf.ByteString) The schema.",
+  "getSourceTableId": "Optional, either this or schema must be specified, not both.\n \n.io.deephaven.proto.backplane.grpc.TableReference source_table_id = 2;\n\n:return: (io.deephaven.proto.backplane.grpc.TableReference) The sourceTableId.",
+  "getSourceTableIdOrBuilder": "Optional, either this or schema must be specified, not both.\n \n.io.deephaven.proto.backplane.grpc.TableReference source_table_id = 2;\n\n:return: io.deephaven.proto.backplane.grpc.TableReferenceOrBuilder",
+  "hasKind": "Specifies what type of input table to create.\n \n.io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind kind = 4;\n\n:return: (boolean) Whether the kind field is set.",
+  "hasResultId": ".io.deephaven.proto.backplane.grpc.Ticket result_id = 1;\n\n:return: (boolean) Whether the resultId field is set.",
+  "hasSchema": "Schema as described in Arrow Message.fbs::Message. Optional, either this or source_table_id must be specified.\n \nbytes schema = 3;\n\n:return: (boolean) Whether the schema field is set.",
+  "hasSourceTableId": "Optional, either this or schema must be specified, not both.\n \n.io.deephaven.proto.backplane.grpc.TableReference source_table_id = 2;\n\n:return: (boolean) Whether the sourceTableId field is set."
+ },
+ "path": "io.deephaven.proto.backplane.grpc.CreateInputTableRequestOrBuilder",
+ "typeName": "interface"
+}

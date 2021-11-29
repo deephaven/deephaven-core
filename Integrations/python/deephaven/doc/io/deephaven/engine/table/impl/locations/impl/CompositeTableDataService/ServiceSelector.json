@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.engine.table.impl.locations.impl.CompositeTableDataService$ServiceSelector",
+ "methods": {
+  "call": ":param tableKey: io.deephaven.engine.table.impl.locations.TableKey\n:return: io.deephaven.engine.table.impl.locations.TableDataService[]",
+  "describe": "Get a detailed description string.\n\n:return: (java.lang.String) A description string",
+  "resetServices": "*Overload 1*  \n  \n  \n*Overload 2*  \n  :param key: io.deephaven.engine.table.impl.locations.TableKey"
+ },
+ "path": "io.deephaven.engine.table.impl.locations.impl.CompositeTableDataService.ServiceSelector",
+ "typeName": "interface"
+}

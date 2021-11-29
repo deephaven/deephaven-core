@@ -1,0 +1,6 @@
+{
+ "className": "io.deephaven.proto.backplane.grpc.TerminationNotificationRequestOrBuilder",
+ "methods": {},
+ "path": "io.deephaven.proto.backplane.grpc.TerminationNotificationRequestOrBuilder",
+ "typeName": "interface"
+}

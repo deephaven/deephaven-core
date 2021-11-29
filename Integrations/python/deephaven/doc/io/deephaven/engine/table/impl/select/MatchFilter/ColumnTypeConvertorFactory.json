@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.engine.table.impl.select.MatchFilter$ColumnTypeConvertorFactory",
+ "methods": {
+  "getConvertor": ":param cls: java.lang.Class<?>\n:param name: java.lang.String\n:return: io.deephaven.engine.table.impl.select.MatchFilter.ColumnTypeConvertor"
+ },
+ "path": "io.deephaven.engine.table.impl.select.MatchFilter.ColumnTypeConvertorFactory",
+ "typeName": "class"
+}

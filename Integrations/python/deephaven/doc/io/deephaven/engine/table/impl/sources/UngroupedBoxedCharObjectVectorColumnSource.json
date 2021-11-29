@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.engine.table.impl.sources.UngroupedBoxedCharObjectVectorColumnSource",
+ "methods": {
+  "getChar": ":param index: long\n:return: char",
+  "getPrevChar": ":param index: long\n:return: char"
+ },
+ "path": "io.deephaven.engine.table.impl.sources.UngroupedBoxedCharObjectVectorColumnSource",
+ "text": "An Ungrouped Column sourced for the Boxed Type Character.\n \n The UngroupedBoxedC-harVectorColumnSource is replicated to all other types with\n io.deephaven.engine.table.impl.sources.Replicate.\n\n (C-har is deliberately spelled that way in order to prevent Replicate from altering this very comment).",
+ "typeName": "class"
+}

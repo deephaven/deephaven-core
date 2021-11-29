@@ -1,0 +1,7 @@
+{
+ "className": "io.deephaven.engine.table.impl.ColumnSourceGetDefaults",
+ "methods": {},
+ "path": "io.deephaven.engine.table.impl.ColumnSourceGetDefaults",
+ "text": "Defaulted interfaces for various base ColumnSource types, in order to avoid having defaults at higher levels\n in the class hierarchy.",
+ "typeName": "class"
+}

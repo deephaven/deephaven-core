@@ -1,0 +1,14 @@
+{
+ "className": "io.deephaven.engine.table.impl.select.QueryScopeParamTypeUtil",
+ "methods": {
+  "classFromType": ":param declaredType: java.lang.reflect.Type\n:return: java.lang.Class<?>",
+  "expandParameterClasses": "Get a map from binary name to declared type for the dynamic classes referenced by an array of param classes.\n\n:param params: (java.util.List<java.lang.Class<?>>) - The parameters to operate on\n:return: (java.util.Map<java.lang.String,java.lang.Class<?>>) The result map",
+  "getDeclaredClass": "Note: Java generics information - <T>\n\n:param value: T\n:return: java.lang.Class<?>",
+  "getDeclaredType": "Note: Java generics information - <T>\n\n:param value: T\n:return: java.lang.reflect.Type",
+  "getDeclaredTypeName": "Note: Java generics information - <T>\n\n:param value: T\n:return: java.lang.String",
+  "getPrimitiveTypeNameIfAvailable": "Note: Java generics information - <T>\n\n:param value: T\n:return: java.lang.String"
+ },
+ "path": "io.deephaven.engine.table.impl.select.QueryScopeParamTypeUtil",
+ "text": "Utilities for expanding QueryScope parameter classes.",
+ "typeName": "class"
+}

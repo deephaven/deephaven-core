@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.engine.table.impl.by.DistinctSpec",
+ "methods": {
+  "countNulls": ":return: boolean",
+  "getChunkedOperator": ":param type: java.lang.Class\n:param name: java.lang.String\n:param exposeInternalColumns: boolean\n:return: io.deephaven.engine.table.impl.by.IterativeChunkedAggregationOperator",
+  "getMemoKey": "Produces a MemoKey for this AggregationSpec.\n\n \n If two AggregationSpecs have equal memoKeys, then Table.groupBy(java.util.Collection<? extends io.deephaven.api.Selectable>) operations that have the same group by\n columns may be memoized. In that case instead of recomputing the result; the original result will be used.\n \n\n If null is returned, the operation will not be memoized.\n \n\n:return: (io.deephaven.engine.table.impl.by.AggregationMemoKey) an AggregationMemoKey, null if this operation can not be memoized."
+ },
+ "path": "io.deephaven.engine.table.impl.by.DistinctSpec",
+ "text": "An Iterative state factory that computes the count of distinct items within a particular state. It supports rollups,\n and converts itself into a Sum at the second level of the rollup.",
+ "typeName": "class"
+}

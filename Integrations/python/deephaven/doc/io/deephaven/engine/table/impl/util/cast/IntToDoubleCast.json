@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.engine.table.impl.util.cast.IntToDoubleCast",
+ "methods": {
+  "cast": "Note: Java generics information - <T>\n\n:param extend: io.deephaven.engine.chunk.Chunk<?\n:return: io.deephaven.engine.chunk.DoubleChunk<? extends T>",
+  "castInto": "Note: Java generics information - <T2 extends io.deephaven.engine.chunk.Attributes.Any>\n\n:param extend: io.deephaven.engine.chunk.IntChunk<?\n:param result: io.deephaven.engine.chunk.WritableDoubleChunk<T2>"
+ },
+ "path": "io.deephaven.engine.table.impl.util.cast.IntToDoubleCast",
+ "text": "Cast the values in the input chunk to an int.",
+ "typeName": "class"
+}

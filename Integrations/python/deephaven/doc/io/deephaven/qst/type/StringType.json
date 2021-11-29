@@ -1,0 +1,12 @@
+{
+ "className": "io.deephaven.qst.type.StringType",
+ "methods": {
+  "clazz": "The class representing this type.\n\n:return: (java.lang.Class<java.lang.String>) the class",
+  "instance": ":return: io.deephaven.qst.type.StringType",
+  "toString": ":return: java.lang.String",
+  "walk": "Note: Java generics information - <V extends io.deephaven.qst.type.GenericType.Visitor>\n\n:param visitor: V\n:return: V"
+ },
+ "path": "io.deephaven.qst.type.StringType",
+ "text": "The String type.",
+ "typeName": "class"
+}

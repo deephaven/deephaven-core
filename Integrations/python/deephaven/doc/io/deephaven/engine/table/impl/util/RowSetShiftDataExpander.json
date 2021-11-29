@@ -1,0 +1,12 @@
+{
+ "className": "io.deephaven.engine.table.impl.util.RowSetShiftDataExpander",
+ "methods": {
+  "getAdded": "Fetch the resulting RowSet of added values.\n\n:return: (io.deephaven.engine.rowset.RowSet) added RowSet",
+  "getModified": "Fetch the resulting RowSet of modified values.\n\n:return: (io.deephaven.engine.rowset.RowSet) modified RowSet",
+  "getRemoved": "Fetch the resulting RowSet of removed values.\n\n:return: (io.deephaven.engine.rowset.RowSet) removed RowSet",
+  "validate": "Perform backwards compatible validation checks.\n\n:param update: (io.deephaven.engine.table.TableUpdate) - The update originally passed at construction time, used only for logging debug info on error\n:param sourceRowSet: (io.deephaven.engine.rowset.TrackingRowSet) - The underlying RowSet that applies to added/removed/modified"
+ },
+ "path": "io.deephaven.engine.table.impl.util.RowSetShiftDataExpander",
+ "text": "Expands TableUpdateListener.onUpdate(TableUpdate)'s Update into a backward compatible ARM (added, removed,\n modified) by expanding keyspace shifts.\n\n Using this is almost always less efficient than using the Update directly.",
+ "typeName": "class"
+}

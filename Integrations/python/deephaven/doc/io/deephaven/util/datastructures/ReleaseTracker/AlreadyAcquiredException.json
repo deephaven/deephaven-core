@@ -1,0 +1,6 @@
+{
+ "className": "io.deephaven.util.datastructures.ReleaseTracker$AlreadyAcquiredException",
+ "methods": {},
+ "path": "io.deephaven.util.datastructures.ReleaseTracker.AlreadyAcquiredException",
+ "typeName": "class"
+}

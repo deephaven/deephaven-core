@@ -1,0 +1,18 @@
+{
+ "className": "io.deephaven.qst.array.FloatArray",
+ "methods": {
+  "builder": ":param initialSize: int\n:return: io.deephaven.qst.array.FloatArray.Builder",
+  "componentType": ":return: io.deephaven.qst.type.FloatType",
+  "empty": ":return: io.deephaven.qst.array.FloatArray",
+  "equals": ":param o: java.lang.Object\n:return: boolean",
+  "hashCode": ":return: int",
+  "of": "*Overload 1*  \n  :param values: float...\n  :return: io.deephaven.qst.array.FloatArray\n  \n*Overload 2*  \n  :param values: java.lang.Float...\n  :return: io.deephaven.qst.array.FloatArray\n  \n*Overload 3*  \n  :param values: java.lang.Iterable<java.lang.Float>\n  :return: io.deephaven.qst.array.FloatArray\n  \n*Overload 4*  \n  :param values: java.util.Collection<java.lang.Float>\n  :return: io.deephaven.qst.array.FloatArray",
+  "ofUnsafe": ":param values: float...\n:return: io.deephaven.qst.array.FloatArray",
+  "size": ":return: int",
+  "values": "The raw floats. Must not be modified.\n\n:return: (float[]) the floats, do not modify",
+  "walk": "Note: Java generics information - <V extends io.deephaven.qst.array.PrimitiveArray.Visitor>\n\n:param visitor: V\n:return: V"
+ },
+ "path": "io.deephaven.qst.array.FloatArray",
+ "text": "A FloatType array.",
+ "typeName": "class"
+}

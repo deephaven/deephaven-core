@@ -1,0 +1,16 @@
+{
+ "className": "io.deephaven.engine.table.impl.ColumnSourceGetDefaults$ForBoolean",
+ "methods": {
+  "getBoolean": ":param index: long\n:return: java.lang.Boolean",
+  "getByte": ":param index: long\n:return: byte",
+  "getChar": ":param index: long\n:return: char",
+  "getDouble": ":param index: long\n:return: double",
+  "getFloat": ":param index: long\n:return: float",
+  "getInt": ":param index: long\n:return: int",
+  "getLong": ":param index: long\n:return: long",
+  "getShort": ":param index: long\n:return: short"
+ },
+ "path": "io.deephaven.engine.table.impl.ColumnSourceGetDefaults.ForBoolean",
+ "text": "Default interface for Boolean ColumnSource implementations.",
+ "typeName": "interface"
+}

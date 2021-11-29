@@ -1,0 +1,28 @@
+{
+ "className": "io.deephaven.proto.backplane.grpc.CreateInputTableRequest$InputTableKind$InMemoryKeyBacked",
+ "methods": {
+  "equals": ":param obj: java.lang.Object\n:return: boolean",
+  "getDefaultInstance": ":return: io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryKeyBacked",
+  "getDefaultInstanceForType": ":return: io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryKeyBacked",
+  "getDescriptor": ":return: com.google.protobuf.Descriptors.Descriptor",
+  "getKeyColumns": "repeated string key_columns = 1;\n\n:param index: (int) - The index of the element to return.\n:return: (java.lang.String) The keyColumns at the given index.",
+  "getKeyColumnsBytes": "repeated string key_columns = 1;\n\n:param index: (int) - The index of the value to return.\n:return: (com.google.protobuf.ByteString) The bytes of the keyColumns at the given index.",
+  "getKeyColumnsCount": "repeated string key_columns = 1;\n\n:return: (int) The count of keyColumns.",
+  "getKeyColumnsList": "repeated string key_columns = 1;\n\n:return: (com.google.protobuf.ProtocolStringList) A list containing the keyColumns.",
+  "getParserForType": ":return: com.google.protobuf.Parser<io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryKeyBacked>",
+  "getSerializedSize": ":return: int",
+  "getUnknownFields": ":return: com.google.protobuf.UnknownFieldSet",
+  "hashCode": ":return: int",
+  "isInitialized": ":return: boolean",
+  "newBuilder": "*Overload 1*  \n  :return: io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryKeyBacked.Builder\n  \n*Overload 2*  \n  :param prototype: io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryKeyBacked\n  :return: io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryKeyBacked.Builder",
+  "newBuilderForType": ":return: io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryKeyBacked.Builder",
+  "parseDelimitedFrom": "*Overload 1*  \n  :param input: java.io.InputStream\n  :return: io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryKeyBacked\n  \n*Overload 2*  \n  :param input: java.io.InputStream\n  :param extensionRegistry: com.google.protobuf.ExtensionRegistryLite\n  :return: io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryKeyBacked",
+  "parseFrom": "*Overload 1*  \n  :param data: java.nio.ByteBuffer\n  :return: io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryKeyBacked\n  \n*Overload 2*  \n  :param data: java.nio.ByteBuffer\n  :param extensionRegistry: com.google.protobuf.ExtensionRegistryLite\n  :return: io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryKeyBacked\n  \n*Overload 3*  \n  :param data: com.google.protobuf.ByteString\n  :return: io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryKeyBacked\n  \n*Overload 4*  \n  :param data: com.google.protobuf.ByteString\n  :param extensionRegistry: com.google.protobuf.ExtensionRegistryLite\n  :return: io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryKeyBacked\n  \n*Overload 5*  \n  :param data: byte[]\n  :return: io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryKeyBacked\n  \n*Overload 6*  \n  :param data: byte[]\n  :param extensionRegistry: com.google.protobuf.ExtensionRegistryLite\n  :return: io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryKeyBacked\n  \n*Overload 7*  \n  :param input: java.io.InputStream\n  :return: io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryKeyBacked\n  \n*Overload 8*  \n  :param input: java.io.InputStream\n  :param extensionRegistry: com.google.protobuf.ExtensionRegistryLite\n  :return: io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryKeyBacked\n  \n*Overload 9*  \n  :param input: com.google.protobuf.CodedInputStream\n  :return: io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryKeyBacked\n  \n*Overload 10*  \n  :param input: com.google.protobuf.CodedInputStream\n  :param extensionRegistry: com.google.protobuf.ExtensionRegistryLite\n  :return: io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryKeyBacked",
+  "parser": ":return: com.google.protobuf.Parser<io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryKeyBacked>",
+  "toBuilder": ":return: io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryKeyBacked.Builder",
+  "writeTo": ":param output: com.google.protobuf.CodedOutputStream"
+ },
+ "path": "io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryKeyBacked",
+ "text": "Creates an in-memory table that supports updates and deletes by keys.\n \n\n Protobuf type io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryKeyBacked",
+ "typeName": "class"
+}

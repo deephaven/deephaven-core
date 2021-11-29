@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.engine.updategraph.NotificationAdapter",
+ "methods": {
+  "append": ":param logOutput: io.deephaven.base.log.LogOutput\n:return: io.deephaven.base.log.LogOutput",
+  "canExecute": "Can this notification be executed? That is, are all of it's dependencies satisfied.\n\n:param step: (long) - The step for which we are testing satisfaction\n:return: (boolean) true if this notification can be executed, false if it has unmet dependencies"
+ },
+ "path": "io.deephaven.engine.updategraph.NotificationAdapter",
+ "text": "Implementation of NotificationQueue.Notification that wraps another, in order to allow overrides.",
+ "typeName": "class"
+}

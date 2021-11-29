@@ -1,7 +1,6 @@
 
 """
-Tools for working with tables. This includes methods to examine tables, combine them, convert them to and from CSV
- files, and create and manipulate columns.
+Tools for users to manipulate tables.
 """
 
 
@@ -377,11 +376,17 @@ def base64Fingerprint(source):
 @_passThrough
 def byteCol(name, *data):
     """
-    Returns a ColumnHolder of type byte that can be used when creating in-memory tables.
+    Creates a new ColumnHolder of type `byte` that can be used when creating in-memory tables.
     
-    :param name: (java.lang.String) - name of the column
-    :param data: (byte...) - a list of values for the column
+    :param name: name for the column
+    :param data: variable argument for the data
     :return: (io.deephaven.engine.table.impl.util.ColumnHolder) a Deephaven ColumnHolder object
+    
+    data structure:
+      * an int or list of ints
+      * a :class:`numpy.ndarray` of integer or floating point values. `NaN` values will be mapped to `NULL_BYTE`
+        constant values, and all other values simply cast.
+      * a :class:`pandas.Series` whose values are a numpy array described above
     """
     
     return _custom_byteCol(name, *data)
@@ -390,11 +395,18 @@ def byteCol(name, *data):
 @_passThrough
 def charCol(name, *data):
     """
-    Returns a ColumnHolder of type char that can be used when creating in-memory tables.
+    Creates a new ColumnHolder of type `char` that can be used when creating in-memory tables.
     
-    :param name: (java.lang.String) - name of the column
-    :param data: (char...) - a list of values for the column
+    :param name: name for the column
+    :param data: variable argument for the data
     :return: (io.deephaven.engine.table.impl.util.ColumnHolder) a Deephaven ColumnHolder object
+    
+    `data` structure:
+      * an int
+      * a string - will be interpreted as list of characters
+      * a :class:`numpy.ndarray` of integer or one-character string type
+      * a :class:`pandas.Series` whose values are a numpy array described above
+      * an iterable of integers or strings - if string, only the first character will be used
     """
     
     return _custom_charCol(name, *data)
@@ -405,11 +417,14 @@ def col(name, *data):
     """
     Returns a ColumnHolder that can be used when creating in-memory tables.
     
-    Note: Java generics information - <T>
-    
-    :param name: (java.lang.String) - name of the column
-    :param data: (T...) - a list of values for the column
+    :param name: name for the column
+    :param data: variable argument for the data
     :return: (io.deephaven.engine.table.impl.util.ColumnHolder) a Deephaven ColumnHolder object
+    
+    data structure:
+      * an int, bool, float, datetime, date, string or iterable of (one) such
+      * :class:`numpy.ndarray` containing boolean, numerical, datetime64, object, or string data (type inferred)
+      * :class:`pandas.Series` object whose values are such a numpy array
     """
     
     return _custom_col(name, *data)
@@ -418,44 +433,15 @@ def col(name, *data):
 @_passThrough
 def colSource(*args):
     """
-    **Incompatible overloads text - text from the first overload:**
+    Creates a column of appropriate type, used for creating in-memory tables.
+        
+    :param data: variable argument for the data
+    :return: (io.deephaven.engine.table.impl.sources.ColumnSource<T>) a Deephaven ColumnSource of inferred type
     
-    Creates an in-memory column of the specified type for a collection of values.
-    
-    *Overload 1*  
-      Note: Java generics information - <T>
-      
-      :param clazz: (java.lang.Class<T>) - the class to use for the new column
-      :param values: (java.util.Collection<T>) - a collection of values to populate the new column
-      :return: (io.deephaven.engine.table.ColumnSource<T>) a Deephaven ColumnSource object
-      
-    *Overload 2*  
-      :param values: (long...) - a collection of values to populate the new column
-      :return: (io.deephaven.engine.table.ColumnSource<java.lang.Long>) a Deephaven ColumnSource object
-      
-    *Overload 3*  
-      :param values: (int...) - a collection of values to populate the new column
-      :return: (io.deephaven.engine.table.ColumnSource<java.lang.Integer>) a Deephaven ColumnSource object
-      
-    *Overload 4*  
-      :param values: (short...) - a collection of values to populate the new column
-      :return: (io.deephaven.engine.table.ColumnSource<java.lang.Short>) a Deephaven ColumnSource object
-      
-    *Overload 5*  
-      :param values: (byte...) - a collection of values to populate the new column
-      :return: (io.deephaven.engine.table.ColumnSource<java.lang.Byte>) a Deephaven ColumnSource object
-      
-    *Overload 6*  
-      :param values: (char...) - a collection of values to populate the new column
-      :return: (io.deephaven.engine.table.ColumnSource<java.lang.Character>) a Deephaven ColumnSource object
-      
-    *Overload 7*  
-      :param values: (double...) - a collection of values to populate the new column
-      :return: (io.deephaven.engine.table.ColumnSource<java.lang.Double>) a Deephaven ColumnSource object
-      
-    *Overload 8*  
-      :param values: (float...) - a collection of values to populate the new column
-      :return: (io.deephaven.engine.table.ColumnSource<java.lang.Float>) a Deephaven ColumnSource object
+    data structure:
+      * a java object, or list of java objects
+      * an int, bool, float, datetime, date, string or iterable of (one) such
+      * :class:`pandas.Series` object whose values are such a numpy array
     """
     
     return _custom_colSource(*args)
@@ -534,11 +520,17 @@ def diffPair(actualResult, expectedResult, maxDiffLines, itemsToSkip):
 @_passThrough
 def doubleCol(name, *data):
     """
-    Returns a ColumnHolder of type double that can be used when creating in-memory tables.
+    Creates a new ColumnHolder of type `double` that can be used when creating in-memory tables.
     
-    :param name: (java.lang.String) - name of the column
-    :param data: (double...) - a list of values for the column
+    :param name: name for the column
+    :param data: variable argument for the data
     :return: (io.deephaven.engine.table.impl.util.ColumnHolder) a Deephaven ColumnHolder object
+    
+    data structure:
+      * an int or float or list of ints or floats
+      * a :class:`numpy.ndarray` of integer or floating point values. `NaN` values will be mapped to `NULL_DOUBLE`
+         constant values, and all other values simply cast.
+      * a :class:`pandas.Series` whose values are a numpy array described above
     """
     
     return _custom_doubleCol(name, *data)
@@ -559,11 +551,17 @@ def emptyTable(size):
 @_passThrough
 def floatCol(name, *data):
     """
-    Returns a ColumnHolder of type float that can be used when creating in-memory tables.
+    Creates a new ColumnHolder of type `float` that can be used when creating in-memory tables.
     
-    :param name: (java.lang.String) - name of the column
-    :param data: (float...) - a list of values for the column
+    :param name: name for the column
+    :param data: variable argument for the data
     :return: (io.deephaven.engine.table.impl.util.ColumnHolder) a Deephaven ColumnHolder object
+    
+    data structure:
+      * a int or float or list of ints or floats
+      * a :class:`numpy.ndarray` of integer or floating point values. `NaN` values will be mapped to `NULL_FLOAT`
+        constant values, and all other values simply cast.
+      * a :class:`pandas.Series` whose values are a numpy array described above
     """
     
     return _custom_floatCol(name, *data)
@@ -610,11 +608,17 @@ def html(source):
 @_passThrough
 def intCol(name, *data):
     """
-    Returns a ColumnHolder of type int that can be used when creating in-memory tables.
+    Creates a new ColumnHolder of type `int` that can be used when creating in-memory tables.
     
-    :param name: (java.lang.String) - name of the column
-    :param data: (int...) - a list of values for the column
+    :param name: name for the column
+    :param data: variable argument for the data
     :return: (io.deephaven.engine.table.impl.util.ColumnHolder) a Deephaven ColumnHolder object
+    
+    data structure:
+      * an int or list of ints
+      * a :class:`numpy.ndarray` of integer or floating point values. `NaN` values will be mapped to `NULL_INT`
+        constant values, and all other values simply cast.
+      * a :class:`pandas.Series` whose values are a numpy array described above
     """
     
     return _custom_intCol(name, *data)
@@ -623,11 +627,17 @@ def intCol(name, *data):
 @_passThrough
 def longCol(name, *data):
     """
-    Returns a ColumnHolder of type long that can be used when creating in-memory tables.
+    Creates a new ColumnHolder of type `long` that can be used when creating in-memory tables.
     
-    :param name: (java.lang.String) - name of the column
-    :param data: (long...) - a list of values for the column
+    :param name: name for the column
+    :param data: variable argument for the data
     :return: (io.deephaven.engine.table.impl.util.ColumnHolder) a Deephaven ColumnHolder object
+    
+    data structure:
+      * an int or list of ints
+      * a :class:`numpy.ndarray` of integer or floating point values. `NaN` values will be mapped to `NULL_LONG`
+        constant values, and all other values simply cast.
+      * a :class:`pandas.Series` whose values are a numpy array described above
     """
     
     return _custom_longCol(name, *data)
@@ -741,12 +751,15 @@ def nullTypeAsString(dataType):
 @_passThrough
 def objColSource(*values):
     """
-    Creates an in-memory column of the specified type for a collection of values
+    Creates a column of appropriate object type, used for creating in-memory tables.
     
-    Note: Java generics information - <T>
-    
-    :param values: (T...) - a collection of values to populate the new column
-    :return: (io.deephaven.engine.table.ColumnSource<T>) a Deephaven ColumnSource object
+    :param data: variable argument for the data
+    :return: (io.deephaven.engine.table.impl.sources.ColumnSource) a Deephaven ColumnSource of inferred type
+    data structure:
+        * a java object, or list of java objects
+        * an int, bool, float, datetime, date, string or iterable of (one) such
+    * :class:`numpy.ndarray` containing boolean, numerical, datetime64, object, or string data (type inferred)
+    * :class:`pandas.Series` object whose values are such a numpy array
     """
     
     return _custom_objColSource(*values)
@@ -789,11 +802,17 @@ def roundDecimalColumnsExcept(table, *columnsNotToRound):
 @_passThrough
 def shortCol(name, *data):
     """
-    Returns a ColumnHolder of type short that can be used when creating in-memory tables.
-    
-    :param name: (java.lang.String) - name of the column
-    :param data: (short...) - a list of values for the column
+    Creates a new ColumnHolder of type `short` that can be used when creating in-memory tables.
+        
+    :param name: name for the column
+    :param data: variable argument for the data
     :return: (io.deephaven.engine.table.impl.util.ColumnHolder) a Deephaven ColumnHolder object
+    
+    data structure:
+      * an int or list of ints
+      * a :class:`numpy.ndarray` of integer or floating point values. `NaN` values will be mapped to `NULL_SHORT`
+        constant values, and all other values simply cast.
+      * a :class:`pandas.Series` whose values are a numpy array described above
     """
     
     return _custom_shortCol(name, *data)

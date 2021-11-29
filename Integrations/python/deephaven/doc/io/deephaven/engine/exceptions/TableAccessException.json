@@ -1,0 +1,7 @@
+{
+ "className": "io.deephaven.engine.exceptions.TableAccessException",
+ "methods": {},
+ "path": "io.deephaven.engine.exceptions.TableAccessException",
+ "text": "An UncheckedPermissionException derivative which indicates a table may not be accessed for one reason or\n another.",
+ "typeName": "class"
+}

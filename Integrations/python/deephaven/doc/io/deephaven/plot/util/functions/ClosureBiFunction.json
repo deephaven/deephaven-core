@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.plot.util.functions.ClosureBiFunction",
+ "methods": {
+  "apply": "Applies this function to the given arguments.\n\n:param t: (ClosureBiFunction.T) - the first function argument\n:param u: (ClosureBiFunction.U) - the second function argument\n:return: (ClosureBiFunction.R) the function result"
+ },
+ "path": "io.deephaven.plot.util.functions.ClosureBiFunction",
+ "text": "Wraps a SerializableBiFunction with the API of a function.",
+ "typeName": "class"
+}

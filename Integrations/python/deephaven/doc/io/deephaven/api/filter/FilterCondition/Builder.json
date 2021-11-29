@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.api.filter.FilterCondition$Builder",
+ "methods": {
+  "build": ":return: io.deephaven.api.filter.FilterCondition",
+  "lhs": ":param lhs: io.deephaven.api.value.Value\n:return: io.deephaven.api.filter.FilterCondition.Builder",
+  "operator": ":param operator: io.deephaven.api.filter.FilterCondition.Operator\n:return: io.deephaven.api.filter.FilterCondition.Builder",
+  "rhs": ":param rhs: io.deephaven.api.value.Value\n:return: io.deephaven.api.filter.FilterCondition.Builder"
+ },
+ "path": "io.deephaven.api.filter.FilterCondition.Builder",
+ "typeName": "interface"
+}

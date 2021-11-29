@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.plot.datasets.data.IndexableDataTable",
+ "methods": {
+  "convert": "Converts between the value in the column and the return value of the provider.\n\n:param v: (java.lang.Object) - raw value from the column\n:return: (IndexableDataTable.T) raw value converted into the desired data value",
+  "get": "Gets the value at the given index.\n\n:param index: (int) - index\n:return: (IndexableDataTable.T) value of this dataset at index",
+  "size": "Gets the size of this dataset.\n\n:return: (int) the size of this dataset"
+ },
+ "path": "io.deephaven.plot.datasets.data.IndexableDataTable",
+ "text": "IndexableData dataset whose data is a column in a table and whose indices are the row numbers of the column.",
+ "typeName": "class"
+}

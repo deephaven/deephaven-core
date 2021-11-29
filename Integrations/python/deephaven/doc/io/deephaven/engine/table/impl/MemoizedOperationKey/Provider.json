@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.engine.table.impl.MemoizedOperationKey$Provider",
+ "methods": {
+  "getMemoKey": ":return: io.deephaven.engine.table.impl.MemoizedOperationKey"
+ },
+ "path": "io.deephaven.engine.table.impl.MemoizedOperationKey.Provider",
+ "typeName": "interface"
+}

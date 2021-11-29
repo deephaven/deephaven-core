@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.engine.table.impl.ssa.IntSsaChecker",
+ "methods": {
+  "checkSsa": ":param ssa: io.deephaven.engine.table.impl.ssa.SegmentedSortedArray\n:param valueChunk: io.deephaven.engine.chunk.Chunk<? extendsio.deephaven.engine.chunk.Attributes.Values>\n:param tableIndexChunk: io.deephaven.engine.chunk.LongChunk<? extendsio.deephaven.engine.chunk.Attributes.RowKeys>"
+ },
+ "path": "io.deephaven.engine.table.impl.ssa.IntSsaChecker",
+ "typeName": "class"
+}

@@ -1,0 +1,13 @@
+{
+ "className": "io.deephaven.qst.type.ByteType",
+ "methods": {
+  "arrayType": "Create a native array type with this as the component type.\n\n:return: (io.deephaven.qst.type.NativeArrayType<byte[],java.lang.Byte>) the native array type",
+  "clazz": "The class representing this type.\n\n:return: (java.lang.Class<java.lang.Byte>) the class",
+  "instance": ":return: io.deephaven.qst.type.ByteType",
+  "toString": ":return: java.lang.String",
+  "walk": "Note: Java generics information - <V extends io.deephaven.qst.type.PrimitiveType.Visitor>\n\n:param visitor: V\n:return: V"
+ },
+ "path": "io.deephaven.qst.type.ByteType",
+ "text": "The Byte type.",
+ "typeName": "class"
+}

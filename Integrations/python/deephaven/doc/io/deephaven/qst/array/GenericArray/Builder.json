@@ -1,0 +1,12 @@
+{
+ "className": "io.deephaven.qst.array.GenericArray$Builder",
+ "methods": {
+  "add": "*Overload 1*  \n  :param item: GenericArray.Builder.T\n  :return: io.deephaven.qst.array.GenericArray.Builder<GenericArray.Builder.T>\n  \n*Overload 2*  \n  :param items: GenericArray.Builder.T...\n  :return: io.deephaven.qst.array.GenericArray.Builder<GenericArray.Builder.T>\n  \n*Overload 3*  \n  :param items: java.lang.Iterable<GenericArray.Builder.T>\n  :return: io.deephaven.qst.array.GenericArray.Builder<GenericArray.Builder.T>",
+  "addAllValues": ":param elements: java.lang.Iterable<? extendsGenericArray.Builder.T>\n:return: io.deephaven.qst.array.GenericArray.Builder<GenericArray.Builder.T>",
+  "addValues": "*Overload 1*  \n  :param item: GenericArray.Builder.T\n  :return: io.deephaven.qst.array.GenericArray.Builder<GenericArray.Builder.T>\n  \n*Overload 2*  \n  :param item: GenericArray.Builder.T...\n  :return: io.deephaven.qst.array.GenericArray.Builder<GenericArray.Builder.T>",
+  "build": ":return: io.deephaven.qst.array.GenericArray<GenericArray.Builder.T>",
+  "componentType": ":param componentType: io.deephaven.qst.type.GenericType<GenericArray.Builder.T>\n:return: io.deephaven.qst.array.GenericArray.Builder<GenericArray.Builder.T>"
+ },
+ "path": "io.deephaven.qst.array.GenericArray.Builder",
+ "typeName": "class"
+}

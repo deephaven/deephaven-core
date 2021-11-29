@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.engine.tablelogger.ProcessMemoryLogLogger",
+ "methods": {
+  "getColumnNames": ":return: java.lang.String[]",
+  "getDefaultTableName": ":return: java.lang.String",
+  "getTableDefinition": ":return: io.deephaven.engine.table.TableDefinition",
+  "log": "*Overload 1*  \n  :param intervalStartTime: long\n  :param intervalDurationNanos: long\n  :param totalMemory: long\n  :param freeMemory: long\n  :param intervalCollections: long\n  :param intervalCollectionTimeNanos: long\n  \n*Overload 2*  \n  :param flags: io.deephaven.tablelogger.Row.Flags\n  :param intervalStartTime: long\n  :param intervalDurationNanos: long\n  :param totalMemory: long\n  :param freeMemory: long\n  :param intervalCollections: long\n  :param intervalCollectionTimeNanos: long"
+ },
+ "path": "io.deephaven.engine.tablelogger.ProcessMemoryLogLogger",
+ "typeName": "class"
+}

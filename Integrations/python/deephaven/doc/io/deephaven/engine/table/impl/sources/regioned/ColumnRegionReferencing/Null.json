@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.engine.table.impl.sources.regioned.ColumnRegionReferencing$Null",
+ "methods": {
+  "getReferencedRegion": ":return: ColumnRegionReferencing.Null.REFERENCED_COLUMN_REGION"
+ },
+ "path": "io.deephaven.engine.table.impl.sources.regioned.ColumnRegionReferencing.Null",
+ "typeName": "class"
+}

@@ -1,0 +1,13 @@
+{
+ "className": "io.deephaven.grpc_api.uri.UriModule",
+ "methods": {
+  "bindApplicationResolver": ":param resolver: io.deephaven.grpc_api.uri.ApplicationResolver\n:return: io.deephaven.grpc_api.uri.UriResolver",
+  "bindCsvResolver": ":param resolver: io.deephaven.grpc_api.uri.CsvTableResolver\n:return: io.deephaven.grpc_api.uri.UriResolver",
+  "bindParquetResolver": ":param resolver: io.deephaven.grpc_api.uri.ParquetTableResolver\n:return: io.deephaven.grpc_api.uri.UriResolver",
+  "bindQueryScopeResolver": ":param resolver: io.deephaven.grpc_api.uri.QueryScopeResolver\n:return: io.deephaven.grpc_api.uri.UriResolver",
+  "bindsBarrageTableResolver": ":param resolver: io.deephaven.grpc_api.uri.BarrageTableResolver\n:return: io.deephaven.grpc_api.uri.UriResolver"
+ },
+ "path": "io.deephaven.grpc_api.uri.UriModule",
+ "text": "Installs the URI resolvers. See each specific resolver for more information.",
+ "typeName": "interface"
+}

@@ -1,0 +1,12 @@
+{
+ "className": "io.deephaven.plot.filters.SelectableDataSet",
+ "methods": {
+  "getLastBy": "Gets a version of the SelectableDataSet with a lastBy applied to the tables.\n\n:param groupByColumns: (java.util.Collection<java.lang.String>) - The grouping columns for the lastBy\n:return: (io.deephaven.plot.filters.SelectableDataSet<SelectableDataSet.KEY_TYPE,SelectableDataSet.VALUE_TYPE>) a new SelectableDataSet with lastBy applied",
+  "getSwappableTable": "**Incompatible overloads text - text from the first overload:**\n\nGets the view of the Table with the selected subset.\n\n*Overload 1*  \n  :param seriesName: java.lang.Comparable\n  :param chart: (io.deephaven.plot.ChartImpl) - chart\n  :param tableTransform: (java.util.function.Function<io.deephaven.engine.table.Table,io.deephaven.engine.table.Table>) - tableTransform applied to the tables in tableMaps. The purpose of this transform is to\n          track the table definitions for tables inside tableMap\n  :param cols: (java.lang.String...) - selected columns\n  :return: (io.deephaven.plot.util.tables.SwappableTable) table view on selected subset\n  \n*Overload 2*  \n  :param seriesName: java.lang.Comparable\n  :param chart: (io.deephaven.plot.ChartImpl) - chart\n  :param cols: (java.lang.String...) - selected columns\n  :return: (io.deephaven.plot.util.tables.SwappableTable) table view on selected subset",
+  "getTableDefinition": ":return: (io.deephaven.engine.table.TableDefinition) underlying table definition.",
+  "transform": "Produces a derivative SelectableDataSet with the specified transformation applied to all internal tables.\n\n:param memoKey: (java.lang.Object) - An Object that uniquely identifies the actions taken by the transformation so it can be cached.\n:param transformation: java.util.function.Function<io.deephaven.engine.table.Table,io.deephaven.engine.table.Table>\n:return: (io.deephaven.plot.filters.SelectableDataSet<SelectableDataSet.KEY_TYPE,SelectableDataSet.VALUE_TYPE>) a new SelectableDataSet with the transformation applied"
+ },
+ "path": "io.deephaven.plot.filters.SelectableDataSet",
+ "text": "A Table with a view on a selectable subset.",
+ "typeName": "interface"
+}

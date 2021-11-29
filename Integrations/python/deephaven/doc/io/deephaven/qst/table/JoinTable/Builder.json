@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.qst.table.JoinTable$Builder",
+ "methods": {
+  "reserveBits": ":param reserveBits: int\n:return: io.deephaven.qst.table.JoinTable.Builder"
+ },
+ "path": "io.deephaven.qst.table.JoinTable.Builder",
+ "typeName": "interface"
+}

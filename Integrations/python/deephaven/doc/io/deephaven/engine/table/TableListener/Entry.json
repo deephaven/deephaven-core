@@ -1,0 +1,7 @@
+{
+ "className": "io.deephaven.engine.table.TableListener$Entry",
+ "methods": {},
+ "path": "io.deephaven.engine.table.TableListener.Entry",
+ "text": "Interface for instrumentation entries used by update graph nodes.",
+ "typeName": "interface"
+}

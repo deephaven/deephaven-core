@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.table.impl.by.ssmminmax.IntSetResult",
+ "methods": {
+  "setResult": ":param ssm: io.deephaven.engine.table.impl.ssms.SegmentedSortedMultiSet\n:param destination: long\n:return: boolean",
+  "setResultNull": ":param destination: long\n:return: boolean"
+ },
+ "path": "io.deephaven.engine.table.impl.by.ssmminmax.IntSetResult",
+ "typeName": "class"
+}
