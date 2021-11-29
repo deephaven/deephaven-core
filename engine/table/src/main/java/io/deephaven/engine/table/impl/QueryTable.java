@@ -437,7 +437,9 @@ public class QueryTable extends BaseTable {
     @Override
     public Table rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents,
             Selectable... groupByColumns) {
-        return aggByInternal(aggregations, groupByColumns, (af, gbc) -> rollup(af, includeConstituents, gbc));
+        final List<AggregationFactory.AggregationElement> converted =
+                AggregationFactory.AggregationElement.convert(aggregations);
+        return rollup(new AggregationFactory(converted), includeConstituents, SelectColumn.from(groupByColumns));
     }
 
     // TODO (https://github.com/deephaven/deephaven-core/issues/991): Make this private, and clean up everything that
@@ -592,36 +594,30 @@ public class QueryTable extends BaseTable {
     }
 
     @Override
-    public Table aggBy(Collection<? extends Aggregation> aggregations,
-            Collection<? extends Selectable> groupByColumns) {
-        return aggByInternal(aggregations, groupByColumns.toArray(ZERO_LENGTH_SELECTABLE_ARRAY), this::by);
-    }
+    public Table aggBy(final Collection<? extends Aggregation> aggregations,
+                       final Collection<? extends Selectable> groupByColumns) {
+        final List<AggregationFactory.AggregationElement> optimized =
+                AggregationFactory.AggregationElement.optimizeAndConvert(aggregations);
 
-    private Table aggByInternal(Collection<? extends Aggregation> aggregations, Selectable[] groupByColumns,
-            BiFunction<AggregationFactory, SelectColumn[], Table> operation) {
-        List<AggregationFactory.AggregationElement> optimized =
-                AggregationFactory.AggregationElement.optimize(aggregations);
-        List<ColumnName> optimizedOrder = optimized.stream()
+        final List<ColumnName> optimizedOrder = optimized.stream()
                 .map(AggregationFactory.AggregationElement::getResultPairs)
                 .flatMap(Stream::of)
                 .map(MatchPair::leftColumn)
                 .map(ColumnName::of)
                 .collect(Collectors.toList());
-        List<ColumnName> userOrder = AggregationOutputs.of(aggregations).collect(Collectors.toList());
+        final List<ColumnName> userOrder = AggregationOutputs.of(aggregations).collect(Collectors.toList());
 
-        Table aggregationTable = operation.apply(
-                new AggregationFactory(optimized), SelectColumn.from(groupByColumns));
+        final Table aggregationTable = by(new AggregationFactory(optimized), SelectColumn.from(groupByColumns));
 
         if (userOrder.equals(optimizedOrder)) {
             return aggregationTable;
         }
 
-        // We need to re-order the groupByColumns to match the user-provided order
-        List<ColumnName> newOrder =
-                Stream.concat(Arrays.stream(groupByColumns).map(Selectable::newColumn), userOrder.stream())
+        // We need to re-order the result columns to match the user-provided order
+        List<ColumnName> resultOrder =
+                Stream.concat(groupByColumns.stream().map(Selectable::newColumn), userOrder.stream())
                         .collect(Collectors.toList());
-
-        return aggregationTable.updateView(newOrder);
+        return aggregationTable.view(resultOrder);
     }
 
     @Override

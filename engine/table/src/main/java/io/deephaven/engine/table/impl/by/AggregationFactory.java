@@ -4,44 +4,27 @@
 
 package io.deephaven.engine.table.impl.by;
 
-import io.deephaven.api.ColumnName;
-import io.deephaven.api.SortColumn;
-import io.deephaven.api.agg.*;
-import io.deephaven.api.agg.Group;
+import io.deephaven.api.agg.Aggregation;
+import io.deephaven.api.agg.Multi;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.datastructures.util.SmartKey;
-import io.deephaven.engine.table.ColumnDefinition;
-import io.deephaven.engine.table.Table;
+import io.deephaven.engine.chunk.Attributes.Values;
+import io.deephaven.engine.chunk.ChunkType;
+import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.*;
-import io.deephaven.engine.vector.Vector;
-import io.deephaven.engine.table.MatchPair;
-import io.deephaven.engine.table.impl.select.MatchPairFactory;
-import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.tuple.generated.ByteDoubleTuple;
 import io.deephaven.engine.table.impl.by.ssmminmax.SsmChunkedMinMaxOperator;
-import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.impl.select.MatchPairFactory;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.sources.SingleValueObjectColumnSource;
-import io.deephaven.engine.chunk.Attributes.Values;
-import io.deephaven.engine.table.ChunkSource;
-import io.deephaven.engine.chunk.ChunkType;
 import io.deephaven.engine.table.impl.ssms.SegmentedSortedMultiSet;
+import io.deephaven.engine.time.DateTime;
+import io.deephaven.engine.vector.Vector;
 import org.jetbrains.annotations.NotNull;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.OptionalInt;
+import java.util.*;
 import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -616,32 +599,52 @@ public class AggregationFactory implements AggregationSpec {
     public interface AggregationElement {
 
         /**
-         * Equivalent to {@code optimize(Collections.singleton(aggregation))}.
+         * Equivalent to {@code convertOrdered(Collections.singleton(aggregation))} or
+         * {@code optimizeAndConvert(Collections.singleton(aggregation))}.
          *
-         * @param aggregation the aggregation
-         * @return the optimized aggregations
-         * @see #optimize(Collection)
+         * @param aggregation The {@link Aggregation aggregation}
+         * @return A list of {@link AggregationElement aggregation elements}
+         * @see #optimizeAndConvert(Collection)
+         * @see #convert(Collection)
          */
-        static List<AggregationElement> optimize(Aggregation aggregation) {
-            return optimize(Collections.singleton(aggregation));
+        static List<AggregationElement> convert(Aggregation aggregation) {
+            return optimizeAndConvert(Collections.singleton(aggregation));
         }
 
         /**
-         * Optimizes the aggregations, collapsing relevant aggregations into single {@link AggregationElement elements}
-         * where applicable.
+         * Converts and optimizes the aggregations, collapsing relevant aggregations into single
+         * {@link AggregationElement elements} where applicable.
          *
          * <p>
          * Note: due to the optimization, the aggregation elements may not be in the same order as specified in
          * {@code aggregations}.
          *
-         * @param aggregations the aggregations
-         * @return the optimized aggregations
+         * @param aggregations The {@link Aggregation aggregation}
+         * @return A list of {@link AggregationElement aggregation elements}
+         * @see #convert(Aggregation)
+         * @see #convert(Collection)
          */
-        static List<AggregationElement> optimize(Collection<? extends Aggregation> aggregations) {
-            AggregationAdapterOptimizer builder = new AggregationAdapterOptimizer();
-            for (Aggregation a : aggregations) {
-                a.walk(builder);
-            }
+        static List<AggregationElement> optimizeAndConvert(Collection<? extends Aggregation> aggregations) {
+            AggregationAdapterOptimized builder = new AggregationAdapterOptimized();
+            aggregations.forEach(a -> a.walk(builder));
+            return builder.build();
+        }
+
+        /**
+         * Converts and the aggregations, only collapsing {@link Multi multi} aggregations into single
+         * {@link AggregationElement elements}, leaving singular aggregations as they are.
+         *
+         * <p>
+         * Note: The results will preserve the intended order of the inputs.
+         *
+         * @param aggregations The {@link Aggregation aggregation}
+         * @return A list of {@link AggregationElement aggregation elements}
+         * @see #convert(Aggregation)
+         * @see #optimizeAndConvert(Collection)
+         */
+        static List<AggregationElement> convert(Collection<? extends Aggregation> aggregations) {
+            AggregationAdapterOrdered builder = new AggregationAdapterOrdered();
+            aggregations.forEach(a -> a.walk(builder));
             return builder.build();
         }
 
@@ -1590,332 +1593,4 @@ public class AggregationFactory implements AggregationSpec {
         table.setAttribute(Table.REVERSE_LOOKUP_ATTRIBUTE, ReverseLookup.NULL);
     }
 
-    private static class AggregationAdapterOptimizer implements Aggregation.Visitor {
-
-        private final List<Pair> absSums = new ArrayList<>();
-        private final List<Pair> arrays = new ArrayList<>();
-        private final List<Pair> avgs = new ArrayList<>();
-        private final List<ColumnName> counts = new ArrayList<>();
-        private final Map<Boolean, List<Pair>> countDistincts = new HashMap<>();
-        private final Map<Boolean, List<Pair>> distincts = new HashMap<>();
-        private final List<Pair> firsts = new ArrayList<>();
-        private final List<Pair> lasts = new ArrayList<>();
-        private final List<Pair> maxs = new ArrayList<>();
-        private final Map<Boolean, List<Pair>> medians = new HashMap<>();
-        private final List<Pair> mins = new ArrayList<>();
-        private final Map<ByteDoubleTuple, List<Pair>> pcts = new HashMap<>();
-        private final Map<List<SortColumn>, List<Pair>> sortedFirsts = new HashMap<>();
-        private final Map<List<SortColumn>, List<Pair>> sortedLasts = new HashMap<>();
-        private final List<Pair> stds = new ArrayList<>();
-        private final List<Pair> sums = new ArrayList<>();
-        private final Map<Boolean, List<Pair>> uniques = new HashMap<>();
-        private final List<Pair> vars = new ArrayList<>();
-        private final Map<ColumnName, List<Pair>> wAvgs = new HashMap<>();
-        private final Map<ColumnName, List<Pair>> wSums = new HashMap<>();
-
-        /**
-         * We'll do our best to maintain the original aggregation ordering. This will maintain the user-specified order
-         * as long as the user aggregation types were all next to each other.
-         *
-         * ie:
-         *
-         * {@code aggBy([ Sum.of(A), Sum.of(B), Avg.of(C), Avg.of(D) ], ...)} will not need to be re-ordered
-         *
-         * {@code aggBy([ Sum.of(A), Avg.of(C), Avg.of(D), Sum.of(B) ], ...)} will need to be re-ordered
-         */
-        private final LinkedHashSet<BuildLogic> buildOrder = new LinkedHashSet<>();
-
-        @FunctionalInterface
-        private interface BuildLogic {
-            void appendTo(List<AggregationElement> outs);
-        }
-
-        // Unfortunately, it doesn't look like we can add ad-hoc lambdas to buildOrder, they don't appear to be equal
-        // across multiple constructions.
-        private final BuildLogic buildAbsSums = this::buildAbsSums;
-        private final BuildLogic buildArrays = this::buildArrays;
-        private final BuildLogic buildAvgs = this::buildAvgs;
-        private final BuildLogic buildCounts = this::buildCounts;
-        private final BuildLogic buildCountDistincts = this::buildCountDistincts;
-        private final BuildLogic buildDistincts = this::buildDistincts;
-        private final BuildLogic buildFirsts = this::buildFirsts;
-        private final BuildLogic buildLasts = this::buildLasts;
-        private final BuildLogic buildMaxes = this::buildMaxes;
-        private final BuildLogic buildMedians = this::buildMedians;
-        private final BuildLogic buildMins = this::buildMins;
-        private final BuildLogic buildPcts = this::buildPcts;
-        private final BuildLogic buildSortedFirsts = this::buildSortedFirsts;
-        private final BuildLogic buildSortedLasts = this::buildSortedLasts;
-        private final BuildLogic buildStds = this::buildStds;
-        private final BuildLogic buildSums = this::buildSums;
-        private final BuildLogic buildUniques = this::buildUniques;
-        private final BuildLogic buildVars = this::buildVars;
-        private final BuildLogic buildWAvgs = this::buildWAvgs;
-        private final BuildLogic buildWSums = this::buildWSums;
-
-
-        List<AggregationElement> build() {
-            List<AggregationElement> aggs = new ArrayList<>();
-            for (BuildLogic buildLogic : buildOrder) {
-                buildLogic.appendTo(aggs);
-            }
-            return aggs;
-        }
-
-        private void buildWSums(List<AggregationElement> aggs) {
-            for (Map.Entry<ColumnName, List<Pair>> e : wSums.entrySet()) {
-                aggs.add(Agg(new WeightedSumSpecImpl(e.getKey().name()), MatchPair.fromPairs(e.getValue())));
-            }
-        }
-
-        private void buildWAvgs(List<AggregationElement> aggs) {
-            for (Map.Entry<ColumnName, List<Pair>> e : wAvgs.entrySet()) {
-                aggs.add(Agg(new WeightedAverageSpecImpl(e.getKey().name()), MatchPair.fromPairs(e.getValue())));
-            }
-        }
-
-        private void buildVars(List<AggregationElement> aggs) {
-            if (!vars.isEmpty()) {
-                aggs.add(Agg(AggType.Var, MatchPair.fromPairs(vars)));
-            }
-        }
-
-        private void buildUniques(List<AggregationElement> aggs) {
-            for (Map.Entry<Boolean, List<Pair>> e : uniques.entrySet()) {
-                aggs.add(Agg(new UniqueSpec(e.getKey()), MatchPair.fromPairs(e.getValue())));
-            }
-        }
-
-        private void buildSums(List<AggregationElement> aggs) {
-            if (!sums.isEmpty()) {
-                aggs.add(Agg(AggType.Sum, MatchPair.fromPairs(sums)));
-            }
-        }
-
-        private void buildStds(List<AggregationElement> aggs) {
-            if (!stds.isEmpty()) {
-                aggs.add(Agg(AggType.Std, MatchPair.fromPairs(stds)));
-            }
-        }
-
-        private void buildSortedLasts(List<AggregationElement> aggs) {
-            for (Map.Entry<List<SortColumn>, List<Pair>> e : sortedLasts.entrySet()) {
-                // TODO(deephaven-core#821): SortedFirst / SortedLast aggregations with sort direction
-                String[] columns =
-                        e.getKey().stream().map(SortColumn::column).map(ColumnName::name).toArray(String[]::new);
-                aggs.add(Agg(new SortedLastBy(columns), MatchPair.fromPairs(e.getValue())));
-            }
-        }
-
-        private void buildSortedFirsts(List<AggregationElement> aggs) {
-            for (Map.Entry<List<SortColumn>, List<Pair>> e : sortedFirsts.entrySet()) {
-                // TODO(deephaven-core#821): SortedFirst / SortedLast aggregations with sort direction
-                String[] columns =
-                        e.getKey().stream().map(SortColumn::column).map(ColumnName::name).toArray(String[]::new);
-                aggs.add(Agg(new SortedFirstBy(columns), MatchPair.fromPairs(e.getValue())));
-            }
-        }
-
-        private void buildPcts(List<AggregationElement> aggs) {
-            for (Map.Entry<ByteDoubleTuple, List<Pair>> e : pcts.entrySet()) {
-                aggs.add(Agg(new PercentileBySpecImpl(e.getKey().getSecondElement(),
-                        e.getKey().getFirstElement() != 0), MatchPair.fromPairs(e.getValue())));
-            }
-        }
-
-        private void buildMins(List<AggregationElement> aggs) {
-            if (!mins.isEmpty()) {
-                aggs.add(Agg(AggType.Min, MatchPair.fromPairs(mins)));
-            }
-        }
-
-        private void buildMedians(List<AggregationElement> aggs) {
-            for (Map.Entry<Boolean, List<Pair>> e : medians.entrySet()) {
-                aggs.add(Agg(new PercentileBySpecImpl(0.50d, e.getKey()), MatchPair.fromPairs(e.getValue())));
-            }
-        }
-
-        private void buildMaxes(List<AggregationElement> aggs) {
-            if (!maxs.isEmpty()) {
-                aggs.add(Agg(AggType.Max, MatchPair.fromPairs(maxs)));
-            }
-        }
-
-        private void buildLasts(List<AggregationElement> aggs) {
-            if (!lasts.isEmpty()) {
-                aggs.add(Agg(AggType.Last, MatchPair.fromPairs(lasts)));
-            }
-        }
-
-        private void buildFirsts(List<AggregationElement> aggs) {
-            if (!firsts.isEmpty()) {
-                aggs.add(Agg(AggType.First, MatchPair.fromPairs(firsts)));
-            }
-        }
-
-        private void buildDistincts(List<AggregationElement> aggs) {
-            for (Map.Entry<Boolean, List<Pair>> e : distincts.entrySet()) {
-                aggs.add(Agg(new DistinctSpec(e.getKey()), MatchPair.fromPairs(e.getValue())));
-            }
-        }
-
-        private void buildCountDistincts(List<AggregationElement> aggs) {
-            for (Map.Entry<Boolean, List<Pair>> e : countDistincts.entrySet()) {
-                aggs.add(Agg(new CountDistinctSpec(e.getKey()), MatchPair.fromPairs(e.getValue())));
-            }
-        }
-
-        private void buildCounts(List<AggregationElement> aggs) {
-            for (ColumnName count : counts) {
-                aggs.add(new CountAggregationElement(count.name()));
-            }
-        }
-
-        private void buildAvgs(List<AggregationElement> aggs) {
-            if (!avgs.isEmpty()) {
-                aggs.add(Agg(AggType.Avg, MatchPair.fromPairs(avgs)));
-            }
-        }
-
-        private void buildArrays(List<AggregationElement> aggs) {
-            if (!arrays.isEmpty()) {
-                aggs.add(Agg(AggType.Group, MatchPair.fromPairs(arrays)));
-            }
-        }
-
-        private void buildAbsSums(List<AggregationElement> aggs) {
-            if (!absSums.isEmpty()) {
-                aggs.add(Agg(AggType.AbsSum, MatchPair.fromPairs(absSums)));
-            }
-        }
-
-        @Override
-        public void visit(AbsSum absSum) {
-            absSums.add(absSum.pair());
-            buildOrder.add(buildAbsSums);
-        }
-
-        @Override
-        public void visit(Group group) {
-            arrays.add(group.pair());
-            buildOrder.add(buildArrays);
-        }
-
-        @Override
-        public void visit(Avg avg) {
-            avgs.add(avg.pair());
-            buildOrder.add(buildAvgs);
-        }
-
-        @Override
-        public void visit(Count count) {
-            counts.add(count.column());
-            buildOrder.add(buildCounts);
-        }
-
-        @Override
-        public void visit(CountDistinct countDistinct) {
-            countDistincts.computeIfAbsent(countDistinct.countNulls(), b -> new ArrayList<>())
-                    .add(countDistinct.pair());
-            buildOrder.add(buildCountDistincts);
-        }
-
-        @Override
-        public void visit(Distinct distinct) {
-            distincts.computeIfAbsent(distinct.includeNulls(), b -> new ArrayList<>()).add(distinct.pair());
-            buildOrder.add(buildDistincts);
-        }
-
-        @Override
-        public void visit(First first) {
-            firsts.add(first.pair());
-            buildOrder.add(buildFirsts);
-        }
-
-        @Override
-        public void visit(Last last) {
-            lasts.add(last.pair());
-            buildOrder.add(buildLasts);
-        }
-
-        @Override
-        public void visit(Max max) {
-            maxs.add(max.pair());
-            buildOrder.add(buildMaxes);
-        }
-
-        @Override
-        public void visit(Med med) {
-            medians.computeIfAbsent(med.averageMedian(), b -> new ArrayList<>()).add(med.pair());
-            buildOrder.add(buildMedians);
-        }
-
-        @Override
-        public void visit(Min min) {
-            mins.add(min.pair());
-            buildOrder.add(buildMins);
-        }
-
-        @Override
-        public void visit(Multi<?> multi) {
-            for (Aggregation aggregation : multi.aggregations()) {
-                aggregation.walk(this);
-            }
-        }
-
-        @Override
-        public void visit(Pct pct) {
-            pcts.computeIfAbsent(new ByteDoubleTuple(pct.averageMedian() ? (byte) 1 : (byte) 0, pct.percentile()),
-                    b -> new ArrayList<>()).add(pct.pair());
-            buildOrder.add(buildPcts);
-        }
-
-        @Override
-        public void visit(SortedFirst sortedFirst) {
-            sortedFirsts.computeIfAbsent(sortedFirst.columns(), b -> new ArrayList<>()).add(sortedFirst.pair());
-            buildOrder.add(buildSortedFirsts);
-        }
-
-        @Override
-        public void visit(SortedLast sortedLast) {
-            sortedLasts.computeIfAbsent(sortedLast.columns(), b -> new ArrayList<>()).add(sortedLast.pair());
-            buildOrder.add(buildSortedLasts);
-        }
-
-        @Override
-        public void visit(Std std) {
-            stds.add(std.pair());
-            buildOrder.add(buildStds);
-        }
-
-        @Override
-        public void visit(Sum sum) {
-            sums.add(sum.pair());
-            buildOrder.add(buildSums);
-        }
-
-        @Override
-        public void visit(Unique unique) {
-            uniques.computeIfAbsent(unique.includeNulls(), b -> new ArrayList<>()).add(unique.pair());
-            buildOrder.add(buildUniques);
-        }
-
-        @Override
-        public void visit(Var var) {
-            vars.add(var.pair());
-            buildOrder.add(buildVars);
-        }
-
-        @Override
-        public void visit(WAvg wAvg) {
-            wAvgs.computeIfAbsent(wAvg.weight(), b -> new ArrayList<>()).add(wAvg.pair());
-            buildOrder.add(buildWAvgs);
-        }
-
-        @Override
-        public void visit(WSum wSum) {
-            wSums.computeIfAbsent(wSum.weight(), b -> new ArrayList<>()).add(wSum.pair());
-            buildOrder.add(buildWSums);
-        }
-    }
 }

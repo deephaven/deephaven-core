@@ -50,14 +50,14 @@ public class StreamToTableAdapter implements SafeCloseable, StreamConsumer, Runn
     /** To start out when we have no data, we use null value column sources which are cheap and singletons. */
     private final NullValueColumnSource<?>[] nullColumnSources;
 
-    // we accumulate data into buffer from the ingester thread; capture it into current on the UGP thread; move it into
-    // prev after one cycle, and then then the cycle after that we clear out the chunks and reuse them for the buffers
-    // they all start out null in the constructor
+    // We accumulate data into buffer from the ingester thread; capture it into current on the UGP thread; move it into
+    // prev after one cycle, and then the cycle after that we clear out the chunks and reuse them for the buffers.
+    // They all start out null in the constructor.
     private ChunkColumnSource<?>[] bufferChunkSources;
     private ChunkColumnSource<?>[] currentChunkSources;
     private ChunkColumnSource<?>[] prevChunkSources;
 
-    // a list of failures that have occurred
+    /** A list of failures that have occurred. */
     private List<Exception> enqueuedFailure;
 
     private volatile Runnable shutdownCallback;
