@@ -296,7 +296,7 @@ inline bool AsOfJoinTablesRequest_MatchRule_Parse(
 enum ComboAggregateRequest_AggType : int {
   ComboAggregateRequest_AggType_SUM = 0,
   ComboAggregateRequest_AggType_ABS_SUM = 1,
-  ComboAggregateRequest_AggType_ARRAY = 2,
+  ComboAggregateRequest_AggType_GROUP = 2,
   ComboAggregateRequest_AggType_AVG = 3,
   ComboAggregateRequest_AggType_COUNT = 4,
   ComboAggregateRequest_AggType_FIRST = 5,
