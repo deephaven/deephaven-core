@@ -14,13 +14,11 @@ public class JsTimeZone {
     // Map of all time IDs to their JsTimeZone
     private static final Map<String, JsTimeZone> timeZones = new HashMap<>();
 
-    public static JsTimeZone getTimeZone(String tzCode) {
-        return getTimeZoneForCode(tzCode);
+    static {
+        initTimeZones();
     }
 
-    private static JsTimeZone getTimeZoneForCode(String tzCode) {
-        initTimeZones();
-
+    public static JsTimeZone getTimeZone(String tzCode) {
         if (!timeZones.containsKey(tzCode)) {
             throw new IllegalArgumentException("Unsupported time zone " + tzCode);
         }
@@ -29,10 +27,6 @@ public class JsTimeZone {
     }
 
     private static void initTimeZones() {
-        if (!timeZones.isEmpty()) {
-            return;
-        }
-
         final TimeZoneConstants constants = GWT.create(TimeZoneConstants.class);
 
         // Add all the constants from TimeZoneConstants
