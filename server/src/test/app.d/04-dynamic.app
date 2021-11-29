@@ -1,2 +1,2 @@
 type=dynamic
-class=io.deephaven.grpc_api.appmode.ApplicationConfigs$App04
+class=io.deephaven.server.appmode.ApplicationConfigs$App04

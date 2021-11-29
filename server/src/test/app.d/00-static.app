@@ -1,2 +1,2 @@
 type=static
-class=io.deephaven.grpc_api.appmode.ApplicationConfigs$App00
+class=io.deephaven.server.appmode.ApplicationConfigs$App00

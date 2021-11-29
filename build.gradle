@@ -400,7 +400,7 @@ tasks.register 'allJavadoc', Javadoc, {
                 ':ModelFarm',
                 ':Numerics',
                 ':Plot',
-                ':grpc-api',
+                ':server',
                 ':qst',
                 ':table-api',
                 ':uri',
@@ -472,14 +472,14 @@ tasks.register('quick') {
         allprojects.collect { it.tasks.matching { it.name == 'compileTestJava' } } +\
         allprojects.collect { it.tasks.matching { it.name == 'spotlessCheck' } }
     }
-    it.dependsOn project(':grpc-api').tasks.findByName(LifecycleBasePlugin.CHECK_TASK_NAME)
+    it.dependsOn project(':server').tasks.findByName(LifecycleBasePlugin.CHECK_TASK_NAME)
     it.dependsOn project(':Generators').tasks.findByName(LifecycleBasePlugin.CHECK_TASK_NAME)
 }
 
 tasks.register('prepareCompose') {
     it.group 'Deephaven lifecycle'
     it.description 'A lifecycle task that prepares prerequisites for local docker-compose builds'
-    it.dependsOn project(':docker-server-slim').tasks.findByName('buildDocker-server-slim'),
+    it.dependsOn project(':docker-server-slim').tasks.findByName('buildDocker-server-slim'),//docker-server-slim-netty
             project(':docker-server').tasks.findByName('buildDocker-server'),
             project(':docker-web').tasks.findByName('buildDocker'),
             project(':envoy').tasks.findByName('buildDocker'),
@@ -494,7 +494,7 @@ tasks.register('smoke') {
         allprojects.collect { it.tasks.matching { it.name == 'compileTestJava' } } +\
         allprojects.collect { it.tasks.matching { it.name == 'spotlessCheck' } }
     }
-    it.dependsOn project(':grpc-api').tasks.findByName(LifecycleBasePlugin.CHECK_TASK_NAME)
+    it.dependsOn project(':server').tasks.findByName(LifecycleBasePlugin.CHECK_TASK_NAME)
     it.dependsOn project(':docker-server-slim').tasks.findByName('prepareDocker')
     it.dependsOn project(':docker-server').tasks.findByName('prepareDocker')
     it.dependsOn project(':web').tasks.findByName(LifecycleBasePlugin.ASSEMBLE_TASK_NAME)

@@ -3,6 +3,7 @@ package io.deephaven.server.runner;
 import dagger.Module;
 import dagger.Provides;
 import io.deephaven.extensions.barrage.util.DefensiveDrainable;
+import io.grpc.BindableService;
 import io.grpc.ForwardingServerCall.SimpleForwardingServerCall;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.Metadata;
@@ -36,8 +37,15 @@ public class ServerBuilderInProcessModule {
     }
 
     @Provides
-    static ServerBuilder<?> serverBuilder(@Named("serverName") String serverName) {
-        return InProcessServerBuilder.forName(serverName).intercept(DrainingInterceptor.INSTANCE);
+    static GrpcServer serverBuilder(@Named("serverName") String serverName, Set<BindableService> services,
+            Set<ServerInterceptor> interceptors) {
+        InProcessServerBuilder builder =
+                InProcessServerBuilder.forName(serverName).intercept(DrainingInterceptor.INSTANCE);
+
+        services.forEach(builder::addService);
+        interceptors.forEach(builder::intercept);
+
+        return GrpcServer.of(builder.build());
     }
 
     @Provides

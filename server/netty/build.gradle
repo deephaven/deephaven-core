@@ -1,14 +1,73 @@
 plugins {
     id 'java-library'
+    id 'application'
+}
+
+configurations {
+    applicationDist
 }
 
 dependencies {
-    api project(':server')
+    api project(':server') {
+        // way too many dependencies right now
+        // but at least we can cut-off slf4j-simple
+//        exclude group: 'org.slf4j', module: 'slf4j-simple'
+    }
+    api project(':application-mode')
+
     Classpaths.inheritDagger(project)
 
     Classpaths.inheritGrpcPlatform(project)
     implementation 'io.grpc:grpc-netty'
 
+    runtimeOnly project(':log-to-slf4j')
+    runtimeOnly project(':logback-print-stream-globals')
+    runtimeOnly project(':logback-logbuffer')
+    Classpaths.inheritLogbackClassic(project)
 
     testImplementation project(':server-test')
 }
+
+distributions {
+    main {
+        distributionBaseName = 'server'
+    }
+}
+
+def extraJvmArgs = []
+if (hasProperty('groovy')) {
+    extraJvmArgs = ['-Ddeephaven.console.type=groovy']
+}
+
+application {
+    mainClassName = 'io.deephaven.server.netty.NettyMain'
+    applicationName = 'start'
+    applicationDefaultJvmArgs = [
+            '-server',
+            '-XX:+UseG1GC',
+            '-XX:MaxGCPauseMillis=100',
+            '-XX:+UseStringDeduplication',
+            '-XshowSettings:vm',
+
+            // Settings based on the cgroup limits:
+            // https://www.oracle.com/java/technologies/javase/8u191-relnotes.html
+            // the initial memory reservation, expressed as a percentage of (todo - is this as a percentage against the JVMs computed maximum, or the system memory?)
+            // Note: this feature works w/ cgroups v1, and not cgroups v2 *yet* (except in java 15+).
+            // Maybe we can request backport: https://bugs.openjdk.java.net/browse/JDK-8230305 ?
+            // https://www.redhat.com/sysadmin/fedora-31-control-group-v2
+            '-XX:InitialRAMPercentage=25.0',
+            // the percentage of system memory that the JVM will use as maximum in low-memory systems
+            '-XX:MinRAMPercentage=70.0',
+            // the percentage of system memory that the JVM will use as maximum
+            '-XX:MaxRAMPercentage=80.0',
+
+            // TODO(deephaven-core#1493): add-opens Docker application based on plugin conventions
+            '--add-opens', 'java.base/java.nio=ALL-UNNAMED'
+    ] + extraJvmArgs
+}
+
+artifacts {
+    applicationDist project.tasks.findByName('distTar')
+}
+
+apply plugin: 'io.deephaven.java-open-nio'

@@ -1,6 +1,6 @@
 package io.deephaven.server.runner;
 
-import io.deephaven.server.util.ExportTicketHelper;
+import io.deephaven.grpc_api.util.ExportTicketHelper;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation;
 import io.deephaven.proto.backplane.grpc.EmptyTableRequest;

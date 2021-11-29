@@ -24,7 +24,7 @@ dependencies {
 
     Classpaths.inheritAssertJ(project)
 
-    testImplementation TestTools.projectDependency(project, 'grpc-api')
+    testImplementation TestTools.projectDependency(project, 'server')
     testImplementation project(':log-to-slf4j')
 }
 

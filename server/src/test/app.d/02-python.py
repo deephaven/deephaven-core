@@ -10,7 +10,7 @@ def demo_app(app: ApplicationState):
   app.setField("world", TableTools.timeTable("00:00:01"))
 
 def initialize(func: Callable[[ApplicationState], None]):
-  app = jpy.get_type("io.deephaven.grpc_api.appmode.ApplicationContext").get()
+  app = jpy.get_type("io.deephaven.appmode.ApplicationContext").get()
   func(app)
 
 initialize(demo_app)
@@ -23,7 +23,7 @@ def demo_implicit():
   global world_imp; world_imp = TableTools.timeTable("00:00:01")
 
 def initialize_implicitly(func: Callable[[], None]):
-  app = jpy.get_type("io.deephaven.grpc_api.appmode.ApplicationContext").get()
+  app = jpy.get_type("io.deephaven.appmode.ApplicationContext").get()
   original_fields = dict(globals())
   candidate_fields = dict(original_fields)
   exec(func.__code__, candidate_fields)

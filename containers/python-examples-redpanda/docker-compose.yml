@@ -2,7 +2,7 @@ version: "3.4"
 
 services:
   grpc-api:
-    image: ghcr.io/deephaven/grpc-api:${VERSION:-latest}
+    image: ghcr.io/deephaven/server-netty:${VERSION:-latest}
     expose:
       - '8080'
     volumes:

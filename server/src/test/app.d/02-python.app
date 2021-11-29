@@ -1,6 +1,6 @@
 type=script
 scriptType=python
-id=io.deephaven.grpc_api.appmode.ApplicationConfigs.app02
+id=io.deephaven.server.appmode.ApplicationConfigs.app02
 name=My Python Application
 
 file_0=02-python.py

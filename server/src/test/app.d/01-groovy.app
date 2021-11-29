@@ -1,6 +1,6 @@
 type=script
 scriptType=groovy
-id=io.deephaven.grpc_api.appmode.ApplicationConfigs.app01
+id=io.deephaven.server.appmode.ApplicationConfigs.app01
 name=My Groovy Application
 
 file_0=01-groovy.groovy

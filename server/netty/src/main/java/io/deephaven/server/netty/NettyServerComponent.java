@@ -1,24 +1,25 @@
-package io.deephaven.server.runner;
+package io.deephaven.server.netty;
 
 import dagger.BindsInstance;
 import dagger.Component;
 import io.deephaven.server.healthcheck.HealthCheckModule;
+import io.deephaven.server.runner.DeephavenApiServer;
+import io.deephaven.server.runner.DeephavenApiServerModule;
 
 import javax.inject.Named;
 import javax.inject.Singleton;
 import java.io.PrintStream;
 
-// @Singleton
-// @Component(modules = {
-// DeephavenApiServerModule.class,
-// HealthCheckModule.class,
-// NettyServerBuilderModule.class
-// })
-public interface DeephavenApiServerComponent {
-
+@Singleton
+@Component(modules = {
+        DeephavenApiServerModule.class,
+        HealthCheckModule.class,
+        NettyServerModule.class
+})
+public interface NettyServerComponent {
     DeephavenApiServer getServer();
 
-    // @Component.Builder
+    @Component.Builder
     interface Builder {
         @BindsInstance
         Builder withPort(@Named("http.port") int port);
@@ -35,6 +36,6 @@ public interface DeephavenApiServerComponent {
         @BindsInstance
         Builder withErr(@Named("err") PrintStream err);
 
-        DeephavenApiServerComponent build();
+        NettyServerComponent build();
     }
 }

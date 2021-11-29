@@ -21,7 +21,6 @@ String[] mods = [
         'BenchmarkSupport',
         'python-engine-test',
         'Parquet',
-        'grpc-api',
         'server',
         'table-api',
         'qst']
@@ -112,9 +111,6 @@ project(':log-example-stream').projectDir = file('log-factory/examples/example-s
 
 include(':log-example-file')
 project(':log-example-file').projectDir = file('log-factory/examples/example-file')
-
-include(':grpc-api-server-native')
-project(':grpc-api-server-native').projectDir = file('grpc-api/server/native')
 
 include(':server-test')
 project(':server-test').projectDir = file('server/test')

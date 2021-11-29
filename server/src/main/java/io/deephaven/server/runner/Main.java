@@ -7,11 +7,11 @@ import io.deephaven.io.logger.LogBufferGlobal;
 import io.deephaven.io.logger.LogBufferInterceptor;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.process.ProcessEnvironment;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.concurrent.TimeoutException;
 
 public class Main {
     private static void bootstrapSystemProperties(String[] args) throws IOException {
@@ -35,9 +35,16 @@ public class Main {
         }
     }
 
-    public static void main(String[] args)
-            throws IOException, InterruptedException, ClassNotFoundException, TimeoutException {
-        System.out.printf("# Starting %s%n", Main.class.getName());
+    /**
+     * Common init method to share between main() implementations.
+     * 
+     * @param mainClass
+     * @return the current configuration instance to be used when configuring the rest of the server
+     * @throws IOException
+     */
+    @NotNull
+    public static Configuration init(String[] args, Class<?> mainClass) throws IOException {
+        System.out.printf("# Starting %s%n", mainClass.getName());
 
         // No classes should be loaded before we bootstrap additional system properties
         bootstrapSystemProperties(args);
@@ -58,23 +65,8 @@ public class Main {
         // Push our log to ProcessEnvironment, so that any parts of the system relying on ProcessEnvironment
         // instead of LoggerFactory can get the correct logger.
         final ProcessEnvironment processEnvironment =
-                ProcessEnvironment.basicInteractiveProcessInitialization(config, Main.class.getName(), log);
+                ProcessEnvironment.basicInteractiveProcessInitialization(config, mainClass.getName(), log);
         Thread.setDefaultUncaughtExceptionHandler(processEnvironment.getFatalErrorReporter());
-
-        // defaults to 5 minutes
-        int httpSessionExpireMs = config.getIntegerWithDefault("http.session.durationMs", 300000);
-        int httpPort = config.getIntegerWithDefault("http.port", 8080);
-        int schedulerPoolSize = config.getIntegerWithDefault("scheduler.poolSize", 4);
-
-        DaggerDeephavenApiServerComponent
-                .builder()
-                .withPort(httpPort)
-                .withSchedulerPoolSize(schedulerPoolSize)
-                .withSessionTokenExpireTmMs(httpSessionExpireMs)
-                .withOut(PrintStreamGlobals.getOut())
-                .withErr(PrintStreamGlobals.getErr())
-                .build()
-                .getServer()
-                .run();
+        return config;
     }
 }
