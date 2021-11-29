@@ -1240,7 +1240,7 @@ public class DateTimeUtils {
         if (timeProvider != null) {
             return timeProvider.currentTime();
         }
-        return nanosToTime(millisToNanos(System.currentTimeMillis()));
+        return DateTime.now();
     }
 
     // TODO: Revoke public access to these fields and retire them! Use getCurrentDate(), maybe hold on to the
