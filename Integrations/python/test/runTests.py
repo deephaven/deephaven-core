@@ -14,7 +14,7 @@ else:
     import unittest
 
 from testCalendars import TestCalendars  # pass 2.7 & 3.7
-from testComboAggregateFactory import TestComboAggregateFactory # pass 2.7 & 3.7
+from testAggregation import TestAggregation # pass 2.7 & 3.7
 from testDateTimeUtil import TestDateTimeUtil  # missing method - updated jar should solve
 from testPlot import TestPlot
 from testFigureWrapper import TestFigureWrapper  # axis methods - how to resolve
@@ -57,7 +57,7 @@ if __name__ == "__main__":
 
     goodClasses = {
         'Cals'.lower(): TestCalendars,
-        'CAF'.lower(): TestComboAggregateFactory,
+        'AGG'.lower(): TestAggregation,
         'DTU'.lower(): TestDateTimeUtil,
         'Plot'.lower(): TestPlot,
         'FigW'.lower(): TestFigureWrapper,

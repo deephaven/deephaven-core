@@ -13,6 +13,7 @@ from typing import NewType
 
 # None until the first _defineSymbols() call
 _table_tools_ = None
+_table_factory_ = None
 _col_def_ = None
 _python_tools_ = None
 _qst_col_header_ = None
@@ -74,7 +75,7 @@ def _defineSymbols():
     if not jpy.has_jvm():
         raise SystemError("No java functionality can be used until the JVM has been initialized through the jpy module")
 
-    global _table_tools_, _col_def_, _python_tools_, _qst_col_header_, \
+    global _table_tools_, _table_factory_, _col_def_, _python_tools_, _qst_col_header_, \
         _qst_column_, _qst_newtable_, _qst_type_, _table_, \
         DataType, bool_, byte, short, int16, char, int_, int32, long_, int64, \
         float_, single, float32, double, float64, \
@@ -86,6 +87,7 @@ def _defineSymbols():
     if _table_tools_ is None:
         # This will raise an exception if the desired object is not the classpath
         _table_tools_ = jpy.get_type("io.deephaven.engine.util.TableTools")
+        _table_factory_ = jpy.get_type("io.deephaven.engine.table.TableFactory")
         _col_def_ = jpy.get_type("io.deephaven.engine.table.ColumnDefinition")
         _python_tools_ = jpy.get_type("io.deephaven.integrations.python.PythonTools")
         _qst_col_header_ = jpy.get_type("io.deephaven.qst.column.header.ColumnHeader")
@@ -255,7 +257,7 @@ def _getQstCol(col_name:str, col_type:DataType, col_data=None):
 @_passThrough
 def _getTable(qst_cols):
     qst_newtable = _qst_newtable_.of(qst_cols)
-    return _table_.of(qst_newtable)        
+    return _table_factory_.of(qst_newtable)
     
 @_passThrough
 def _table_by_rows(data, columns):
@@ -349,7 +351,7 @@ def table_of(data, columns=None):
                     col_header = col_header.header(t[0], t[1])
             except Exception as e:
                 raise Exception("Could not create column definition from " + str(t)) from e
-        return _table_.of(col_header)
+        return _table_factory_.of(col_header)
 
     if isinstance(data, collections.Sequence):
         return _table_by_rows(data, columns)

@@ -12,7 +12,7 @@ import tempfile
 import os
 import numpy
 
-from deephaven import TableTools, ComboAggregateFactory
+from deephaven import TableTools, Aggregation
 
 # NB: these two modules cannot even be imported successfully without the jvm initialized
 import deephaven.Plot as Plot

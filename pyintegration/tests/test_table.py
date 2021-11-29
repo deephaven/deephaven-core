@@ -35,14 +35,12 @@ class TableTestCase(BaseTestCase):
     def test_time_table(self):
         t = time_table("00:00:01")
         self.assertEqual(1, len(t.columns))
-        sleep(2)
-        self.assertLessEqual(2, t.size)
-        self.assertLessEqual(2, len(t.to_string(num_rows=20).split("\n")))
+        self.assertTrue(t.isRefreshing())
 
         t = time_table("00:00:01", start_time="2021-11-06T13:21:00 NY")
-        start_size = t.size
-        sleep(2)
-        self.assertLess(start_size, t.size)
+        self.assertEqual(1, len(t.columns))
+        self.assertTrue(t.isRefreshing())
+        self.assertEqual("2021-11-06T13:21:00 NY", t.getColumnSource("Timestamp").get(0).toString())
 
     def test_repr(self):
         print(self.test_table)
@@ -276,7 +274,7 @@ class TableTestCase(BaseTestCase):
                      pct(percentile=0.5, cols=["PctC = c"]),
                      weighted_avg(wcol="d", cols=["WavGD = d"])]
 
-        result_table = self.test_table.combo_by(aggs=combo_agg, by=["a"])
+        result_table = self.test_table.agg_by(aggs=combo_agg, by=["a"])
         self.assertEqual(result_table.size, num_distinct_a)
 
 

@@ -18,10 +18,7 @@ import io.deephaven.util.datastructures.LongSizedDataStructure;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
 
@@ -997,6 +994,18 @@ public interface Table extends
     @Override
     @ConcurrentMethod
     Table groupBy();
+
+    @Override
+    @ConcurrentMethod
+    Table aggBy(Aggregation aggregation);
+
+    @Override
+    @ConcurrentMethod
+    Table aggBy(Aggregation aggregation, String... groupByColumns);
+
+    @Override
+    @ConcurrentMethod
+    Table aggBy(Aggregation aggregation, Collection<? extends Selectable> groupByColumns);
 
     @Override
     @ConcurrentMethod

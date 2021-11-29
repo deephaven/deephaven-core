@@ -12,7 +12,7 @@ import jpy
 from deephaven2 import DHError
 
 _JQstType = jpy.get_type("io.deephaven.qst.type.Type")
-_JTableTools = jpy.get_type("io.deephaven.engine.tables.utils.TableTools")
+_JTableTools = jpy.get_type("io.deephaven.engine.util.TableTools")
 
 
 def _qst_custom_type(cls_name: str):
@@ -43,9 +43,9 @@ class DType(Enum):
     float64 = double
     string = _JQstType.stringType(), "java.lang.String"
     BigDecimal = _qst_custom_type("java.math.BigDecimal"), "java.math.BigDecimal"
-    StringSet = _qst_custom_type("io.deephaven.engine.tables.libs.StringSet"), "io.deephaven.engine.tables.libs.StringSet"
-    DateTime = _qst_custom_type("io.deephaven.engine.tables.utils.DateTime"), "io.deephaven.engine.tables.utils.DateTime"
-    Period = _qst_custom_type("io.deephaven.engine.tables.utils.Period"), "io.deephaven.engine.tables.utils.Period"
+    StringSet = _qst_custom_type("io.deephaven.engine.stringset.StringSet"), "io.deephaven.engine.stringset.StringSet"
+    DateTime = _qst_custom_type("io.deephaven.engine.time.DateTime"), "io.deephaven.engine.time.DateTime"
+    Period = _qst_custom_type("io.deephaven.engine.time.Period"), "io.deephaven.engine.time.Period"
 
     def __new__(cls, qst_type, j_type):
         obj = object.__new__(cls)

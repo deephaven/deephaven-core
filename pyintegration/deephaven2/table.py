@@ -14,7 +14,10 @@ from deephaven2.agg import Aggregation
 from deephaven2.constants import SortDirection
 
 _JTableTools = jpy.get_type("io.deephaven.engine.util.TableTools")
-_JSortPair = jpy.get_type("io.deephaven.engine.table.impl.SortPair")
+_JColumnName = jpy.get_type("io.deephaven.api.ColumnName")
+_JSortColumn = jpy.get_type("io.deephaven.api.SortColumn")
+_JFilter = jpy.get_type("io.deephaven.api.filter.Filter")
+_JFilterOr = jpy.get_type("io.deephaven.api.filter.FilterOr")
 
 
 #
@@ -192,7 +195,7 @@ class Table:
             DHError
         """
         try:
-            return Table(j_table=self._j_table.moveDownColumns(*cols))
+            return Table(j_table=self._j_table.moveColumnsDown(*cols))
         except Exception as e:
             raise DHError(e, "table move_columns_down operation failed.") from e
 
@@ -210,7 +213,7 @@ class Table:
             DHError
         """
         try:
-            return Table(j_table=self._j_table.moveUpColumns(*cols))
+            return Table(j_table=self._j_table.moveColumnsUp(*cols))
         except Exception as e:
             raise DHError(e, "table move_columns_up operation failed.") from e
 
@@ -418,9 +421,9 @@ class Table:
         """
         try:
             if not filters:
-                return Table(j_table=self._j_table.whereOneOf())
+                return Table(j_table=self._j_table.where())
             else:
-                return Table(j_table=self._j_table.whereOneOf(*filters))
+                return Table(j_table=self._j_table.where(_JFilterOr.of(_JFilter.from(*filters))))
         except Exception as e:
             raise DHError(e, "table where_one_of operation failed.") from e
 
@@ -561,13 +564,13 @@ class Table:
             DHError
         """
 
-        def sort_pair(col, dir_):
-            return _JSortPair.descending(col) if dir_ == SortDirection.DESCENDING else _JSortPair.ascending(col)
+        def sort_column(col, dir_):
+            return _JSortColumn.desc(_JColumnName.of(col)) if dir_ == SortDirection.DESCENDING else _JSortColumn.asc(_JColumnName.of(col))
 
         try:
             if order:
-                sort_pairs = [sort_pair(col, dir_) for col, dir_ in zip(order_by, order)]
-                return Table(j_table=self._j_table.sort(*sort_pairs))
+                sort_columns = [sort_column(col, dir_) for col, dir_ in zip(order_by, order)]
+                return Table(j_table=self._j_table.sort(*sort_columns))
             else:
                 return Table(j_table=self._j_table.sort(*order_by))
         except Exception as e:
@@ -1028,8 +1031,8 @@ class Table:
         except Exception as e:
             raise DHError(e, "table count_by operation failed.") from e
 
-    def combo_by(self, aggs: List[Aggregation], by: List[str]) -> Table:
-        """ The combo_by method creates a new table containing grouping columns and grouped data. The resulting
+    def agg_by(self, aggs: List[Aggregation], by: List[str]) -> Table:
+        """ The agg_by method creates a new table containing grouping columns and grouped data. The resulting
         grouped data is defined by the aggregations specified.
 
         Args:
@@ -1045,5 +1048,5 @@ class Table:
         try:
             return Table(j_table=self._j_table.aggBy([agg.j_agg for agg in aggs], *by))
         except Exception as e:
-            raise DHError(e, "table combo_by operation failed.") from e
+            raise DHError(e, "table agg_by operation failed.") from e
     # endregion

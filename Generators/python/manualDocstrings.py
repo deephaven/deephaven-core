@@ -7,7 +7,7 @@ allManualDocs = {}
 ########################################################################################################################
 # TableTools custom methods population
 
-pathName = "io.deephaven.engine.tables.utils.TableTools"
+pathName = "io.deephaven.engine.util.TableTools"
 className = pathName
 dd = {
     "className": className,

@@ -564,7 +564,7 @@ class TableInterface(ABC):
         table_op = DedicatedAggOp(AggType.COUNT, count_column=col)
         return self.table_op_handler(table_op)
 
-    def combo_by(self, agg: ComboAggregation, by: List[str]):
+    def agg_by(self, agg: ComboAggregation, by: List[str]):
         """ Perform a Combined Aggregation operation on the table and return the result table.
 
         Args:

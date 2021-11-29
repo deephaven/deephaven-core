@@ -9,7 +9,7 @@ from pydeephaven.proto import table_pb2
 class AggType(Enum):
     SUM = table_pb2.ComboAggregateRequest.AggType.SUM
     ABS_SUM = table_pb2.ComboAggregateRequest.AggType.ABS_SUM
-    ARRAY = table_pb2.ComboAggregateRequest.AggType.ARRAY
+    GROUP = table_pb2.ComboAggregateRequest.AggType.GROUP
     AVG = table_pb2.ComboAggregateRequest.AggType.AVG
     COUNT = table_pb2.ComboAggregateRequest.AggType.COUNT
     FIRST = table_pb2.ComboAggregateRequest.AggType.FIRST

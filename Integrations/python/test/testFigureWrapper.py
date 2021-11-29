@@ -11,7 +11,7 @@ import sys
 import tempfile
 import os
 
-from deephaven import TableTools, ComboAggregateFactory, Plot, Calendars
+from deephaven import TableTools, Aggregation, Plot, Calendars
 from deephaven.Plot import figure_wrapper
 
 if sys.version_info[0] < 3:
@@ -128,8 +128,7 @@ class TestFigureWrapper(unittest.TestCase):
 
         figure = figure_wrapper.FigureWrapper(1, 1)
         with self.subTest("piePlot"):
-            figure = figure.piePlot("Pie", self.table.by(
-                ComboAggregateFactory.AggCombo(ComboAggregateFactory.AggAvg("price")), "Sym"), "Sym", "price")
+            figure = figure.piePlot("Pie", self.table.aggBy(Aggregation.AggAvg("price"), "Sym"), "Sym", "price")
 
         figure = figure_wrapper.FigureWrapper(1, 1)
         with self.subTest("ohlcPlot"):
@@ -151,10 +150,10 @@ class TestFigureWrapper(unittest.TestCase):
         figure = figure_wrapper.FigureWrapper(1, 1)
         with self.subTest("catErrorBar"):
             figure = figure.catErrorBar("Cat Error Bar",
-                                        self.table.by(ComboAggregateFactory.AggCombo(
-                                            ComboAggregateFactory.AggAvg("avgPrice=price"),
-                                            ComboAggregateFactory.AggMin("minPrice=price"),
-                                            ComboAggregateFactory.AggMax("maxPrice=price")), "Sym"),
+                                        self.table.aggBy([
+                                            Aggregation.AggAvg("avgPrice=price"),
+                                            Aggregation.AggMin("minPrice=price"),
+                                            Aggregation.AggMax("maxPrice=price")], "Sym"),
                                         "Sym", "avgPrice", "minPrice", "maxPrice")
         del figure
 

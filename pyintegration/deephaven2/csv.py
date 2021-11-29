@@ -13,10 +13,10 @@ from deephaven2 import DHError
 from deephaven2.dtypes import DType
 from deephaven2.table import Table
 
-_JCsvHelpers = jpy.get_type("io.deephaven.engine.tables.utils.CsvHelpers")
-_JCsvSpecs = jpy.get_type("io.deephaven.engine.util.csv.CsvSpecs")
+_JCsvHelpers = jpy.get_type("io.deephaven.csv.CsvTools")
+_JCsvSpecs = jpy.get_type("io.deephaven.csv.CsvSpecs")
+_JInferenceSpecs = jpy.get_type("io.deephaven.csv.InferenceSpecs")
 _JTableHeader = jpy.get_type("io.deephaven.qst.table.TableHeader")
-_JInferenceSpecs = jpy.get_type("io.deephaven.engine.util.csv.InferenceSpecs")
 _JCharset = jpy.get_type("java.nio.charset.Charset")
 
 

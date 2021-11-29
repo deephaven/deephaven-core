@@ -1,5 +1,5 @@
 {
- "className": "io.deephaven.engine.tables.utils.TableTools",
+ "className": "io.deephaven.engine.util.TableTools",
  "methods": {
   "byteCol": "Creates a new ColumnHolder of type `byte` that can be used when creating in-memory tables.\n\n:param name: name for the column\n:param data: variable argument for the data\n:return: (io.deephaven.engine.table.impl.util.ColumnHolder) a Deephaven ColumnHolder object\n\ndata structure:\n  * an int or list of ints\n  * a :class:`numpy.ndarray` of integer or floating point values. `NaN` values will be mapped to `NULL_BYTE`\n    constant values, and all other values simply cast.\n  * a :class:`pandas.Series` whose values are a numpy array described above",
   "charCol": "Creates a new ColumnHolder of type `char` that can be used when creating in-memory tables.\n\n:param name: name for the column\n:param data: variable argument for the data\n:return: (io.deephaven.engine.table.impl.util.ColumnHolder) a Deephaven ColumnHolder object\n\n`data` structure:\n  * an int\n  * a string - will be interpreted as list of characters\n  * a :class:`numpy.ndarray` of integer or one-character string type\n  * a :class:`pandas.Series` whose values are a numpy array described above\n  * an iterable of integers or strings - if string, only the first character will be used",
@@ -12,7 +12,7 @@
   "objColSource": "Creates a column of appropriate object type, used for creating in-memory tables.\n\n:param data: variable argument for the data\n:return: (io.deephaven.engine.table.impl.sources.ColumnSource) a Deephaven ColumnSource of inferred type\ndata structure:\n    * a java object, or list of java objects\n    * an int, bool, float, datetime, date, string or iterable of (one) such\n* :class:`numpy.ndarray` containing boolean, numerical, datetime64, object, or string data (type inferred)\n* :class:`pandas.Series` object whose values are such a numpy array",
   "shortCol": "Creates a new ColumnHolder of type `short` that can be used when creating in-memory tables.\n    \n:param name: name for the column\n:param data: variable argument for the data\n:return: (io.deephaven.engine.table.impl.util.ColumnHolder) a Deephaven ColumnHolder object\n\ndata structure:\n  * an int or list of ints\n  * a :class:`numpy.ndarray` of integer or floating point values. `NaN` values will be mapped to `NULL_SHORT`\n    constant values, and all other values simply cast.\n  * a :class:`pandas.Series` whose values are a numpy array described above"
  },
- "path": "io.deephaven.engine.tables.utils.TableTools",
+ "path": "io.deephaven.engine.util.TableTools",
  "text": "Tools for users to manipulate tables.",
  "typeName": "class"
 }

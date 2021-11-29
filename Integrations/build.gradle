@@ -20,7 +20,8 @@ dependencies {
             // need these projects so session default imports / generated type wrappers resolve correctly
             project(':Numerics'),
             project(':Plot'),
-            project(':extensions-kafka')
+            project(':extensions-kafka'),
+            project(':extensions-parquet-table')
 }
 
 sourceSets {

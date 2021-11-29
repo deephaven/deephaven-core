@@ -134,16 +134,16 @@ _boxedArrayTypes = {
 
 
 _javaTypeToVectorType = {
-    'java.lang.String': 'ObjectVectorDirect',
-    'char': 'CharVectorDirect',
-    'java.lang.Boolean': 'ObjectVectorDirect',
-    'boolean': 'ObjectVectorDirect',  # it really should be boxed...
-    'byte': 'ByteVectorDirect',
-    'short': 'ShortVectorDirect',
-    'int': 'IntVectorDirect',
-    'long': 'LongVectorDirect',
-    'float': 'FloatVectorDirect',
-    'double': 'DoubleVectorDirect',
+    'java.lang.String': 'io.deephaven.engine.vector.ObjectVectorDirect',
+    'char': 'io.deephaven.engine.vector.CharVectorDirect',
+    'java.lang.Boolean': 'io.deephaven.engine.vector.ObjectVectorDirect',
+    'boolean': 'io.deephaven.engine.vector.ObjectVectorDirect',  # it really should be boxed...
+    'byte': 'io.deephaven.engine.vector.ByteVectorDirect',
+    'short': 'io.deephaven.engine.vector.ShortVectorDirect',
+    'int': 'io.deephaven.engine.vector.IntVectorDirect',
+    'long': 'io.deephaven.engine.vector.LongVectorDirect',
+    'float': 'io.deephaven.engine.vector.FloatVectorDirect',
+    'double': 'io.deephaven.engine.vector.DoubleVectorDirect',
 }
 
 _javaTypeToImmutableColumnSource = {
@@ -429,7 +429,7 @@ def _arrayColumnSource(array, javaTypeString):
     if javaTypeString in _javaTypeToVectorType:
         arrayType = _javaTypeToVectorType[javaTypeString]
     elif javaTypeString in jpy.dtypes:
-        arrayType = 'ObjectVectorDirect'
+        arrayType = 'io.deephaven.engine.vector.ObjectVectorDirect'
 
     arrayCls = jpy.get_type(arrayType)
     if javaTypeString == 'java.lang.Boolean':
