@@ -5,7 +5,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.impl.RowSetUtils;
-import io.deephaven.rowset.chunkattributes.OrderedRowKeys;
+import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;

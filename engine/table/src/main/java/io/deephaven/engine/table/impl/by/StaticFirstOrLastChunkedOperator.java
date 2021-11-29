@@ -7,7 +7,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
-import io.deephaven.rowset.chunkattributes.RowKeys;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.attributes.Values;
 
 public class StaticFirstOrLastChunkedOperator extends BaseAddOnlyFirstOrLastChunkedOperator {

@@ -3,7 +3,7 @@ package io.deephaven.engine.table.impl.join.dupcompact;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.table.Context;
 import io.deephaven.chunk.*;
-import io.deephaven.rowset.chunkattributes.RowKeys;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 
 public interface DupCompactKernel extends Context {
     static DupCompactKernel makeDupCompact(ChunkType chunkType, boolean reverse) {

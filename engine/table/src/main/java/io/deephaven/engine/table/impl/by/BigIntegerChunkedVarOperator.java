@@ -11,7 +11,7 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.sources.ObjectArraySource;
 import io.deephaven.chunk.*;
-import io.deephaven.rowset.chunkattributes.RowKeys;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.util.BigDecimalUtils;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableObject;

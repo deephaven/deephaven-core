@@ -18,7 +18,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.sort.LongMegaMergeKernel;
 import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.engine.table.impl.util.*;
-import io.deephaven.rowset.chunkattributes.RowKeys;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.engine.table.impl.sort.findruns.FindRunsKernel;

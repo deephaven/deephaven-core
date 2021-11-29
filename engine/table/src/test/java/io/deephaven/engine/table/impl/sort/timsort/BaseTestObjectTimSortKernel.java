@@ -13,7 +13,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderRandom;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSequenceFactory;
-import io.deephaven.rowset.chunkattributes.RowKeys;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.tuple.generated.ObjectLongLongTuple;
 import io.deephaven.tuple.generated.ObjectLongTuple;

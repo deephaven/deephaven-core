@@ -7,7 +7,7 @@ import java.util.Objects;
 
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Any;
-import io.deephaven.rowset.chunkattributes.RowKeys;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 
 public class ObjectDupCompactKernel implements DupCompactKernel {
     static final ObjectDupCompactKernel INSTANCE = new ObjectDupCompactKernel();

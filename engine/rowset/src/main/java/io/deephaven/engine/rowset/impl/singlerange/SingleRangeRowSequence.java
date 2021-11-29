@@ -1,6 +1,6 @@
 package io.deephaven.engine.rowset.impl.singlerange;
 
-import io.deephaven.rowset.chunkattributes.OrderedRowKeyRanges;
+import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges;
 
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
@@ -8,7 +8,7 @@ import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.rowset.impl.WritableRowSetImpl;
 import io.deephaven.engine.rowset.impl.RowSequenceAsChunkImpl;
 import io.deephaven.chunk.WritableLongChunk;
-import io.deephaven.rowset.chunkattributes.RowKeys;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 
 public class SingleRangeRowSequence extends RowSequenceAsChunkImpl implements SingleRangeMixin {
     private long rangeStart;

@@ -7,7 +7,7 @@ import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.rowset.chunkattributes.RowKeys;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 
 public interface ChunkFiller {
 

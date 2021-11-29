@@ -5,9 +5,11 @@ package io.deephaven.engine.table.impl.join.dupcompact;
 
 import java.util.Objects;
 
+import java.util.Objects;
+
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Any;
-import io.deephaven.rowset.chunkattributes.RowKeys;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 
 public class ObjectReverseDupCompactKernel implements DupCompactKernel {
     static final ObjectReverseDupCompactKernel INSTANCE = new ObjectReverseDupCompactKernel();

@@ -10,7 +10,7 @@ package io.deephaven.engine.table.impl.by;
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.rowset.chunkattributes.RowKeys;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.compare.FloatComparisons;
 import io.deephaven.engine.table.impl.sources.FloatArraySource;

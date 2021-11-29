@@ -7,7 +7,6 @@ import io.deephaven.chunk.ObjectChunk;
 
 import io.deephaven.chunk.WritableObjectChunk;
 
-import io.deephaven.rowset.chunkattributes.RowKeys;
 import io.deephaven.util.BooleanUtils;
 
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -22,6 +21,7 @@ import io.deephaven.engine.table.impl.select.FormulaColumn;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.testutil.Shuffle;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import junit.framework.TestCase;
 import org.junit.After;
 import org.junit.Before;

@@ -3,11 +3,12 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.table.impl.join.dupcompact;
 
-import io.deephaven.rowset.chunkattributes.RowKeys;
+import io.deephaven.util.QueryConstants;
 import io.deephaven.util.compare.CharComparisons;
 
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Any;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 
 public class NullAwareCharDupCompactKernel implements DupCompactKernel {
     static final NullAwareCharDupCompactKernel INSTANCE = new NullAwareCharDupCompactKernel();

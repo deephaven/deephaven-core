@@ -23,7 +23,7 @@ import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.chunk.*;
-import io.deephaven.rowset.chunkattributes.OrderedRowKeys;
+import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.text.Indenter;
 import io.deephaven.util.type.TypeUtils;

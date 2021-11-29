@@ -15,7 +15,7 @@ import io.deephaven.engine.table.*;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.datastructures.hash.HashMapK4V4;
 import io.deephaven.engine.table.impl.sort.LongSortKernel;
-import io.deephaven.rowset.chunkattributes.OrderedRowKeys;
+import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableLongChunk;

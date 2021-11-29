@@ -14,8 +14,8 @@ import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.sources.ObjectArraySource;
 import io.deephaven.engine.table.impl.sources.aggregate.AggregateColumnSource;
 import io.deephaven.chunk.*;
-import io.deephaven.rowset.chunkattributes.OrderedRowKeys;
-import io.deephaven.rowset.chunkattributes.RowKeys;
+import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;

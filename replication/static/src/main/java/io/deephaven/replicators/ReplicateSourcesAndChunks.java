@@ -84,7 +84,7 @@ public class ReplicateSourcesAndChunks {
                 "ColumnSource<[?] extends Object>", "ColumnSource<? extends T>",
                 "set\\(Object", "set(T",
                 "set\\(long key, Object", "set(long key, T",
-                "final ObjectChunk<[?] extends Attributes.Values>", "final ObjectChunk<T, ? extends Attributes.Values>",
+                "final ObjectChunk<[?] extends Values>", "final ObjectChunk<T, ? extends Values>",
                 "unbox\\((.*)\\)", "$1");
         lines = ReplicationUtils.removeRegion(lines, "UnboxedSetter");
         lines = ReplicationUtils.replaceRegion(lines, "Constructor", Arrays.asList(
@@ -113,7 +113,7 @@ public class ReplicateSourcesAndChunks {
                 "ForObject", "ForObject<T>",
                 "Object getObject", "T get",
                 "Object current", "T current",
-                "ObjectChunk<\\? extends Attributes.Values>", "ObjectChunk<T, ? extends Attributes.Values>",
+                "ObjectChunk<\\? extends Values>", "ObjectChunk<T, ? extends Values>",
                 "QueryConstants.NULL_OBJECT", "null");
 
         lines = ReplicationUtils.replaceRegion(lines, "constructor", Arrays.asList(

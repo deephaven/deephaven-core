@@ -1,7 +1,7 @@
 package io.deephaven.engine.table.impl.select.python;
 
 import io.deephaven.engine.table.impl.select.ConditionFilter.FilterKernel;
-import io.deephaven.rowset.chunkattributes.OrderedRowKeys;
+import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;
 import org.jpy.PyObject;

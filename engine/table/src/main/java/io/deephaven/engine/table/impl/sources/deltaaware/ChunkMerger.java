@@ -5,7 +5,7 @@ import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.rowset.chunkattributes.OrderedRowKeyRanges;
+import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges;
 
 class ChunkMerger<ATTR extends Any> {
     // Copy the data back into the positions where it needs to go.

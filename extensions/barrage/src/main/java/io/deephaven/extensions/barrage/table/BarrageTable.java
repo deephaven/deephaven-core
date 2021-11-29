@@ -30,8 +30,8 @@ import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.log.LogEntry;
 import io.deephaven.io.log.LogLevel;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.rowset.chunkattributes.OrderedRowKeys;
-import io.deephaven.rowset.chunkattributes.RowKeys;
+import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.util.annotations.InternalUseOnly;
 import org.jetbrains.annotations.NotNull;
 

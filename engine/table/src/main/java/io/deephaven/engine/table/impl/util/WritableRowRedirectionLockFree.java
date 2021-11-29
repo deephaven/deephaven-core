@@ -14,7 +14,7 @@ import io.deephaven.util.datastructures.hash.HashMapLockFreeK1V1;
 import io.deephaven.util.datastructures.hash.HashMapLockFreeK2V2;
 import io.deephaven.util.datastructures.hash.HashMapLockFreeK4V4;
 import io.deephaven.util.datastructures.hash.TNullableLongLongMap;
-import io.deephaven.rowset.chunkattributes.RowKeys;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.LongChunk;

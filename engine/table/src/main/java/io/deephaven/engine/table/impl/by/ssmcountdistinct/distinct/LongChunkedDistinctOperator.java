@@ -7,6 +7,7 @@
 
 package io.deephaven.engine.table.impl.by.ssmcountdistinct.distinct;
 
+import io.deephaven.engine.table.impl.sources.BoxedColumnSource;
 import io.deephaven.time.DateTime;
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.DateTimeSsmSourceWrapper;
 
@@ -25,7 +26,7 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
-import io.deephaven.rowset.chunkattributes.RowKeys;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.impl.ssms.LongSegmentedSortedMultiset;
 import io.deephaven.engine.table.impl.ssms.SegmentedSortedMultiSet;

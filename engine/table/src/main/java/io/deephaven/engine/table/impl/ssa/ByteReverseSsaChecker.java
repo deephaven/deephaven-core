@@ -11,7 +11,7 @@ import io.deephaven.chunk.WritableByteChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.util.hashing.ByteChunkEquals;
 import io.deephaven.chunk.util.hashing.LongChunkEquals;
-import io.deephaven.rowset.chunkattributes.RowKeys;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.impl.util.ChunkUtils;
 

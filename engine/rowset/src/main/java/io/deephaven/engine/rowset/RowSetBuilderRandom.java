@@ -4,8 +4,8 @@
 
 package io.deephaven.engine.rowset;
 
-import io.deephaven.rowset.chunkattributes.OrderedRowKeys;
-import io.deephaven.rowset.chunkattributes.RowKeys;
+import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.util.datastructures.LongRangeIterator;
 import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.LongChunk;

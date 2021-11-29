@@ -3,7 +3,7 @@ package io.deephaven.engine.table.impl.by;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.rowset.chunkattributes.RowKeys;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.util.SafeCloseable;
 import org.apache.commons.lang3.mutable.MutableInt;
 

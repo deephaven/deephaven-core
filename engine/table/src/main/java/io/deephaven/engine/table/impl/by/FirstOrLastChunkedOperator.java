@@ -15,8 +15,8 @@ import io.deephaven.engine.table.impl.sources.ObjectArraySource;
 import io.deephaven.engine.table.impl.sources.RedirectedColumnSource;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.table.impl.util.*;
-import io.deephaven.rowset.chunkattributes.OrderedRowKeys;
-import io.deephaven.rowset.chunkattributes.RowKeys;
+import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 
 import java.util.LinkedHashMap;
 import java.util.Map;

@@ -9,9 +9,11 @@ package io.deephaven.extensions.barrage.chunk.array;
 
 import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.IntChunk;
 import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.WritableChunk;
+import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.ChunkPositions;

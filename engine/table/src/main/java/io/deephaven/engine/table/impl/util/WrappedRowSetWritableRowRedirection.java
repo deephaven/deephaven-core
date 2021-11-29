@@ -8,7 +8,7 @@ import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.chunk.*;
-import io.deephaven.rowset.chunkattributes.RowKeys;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.util.LongChunkAppender;
 import io.deephaven.chunk.util.LongChunkIterator;
 import io.deephaven.engine.rowset.RowSet;

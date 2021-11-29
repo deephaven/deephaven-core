@@ -32,7 +32,7 @@ public class QueryLibraryImportsDefaults implements QueryLibraryImports {
                 classLoader.getDefinedPackage("java.lang"),
                 classLoader.getDefinedPackage("java.util"),
                 classLoader.getDefinedPackage("io.deephaven.chunk.attributes"),
-                classLoader.getDefinedPackage("io.deephaven.rowset.chunkattributes")
+                classLoader.getDefinedPackage("io.deephaven.engine.rowset.chunkattributes")
         ));
     }
 

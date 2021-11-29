@@ -4,7 +4,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.rowset.chunkattributes.RowKeys;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;

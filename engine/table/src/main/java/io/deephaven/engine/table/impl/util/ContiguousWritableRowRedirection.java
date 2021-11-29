@@ -8,7 +8,7 @@ import gnu.trove.map.hash.TLongLongHashMap;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.rowset.chunkattributes.RowKeys;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.engine.updategraph.UpdateCommitter;

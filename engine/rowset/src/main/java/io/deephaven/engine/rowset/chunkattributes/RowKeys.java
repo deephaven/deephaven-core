@@ -1,4 +1,4 @@
-package io.deephaven.rowset.chunkattributes;
+package io.deephaven.engine.rowset.chunkattributes;
 
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.attributes.Indices;

@@ -6,11 +6,11 @@ package io.deephaven.engine.rowset.impl;
 
 import io.deephaven.engine.rowset.*;
 import io.deephaven.chunk.attributes.Any;
-import io.deephaven.rowset.chunkattributes.OrderedRowKeyRanges;
+import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.util.pools.ChunkPoolReleaseTracking;
-import io.deephaven.rowset.chunkattributes.OrderedRowKeys;
+import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableList;
 import org.apache.commons.lang3.mutable.MutableInt;

@@ -10,7 +10,7 @@ import io.deephaven.engine.table.ColumnSource;
 import org.jetbrains.annotations.NotNull;
 
 import io.deephaven.engine.table.impl.CrossJoinShiftState;
-import io.deephaven.rowset.chunkattributes.RowKeys;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 
 import io.deephaven.chunk.attributes.Values;
 import static io.deephaven.util.QueryConstants.*;

@@ -6,7 +6,7 @@ package io.deephaven.engine.table.impl.ssa;
 import io.deephaven.util.compare.DoubleComparisons;
 
 import io.deephaven.chunk.*;
-import io.deephaven.rowset.chunkattributes.RowKeys;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.sized.SizedLongChunk;
 import io.deephaven.engine.rowset.RowSequence;

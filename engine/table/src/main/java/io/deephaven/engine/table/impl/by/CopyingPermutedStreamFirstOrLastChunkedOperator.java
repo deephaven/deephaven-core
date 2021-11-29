@@ -10,7 +10,7 @@ import io.deephaven.chunk.*;
 import io.deephaven.engine.table.impl.util.ChunkUtils;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSequenceFactory;
-import io.deephaven.rowset.chunkattributes.RowKeys;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.util.SafeCloseableList;
 import org.jetbrains.annotations.NotNull;
 

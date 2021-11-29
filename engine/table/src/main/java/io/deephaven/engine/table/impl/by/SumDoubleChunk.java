@@ -13,10 +13,10 @@ class SumDoubleChunk {
     private SumDoubleChunk() {} // static use only
 
     static double sumDoubleChunk(DoubleChunk<? extends Values> values, int chunkStart, int chunkSize,
-                                 MutableInt chunkNormalCount,
-                                 MutableInt chunkNanCount,
-                                 MutableInt chunkInfinityCount,
-                                 MutableInt chunkMinusInfinityCount) {
+                                MutableInt chunkNormalCount,
+                                MutableInt chunkNanCount,
+                                MutableInt chunkInfinityCount,
+                                MutableInt chunkMinusInfinityCount) {
         final int end = chunkStart + chunkSize;
         double sum = 0;
         for (int ii = chunkStart; ii < end; ++ii) {
@@ -37,11 +37,11 @@ class SumDoubleChunk {
     }
 
     static double sum2DoubleChunk(DoubleChunk<? extends Values> values, int chunkStart, int chunkSize,
-                                  MutableInt chunkNormalCount,
-                                  MutableInt chunkNanCount,
-                                  MutableInt chunkInfinityCount,
-                                  MutableInt chunkMinusInfinityCount,
-                                  MutableDouble sum2out) {
+                                 MutableInt chunkNormalCount,
+                                 MutableInt chunkNanCount,
+                                 MutableInt chunkInfinityCount,
+                                 MutableInt chunkMinusInfinityCount,
+                                 MutableDouble sum2out) {
         final int end = chunkStart + chunkSize;
         double sum = 0;
         double sum2 = 0;
@@ -69,9 +69,9 @@ class SumDoubleChunk {
     }
 
     static double sumDoubleChunkAbs(DoubleChunk<? extends Values> values, int chunkStart, int chunkSize,
-                                    MutableInt chunkNormalCount,
-                                    MutableInt chunkNanCount,
-                                    MutableInt chunkInfinityCount) {
+                                   MutableInt chunkNormalCount,
+                                   MutableInt chunkNanCount,
+                                   MutableInt chunkInfinityCount) {
         final int end = chunkStart + chunkSize;
         double sum = 0;
         for (int ii = chunkStart; ii < end; ++ii) {

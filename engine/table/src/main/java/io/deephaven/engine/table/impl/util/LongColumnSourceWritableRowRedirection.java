@@ -3,7 +3,7 @@ package io.deephaven.engine.table.impl.util;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ChunkSink;
 import io.deephaven.engine.table.WritableColumnSource;
-import io.deephaven.rowset.chunkattributes.RowKeys;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.Chunk;
 import io.deephaven.chunk.WritableLongChunk;

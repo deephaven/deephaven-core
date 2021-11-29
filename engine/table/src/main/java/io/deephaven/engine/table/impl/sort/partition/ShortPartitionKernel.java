@@ -4,7 +4,7 @@
 package io.deephaven.engine.table.impl.sort.partition;
 
 import io.deephaven.chunk.attributes.Any;
-import io.deephaven.rowset.chunkattributes.RowKeys;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.tuple.generated.ShortLongTuple;
 import io.deephaven.engine.table.impl.sort.timsort.ShortLongTimsortKernel;
 import io.deephaven.engine.table.impl.sort.LongSortKernel;

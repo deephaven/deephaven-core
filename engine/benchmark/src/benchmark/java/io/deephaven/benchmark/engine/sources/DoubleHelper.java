@@ -3,10 +3,10 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.benchmark.engine.sources;
 
-import io.deephaven.chunk.Attributes.OrderedRowKeys;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableDoubleChunk;
 import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.sources.DoubleArraySource;

@@ -4,7 +4,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.engine.table.ChunkSink;
-import io.deephaven.rowset.chunkattributes.RowKeys;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import org.jetbrains.annotations.NotNull;
 
 public interface FillFromUnordered {

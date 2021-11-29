@@ -6,9 +6,12 @@ package io.deephaven.engine.table.impl.ssa;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.util.hashing.LongChunkEquals;
-import io.deephaven.rowset.chunkattributes.RowKeys;
+import io.deephaven.chunk.util.hashing.LongChunkEquals;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.impl.util.ChunkUtils;
 

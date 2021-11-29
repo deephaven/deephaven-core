@@ -7,7 +7,7 @@ package io.deephaven.engine.table;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.rowset.chunkattributes.RowKeys;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.util.annotations.FinalDefault;
 import io.deephaven.util.datastructures.LongAbortableConsumer;
 import org.jetbrains.annotations.NotNull;

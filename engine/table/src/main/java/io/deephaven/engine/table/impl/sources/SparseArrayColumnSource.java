@@ -10,7 +10,7 @@ import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.time.DateTime;
-import io.deephaven.rowset.chunkattributes.RowKeys;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.Chunk;

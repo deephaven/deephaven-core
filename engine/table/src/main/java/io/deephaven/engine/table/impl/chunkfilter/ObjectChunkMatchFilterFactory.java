@@ -1,7 +1,7 @@
 package io.deephaven.engine.table.impl.chunkfilter;
 
 import io.deephaven.chunk.*;
-import io.deephaven.rowset.chunkattributes.OrderedRowKeys;
+import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.chunk.attributes.Values;
 
 import java.util.Arrays;

@@ -3,11 +3,11 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.table.impl.util.compact;
 
-import io.deephaven.chunk.*;
-import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.chunk.*;
+import io.deephaven.chunk.attributes.Any;
 
 
 public class BooleanCompactKernel implements CompactKernel {

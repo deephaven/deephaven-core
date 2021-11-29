@@ -1,6 +1,6 @@
 package io.deephaven.engine.rowset.impl.rsp;
 
-import io.deephaven.rowset.chunkattributes.RowKeys;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.util.datastructures.LongAbortableConsumer;
 import io.deephaven.engine.rowset.impl.rsp.container.Container;

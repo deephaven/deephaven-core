@@ -1,8 +1,8 @@
 package io.deephaven.engine.rowset;
 
 import gnu.trove.procedure.TLongProcedure;
-import io.deephaven.rowset.chunkattributes.OrderedRowKeyRanges;
-import io.deephaven.rowset.chunkattributes.OrderedRowKeys;
+import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges;
+import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.util.datastructures.LongRangeConsumer;
 import io.deephaven.util.datastructures.LongRangeIterator;
 import io.deephaven.chunk.LongChunk;

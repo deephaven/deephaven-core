@@ -17,7 +17,7 @@ import io.deephaven.chunk.*;
 import io.deephaven.engine.table.impl.ssa.SegmentedSortedArray;
 import io.deephaven.engine.table.impl.util.ChunkUtils;
 import io.deephaven.engine.table.impl.util.LongColumnSourceWritableRowRedirection;
-import io.deephaven.rowset.chunkattributes.RowKeys;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 
 import java.util.LinkedHashMap;
 import java.util.Map;

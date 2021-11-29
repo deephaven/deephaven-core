@@ -4,6 +4,7 @@
 package io.deephaven.engine.table.impl.sort.permute;
 
 import io.deephaven.chunk.WritableIntChunk;
+import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import junit.framework.TestCase;

@@ -6,6 +6,7 @@ package io.deephaven.chunk.util.hashing;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableLongChunk;
 
 /**

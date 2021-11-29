@@ -5,7 +5,7 @@ import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.base.string.cache.CharSequenceUtils;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.rowset.chunkattributes.OrderedRowKeys;
+import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 
 class StringChunkMatchFilterFactory {
     private static final class CIStringKey implements KeyedObjectKey<String, String> {

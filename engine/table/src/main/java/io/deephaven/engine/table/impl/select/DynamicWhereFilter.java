@@ -21,7 +21,7 @@ import io.deephaven.chunk.WritableBooleanChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.engine.table.impl.TupleSourceFactory;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
-import io.deephaven.rowset.chunkattributes.OrderedRowKeys;
+import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 
 import java.util.*;

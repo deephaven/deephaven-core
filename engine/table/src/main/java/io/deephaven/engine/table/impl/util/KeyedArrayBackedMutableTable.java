@@ -13,7 +13,7 @@ import io.deephaven.engine.table.impl.TupleSourceFactory;
 import gnu.trove.impl.Constants;
 import gnu.trove.map.TObjectLongMap;
 import gnu.trove.map.hash.TObjectLongHashMap;
-import io.deephaven.rowset.chunkattributes.RowKeys;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;

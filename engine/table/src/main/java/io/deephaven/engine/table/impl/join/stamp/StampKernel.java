@@ -4,7 +4,7 @@ import io.deephaven.engine.table.Context;
 import io.deephaven.engine.table.impl.SortingOrder;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.rowset.chunkattributes.RowKeys;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import org.jetbrains.annotations.NotNull;
 
 public interface StampKernel extends Context {

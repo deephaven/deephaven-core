@@ -5,7 +5,7 @@
 package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.rowset.chunkattributes.RowKeys;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.chunk.WritableLongChunk;
 import org.jetbrains.annotations.NotNull;

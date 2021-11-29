@@ -4,7 +4,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.impl.sort.timsort.TimsortUtils;
 import io.deephaven.chunk.attributes.Any;
-import io.deephaven.rowset.chunkattributes.RowKeys;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.*;
 import io.deephaven.util.annotations.VisibleForTesting;
 import gnu.trove.list.TIntList;

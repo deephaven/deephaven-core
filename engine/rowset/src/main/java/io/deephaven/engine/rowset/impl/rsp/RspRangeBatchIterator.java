@@ -6,7 +6,7 @@ import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.engine.rowset.impl.rsp.container.Container;
 import io.deephaven.engine.rowset.impl.rsp.container.SearchRangeIterator;
 import io.deephaven.engine.rowset.impl.rsp.container.SingletonContainer;
-import io.deephaven.rowset.chunkattributes.OrderedRowKeyRanges;
+import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges;
 import io.deephaven.util.SafeCloseable;
 
 import static io.deephaven.engine.rowset.impl.rsp.RspArray.*;

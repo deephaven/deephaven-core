@@ -7,7 +7,7 @@ import io.deephaven.engine.table.impl.join.stamp.StampKernel;
 import io.deephaven.engine.table.impl.sort.LongSortKernel;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.rowset.chunkattributes.RowKeys;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.table.impl.util.WritableRowRedirection;

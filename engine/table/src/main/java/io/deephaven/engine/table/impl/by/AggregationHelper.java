@@ -14,7 +14,7 @@ import io.deephaven.engine.table.impl.indexer.RowSetIndexer;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.engine.table.impl.sources.aggregate.AggregateColumnSource;
-import io.deephaven.rowset.chunkattributes.OrderedRowKeys;
+import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.table.impl.SmartKeySource;

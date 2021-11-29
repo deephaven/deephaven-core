@@ -8,7 +8,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.Table;
 import static io.deephaven.engine.table.impl.select.ConditionFilter.FilterKernel;
 import io.deephaven.engine.table.lang.QueryScopeParam;
-import io.deephaven.rowset.chunkattributes.OrderedRowKeys;
+import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 
 import static io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtils.*;
 

@@ -3,12 +3,12 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.table.impl.ssms;
 
-import io.deephaven.chunk.attributes.Any;
 import io.deephaven.time.DateTime;
 import io.deephaven.vector.ObjectVectorDirect;
 import io.deephaven.time.DateTimeUtils;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.attributes.Any;
 import io.deephaven.vector.LongVector;
 import io.deephaven.vector.LongVectorDirect;
 import io.deephaven.vector.ObjectVector;

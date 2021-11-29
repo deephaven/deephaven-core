@@ -9,7 +9,7 @@ import io.deephaven.util.compare.ShortComparisons;
 import io.deephaven.engine.table.impl.sources.ShortArraySource;
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
-import io.deephaven.rowset.chunkattributes.RowKeys;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.*;
 import org.jetbrains.annotations.NotNull;

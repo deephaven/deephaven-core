@@ -25,7 +25,7 @@ import io.deephaven.parquet.table.metadata.GroupingColumnInfo;
 import io.deephaven.parquet.table.metadata.TableInfo;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.table.impl.chunkattributes.DictionaryKeys;
-import io.deephaven.rowset.chunkattributes.UnorderedRowKeys;
+import io.deephaven.engine.rowset.chunkattributes.UnorderedRowKeys;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.table.impl.sources.regioned.*;

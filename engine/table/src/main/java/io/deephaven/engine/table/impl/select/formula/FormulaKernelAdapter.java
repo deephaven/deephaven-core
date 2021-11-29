@@ -3,7 +3,7 @@ package io.deephaven.engine.table.impl.select.formula;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.chunk.*;
-import io.deephaven.rowset.chunkattributes.OrderedRowKeys;
+import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;

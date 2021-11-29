@@ -4,7 +4,7 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Any;
-import io.deephaven.rowset.chunkattributes.RowKeys;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 
 import java.util.function.LongConsumer;
 import java.util.function.Supplier;

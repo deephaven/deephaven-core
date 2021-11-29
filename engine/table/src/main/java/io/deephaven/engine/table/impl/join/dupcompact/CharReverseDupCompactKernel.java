@@ -2,7 +2,7 @@ package io.deephaven.engine.table.impl.join.dupcompact;
 
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Any;
-import io.deephaven.rowset.chunkattributes.RowKeys;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 
 public class CharReverseDupCompactKernel implements DupCompactKernel {
     static final CharReverseDupCompactKernel INSTANCE = new CharReverseDupCompactKernel();

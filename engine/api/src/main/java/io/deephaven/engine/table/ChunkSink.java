@@ -3,7 +3,7 @@ package io.deephaven.engine.table;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.rowset.chunkattributes.RowKeys;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import org.jetbrains.annotations.NotNull;
 
 public interface ChunkSink<ATTR extends Any> extends ChunkSource<ATTR> {

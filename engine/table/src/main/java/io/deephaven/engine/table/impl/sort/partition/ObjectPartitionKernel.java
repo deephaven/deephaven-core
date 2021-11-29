@@ -6,7 +6,7 @@ package io.deephaven.engine.table.impl.sort.partition;
 import java.util.Objects;
 
 import io.deephaven.chunk.attributes.Any;
-import io.deephaven.rowset.chunkattributes.RowKeys;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.tuple.generated.ObjectLongTuple;
 import io.deephaven.engine.table.impl.sort.timsort.ObjectLongTimsortKernel;
 import io.deephaven.engine.table.impl.sort.LongSortKernel;

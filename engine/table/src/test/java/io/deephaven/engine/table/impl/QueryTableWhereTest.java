@@ -14,7 +14,7 @@ import io.deephaven.engine.table.ShiftObliviousListener;
 import io.deephaven.engine.table.impl.QueryTableTestBase.TableComparator;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 import io.deephaven.engine.table.Table;
-import io.deephaven.rowset.chunkattributes.OrderedRowKeys;
+import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.impl.select.MatchPairFactory;

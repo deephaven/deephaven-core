@@ -21,7 +21,7 @@ import io.deephaven.engine.table.impl.by.ssmcountdistinct.SsmDistinctRollupConte
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
-import io.deephaven.rowset.chunkattributes.RowKeys;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.table.impl.ssms.ObjectSegmentedSortedMultiset;

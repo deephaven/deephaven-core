@@ -7,7 +7,7 @@ import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.table.impl.util.cast.ToDoubleCast;
-import io.deephaven.rowset.chunkattributes.RowKeys;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 
 import java.util.Collections;
 import java.util.Map;

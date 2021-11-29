@@ -1,6 +1,6 @@
 package io.deephaven.engine.table.impl.sources;
 
-import io.deephaven.rowset.chunkattributes.RowKeys;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableChunk;
