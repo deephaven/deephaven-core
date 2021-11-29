@@ -4,6 +4,7 @@
 
 package io.deephaven.engine.table.impl.sources;
 
+import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.updategraph.LogicalClock;
@@ -17,7 +18,7 @@ import java.util.function.LongConsumer;
 /**
  * The TreeMapSource is a ColumnSource used only for testing; not in live code.
  *
- * It boxes all of it's objects, and maps Long key values to the data values.
+ * It boxes all of its objects, and maps Long key values to the data values.
  */
 @AbstractColumnSource.IsSerializable(value = true)
 public class TreeMapSource<T> extends AbstractColumnSource<T> {
@@ -102,13 +103,18 @@ public class TreeMapSource<T> extends AbstractColumnSource<T> {
     }
 
     @Override
-    public synchronized T get(long index) {
+    public synchronized T get(final long rowKey) {
+        if (rowKey == RowSequence.NULL_ROW_KEY) {
+            return null;
+        }
         // If a test asks for a non-existent positive row key something is wrong.
         // We have to accept negative values, because e.g. a join may find no matching right key, in which case it
         // has an empty row redirection entry that just gets passed through to the inner column source as -1.
-        if (index >= 0 && !data.containsKey(index))
-            throw new IllegalStateException("Asking for a non-existent key: " + index);
-        return data.get(index);
+        final T retVal = data.get(rowKey);
+        if (retVal == null && !data.containsKey(rowKey)) {
+            throw new IllegalStateException("Asking for a non-existent row key: " + rowKey);
+        }
+        return retVal;
     }
 
     @Override
