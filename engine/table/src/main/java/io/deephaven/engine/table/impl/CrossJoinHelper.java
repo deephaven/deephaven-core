@@ -133,7 +133,7 @@ public class CrossJoinHelper {
                         downstream.removed = rmBuilder.build();
                         resultRowSet.remove(downstream.removed());
 
-                        try (final WritableRowSet prevLeftRowSet = leftTable.getRowSet().prevCopy()) {
+                        try (final WritableRowSet prevLeftRowSet = leftTable.getRowSet().copyPrev()) {
                             prevLeftRowSet.remove(upstream.removed());
                             jsm.applyLeftShift(prevLeftRowSet, upstream.shifted());
                             downstream.shifted = expandLeftOnlyShift(upstream.shifted(), jsm);
@@ -244,7 +244,7 @@ public class CrossJoinHelper {
                                 jsm.rightRemove(upstreamRight.removed(), tracker);
                             }
                             if (upstreamRight.shifted().nonempty()) {
-                                try (final RowSet prevIndex = rightTable.getRowSet().prevCopy()) {
+                                try (final RowSet prevIndex = rightTable.getRowSet().copyPrev()) {
                                     jsm.rightShift(prevIndex, upstreamRight.shifted(), tracker);
                                 }
                             }
@@ -262,7 +262,7 @@ public class CrossJoinHelper {
                             // We must finalize all known slots, so that left accumulation does not mix with right
                             // accumulation.
                             if (upstreamRight.shifted().nonempty()) {
-                                try (final RowSet prevIndex = rightTable.getRowSet().prevCopy()) {
+                                try (final RowSet prevIndex = rightTable.getRowSet().copyPrev()) {
                                     jsm.shiftRightIndexToSlot(prevIndex, upstreamRight.shifted());
                                 }
                             }
@@ -330,7 +330,7 @@ public class CrossJoinHelper {
                         // apply left shifts to tracker (so our mods/adds are in post-shift space)
                         if (leftChanged && upstreamLeft.shifted().nonempty()) {
                             tracker.leftShifted = upstreamLeft.shifted();
-                            try (final WritableRowSet prevLeftMinusRemovals = leftTable.getRowSet().prevCopy()) {
+                            try (final WritableRowSet prevLeftMinusRemovals = leftTable.getRowSet().copyPrev()) {
                                 prevLeftMinusRemovals.remove(upstreamLeft.removed());
                                 jsm.leftShift(prevLeftMinusRemovals, upstreamLeft.shifted(), tracker);
                             }
@@ -697,7 +697,7 @@ public class CrossJoinHelper {
                             jsm.rightRemove(upstream.removed(), tracker);
                         }
                         if (upstream.shifted().nonempty()) {
-                            try (final RowSet prevRowSet = rightTable.getRowSet().prevCopy()) {
+                            try (final RowSet prevRowSet = rightTable.getRowSet().copyPrev()) {
                                 jsm.rightShift(prevRowSet, upstream.shifted(), tracker);
                             }
                         }
@@ -711,7 +711,7 @@ public class CrossJoinHelper {
 
                         // right changes are flushed now
                         if (upstream.shifted().nonempty()) {
-                            try (final RowSet prevRowSet = rightTable.getRowSet().prevCopy()) {
+                            try (final RowSet prevRowSet = rightTable.getRowSet().copyPrev()) {
                                 jsm.shiftRightIndexToSlot(prevRowSet, upstream.shifted());
                             }
                         }
@@ -914,10 +914,10 @@ public class CrossJoinHelper {
                 if (rightChanged) {
                     // Must touch every left row. (Note: this code is accessible iff right changed.)
                     final TrackingRowSet currLeft = leftTable.getRowSet();
-                    final RowSet prevLeft = closer.add(currLeft.prevCopy());
+                    final RowSet prevLeft = closer.add(currLeft.copyPrev());
 
                     long prevRightShift = 0; // how far prevRight has been shifted
-                    final WritableRowSet prevRight = closer.add(rightTable.getRowSet().prevCopy());
+                    final WritableRowSet prevRight = closer.add(rightTable.getRowSet().copyPrev());
 
                     long rmRightShift = 0; // how far rmRight has been shifted
                     final WritableRowSet rmRight = closer.add(rightUpdate.removed().copy());

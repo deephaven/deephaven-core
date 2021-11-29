@@ -379,7 +379,7 @@ public class AggregationHelper {
                                 upstream.shifted()
                                         .apply((final long beginRange, final long endRange, final long shiftDelta) -> {
                                             final RowSet shiftedPreviousRowSet;
-                                            try (final RowSet previousIndex = inputTable.getRowSet().prevCopy()) {
+                                            try (final RowSet previousIndex = inputTable.getRowSet().copyPrev()) {
                                                 shiftedPreviousRowSet =
                                                         previousIndex.subSetByKeyRange(beginRange, endRange);
                                             }

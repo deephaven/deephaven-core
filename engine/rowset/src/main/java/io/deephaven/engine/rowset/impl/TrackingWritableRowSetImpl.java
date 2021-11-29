@@ -108,7 +108,7 @@ public class TrackingWritableRowSetImpl extends WritableRowSetImpl implements Tr
     }
 
     @Override
-    public WritableRowSet prevCopy() {
+    public WritableRowSet copyPrev() {
         return new WritableRowSetImpl(checkAndGetPrev().ixCowRef());
     }
 

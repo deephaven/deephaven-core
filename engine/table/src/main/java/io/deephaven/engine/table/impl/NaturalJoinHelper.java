@@ -506,7 +506,7 @@ class NaturalJoinHelper {
             final TableUpdateImpl downstream = TableUpdateImpl.copy(upstream);
             upstream.removed().forAllRowKeys(rowRedirection::removeVoid);
 
-            try (final RowSet prevRowSet = leftTable.getRowSet().prevCopy()) {
+            try (final RowSet prevRowSet = leftTable.getRowSet().copyPrev()) {
                 rowRedirection.applyShift(prevRowSet, upstream.shifted());
             }
 
@@ -611,10 +611,10 @@ class NaturalJoinHelper {
 
                     if (rightKeysChanged) {
                         previousToShift =
-                                getParent().getRowSet().prevCopy().minus(modifiedPreShift)
+                                getParent().getRowSet().copyPrev().minus(modifiedPreShift)
                                         .minus(upstream.removed());
                     } else {
-                        previousToShift = getParent().getRowSet().prevCopy().minus(upstream.removed());
+                        previousToShift = getParent().getRowSet().copyPrev().minus(upstream.removed());
                     }
 
                     final RowSetShiftData.Iterator sit = upstream.shifted().applyIterator();
@@ -830,7 +830,7 @@ class NaturalJoinHelper {
 
                     if (rightShifted.nonempty()) {
                         final WritableRowSet previousToShift =
-                                rightRecorder.getParent().getRowSet().prevCopy().minus(rightRemoved);
+                                rightRecorder.getParent().getRowSet().copyPrev().minus(rightRemoved);
 
                         if (rightKeysModified) {
                             previousToShift.remove(modifiedPreShift);
@@ -904,7 +904,7 @@ class NaturalJoinHelper {
                     }
 
                     if (leftShifted.nonempty()) {
-                        try (final WritableRowSet prevRowSet = leftRecorder.getParent().getRowSet().prevCopy()) {
+                        try (final WritableRowSet prevRowSet = leftRecorder.getParent().getRowSet().copyPrev()) {
                             prevRowSet.remove(leftRemoved);
 
                             if (leftKeyModifications) {

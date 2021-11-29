@@ -63,7 +63,6 @@ import java.lang.ref.WeakReference;
 import java.lang.reflect.Array;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
@@ -1239,7 +1238,7 @@ public class QueryTable extends BaseTable {
                                 (prevRequested, beforeClock) -> {
                                     final boolean usePrev = prevRequested && isRefreshing();
                                     final FilteredTable filteredTable;
-                                    try (final RowSet prevIfNeeded = usePrev ? rowSet.prevCopy() : null) {
+                                    try (final RowSet prevIfNeeded = usePrev ? rowSet.copyPrev() : null) {
                                         final RowSet rowSetToUpdate = usePrev ? prevIfNeeded : rowSet;
                                         final TrackingRowSet currentMapping = filterRows(rowSetToUpdate,
                                                 rowSetToUpdate, usePrev, filters).toTracking();
@@ -1695,8 +1694,8 @@ public class QueryTable extends BaseTable {
             // - clear only the keys that no longer exist
             // - create parallel arrays of pre-shift-keys and post-shift-keys so we can move them in chunks
 
-            try (final WritableRowSet toClear = dependent.rowSet.prevCopy();
-                    final SelectAndViewAnalyzer.UpdateHelper updateHelper =
+            try (final WritableRowSet toClear = dependent.rowSet.copyPrev();
+                 final SelectAndViewAnalyzer.UpdateHelper updateHelper =
                             new SelectAndViewAnalyzer.UpdateHelper(dependent.rowSet, upstream)) {
                 toClear.remove(dependent.rowSet);
                 analyzer.applyUpdate(upstream, toClear, updateHelper);

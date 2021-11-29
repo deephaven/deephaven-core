@@ -1143,7 +1143,7 @@ public class QueryTableNaturalJoinTest extends QueryTableTestBase {
             sb.append(value).append("=").append(new SmartKey(keyValues)).append("\n");
         }
 
-        final RowSet prevRowSet = rowSet.prevCopy();
+        final RowSet prevRowSet = rowSet.copyPrev();
         sb.append("Complete Previous Table has ").append(prevRowSet.size()).append(" rows:\n");
         sb.append("TrackingWritableRowSet=").append(rowSet).append("\n");
         for (final RowSet.Iterator it = prevRowSet.iterator(); it.hasNext();) {

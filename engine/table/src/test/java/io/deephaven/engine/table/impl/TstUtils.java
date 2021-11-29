@@ -546,7 +546,7 @@ public class TstUtils {
     }
 
     public static Table prevTableColumnSources(Table table) {
-        final TrackingWritableRowSet rowSet = table.getRowSet().prevCopy().toTracking();
+        final TrackingWritableRowSet rowSet = table.getRowSet().copyPrev().toTracking();
         final Map<String, ColumnSource<?>> columnSourceMap = new LinkedHashMap<>();
         table.getColumnSourceMap().forEach((k, cs) -> {
             columnSourceMap.put(k, new PrevColumnSource<>(cs));
@@ -555,7 +555,7 @@ public class TstUtils {
     }
 
     public static Table prevTable(Table table) {
-        final RowSet rowSet = table.getRowSet().prevCopy();
+        final RowSet rowSet = table.getRowSet().copyPrev();
 
         final List<ColumnHolder<?>> cols = new ArrayList<>();
         for (Map.Entry<String, ? extends ColumnSource<?>> mapEntry : table.getColumnSourceMap().entrySet()) {

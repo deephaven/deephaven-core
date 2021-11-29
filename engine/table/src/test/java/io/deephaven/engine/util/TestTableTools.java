@@ -900,8 +900,8 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
         Assert.assertTrue(2 * PRIME > UnionRedirection.CHUNK_MULTIPLE);
 
         final Consumer<Boolean> validate = (usePrev) -> {
-            final RowSet origRowSet = usePrev ? table.getRowSet().prevCopy() : table.getRowSet();
-            final RowSet resRowSet = usePrev ? result.getRowSet().prevCopy() : result.getRowSet();
+            final RowSet origRowSet = usePrev ? table.getRowSet().copyPrev() : table.getRowSet();
+            final RowSet resRowSet = usePrev ? result.getRowSet().copyPrev() : result.getRowSet();
             final int numElements = origRowSet.intSize();
 
             // noinspection unchecked
@@ -931,7 +931,7 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
         result.listenForUpdates(new InstrumentedTableUpdateListener("") {
             @Override
             public void onUpdate(final TableUpdate upstream) {
-                Assert.assertTrue(table.getRowSet().intSize() > table.getRowSet().prevCopy().intSize());
+                Assert.assertTrue(table.getRowSet().intSize() > table.getRowSet().intSizePrev());
                 validate.accept(false);
                 validate.accept(true);
             }

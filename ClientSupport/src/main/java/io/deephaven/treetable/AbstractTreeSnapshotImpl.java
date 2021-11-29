@@ -494,7 +494,7 @@ public abstract class AbstractTreeSnapshotImpl<INFO_TYPE extends HierarchicalTab
         // rows skipped.
         long vkUpper;
 
-        final RowSet currentRowSet = usePrev ? curTable.getRowSet().prevCopy() : curTable.getRowSet();
+        final RowSet currentRowSet = usePrev ? curTable.getRowSet().copyPrev() : curTable.getRowSet();
 
         // If the first row of the viewport is beyond the current table, we'll use an upper that's
         // guaranteed to be beyond the table. One of two things will happen:

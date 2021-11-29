@@ -91,8 +91,8 @@ public class TestByteSegmentedSortedArray extends RefreshingTableTestCase {
             final TableUpdateListener asByteListener = new InstrumentedTableUpdateListenerAdapter(asByte, false) {
                 @Override
                 public void onUpdate(TableUpdate upstream) {
-                    try (final ColumnSource.GetContext checkContext = valueSource.makeGetContext(asByte.getRowSet().prevCopy().intSize());
-                         final RowSet relevantIndices = asByte.getRowSet().prevCopy()) {
+                    try (final ColumnSource.GetContext checkContext = valueSource.makeGetContext(asByte.getRowSet().intSizePrev());
+                         final RowSet relevantIndices = asByte.getRowSet().copyPrev()) {
                         checkSsa(ssa, valueSource.getPrevChunk(checkContext, relevantIndices).asByteChunk(), relevantIndices.asRowKeyChunk(), desc);
                     }
 
@@ -108,7 +108,7 @@ public class TestByteSegmentedSortedArray extends RefreshingTableTestCase {
 
                         ssa.validate();
 
-                        try (final RowSet prevRowSet = asByte.getRowSet().prevCopy();
+                        try (final RowSet prevRowSet = asByte.getRowSet().copyPrev();
                              final ColumnSource.GetContext checkContext = valueSource.makeGetContext(prevRowSet.intSize());
                              final RowSet relevantIndices = prevRowSet.minus(takeout)) {
                             checkSsa(ssa, valueSource.getPrevChunk(checkContext, relevantIndices).asByteChunk(), relevantIndices.asRowKeyChunk(), desc);
@@ -118,7 +118,7 @@ public class TestByteSegmentedSortedArray extends RefreshingTableTestCase {
                             final RowSetShiftData.Iterator sit = upstream.shifted().applyIterator();
                             while (sit.hasNext()) {
                                 sit.next();
-                                try (final RowSet prevRowSet = table.getRowSet().prevCopy();
+                                try (final RowSet prevRowSet = table.getRowSet().copyPrev();
                                      final RowSet subRowSet = prevRowSet.subSetByKeyRange(sit.beginRange(), sit.endRange());
                                      final RowSet withoutMods = subRowSet.minus(upstream.getModifiedPreShift());
                                      final RowSet rowSetToShift = withoutMods.minus(upstream.removed())) {

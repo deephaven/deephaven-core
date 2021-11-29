@@ -13,7 +13,6 @@ import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.chunk.Attributes.RowKeys;
 import io.deephaven.engine.chunk.Attributes.Values;
 import io.deephaven.engine.chunk.LongChunk;
-import io.deephaven.engine.chunk.LongChunk;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.test.types.ParallelTest;
@@ -91,8 +90,8 @@ public class TestLongSegmentedSortedArray extends RefreshingTableTestCase {
             final TableUpdateListener asLongListener = new InstrumentedTableUpdateListenerAdapter(asLong, false) {
                 @Override
                 public void onUpdate(TableUpdate upstream) {
-                    try (final ColumnSource.GetContext checkContext = valueSource.makeGetContext(asLong.getRowSet().prevCopy().intSize());
-                         final RowSet relevantIndices = asLong.getRowSet().prevCopy()) {
+                    try (final ColumnSource.GetContext checkContext = valueSource.makeGetContext(asLong.getRowSet().intSizePrev());
+                         final RowSet relevantIndices = asLong.getRowSet().copyPrev()) {
                         checkSsa(ssa, valueSource.getPrevChunk(checkContext, relevantIndices).asLongChunk(), relevantIndices.asRowKeyChunk(), desc);
                     }
 
@@ -108,7 +107,7 @@ public class TestLongSegmentedSortedArray extends RefreshingTableTestCase {
 
                         ssa.validate();
 
-                        try (final RowSet prevRowSet = asLong.getRowSet().prevCopy();
+                        try (final RowSet prevRowSet = asLong.getRowSet().copyPrev();
                              final ColumnSource.GetContext checkContext = valueSource.makeGetContext(prevRowSet.intSize());
                              final RowSet relevantIndices = prevRowSet.minus(takeout)) {
                             checkSsa(ssa, valueSource.getPrevChunk(checkContext, relevantIndices).asLongChunk(), relevantIndices.asRowKeyChunk(), desc);
@@ -118,7 +117,7 @@ public class TestLongSegmentedSortedArray extends RefreshingTableTestCase {
                             final RowSetShiftData.Iterator sit = upstream.shifted().applyIterator();
                             while (sit.hasNext()) {
                                 sit.next();
-                                try (final RowSet prevRowSet = table.getRowSet().prevCopy();
+                                try (final RowSet prevRowSet = table.getRowSet().copyPrev();
                                      final RowSet subRowSet = prevRowSet.subSetByKeyRange(sit.beginRange(), sit.endRange());
                                      final RowSet withoutMods = subRowSet.minus(upstream.getModifiedPreShift());
                                      final RowSet rowSetToShift = withoutMods.minus(upstream.removed())) {

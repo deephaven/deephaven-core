@@ -190,7 +190,7 @@ public class WindowCheck {
                 removeIndex(upstream.removed());
 
                 // anything that was shifted needs to be placed in the proper slots
-                try (final RowSet preShiftRowSet = source.getRowSet().prevCopy()) {
+                try (final RowSet preShiftRowSet = source.getRowSet().copyPrev()) {
                     upstream.shifted().apply((start, end, delta) -> {
                         final RowSet subRowSet = preShiftRowSet.subSetByKeyRange(start, end);
 

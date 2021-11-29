@@ -69,7 +69,7 @@ public class ReverseOperation implements QueryTable.MemoizableOperation<QueryTab
 
     @Override
     public Result<QueryTable> initialize(boolean usePrev, long beforeClock) {
-        final RowSet rowSetToReverse = usePrev ? parent.getRowSet().prevCopy() : parent.getRowSet();
+        final RowSet rowSetToReverse = usePrev ? parent.getRowSet().copyPrev() : parent.getRowSet();
         prevPivot = pivotPoint = computePivot(rowSetToReverse.lastRowKey());
         lastPivotChange = usePrev ? beforeClock - 1 : beforeClock;
 

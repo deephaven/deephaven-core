@@ -188,7 +188,7 @@ public class SelectOverheadLimiter {
                 rowSet.insert(flatResult.getRowSet());
 
                 final TableUpdateImpl downstream = new TableUpdateImpl();
-                downstream.removed = rowSet.prevCopy();
+                downstream.removed = rowSet.copyPrev();
                 downstream.added = rowSet.copy();
                 downstream.modified = RowSetFactory.empty();
                 downstream.modifiedColumnSet = ModifiedColumnSet.EMPTY;

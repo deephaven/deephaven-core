@@ -40,7 +40,7 @@ public interface TrackingRowSet extends RowSet {
      *
      * @return A copy of the previous value
      */
-    WritableRowSet prevCopy();
+    WritableRowSet copyPrev();
 
     /**
      * Same as {@code get(rowPosition)}, as of the end of the previous update graph cycle.

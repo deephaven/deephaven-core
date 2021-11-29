@@ -1476,7 +1476,7 @@ public class ChunkedOperatorAggregationHelper {
             buildSources = reinterpretedKeySources;
         }
 
-        final RowSet rowSet = usePrev ? withView.getRowSet().prevCopy() : withView.getRowSet();
+        final RowSet rowSet = usePrev ? withView.getRowSet().copyPrev() : withView.getRowSet();
 
         if (rowSet.isEmpty()) {
             return;
@@ -1630,7 +1630,7 @@ public class ChunkedOperatorAggregationHelper {
         // to use allColumns as the modified columns parameter
         final IterativeChunkedAggregationOperator.SingletonContext[] opContexts =
                 new IterativeChunkedAggregationOperator.SingletonContext[ac.size()];
-        final RowSet rowSet = usePrev ? table.getRowSet().prevCopy() : table.getRowSet();
+        final RowSet rowSet = usePrev ? table.getRowSet().copyPrev() : table.getRowSet();
         final int initialResultSize;
         try (final SafeCloseable ignored1 = new SafeCloseableArray<>(opContexts);
                 final SafeCloseable ignored2 = usePrev ? rowSet : null) {

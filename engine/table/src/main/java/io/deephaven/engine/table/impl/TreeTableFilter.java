@@ -192,7 +192,7 @@ public class TreeTableFilter implements Function<Table, Table>, MemoizedOperatio
             TLongArrayList parentsToProcess = new TLongArrayList();
             expectedRowSet.forAllRowKeys(parentsToProcess::add);
 
-            final RowSet sourceRowSet = usePrev ? source.getRowSet().prevCopy() : source.getRowSet();
+            final RowSet sourceRowSet = usePrev ? source.getRowSet().copyPrev() : source.getRowSet();
             do {
                 final TLongArrayList newParentKeys = new TLongArrayList();
                 for (final TLongIterator it = parentsToProcess.iterator(); it.hasNext();) {

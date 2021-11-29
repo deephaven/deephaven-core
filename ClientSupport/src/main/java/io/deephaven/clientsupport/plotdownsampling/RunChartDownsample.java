@@ -112,7 +112,7 @@ public class RunChartDownsample implements Function<Table, Table> {
         //
         // baseTable.initializeWithSnapshot("downsample", swapListener, (prevRequested, beforeClock) -> {
         // final boolean usePrev = prevRequested && baseTable.isRefreshing();
-        // final WritableRowSet rowSetToUse = usePrev ? baseTable.build().prevCopy() : baseTable.build();
+        // final WritableRowSet rowSetToUse = usePrev ? baseTable.build().copyPrev() : baseTable.build();
         //
         // // process existing rows
         // handleAdded(rowSetToUse, columnSourceToBin, getNanosPerPx(minBins, usePrev, rowSetToUse, columnSourceToBin),
@@ -518,7 +518,7 @@ public class RunChartDownsample implements Function<Table, Table> {
                 first = key.zoomRange[0];
                 last = key.zoomRange[1];
             } else {
-                final RowSet rowSet = usePrev ? sourceTable.getRowSet().prevCopy() : sourceTable.getRowSet();
+                final RowSet rowSet = usePrev ? sourceTable.getRowSet().copyPrev() : sourceTable.getRowSet();
                 first = xColumnSource.getLong(rowSet.firstRowKey());
                 last = xColumnSource.getLong(rowSet.lastRowKey());
             }
@@ -530,7 +530,7 @@ public class RunChartDownsample implements Function<Table, Table> {
 
         private void handleAdded(final DownsampleChunkContext context, final boolean usePrev,
                 final RowSet addedRowSet) {
-            final RowSet rowSet = usePrev ? addedRowSet.trackingCast().prevCopy() : addedRowSet;
+            final RowSet rowSet = usePrev ? addedRowSet.trackingCast().copyPrev() : addedRowSet;
             if (rowSet.isEmpty()) {
                 return;
             }

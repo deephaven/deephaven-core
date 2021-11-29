@@ -996,13 +996,13 @@ public class QueryTableTest extends QueryTableTestBase {
 
         checkReverse(table, reversed, "Ticker");
 
-        assertEquals("TSLA", reversed.getColumnSource("Ticker").getPrev(reversed.getRowSet().prevCopy().get(0)));
+        assertEquals("TSLA", reversed.getColumnSource("Ticker").getPrev(reversed.getRowSet().copyPrev().get(0)));
 
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
         });
 
-        assertEquals("VXX", reversed.getColumnSource("Ticker").getPrev(reversed.getRowSet().prevCopy().get(0)));
+        assertEquals("VXX", reversed.getColumnSource("Ticker").getPrev(reversed.getRowSet().copyPrev().get(0)));
 
 
         final ColumnSource<Long> longIdentityColumnSource =

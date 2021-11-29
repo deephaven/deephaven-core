@@ -70,7 +70,7 @@ public class StreamTableTools {
 
                         final TrackingWritableRowSet rowSet;
                         if (usePrev) {
-                            try (final RowSet useRowSet = baseStreamTable.getRowSet().prevCopy()) {
+                            try (final RowSet useRowSet = baseStreamTable.getRowSet().copyPrev()) {
                                 rowSet = RowSetFactory.flat(useRowSet.size()).toTracking();
                                 ChunkUtils.copyData(sourceColumns, useRowSet, destColumns, rowSet, usePrev);
                             }

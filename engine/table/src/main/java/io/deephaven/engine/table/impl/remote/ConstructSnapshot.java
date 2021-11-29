@@ -499,7 +499,7 @@ public class ConstructSnapshot {
             if (positionsToSnapshot == null) {
                 keysToSnapshot = null;
             } else if (usePrev) {
-                try (final RowSet prevIndex = table.getRowSet().prevCopy()) {
+                try (final RowSet prevIndex = table.getRowSet().copyPrev()) {
                     keysToSnapshot = prevIndex.subSetForPositions(positionsToSnapshot);
                 }
             } else {
@@ -570,7 +570,7 @@ public class ConstructSnapshot {
             if (positionsToSnapshot == null) {
                 keysToSnapshot = null;
             } else if (usePrev) {
-                try (final RowSet prevRowSet = table.getRowSet().prevCopy()) {
+                try (final RowSet prevRowSet = table.getRowSet().copyPrev()) {
                     keysToSnapshot = prevRowSet.subSetForPositions(positionsToSnapshot);
                 }
             } else {
@@ -1214,7 +1214,7 @@ public class ConstructSnapshot {
             Object logIdentityObject,
             BitSet columnsToSerialize,
             RowSet keysToSnapshot) {
-        snapshot.rowSet = (usePrev ? table.getRowSet().prevCopy() : table.getRowSet()).copy();
+        snapshot.rowSet = (usePrev ? table.getRowSet().copyPrev() : table.getRowSet()).copy();
 
         if (keysToSnapshot != null) {
             snapshot.rowsIncluded = snapshot.rowSet.intersect(keysToSnapshot);
@@ -1282,7 +1282,7 @@ public class ConstructSnapshot {
             final Object logIdentityObject,
             final BitSet columnsToSerialize,
             final RowSet keysToSnapshot) {
-        snapshot.rowsAdded = (usePrev ? table.getRowSet().prevCopy() : table.getRowSet()).copy();
+        snapshot.rowsAdded = (usePrev ? table.getRowSet().copyPrev() : table.getRowSet()).copy();
         snapshot.rowsRemoved = RowSetFactory.empty();
         snapshot.addColumnData = new BarrageMessage.AddColumnData[table.getColumnSources().size()];
 

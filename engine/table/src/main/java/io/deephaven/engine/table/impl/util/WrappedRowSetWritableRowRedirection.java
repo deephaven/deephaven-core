@@ -12,7 +12,6 @@ import io.deephaven.engine.chunk.Attributes.RowKeys;
 import io.deephaven.engine.chunk.util.LongChunkAppender;
 import io.deephaven.engine.chunk.util.LongChunkIterator;
 import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.TrackingWritableRowSet;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import org.jetbrains.annotations.NotNull;
 
@@ -102,7 +101,7 @@ public class WrappedRowSetWritableRowRedirection implements WritableRowRedirecti
             @NotNull final RowSequence outerRowKeys) {
         final WritableLongChunk<RowKeys> indexPositions = ((FillContext) fillContext).indexPositions;
         outerRowKeys.fillRowKeyChunk(indexPositions);
-        try (final RowSet prevWrappedIndex = wrappedRowSet.prevCopy()) {
+        try (final RowSet prevWrappedIndex = wrappedRowSet.copyPrev()) {
             prevWrappedIndex.getKeysForPositions(new LongChunkIterator(indexPositions),
                     new LongChunkAppender(innerRowKeys));
         }

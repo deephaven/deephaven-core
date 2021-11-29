@@ -60,7 +60,7 @@ public class IndexedDataColumn<TYPE> implements DataColumn<TYPE> {
      */
     public static <TYPE> IndexedDataColumn<TYPE> makePreviousColumn(@NotNull final TrackingRowSet rowSet,
             @NotNull final ColumnSource<TYPE> columnSource) {
-        return new IndexedDataColumn<>(null, null, rowSet.prevCopy(), new PrevColumnSource<>(columnSource));
+        return new IndexedDataColumn<>(null, null, rowSet.copyPrev(), new PrevColumnSource<>(columnSource));
     }
 
     @Override

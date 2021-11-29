@@ -93,7 +93,7 @@ public class TableUpdateValidator implements QueryTable.Operation {
 
     @Override
     public Result initialize(boolean usePrev, long beforeClock) {
-        rowSet = usePrev ? tableToValidate.getRowSet().prevCopy() : tableToValidate.getRowSet().copy();
+        rowSet = usePrev ? tableToValidate.getRowSet().copyPrev() : tableToValidate.getRowSet().copy();
 
         resultTable = new QueryTable(RowSetFactory.empty().toTracking(),
                 Collections.emptyMap());
@@ -164,7 +164,7 @@ public class TableUpdateValidator implements QueryTable.Operation {
                         false);
             }
 
-            validateIndexesEqual("pre-update rowSet", rowSet, tableToValidate.getRowSet().prevCopy());
+            validateIndexesEqual("pre-update rowSet", rowSet, tableToValidate.getRowSet().copyPrev());
             rowSet.remove(upstream.removed());
             Arrays.stream(columnInfos).forEach((ci) -> ci.remove(upstream.removed()));
 
