@@ -376,7 +376,7 @@ public class JsFigure extends HasEventHandling {
         }
         for (int i = 0; i < s.getSources().length; i++) {
             SeriesDataSource source = s.getSources()[i];
-            if (!source.getColumnType().equals("io.deephaven.engine.tables.utils.DateTime")) {
+            if (!source.getColumnType().equals("io.deephaven.engine.time.DateTime")) {
                 continue;
             }
             DownsampledAxisDetails downsampledAxisDetails = downsampled.get(source.getAxis().getDescriptor());
