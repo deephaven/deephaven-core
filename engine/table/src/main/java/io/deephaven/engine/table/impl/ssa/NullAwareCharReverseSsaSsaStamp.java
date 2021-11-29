@@ -3,13 +3,12 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.table.impl.ssa;
 
-import io.deephaven.util.QueryConstants;
 import io.deephaven.util.compare.CharComparisons;
 
-import io.deephaven.engine.chunk.*;
-import io.deephaven.engine.chunk.Attributes.RowKeys;
-import io.deephaven.engine.chunk.Attributes.Values;
-import io.deephaven.engine.chunk.sized.SizedLongChunk;
+import io.deephaven.chunk.*;
+import io.deephaven.rowset.chunkattributes.RowKeys;
+import io.deephaven.chunk.attributes.Values;
+import io.deephaven.chunk.sized.SizedLongChunk;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import io.deephaven.engine.table.impl.util.RowRedirection;
@@ -88,14 +87,14 @@ public class NullAwareCharReverseSsaSsaStamp implements SsaSsaStamp {
         processRemovals((NullAwareCharReverseSegmentedSortedArray)leftSsa, rightStampChunk.asCharChunk(), rightKeys, priorRedirections, rowRedirection, modifiedBuilder, disallowExactMatch);
     }
 
-    static private void processRemovals(NullAwareCharReverseSegmentedSortedArray leftSsa, CharChunk<? extends Values> rightStampChunk, LongChunk<Attributes.RowKeys> rightKeys, WritableLongChunk<Attributes.RowKeys> nextRedirections, WritableRowRedirection rowRedirection, RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch) {
+    static private void processRemovals(NullAwareCharReverseSegmentedSortedArray leftSsa, CharChunk<? extends Values> rightStampChunk, LongChunk<RowKeys> rightKeys, WritableLongChunk<RowKeys> nextRedirections, WritableRowRedirection rowRedirection, RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch) {
         // When removing a row, record the stamp, redirection key, and prior redirection key.  Binary search
         // in the left for the removed key to find the smallest value geq the removed right.  Update all rows
         // with the removed redirection to the previous key.
 
         final NullAwareCharReverseSegmentedSortedArray.Iterator leftIt = leftSsa.iterator(disallowExactMatch, false);
 
-        try (final SizedLongChunk<Attributes.RowKeys> modifiedKeys = new SizedLongChunk<>()) {
+        try (final SizedLongChunk<RowKeys> modifiedKeys = new SizedLongChunk<>()) {
             int capacity = rightStampChunk.size();
             modifiedKeys.ensureCapacity(capacity).setSize(capacity);
             int mks = 0;
@@ -137,11 +136,11 @@ public class NullAwareCharReverseSsaSsaStamp implements SsaSsaStamp {
     }
 
     @Override
-    public void processInsertion(SegmentedSortedArray leftSsa, Chunk<? extends Values> rightStampChunk, LongChunk<Attributes.RowKeys> rightKeys, Chunk<Values> nextRightValue, WritableRowRedirection rowRedirection, RowSetBuilderRandom modifiedBuilder, boolean endsWithLastValue, boolean disallowExactMatch) {
+    public void processInsertion(SegmentedSortedArray leftSsa, Chunk<? extends Values> rightStampChunk, LongChunk<RowKeys> rightKeys, Chunk<Values> nextRightValue, WritableRowRedirection rowRedirection, RowSetBuilderRandom modifiedBuilder, boolean endsWithLastValue, boolean disallowExactMatch) {
         processInsertion((NullAwareCharReverseSegmentedSortedArray)leftSsa, rightStampChunk.asCharChunk(), rightKeys, nextRightValue.asCharChunk(), rowRedirection, modifiedBuilder, endsWithLastValue, disallowExactMatch);
     }
 
-    static private void processInsertion(NullAwareCharReverseSegmentedSortedArray leftSsa, CharChunk<? extends Values> rightStampChunk, LongChunk<Attributes.RowKeys> rightKeys, CharChunk<Values> nextRightValue, WritableRowRedirection rowRedirection, RowSetBuilderRandom modifiedBuilder, boolean endsWithLastValue, boolean disallowExactMatch) {
+    static private void processInsertion(NullAwareCharReverseSegmentedSortedArray leftSsa, CharChunk<? extends Values> rightStampChunk, LongChunk<RowKeys> rightKeys, CharChunk<Values> nextRightValue, WritableRowRedirection rowRedirection, RowSetBuilderRandom modifiedBuilder, boolean endsWithLastValue, boolean disallowExactMatch) {
         // We've already filtered out duplicate right stamps by the time we get here, which means that the rightStampChunk
         // contains only values that are the last in any given run; and thus are possible matches.
 
@@ -150,7 +149,7 @@ public class NullAwareCharReverseSsaSsaStamp implements SsaSsaStamp {
 
         final NullAwareCharReverseSegmentedSortedArray.Iterator leftIt = leftSsa.iterator(disallowExactMatch, false);
 
-        try (final SizedLongChunk<Attributes.RowKeys> modifiedKeys = new SizedLongChunk<>()) {
+        try (final SizedLongChunk<RowKeys> modifiedKeys = new SizedLongChunk<>()) {
             int capacity = rightStampChunk.size();
             modifiedKeys.ensureCapacity(capacity).setSize(capacity);
             int mks = 0;
@@ -201,14 +200,14 @@ public class NullAwareCharReverseSsaSsaStamp implements SsaSsaStamp {
     }
 
     @Override
-    public void findModified(SegmentedSortedArray leftSsa, RowRedirection rowRedirection, Chunk<? extends Values> rightStampChunk, LongChunk<Attributes.RowKeys> rightStampIndices, RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch) {
+    public void findModified(SegmentedSortedArray leftSsa, RowRedirection rowRedirection, Chunk<? extends Values> rightStampChunk, LongChunk<RowKeys> rightStampIndices, RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch) {
         findModified((NullAwareCharReverseSegmentedSortedArray)leftSsa, rowRedirection, rightStampChunk.asCharChunk(), rightStampIndices, modifiedBuilder, disallowExactMatch);
     }
 
-    private static void findModified(NullAwareCharReverseSegmentedSortedArray leftSsa, RowRedirection rowRedirection, CharChunk<? extends Values> rightStampChunk, LongChunk<Attributes.RowKeys> rightStampIndices, RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch) {
+    private static void findModified(NullAwareCharReverseSegmentedSortedArray leftSsa, RowRedirection rowRedirection, CharChunk<? extends Values> rightStampChunk, LongChunk<RowKeys> rightStampIndices, RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch) {
         final NullAwareCharReverseSegmentedSortedArray.Iterator leftIt = leftSsa.iterator(disallowExactMatch, false);
 
-        try (final SizedLongChunk<Attributes.RowKeys> modifiedKeys = new SizedLongChunk<>()) {
+        try (final SizedLongChunk<RowKeys> modifiedKeys = new SizedLongChunk<>()) {
             int capacity = rightStampChunk.size();
             modifiedKeys.ensureCapacity(capacity).setSize(capacity);
             int mks = 0;
@@ -240,11 +239,11 @@ public class NullAwareCharReverseSsaSsaStamp implements SsaSsaStamp {
     }
 
     @Override
-    public void applyShift(SegmentedSortedArray leftSsa, Chunk<? extends Values> rightStampChunk, LongChunk<Attributes.RowKeys> rightStampKeys, long shiftDelta, WritableRowRedirection rowRedirection, boolean disallowExactMatch) {
+    public void applyShift(SegmentedSortedArray leftSsa, Chunk<? extends Values> rightStampChunk, LongChunk<RowKeys> rightStampKeys, long shiftDelta, WritableRowRedirection rowRedirection, boolean disallowExactMatch) {
         applyShift((NullAwareCharReverseSegmentedSortedArray)leftSsa, rightStampChunk.asCharChunk(), rightStampKeys, shiftDelta, rowRedirection, disallowExactMatch);
     }
 
-    private void applyShift(NullAwareCharReverseSegmentedSortedArray leftSsa, CharChunk<? extends Values> rightStampChunk, LongChunk<Attributes.RowKeys> rightStampKeys, long shiftDelta, WritableRowRedirection rowRedirection, boolean disallowExactMatch) {
+    private void applyShift(NullAwareCharReverseSegmentedSortedArray leftSsa, CharChunk<? extends Values> rightStampChunk, LongChunk<RowKeys> rightStampKeys, long shiftDelta, WritableRowRedirection rowRedirection, boolean disallowExactMatch) {
         final NullAwareCharReverseSegmentedSortedArray.Iterator leftIt = leftSsa.iterator(disallowExactMatch, false);
 
         for (int ii = 0; ii < rightStampChunk.size(); ++ii) {

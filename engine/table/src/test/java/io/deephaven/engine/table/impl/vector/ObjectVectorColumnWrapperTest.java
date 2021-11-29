@@ -5,7 +5,7 @@ import gnu.trove.list.array.TLongArrayList;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.IntegerArraySource;
 import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.vector.*;
+import io.deephaven.vector.*;
 import junit.framework.TestCase;
 
 import java.util.ArrayList;

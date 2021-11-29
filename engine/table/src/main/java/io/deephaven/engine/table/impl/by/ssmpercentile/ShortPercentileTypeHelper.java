@@ -3,13 +3,14 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.table.impl.by.ssmpercentile;
 
+import io.deephaven.chunk.attributes.ChunkLengths;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.util.compare.ShortComparisons;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.ShortArraySource;
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.ShortChunk;
-import io.deephaven.engine.chunk.Chunk;
-import io.deephaven.engine.chunk.IntChunk;
+import io.deephaven.chunk.ShortChunk;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.IntChunk;
 import io.deephaven.engine.table.impl.ssms.ShortSegmentedSortedMultiset;
 import io.deephaven.engine.table.impl.ssms.SegmentedSortedMultiSet;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -58,8 +59,8 @@ public class ShortPercentileTypeHelper implements SsmChunkedPercentileOperator.P
     }
 
     @Override
-    public int pivot(SegmentedSortedMultiSet segmentedSortedMultiSet, Chunk<? extends Attributes.Values> valueCopy, IntChunk<Attributes.ChunkLengths> counts, int startPosition, int runLength, MutableInt leftOvers) {
-        final ShortChunk<? extends Attributes.Values> asShortChunk = valueCopy.asShortChunk();
+    public int pivot(SegmentedSortedMultiSet segmentedSortedMultiSet, Chunk<? extends Values> valueCopy, IntChunk<ChunkLengths> counts, int startPosition, int runLength, MutableInt leftOvers) {
+        final ShortChunk<? extends Values> asShortChunk = valueCopy.asShortChunk();
         final ShortSegmentedSortedMultiset ssmLo = (ShortSegmentedSortedMultiset)segmentedSortedMultiSet;
         final short hiValue = ssmLo.getMaxShort();
 
@@ -76,8 +77,8 @@ public class ShortPercentileTypeHelper implements SsmChunkedPercentileOperator.P
     }
 
     @Override
-    public int pivot(SegmentedSortedMultiSet segmentedSortedMultiSet, Chunk<? extends Attributes.Values> valueCopy, IntChunk<Attributes.ChunkLengths> counts, int startPosition, int runLength) {
-        final ShortChunk<? extends Attributes.Values> asShortChunk = valueCopy.asShortChunk();
+    public int pivot(SegmentedSortedMultiSet segmentedSortedMultiSet, Chunk<? extends Values> valueCopy, IntChunk<ChunkLengths> counts, int startPosition, int runLength) {
+        final ShortChunk<? extends Values> asShortChunk = valueCopy.asShortChunk();
         final ShortSegmentedSortedMultiset ssmLo = (ShortSegmentedSortedMultiset)segmentedSortedMultiSet;
         final short hiValue = ssmLo.getMaxShort();
 
@@ -95,7 +96,7 @@ public class ShortPercentileTypeHelper implements SsmChunkedPercentileOperator.P
      * @param searchValue the value to find
      * @return the highest index that is less than or equal to valuesToSearch
      */
-    private static int upperBound(ShortChunk<? extends Attributes.Values> valuesToSearch, int lo, int hi, short searchValue) {
+    private static int upperBound(ShortChunk<? extends Values> valuesToSearch, int lo, int hi, short searchValue) {
         while (lo < hi) {
             final int mid = (lo + hi) >>> 1;
             final short testValue = valuesToSearch.get(mid);

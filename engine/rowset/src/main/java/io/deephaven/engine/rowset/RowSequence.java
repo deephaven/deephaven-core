@@ -7,11 +7,11 @@ package io.deephaven.engine.rowset;
 import io.deephaven.util.datastructures.LongAbortableConsumer;
 import io.deephaven.util.datastructures.LongRangeConsumer;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
-import io.deephaven.engine.chunk.Attributes.OrderedRowKeyRanges;
-import io.deephaven.engine.chunk.Attributes.OrderedRowKeys;
-import io.deephaven.engine.chunk.Attributes.RowKeys;
-import io.deephaven.engine.chunk.LongChunk;
-import io.deephaven.engine.chunk.WritableLongChunk;
+import io.deephaven.rowset.chunkattributes.OrderedRowKeyRanges;
+import io.deephaven.rowset.chunkattributes.OrderedRowKeys;
+import io.deephaven.rowset.chunkattributes.RowKeys;
+import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.util.datastructures.LongRangeAbortableConsumer;
 import io.deephaven.util.SafeCloseable;
 

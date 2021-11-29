@@ -1,6 +1,6 @@
 package io.deephaven.engine.table.impl.sources;
 
-import io.deephaven.engine.time.DateTime;
+import io.deephaven.time.DateTime;
 import io.deephaven.qst.array.Array;
 import io.deephaven.qst.array.GenericArray;
 import io.deephaven.qst.array.PrimitiveArray;

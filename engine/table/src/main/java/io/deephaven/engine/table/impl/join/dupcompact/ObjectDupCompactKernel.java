@@ -5,8 +5,9 @@ package io.deephaven.engine.table.impl.join.dupcompact;
 
 import java.util.Objects;
 
-import io.deephaven.engine.chunk.*;
-import io.deephaven.engine.chunk.Attributes.Any;
+import io.deephaven.chunk.*;
+import io.deephaven.chunk.attributes.Any;
+import io.deephaven.rowset.chunkattributes.RowKeys;
 
 public class ObjectDupCompactKernel implements DupCompactKernel {
     static final ObjectDupCompactKernel INSTANCE = new ObjectDupCompactKernel();
@@ -14,11 +15,11 @@ public class ObjectDupCompactKernel implements DupCompactKernel {
     private ObjectDupCompactKernel() {} // use through the instance
 
     @Override
-    public int compactDuplicates(WritableChunk<? extends Any> chunkToCompact, WritableLongChunk<Attributes.RowKeys> keyIndices) {
+    public int compactDuplicates(WritableChunk<? extends Any> chunkToCompact, WritableLongChunk<RowKeys> keyIndices) {
         return compactDuplicates(chunkToCompact.asWritableObjectChunk(), keyIndices);
     }
 
-    private static int compactDuplicates(WritableObjectChunk<Object, ? extends Any> chunkToCompact, WritableLongChunk<Attributes.RowKeys> keyIndices) {
+    private static int compactDuplicates(WritableObjectChunk<Object, ? extends Any> chunkToCompact, WritableLongChunk<RowKeys> keyIndices) {
         final int inputSize = chunkToCompact.size();
         if (inputSize == 0) {
             return -1;

@@ -1,8 +1,7 @@
 package io.deephaven.engine.rowset.impl.rsp;
 
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.Attributes.RowKeys;
-import io.deephaven.engine.chunk.WritableLongChunk;
+import io.deephaven.rowset.chunkattributes.RowKeys;
+import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.util.datastructures.LongAbortableConsumer;
 import io.deephaven.engine.rowset.impl.rsp.container.Container;
 import io.deephaven.engine.rowset.impl.rsp.container.ContainerShortBatchIterator;
@@ -211,8 +210,8 @@ public class RspIterator implements PrimitiveIterator.OfLong, SafeCloseable {
                 }
 
                 @Override
-                public int copyTo(final WritableLongChunk<? extends Attributes.RowKeys> chunk, final int offset,
-                        final int max) {
+                public int copyTo(final WritableLongChunk<? extends RowKeys> chunk, final int offset,
+                                  final int max) {
                     int c = 0;
                     final long last = Math.min(curr + max - 1, end);
                     while (curr <= last) {

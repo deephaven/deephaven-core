@@ -1,7 +1,7 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.time.DateTime;
+import io.deephaven.time.DateTime;
 
 /**
  * Defaulted interfaces for various immutable {@link ColumnSource} types, in order to avoid having defaults at higher

@@ -1,13 +1,13 @@
 package io.deephaven.engine.table.impl.sources.regioned;
 
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.impl.locations.ColumnLocation;
-import io.deephaven.engine.chunk.Attributes;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 @FunctionalInterface
-public interface MakeRegion<ATTR extends Attributes.Values, REGION_TYPE extends ColumnRegion<ATTR>> {
+public interface MakeRegion<ATTR extends Values, REGION_TYPE extends ColumnRegion<ATTR>> {
 
     /**
      * Get a new or re-usable column region appropriate for this source.

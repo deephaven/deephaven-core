@@ -114,9 +114,9 @@ def _defineSymbols():
         float64 = double  # make life simple for people who are used to pyarrow
         string = DataType(_qst_type_.stringType())
         bigdecimal = _typeFromJavaClassName('java.math.BigDecimal')
-        stringset =  _typeFromJavaClassName('io.deephaven.engine.stringset.StringSet')
-        datetime = _typeFromJavaClassName('io.deephaven.engine.time.DateTime')
-        timeperiod = _typeFromJavaClassName('io.deephaven.engine.time.Period')
+        stringset =  _typeFromJavaClassName('io.deephaven.stringset.StringSet')
+        datetime = _typeFromJavaClassName('io.deephaven.time.DateTime')
+        timeperiod = _typeFromJavaClassName('io.deephaven.time.Period')
 
         # Array types.
         byte_array = DataType(byte.arrayType())
@@ -143,9 +143,9 @@ def _defineSymbols():
             double : jpy.get_type('double'),
             string : jpy.get_type('java.lang.String'),
             bigdecimal : jpy.get_type('java.math.BigDecimal'),
-            stringset : jpy.get_type('io.deephaven.engine.stringset.StringSet'),
-            datetime : jpy.get_type('io.deephaven.engine.time.DateTime'),
-            timeperiod : jpy.get_type('io.deephaven.engine.time.Period'),
+            stringset : jpy.get_type('io.deephaven.stringset.StringSet'),
+            datetime : jpy.get_type('io.deephaven.time.DateTime'),
+            timeperiod : jpy.get_type('io.deephaven.time.Period'),
             byte_array : jpy.get_type('[B'),
             short_array : jpy.get_type('[S'),
             int_array : jpy.get_type('[I'),

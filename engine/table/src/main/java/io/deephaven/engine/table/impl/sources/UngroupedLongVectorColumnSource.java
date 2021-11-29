@@ -9,7 +9,7 @@ package io.deephaven.engine.table.impl.sources;
 
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
-import io.deephaven.engine.vector.LongVector;
+import io.deephaven.vector.LongVector;
 
 import static io.deephaven.util.QueryConstants.NULL_LONG;
 

@@ -3,8 +3,9 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.table.impl.join.dupcompact;
 
-import io.deephaven.engine.chunk.*;
-import io.deephaven.engine.chunk.Attributes.Any;
+import io.deephaven.chunk.*;
+import io.deephaven.chunk.attributes.Any;
+import io.deephaven.rowset.chunkattributes.RowKeys;
 
 public class IntReverseDupCompactKernel implements DupCompactKernel {
     static final IntReverseDupCompactKernel INSTANCE = new IntReverseDupCompactKernel();
@@ -12,11 +13,11 @@ public class IntReverseDupCompactKernel implements DupCompactKernel {
     private IntReverseDupCompactKernel() {} // use through the instance
 
     @Override
-    public int compactDuplicates(WritableChunk<? extends Any> chunkToCompact, WritableLongChunk<Attributes.RowKeys> keyIndices) {
+    public int compactDuplicates(WritableChunk<? extends Any> chunkToCompact, WritableLongChunk<RowKeys> keyIndices) {
         return compactDuplicates(chunkToCompact.asWritableIntChunk(), keyIndices);
     }
 
-    private static int compactDuplicates(WritableIntChunk<? extends Any> chunkToCompact, WritableLongChunk<Attributes.RowKeys> keyIndices) {
+    private static int compactDuplicates(WritableIntChunk<? extends Any> chunkToCompact, WritableLongChunk<RowKeys> keyIndices) {
         final int inputSize = chunkToCompact.size();
         if (inputSize == 0) {
             return -1;

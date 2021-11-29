@@ -4,12 +4,12 @@
 
 package io.deephaven.plot.example_plots;
 
-import io.deephaven.engine.time.DateTimeUtils;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.plot.Figure;
 import io.deephaven.plot.FigureFactory;
 import io.deephaven.plot.axistransformations.AxisTransformBusinessCalendar;
-import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.time.calendar.Calendars;
+import io.deephaven.time.DateTime;
+import io.deephaven.time.calendar.Calendars;
 
 
 public class BusinessTime {

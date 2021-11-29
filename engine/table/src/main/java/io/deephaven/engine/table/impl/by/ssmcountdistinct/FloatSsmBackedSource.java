@@ -3,7 +3,7 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.table.impl.by.ssmcountdistinct;
 
-import io.deephaven.engine.vector.FloatVector;
+import io.deephaven.vector.FloatVector;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.ColumnSourceGetDefaults;
 import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;

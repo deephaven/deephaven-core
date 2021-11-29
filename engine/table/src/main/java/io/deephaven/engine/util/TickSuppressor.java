@@ -4,12 +4,13 @@
 
 package io.deephaven.engine.util;
 
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.impl.*;
-import io.deephaven.engine.chunk.util.hashing.ChunkEquals;
-import io.deephaven.engine.chunk.*;
+import io.deephaven.chunk.util.hashing.ChunkEquals;
+import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSequence;
@@ -181,10 +182,10 @@ public class TickSuppressor {
 
                                     for (final int cc : changedColumnIndices) {
                                         // noinspection unchecked
-                                        final Chunk<Attributes.Values> currentValues =
+                                        final Chunk<Values> currentValues =
                                                 inputSources[cc].getChunk(getContextArray[cc], postChunkOk);
                                         // noinspection unchecked
-                                        final Chunk<Attributes.Values> prevValues =
+                                        final Chunk<Values> prevValues =
                                                 inputSources[cc].getPrevChunk(prevContextArray[cc], preChunkOk);
 
                                         // now we need to compare them

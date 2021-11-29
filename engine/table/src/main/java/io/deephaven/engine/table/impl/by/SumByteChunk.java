@@ -3,16 +3,16 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.table.impl.by;
 
+import io.deephaven.chunk.attributes.Any;
 import io.deephaven.util.QueryConstants;
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.ByteChunk;
+import io.deephaven.chunk.ByteChunk;
 import org.apache.commons.lang3.mutable.MutableDouble;
 import org.apache.commons.lang3.mutable.MutableInt;
 
 public class SumByteChunk {
     private SumByteChunk() {} // static use only
 
-    static long sumByteChunk(ByteChunk<? extends Attributes.Any> values, int chunkStart, int chunkSize, MutableInt nonNullCount) {
+    static long sumByteChunk(ByteChunk<? extends Any> values, int chunkStart, int chunkSize, MutableInt nonNullCount) {
         final int end = chunkStart + chunkSize;
         long sum = 0;
         for (int ii = chunkStart; ii < end; ++ii) {
@@ -25,7 +25,7 @@ public class SumByteChunk {
         return sum;
     }
 
-    public static long sumByteChunk(ByteChunk<? extends Attributes.Any> values, int chunkStart, int chunkSize) {
+    public static long sumByteChunk(ByteChunk<? extends Any> values, int chunkStart, int chunkSize) {
         final int end = chunkStart + chunkSize;
         long sum = 0;
         for (int ii = chunkStart; ii < end; ++ii) {
@@ -40,7 +40,7 @@ public class SumByteChunk {
     /**
      * Produce the sum and sum of squares of a byteacter chunk, as doubles.
      */
-    static double sum2ByteChunk(ByteChunk<? extends Attributes.Any> values, int chunkStart, int chunkSize, MutableInt nonNullCount, MutableDouble sum2out) {
+    static double sum2ByteChunk(ByteChunk<? extends Any> values, int chunkStart, int chunkSize, MutableInt nonNullCount, MutableDouble sum2out) {
         final int end = chunkStart + chunkSize;
         double sum = 0;
         double sum2 = 0;
@@ -69,7 +69,7 @@ public class SumByteChunk {
         }
     }
 
-    static long sumByteChunkAbs(ByteChunk<? extends Attributes.Any> values, int chunkStart, int chunkSize, MutableInt nonNullCount) {
+    static long sumByteChunkAbs(ByteChunk<? extends Any> values, int chunkStart, int chunkSize, MutableInt nonNullCount) {
         final int end = chunkStart + chunkSize;
         long sum = 0;
         for (int ii = chunkStart; ii < end; ++ii) {

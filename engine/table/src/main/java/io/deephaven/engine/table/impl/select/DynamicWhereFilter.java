@@ -5,6 +5,7 @@
 package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.base.log.LogOutput;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -15,12 +16,12 @@ import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.select.setinclusion.SetInclusionKernel;
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.Chunk;
-import io.deephaven.engine.chunk.WritableBooleanChunk;
-import io.deephaven.engine.chunk.WritableLongChunk;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.WritableBooleanChunk;
+import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.engine.table.impl.TupleSourceFactory;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
+import io.deephaven.rowset.chunkattributes.OrderedRowKeys;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 
 import java.util.*;
@@ -257,14 +258,14 @@ public class DynamicWhereFilter extends WhereFilterLivenessArtifactImpl implemen
 
         try (final ColumnSource.GetContext getContext = keyColumn.makeGetContext(CHUNK_SIZE);
                 final RowSequence.Iterator rsIt = selection.getRowSequenceIterator()) {
-            final WritableLongChunk<Attributes.OrderedRowKeys> keyIndices =
+            final WritableLongChunk<OrderedRowKeys> keyIndices =
                     WritableLongChunk.makeWritableChunk(CHUNK_SIZE);
-            final WritableBooleanChunk<Attributes.Values> matches = WritableBooleanChunk.makeWritableChunk(CHUNK_SIZE);
+            final WritableBooleanChunk<Values> matches = WritableBooleanChunk.makeWritableChunk(CHUNK_SIZE);
 
             while (rsIt.hasMore()) {
                 final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(CHUNK_SIZE);
 
-                final Chunk<Attributes.Values> chunk = keyColumn.getChunk(getContext, chunkOk);
+                final Chunk<Values> chunk = keyColumn.getChunk(getContext, chunkOk);
                 setInclusionKernel.matchValues(chunk, matches);
 
                 keyIndices.setSize(chunk.size());

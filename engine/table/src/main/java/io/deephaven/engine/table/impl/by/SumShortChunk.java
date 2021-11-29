@@ -3,16 +3,16 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.table.impl.by;
 
+import io.deephaven.chunk.attributes.Any;
 import io.deephaven.util.QueryConstants;
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.ShortChunk;
+import io.deephaven.chunk.ShortChunk;
 import org.apache.commons.lang3.mutable.MutableDouble;
 import org.apache.commons.lang3.mutable.MutableInt;
 
 public class SumShortChunk {
     private SumShortChunk() {} // static use only
 
-    static long sumShortChunk(ShortChunk<? extends Attributes.Any> values, int chunkStart, int chunkSize, MutableInt nonNullCount) {
+    static long sumShortChunk(ShortChunk<? extends Any> values, int chunkStart, int chunkSize, MutableInt nonNullCount) {
         final int end = chunkStart + chunkSize;
         long sum = 0;
         for (int ii = chunkStart; ii < end; ++ii) {
@@ -25,7 +25,7 @@ public class SumShortChunk {
         return sum;
     }
 
-    public static long sumShortChunk(ShortChunk<? extends Attributes.Any> values, int chunkStart, int chunkSize) {
+    public static long sumShortChunk(ShortChunk<? extends Any> values, int chunkStart, int chunkSize) {
         final int end = chunkStart + chunkSize;
         long sum = 0;
         for (int ii = chunkStart; ii < end; ++ii) {
@@ -40,7 +40,7 @@ public class SumShortChunk {
     /**
      * Produce the sum and sum of squares of a shortacter chunk, as doubles.
      */
-    static double sum2ShortChunk(ShortChunk<? extends Attributes.Any> values, int chunkStart, int chunkSize, MutableInt nonNullCount, MutableDouble sum2out) {
+    static double sum2ShortChunk(ShortChunk<? extends Any> values, int chunkStart, int chunkSize, MutableInt nonNullCount, MutableDouble sum2out) {
         final int end = chunkStart + chunkSize;
         double sum = 0;
         double sum2 = 0;
@@ -69,7 +69,7 @@ public class SumShortChunk {
         }
     }
 
-    static long sumShortChunkAbs(ShortChunk<? extends Attributes.Any> values, int chunkStart, int chunkSize, MutableInt nonNullCount) {
+    static long sumShortChunkAbs(ShortChunk<? extends Any> values, int chunkStart, int chunkSize, MutableInt nonNullCount) {
         final int end = chunkStart + chunkSize;
         long sum = 0;
         for (int ii = chunkStart; ii < end; ++ii) {

@@ -1,9 +1,9 @@
 package io.deephaven.engine.table.impl.select.setinclusion;
 
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.Chunk;
-import io.deephaven.engine.chunk.ObjectChunk;
-import io.deephaven.engine.chunk.WritableBooleanChunk;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.ObjectChunk;
+import io.deephaven.chunk.WritableBooleanChunk;
+import io.deephaven.chunk.attributes.Values;
 
 import java.util.Collection;
 
@@ -17,11 +17,11 @@ public class ObjectSetInclusionKernel implements SetInclusionKernel {
     }
 
     @Override
-    public void matchValues(Chunk<Attributes.Values> values, WritableBooleanChunk matches) {
+    public void matchValues(Chunk<Values> values, WritableBooleanChunk matches) {
         matchValues(values.asObjectChunk(), matches);
     }
 
-    private void matchValues(ObjectChunk<?, Attributes.Values> values, WritableBooleanChunk matches) {
+    private void matchValues(ObjectChunk<?, Values> values, WritableBooleanChunk matches) {
         for (int ii = 0; ii < values.size(); ++ii) {
             matches.set(ii, liveValues.contains(values.get(ii)) == inclusion);
         }

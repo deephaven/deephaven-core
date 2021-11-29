@@ -5,7 +5,7 @@
 package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.time.ClockTimeProvider;
+import io.deephaven.time.ClockTimeProvider;
 import io.deephaven.engine.table.impl.RefreshingTableTestCase;
 import io.deephaven.util.clock.RealTimeClock;
 import io.deephaven.engine.table.Table;

@@ -1,9 +1,10 @@
 package io.deephaven.engine.rowset.impl;
 
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.Chunk;
-import io.deephaven.engine.chunk.LongChunk;
-import io.deephaven.engine.chunk.WritableLongChunk;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.WritableLongChunk;
+import io.deephaven.rowset.chunkattributes.OrderedRowKeyRanges;
+import io.deephaven.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.util.datastructures.SizeException;
 
@@ -13,19 +14,19 @@ import io.deephaven.util.datastructures.SizeException;
 public class RowKeyChunkUtils {
 
     /**
-     * Generates a {@code LongChunk<OrderedRowKeyRanges>} from a {@code LongChunk<Attributes.OrderedRowKeys>}.
+     * Generates a {@code LongChunk<OrderedRowKeyRanges>} from a {@code LongChunk<OrderedRowKeys>}.
      *
      * @param chunk the chunk to convert
      * @return the generated chunk
      */
-    public static WritableLongChunk<Attributes.OrderedRowKeyRanges> convertToOrderedKeyRanges(
-            final LongChunk<Attributes.OrderedRowKeys> chunk) {
+    public static WritableLongChunk<OrderedRowKeyRanges> convertToOrderedKeyRanges(
+            final LongChunk<OrderedRowKeys> chunk) {
         return convertToOrderedKeyRanges(chunk, Chunk.MAXIMUM_SIZE);
     }
 
     @VisibleForTesting
-    public static WritableLongChunk<Attributes.OrderedRowKeyRanges> convertToOrderedKeyRanges(
-            final LongChunk<Attributes.OrderedRowKeys> chunk,
+    public static WritableLongChunk<OrderedRowKeyRanges> convertToOrderedKeyRanges(
+            final LongChunk<OrderedRowKeys> chunk,
             final long maxChunkSize) {
         if (chunk.size() == 0) {
             return WritableLongChunk.makeWritableChunk(0);
@@ -44,7 +45,7 @@ public class RowKeyChunkUtils {
             throw new SizeException("Cannot expand RowKeys Chunk into KeyRanges Chunk.", newSize, maxChunkSize);
         }
 
-        final WritableLongChunk<Attributes.OrderedRowKeyRanges> newChunk =
+        final WritableLongChunk<OrderedRowKeyRanges> newChunk =
                 WritableLongChunk.makeWritableChunk((int) newSize);
 
         convertToOrderedKeyRanges(chunk, newChunk);
@@ -58,8 +59,8 @@ public class RowKeyChunkUtils {
      * @param chunk the chunk to convert
      * @param dest the chunk to fill with ranges
      */
-    public static void convertToOrderedKeyRanges(final LongChunk<Attributes.OrderedRowKeys> chunk,
-            final WritableLongChunk<Attributes.OrderedRowKeyRanges> dest) {
+    public static void convertToOrderedKeyRanges(final LongChunk<OrderedRowKeys> chunk,
+            final WritableLongChunk<OrderedRowKeyRanges> dest) {
         int destOffset = 0;
         if (chunk.size() == 0) {
             dest.setSize(destOffset);
@@ -81,25 +82,25 @@ public class RowKeyChunkUtils {
     }
 
     /**
-     * Generates a {@code LongChunk<Attributes.OrderedRowKeys>} from {@code LongChunk<Attributes.OrderedRowKeyRanges>}.
+     * Generates a {@code LongChunk<OrderedRowKeys>} from {@code LongChunk<OrderedRowKeyRanges>}.
      *
      * @param chunk the chunk to convert
      * @return the generated chunk
      */
-    public static LongChunk<Attributes.OrderedRowKeys> convertToOrderedKeyIndices(
-            final LongChunk<Attributes.OrderedRowKeyRanges> chunk) {
+    public static LongChunk<OrderedRowKeys> convertToOrderedKeyIndices(
+            final LongChunk<OrderedRowKeyRanges> chunk) {
         return convertToOrderedKeyIndices(0, chunk);
     }
 
     /**
-     * Generates a {@code LongChunk<Attributes.OrderedRowKeys>} from {@code LongChunk<Attributes.OrderedRowKeyRanges>}.
+     * Generates a {@code LongChunk<OrderedRowKeys>} from {@code LongChunk<OrderedRowKeyRanges>}.
      *
      * @param srcOffset the offset into {@code chunk} to begin including in the generated chunk
      * @param chunk the chunk to convert
      * @return the generated chunk
      */
-    public static LongChunk<Attributes.OrderedRowKeys> convertToOrderedKeyIndices(int srcOffset,
-            final LongChunk<Attributes.OrderedRowKeyRanges> chunk) {
+    public static LongChunk<OrderedRowKeys> convertToOrderedKeyIndices(int srcOffset,
+                                                                       final LongChunk<OrderedRowKeyRanges> chunk) {
         srcOffset += srcOffset % 2; // ensure that we are using the correct range edges
 
         long numElements = 0;
@@ -114,21 +115,21 @@ public class RowKeyChunkUtils {
                     Chunk.MAXIMUM_SIZE);
         }
 
-        final WritableLongChunk<Attributes.OrderedRowKeys> newChunk =
+        final WritableLongChunk<OrderedRowKeys> newChunk =
                 WritableLongChunk.makeWritableChunk((int) numElements);
         convertToOrderedKeyIndices(srcOffset, chunk, newChunk, 0);
         return newChunk;
     }
 
     /**
-     * Fill a {@code LongChunk<Attributes.OrderedRowKeys>} from {@code LongChunk<Attributes.OrderedRowKeyRanges>}.
+     * Fill a {@code LongChunk<OrderedRowKeys>} from {@code LongChunk<OrderedRowKeyRanges>}.
      *
      * @param srcOffset the offset into {@code chunk} to begin including in the generated chunk
      * @param chunk the chunk to convert
      * @param dest the chunk to fill with indices
      */
-    public static void convertToOrderedKeyIndices(int srcOffset, final LongChunk<Attributes.OrderedRowKeyRanges> chunk,
-            final WritableLongChunk<Attributes.OrderedRowKeys> dest, int destOffset) {
+    public static void convertToOrderedKeyIndices(int srcOffset, final LongChunk<OrderedRowKeyRanges> chunk,
+                                                  final WritableLongChunk<OrderedRowKeys> dest, int destOffset) {
         srcOffset += srcOffset & 1; // ensure that we are using the correct range edges
 
         for (int idx = srcOffset; idx + 1 < chunk.size() && destOffset < dest.size(); idx += 2) {

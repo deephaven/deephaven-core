@@ -4,16 +4,17 @@
 package io.deephaven.engine.table.impl.ssms;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.vector.FloatVector;
-import io.deephaven.engine.vector.FloatVectorDirect;
-import io.deephaven.engine.vector.ObjectVector;
+import io.deephaven.chunk.attributes.Any;
+import io.deephaven.vector.FloatVector;
+import io.deephaven.vector.FloatVectorDirect;
+import io.deephaven.vector.ObjectVector;
 import io.deephaven.util.compare.FloatComparisons;
 import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.engine.table.impl.by.SumIntChunk;
 import io.deephaven.engine.table.impl.sort.timsort.TimsortUtils;
-import io.deephaven.engine.chunk.*;
-import io.deephaven.engine.chunk.Attributes.ChunkLengths;
-import io.deephaven.engine.chunk.Attributes.Values;
+import io.deephaven.chunk.*;
+import io.deephaven.chunk.attributes.ChunkLengths;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.util.annotations.VisibleForTesting;
 import gnu.trove.set.hash.TFloatHashSet;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -687,7 +688,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
      * @param searchValue the value to find
      * @return the lowest index that is greater than or equal to valuesToSearch
      */
-    private static int gallopBound(FloatChunk<? extends Attributes.Any> valuesToSearch, int lo, int hi, float searchValue) {
+    private static int gallopBound(FloatChunk<? extends Any> valuesToSearch, int lo, int hi, float searchValue) {
         while (lo < hi) {
             final int mid = (lo + hi) >>> 1;
             final float testValue = valuesToSearch.get(mid);
@@ -2128,7 +2129,7 @@ public final class FloatSegmentedSortedMultiset implements SegmentedSortedMultiS
 
     @Override
     public WritableLongChunk<?> countChunk() {
-        final WritableLongChunk<Attributes.Any> countChunk = WritableLongChunk.makeWritableChunk(intSize());
+        final WritableLongChunk<Any> countChunk = WritableLongChunk.makeWritableChunk(intSize());
         if (leafCount == 1) {
             countChunk.copyFromTypedArray(directoryCount, 0, 0, size);
         } else if (leafCount > 0) {

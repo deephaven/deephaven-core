@@ -1,10 +1,10 @@
 package io.deephaven.engine.table.impl.sources.regioned;
 
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.Attributes.Any;
+import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
+import io.deephaven.engine.table.impl.chunkattributes.DictionaryKeys;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.function.Supplier;
@@ -44,7 +44,7 @@ public class DeferredColumnRegionObject<DATA_TYPE, ATTR extends Any>
     }
 
     @Override
-    public ColumnRegionLong<Attributes.DictionaryKeys> getDictionaryKeysRegion() {
+    public ColumnRegionLong<DictionaryKeys> getDictionaryKeysRegion() {
         return getResultRegion().getDictionaryKeysRegion();
     }
 

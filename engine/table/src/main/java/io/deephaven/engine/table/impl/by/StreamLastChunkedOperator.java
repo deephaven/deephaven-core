@@ -5,11 +5,11 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.chunk.*;
-import io.deephaven.engine.chunk.Attributes.ChunkLengths;
-import io.deephaven.engine.chunk.Attributes.ChunkPositions;
-import io.deephaven.engine.chunk.Attributes.RowKeys;
-import io.deephaven.engine.chunk.Attributes.Values;
+import io.deephaven.chunk.*;
+import io.deephaven.chunk.attributes.ChunkLengths;
+import io.deephaven.chunk.attributes.ChunkPositions;
+import io.deephaven.rowset.chunkattributes.RowKeys;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import org.jetbrains.annotations.NotNull;
@@ -34,7 +34,7 @@ public class StreamLastChunkedOperator extends CopyingPermutedStreamFirstOrLastC
     public void addChunk(final BucketedContext context, // Unused
             final Chunk<? extends Values> values, // Unused
             @NotNull final LongChunk<? extends RowKeys> inputRowKeys,
-            @NotNull final IntChunk<Attributes.RowKeys> destinations,
+            @NotNull final IntChunk<RowKeys> destinations,
             @NotNull final IntChunk<ChunkPositions> startPositions,
             @NotNull final IntChunk<ChunkLengths> length,
             @NotNull final WritableBooleanChunk<Values> stateModified) {

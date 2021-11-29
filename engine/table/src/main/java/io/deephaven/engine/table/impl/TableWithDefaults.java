@@ -22,7 +22,6 @@ import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.util.ColumnFormattingValues;
 import io.deephaven.engine.liveness.LivenessScopeStack;
-import io.deephaven.engine.vector.Vector;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;

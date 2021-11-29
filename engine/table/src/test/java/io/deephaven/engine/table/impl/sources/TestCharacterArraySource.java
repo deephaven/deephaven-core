@@ -9,10 +9,11 @@ import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.impl.select.FormulaColumn;
-import io.deephaven.engine.chunk.*;
-import io.deephaven.engine.chunk.Attributes.OrderedRowKeyRanges;
-import io.deephaven.engine.chunk.Attributes.Values;
+import io.deephaven.chunk.*;
+import io.deephaven.rowset.chunkattributes.OrderedRowKeyRanges;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.testutil.Shuffle;
+import io.deephaven.rowset.chunkattributes.RowKeys;
 import junit.framework.TestCase;
 import org.junit.After;
 import org.junit.Before;
@@ -23,7 +24,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.stream.LongStream;
 
-import static io.deephaven.engine.chunk.ArrayGenerator.indexDataGenerator;
+import static io.deephaven.chunk.ArrayGenerator.indexDataGenerator;
 import static io.deephaven.util.QueryConstants.NULL_CHAR;
 import static junit.framework.TestCase.*;
 
@@ -552,7 +553,7 @@ public class TestCharacterArraySource {
 
         try (final ChunkSource.FillContext ctx = source.makeFillContext(keys.length);
              final WritableCharChunk<Values> dest = WritableCharChunk.makeWritableChunk(keys.length);
-             final ResettableLongChunk<Attributes.RowKeys> rlc = ResettableLongChunk.makeResettableChunk()) {
+             final ResettableLongChunk<RowKeys> rlc = ResettableLongChunk.makeResettableChunk()) {
             rlc.resetFromTypedArray(keys, 0, keys.length);
             source.fillChunkUnordered(ctx, dest, rlc);
             assertEquals(keys.length, dest.size());

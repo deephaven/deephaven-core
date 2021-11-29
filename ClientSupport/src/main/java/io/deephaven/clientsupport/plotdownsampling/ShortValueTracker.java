@@ -4,12 +4,12 @@
 package io.deephaven.clientsupport.plotdownsampling;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.table.impl.sources.ShortArraySource;
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.Chunk;
+import io.deephaven.chunk.Chunk;
 import org.jetbrains.annotations.Nullable;
 
 import static io.deephaven.util.QueryConstants.NULL_SHORT;
@@ -41,7 +41,7 @@ public final class ShortValueTracker extends ValueTracker {
     }
 
     @Override
-    public void append(int offset, long rowKey, Chunk<? extends Attributes.Values> valuesChunk, int indexInChunk, @Nullable WritableRowSet nulls) {
+    public void append(int offset, long rowKey, Chunk<? extends Values> valuesChunk, int indexInChunk, @Nullable WritableRowSet nulls) {
         final short val = valuesChunk.asShortChunk().get(indexInChunk);
         if (val == NULL_SHORT) {
             if (nulls != null) {
@@ -67,7 +67,7 @@ public final class ShortValueTracker extends ValueTracker {
     }
 
     @Override
-    public void update(int offset, long rowKey, Chunk<? extends Attributes.Values> valuesChunk, int indexInChunk, @Nullable WritableRowSet nulls) {
+    public void update(int offset, long rowKey, Chunk<? extends Values> valuesChunk, int indexInChunk, @Nullable WritableRowSet nulls) {
         short val = valuesChunk.asShortChunk().get(indexInChunk);
         if (val == NULL_SHORT) {
             if (nulls != null) {
@@ -125,7 +125,7 @@ public final class ShortValueTracker extends ValueTracker {
     }
 
     @Override
-    public void validate(int offset, long rowKey, Chunk<? extends Attributes.Values> valuesChunk, int indexInChunk, @Nullable RowSet nulls) {
+    public void validate(int offset, long rowKey, Chunk<? extends Values> valuesChunk, int indexInChunk, @Nullable RowSet nulls) {
         short val = valuesChunk.asShortChunk().get(indexInChunk);
         if (val == NULL_SHORT) {
             // can't check if our min/max is valid, or anything about positions, only can confirm that this rowKey is in

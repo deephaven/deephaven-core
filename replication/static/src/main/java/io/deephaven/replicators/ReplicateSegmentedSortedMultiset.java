@@ -120,7 +120,7 @@ public class ReplicateSegmentedSortedMultiset {
         List<String> lines = FileUtils.readLines(longFile, Charset.defaultCharset());
         lines = addImport(lines,
                 "import io.deephaven.engine.table.impl.sources.BoxedColumnSource;",
-                "import io.deephaven.engine.time.DateTime;",
+                "import io.deephaven.time.DateTime;",
                 "import io.deephaven.engine.table.impl.by.ssmcountdistinct.DateTimeSsmSourceWrapper;");
         lines = replaceRegion(lines, "Constructor",
                 indent(Collections.singletonList("Class<?> type,"), 12));
@@ -234,9 +234,9 @@ public class ReplicateSegmentedSortedMultiset {
         List<String> lines = FileUtils.readLines(longFile, Charset.defaultCharset());
 
         lines = addImport(lines,
-                "import io.deephaven.engine.time.DateTime;",
-                "import io.deephaven.engine.vector.ObjectVectorDirect;",
-                "import io.deephaven.engine.time.DateTimeUtils;");
+                "import io.deephaven.time.DateTime;",
+                "import io.deephaven.vector.ObjectVectorDirect;",
+                "import io.deephaven.time.DateTimeUtils;");
         lines = insertRegion(lines, "Extensions",
                 Arrays.asList(
                         "    public DateTime getAsDate(long i) {",

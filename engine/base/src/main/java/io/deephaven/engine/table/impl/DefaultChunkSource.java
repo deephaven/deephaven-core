@@ -4,18 +4,18 @@
 
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.Chunk;
-import io.deephaven.engine.chunk.ChunkType;
-import io.deephaven.engine.chunk.WritableChunk;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.ChunkType;
+import io.deephaven.chunk.WritableChunk;
 import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.util.annotations.FinalDefault;
 import org.jetbrains.annotations.NotNull;
 
-public interface DefaultChunkSource<ATTR extends Attributes.Any> extends ChunkSource<ATTR> {
+public interface DefaultChunkSource<ATTR extends Any> extends ChunkSource<ATTR> {
 
     @Override
     default GetContext makeGetContext(final int chunkCapacity, final SharedContext sharedContext) {
@@ -46,7 +46,7 @@ public interface DefaultChunkSource<ATTR extends Attributes.Any> extends ChunkSo
         return chunk;
     }
 
-    interface WithPrev<ATTR extends Attributes.Any> extends DefaultChunkSource<ATTR>, ChunkSource.WithPrev<ATTR> {
+    interface WithPrev<ATTR extends Any> extends DefaultChunkSource<ATTR>, ChunkSource.WithPrev<ATTR> {
 
         @Override
         default Chunk<? extends ATTR> getPrevChunk(@NotNull final GetContext context,
@@ -122,7 +122,7 @@ public interface DefaultChunkSource<ATTR extends Attributes.Any> extends ChunkSo
      * An alternative set of defaults which may typically be used by {@link ChunkSource}s which support a get method
      * which only works for contiguous ranges. They should just implement {@link #getChunk(GetContext, long, long)}.
      */
-    interface SupportsContiguousGet<ATTR extends Attributes.Any> extends DefaultChunkSource<ATTR> {
+    interface SupportsContiguousGet<ATTR extends Any> extends DefaultChunkSource<ATTR> {
         @Override
         default Chunk<? extends ATTR> getChunk(@NotNull final GetContext context,
                 @NotNull final RowSequence rowSequence) {

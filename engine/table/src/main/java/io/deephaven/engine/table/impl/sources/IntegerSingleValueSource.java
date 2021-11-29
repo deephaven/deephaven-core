@@ -7,14 +7,15 @@
 
 package io.deephaven.engine.table.impl.sources;
 
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
 import io.deephaven.engine.updategraph.LogicalClock;
+import io.deephaven.rowset.chunkattributes.RowKeys;
 import io.deephaven.util.QueryConstants;
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.IntChunk;
-import io.deephaven.engine.chunk.Chunk;
-import io.deephaven.engine.chunk.LongChunk;
+import io.deephaven.chunk.IntChunk;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.LongChunk;
 import io.deephaven.engine.rowset.RowSequence;
 import org.jetbrains.annotations.NotNull;
 
@@ -91,22 +92,22 @@ public class IntegerSingleValueSource extends SingleValueColumnSource<Integer> i
     }
 
     @Override
-    public final void fillFromChunk(@NotNull FillFromContext context, @NotNull Chunk<? extends Attributes.Values> src, @NotNull RowSequence rowSequence) {
+    public final void fillFromChunk(@NotNull FillFromContext context, @NotNull Chunk<? extends Values> src, @NotNull RowSequence rowSequence) {
         if (rowSequence.size() == 0) {
             return;
         }
         // We can only hold one value anyway, so arbitrarily take the first value in the chunk and ignore the rest.
-        final IntChunk<? extends Attributes.Values> chunk = src.asIntChunk();
+        final IntChunk<? extends Values> chunk = src.asIntChunk();
         set(chunk.get(0));
     }
 
     @Override
-    public void fillFromChunkUnordered(@NotNull FillFromContext context, @NotNull Chunk<? extends Attributes.Values> src, @NotNull LongChunk<Attributes.RowKeys> keys) {
+    public void fillFromChunkUnordered(@NotNull FillFromContext context, @NotNull Chunk<? extends Values> src, @NotNull LongChunk<RowKeys> keys) {
         if (keys.size() == 0) {
             return;
         }
         // We can only hold one value anyway, so arbitrarily take the first value in the chunk and ignore the rest.
-        final IntChunk<? extends Attributes.Values> chunk = src.asIntChunk();
+        final IntChunk<? extends Values> chunk = src.asIntChunk();
         set(chunk.get(0));
     }
 }

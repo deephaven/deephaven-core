@@ -1,6 +1,7 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.verify.Require;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.exceptions.UncheckedTableException;
 import io.deephaven.engine.rowset.*;
@@ -9,9 +10,8 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.table.impl.select.WhereFilter;
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.WritableChunk;
-import io.deephaven.engine.chunk.WritableObjectChunk;
+import io.deephaven.chunk.WritableChunk;
+import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.util.SafeCloseableList;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.jetbrains.annotations.NotNull;
@@ -292,7 +292,7 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
 
         @Override
         public void fillChunk(@NotNull FillContext context,
-                @NotNull WritableChunk<? super Attributes.Values> destination, @NotNull RowSequence rowSequence) {
+                              @NotNull WritableChunk<? super Values> destination, @NotNull RowSequence rowSequence) {
             try (final RowSet keysToCheck = rowSequence.asRowSet();
                     final RowSet intersection = keysToCheck.intersect(source)) {
                 fillChunkInternal(keysToCheck, intersection, rowSequence.intSize(), destination);
@@ -301,7 +301,7 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
 
         @Override
         public void fillPrevChunk(@NotNull FillContext context,
-                @NotNull WritableChunk<? super Attributes.Values> destination, @NotNull RowSequence rowSequence) {
+                                  @NotNull WritableChunk<? super Values> destination, @NotNull RowSequence rowSequence) {
             try (final RowSet keysToCheck = rowSequence.asRowSet();
                  final RowSet sourcePrev = source.copyPrev();
                  final RowSet intersection = keysToCheck.intersect(sourcePrev)) {
@@ -318,8 +318,8 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
          * @param destination the destination chunk
          */
         private void fillChunkInternal(RowSet keysToCheck, RowSet intersection, int RowSequenceSize,
-                @NotNull WritableChunk<? super Attributes.Values> destination) {
-            final WritableObjectChunk<Boolean, ? super Attributes.Values> writeable =
+                @NotNull WritableChunk<? super Values> destination) {
+            final WritableObjectChunk<Boolean, ? super Values> writeable =
                     destination.asWritableObjectChunk();
             writeable.setSize(RowSequenceSize);
             if (intersection.isEmpty()) {

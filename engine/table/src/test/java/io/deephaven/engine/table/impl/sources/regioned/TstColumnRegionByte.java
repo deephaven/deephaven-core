@@ -4,10 +4,10 @@
 
 package io.deephaven.engine.table.impl.sources.regioned;
 
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.util.QueryConstants;
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.WritableByteChunk;
-import io.deephaven.engine.chunk.WritableChunk;
+import io.deephaven.chunk.WritableByteChunk;
+import io.deephaven.chunk.WritableChunk;
 import io.deephaven.engine.page.Page;
 import io.deephaven.engine.rowset.RowSequence;
 import junit.framework.TestCase;
@@ -23,7 +23,7 @@ import static org.junit.Assert.assertArrayEquals;
 @SuppressWarnings({"AutoBoxing", "JUnit4AnnotatedMethodInJUnit3TestCase"})
 public abstract class TstColumnRegionByte {
 
-    static class Identity implements ColumnRegionByte<Attributes.Values>, Page.WithDefaults<Attributes.Values> {
+    static class Identity implements ColumnRegionByte<Values>, Page.WithDefaults<Values> {
 
         @Override
         public long mask() {
@@ -45,8 +45,8 @@ public abstract class TstColumnRegionByte {
         }
 
         @Override
-        public void fillChunkAppend(@NotNull FillContext context, @NotNull WritableChunk<? super Attributes.Values> destination, @NotNull RowSequence rowSequence) {
-            WritableByteChunk<? super Attributes.Values> charDestination = destination.asWritableByteChunk();
+        public void fillChunkAppend(@NotNull FillContext context, @NotNull WritableChunk<? super Values> destination, @NotNull RowSequence rowSequence) {
+            WritableByteChunk<? super Values> charDestination = destination.asWritableByteChunk();
             int size = destination.size();
             int length = (int) rowSequence.size();
 
@@ -61,7 +61,7 @@ public abstract class TstColumnRegionByte {
         }
     }
 
-    public static class TestNull extends TstColumnRegionPrimative<ColumnRegionByte<Attributes.Values>> {
+    public static class TestNull extends TstColumnRegionPrimative<ColumnRegionByte<Values>> {
 
         @Override
         public void setUp() throws Exception {
@@ -91,7 +91,7 @@ public abstract class TstColumnRegionByte {
         }
     }
 
-    public static class TestDeferred extends TstColumnRegionPrimative.Deferred<ColumnRegionByte<Attributes.Values>> {
+    public static class TestDeferred extends TstColumnRegionPrimative.Deferred<ColumnRegionByte<Values>> {
 
         @Override
         public void setUp() throws Exception {

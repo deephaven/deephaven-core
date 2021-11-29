@@ -1,7 +1,7 @@
 {
- "className": "io.deephaven.engine.chunk.Attributes$UnorderedRowKeys",
+ "className": "io.deephaven.chunk.Attributes$UnorderedRowKeys",
  "methods": {},
- "path": "io.deephaven.engine.chunk.Attributes.UnorderedRowKeys",
+ "path": "io.deephaven.chunk.Attributes.UnorderedRowKeys",
  "text": "The chunk contains row keys, which may be in any order (and contain duplicates).",
  "typeName": "interface"
 }

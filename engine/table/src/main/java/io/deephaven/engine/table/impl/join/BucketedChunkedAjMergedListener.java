@@ -1,6 +1,8 @@
 package io.deephaven.engine.table.impl.join;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.attributes.Any;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ModifiedColumnSet;
@@ -8,20 +10,21 @@ import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.SortingOrder;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.*;
-import io.deephaven.engine.chunk.util.hashing.ChunkEquals;
+import io.deephaven.chunk.util.hashing.ChunkEquals;
 import io.deephaven.engine.table.impl.sort.LongSortKernel;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.sources.LongArraySource;
 import io.deephaven.engine.table.impl.sources.ObjectArraySource;
-import io.deephaven.engine.chunk.*;
-import io.deephaven.engine.chunk.sized.SizedChunk;
-import io.deephaven.engine.chunk.sized.SizedLongChunk;
+import io.deephaven.chunk.*;
+import io.deephaven.chunk.sized.SizedChunk;
+import io.deephaven.chunk.sized.SizedLongChunk;
 import io.deephaven.engine.table.impl.ssa.ChunkSsaStamp;
 import io.deephaven.engine.table.impl.ssa.SegmentedSortedArray;
 import io.deephaven.engine.table.impl.ssa.SsaSsaStamp;
 import io.deephaven.engine.table.impl.util.*;
 import io.deephaven.engine.table.impl.util.compact.CompactKernel;
 import io.deephaven.engine.table.impl.util.compact.LongCompactKernel;
+import io.deephaven.rowset.chunkattributes.RowKeys;
 import io.deephaven.util.SafeCloseable;
 import org.apache.commons.lang3.mutable.MutableObject;
 
@@ -29,7 +32,6 @@ import java.util.Arrays;
 import java.util.Collections;
 
 import static io.deephaven.engine.table.impl.RightIncrementalChunkedAsOfJoinStateManager.*;
-import static io.deephaven.engine.chunk.Attributes.*;
 
 public class BucketedChunkedAjMergedListener extends MergedListener {
     private final JoinListenerRecorder leftRecorder;

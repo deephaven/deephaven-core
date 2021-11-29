@@ -2,9 +2,9 @@ package io.deephaven.engine.table.impl.select.formula;
 
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.chunk.*;
-import io.deephaven.engine.chunk.Attributes.OrderedRowKeys;
-import io.deephaven.engine.chunk.Attributes.Values;
+import io.deephaven.chunk.*;
+import io.deephaven.rowset.chunkattributes.OrderedRowKeys;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSequence;
@@ -144,63 +144,63 @@ public class FormulaKernelAdapter extends io.deephaven.engine.table.impl.select.
     }
 
     private Object handleGetObject(final long k, boolean usePrev) {
-        try (final WritableObjectChunk<Object, Attributes.Values> __dest = WritableObjectChunk.makeWritableChunk(1)) {
+        try (final WritableObjectChunk<Object, Values> __dest = WritableObjectChunk.makeWritableChunk(1)) {
             commonGetLogic(__dest, k, usePrev);
             return __dest.get(0);
         }
     }
 
     private Boolean handleGetBoolean(final long k, boolean usePrev) {
-        try (final WritableObjectChunk<Boolean, Attributes.Values> __dest = WritableObjectChunk.makeWritableChunk(1)) {
+        try (final WritableObjectChunk<Boolean, Values> __dest = WritableObjectChunk.makeWritableChunk(1)) {
             commonGetLogic(__dest, k, usePrev);
             return __dest.get(0);
         }
     }
 
     private byte handleGetByte(final long k, boolean usePrev) {
-        try (final WritableByteChunk<Attributes.Values> __dest = WritableByteChunk.makeWritableChunk(1)) {
+        try (final WritableByteChunk<Values> __dest = WritableByteChunk.makeWritableChunk(1)) {
             commonGetLogic(__dest, k, usePrev);
             return __dest.get(0);
         }
     }
 
     private char handleGetChar(final long k, boolean usePrev) {
-        try (final WritableCharChunk<Attributes.Values> __dest = WritableCharChunk.makeWritableChunk(1)) {
+        try (final WritableCharChunk<Values> __dest = WritableCharChunk.makeWritableChunk(1)) {
             commonGetLogic(__dest, k, usePrev);
             return __dest.get(0);
         }
     }
 
     private double handleGetDouble(final long k, boolean usePrev) {
-        try (final WritableDoubleChunk<Attributes.Values> __dest = WritableDoubleChunk.makeWritableChunk(1)) {
+        try (final WritableDoubleChunk<Values> __dest = WritableDoubleChunk.makeWritableChunk(1)) {
             commonGetLogic(__dest, k, usePrev);
             return __dest.get(0);
         }
     }
 
     private float handleGetFloat(final long k, boolean usePrev) {
-        try (final WritableFloatChunk<Attributes.Values> __dest = WritableFloatChunk.makeWritableChunk(1)) {
+        try (final WritableFloatChunk<Values> __dest = WritableFloatChunk.makeWritableChunk(1)) {
             commonGetLogic(__dest, k, usePrev);
             return __dest.get(0);
         }
     }
 
     private int handleGetInt(final long k, boolean usePrev) {
-        try (final WritableIntChunk<Attributes.Values> __dest = WritableIntChunk.makeWritableChunk(1)) {
+        try (final WritableIntChunk<Values> __dest = WritableIntChunk.makeWritableChunk(1)) {
             commonGetLogic(__dest, k, usePrev);
             return __dest.get(0);
         }
     }
 
     private long handleGetLong(final long k, boolean usePrev) {
-        try (final WritableLongChunk<Attributes.Values> __dest = WritableLongChunk.makeWritableChunk(1)) {
+        try (final WritableLongChunk<Values> __dest = WritableLongChunk.makeWritableChunk(1)) {
             commonGetLogic(__dest, k, usePrev);
             return __dest.get(0);
         }
     }
 
     private short handleGetShort(final long k, boolean usePrev) {
-        try (final WritableShortChunk<Attributes.Values> __dest = WritableShortChunk.makeWritableChunk(1)) {
+        try (final WritableShortChunk<Values> __dest = WritableShortChunk.makeWritableChunk(1)) {
             commonGetLogic(__dest, k, usePrev);
             return __dest.get(0);
         }
@@ -243,7 +243,7 @@ public class FormulaKernelAdapter extends io.deephaven.engine.table.impl.select.
             return;
         }
         final AdapterContext __typedContext = (AdapterContext) __context;
-        final Chunk<? extends Attributes.Values>[] sourceChunks = new Chunk[sourceDescriptor.sources.length];
+        final Chunk<? extends Values>[] sourceChunks = new Chunk[sourceDescriptor.sources.length];
         try (final RowSequence flat = RowSetFactory.flat(__rowSequence.size())) {
             for (int ii = 0; ii < sourceDescriptor.sources.length; ++ii) {
                 final String name = sourceDescriptor.sources[ii];
@@ -298,7 +298,7 @@ public class FormulaKernelAdapter extends io.deephaven.engine.table.impl.select.
 
     @Override
     public AdapterContext makeFillContext(final int chunkCapacity) {
-        WritableIntChunk<Attributes.OrderedRowKeys> iChunk = null;
+        WritableIntChunk<OrderedRowKeys> iChunk = null;
         WritableLongChunk<OrderedRowKeys> iiChunk = null;
         WritableLongChunk<OrderedRowKeys> kChunk = null;
 
@@ -335,7 +335,7 @@ public class FormulaKernelAdapter extends io.deephaven.engine.table.impl.select.
     private static class AdapterContext implements FillContext {
         final WritableIntChunk<OrderedRowKeys> iChunk;
         final WritableLongChunk<OrderedRowKeys> iiChunk;
-        final WritableLongChunk<Attributes.OrderedRowKeys> kChunk;
+        final WritableLongChunk<OrderedRowKeys> kChunk;
         final ColumnSource.GetContext[] sourceContexts;
         final FillContext kernelContext;
 

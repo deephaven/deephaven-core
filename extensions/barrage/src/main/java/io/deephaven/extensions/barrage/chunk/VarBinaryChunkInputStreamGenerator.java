@@ -8,14 +8,15 @@ import com.google.common.base.Charsets;
 import com.google.common.io.LittleEndianDataOutputStream;
 import gnu.trove.iterator.TLongIterator;
 import io.deephaven.UncheckedDeephavenException;
+import io.deephaven.chunk.attributes.ChunkPositions;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.IntChunk;
-import io.deephaven.engine.chunk.ObjectChunk;
-import io.deephaven.engine.chunk.WritableIntChunk;
-import io.deephaven.engine.chunk.WritableLongChunk;
-import io.deephaven.engine.chunk.WritableObjectChunk;
-import io.deephaven.engine.chunk.util.pools.PoolableChunk;
+import io.deephaven.chunk.IntChunk;
+import io.deephaven.chunk.ObjectChunk;
+import io.deephaven.chunk.WritableIntChunk;
+import io.deephaven.chunk.WritableLongChunk;
+import io.deephaven.chunk.WritableObjectChunk;
+import io.deephaven.chunk.util.pools.PoolableChunk;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.util.BarrageProtoUtil;
@@ -28,16 +29,16 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Iterator;
 
-public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamGenerator<ObjectChunk<T, Attributes.Values>> {
+public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamGenerator<ObjectChunk<T, Values>> {
     private static final String DEBUG_NAME = "ObjectChunkInputStream Serialization";
 
     private final Class<T> type;
     private final Appender<T> appendItem;
 
     private byte[] bytes;
-    private WritableIntChunk<Attributes.ChunkPositions> offsets;
+    private WritableIntChunk<ChunkPositions> offsets;
     private byte[] stringBytes;
-    private WritableIntChunk<Attributes.ChunkPositions> stringOffsets;
+    private WritableIntChunk<ChunkPositions> stringOffsets;
 
     public interface Appender<T> {
         void append(OutputStream out, T item) throws IOException;
@@ -47,7 +48,7 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
         T constructFrom(final byte[] buf, int offset, int length) throws IOException;
     }
 
-    VarBinaryChunkInputStreamGenerator(final Class<T> type, final ObjectChunk<T, Attributes.Values> chunk,
+    VarBinaryChunkInputStreamGenerator(final Class<T> type, final ObjectChunk<T, Values> chunk,
                                        final Appender<T> appendItem) {
         super(chunk, 0);
         this.type = type;
@@ -123,11 +124,11 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
     private class ObjectChunkInputStream extends BaseChunkInputStream {
         private int cachedSize = -1;
         private final byte[] myBytes;
-        private final IntChunk<Attributes.ChunkPositions> myOffsets;
+        private final IntChunk<ChunkPositions> myOffsets;
 
         private ObjectChunkInputStream(
                 final BarrageSubscriptionOptions options,
-                final IntChunk<Attributes.ChunkPositions> myOffsets,
+                final IntChunk<ChunkPositions> myOffsets,
                 final byte[] myBytes, final RowSet subset) {
             super(chunk, options, subset);
             this.myBytes = myBytes;
@@ -295,7 +296,7 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
         }
     }
 
-    static <T> ObjectChunk<T, Attributes.Values> extractChunkFromInputStream(
+    static <T> ObjectChunk<T, Values> extractChunkFromInputStream(
             final DataInput is,
             final Iterator<FieldNodeInfo> fieldNodeIter,
             final TLongIterator bufferInfoIter,
@@ -305,15 +306,15 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
         final long offsetsBuffer = bufferInfoIter.next();
         final long payloadBuffer = bufferInfoIter.next();
 
-        final WritableObjectChunk<T, Attributes.Values> chunk = WritableObjectChunk.makeWritableChunk(nodeInfo.numElements);
+        final WritableObjectChunk<T, Values> chunk = WritableObjectChunk.makeWritableChunk(nodeInfo.numElements);
 
         if (nodeInfo.numElements == 0) {
             return chunk;
         }
 
         final int numValidityLongs = (nodeInfo.numElements + 63) / 64;
-        try (final WritableLongChunk<Attributes.Values> isValid = WritableLongChunk.makeWritableChunk(numValidityLongs);
-             final WritableIntChunk<Attributes.Values> offsets = WritableIntChunk.makeWritableChunk(nodeInfo.numElements + 1)) {
+        try (final WritableLongChunk<Values> isValid = WritableLongChunk.makeWritableChunk(numValidityLongs);
+             final WritableIntChunk<Values> offsets = WritableIntChunk.makeWritableChunk(nodeInfo.numElements + 1)) {
             // Read validity buffer:
             int jj = 0;
             for (; jj < Math.min(numValidityLongs, validityBuffer / 8); ++jj) {

@@ -4,11 +4,12 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
-import io.deephaven.engine.time.DateTime;
+import io.deephaven.rowset.chunkattributes.OrderedRowKeys;
+import io.deephaven.time.DateTime;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
-import io.deephaven.engine.chunk.*;
-import io.deephaven.engine.chunk.Attributes.Values;
+import io.deephaven.chunk.*;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.util.QueryConstants;
@@ -73,8 +74,8 @@ public class DateTimeRangeFilter extends LongRangeFilter {
 
     private class DateTimeLongChunkFilterAdapter implements ChunkFilter {
         @Override
-        public void filter(Chunk<? extends Values> values, LongChunk<Attributes.OrderedRowKeys> keys,
-                WritableLongChunk<Attributes.OrderedRowKeys> results) {
+        public void filter(Chunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
+                WritableLongChunk<OrderedRowKeys> results) {
             try (final WritableLongChunk<Values> writableLongChunk =
                     WritableLongChunk.makeWritableChunk(values.size())) {
 

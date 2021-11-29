@@ -13,12 +13,12 @@ import static io.deephaven.replication.ReplicatePrimitiveCode.floatToAllFloating
 
 public class ReplicatePrimitiveLibTests {
     public static void main(String[] args) throws IOException {
-        charToAllButBoolean("engine/function/src/test/java/io/deephaven/engine/function/TestCharPrimitives.java");
+        charToAllButBoolean("engine/function/src/test/java/io/deephaven/function/TestCharPrimitives.java");
         shortToAllIntegralTypes(
-                "engine/function/src/test/java/io/deephaven/engine/function/TestShortNumericPrimitives.java");
+                "engine/function/src/test/java/io/deephaven/function/TestShortNumericPrimitives.java");
         floatToAllFloatingPoints(
-                "engine/function/src/test/java/io/deephaven/engine/function/TestFloatNumericPrimitives.java");
+                "engine/function/src/test/java/io/deephaven/function/TestFloatNumericPrimitives.java");
         floatToAllFloatingPoints(
-                "engine/function/src/test/java/io/deephaven/engine/function/TestFloatFpPrimitives.java");
+                "engine/function/src/test/java/io/deephaven/function/TestFloatFpPrimitives.java");
     }
 }

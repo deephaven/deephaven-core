@@ -6,10 +6,10 @@ package io.deephaven.engine.table.impl.sources;
 
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.select.Formula;
-import io.deephaven.engine.chunk.Attributes.Values;
-import io.deephaven.engine.chunk.Chunk;
+import io.deephaven.chunk.attributes.Values;
+import io.deephaven.chunk.Chunk;
 import io.deephaven.engine.table.SharedContext;
-import io.deephaven.engine.chunk.WritableChunk;
+import io.deephaven.chunk.WritableChunk;
 import io.deephaven.engine.rowset.RowSequence;
 import org.jetbrains.annotations.NotNull;
 

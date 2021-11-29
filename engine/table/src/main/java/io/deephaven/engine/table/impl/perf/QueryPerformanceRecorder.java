@@ -9,7 +9,7 @@ import io.deephaven.base.Procedure;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.engine.chunk.util.pools.ChunkPoolInstrumentation;
+import io.deephaven.chunk.util.pools.ChunkPoolInstrumentation;
 import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.util.TableTools;
@@ -321,7 +321,7 @@ public class QueryPerformanceRecorder implements Serializable {
 
     /**
      * Install {@link QueryPerformanceRecorder#recordPoolAllocation(java.util.function.Supplier)} as the allocation
-     * recorder for {@link io.deephaven.engine.chunk.util.pools.ChunkPool chunk pools}.
+     * recorder for {@link io.deephaven.chunk.util.pools.ChunkPool chunk pools}.
      */
     public static void installPoolAllocationRecorder() {
         ChunkPoolInstrumentation.setAllocationRecorder(QueryPerformanceRecorder::recordPoolAllocation);

@@ -1,13 +1,13 @@
 package io.deephaven.benchmark.engine;
 
+import io.deephaven.chunk.attributes.Values;
+import io.deephaven.chunk.WritableChunk;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.impl.select.IncrementalReleaseFilter;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.table.SharedContext;
-import io.deephaven.engine.chunk.WritableChunk;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.benchmarking.BenchmarkTools;
 import io.deephaven.benchmarking.runner.TableBenchmarkState;
@@ -24,7 +24,7 @@ import java.io.IOException;
 public abstract class RedirectionBenchBase {
 
     private Table inputTable;
-    private WritableChunk<Attributes.Values> chunk;
+    private WritableChunk<Values> chunk;
 
     protected TableBenchmarkState state;
 
@@ -40,14 +40,14 @@ public abstract class RedirectionBenchBase {
         public final IncrementalReleaseFilter incrementalReleaseFilter;
         public final int steps;
         public final String[] fillCols;
-        public final WritableChunk<Attributes.Values> chunk;
+        public final WritableChunk<Values> chunk;
 
         public QueryData(
                 final Table live,
                 final IncrementalReleaseFilter incrementalReleaseFilter,
                 final int steps,
                 final String[] fillCol,
-                final WritableChunk<Attributes.Values> chunk) {
+                final WritableChunk<Values> chunk) {
             this.live = live;
             this.incrementalReleaseFilter = incrementalReleaseFilter;
             this.steps = steps;

@@ -9,7 +9,7 @@ import io.deephaven.engine.table.impl.locations.ColumnLocation;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.TableLocationKey;
 import io.deephaven.engine.table.impl.ColumnSourceGetDefaults;
-import io.deephaven.engine.chunk.Attributes.Values;
+import io.deephaven.chunk.attributes.Values;
 import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.util.type.TypeUtils.unbox;

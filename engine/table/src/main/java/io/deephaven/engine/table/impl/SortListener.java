@@ -12,14 +12,13 @@ import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.datastructures.hash.HashMapK4V4;
 import io.deephaven.engine.table.impl.sort.LongSortKernel;
-import io.deephaven.engine.chunk.Attributes.OrderedRowKeys;
-import io.deephaven.engine.chunk.ChunkType;
-import io.deephaven.engine.chunk.LongChunk;
-import io.deephaven.engine.chunk.WritableLongChunk;
+import io.deephaven.rowset.chunkattributes.OrderedRowKeys;
+import io.deephaven.chunk.ChunkType;
+import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.engine.table.impl.util.*;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableList;
@@ -191,7 +190,7 @@ public class SortListener extends BaseTable.ListenerImpl {
             if (numRemovedKeys > 0) {
                 fillArray(removedOutputKeys, upstream.removed(), 0, reverseLookup::remove);
                 Arrays.sort(removedOutputKeys, 0, numRemovedKeys);
-                final LongChunk<Attributes.OrderedRowKeys> keyChunk =
+                final LongChunk<OrderedRowKeys> keyChunk =
                         LongChunk.chunkWrap(removedOutputKeys, 0, numRemovedKeys);
                 try (final RowSequence wrappedKeyChunk = RowSequenceFactory.wrapRowKeysChunkAsRowSequence(keyChunk)) {
                     sortMapping.removeAll(wrappedKeyChunk);
@@ -261,7 +260,7 @@ public class SortListener extends BaseTable.ListenerImpl {
             // otherwise the algorithm will not be able to break ties by upstream keyspace.
             if (numRemovedKeys > removedSize) {
                 Arrays.sort(removedOutputKeys, removedSize, numRemovedKeys);
-                final LongChunk<Attributes.OrderedRowKeys> keyChunk =
+                final LongChunk<OrderedRowKeys> keyChunk =
                         LongChunk.chunkWrap(removedOutputKeys, removedSize, numRemovedKeys - removedSize);
                 try (final RowSequence wrappedKeyChunk = RowSequenceFactory.wrapRowKeysChunkAsRowSequence(keyChunk)) {
                     sortMapping.removeAll(wrappedKeyChunk);

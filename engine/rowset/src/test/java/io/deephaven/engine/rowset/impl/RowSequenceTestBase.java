@@ -5,12 +5,12 @@
 package io.deephaven.engine.rowset.impl;
 
 import io.deephaven.engine.rowset.*;
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.Attributes.Any;
-import io.deephaven.engine.chunk.Attributes.OrderedRowKeyRanges;
-import io.deephaven.engine.chunk.LongChunk;
-import io.deephaven.engine.chunk.WritableLongChunk;
-import io.deephaven.engine.chunk.util.pools.ChunkPoolReleaseTracking;
+import io.deephaven.chunk.attributes.Any;
+import io.deephaven.rowset.chunkattributes.OrderedRowKeyRanges;
+import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.WritableLongChunk;
+import io.deephaven.chunk.util.pools.ChunkPoolReleaseTracking;
+import io.deephaven.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableList;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -272,12 +272,12 @@ public abstract class RowSequenceTestBase {
     public void testFillIndices() {
         for (long[] ranges : new long[][] {ranges0, ranges1, ranges2}) {
             final long[] indices = indicesFromRanges(shift(ranges, offset0));
-            try (final WritableLongChunk<Attributes.OrderedRowKeys> chunk =
+            try (final WritableLongChunk<OrderedRowKeys> chunk =
                     WritableLongChunk.makeWritableChunk(indices.length)) {
                 try (final RowSequence OK = create(indices)) {
                     OK.fillRowKeyChunk(chunk);
                 }
-                final LongChunk<Attributes.OrderedRowKeys> expectedChunk =
+                final LongChunk<OrderedRowKeys> expectedChunk =
                         LongChunk.chunkWrap(indices, 0, indices.length);
                 assertChunksEqual(expectedChunk, chunk);
             }
@@ -504,7 +504,7 @@ public abstract class RowSequenceTestBase {
 
     protected void assertContentsByIndices(
             final String msg, final long[] expected, final RowSequence rowSequence) {
-        final LongChunk<Attributes.OrderedRowKeys> expectedIndices = LongChunk.chunkWrap(expected);
+        final LongChunk<OrderedRowKeys> expectedIndices = LongChunk.chunkWrap(expected);
         try (final WritableLongChunk<OrderedRowKeyRanges> expectedRanges =
                 RowKeyChunkUtils.convertToOrderedKeyRanges(expectedIndices)) {
 
@@ -525,7 +525,7 @@ public abstract class RowSequenceTestBase {
             }));
 
             // Check fillKeyIndices
-            try (final WritableLongChunk<Attributes.OrderedRowKeys> writableOKIndices =
+            try (final WritableLongChunk<OrderedRowKeys> writableOKIndices =
                     WritableLongChunk.makeWritableChunk(expectedIndices.size())) {
                 rowSequence.fillRowKeyChunk(writableOKIndices);
                 assertChunksEqual(expectedIndices, writableOKIndices);

@@ -1,9 +1,10 @@
 package io.deephaven.engine.table.impl.sources.deltaaware;
 
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ChunkSink;
-import io.deephaven.engine.chunk.*;
+import io.deephaven.chunk.*;
 
 public class ChunkAdapter<T> {
     public static <T> ChunkAdapter<T> create(Class type, final ChunkSink baseline,
@@ -41,7 +42,7 @@ public class ChunkAdapter<T> {
     /**
      * The allocated chunk (of the proper target type) that we use as a staging area for our values.
      */
-    private final WritableChunk<Attributes.Values> baseChunk;
+    private final WritableChunk<Values> baseChunk;
 
     ChunkAdapter(final ChunkSink baseline, final ChunkSink delta) {
         this.baseline = baseline;

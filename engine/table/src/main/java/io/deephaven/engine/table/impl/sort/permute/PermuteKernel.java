@@ -1,12 +1,12 @@
 package io.deephaven.engine.table.impl.sort.permute;
 
-import io.deephaven.engine.chunk.Chunk;
-import io.deephaven.engine.chunk.ChunkType;
-import io.deephaven.engine.chunk.IntChunk;
-import io.deephaven.engine.chunk.WritableChunk;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.ChunkType;
+import io.deephaven.chunk.IntChunk;
+import io.deephaven.chunk.WritableChunk;
 
-import static io.deephaven.engine.chunk.Attributes.Any;
-import static io.deephaven.engine.chunk.Attributes.ChunkPositions;
+import io.deephaven.chunk.attributes.Any;
+import io.deephaven.chunk.attributes.ChunkPositions;
 
 public interface PermuteKernel {
     static PermuteKernel makePermuteKernel(ChunkType chunkType) {

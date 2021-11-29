@@ -1,13 +1,13 @@
 package io.deephaven.engine.rowset.impl.rsp;
 
-import static io.deephaven.engine.chunk.Attributes.OrderedRowKeys;
+import io.deephaven.rowset.chunkattributes.OrderedRowKeyRanges;
+import io.deephaven.rowset.chunkattributes.OrderedRowKeys;
 
 import io.deephaven.engine.rowset.impl.*;
 import io.deephaven.engine.testutil.Shuffle;
 import io.deephaven.util.datastructures.LongAbortableConsumer;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.WritableLongChunk;
+import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.test.types.OutOfBandTest;
 import gnu.trove.set.TLongSet;
 import gnu.trove.set.hash.TLongHashSet;
@@ -3226,7 +3226,7 @@ public class RspBitmapTest {
         for (int i = 0; i < steps; ++i) {
             final RspBitmap rb =
                     populateRandom(pfxMsg, r, count, 1, 10 * count, clusterWidth, jumpOneIn);
-            final WritableLongChunk<Attributes.OrderedRowKeyRanges> chunk =
+            final WritableLongChunk<OrderedRowKeyRanges> chunk =
                     WritableLongChunk.makeWritableChunk(2 * count);
             final RspRangeBatchIterator rbit = rb.getRangeBatchIterator(0, rb.getCardinality());
             final int ret = rbit.fillRangeChunk(chunk, 0);
@@ -3254,7 +3254,7 @@ public class RspBitmapTest {
         rb.appendRange((k + 1) * BLOCK_SIZE, (k + 1) * BLOCK_SIZE + BLOCK_LAST);
         final long max;
         rb.append(max = (k + 2) * BLOCK_SIZE);
-        final WritableLongChunk<Attributes.OrderedRowKeyRanges> chunk = WritableLongChunk.makeWritableChunk(2);
+        final WritableLongChunk<OrderedRowKeyRanges> chunk = WritableLongChunk.makeWritableChunk(2);
         final RspRangeBatchIterator rit = rb.getRangeBatchIterator(0, rb.getCardinality());
         final int r = rit.fillRangeChunk(chunk, 0);
         assertEquals(1, r);
@@ -3271,7 +3271,7 @@ public class RspBitmapTest {
         final RspRangeBatchIterator rit = rb.getRangeBatchIterator(0, rb.getCardinality());
         final RspRangeIterator it = rb.getRangeIterator();
         final int sz = 8;
-        final WritableLongChunk<Attributes.OrderedRowKeyRanges> chunk = WritableLongChunk.makeWritableChunk(sz);
+        final WritableLongChunk<OrderedRowKeyRanges> chunk = WritableLongChunk.makeWritableChunk(sz);
         int batch = 0;
         int rangeRank = 0;
         while (rit.hasNext()) {
@@ -4325,7 +4325,7 @@ public class RspBitmapTest {
     public void testAddValuesUnsafeRegression() {
         RspBitmap rb = new RspBitmap();
         rb = rb.add(3);
-        final WritableLongChunk<Attributes.OrderedRowKeys> chunk = WritableLongChunk.makeWritableChunk(4);
+        final WritableLongChunk<OrderedRowKeys> chunk = WritableLongChunk.makeWritableChunk(4);
         chunk.setSize(0);
         chunk.add(4);
         chunk.add(BLOCK_SIZE + 10);

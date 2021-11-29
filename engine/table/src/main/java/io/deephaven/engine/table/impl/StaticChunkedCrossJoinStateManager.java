@@ -5,15 +5,20 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.verify.Require;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.chunk.*;
-import io.deephaven.engine.chunk.Attributes.*;
+import io.deephaven.chunk.*;
+import io.deephaven.chunk.attributes.Any;
+import io.deephaven.chunk.attributes.ChunkPositions;
+import io.deephaven.chunk.attributes.HashCodes;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
+import io.deephaven.rowset.chunkattributes.OrderedRowKeys;
+import io.deephaven.rowset.chunkattributes.RowKeys;
 import io.deephaven.util.QueryConstants;
-import io.deephaven.engine.chunk.util.hashing.*;
+import io.deephaven.chunk.util.hashing.*;
 // this is ugly to have twice, but we do need it twice for replication
 // @StateChunkIdentityName@ from \QObjectChunkIdentity\E
-import io.deephaven.engine.chunk.util.hashing.ObjectChunkIdentityEquals;
+import io.deephaven.chunk.util.hashing.ObjectChunkIdentityEquals;
 import io.deephaven.engine.table.impl.sort.permute.PermuteKernel;
 import io.deephaven.engine.table.impl.sort.timsort.LongIntTimsortKernel;
 import io.deephaven.engine.table.impl.sources.*;
@@ -372,7 +377,7 @@ class StaticChunkedCrossJoinStateManager
         final ColumnSource.FillContext overflowOverflowFillContext;
 
         // the chunk of hashcodes
-        final WritableIntChunk<HashCode> hashChunk;
+        final WritableIntChunk<HashCodes> hashChunk;
         // the chunk of positions within our table
         final WritableLongChunk<RowKeys> tableLocationsChunk;
 
@@ -1293,7 +1298,7 @@ class StaticChunkedCrossJoinStateManager
         }
     }
 
-    private void hashKeyChunks(WritableIntChunk<HashCode> hashChunk, Chunk<Values>[] sourceKeyChunks) {
+    private void hashKeyChunks(WritableIntChunk<HashCodes> hashChunk, Chunk<Values>[] sourceKeyChunks) {
         chunkHashers[0].hashInitial(sourceKeyChunks[0], hashChunk);
         for (int ii = 1; ii < sourceKeyChunks.length; ++ii) {
             chunkHashers[ii].hashUpdate(sourceKeyChunks[ii], hashChunk);
@@ -1324,7 +1329,7 @@ class StaticChunkedCrossJoinStateManager
         final ColumnSource.FillContext[] overflowContexts;
 
         // the chunk of hashcodes
-        final WritableIntChunk<HashCode> hashChunk;
+        final WritableIntChunk<HashCodes> hashChunk;
         // the chunk of positions within our table
         final WritableLongChunk<RowKeys> tableLocationsChunk;
 
@@ -1585,13 +1590,13 @@ class StaticChunkedCrossJoinStateManager
     }
     // endmixin decorationProbe
 
-    private void convertHashToTableLocations(WritableIntChunk<HashCode> hashChunk, WritableLongChunk<RowKeys> tablePositionsChunk) {
+    private void convertHashToTableLocations(WritableIntChunk<HashCodes> hashChunk, WritableLongChunk<RowKeys> tablePositionsChunk) {
         // mixin rehash
         // NOTE that this mixin section is a bit ugly, we are spanning the two functions so that we can avoid using tableHashPivot and having the unused pivotPoint parameter
         convertHashToTableLocations(hashChunk, tablePositionsChunk, tableHashPivot);
     }
 
-    private void convertHashToTableLocations(WritableIntChunk<HashCode> hashChunk, WritableLongChunk<RowKeys> tablePositionsChunk, int pivotPoint) {
+    private void convertHashToTableLocations(WritableIntChunk<HashCodes> hashChunk, WritableLongChunk<RowKeys> tablePositionsChunk, int pivotPoint) {
         // endmixin rehash
 
         // turn hash codes into indices within our table

@@ -1,6 +1,6 @@
 package io.deephaven.engine.table;
 
-import io.deephaven.engine.chunk.WritableChunk;
+import io.deephaven.chunk.WritableChunk;
 import io.deephaven.util.annotations.FinalDefault;
 
 public interface GetContextMaker {

@@ -1,17 +1,17 @@
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.MatchPair;
-import io.deephaven.engine.time.DateTime;
+import io.deephaven.time.DateTime;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
-import io.deephaven.engine.chunk.util.hashing.ToIntFunctor;
-import io.deephaven.engine.chunk.util.hashing.ToIntegerCast;
+import io.deephaven.chunk.util.hashing.ToIntFunctor;
+import io.deephaven.chunk.util.hashing.ToIntegerCast;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.sources.IntegerSparseArraySource;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.ChunkType;
+import io.deephaven.chunk.ChunkType;
 import io.deephaven.engine.table.impl.sources.regioned.SymbolTableSource;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.type.TypeUtils;
@@ -32,7 +32,7 @@ class BucketingContext implements SafeCloseable {
     final ColumnSource<?>[] rightSources;
     final ColumnSource<?>[] originalLeftSources;
 
-    ToIntFunctor<Attributes.Values> uniqueFunctor = null;
+    ToIntFunctor<Values> uniqueFunctor = null;
     boolean uniqueValues = false;
     long maximumUniqueValue = Integer.MAX_VALUE;
     long minimumUniqueValue = Integer.MIN_VALUE;

@@ -1,10 +1,10 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.table.ColumnDefinition;
-import io.deephaven.engine.vector.ObjectVector;
-import io.deephaven.engine.vector.Vector;
-import io.deephaven.engine.stringset.StringSet;
-import io.deephaven.engine.time.DateTime;
+import io.deephaven.vector.ObjectVector;
+import io.deephaven.vector.Vector;
+import io.deephaven.stringset.StringSet;
+import io.deephaven.time.DateTime;
 import io.deephaven.util.codec.CodecCache;
 import io.deephaven.util.codec.ExternalizableCodec;
 import io.deephaven.util.codec.ObjectCodec;

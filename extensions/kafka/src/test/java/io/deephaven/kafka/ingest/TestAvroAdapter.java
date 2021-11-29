@@ -1,10 +1,11 @@
 package io.deephaven.kafka.ingest;
 
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.time.DateTimeUtils;
-import io.deephaven.engine.chunk.*;
+import io.deephaven.time.DateTime;
+import io.deephaven.time.DateTimeUtils;
+import io.deephaven.chunk.*;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseableArray;
@@ -47,7 +48,7 @@ public class TestAvroAdapter {
         colMap.put("userid", "userid");
         colMap.put("pageid", "pageid");
 
-        try (final WritableObjectChunk<Object, Attributes.Values> inputValues =
+        try (final WritableObjectChunk<Object, Values> inputValues =
                 WritableObjectChunk.makeWritableChunk(1)) {
             inputValues.setSize(0);
             inputValues.add(genericRecord);
@@ -124,7 +125,7 @@ public class TestAvroAdapter {
             colMap.put(s, s);
         }
 
-        try (final WritableObjectChunk<Object, Attributes.Values> inputValues =
+        try (final WritableObjectChunk<Object, Values> inputValues =
                 WritableObjectChunk.makeWritableChunk(3)) {
             inputValues.setSize(0);
             inputValues.add(genericRecord1);

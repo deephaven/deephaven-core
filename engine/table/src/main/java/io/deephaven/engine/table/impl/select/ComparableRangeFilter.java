@@ -6,9 +6,9 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 import io.deephaven.util.compare.ObjectComparisons;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.chunk.*;
-import io.deephaven.engine.chunk.Attributes.OrderedRowKeys;
-import io.deephaven.engine.chunk.Attributes.Values;
+import io.deephaven.chunk.*;
+import io.deephaven.rowset.chunkattributes.OrderedRowKeys;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.util.annotations.TestUseOnly;
@@ -126,7 +126,7 @@ public class ComparableRangeFilter extends AbstractRangeFilter {
 
 
         @Override
-        public void filter(Chunk<? extends Values> values, LongChunk<Attributes.OrderedRowKeys> keys,
+        public void filter(Chunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
                 WritableLongChunk<OrderedRowKeys> results) {
             final ObjectChunk<? extends Comparable, ? extends Values> objectChunk = values.asObjectChunk();
 
@@ -159,7 +159,7 @@ public class ComparableRangeFilter extends AbstractRangeFilter {
 
 
         @Override
-        public void filter(Chunk<? extends Values> values, LongChunk<Attributes.OrderedRowKeys> keys,
+        public void filter(Chunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
                 WritableLongChunk<OrderedRowKeys> results) {
             final ObjectChunk<? extends Comparable, ? extends Values> objectChunk = values.asObjectChunk();
 
@@ -194,7 +194,7 @@ public class ComparableRangeFilter extends AbstractRangeFilter {
 
 
         @Override
-        public void filter(Chunk<? extends Values> values, LongChunk<Attributes.OrderedRowKeys> keys,
+        public void filter(Chunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
                 WritableLongChunk<OrderedRowKeys> results) {
             final ObjectChunk<? extends Comparable, ? extends Values> objectChunk = values.asObjectChunk();
 

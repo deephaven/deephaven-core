@@ -2,7 +2,7 @@
  "className": "io.deephaven.modelfarm.util.ModelFarmUtils",
  "methods": {
   "array2Double": "Interpret a table cell value as a 2D double array.\n\n:param o: (java.lang.Object) - table cell value.\n:return: (double[][]) 2D double array.",
-  "arrayDateTime": "Interpret a table cell value as a date time array.\n\n:param o: (java.lang.Object) - table cell value.\n:return: (io.deephaven.engine.time.DateTime[]) date time array.",
+  "arrayDateTime": "Interpret a table cell value as a date time array.\n\n:param o: (java.lang.Object) - table cell value.\n:return: (io.deephaven.time.DateTime[]) date time array.",
   "arrayDouble": "Interpret a table cell value as a double array.\n\n:param o: (java.lang.Object) - table cell value.\n:return: (double[]) double array.",
   "arrayFloat": "Interpret a table cell value as a float array.\n\n:param o: (java.lang.Object) - table cell value.\n:return: (float[]) float array.",
   "arrayInt": "Interpret a table cell value as an int array.\n\n:param o: (java.lang.Object) - table cell value.\n:return: (int[]) int array.",

@@ -1,7 +1,7 @@
 {
  "className": "io.deephaven.engine.table.impl.by.SumByteChunk",
  "methods": {
-  "sumByteChunk": ":param values: io.deephaven.engine.chunk.ByteChunk<? extendsio.deephaven.engine.chunk.Attributes.Any>\n:param chunkStart: int\n:param chunkSize: int\n:return: long"
+  "sumByteChunk": ":param values: io.deephaven.chunk.ByteChunk<? extendsio.deephaven.chunk.Attributes.Any>\n:param chunkStart: int\n:param chunkSize: int\n:return: long"
  },
  "path": "io.deephaven.engine.table.impl.by.SumByteChunk",
  "typeName": "class"

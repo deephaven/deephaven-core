@@ -8,11 +8,12 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.sources.ObjectArraySource;
-import io.deephaven.engine.chunk.*;
-import io.deephaven.engine.chunk.Attributes.ChunkLengths;
-import io.deephaven.engine.chunk.Attributes.ChunkPositions;
-import io.deephaven.engine.chunk.Attributes.RowKeys;
-import io.deephaven.engine.chunk.Attributes.Values;
+import io.deephaven.chunk.*;
+import io.deephaven.chunk.attributes.ChunkLengths;
+import io.deephaven.chunk.attributes.ChunkPositions;
+import io.deephaven.rowset.chunkattributes.OrderedRowKeys;
+import io.deephaven.rowset.chunkattributes.RowKeys;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.util.BigDecimalUtils;
@@ -44,7 +45,7 @@ class BigIntegerChunkedReVarOperator implements IterativeChunkedAggregationOpera
     }
 
     @Override
-    public void addChunk(BucketedContext context, Chunk<? extends Values> values, LongChunk<? extends RowKeys> inputRowKeys, IntChunk<Attributes.RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length, WritableBooleanChunk<Values> stateModified) {
+    public void addChunk(BucketedContext context, Chunk<? extends Values> values, LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length, WritableBooleanChunk<Values> stateModified) {
         doBucketedUpdate((ReVarContext)context, destinations, startPositions, stateModified);
     }
 
@@ -54,7 +55,7 @@ class BigIntegerChunkedReVarOperator implements IterativeChunkedAggregationOpera
     }
 
     @Override
-    public void modifyChunk(BucketedContext context, Chunk<? extends Values> previousValues, Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> postShiftRowKeys, IntChunk<Attributes.RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length, WritableBooleanChunk<Values> stateModified) {
+    public void modifyChunk(BucketedContext context, Chunk<? extends Values> previousValues, Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> postShiftRowKeys, IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length, WritableBooleanChunk<Values> stateModified) {
         doBucketedUpdate((ReVarContext)context, destinations, startPositions, stateModified);
     }
 
@@ -120,7 +121,7 @@ class BigIntegerChunkedReVarOperator implements IterativeChunkedAggregationOpera
     }
 
     private class ReVarContext implements BucketedContext {
-        final WritableLongChunk<Attributes.OrderedRowKeys> keyIndices;
+        final WritableLongChunk<OrderedRowKeys> keyIndices;
         final ChunkSource.GetContext sumSumContext;
         final ChunkSource.GetContext sum2SumContext;
         final ChunkSource.GetContext nncSumContext;

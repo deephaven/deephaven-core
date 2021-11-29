@@ -1,9 +1,9 @@
 package io.deephaven.kafka.ingest;
 
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.ObjectChunk;
-import io.deephaven.engine.chunk.WritableChunk;
-import io.deephaven.engine.chunk.WritableObjectChunk;
+import io.deephaven.chunk.ObjectChunk;
+import io.deephaven.chunk.WritableChunk;
+import io.deephaven.chunk.WritableObjectChunk;
+import io.deephaven.chunk.attributes.Values;
 import org.apache.avro.generic.GenericRecord;
 
 import java.util.Objects;
@@ -16,8 +16,8 @@ public class GenericRecordStringFieldCopier implements FieldCopier {
     }
 
     @Override
-    public void copyField(ObjectChunk<Object, Attributes.Values> inputChunk, WritableChunk<Attributes.Values> publisherChunk, int sourceOffset, int destOffset, int length) {
-        final WritableObjectChunk<Object, Attributes.Values> output = publisherChunk.asWritableObjectChunk();
+    public void copyField(ObjectChunk<Object, Values> inputChunk, WritableChunk<Values> publisherChunk, int sourceOffset, int destOffset, int length) {
+        final WritableObjectChunk<Object, Values> output = publisherChunk.asWritableObjectChunk();
         for (int ii = 0; ii < length; ++ii) {
             final GenericRecord genericRecord = (GenericRecord)inputChunk.get(ii + sourceOffset);
             final Object value = genericRecord == null ? null : genericRecord.get(fieldName);

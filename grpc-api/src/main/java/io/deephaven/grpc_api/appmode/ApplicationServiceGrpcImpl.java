@@ -4,7 +4,7 @@ import com.google.rpc.Code;
 import io.deephaven.appmode.ApplicationState;
 import io.deephaven.appmode.CustomField;
 import io.deephaven.appmode.Field;
-import io.deephaven.engine.time.DateTimeUtils;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.plot.FigureWidget;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.util.ScriptSession;

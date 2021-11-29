@@ -4,7 +4,7 @@
 
 package io.deephaven.engine.table.impl.lang;
 
-import io.deephaven.engine.vector.IntVector;
+import io.deephaven.vector.IntVector;
 
 import java.io.Serializable;
 

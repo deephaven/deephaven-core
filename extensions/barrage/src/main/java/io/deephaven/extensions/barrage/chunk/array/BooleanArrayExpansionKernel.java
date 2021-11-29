@@ -7,23 +7,24 @@
 
 package io.deephaven.extensions.barrage.chunk.array;
 
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.BooleanChunk;
-import io.deephaven.engine.chunk.Chunk;
-import io.deephaven.engine.chunk.IntChunk;
-import io.deephaven.engine.chunk.ObjectChunk;
-import io.deephaven.engine.chunk.WritableBooleanChunk;
-import io.deephaven.engine.chunk.WritableChunk;
-import io.deephaven.engine.chunk.WritableIntChunk;
-import io.deephaven.engine.chunk.WritableObjectChunk;
-import io.deephaven.engine.chunk.sized.SizedBooleanChunk;
+import io.deephaven.chunk.BooleanChunk;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.IntChunk;
+import io.deephaven.chunk.ObjectChunk;
+import io.deephaven.chunk.WritableBooleanChunk;
+import io.deephaven.chunk.WritableChunk;
+import io.deephaven.chunk.WritableIntChunk;
+import io.deephaven.chunk.WritableObjectChunk;
+import io.deephaven.chunk.attributes.Any;
+import io.deephaven.chunk.attributes.ChunkPositions;
+import io.deephaven.chunk.sized.SizedBooleanChunk;
 
 public class BooleanArrayExpansionKernel implements ArrayExpansionKernel {
     private final static boolean[] ZERO_LEN_ARRAY = new boolean[0];
     public final static BooleanArrayExpansionKernel INSTANCE = new BooleanArrayExpansionKernel();
 
     @Override
-    public <T, A extends Attributes.Any> WritableChunk<A> expand(final ObjectChunk<T, A> source, final WritableIntChunk<Attributes.ChunkPositions> perElementLengthDest) {
+    public <T, A extends Any> WritableChunk<A> expand(final ObjectChunk<T, A> source, final WritableIntChunk<ChunkPositions> perElementLengthDest) {
         if (source.size() == 0) {
             perElementLengthDest.setSize(0);
             return WritableBooleanChunk.makeWritableChunk(0);
@@ -51,8 +52,8 @@ public class BooleanArrayExpansionKernel implements ArrayExpansionKernel {
     }
 
     @Override
-    public <T, A extends Attributes.Any> WritableObjectChunk<T, A> contract(
-            final Chunk<A> source, final IntChunk<Attributes.ChunkPositions> perElementLengthDest) {
+    public <T, A extends Any> WritableObjectChunk<T, A> contract(
+            final Chunk<A> source, final IntChunk<ChunkPositions> perElementLengthDest) {
         if (perElementLengthDest.size() == 0) {
             return WritableObjectChunk.makeWritableChunk(0);
         }

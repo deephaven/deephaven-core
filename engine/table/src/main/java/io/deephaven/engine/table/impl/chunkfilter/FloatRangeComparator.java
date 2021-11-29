@@ -1,10 +1,9 @@
 package io.deephaven.engine.table.impl.chunkfilter;
 
 import io.deephaven.util.compare.FloatComparisons;
-import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
-import io.deephaven.engine.chunk.*;
-import io.deephaven.engine.chunk.Attributes.OrderedRowKeys;
-import io.deephaven.engine.chunk.Attributes.Values;
+import io.deephaven.chunk.*;
+import io.deephaven.rowset.chunkattributes.OrderedRowKeys;
+import io.deephaven.chunk.attributes.Values;
 
 public class FloatRangeComparator {
     private FloatRangeComparator() {} // static use only
@@ -18,7 +17,7 @@ public class FloatRangeComparator {
             this.upper = upper;
         }
 
-        abstract public void filter(FloatChunk<? extends Values> values, LongChunk<Attributes.OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results);
+        abstract public void filter(FloatChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results);
     }
 
     static class FloatDoubleInclusiveInclusiveFilter extends FloatFloatFilter {
@@ -42,7 +41,7 @@ public class FloatRangeComparator {
             super(lower, upper);
         }
 
-        public void filter(FloatChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<Attributes.OrderedRowKeys> results) {
+        public void filter(FloatChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final float value = values.get(ii);

@@ -1,14 +1,14 @@
 package io.deephaven.engine.table.impl.select.setinclusion;
 
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.Chunk;
-import io.deephaven.engine.chunk.ChunkType;
-import io.deephaven.engine.chunk.WritableBooleanChunk;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.ChunkType;
+import io.deephaven.chunk.WritableBooleanChunk;
+import io.deephaven.chunk.attributes.Values;
 
 import java.util.Collection;
 
 public interface SetInclusionKernel {
-    void matchValues(Chunk<Attributes.Values> values, WritableBooleanChunk matches);
+    void matchValues(Chunk<Values> values, WritableBooleanChunk matches);
 
     static SetInclusionKernel makeKernel(ChunkType type, Collection<Object> values, boolean inclusion) {
         switch (type) {

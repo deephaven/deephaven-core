@@ -1,20 +1,21 @@
 package io.deephaven.engine.page;
 
 import io.deephaven.base.verify.Require;
-import io.deephaven.engine.chunk.*;
+import io.deephaven.chunk.*;
+import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.rowset.RowSequence;
 import org.jetbrains.annotations.NotNull;
 
-public class ObjectChunkPage<T, ATTR extends Attributes.Any> extends ObjectChunk<T, ATTR> implements ChunkPage<ATTR> {
+public class ObjectChunkPage<T, ATTR extends Any> extends ObjectChunk<T, ATTR> implements ChunkPage<ATTR> {
 
     private final long mask;
     private final long firstRow;
 
-    public static <T, ATTR extends Attributes.Any> ObjectChunkPage<T, ATTR> pageWrap(long begRow, T[] data, int offset, int capacity, long mask) {
+    public static <T, ATTR extends Any> ObjectChunkPage<T, ATTR> pageWrap(long begRow, T[] data, int offset, int capacity, long mask) {
         return new ObjectChunkPage<>(begRow, data, offset, capacity, mask);
     }
 
-    public static <T, ATTR extends Attributes.Any> ObjectChunkPage<T, ATTR> pageWrap(long begRow, T[] data, long mask) {
+    public static <T, ATTR extends Any> ObjectChunkPage<T, ATTR> pageWrap(long begRow, T[] data, long mask) {
         return new ObjectChunkPage<>(begRow, data, 0, data.length, mask);
     }
 

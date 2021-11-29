@@ -2,9 +2,9 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.engine.chunk.Attributes.Values;
-import io.deephaven.engine.chunk.Chunk;
-import io.deephaven.engine.chunk.WritableChunk;
+import io.deephaven.chunk.attributes.Values;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.WritableChunk;
 import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;

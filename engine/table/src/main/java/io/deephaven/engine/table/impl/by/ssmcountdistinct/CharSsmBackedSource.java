@@ -1,6 +1,6 @@
 package io.deephaven.engine.table.impl.by.ssmcountdistinct;
 
-import io.deephaven.engine.vector.CharVector;
+import io.deephaven.vector.CharVector;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.ColumnSourceGetDefaults;
 import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;

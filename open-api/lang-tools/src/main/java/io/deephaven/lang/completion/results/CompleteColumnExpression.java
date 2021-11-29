@@ -1,6 +1,6 @@
 package io.deephaven.lang.completion.results;
 
-import io.deephaven.engine.function.BytePrimitives;
+import io.deephaven.function.BytePrimitives;
 import io.deephaven.lang.completion.ChunkerCompleter;
 import io.deephaven.lang.completion.CompletionRequest;
 import io.deephaven.lang.generated.ChunkerConstants;

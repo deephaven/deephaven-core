@@ -7,10 +7,12 @@ package io.deephaven.engine.table.impl.sources;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
-import io.deephaven.engine.vector.Vector;
-import io.deephaven.engine.chunk.*;
-import io.deephaven.engine.chunk.Attributes.RowKeys;
-import io.deephaven.engine.chunk.Attributes.Values;
+import io.deephaven.rowset.chunkattributes.OrderedRowKeyRanges;
+import io.deephaven.rowset.chunkattributes.OrderedRowKeys;
+import io.deephaven.vector.Vector;
+import io.deephaven.chunk.*;
+import io.deephaven.rowset.chunkattributes.RowKeys;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.util.SoftRecycler;
 import org.jetbrains.annotations.NotNull;
@@ -226,7 +228,7 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]> implements M
     }
 
     @Override
-    protected void fillSparseChunkUnordered(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final LongChunk<? extends Attributes.RowKeys> indices) {
+    protected void fillSparseChunkUnordered(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final LongChunk<? extends RowKeys> indices) {
         final WritableObjectChunk<T, ? super Values> dest = destGeneric.asWritableObjectChunk();
         final int sz = indices.size();
         for (int ii = 0; ii < sz; ++ii) {
@@ -247,7 +249,7 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]> implements M
     }
 
     @Override
-    protected void fillSparsePrevChunkUnordered(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final LongChunk<? extends Attributes.RowKeys> indices) {
+    protected void fillSparsePrevChunkUnordered(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final LongChunk<? extends RowKeys> indices) {
         final WritableObjectChunk<T, ? super Values> dest = destGeneric.asWritableObjectChunk();
         final int sz = indices.size();
         for (int ii = 0; ii < sz; ++ii) {
@@ -272,7 +274,7 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]> implements M
     @Override
     void fillFromChunkByRanges(@NotNull RowSequence rowSequence, Chunk<? extends Values> src) {
         final ObjectChunk<T, ? extends Values> chunk = src.asObjectChunk();
-        final LongChunk<Attributes.OrderedRowKeyRanges> ranges = rowSequence.asRowKeyRangesChunk();
+        final LongChunk<OrderedRowKeyRanges> ranges = rowSequence.asRowKeyRangesChunk();
 
         final boolean hasPrev = prevFlusher != null;
 
@@ -347,7 +349,7 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]> implements M
     @Override
     void fillFromChunkByKeys(@NotNull RowSequence rowSequence, Chunk<? extends Values> src) {
         final ObjectChunk<T, ? extends Values> chunk = src.asObjectChunk();
-        final LongChunk<Attributes.OrderedRowKeys> keys = rowSequence.asRowKeyChunk();
+        final LongChunk<OrderedRowKeys> keys = rowSequence.asRowKeyChunk();
 
         final boolean hasPrev = prevFlusher != null;
 

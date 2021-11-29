@@ -1,19 +1,19 @@
 package io.deephaven.parquet.table.pagestore.topage;
 
-import io.deephaven.engine.vector.ObjectVector;
-import io.deephaven.engine.vector.ObjectVectorDirect;
+import io.deephaven.chunk.attributes.Any;
+import io.deephaven.vector.ObjectVector;
+import io.deephaven.vector.ObjectVectorDirect;
 import io.deephaven.util.BooleanUtils;
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.ChunkType;
+import io.deephaven.chunk.ChunkType;
 import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.util.BooleanUtils.NULL_BOOLEAN_AS_BYTE_BOXED;
 
-public class ToBooleanAsBytePage<ATTR extends Attributes.Any> implements ToPage<ATTR, byte[]> {
+public class ToBooleanAsBytePage<ATTR extends Any> implements ToPage<ATTR, byte[]> {
 
     private static final ToBooleanAsBytePage INSTANCE = new ToBooleanAsBytePage<>();
 
-    public static <ATTR extends Attributes.Any> ToBooleanAsBytePage<ATTR> create(Class<?> nativeType) {
+    public static <ATTR extends Any> ToBooleanAsBytePage<ATTR> create(Class<?> nativeType) {
         if (nativeType == null || Boolean.class.equals(nativeType)) {
             //noinspection unchecked
             return INSTANCE;

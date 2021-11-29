@@ -25,7 +25,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.updategraph.WaitNotification;
-import io.deephaven.engine.time.DateTime;
+import io.deephaven.time.DateTime;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.engine.liveness.LivenessManager;
 import io.deephaven.engine.liveness.LivenessScope;
@@ -34,7 +34,7 @@ import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.NotificationStepSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.updategraph.LogicalClock;
-import io.deephaven.engine.chunk.*;
+import io.deephaven.chunk.*;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.internal.log.LoggerFactory;
@@ -45,7 +45,7 @@ import java.lang.reflect.Array;
 import java.util.*;
 import java.util.stream.Stream;
 
-import static io.deephaven.engine.chunk.Attributes.Values;
+import io.deephaven.chunk.attributes.Values;
 
 /**
  * A Set of static utilities for computing values from a table while avoiding the use of the UGP lock. This class

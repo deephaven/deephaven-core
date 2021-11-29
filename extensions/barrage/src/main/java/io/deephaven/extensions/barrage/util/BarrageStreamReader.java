@@ -21,7 +21,7 @@ import io.deephaven.engine.table.impl.util.*;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.chunk.ChunkInputStreamGenerator;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
-import io.deephaven.engine.chunk.ChunkType;
+import io.deephaven.chunk.ChunkType;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import org.apache.arrow.flatbuf.Message;

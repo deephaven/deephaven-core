@@ -5,11 +5,12 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.rowset.impl.TrackingWritableRowSetImpl;
+import io.deephaven.rowset.chunkattributes.OrderedRowKeyRanges;
+import io.deephaven.rowset.chunkattributes.RowKeys;
 import io.deephaven.util.datastructures.LongAbortableConsumer;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.impl.RowSequenceAsChunkImpl;
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.WritableLongChunk;
+import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.util.datastructures.LongRangeAbortableConsumer;
 
 import java.util.function.BiConsumer;
@@ -179,7 +180,7 @@ public class SortedRangesRowSequence extends RowSequenceAsChunkImpl {
     }
 
     @Override
-    public void fillRowKeyChunk(final WritableLongChunk<? extends Attributes.RowKeys> chunkToFill) {
+    public void fillRowKeyChunk(final WritableLongChunk<? extends RowKeys> chunkToFill) {
         chunkToFill.setSize(0);
         forEachRowKey((final long key) -> {
             chunkToFill.add(key);
@@ -188,7 +189,7 @@ public class SortedRangesRowSequence extends RowSequenceAsChunkImpl {
     }
 
     @Override
-    public void fillRowKeyRangesChunk(final WritableLongChunk<Attributes.OrderedRowKeyRanges> chunkToFill) {
+    public void fillRowKeyRangesChunk(final WritableLongChunk<OrderedRowKeyRanges> chunkToFill) {
         chunkToFill.setSize(0);
         forEachRowKeyRange((final long start, final long end) -> {
             chunkToFill.add(start);

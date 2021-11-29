@@ -5,9 +5,9 @@ import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.chunk.*;
-import io.deephaven.engine.chunk.Attributes.OrderedRowKeys;
-import io.deephaven.engine.chunk.Attributes.Values;
+import io.deephaven.chunk.*;
+import io.deephaven.rowset.chunkattributes.OrderedRowKeys;
+import io.deephaven.chunk.attributes.Values;
 
 public interface ChunkFilter {
     /**
@@ -23,11 +23,11 @@ public interface ChunkFilter {
             WritableLongChunk<OrderedRowKeys> results);
 
     interface CharChunkFilter extends ChunkFilter {
-        void filter(CharChunk<? extends Values> values, LongChunk<Attributes.OrderedRowKeys> keys,
+        void filter(CharChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
                 WritableLongChunk<OrderedRowKeys> results);
 
         default void filter(Chunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<Attributes.OrderedRowKeys> results) {
+                WritableLongChunk<OrderedRowKeys> results) {
             filter(values.asCharChunk(), keys, results);
         }
     }
@@ -47,7 +47,7 @@ public interface ChunkFilter {
                 WritableLongChunk<OrderedRowKeys> results);
 
         default void filter(Chunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<Attributes.OrderedRowKeys> results) {
+                WritableLongChunk<OrderedRowKeys> results) {
             filter(values.asShortChunk(), keys, results);
         }
     }
@@ -57,36 +57,36 @@ public interface ChunkFilter {
                 WritableLongChunk<OrderedRowKeys> results);
 
         default void filter(Chunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<Attributes.OrderedRowKeys> results) {
+                WritableLongChunk<OrderedRowKeys> results) {
             filter(values.asIntChunk(), keys, results);
         }
     }
 
     interface LongChunkFilter extends ChunkFilter {
         void filter(LongChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<Attributes.OrderedRowKeys> results);
+                WritableLongChunk<OrderedRowKeys> results);
 
         default void filter(Chunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<Attributes.OrderedRowKeys> results) {
+                WritableLongChunk<OrderedRowKeys> results) {
             filter(values.asLongChunk(), keys, results);
         }
     }
 
     interface FloatChunkFilter extends ChunkFilter {
         void filter(FloatChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<Attributes.OrderedRowKeys> results);
+                WritableLongChunk<OrderedRowKeys> results);
 
         default void filter(Chunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<Attributes.OrderedRowKeys> results) {
+                WritableLongChunk<OrderedRowKeys> results) {
             filter(values.asFloatChunk(), keys, results);
         }
     }
 
     interface DoubleChunkFilter extends ChunkFilter {
-        void filter(DoubleChunk<? extends Values> values, LongChunk<Attributes.OrderedRowKeys> keys,
-                WritableLongChunk<Attributes.OrderedRowKeys> results);
+        void filter(DoubleChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
+                WritableLongChunk<OrderedRowKeys> results);
 
-        default void filter(Chunk<? extends Values> values, LongChunk<Attributes.OrderedRowKeys> keys,
+        default void filter(Chunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
                 WritableLongChunk<OrderedRowKeys> results) {
             filter(values.asDoubleChunk(), keys, results);
         }
@@ -97,7 +97,7 @@ public interface ChunkFilter {
                 WritableLongChunk<OrderedRowKeys> results);
 
         default void filter(Chunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                WritableLongChunk<Attributes.OrderedRowKeys> results) {
+                WritableLongChunk<OrderedRowKeys> results) {
             filter(values.asObjectChunk(), keys, results);
         }
     }

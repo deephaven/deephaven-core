@@ -1,9 +1,9 @@
 package io.deephaven.kafka.ingest;
 
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.ChunkType;
-import io.deephaven.engine.chunk.ObjectChunk;
-import io.deephaven.engine.chunk.WritableChunk;
+import io.deephaven.chunk.ChunkType;
+import io.deephaven.chunk.ObjectChunk;
+import io.deephaven.chunk.WritableChunk;
+import io.deephaven.chunk.attributes.Values;
 
 /**
  * Copy fields from a chunk of Kafka key or value objects to a chunk that will be published to a stream table.
@@ -17,7 +17,7 @@ public interface FieldCopier {
      * @param destOffset     the destination chunk offset
      * @param length
      */
-    void copyField(ObjectChunk<Object, Attributes.Values> inputChunk, WritableChunk<Attributes.Values> publisherChunk,
+    void copyField(ObjectChunk<Object, Values> inputChunk, WritableChunk<Values> publisherChunk,
                    int sourceOffset, int destOffset, int length);
 
     interface Factory {

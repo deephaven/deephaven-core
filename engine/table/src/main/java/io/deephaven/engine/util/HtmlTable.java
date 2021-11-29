@@ -5,8 +5,8 @@
 package io.deephaven.engine.util;
 
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.time.TimeZone;
+import io.deephaven.time.DateTime;
+import io.deephaven.time.TimeZone;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.rowset.RowSet;
 import org.apache.commons.text.StringEscapeUtils;

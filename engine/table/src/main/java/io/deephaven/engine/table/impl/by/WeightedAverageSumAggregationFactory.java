@@ -3,8 +3,8 @@ package io.deephaven.engine.table.impl.by;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.chunk.*;
-import io.deephaven.engine.chunk.Attributes.Values;
+import io.deephaven.chunk.*;
+import io.deephaven.chunk.attributes.Values;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;

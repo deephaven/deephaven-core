@@ -1,5 +1,5 @@
 {
- "className": "io.deephaven.engine.vector.Vector",
+ "className": "io.deephaven.vector.Vector",
  "methods": {
   "clampIndex": ":param validFromInclusive: long\n:param validToExclusive: long\n:param index: long\n:return: long",
   "classToHelper": ":param clazz: java.lang.Class\n:return: java.util.function.Function<java.lang.Object,java.lang.String>",
@@ -13,6 +13,6 @@
   "toArray": ":return: java.lang.Object",
   "toString": ":param prefixLength: int\n:return: java.lang.String"
  },
- "path": "io.deephaven.engine.vector.Vector",
+ "path": "io.deephaven.vector.Vector",
  "typeName": "interface"
 }

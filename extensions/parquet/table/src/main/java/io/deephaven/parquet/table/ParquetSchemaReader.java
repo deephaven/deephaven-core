@@ -2,8 +2,8 @@ package io.deephaven.parquet.table;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.deephaven.UncheckedDeephavenException;
-import io.deephaven.engine.stringset.StringSet;
-import io.deephaven.engine.time.DateTime;
+import io.deephaven.stringset.StringSet;
+import io.deephaven.time.DateTime;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.parquet.table.metadata.CodecInfo;
 import io.deephaven.parquet.table.metadata.ColumnTypeInfo;

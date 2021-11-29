@@ -1,5 +1,5 @@
 {
- "className": "io.deephaven.engine.stringset.LongBitmapStringSet",
+ "className": "io.deephaven.stringset.LongBitmapStringSet",
  "methods": {
   "contains": ":param value: java.lang.String\n:return: boolean",
   "containsAll": ":param values: java.lang.String...\n:return: boolean",
@@ -14,7 +14,7 @@
   "toString": ":return: java.lang.String",
   "values": ":return: java.lang.String[]"
  },
- "path": "io.deephaven.engine.stringset.LongBitmapStringSet",
+ "path": "io.deephaven.stringset.LongBitmapStringSet",
  "text": "StringSet that wraps a long bitmap decoded with a lookup function.",
  "typeName": "class"
 }

@@ -1,7 +1,7 @@
 package io.deephaven.engine.table.impl.sources.immutable;
 
-import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.time.DateTimeUtils;
+import io.deephaven.time.DateTime;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.ImmutableColumnSourceGetDefaults;
 

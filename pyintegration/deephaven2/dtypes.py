@@ -43,9 +43,9 @@ class DType(Enum):
     float64 = double
     string = _JQstType.stringType(), "java.lang.String"
     BigDecimal = _qst_custom_type("java.math.BigDecimal"), "java.math.BigDecimal"
-    StringSet = _qst_custom_type("io.deephaven.engine.stringset.StringSet"), "io.deephaven.engine.stringset.StringSet"
-    DateTime = _qst_custom_type("io.deephaven.engine.time.DateTime"), "io.deephaven.engine.time.DateTime"
-    Period = _qst_custom_type("io.deephaven.engine.time.Period"), "io.deephaven.engine.time.Period"
+    StringSet = _qst_custom_type("io.deephaven.stringset.StringSet"), "io.deephaven.stringset.StringSet"
+    DateTime = _qst_custom_type("io.deephaven.time.DateTime"), "io.deephaven.time.DateTime"
+    Period = _qst_custom_type("io.deephaven.time.Period"), "io.deephaven.time.Period"
 
     def __new__(cls, qst_type, j_type):
         obj = object.__new__(cls)

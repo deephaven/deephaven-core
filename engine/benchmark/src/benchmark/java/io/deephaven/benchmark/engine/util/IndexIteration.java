@@ -1,7 +1,7 @@
 package io.deephaven.benchmark.engine.util;
 
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.chunk.*;
+import io.deephaven.chunk.*;
 import io.deephaven.benchmarking.BenchUtil;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;

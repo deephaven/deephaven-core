@@ -2,12 +2,13 @@ package io.deephaven.engine.table.impl.by;
 
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.MatchPair;
-import io.deephaven.engine.chunk.*;
+import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.rowset.chunkattributes.RowKeys;
 import io.deephaven.util.QueryConstants;
-import io.deephaven.engine.chunk.Attributes.ChunkLengths;
-import io.deephaven.engine.chunk.Attributes.ChunkPositions;
-import io.deephaven.engine.chunk.Attributes.Values;
+import io.deephaven.chunk.attributes.ChunkLengths;
+import io.deephaven.chunk.attributes.ChunkPositions;
+import io.deephaven.chunk.attributes.Values;
 
 public class AddOnlyFirstOrLastChunkedOperator extends BaseAddOnlyFirstOrLastChunkedOperator {
     AddOnlyFirstOrLastChunkedOperator(boolean isFirst, MatchPair[] resultPairs, Table originalTable,
@@ -17,9 +18,9 @@ public class AddOnlyFirstOrLastChunkedOperator extends BaseAddOnlyFirstOrLastChu
 
     @Override
     public void addChunk(BucketedContext bucketedContext, Chunk<? extends Values> values,
-            LongChunk<? extends Attributes.RowKeys> inputRowKeys, IntChunk<Attributes.RowKeys> destinations,
-            IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
-            WritableBooleanChunk<Values> stateModified) {
+                         LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations,
+                         IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+                         WritableBooleanChunk<Values> stateModified) {
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
             final int runLength = length.get(ii);
@@ -31,11 +32,11 @@ public class AddOnlyFirstOrLastChunkedOperator extends BaseAddOnlyFirstOrLastChu
 
     @Override
     public boolean addChunk(SingletonContext singletonContext, int chunkSize, Chunk<? extends Values> values,
-            LongChunk<? extends Attributes.RowKeys> inputRowKeys, long destination) {
+                            LongChunk<? extends RowKeys> inputRowKeys, long destination) {
         return addChunk(inputRowKeys, 0, inputRowKeys.size(), destination);
     }
 
-    private boolean addChunk(LongChunk<? extends Attributes.RowKeys> indices, int start, int length, long destination) {
+    private boolean addChunk(LongChunk<? extends RowKeys> indices, int start, int length, long destination) {
         if (length == 0) {
             return false;
         }

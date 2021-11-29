@@ -1,9 +1,8 @@
 package io.deephaven.engine.table.impl.sources;
 
-import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.table.SharedContext;
-import io.deephaven.engine.chunk.WritableChunk;
-import io.deephaven.engine.chunk.WritableLongChunk;
+import io.deephaven.chunk.WritableChunk;
+import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.chunkfillers.ChunkFiller;
 import io.deephaven.engine.rowset.RowSequence;
@@ -11,8 +10,9 @@ import io.deephaven.engine.table.ColumnSource;
 import org.jetbrains.annotations.NotNull;
 
 import io.deephaven.engine.table.impl.CrossJoinShiftState;
-import static io.deephaven.engine.chunk.Attributes.RowKeys;
-import static io.deephaven.engine.chunk.Attributes.Values;
+import io.deephaven.rowset.chunkattributes.RowKeys;
+
+import io.deephaven.chunk.attributes.Values;
 import static io.deephaven.util.QueryConstants.*;
 
 public class BitMaskingColumnSource<T> extends AbstractColumnSource<T> implements UngroupableColumnSource {
@@ -378,7 +378,7 @@ public class BitMaskingColumnSource<T> extends AbstractColumnSource<T> implement
 
             private final boolean shared;
 
-            private final WritableLongChunk<Attributes.RowKeys> maskedKeys;
+            private final WritableLongChunk<RowKeys> maskedKeys;
 
             private boolean maskedKeysReusable;
 

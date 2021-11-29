@@ -8,13 +8,13 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.time.DateTimeUtils;
-import io.deephaven.engine.time.TimeProvider;
+import io.deephaven.time.DateTime;
+import io.deephaven.time.DateTimeUtils;
+import io.deephaven.time.TimeProvider;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.function.LongNumericPrimitives;
+import io.deephaven.function.LongNumericPrimitives;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.sources.DateTimeArraySource;
 

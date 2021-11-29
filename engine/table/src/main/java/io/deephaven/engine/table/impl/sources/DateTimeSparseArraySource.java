@@ -8,9 +8,12 @@ import io.deephaven.engine.table.impl.DefaultChunkSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
-import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.chunk.*;
-import io.deephaven.engine.chunk.Attributes.Values;
+import io.deephaven.rowset.chunkattributes.OrderedRowKeyRanges;
+import io.deephaven.rowset.chunkattributes.OrderedRowKeys;
+import io.deephaven.rowset.chunkattributes.RowKeys;
+import io.deephaven.time.DateTime;
+import io.deephaven.chunk.*;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.impl.chunkfillers.ChunkFiller;
 import io.deephaven.engine.rowset.RowSequence;
 import org.jetbrains.annotations.NotNull;
@@ -86,7 +89,7 @@ public class DateTimeSparseArraySource extends AbstractSparseLongArraySource<Dat
 
     @Override
     void fillByUnRowSequence(@NotNull WritableChunk<? super Values> dest,
-            @NotNull LongChunk<? extends Attributes.RowKeys> keys) {
+            @NotNull LongChunk<? extends RowKeys> keys) {
         final WritableObjectChunk<DateTime, ? super Values> objectChunk = dest.asWritableObjectChunk();
         for (int ii = 0; ii < keys.size();) {
             final long firstKey = keys.get(ii);
@@ -121,7 +124,7 @@ public class DateTimeSparseArraySource extends AbstractSparseLongArraySource<Dat
     }
 
     void fillPrevByUnRowSequence(@NotNull WritableChunk<? super Values> dest,
-            @NotNull LongChunk<? extends Attributes.RowKeys> keys) {
+            @NotNull LongChunk<? extends RowKeys> keys) {
         final WritableObjectChunk<DateTime, ? super Values> objectChunk = dest.asWritableObjectChunk();
         for (int ii = 0; ii < keys.size();) {
             final long firstKey = keys.get(ii);
@@ -168,7 +171,7 @@ public class DateTimeSparseArraySource extends AbstractSparseLongArraySource<Dat
     @Override
     public void fillFromChunkByRanges(@NotNull RowSequence rowSequence, Chunk<? extends Values> src) {
         final ObjectChunk<DateTime, ? extends Values> chunk = src.asObjectChunk();
-        final LongChunk<Attributes.OrderedRowKeyRanges> ranges = rowSequence.asRowKeyRangesChunk();
+        final LongChunk<OrderedRowKeyRanges> ranges = rowSequence.asRowKeyRangesChunk();
         int offset = 0;
         for (int ii = 0; ii < ranges.size(); ii += 2) {
             long firstKey = ranges.get(ii);
@@ -204,7 +207,7 @@ public class DateTimeSparseArraySource extends AbstractSparseLongArraySource<Dat
     @Override
     public void fillFromChunkByKeys(@NotNull RowSequence rowSequence, Chunk<? extends Values> src) {
         final ObjectChunk<DateTime, ? extends Values> chunk = src.asObjectChunk();
-        final LongChunk<Attributes.OrderedRowKeys> keys = rowSequence.asRowKeyChunk();
+        final LongChunk<OrderedRowKeys> keys = rowSequence.asRowKeyChunk();
 
         for (int ii = 0; ii < keys.size();) {
             final long firstKey = keys.get(ii);
@@ -233,7 +236,7 @@ public class DateTimeSparseArraySource extends AbstractSparseLongArraySource<Dat
 
     @Override
     public void fillFromChunkUnordered(@NotNull FillFromContext context, @NotNull Chunk<? extends Values> src,
-            @NotNull LongChunk<Attributes.RowKeys> keys) {
+            @NotNull LongChunk<RowKeys> keys) {
         if (keys.size() == 0) {
             return;
         }

@@ -1,5 +1,6 @@
 package io.deephaven.engine.table.impl.util;
 
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.Table;
@@ -9,7 +10,7 @@ import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.iterators.IntegerColumnIterator;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.chunk.*;
+import io.deephaven.chunk.*;
 import junit.framework.TestCase;
 
 import java.util.*;
@@ -89,9 +90,9 @@ public class TestColumnsToRowsTransform extends RefreshingTableTestCase {
 
         // noinspection unchecked
         final ColumnSource<Integer> valueSource = filtered.getColumnSource("Value");
-        try (final WritableIntChunk<Attributes.Values> destination = WritableIntChunk.makeWritableChunk(2);
-                final SharedContext sharedContext = SharedContext.makeSharedContext();
-                final ChunkSource.FillContext f1 = valueSource.makeFillContext(2, sharedContext)) {
+        try (final WritableIntChunk<Values> destination = WritableIntChunk.makeWritableChunk(2);
+             final SharedContext sharedContext = SharedContext.makeSharedContext();
+             final ChunkSource.FillContext f1 = valueSource.makeFillContext(2, sharedContext)) {
             valueSource.fillChunk(f1, destination, filtered.getRowSet());
             System.out.println(destination.get(0));
             System.out.println(destination.get(1));

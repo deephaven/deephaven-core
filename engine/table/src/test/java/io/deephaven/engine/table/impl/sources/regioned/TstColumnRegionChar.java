@@ -4,11 +4,11 @@
 
 package io.deephaven.engine.table.impl.sources.regioned;
 
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.util.QueryConstants;
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.WritableCharChunk;
-import io.deephaven.engine.chunk.WritableChunk;
+import io.deephaven.chunk.WritableCharChunk;
+import io.deephaven.chunk.WritableChunk;
 import io.deephaven.engine.page.Page;
 import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
@@ -22,7 +22,7 @@ import java.util.function.Supplier;
 public class TstColumnRegionChar {
 
     @SuppressWarnings("unused")
-    static class Identity implements ColumnRegionChar<Attributes.Values>, Page.WithDefaults<Attributes.Values> {
+    static class Identity implements ColumnRegionChar<Values>, Page.WithDefaults<Values> {
 
         @Override
         public long mask() {
@@ -35,8 +35,8 @@ public class TstColumnRegionChar {
         }
 
         @Override
-        public void fillChunkAppend(@NotNull FillContext context, @NotNull WritableChunk<? super Attributes.Values> destination, @NotNull RowSequence rowSequence) {
-            WritableCharChunk<? super Attributes.Values> charDestination = destination.asWritableCharChunk();
+        public void fillChunkAppend(@NotNull FillContext context, @NotNull WritableChunk<? super Values> destination, @NotNull RowSequence rowSequence) {
+            WritableCharChunk<? super Values> charDestination = destination.asWritableCharChunk();
             int size = destination.size();
             int length = (int) rowSequence.size();
 
@@ -51,7 +51,7 @@ public class TstColumnRegionChar {
         }
     }
 
-    public static class TestNull extends TstColumnRegionPrimative<ColumnRegionChar<Attributes.Values>> {
+    public static class TestNull extends TstColumnRegionPrimative<ColumnRegionChar<Values>> {
 
         @Override
         public void setUp() throws Exception {
@@ -69,7 +69,7 @@ public class TstColumnRegionChar {
         }
     }
 
-    public static class TestDeferred extends TstColumnRegionPrimative.Deferred<ColumnRegionChar<Attributes.Values>> {
+    public static class TestDeferred extends TstColumnRegionPrimative.Deferred<ColumnRegionChar<Values>> {
 
         @Override
         public void setUp() throws Exception {

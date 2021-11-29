@@ -1,20 +1,15 @@
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.compilertools.CompilerTools;
-import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.function.ByteNumericPrimitives;
-import io.deephaven.engine.function.DoubleNumericPrimitives;
-import io.deephaven.engine.function.FloatNumericPrimitives;
-import io.deephaven.engine.function.IntegerNumericPrimitives;
+import io.deephaven.function.ByteNumericPrimitives;
+import io.deephaven.function.DoubleNumericPrimitives;
+import io.deephaven.function.FloatNumericPrimitives;
+import io.deephaven.function.IntegerNumericPrimitives;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.util.TotalsTableBuilder;
-import io.deephaven.engine.vector.DoubleVectorDirect;
+import io.deephaven.vector.DoubleVectorDirect;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.util.QueryConstants;
-import org.junit.After;
-import org.junit.Before;
 
 import java.io.IOException;
 import java.util.Arrays;

@@ -4,7 +4,7 @@
 
 //auto imported
 
-import io.deephaven.engine.time.DateTime
+import io.deephaven.time.DateTime
 import io.deephaven.engine.util.TableTools
 
 import static io.deephaven.plot.colors.ColorMaps.heatMap

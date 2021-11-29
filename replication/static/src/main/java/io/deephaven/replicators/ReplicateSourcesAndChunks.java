@@ -38,7 +38,7 @@ public class ReplicateSourcesAndChunks {
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/UngroupedBoxedCharArrayColumnSource.java");
         charToAllButBoolean(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/immutable/ImmutableCharArraySource.java");
-        charToAll("engine/chunk/src/main/java/io/deephaven/engine/chunk/sized/SizedCharChunk.java");
+        charToAll("engine/chunk/src/main/java/io/deephaven/chunk/sized/SizedCharChunk.java");
 
         replicateChunks();
         replicateWritableChunks();
@@ -53,7 +53,7 @@ public class ReplicateSourcesAndChunks {
         replicateResettableWritableChunkChunks();
 
         replicateFactories();
-        charToAll("engine/chunk/src/main/java/io/deephaven/engine/chunk/util/pools/CharChunkPool.java");
+        charToAll("engine/chunk/src/main/java/io/deephaven/chunk/util/pools/CharChunkPool.java");
 
         replicateChunkFillers();
 
@@ -143,14 +143,14 @@ public class ReplicateSourcesAndChunks {
     }
 
     private static void replicateChunks() throws IOException {
-        charToAllButBooleanAndByte("engine/chunk/src/main/java/io/deephaven/engine/chunk/CharChunk.java");
+        charToAllButBooleanAndByte("engine/chunk/src/main/java/io/deephaven/chunk/CharChunk.java");
         replicateByteChunks();
         replicateBooleanChunks();
         replicateObjectChunks();
     }
 
     private static void replicateByteChunks() throws IOException {
-        final String className = charToByte("engine/chunk/src/main/java/io/deephaven/engine/chunk/CharChunk.java");
+        final String className = charToByte("engine/chunk/src/main/java/io/deephaven/chunk/CharChunk.java");
         final File classFile = new File(className);
 
         List<String> classLines = FileUtils.readLines(classFile, Charset.defaultCharset());
@@ -170,7 +170,7 @@ public class ReplicateSourcesAndChunks {
     }
 
     private static void replicateBooleanChunks() throws IOException {
-        final String className = charToBoolean("engine/chunk/src/main/java/io/deephaven/engine/chunk/CharChunk.java");
+        final String className = charToBoolean("engine/chunk/src/main/java/io/deephaven/chunk/CharChunk.java");
         final File classFile = new File(className);
         List<String> classLines = FileUtils.readLines(classFile, Charset.defaultCharset());
         classLines = ReplicationUtils.removeRegion(classLines, "BufferImports");
@@ -179,7 +179,7 @@ public class ReplicateSourcesAndChunks {
     }
 
     private static void replicateObjectChunks() throws IOException {
-        final String className = charToObject("engine/chunk/src/main/java/io/deephaven/engine/chunk/CharChunk.java");
+        final String className = charToObject("engine/chunk/src/main/java/io/deephaven/chunk/CharChunk.java");
         final File classFile = new File(className);
         List<String> lines = FileUtils.readLines(classFile, Charset.defaultCharset());
         lines = globalReplacements(lines,
@@ -208,13 +208,13 @@ public class ReplicateSourcesAndChunks {
     }
 
     private static void replicateChunkChunks() throws IOException {
-        charToAll("engine/chunk/src/main/java/io/deephaven/engine/chunk/CharChunkChunk.java");
+        charToAll("engine/chunk/src/main/java/io/deephaven/chunk/CharChunkChunk.java");
         replicateObjectChunkChunks();
     }
 
     private static void replicateObjectChunkChunks() throws IOException {
         final String className = charToObject(
-                "engine/chunk/src/main/java/io/deephaven/engine/chunk/CharChunkChunk.java");
+                "engine/chunk/src/main/java/io/deephaven/chunk/CharChunkChunk.java");
         final File classFile = new File(className);
         List<String> lines = FileUtils.readLines(classFile, Charset.defaultCharset());
         lines = globalReplacements(lines,
@@ -234,7 +234,7 @@ public class ReplicateSourcesAndChunks {
 
     private static void replicateWritableChunks() throws IOException {
         final List<String> files =
-                charToAllButBoolean("engine/chunk/src/main/java/io/deephaven/engine/chunk/WritableCharChunk.java");
+                charToAllButBoolean("engine/chunk/src/main/java/io/deephaven/chunk/WritableCharChunk.java");
         for (String fileName : files) {
             final File classFile = new File(fileName);
             List<String> lines = FileUtils.readLines(classFile, Charset.defaultCharset());
@@ -247,7 +247,7 @@ public class ReplicateSourcesAndChunks {
 
     private static void replicateWritableBooleanChunks() throws IOException {
         final String writableBooleanChunkClassName = charToBoolean(
-                "engine/chunk/src/main/java/io/deephaven/engine/chunk/WritableCharChunk.java");
+                "engine/chunk/src/main/java/io/deephaven/chunk/WritableCharChunk.java");
         final File writableBooleanChunkClassFile = new File(writableBooleanChunkClassName);
         List<String> writableBooleanChunkClassLines =
                 FileUtils.readLines(writableBooleanChunkClassFile, Charset.defaultCharset());
@@ -265,7 +265,7 @@ public class ReplicateSourcesAndChunks {
 
     private static void replicateWritableObjectChunks() throws IOException {
         final String className = charToObject(
-                "engine/chunk/src/main/java/io/deephaven/engine/chunk/WritableCharChunk.java");
+                "engine/chunk/src/main/java/io/deephaven/chunk/WritableCharChunk.java");
         final File classFile = new File(className);
         List<String> lines = FileUtils.readLines(classFile, Charset.defaultCharset());
         lines = globalReplacements(lines,
@@ -302,14 +302,14 @@ public class ReplicateSourcesAndChunks {
     }
 
     private static void replicateWritableChunkChunks() throws IOException {
-        charToAllButBoolean("engine/chunk/src/main/java/io/deephaven/engine/chunk/WritableCharChunkChunk.java");
+        charToAllButBoolean("engine/chunk/src/main/java/io/deephaven/chunk/WritableCharChunkChunk.java");
         replicateWritableBooleanChunkChunks();
         replicateWritableObjectChunkChunks();
     }
 
     private static void replicateWritableBooleanChunkChunks() throws IOException {
         final String writableBooleanChunkClassName = charToBoolean(
-                "engine/chunk/src/main/java/io/deephaven/engine/chunk/WritableCharChunkChunk.java");
+                "engine/chunk/src/main/java/io/deephaven/chunk/WritableCharChunkChunk.java");
         final File writableBooleanChunkClassFile = new File(writableBooleanChunkClassName);
         List<String> writableBooleanChunkClassLines =
                 FileUtils.readLines(writableBooleanChunkClassFile, Charset.defaultCharset());
@@ -327,7 +327,7 @@ public class ReplicateSourcesAndChunks {
 
     private static void replicateWritableObjectChunkChunks() throws IOException {
         final String className = charToObject(
-                "engine/chunk/src/main/java/io/deephaven/engine/chunk/WritableCharChunkChunk.java");
+                "engine/chunk/src/main/java/io/deephaven/chunk/WritableCharChunkChunk.java");
         final File classFile = new File(className);
         List<String> lines = FileUtils.readLines(classFile, Charset.defaultCharset());
         lines = globalReplacements(lines,
@@ -347,13 +347,13 @@ public class ReplicateSourcesAndChunks {
     }
 
     private static void replicateResettableChunks() throws IOException {
-        charToAll("engine/chunk/src/main/java/io/deephaven/engine/chunk/ResettableCharChunk.java");
+        charToAll("engine/chunk/src/main/java/io/deephaven/chunk/ResettableCharChunk.java");
         replicateResettableObjectChunks();
     }
 
     private static void replicateResettableObjectChunks() throws IOException {
         final String className = charToObject(
-                "engine/chunk/src/main/java/io/deephaven/engine/chunk/ResettableCharChunk.java");
+                "engine/chunk/src/main/java/io/deephaven/chunk/ResettableCharChunk.java");
         final File classFile = new File(className);
         List<String> lines = FileUtils.readLines(classFile, Charset.defaultCharset());
         lines = globalReplacements(lines,
@@ -370,13 +370,13 @@ public class ReplicateSourcesAndChunks {
     }
 
     private static void replicateResettableWritableChunks() throws IOException {
-        charToAll("engine/chunk/src/main/java/io/deephaven/engine/chunk/ResettableWritableCharChunk.java");
+        charToAll("engine/chunk/src/main/java/io/deephaven/chunk/ResettableWritableCharChunk.java");
         replicateResettableWritableObjectChunks();
     }
 
     private static void replicateResettableWritableObjectChunks() throws IOException {
         final String className = charToObject(
-                "engine/chunk/src/main/java/io/deephaven/engine/chunk/ResettableWritableCharChunk.java");
+                "engine/chunk/src/main/java/io/deephaven/chunk/ResettableWritableCharChunk.java");
         final File classFile = new File(className);
         List<String> lines = FileUtils.readLines(classFile, Charset.defaultCharset());
         lines = globalReplacements(lines,
@@ -393,13 +393,13 @@ public class ReplicateSourcesAndChunks {
     }
 
     private static void replicateResettableWritableChunkChunks() throws IOException {
-        charToAll("engine/chunk/src/main/java/io/deephaven/engine/chunk/ResettableWritableCharChunkChunk.java");
+        charToAll("engine/chunk/src/main/java/io/deephaven/chunk/ResettableWritableCharChunkChunk.java");
         replicateResettableWritableObjectChunkChunks();
     }
 
     private static void replicateResettableWritableObjectChunkChunks() throws IOException {
         final String className = charToObject(
-                "engine/chunk/src/main/java/io/deephaven/engine/chunk/ResettableWritableCharChunkChunk.java");
+                "engine/chunk/src/main/java/io/deephaven/chunk/ResettableWritableCharChunkChunk.java");
         final File classFile = new File(className);
         List<String> lines = FileUtils.readLines(classFile, Charset.defaultCharset());
         lines = globalReplacements(lines,
@@ -418,13 +418,13 @@ public class ReplicateSourcesAndChunks {
     }
 
     private static void replicateResettableChunkChunks() throws IOException {
-        charToAll("engine/chunk/src/main/java/io/deephaven/engine/chunk/ResettableCharChunkChunk.java");
+        charToAll("engine/chunk/src/main/java/io/deephaven/chunk/ResettableCharChunkChunk.java");
         replicateResettableObjectChunkChunks();
     }
 
     private static void replicateResettableObjectChunkChunks() throws IOException {
         final String className = charToObject(
-                "engine/chunk/src/main/java/io/deephaven/engine/chunk/ResettableCharChunkChunk.java");
+                "engine/chunk/src/main/java/io/deephaven/chunk/ResettableCharChunkChunk.java");
         final File classFile = new File(className);
         List<String> lines = FileUtils.readLines(classFile, Charset.defaultCharset());
         lines = globalReplacements(lines,
@@ -439,9 +439,9 @@ public class ReplicateSourcesAndChunks {
 
     private static void replicateFactories() throws IOException {
         charToAllButBoolean(
-                "engine/chunk/src/main/java/io/deephaven/engine/chunk/util/factories/CharChunkFactory.java");
+                "engine/chunk/src/main/java/io/deephaven/chunk/util/factories/CharChunkFactory.java");
         final String className = charToBoolean(
-                "engine/chunk/src/main/java/io/deephaven/engine/chunk/util/factories/CharChunkFactory.java");
+                "engine/chunk/src/main/java/io/deephaven/chunk/util/factories/CharChunkFactory.java");
         final File classFile = new File(className);
         List<String> classLines = FileUtils.readLines(classFile, Charset.defaultCharset());
         FileUtils.writeLines(classFile, classLines);
@@ -922,7 +922,7 @@ public class ReplicateSourcesAndChunks {
                 "        }",
                 "    }"));
 
-        lines = addImport(lines, "import io.deephaven.engine.vector.Vector;");
+        lines = addImport(lines, "import io.deephaven.vector.Vector;");
 
         FileUtils.writeLines(objectFile, lines);
     }

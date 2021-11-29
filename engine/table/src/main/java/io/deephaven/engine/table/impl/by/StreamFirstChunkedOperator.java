@@ -1,6 +1,9 @@
 package io.deephaven.engine.table.impl.by;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.attributes.ChunkLengths;
+import io.deephaven.chunk.attributes.ChunkPositions;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
@@ -8,8 +11,9 @@ import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.rowset.impl.ShiftedRowSequence;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.ChunkSink;
-import io.deephaven.engine.chunk.Attributes.*;
-import io.deephaven.engine.chunk.*;
+import io.deephaven.chunk.*;
+import io.deephaven.rowset.chunkattributes.OrderedRowKeys;
+import io.deephaven.rowset.chunkattributes.RowKeys;
 import io.deephaven.util.SafeCloseableList;
 import org.jetbrains.annotations.NotNull;
 
@@ -63,12 +67,12 @@ public class StreamFirstChunkedOperator extends BaseStreamFirstOrLastChunkedOper
 
     @Override
     public void addChunk(final BucketedContext context, // Unused
-            final Chunk<? extends Values> values, // Unused
-            @NotNull final LongChunk<? extends RowKeys> inputRowKeys,
-            @NotNull final IntChunk<RowKeys> destinations,
-            @NotNull final IntChunk<ChunkPositions> startPositions,
-            final IntChunk<ChunkLengths> length, // Unused
-            @NotNull final WritableBooleanChunk<Values> stateModified) {
+                         final Chunk<? extends Values> values, // Unused
+                         @NotNull final LongChunk<? extends RowKeys> inputRowKeys,
+                         @NotNull final IntChunk<RowKeys> destinations,
+                         @NotNull final IntChunk<ChunkPositions> startPositions,
+                         final IntChunk<ChunkLengths> length, // Unused
+                         @NotNull final WritableBooleanChunk<Values> stateModified) {
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
             final long destination = destinations.get(startPosition);

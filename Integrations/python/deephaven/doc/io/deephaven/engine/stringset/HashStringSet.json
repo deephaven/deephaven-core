@@ -1,5 +1,5 @@
 {
- "className": "io.deephaven.engine.stringset.HashStringSet",
+ "className": "io.deephaven.stringset.HashStringSet",
  "methods": {
   "addStringToSet": ":param val: java.lang.String",
   "contains": ":param value: java.lang.String\n:return: boolean",
@@ -15,7 +15,7 @@
   "toString": ":return: java.lang.String",
   "values": ":return: java.lang.String[]"
  },
- "path": "io.deephaven.engine.stringset.HashStringSet",
+ "path": "io.deephaven.stringset.HashStringSet",
  "text": "HashSet-backed StringSet implementation.",
  "typeName": "class"
 }

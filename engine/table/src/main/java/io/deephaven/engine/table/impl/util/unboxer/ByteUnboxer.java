@@ -3,11 +3,12 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.table.impl.util.unboxer;
 
-import io.deephaven.engine.chunk.*;
+import io.deephaven.chunk.*;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.util.type.TypeUtils;
 
 class ByteUnboxer implements ChunkUnboxer.UnboxerKernel {
-    private final WritableByteChunk<Attributes.Values> primitiveChunk;
+    private final WritableByteChunk<Values> primitiveChunk;
 
     ByteUnboxer(int capacity) {
         primitiveChunk = WritableByteChunk.makeWritableChunk(capacity);
@@ -19,19 +20,19 @@ class ByteUnboxer implements ChunkUnboxer.UnboxerKernel {
     }
 
     @Override
-    public ByteChunk<? extends Attributes.Values> unbox(ObjectChunk<?, ? extends Attributes.Values> boxed) {
+    public ByteChunk<? extends Values> unbox(ObjectChunk<?, ? extends Values> boxed) {
         unboxTo(boxed, primitiveChunk, 0, 0);
         primitiveChunk.setSize(boxed.size());
         return primitiveChunk;
     }
 
     @Override
-    public void unboxTo(ObjectChunk<?, ? extends Attributes.Values> boxed, WritableChunk<? extends Attributes.Values> primitives, int sourceOffset, int destOffset) {
+    public void unboxTo(ObjectChunk<?, ? extends Values> boxed, WritableChunk<? extends Values> primitives, int sourceOffset, int destOffset) {
         unboxTo(boxed, primitives.asWritableByteChunk(), sourceOffset, destOffset);
     }
 
-    public static void unboxTo(ObjectChunk<?, ? extends Attributes.Values> boxed, WritableByteChunk<? extends Attributes.Values> primitives, int sourceOffset, int destOffset) {
-        final ObjectChunk<Byte, ? extends Attributes.Values> byteChunk = boxed.asObjectChunk();
+    public static void unboxTo(ObjectChunk<?, ? extends Values> boxed, WritableByteChunk<? extends Values> primitives, int sourceOffset, int destOffset) {
+        final ObjectChunk<Byte, ? extends Values> byteChunk = boxed.asObjectChunk();
         for (int ii = 0; ii < boxed.size(); ++ii) {
             primitives.set(ii + destOffset, TypeUtils.unbox(byteChunk.get(ii + sourceOffset)));
         }

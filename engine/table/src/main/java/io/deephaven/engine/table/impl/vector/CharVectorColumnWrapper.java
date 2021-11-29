@@ -11,7 +11,7 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetBuilderRandom;
-import io.deephaven.engine.vector.CharVector;
+import io.deephaven.vector.CharVector;
 import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.util.QueryConstants.NULL_CHAR;

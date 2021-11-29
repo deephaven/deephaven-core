@@ -1,9 +1,9 @@
 package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.time.DateTimeUtils;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.time.DateTime;
+import io.deephaven.time.DateTime;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.UpdateSourceQueryTable;
 import io.deephaven.engine.table.impl.TstUtils;

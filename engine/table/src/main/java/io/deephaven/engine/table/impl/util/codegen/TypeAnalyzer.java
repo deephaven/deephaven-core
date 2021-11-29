@@ -18,8 +18,8 @@ public class TypeAnalyzer {
         if (type == Boolean.class || type == boolean.class) {
             enginePrimitiveType = Boolean.class;
             chunkVariableBase = "ObjectChunk";
-            chunkExtendsGenericArgs = "<java.lang.Boolean, ? extends Attributes.Values>";
-            chunkSuperGenericArgs = "<java.lang.Boolean, ? super Attributes.Values>";
+            chunkExtendsGenericArgs = "<java.lang.Boolean, ? extends Values>";
+            chunkSuperGenericArgs = "<java.lang.Boolean, ? super Values>";
             chunkTypeString = "Object";
         } else {
             // primitive -> unchanged
@@ -28,15 +28,15 @@ public class TypeAnalyzer {
             enginePrimitiveType = TypeUtils.getUnboxedType(type);
             if (enginePrimitiveType == null) {
                 chunkVariableBase = "ObjectChunk";
-                chunkExtendsGenericArgs = String.format("<%s, ? extends Attributes.Values>", type.getCanonicalName());
-                chunkSuperGenericArgs = String.format("<%s, ? super Attributes.Values>", type.getCanonicalName());
+                chunkExtendsGenericArgs = String.format("<%s, ? extends Values>", type.getCanonicalName());
+                chunkSuperGenericArgs = String.format("<%s, ? super Values>", type.getCanonicalName());
                 chunkTypeString = "Object";
             } else {
                 final String simpleName = enginePrimitiveType.getSimpleName();
                 final String camelCasedName = Character.toUpperCase(simpleName.charAt(0)) + simpleName.substring(1);
                 chunkVariableBase = camelCasedName + "Chunk";
-                chunkExtendsGenericArgs = "<? extends Attributes.Values>";
-                chunkSuperGenericArgs = "<? super Attributes.Values>";
+                chunkExtendsGenericArgs = "<? extends Values>";
+                chunkSuperGenericArgs = "<? super Values>";
                 chunkTypeString = camelCasedName;
             }
         }

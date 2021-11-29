@@ -3,19 +3,19 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.parquet.table.pagestore.topage;
 
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.ChunkType;
+import io.deephaven.chunk.ChunkType;
+import io.deephaven.chunk.attributes.Any;
 import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.util.QueryConstants.NULL_BYTE;
 
-public class ToBytePageFromInt<ATTR extends Attributes.Any> implements ToPage<ATTR, byte[]> {
+public class ToBytePageFromInt<ATTR extends Any> implements ToPage<ATTR, byte[]> {
 
     private static final ToBytePageFromInt INSTANCE = new ToBytePageFromInt<>();
 
     private static final Integer NULL_BYTE_AS_INT = (int) NULL_BYTE;
 
-    public static <ATTR extends Attributes.Any> ToBytePageFromInt<ATTR> create(Class<?> nativeType) {
+    public static <ATTR extends Any> ToBytePageFromInt<ATTR> create(Class<?> nativeType) {
         if (nativeType == null || byte.class.equals(nativeType)) {
             //noinspection unchecked
             return INSTANCE;

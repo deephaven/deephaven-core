@@ -5,8 +5,8 @@
 package io.deephaven.engine.table;
 
 import io.deephaven.base.verify.Require;
-import io.deephaven.engine.chunk.Attributes.Values;
-import io.deephaven.engine.chunk.ChunkType;
+import io.deephaven.chunk.attributes.Values;
+import io.deephaven.chunk.ChunkType;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.util.annotations.FinalDefault;

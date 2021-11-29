@@ -1,7 +1,7 @@
 package io.deephaven.engine.table.impl.select.codegen;
 
 import io.deephaven.compilertools.CompilerTools;
-import io.deephaven.engine.vector.Vector;
+import io.deephaven.vector.Vector;
 import io.deephaven.engine.table.lang.QueryLibrary;
 import io.deephaven.engine.table.lang.QueryScopeParam;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
@@ -167,8 +167,8 @@ public class JavaKernelBuilder {
         final CodeGenerator g = CodeGenerator.create(
                 "@Override",
                 "public void applyFormulaChunk([[CANONICAL_FORMULA_FILLCONTEXT]] __context,", CodeGenerator.indent(
-                        "final WritableChunk<? super Attributes.Values> __destination,",
-                        "Chunk<? extends Attributes.Values>[] __sources)"),
+                        "final WritableChunk<? super Values> __destination,",
+                        "Chunk<? extends Values>[] __sources)"),
                 CodeGenerator.block(
                         "final [[DEST_CHUNK_TYPE]] __typedDestination = __destination.[[DEST_AS_CHUNK_METHOD]]();",
                         CodeGenerator.repeated("getChunks",

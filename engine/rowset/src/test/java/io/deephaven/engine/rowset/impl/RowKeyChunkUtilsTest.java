@@ -6,13 +6,12 @@ package io.deephaven.engine.rowset.impl;
 
 import io.deephaven.base.Pair;
 import io.deephaven.util.datastructures.SizeException;
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.Attributes.Any;
-import io.deephaven.engine.chunk.Attributes.OrderedRowKeys;
-import io.deephaven.engine.chunk.Attributes.OrderedRowKeyRanges;
-import io.deephaven.engine.chunk.Chunk;
-import io.deephaven.engine.chunk.LongChunk;
-import io.deephaven.engine.chunk.WritableLongChunk;
+import io.deephaven.chunk.attributes.Any;
+import io.deephaven.rowset.chunkattributes.OrderedRowKeys;
+import io.deephaven.rowset.chunkattributes.OrderedRowKeyRanges;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.WritableLongChunk;
 import org.junit.Test;
 
 import java.util.Random;
@@ -47,7 +46,7 @@ public class RowKeyChunkUtilsTest {
 
     private void tryMaxChunkSizeTest(final long limit) {
         final LongChunk<OrderedRowKeys> chunk = createChunk(0, 2); // mind the gap
-        final LongChunk<Attributes.OrderedRowKeyRanges> newChunk =
+        final LongChunk<OrderedRowKeyRanges> newChunk =
                 (limit == 0) ? RowKeyChunkUtils.convertToOrderedKeyRanges(chunk)
                         : RowKeyChunkUtils.convertToOrderedKeyRanges(chunk, limit);
         validateChunk(newChunk, 0, 0, 2, 2);

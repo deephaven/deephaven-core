@@ -3,8 +3,9 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.table.impl.sort.findruns;
 
-import io.deephaven.engine.chunk.*;
-import io.deephaven.engine.chunk.Attributes.*;
+import io.deephaven.chunk.*;
+import io.deephaven.chunk.attributes.ChunkLengths;
+import io.deephaven.chunk.attributes.ChunkPositions;
 
 public class ByteFindRunsKernel {
     /**

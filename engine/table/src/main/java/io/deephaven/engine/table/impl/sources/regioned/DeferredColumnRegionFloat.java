@@ -3,7 +3,7 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.table.impl.sources.regioned;
 
-import io.deephaven.engine.chunk.Attributes;
+import io.deephaven.chunk.attributes.Any;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.function.Supplier;
@@ -12,7 +12,7 @@ import java.util.function.Supplier;
  * {@link ColumnRegionFloat} implementation for deferred regions, i.e. regions that will be properly constructed on
  * first access.
  */
-public class DeferredColumnRegionFloat<ATTR extends Attributes.Any>
+public class DeferredColumnRegionFloat<ATTR extends Any>
         extends DeferredColumnRegionBase<ATTR, ColumnRegionFloat<ATTR>>
         implements ColumnRegionFloat<ATTR> {
 

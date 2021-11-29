@@ -1,13 +1,14 @@
 package io.deephaven.engine.table.impl.chunkfillers;
 
 import io.deephaven.engine.table.ElementSource;
-import static io.deephaven.engine.chunk.Attributes.RowKeys;
-import static io.deephaven.engine.chunk.Attributes.Values;
+import io.deephaven.rowset.chunkattributes.RowKeys;
+
+import io.deephaven.chunk.attributes.Values;
 
 import io.deephaven.engine.table.WritableColumnSource;
-import io.deephaven.engine.chunk.LongChunk;
-import io.deephaven.engine.chunk.WritableCharChunk;
-import io.deephaven.engine.chunk.WritableChunk;
+import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.WritableCharChunk;
+import io.deephaven.chunk.WritableChunk;
 import io.deephaven.engine.rowset.RowSequence;
 import org.apache.commons.lang3.mutable.MutableInt;
 

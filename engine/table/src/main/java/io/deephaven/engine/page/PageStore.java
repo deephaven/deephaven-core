@@ -1,9 +1,10 @@
 package io.deephaven.engine.page;
 
+import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.impl.DefaultChunkSource;
 import io.deephaven.engine.table.impl.DefaultGetContext;
-import io.deephaven.engine.chunk.*;
+import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.util.annotations.FinalDefault;
@@ -13,7 +14,7 @@ import org.jetbrains.annotations.NotNull;
  * PageStores are a collection of non-overlapping pages, which provides a single {@link ChunkSource} interface across
  * all the pages.
  */
-public interface PageStore<ATTR extends Attributes.Any, INNER_ATTR extends ATTR, PAGE extends Page<INNER_ATTR>>
+public interface PageStore<ATTR extends Any, INNER_ATTR extends ATTR, PAGE extends Page<INNER_ATTR>>
         extends PagingChunkSource<ATTR>, DefaultChunkSource.SupportsContiguousGet<ATTR> {
 
     /**

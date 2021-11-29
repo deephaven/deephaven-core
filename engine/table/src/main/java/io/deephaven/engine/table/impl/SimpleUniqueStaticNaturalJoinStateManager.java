@@ -2,11 +2,11 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
-import io.deephaven.engine.chunk.util.hashing.ToIntFunctor;
+import io.deephaven.chunk.util.hashing.ToIntFunctor;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.sources.LongArraySource;
-import io.deephaven.engine.chunk.*;
-import io.deephaven.engine.chunk.Attributes.Values;
+import io.deephaven.chunk.*;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import io.deephaven.engine.rowset.RowSet;

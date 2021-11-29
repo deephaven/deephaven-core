@@ -4,12 +4,12 @@
 package io.deephaven.clientsupport.plotdownsampling;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.table.impl.sources.FloatArraySource;
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.Chunk;
+import io.deephaven.chunk.Chunk;
 import org.jetbrains.annotations.Nullable;
 
 import static io.deephaven.util.QueryConstants.NULL_FLOAT;
@@ -41,7 +41,7 @@ public final class FloatValueTracker extends ValueTracker {
     }
 
     @Override
-    public void append(int offset, long rowKey, Chunk<? extends Attributes.Values> valuesChunk, int indexInChunk, @Nullable WritableRowSet nulls) {
+    public void append(int offset, long rowKey, Chunk<? extends Values> valuesChunk, int indexInChunk, @Nullable WritableRowSet nulls) {
         final float val = valuesChunk.asFloatChunk().get(indexInChunk);
         if (val == NULL_FLOAT) {
             if (nulls != null) {
@@ -67,7 +67,7 @@ public final class FloatValueTracker extends ValueTracker {
     }
 
     @Override
-    public void update(int offset, long rowKey, Chunk<? extends Attributes.Values> valuesChunk, int indexInChunk, @Nullable WritableRowSet nulls) {
+    public void update(int offset, long rowKey, Chunk<? extends Values> valuesChunk, int indexInChunk, @Nullable WritableRowSet nulls) {
         float val = valuesChunk.asFloatChunk().get(indexInChunk);
         if (val == NULL_FLOAT) {
             if (nulls != null) {
@@ -125,7 +125,7 @@ public final class FloatValueTracker extends ValueTracker {
     }
 
     @Override
-    public void validate(int offset, long rowKey, Chunk<? extends Attributes.Values> valuesChunk, int indexInChunk, @Nullable RowSet nulls) {
+    public void validate(int offset, long rowKey, Chunk<? extends Values> valuesChunk, int indexInChunk, @Nullable RowSet nulls) {
         float val = valuesChunk.asFloatChunk().get(indexInChunk);
         if (val == NULL_FLOAT) {
             // can't check if our min/max is valid, or anything about positions, only can confirm that this rowKey is in

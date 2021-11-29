@@ -3,22 +3,19 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.table.impl.sortcheck;
 
-import java.util.Objects;
-
-import io.deephaven.util.compare.ObjectComparisons;
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.ObjectChunk;
-import io.deephaven.engine.chunk.Chunk;
+import io.deephaven.chunk.ObjectChunk;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.attributes.Values;
 
 public class ObjectReverseSortCheck implements SortCheck {
     static final SortCheck INSTANCE = new ObjectReverseSortCheck();
 
     @Override
-    public int sortCheck(Chunk<? extends Attributes.Values> valuesToCheck) {
+    public int sortCheck(Chunk<? extends Values> valuesToCheck) {
         return sortCheck(valuesToCheck.asObjectChunk());
     }
 
-    private int sortCheck(ObjectChunk<Object, ? extends Attributes.Values> valuesToCheck) {
+    private int sortCheck(ObjectChunk<Object, ? extends Values> valuesToCheck) {
         if (valuesToCheck.size() == 0) {
             return -1;
         }

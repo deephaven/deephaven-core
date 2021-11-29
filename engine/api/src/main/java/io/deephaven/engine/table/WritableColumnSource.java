@@ -4,9 +4,10 @@
 
 package io.deephaven.engine.table;
 
-import io.deephaven.engine.chunk.*;
-import io.deephaven.engine.chunk.Attributes.Values;
+import io.deephaven.chunk.*;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.rowset.chunkattributes.RowKeys;
 import io.deephaven.util.annotations.FinalDefault;
 import io.deephaven.util.datastructures.LongAbortableConsumer;
 import org.jetbrains.annotations.NotNull;
@@ -90,7 +91,7 @@ public interface WritableColumnSource<T> extends ColumnSource<T>, ChunkSink<Valu
 
     @Override
     default void fillFromChunkUnordered(@NotNull FillFromContext context, @NotNull Chunk<? extends Values> src,
-            @NotNull LongChunk<Attributes.RowKeys> keys) {
+            @NotNull LongChunk<RowKeys> keys) {
         final SinkFiller filler = (SinkFiller) context;
         filler.reset(this, src);
         for (int ii = 0; ii < keys.size(); ++ii) {

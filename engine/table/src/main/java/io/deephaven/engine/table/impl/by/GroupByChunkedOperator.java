@@ -1,6 +1,9 @@
 package io.deephaven.engine.table.impl.by;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.attributes.ChunkLengths;
+import io.deephaven.chunk.attributes.ChunkPositions;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
@@ -10,8 +13,9 @@ import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.sources.ObjectArraySource;
 import io.deephaven.engine.table.impl.sources.aggregate.AggregateColumnSource;
-import io.deephaven.engine.chunk.Attributes.*;
-import io.deephaven.engine.chunk.*;
+import io.deephaven.chunk.*;
+import io.deephaven.rowset.chunkattributes.OrderedRowKeys;
+import io.deephaven.rowset.chunkattributes.RowKeys;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
@@ -59,9 +63,9 @@ public final class GroupByChunkedOperator implements IterativeChunkedAggregation
 
     @Override
     public void addChunk(final BucketedContext bucketedContext, final Chunk<? extends Values> values,
-            @NotNull final LongChunk<? extends RowKeys> inputRowKeys,
-            @NotNull final IntChunk<RowKeys> destinations, @NotNull final IntChunk<ChunkPositions> startPositions,
-            @NotNull final IntChunk<ChunkLengths> length, @NotNull final WritableBooleanChunk<Values> stateModified) {
+                         @NotNull final LongChunk<? extends RowKeys> inputRowKeys,
+                         @NotNull final IntChunk<RowKeys> destinations, @NotNull final IntChunk<ChunkPositions> startPositions,
+                         @NotNull final IntChunk<ChunkLengths> length, @NotNull final WritableBooleanChunk<Values> stateModified) {
         Assert.eqNull(values, "values");
         someKeyHasAddsOrRemoves |= startPositions.size() > 0;
         // noinspection unchecked

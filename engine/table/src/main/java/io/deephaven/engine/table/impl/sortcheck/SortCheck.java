@@ -1,8 +1,8 @@
 package io.deephaven.engine.table.impl.sortcheck;
 
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.Chunk;
-import io.deephaven.engine.chunk.ChunkType;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.ChunkType;
+import io.deephaven.chunk.attributes.Values;
 
 public interface SortCheck {
     /**
@@ -11,7 +11,7 @@ public interface SortCheck {
      * @param valuesToCheck a chunk of values to check for out of order elements
      * @return the first position of an out-of-order element, or -1 if all elements are in order
      */
-    int sortCheck(Chunk<? extends Attributes.Values> valuesToCheck);
+    int sortCheck(Chunk<? extends Values> valuesToCheck);
 
     static SortCheck make(ChunkType chunkType, boolean reverse) {
         switch (chunkType) {

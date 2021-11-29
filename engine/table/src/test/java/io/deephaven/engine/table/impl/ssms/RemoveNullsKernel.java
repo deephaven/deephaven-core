@@ -1,8 +1,8 @@
 package io.deephaven.engine.table.impl.ssms;
 
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.WritableCharChunk;
-import io.deephaven.engine.chunk.WritableChunk;
+import io.deephaven.chunk.WritableCharChunk;
+import io.deephaven.chunk.WritableChunk;
+import io.deephaven.chunk.attributes.Any;
 import io.deephaven.util.QueryConstants;
 
 public interface RemoveNullsKernel {
@@ -11,15 +11,15 @@ public interface RemoveNullsKernel {
      *
      * @param chunk the chunk to remove nulls from
      */
-    void removeNulls(WritableChunk<? extends Attributes.Any> chunk);
+    void removeNulls(WritableChunk<? extends Any> chunk);
 
     class CharRemoveNulls implements RemoveNullsKernel {
         @Override
-        public void removeNulls(WritableChunk<? extends Attributes.Any> chunk) {
+        public void removeNulls(WritableChunk<? extends Any> chunk) {
             removeNulls(chunk.asWritableCharChunk());
         }
 
-        public static void removeNulls(WritableCharChunk<? extends Attributes.Any> chunk) {
+        public static void removeNulls(WritableCharChunk<? extends Any> chunk) {
             int maxCopy = 0;
             if (chunk.get(chunk.size() - 1) == Character.MAX_VALUE) {
                 int lastMax = chunk.size() - 1;

@@ -3,18 +3,19 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.table.impl.sort.permute;
 
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.WritableByteChunk;
-import io.deephaven.engine.chunk.WritableIntChunk;
+import io.deephaven.chunk.WritableByteChunk;
+import io.deephaven.chunk.WritableIntChunk;
+import io.deephaven.chunk.attributes.Any;
+import io.deephaven.chunk.attributes.ChunkPositions;
 import junit.framework.TestCase;
 import org.junit.Test;
 
 public class TestBytePermuteKernel {
     @Test
     public void testReverse() {
-        final WritableByteChunk<Attributes.Any> inputValues = WritableByteChunk.makeWritableChunk(10);
-        final WritableIntChunk<Attributes.ChunkPositions> destinations = WritableIntChunk.makeWritableChunk(10);
-        final WritableByteChunk<Attributes.Any> outputValues = WritableByteChunk.makeWritableChunk(10);
+        final WritableByteChunk<Any> inputValues = WritableByteChunk.makeWritableChunk(10);
+        final WritableIntChunk<ChunkPositions> destinations = WritableIntChunk.makeWritableChunk(10);
+        final WritableByteChunk<Any> outputValues = WritableByteChunk.makeWritableChunk(10);
 
         inputValues.setSize(0);
         for (byte value = startingValue(); inputValues.size() < 10; ++value) {
@@ -37,9 +38,9 @@ public class TestBytePermuteKernel {
 
     @Test
     public void testInterleave() {
-        final WritableByteChunk<Attributes.Any> inputValues = WritableByteChunk.makeWritableChunk(10);
-        final WritableIntChunk<Attributes.ChunkPositions> destinations = WritableIntChunk.makeWritableChunk(10);
-        final WritableByteChunk<Attributes.Any> outputValues = WritableByteChunk.makeWritableChunk(10);
+        final WritableByteChunk<Any> inputValues = WritableByteChunk.makeWritableChunk(10);
+        final WritableIntChunk<ChunkPositions> destinations = WritableIntChunk.makeWritableChunk(10);
+        final WritableByteChunk<Any> outputValues = WritableByteChunk.makeWritableChunk(10);
 
         inputValues.setSize(0);
         for (byte value = startingValue(); inputValues.size() < 10; ++value) {
@@ -69,9 +70,9 @@ public class TestBytePermuteKernel {
 
     @Test
     public void testSpread() {
-        final WritableByteChunk<Attributes.Any> inputValues = WritableByteChunk.makeWritableChunk(10);
-        final WritableIntChunk<Attributes.ChunkPositions> destinations = WritableIntChunk.makeWritableChunk(10);
-        final WritableByteChunk<Attributes.Any> outputValues = WritableByteChunk.makeWritableChunk(20);
+        final WritableByteChunk<Any> inputValues = WritableByteChunk.makeWritableChunk(10);
+        final WritableIntChunk<ChunkPositions> destinations = WritableIntChunk.makeWritableChunk(10);
+        final WritableByteChunk<Any> outputValues = WritableByteChunk.makeWritableChunk(20);
         outputValues.fillWithValue(0, outputValues.size(), uninitializedValue());
 
         inputValues.setSize(0);

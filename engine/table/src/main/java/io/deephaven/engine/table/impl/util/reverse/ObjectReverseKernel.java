@@ -1,8 +1,7 @@
 package io.deephaven.engine.table.impl.util.reverse;
 
-import io.deephaven.engine.chunk.*;
-
-import static io.deephaven.engine.chunk.Attributes.*;
+import io.deephaven.chunk.*;
+import io.deephaven.chunk.attributes.Any;
 
 public class ObjectReverseKernel {
     public static <T extends Any> void reverse(WritableObjectChunk<Object, T> chunkToReverse) {

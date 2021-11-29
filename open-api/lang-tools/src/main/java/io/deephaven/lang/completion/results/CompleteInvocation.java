@@ -4,7 +4,7 @@ import io.deephaven.lang.completion.ChunkerCompleter;
 import io.deephaven.lang.completion.CompletionRequest;
 import io.deephaven.lang.generated.ChunkerConstants;
 import io.deephaven.lang.generated.Token;
-import io.deephaven.engine.function.BytePrimitives;
+import io.deephaven.function.BytePrimitives;
 import io.deephaven.proto.backplane.script.grpc.CompletionItem;
 import io.deephaven.proto.backplane.script.grpc.DocumentRange;
 

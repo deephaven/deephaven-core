@@ -4,8 +4,8 @@
 
 package io.deephaven.integrations.common;
 
-import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.time.DateTimeUtils;
+import io.deephaven.time.DateTime;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.BooleanUtils;
 
 /**

@@ -3,17 +3,17 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.parquet.table.pagestore.topage;
 
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.ChunkType;
+import io.deephaven.chunk.ChunkType;
+import io.deephaven.chunk.attributes.Any;
 import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.util.QueryConstants.NULL_LONG_BOXED;
 
-public class ToLongPage<ATTR extends Attributes.Any> implements ToPage<ATTR, long[]> {
+public class ToLongPage<ATTR extends Any> implements ToPage<ATTR, long[]> {
 
     private static final ToLongPage INSTANCE = new ToLongPage<>();
 
-    public static <ATTR extends Attributes.Any> ToLongPage<ATTR> create(Class<?> nativeType) {
+    public static <ATTR extends Any> ToLongPage<ATTR> create(Class<?> nativeType) {
         if (nativeType == null || long.class.equals(nativeType)) {
             //noinspection unchecked
             return INSTANCE;

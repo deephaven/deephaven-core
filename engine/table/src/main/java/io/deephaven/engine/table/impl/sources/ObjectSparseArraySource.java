@@ -7,14 +7,14 @@
 
 package io.deephaven.engine.table.impl.sources;
 
-import io.deephaven.engine.vector.Vector;
+import io.deephaven.vector.Vector;
 
 import io.deephaven.engine.table.impl.DefaultGetContext;
-import io.deephaven.engine.chunk.*;
-import io.deephaven.engine.chunk.Attributes.OrderedRowKeyRanges;
-import io.deephaven.engine.chunk.Attributes.RowKeys;
-import io.deephaven.engine.chunk.Attributes.Values;
-import io.deephaven.engine.chunk.Attributes.OrderedRowKeys;
+import io.deephaven.chunk.*;
+import io.deephaven.rowset.chunkattributes.OrderedRowKeyRanges;
+import io.deephaven.rowset.chunkattributes.RowKeys;
+import io.deephaven.chunk.attributes.Values;
+import io.deephaven.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;

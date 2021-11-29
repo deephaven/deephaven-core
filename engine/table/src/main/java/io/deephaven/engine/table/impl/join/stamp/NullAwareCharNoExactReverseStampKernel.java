@@ -3,12 +3,11 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.table.impl.join.stamp;
 
-import io.deephaven.util.QueryConstants;
 import io.deephaven.util.compare.CharComparisons;
 
-import io.deephaven.engine.chunk.*;
-import io.deephaven.engine.chunk.Attributes.RowKeys;
-import io.deephaven.engine.chunk.Attributes.Values;
+import io.deephaven.chunk.*;
+import io.deephaven.rowset.chunkattributes.RowKeys;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 
 
@@ -17,11 +16,11 @@ public class NullAwareCharNoExactReverseStampKernel implements StampKernel {
     private NullAwareCharNoExactReverseStampKernel() {} // static use only
 
     @Override
-    public void computeRedirections(Chunk<Values> leftStamps, Chunk<Values> rightStamps, LongChunk<Attributes.RowKeys> rightKeyIndices, WritableLongChunk<Attributes.RowKeys> leftRedirections) {
+    public void computeRedirections(Chunk<Values> leftStamps, Chunk<Values> rightStamps, LongChunk<RowKeys> rightKeyIndices, WritableLongChunk<RowKeys> leftRedirections) {
         computeRedirections(leftStamps.asCharChunk(), rightStamps.asCharChunk(), rightKeyIndices, leftRedirections);
     }
 
-    static private void computeRedirections(CharChunk<Values> leftStamps, CharChunk<Values> rightStamps, LongChunk<RowKeys> rightKeyIndices, WritableLongChunk<Attributes.RowKeys> leftRedirections) {
+    static private void computeRedirections(CharChunk<Values> leftStamps, CharChunk<Values> rightStamps, LongChunk<RowKeys> rightKeyIndices, WritableLongChunk<RowKeys> leftRedirections) {
         final int leftSize = leftStamps.size();
         final int rightSize = rightStamps.size();
         if (rightSize == 0) {

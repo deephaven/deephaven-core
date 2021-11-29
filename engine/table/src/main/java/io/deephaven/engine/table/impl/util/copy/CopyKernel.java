@@ -1,8 +1,7 @@
 package io.deephaven.engine.table.impl.util.copy;
 
-import io.deephaven.engine.chunk.*;
-
-import static io.deephaven.engine.chunk.Attributes.*;
+import io.deephaven.chunk.*;
+import io.deephaven.chunk.attributes.Any;
 
 public interface CopyKernel {
     static CopyKernel makeCopyKernel(ChunkType chunkType) {
@@ -45,8 +44,8 @@ public interface CopyKernel {
      * @param length the number of elements to copy
      */
     <T extends Any> void conditionalCopy(WritableChunk<T> output, Object baseInput, Object overInput,
-            long[] useOverInput,
-            int srcOffset, int dstOffset, int length);
+                                         long[] useOverInput,
+                                         int srcOffset, int dstOffset, int length);
 
     class Utils {
         /**

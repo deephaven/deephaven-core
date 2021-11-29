@@ -1,5 +1,6 @@
 package io.deephaven.clientsupport.plotdownsampling;
 
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetShiftData;
@@ -7,8 +8,7 @@ import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.table.impl.sources.BooleanArraySource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.sources.LongArraySource;
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.Chunk;
+import io.deephaven.chunk.Chunk;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
@@ -108,7 +108,7 @@ public abstract class ValueTracker {
      * @param valuesChunk the chunk that we're currently examining
      * @param indexInChunk the index in the chunk that we're currently examining
      */
-    public abstract void append(int offset, long rowKey, Chunk<? extends Attributes.Values> valuesChunk, int indexInChunk, @Nullable WritableRowSet nulls);
+    public abstract void append(int offset, long rowKey, Chunk<? extends Values> valuesChunk, int indexInChunk, @Nullable WritableRowSet nulls);
 
     /**
      * Indicates that a row was removed from the original table being downsampled. If that row key was previously
@@ -151,7 +151,7 @@ public abstract class ValueTracker {
      * @param valuesChunk the chunk that we're currently examining
      * @param chunkIndex the index in the chunk that we're currently examining
      */
-    public abstract void update(int offset, long rowKey, Chunk<? extends Attributes.Values> valuesChunk, int chunkIndex, @Nullable WritableRowSet nulls);
+    public abstract void update(int offset, long rowKey, Chunk<? extends Values> valuesChunk, int chunkIndex, @Nullable WritableRowSet nulls);
 
     /**
      * Transforms the given BucketState.offset into the position in the array sources that represents the min value
@@ -206,7 +206,7 @@ public abstract class ValueTracker {
      * Scan the given chunk and confirm that whichever values are currently selected as max and min are correct, and
      * that the current data is now valid.
      */
-    public abstract void validate(int offset, long rowKey, Chunk<? extends Attributes.Values> valuesChunk, int indexInChunk, @Nullable RowSet nulls);
+    public abstract void validate(int offset, long rowKey, Chunk<? extends Values> valuesChunk, int indexInChunk, @Nullable RowSet nulls);
 
     public final void shiftMaxIndex(final int offset, final RowSetShiftData shiftData) {
         final long maxIndex = maxIndex(offset);

@@ -8,11 +8,11 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.compilertools.CompilerTools;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.impl.lang.QueryLanguageParser;
-import io.deephaven.engine.vector.ObjectVector;
+import io.deephaven.vector.ObjectVector;
 import io.deephaven.engine.table.lang.QueryLibrary;
 import io.deephaven.engine.table.lang.QueryScopeParam;
 import io.deephaven.engine.table.lang.QueryScope;
-import io.deephaven.engine.time.DateTimeUtils;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
 import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.util.PythonScopeJpyImpl.NumbaCallableWrapper;
@@ -26,10 +26,10 @@ import io.deephaven.engine.table.impl.select.formula.FormulaSourceDescriptor;
 import io.deephaven.engine.table.impl.select.python.DeephavenCompatibleFunction;
 import io.deephaven.engine.table.impl.select.python.FormulaColumnPython;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.chunk.ChunkType;
+import io.deephaven.chunk.ChunkType;
 import io.deephaven.engine.table.impl.util.codegen.CodeGenerator;
 import io.deephaven.engine.table.impl.util.codegen.TypeAnalyzer;
-import io.deephaven.engine.vector.Vector;
+import io.deephaven.vector.Vector;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.type.TypeUtils;
@@ -311,7 +311,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
                     fc.replace("COLUMN_NAME", ac.bareName);
 
                     final String vtp = getVectorType(ac.columnSource.getType()).getCanonicalName().replace(
-                            "io.deephaven.engine.vector",
+                            "io.deephaven.vector",
                             "io.deephaven.engine.table.impl.vector");
                     fc.replace("VECTOR_TYPE_PREFIX", vtp);
                     return null;
@@ -438,10 +438,10 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
                 "private class FormulaFillContext implements [[FILL_CONTEXT_CANONICAL]]", CodeGenerator.block(
                         // The optional i chunk
                         CodeGenerator.optional("needsIChunk",
-                                "private final WritableIntChunk<Attributes.OrderedRowKeys> __iChunk;"),
+                                "private final WritableIntChunk<OrderedRowKeys> __iChunk;"),
                         // The optional ii chunk
                         CodeGenerator.optional("needsIIChunk",
-                                "private final WritableLongChunk<Attributes.OrderedRowKeys> __iiChunk;"),
+                                "private final WritableLongChunk<OrderedRowKeys> __iiChunk;"),
                         // fields
                         CodeGenerator.repeated("defineField",
                                 "private final ColumnSource.GetContext __subContext[[COL_SOURCE_NAME]];"),
@@ -503,7 +503,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
     private CodeGenerator generateFillChunk(boolean usePrev) {
         final CodeGenerator g = CodeGenerator.create(
                 "@Override",
-                "public void [[FILL_METHOD]](final FillContext __context, final WritableChunk<? super Attributes.Values> __destination, final RowSequence __rowSequence)",
+                "public void [[FILL_METHOD]](final FillContext __context, final WritableChunk<? super Values> __destination, final RowSequence __rowSequence)",
                 CodeGenerator.block(
                         "final FormulaFillContext __typedContext = (FormulaFillContext)__context;",
                         CodeGenerator.repeated("getChunks",
@@ -536,7 +536,7 @@ public class DhFormulaColumn extends AbstractFormulaColumn {
         final CodeGenerator g = CodeGenerator.create(
                 "private void fillChunkHelper(final boolean __usePrev, final FormulaFillContext __context,",
                 CodeGenerator.indent(
-                        "final WritableChunk<? super Attributes.Values> __destination,",
+                        "final WritableChunk<? super Values> __destination,",
                         "final RowSequence __rowSequence[[ADDITIONAL_CHUNK_ARGS]])"),
                 CodeGenerator.block(
                         "final [[DEST_CHUNK_TYPE]] __typedDestination = __destination.[[DEST_AS_CHUNK_METHOD]]();",

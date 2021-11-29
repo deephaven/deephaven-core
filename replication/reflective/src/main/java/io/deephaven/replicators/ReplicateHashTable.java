@@ -4,7 +4,7 @@ import gnu.trove.stack.TIntStack;
 import gnu.trove.stack.array.TIntArrayStack;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.chunk.ChunkType;
+import io.deephaven.chunk.ChunkType;
 import io.deephaven.engine.table.impl.HashTableAnnotations.EmptyStateValue;
 import io.deephaven.engine.table.impl.HashTableAnnotations.OverflowStateColumnSource;
 import io.deephaven.engine.table.impl.HashTableAnnotations.StateColumnSource;

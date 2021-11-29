@@ -6,7 +6,7 @@ import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.util.WritableRowRedirection;
-import io.deephaven.engine.vector.Vector;
+import io.deephaven.vector.Vector;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.impl.select.SourceColumn;

@@ -1,6 +1,7 @@
 package io.deephaven.engine.table.impl.verify;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -11,8 +12,7 @@ import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.impl.sortcheck.SortCheck;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.Chunk;
+import io.deephaven.chunk.Chunk;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.impl.util.*;
 import io.deephaven.engine.rowset.RowSequence;
@@ -72,7 +72,7 @@ public class SortedAssertionInstrumentedListenerAdapter extends BaseTable.Listen
                 final RowSequence.Iterator rsIt = toProcess.getRowSequenceIterator()) {
             while (rsIt.hasMore()) {
                 final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(contextSize);
-                final Chunk<? extends Attributes.Values> valuesChunk = parentColumnSource.getChunk(getContext, chunkOk);
+                final Chunk<? extends Values> valuesChunk = parentColumnSource.getChunk(getContext, chunkOk);
                 final int firstUnsorted = sortCheck.sortCheck(valuesChunk);
                 if (firstUnsorted >= 0) {
                     final String value1 = ChunkUtils.extractKeyStringFromChunk(valuesChunk.getChunkType(), valuesChunk,

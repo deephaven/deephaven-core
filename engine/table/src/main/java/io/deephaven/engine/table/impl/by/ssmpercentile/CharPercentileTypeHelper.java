@@ -1,12 +1,13 @@
 package io.deephaven.engine.table.impl.by.ssmpercentile;
 
+import io.deephaven.chunk.attributes.ChunkLengths;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.util.compare.CharComparisons;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.CharacterArraySource;
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.CharChunk;
-import io.deephaven.engine.chunk.Chunk;
-import io.deephaven.engine.chunk.IntChunk;
+import io.deephaven.chunk.CharChunk;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.IntChunk;
 import io.deephaven.engine.table.impl.ssms.CharSegmentedSortedMultiset;
 import io.deephaven.engine.table.impl.ssms.SegmentedSortedMultiSet;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -55,8 +56,8 @@ public class CharPercentileTypeHelper implements SsmChunkedPercentileOperator.Pe
     }
 
     @Override
-    public int pivot(SegmentedSortedMultiSet segmentedSortedMultiSet, Chunk<? extends Attributes.Values> valueCopy, IntChunk<Attributes.ChunkLengths> counts, int startPosition, int runLength, MutableInt leftOvers) {
-        final CharChunk<? extends Attributes.Values> asCharChunk = valueCopy.asCharChunk();
+    public int pivot(SegmentedSortedMultiSet segmentedSortedMultiSet, Chunk<? extends Values> valueCopy, IntChunk<ChunkLengths> counts, int startPosition, int runLength, MutableInt leftOvers) {
+        final CharChunk<? extends Values> asCharChunk = valueCopy.asCharChunk();
         final CharSegmentedSortedMultiset ssmLo = (CharSegmentedSortedMultiset)segmentedSortedMultiSet;
         final char hiValue = ssmLo.getMaxChar();
 
@@ -73,8 +74,8 @@ public class CharPercentileTypeHelper implements SsmChunkedPercentileOperator.Pe
     }
 
     @Override
-    public int pivot(SegmentedSortedMultiSet segmentedSortedMultiSet, Chunk<? extends Attributes.Values> valueCopy, IntChunk<Attributes.ChunkLengths> counts, int startPosition, int runLength) {
-        final CharChunk<? extends Attributes.Values> asCharChunk = valueCopy.asCharChunk();
+    public int pivot(SegmentedSortedMultiSet segmentedSortedMultiSet, Chunk<? extends Values> valueCopy, IntChunk<ChunkLengths> counts, int startPosition, int runLength) {
+        final CharChunk<? extends Values> asCharChunk = valueCopy.asCharChunk();
         final CharSegmentedSortedMultiset ssmLo = (CharSegmentedSortedMultiset)segmentedSortedMultiSet;
         final char hiValue = ssmLo.getMaxChar();
 
@@ -92,7 +93,7 @@ public class CharPercentileTypeHelper implements SsmChunkedPercentileOperator.Pe
      * @param searchValue the value to find
      * @return the highest index that is less than or equal to valuesToSearch
      */
-    private static int upperBound(CharChunk<? extends Attributes.Values> valuesToSearch, int lo, int hi, char searchValue) {
+    private static int upperBound(CharChunk<? extends Values> valuesToSearch, int lo, int hi, char searchValue) {
         while (lo < hi) {
             final int mid = (lo + hi) >>> 1;
             final char testValue = valuesToSearch.get(mid);

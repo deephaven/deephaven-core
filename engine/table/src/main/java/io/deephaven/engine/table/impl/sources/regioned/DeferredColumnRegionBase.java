@@ -1,8 +1,9 @@
 package io.deephaven.engine.table.impl.sources.regioned;
 
 import io.deephaven.base.verify.Require;
+import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.table.SharedContext;
-import io.deephaven.engine.chunk.*;
+import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.RowSequence;
 import org.jetbrains.annotations.NotNull;
 
@@ -12,7 +13,7 @@ import java.util.function.Supplier;
 /**
  * Base deferred region implementation.
  */
-public abstract class DeferredColumnRegionBase<ATTR extends Attributes.Any, REGION_TYPE extends ColumnRegion<ATTR>>
+public abstract class DeferredColumnRegionBase<ATTR extends Any, REGION_TYPE extends ColumnRegion<ATTR>>
         extends GenericColumnRegionBase<ATTR>
         implements DeferredColumnRegion<ATTR, REGION_TYPE> {
 

@@ -1,7 +1,7 @@
 {
  "className": "io.deephaven.engine.table.impl.util.reverse.IntReverseKernel",
  "methods": {
-  "reverse": "Note: Java generics information - <T extends io.deephaven.engine.chunk.Attributes.Any>\n\n:param chunkToReverse: io.deephaven.engine.chunk.WritableIntChunk<T>"
+  "reverse": "Note: Java generics information - <T extends io.deephaven.chunk.Attributes.Any>\n\n:param chunkToReverse: io.deephaven.chunk.WritableIntChunk<T>"
  },
  "path": "io.deephaven.engine.table.impl.util.reverse.IntReverseKernel",
  "typeName": "class"

@@ -1,13 +1,15 @@
 package io.deephaven.engine.table.impl.by.ssmcountdistinct;
 
+import io.deephaven.chunk.attributes.ChunkLengths;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.impl.by.IterativeChunkedAggregationOperator;
-import io.deephaven.engine.chunk.*;
+import io.deephaven.chunk.*;
 
 public class BucketSsmDistinctContext extends SsmDistinctContext
         implements IterativeChunkedAggregationOperator.BucketedContext {
-    public final WritableIntChunk<Attributes.ChunkLengths> lengthCopy;
-    public final ResettableWritableChunk<Attributes.Values> valueResettable;
-    public final ResettableWritableIntChunk<Attributes.ChunkLengths> countResettable;
+    public final WritableIntChunk<ChunkLengths> lengthCopy;
+    public final ResettableWritableChunk<Values> valueResettable;
+    public final ResettableWritableIntChunk<ChunkLengths> countResettable;
     public final WritableBooleanChunk<?> ssmsToMaybeClear;
 
     public BucketSsmDistinctContext(ChunkType chunkType, int size) {

@@ -1,6 +1,8 @@
 package io.deephaven.engine.table.impl.join.dupexpand;
 
-import io.deephaven.engine.chunk.*;
+import io.deephaven.chunk.*;
+import io.deephaven.chunk.attributes.Any;
+import io.deephaven.chunk.attributes.ChunkLengths;
 
 public interface DupExpandKernel {
 
@@ -37,6 +39,6 @@ public interface DupExpandKernel {
      * @param chunkToExpand the values to expand in-place (this writable chunk must have capacity >= expandedSize)
      * @param keyRunLengths the key run-lengths parallel to chunkToExpand
      */
-    void expandDuplicates(int expandedSize, WritableChunk<? extends Attributes.Any> chunkToExpand,
-            IntChunk<Attributes.ChunkLengths> keyRunLengths);
+    void expandDuplicates(int expandedSize, WritableChunk<? extends Any> chunkToExpand,
+            IntChunk<ChunkLengths> keyRunLengths);
 }

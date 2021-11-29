@@ -6,20 +6,20 @@ package io.deephaven.engine.rowset.impl;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.*;
+import io.deephaven.rowset.chunkattributes.OrderedRowKeyRanges;
 import io.deephaven.util.datastructures.LongAbortableConsumer;
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.Attributes.RowKeys;
-import io.deephaven.engine.chunk.Attributes.OrderedRowKeys;
-import io.deephaven.engine.chunk.LongChunk;
-import io.deephaven.engine.chunk.OrderedChunkUtils;
-import io.deephaven.engine.chunk.WritableLongChunk;
+import io.deephaven.rowset.chunkattributes.RowKeys;
+import io.deephaven.rowset.chunkattributes.OrderedRowKeys;
+import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.OrderedChunkUtils;
+import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.util.datastructures.LongRangeAbortableConsumer;
 
 public class RowSequenceRowKeysChunkImpl implements RowSequence {
 
     private final LongChunk<OrderedRowKeys> backingChunk;
     private final WritableLongChunk<OrderedRowKeys> toReleaseChunk;
-    private WritableLongChunk<Attributes.OrderedRowKeyRanges> asRangesChunk = null;
+    private WritableLongChunk<OrderedRowKeyRanges> asRangesChunk = null;
 
     private RowSequenceRowKeysChunkImpl(final LongChunk<OrderedRowKeys> backingChunk) {
         this.backingChunk = backingChunk;
@@ -142,12 +142,12 @@ public class RowSequenceRowKeysChunkImpl implements RowSequence {
     }
 
     @Override
-    public final LongChunk<Attributes.OrderedRowKeys> asRowKeyChunk() {
+    public final LongChunk<OrderedRowKeys> asRowKeyChunk() {
         return backingChunk;
     }
 
     @Override
-    public final LongChunk<Attributes.OrderedRowKeyRanges> asRowKeyRangesChunk() {
+    public final LongChunk<OrderedRowKeyRanges> asRowKeyRangesChunk() {
         if (backingChunk.size() == 0) {
             return LongChunk.getEmptyChunk();
         }
@@ -166,7 +166,7 @@ public class RowSequenceRowKeysChunkImpl implements RowSequence {
     }
 
     @Override
-    public final void fillRowKeyRangesChunk(final WritableLongChunk<Attributes.OrderedRowKeyRanges> chunkToFill) {
+    public final void fillRowKeyRangesChunk(final WritableLongChunk<OrderedRowKeyRanges> chunkToFill) {
         RowKeyChunkUtils.convertToOrderedKeyRanges(backingChunk, chunkToFill);
     }
 

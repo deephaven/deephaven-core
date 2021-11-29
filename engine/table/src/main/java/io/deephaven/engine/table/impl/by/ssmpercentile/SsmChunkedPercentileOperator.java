@@ -5,13 +5,16 @@
 package io.deephaven.engine.table.impl.by.ssmpercentile;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.attributes.ChunkLengths;
+import io.deephaven.chunk.attributes.ChunkPositions;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.time.DateTime;
+import io.deephaven.rowset.chunkattributes.RowKeys;
+import io.deephaven.time.DateTime;
 import io.deephaven.engine.table.impl.by.IterativeChunkedAggregationOperator;
 import io.deephaven.engine.table.impl.sources.*;
-import io.deephaven.engine.chunk.*;
-import io.deephaven.engine.chunk.Attributes.*;
+import io.deephaven.chunk.*;
 import io.deephaven.engine.table.impl.ssms.SegmentedSortedMultiSet;
 import io.deephaven.engine.table.impl.util.compact.CompactKernel;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -152,7 +155,7 @@ public class SsmChunkedPercentileOperator implements IterativeChunkedAggregation
         boolean setResultNull(long destination);
 
         int pivot(SegmentedSortedMultiSet ssmLo, Chunk<? extends Values> valueCopy, IntChunk<ChunkLengths> counts,
-                int startPosition, int runLength, MutableInt leftOvers);
+                  int startPosition, int runLength, MutableInt leftOvers);
 
         int pivot(SegmentedSortedMultiSet segmentedSortedMultiSet, Chunk<? extends Values> valueCopy,
                 IntChunk<ChunkLengths> counts, int startPosition, int runLength);
@@ -160,9 +163,9 @@ public class SsmChunkedPercentileOperator implements IterativeChunkedAggregation
 
     @Override
     public void addChunk(BucketedContext bucketedContext, Chunk<? extends Values> values,
-            LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations,
-            IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
-            WritableBooleanChunk<Values> stateModified) {
+                         LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations,
+                         IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+                         WritableBooleanChunk<Values> stateModified) {
         final BucketSsmMinMaxContext context = (BucketSsmMinMaxContext) bucketedContext;
 
         context.valueCopy.setSize(values.size());

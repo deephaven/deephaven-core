@@ -35,10 +35,10 @@ public class TupleSourceCodeGenerator {
             "io.deephaven.engine.table.impl.tuplesource.AbstractTupleSource",
             "io.deephaven.engine.table.ColumnSource",
             "io.deephaven.engine.table.WritableColumnSource",
-            "io.deephaven.engine.chunk.Attributes.Values",
-            "io.deephaven.engine.chunk.Chunk",
-            "io.deephaven.engine.chunk.WritableChunk",
-            "io.deephaven.engine.chunk.WritableObjectChunk",
+            "io.deephaven.chunk.attributes.Values",
+            "io.deephaven.chunk.Chunk",
+            "io.deephaven.chunk.WritableChunk",
+            "io.deephaven.chunk.WritableObjectChunk",
     };
 
     private static final String CLASS_NAME_SUFFIX = "ColumnTupleSource";
@@ -60,8 +60,8 @@ public class TupleSourceCodeGenerator {
             OBJECT(               "Object", "java.lang.Object",                  null,         null, false,                                 CS + ".get("        + RK + ")" ,                                 CS + ".getPrev("        + RK + ")" ,                                 VAL      ,                                    VAL      ,                 VAL                                                                                                                   ),
          R_BOOLEAN( "ReinterpretedBoolean", "byte",                              null,         null,  true,                                 CS + ".getByte("    + RK + ")" ,                                 CS + ".getPrevByte("    + RK + ")" , "BooleanUtils.byteAsBoolean(" + VAL + ')', "BooleanUtils.booleanAsByte("    + VAL + ')', "(Boolean)"   + VAL, "io.deephaven.util.type.TypeUtils", "io.deephaven.util.BooleanUtils"                                             ),
            BOOLEAN(              "Boolean", "java.lang.Boolean",                 "byte",  R_BOOLEAN, false, "BooleanUtils.booleanAsByte(" + CS + ".getBoolean(" + RK + "))", "BooleanUtils.booleanAsByte(" + CS + ".getPrevBoolean(" + RK + "))", "BooleanUtils.byteAsBoolean(" + VAL + ')', "BooleanUtils.booleanAsByte("    + VAL + ')', "(Boolean)"   + VAL, "io.deephaven.util.BooleanUtils"                                                                                 ),
-        R_DATETIME("ReinterpretedDateTime", "long",                              null,         null,  true,                                 CS + ".getLong("    + RK + ")" ,                                 CS + ".getPrevLong("    + RK + ")" , "DateTimeUtils.nanosToTime("  + VAL + ')', "DateTimeUtils.nanos("           + VAL + ')', "(DateTime)"  + VAL, "io.deephaven.util.type.TypeUtils", "io.deephaven.engine.time.DateTime", "io.deephaven.engine.time.DateTimeUtils"),
-          DATETIME(             "DateTime", "io.deephaven.engine.time.DateTime", "long", R_DATETIME, false,        "DateTimeUtils.nanos(" + CS + ".get("        + RK + "))",        "DateTimeUtils.nanos(" + CS + ".getPrev("        + RK + "))", "DateTimeUtils.nanosToTime("  + VAL + ')', "DateTimeUtils.nanos("           + VAL + ')', "(DateTime)"  + VAL, "io.deephaven.engine.time.DateTime","io.deephaven.engine.time.DateTimeUtils"                                     ),
+        R_DATETIME("ReinterpretedDateTime", "long",                              null,         null,  true,                                 CS + ".getLong("    + RK + ")" ,                                 CS + ".getPrevLong("    + RK + ")" , "DateTimeUtils.nanosToTime("  + VAL + ')', "DateTimeUtils.nanos("           + VAL + ')', "(DateTime)"  + VAL, "io.deephaven.util.type.TypeUtils", "io.deephaven.time.DateTime", "io.deephaven.time.DateTimeUtils"),
+          DATETIME(             "DateTime", "io.deephaven.time.DateTime", "long", R_DATETIME, false,        "DateTimeUtils.nanos(" + CS + ".get("        + RK + "))",        "DateTimeUtils.nanos(" + CS + ".getPrev("        + RK + "))", "DateTimeUtils.nanosToTime("  + VAL + ')', "DateTimeUtils.nanos("           + VAL + ')', "(DateTime)"  + VAL, "io.deephaven.time.DateTime","io.deephaven.time.DateTimeUtils"                                     ),
         ;
         // @formatter:on
 
@@ -106,7 +106,7 @@ public class TupleSourceCodeGenerator {
                     ? elementClassName.substring(0, 1).toUpperCase() + elementClassName.substring(1)
                     : "Object";
             chunkClassName = chunkTypeName + "Chunk";
-            this.imports = Stream.concat(Stream.of("io.deephaven.engine.chunk." + chunkClassName), Stream.of(imports))
+            this.imports = Stream.concat(Stream.of("io.deephaven.chunk." + chunkClassName), Stream.of(imports))
                     .toArray(String[]::new);
         }
 

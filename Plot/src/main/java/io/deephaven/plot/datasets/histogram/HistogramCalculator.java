@@ -5,7 +5,7 @@
 package io.deephaven.plot.datasets.histogram;
 
 import io.deephaven.base.verify.Require;
-import io.deephaven.engine.function.DoubleFpPrimitives;
+import io.deephaven.function.DoubleFpPrimitives;
 import io.deephaven.plot.errors.PlotInfo;
 import io.deephaven.plot.errors.PlotUnsupportedOperationException;
 import io.deephaven.plot.util.ArgumentValidations;
@@ -45,7 +45,7 @@ public class HistogramCalculator {
 
         return t
                 .view(view)
-                .where("io.deephaven.engine.function.DoubleFpPrimitives.isNormal(X)");
+                .where("io.deephaven.function.DoubleFpPrimitives.isNormal(X)");
     }
 
     private static Table counts(final Table data, final Table range, final String... byColumns) {

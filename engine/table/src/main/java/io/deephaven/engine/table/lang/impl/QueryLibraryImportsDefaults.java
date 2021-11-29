@@ -1,6 +1,6 @@
 package io.deephaven.engine.table.lang.impl;
 
-import io.deephaven.engine.function.*;
+import io.deephaven.function.*;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ColumnSource;
@@ -9,13 +9,13 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtils;
 import io.deephaven.engine.table.lang.QueryLibraryImports;
 import io.deephaven.engine.table.lang.QueryScopeParam;
-import io.deephaven.engine.time.DateTimeUtils;
-import io.deephaven.engine.vector.VectorConversions;
+import io.deephaven.time.DateTimeUtils;
+import io.deephaven.vector.VectorConversions;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.engine.table.Context;
-import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.time.Period;
-import io.deephaven.engine.time.TimeZone;
+import io.deephaven.time.DateTime;
+import io.deephaven.time.Period;
+import io.deephaven.time.TimeZone;
 import io.deephaven.engine.util.ColorUtilImpl;
 import io.deephaven.util.type.ArrayTypeUtils;
 
@@ -27,9 +27,13 @@ public class QueryLibraryImportsDefaults implements QueryLibraryImports {
 
     @Override
     public Set<Package> packages() {
+        final ClassLoader classLoader = getClass().getClassLoader();
         return new LinkedHashSet<>(Arrays.asList(
-                Package.getPackage("java.lang"),
-                Package.getPackage("java.util")));
+                classLoader.getDefinedPackage("java.lang"),
+                classLoader.getDefinedPackage("java.util"),
+                classLoader.getDefinedPackage("io.deephaven.chunk.attributes"),
+                classLoader.getDefinedPackage("io.deephaven.rowset.chunkattributes")
+        ));
     }
 
     @Override
@@ -58,28 +62,28 @@ public class QueryLibraryImportsDefaults implements QueryLibraryImports {
                 RowSetBuilderSequential.class,
                 LongSizedDataStructure.class,
                 java.util.concurrent.ConcurrentHashMap.class,
-                io.deephaven.engine.chunk.Attributes.class,
-                io.deephaven.engine.chunk.Chunk.class,
-                io.deephaven.engine.chunk.ByteChunk.class,
-                io.deephaven.engine.chunk.CharChunk.class,
-                io.deephaven.engine.chunk.ShortChunk.class,
-                io.deephaven.engine.chunk.IntChunk.class,
-                io.deephaven.engine.chunk.LongChunk.class,
-                io.deephaven.engine.chunk.FloatChunk.class,
-                io.deephaven.engine.chunk.DoubleChunk.class,
-                io.deephaven.engine.chunk.ObjectChunk.class,
-                io.deephaven.engine.chunk.WritableChunk.class,
-                io.deephaven.engine.chunk.WritableByteChunk.class,
-                io.deephaven.engine.chunk.WritableCharChunk.class,
-                io.deephaven.engine.chunk.WritableShortChunk.class,
-                io.deephaven.engine.chunk.WritableIntChunk.class,
-                io.deephaven.engine.chunk.WritableLongChunk.class,
-                io.deephaven.engine.chunk.WritableFloatChunk.class,
-                io.deephaven.engine.chunk.WritableDoubleChunk.class,
-                io.deephaven.engine.chunk.WritableObjectChunk.class,
+                io.deephaven.chunk.Chunk.class,
+                io.deephaven.chunk.ByteChunk.class,
+                io.deephaven.chunk.CharChunk.class,
+                io.deephaven.chunk.ShortChunk.class,
+                io.deephaven.chunk.IntChunk.class,
+                io.deephaven.chunk.LongChunk.class,
+                io.deephaven.chunk.FloatChunk.class,
+                io.deephaven.chunk.DoubleChunk.class,
+                io.deephaven.chunk.ObjectChunk.class,
+                io.deephaven.chunk.WritableChunk.class,
+                io.deephaven.chunk.WritableByteChunk.class,
+                io.deephaven.chunk.WritableCharChunk.class,
+                io.deephaven.chunk.WritableShortChunk.class,
+                io.deephaven.chunk.WritableIntChunk.class,
+                io.deephaven.chunk.WritableLongChunk.class,
+                io.deephaven.chunk.WritableFloatChunk.class,
+                io.deephaven.chunk.WritableDoubleChunk.class,
+                io.deephaven.chunk.WritableObjectChunk.class,
                 Context.class,
                 io.deephaven.engine.table.impl.select.ConditionFilter.FilterKernel.class,
-                RowSequence.class));
+                RowSequence.class
+        ));
     }
 
     @Override
@@ -114,7 +118,7 @@ public class QueryLibraryImportsDefaults implements QueryLibraryImports {
                 io.deephaven.gui.color.Color.class,
                 ColorUtilImpl.class,
                 io.deephaven.engine.table.impl.verify.TableAssertions.class,
-                io.deephaven.engine.time.calendar.StaticCalendarMethods.class,
-                io.deephaven.engine.chunk.Attributes.class));
+                io.deephaven.time.calendar.StaticCalendarMethods.class
+        ));
     }
 }

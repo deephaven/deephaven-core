@@ -3,18 +3,19 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.table.impl.sort.permute;
 
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.WritableDoubleChunk;
-import io.deephaven.engine.chunk.WritableIntChunk;
+import io.deephaven.chunk.WritableDoubleChunk;
+import io.deephaven.chunk.WritableIntChunk;
+import io.deephaven.chunk.attributes.Any;
+import io.deephaven.chunk.attributes.ChunkPositions;
 import junit.framework.TestCase;
 import org.junit.Test;
 
 public class TestDoublePermuteKernel {
     @Test
     public void testReverse() {
-        final WritableDoubleChunk<Attributes.Any> inputValues = WritableDoubleChunk.makeWritableChunk(10);
-        final WritableIntChunk<Attributes.ChunkPositions> destinations = WritableIntChunk.makeWritableChunk(10);
-        final WritableDoubleChunk<Attributes.Any> outputValues = WritableDoubleChunk.makeWritableChunk(10);
+        final WritableDoubleChunk<Any> inputValues = WritableDoubleChunk.makeWritableChunk(10);
+        final WritableIntChunk<ChunkPositions> destinations = WritableIntChunk.makeWritableChunk(10);
+        final WritableDoubleChunk<Any> outputValues = WritableDoubleChunk.makeWritableChunk(10);
 
         inputValues.setSize(0);
         for (double value = startingValue(); inputValues.size() < 10; ++value) {
@@ -37,9 +38,9 @@ public class TestDoublePermuteKernel {
 
     @Test
     public void testInterleave() {
-        final WritableDoubleChunk<Attributes.Any> inputValues = WritableDoubleChunk.makeWritableChunk(10);
-        final WritableIntChunk<Attributes.ChunkPositions> destinations = WritableIntChunk.makeWritableChunk(10);
-        final WritableDoubleChunk<Attributes.Any> outputValues = WritableDoubleChunk.makeWritableChunk(10);
+        final WritableDoubleChunk<Any> inputValues = WritableDoubleChunk.makeWritableChunk(10);
+        final WritableIntChunk<ChunkPositions> destinations = WritableIntChunk.makeWritableChunk(10);
+        final WritableDoubleChunk<Any> outputValues = WritableDoubleChunk.makeWritableChunk(10);
 
         inputValues.setSize(0);
         for (double value = startingValue(); inputValues.size() < 10; ++value) {
@@ -69,9 +70,9 @@ public class TestDoublePermuteKernel {
 
     @Test
     public void testSpread() {
-        final WritableDoubleChunk<Attributes.Any> inputValues = WritableDoubleChunk.makeWritableChunk(10);
-        final WritableIntChunk<Attributes.ChunkPositions> destinations = WritableIntChunk.makeWritableChunk(10);
-        final WritableDoubleChunk<Attributes.Any> outputValues = WritableDoubleChunk.makeWritableChunk(20);
+        final WritableDoubleChunk<Any> inputValues = WritableDoubleChunk.makeWritableChunk(10);
+        final WritableIntChunk<ChunkPositions> destinations = WritableIntChunk.makeWritableChunk(10);
+        final WritableDoubleChunk<Any> outputValues = WritableDoubleChunk.makeWritableChunk(20);
         outputValues.fillWithValue(0, outputValues.size(), uninitializedValue());
 
         inputValues.setSize(0);

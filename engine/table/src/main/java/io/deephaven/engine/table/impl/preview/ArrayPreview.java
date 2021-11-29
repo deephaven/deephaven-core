@@ -1,7 +1,7 @@
 package io.deephaven.engine.table.impl.preview;
 
-import io.deephaven.engine.vector.Vector;
-import io.deephaven.engine.vector.VectorFactory;
+import io.deephaven.vector.Vector;
+import io.deephaven.vector.VectorFactory;
 import org.jpy.PyListWrapper;
 
 /**

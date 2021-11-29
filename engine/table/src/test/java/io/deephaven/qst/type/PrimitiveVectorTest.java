@@ -2,8 +2,7 @@ package io.deephaven.qst.type;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.deephaven.engine.vector.*;
-import io.deephaven.engine.vector.*;
+import io.deephaven.vector.*;
 
 import java.lang.reflect.InvocationTargetException;
 

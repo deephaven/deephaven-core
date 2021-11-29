@@ -4,10 +4,10 @@
 
 package io.deephaven.plot.example_plots;
 
-import io.deephaven.engine.time.DateTimeUtils;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.plot.Figure;
 import io.deephaven.plot.FigureFactory;
-import io.deephaven.engine.time.DateTime;
+import io.deephaven.time.DateTime;
 
 
 public class SimpleTsDBDatePlot {

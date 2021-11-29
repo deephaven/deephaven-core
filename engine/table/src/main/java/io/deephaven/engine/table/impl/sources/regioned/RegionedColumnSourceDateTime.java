@@ -1,9 +1,10 @@
 package io.deephaven.engine.table.impl.sources.regioned;
 
-import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.time.DateTimeUtils;
+import io.deephaven.chunk.attributes.Values;
+import io.deephaven.time.DateTime;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.table.impl.ColumnSourceGetDefaults;
-import io.deephaven.engine.chunk.*;
+import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.RowSequence;
 
 /**
@@ -11,7 +12,7 @@ import io.deephaven.engine.rowset.RowSequence;
  */
 final class RegionedColumnSourceDateTime
         extends
-        RegionedColumnSourceReferencing<DateTime, Attributes.Values, Long, ColumnRegionLong<Attributes.Values>>
+        RegionedColumnSourceReferencing<DateTime, Values, Long, ColumnRegionLong<Values>>
         implements ColumnSourceGetDefaults.ForObject<DateTime> {
 
     public RegionedColumnSourceDateTime() {
@@ -20,10 +21,10 @@ final class RegionedColumnSourceDateTime
     }
 
     @Override
-    public void convertRegion(WritableChunk<? super Attributes.Values> destination,
-            Chunk<? extends Attributes.Values> source, RowSequence rowSequence) {
-        WritableObjectChunk<DateTime, ? super Attributes.Values> objectChunk = destination.asWritableObjectChunk();
-        LongChunk<? extends Attributes.Values> longChunk = source.asLongChunk();
+    public void convertRegion(WritableChunk<? super Values> destination,
+                              Chunk<? extends Values> source, RowSequence rowSequence) {
+        WritableObjectChunk<DateTime, ? super Values> objectChunk = destination.asWritableObjectChunk();
+        LongChunk<? extends Values> longChunk = source.asLongChunk();
 
         final int size = objectChunk.size();
         final int length = longChunk.size();

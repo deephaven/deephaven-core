@@ -5,7 +5,7 @@
 package io.deephaven.extensions.barrage.util;
 
 import io.deephaven.engine.table.impl.util.BarrageMessage;
-import io.deephaven.engine.chunk.ChunkType;
+import io.deephaven.chunk.ChunkType;
 
 import java.io.InputStream;
 

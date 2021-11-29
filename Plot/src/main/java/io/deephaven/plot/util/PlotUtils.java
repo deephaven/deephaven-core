@@ -21,7 +21,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.lang.QueryScope;
-import io.deephaven.engine.time.DateTime;
+import io.deephaven.time.DateTime;
 import io.deephaven.engine.table.impl.by.AggregationFactory;
 import io.deephaven.engine.table.impl.by.KeyOnlyFirstOrLastBySpec;
 import io.deephaven.gui.color.ColorPaletteArray;
@@ -44,7 +44,7 @@ import java.util.stream.IntStream;
 
 import static io.deephaven.util.QueryConstants.*;
 import static io.deephaven.engine.table.impl.by.AggregationFactory.*;
-import static io.deephaven.engine.function.IntegerNumericPrimitives.abs;
+import static io.deephaven.function.IntegerNumericPrimitives.abs;
 
 /**
  * Utilities class for plotting.

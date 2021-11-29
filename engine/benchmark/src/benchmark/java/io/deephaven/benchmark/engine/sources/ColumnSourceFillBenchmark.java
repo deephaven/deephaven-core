@@ -1,9 +1,9 @@
 package io.deephaven.benchmark.engine.sources;
 
 
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.WritableLongChunk;
+import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import gnu.trove.set.TIntSet;
 import gnu.trove.set.hash.TIntHashSet;
 import io.deephaven.benchmarking.CsvResultWriter;
@@ -34,7 +34,7 @@ public class ColumnSourceFillBenchmark {
 
     private FillBenchmarkHelper helper;
 
-    private WritableLongChunk<Attributes.OrderedRowKeys> keys;
+    private WritableLongChunk<OrderedRowKeys> keys;
     private RowSequence rowSequence;
 
     @Param({"long"})

@@ -1,16 +1,16 @@
 package io.deephaven.parquet.table.pagestore.topage;
 
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.ChunkType;
+import io.deephaven.chunk.ChunkType;
+import io.deephaven.chunk.attributes.Any;
 import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.util.QueryConstants.NULL_INT_BOXED;
 
-public class ToIntPage<ATTR extends Attributes.Any> implements ToPage<ATTR, int[]> {
+public class ToIntPage<ATTR extends Any> implements ToPage<ATTR, int[]> {
 
     private static final ToIntPage INSTANCE = new ToIntPage<>();
 
-    public static <ATTR extends Attributes.Any> ToIntPage<ATTR> create(Class<?> nativeType) {
+    public static <ATTR extends Any> ToIntPage<ATTR> create(Class<?> nativeType) {
         if (nativeType == null || int.class.equals(nativeType)) {
             //noinspection unchecked
             return INSTANCE;

@@ -13,7 +13,7 @@ import io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtils;
 import io.deephaven.engine.table.impl.lang.QueryLanguageParser.QueryLanguageParseException;
 import io.deephaven.engine.table.lang.QueryLibrary;
 import io.deephaven.engine.table.lang.QueryScope;
-import io.deephaven.engine.time.DateTime;
+import io.deephaven.time.DateTime;
 import io.deephaven.engine.table.impl.util.codegen.TypeAnalyzer;
 import io.deephaven.test.junit4.EngineCleanup;
 import io.deephaven.test.types.OutOfBandTest;
@@ -323,7 +323,7 @@ public class TestFormulaColumn {
             result = new HashSet<String>();
             check(row, expression, result);
 
-            expression = "new io.deephaven.engine.time.DateTime(123L)";
+            expression = "new io.deephaven.time.DateTime(123L)";
             result = new DateTime(123L);
             check(row, expression, result);
         }

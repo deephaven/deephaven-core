@@ -11,7 +11,7 @@ import io.deephaven.base.reference.SimpleReference;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.chunk.util.pools.MultiChunkPool;
+import io.deephaven.chunk.util.pools.MultiChunkPool;
 import io.deephaven.engine.liveness.LivenessManager;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;

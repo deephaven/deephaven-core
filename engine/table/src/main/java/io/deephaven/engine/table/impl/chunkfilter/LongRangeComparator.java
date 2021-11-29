@@ -4,10 +4,9 @@
 package io.deephaven.engine.table.impl.chunkfilter;
 
 import io.deephaven.util.compare.LongComparisons;
-import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
-import io.deephaven.engine.chunk.*;
-import io.deephaven.engine.chunk.Attributes.OrderedRowKeys;
-import io.deephaven.engine.chunk.Attributes.Values;
+import io.deephaven.chunk.*;
+import io.deephaven.rowset.chunkattributes.OrderedRowKeys;
+import io.deephaven.chunk.attributes.Values;
 
 public class LongRangeComparator {
     private LongRangeComparator() {} // static use only
@@ -21,7 +20,7 @@ public class LongRangeComparator {
             this.upper = upper;
         }
 
-        abstract public void filter(LongChunk<? extends Values> values, LongChunk<Attributes.OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results);
+        abstract public void filter(LongChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results);
     }
 
     static class LongLongInclusiveInclusiveFilter extends LongLongFilter {
@@ -29,7 +28,7 @@ public class LongRangeComparator {
             super(lower, upper);
         }
 
-        public void filter(LongChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<Attributes.OrderedRowKeys> results) {
+        public void filter(LongChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final long value = values.get(ii);
@@ -45,7 +44,7 @@ public class LongRangeComparator {
             super(lower, upper);
         }
 
-        public void filter(LongChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<Attributes.OrderedRowKeys> results) {
+        public void filter(LongChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final long value = values.get(ii);
@@ -61,7 +60,7 @@ public class LongRangeComparator {
             super(lower, upper);
         }
 
-        public void filter(LongChunk<? extends Values> values, LongChunk<Attributes.OrderedRowKeys> keys, WritableLongChunk<Attributes.OrderedRowKeys> results) {
+        public void filter(LongChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final long value = values.get(ii);
@@ -77,7 +76,7 @@ public class LongRangeComparator {
             super(lower, upper);
         }
 
-        public void filter(LongChunk<? extends Values> values, LongChunk<Attributes.OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
+        public void filter(LongChunk<? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final long value = values.get(ii);

@@ -6,16 +6,15 @@ package io.deephaven.engine.table.impl.ssa;
 import io.deephaven.util.compare.DoubleComparisons;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.DoubleChunk;
-import io.deephaven.engine.chunk.Chunk;
-import io.deephaven.engine.chunk.LongChunk;
-import io.deephaven.engine.chunk.WritableDoubleChunk;
-import io.deephaven.engine.chunk.WritableLongChunk;
-import io.deephaven.engine.chunk.util.hashing.DoubleChunkEquals;
-import io.deephaven.engine.chunk.util.hashing.LongChunkEquals;
-import io.deephaven.engine.chunk.Attributes.RowKeys;
-import io.deephaven.engine.chunk.Attributes.Values;
+import io.deephaven.chunk.DoubleChunk;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.WritableDoubleChunk;
+import io.deephaven.chunk.WritableLongChunk;
+import io.deephaven.chunk.util.hashing.DoubleChunkEquals;
+import io.deephaven.chunk.util.hashing.LongChunkEquals;
+import io.deephaven.rowset.chunkattributes.RowKeys;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.impl.util.ChunkUtils;
 
 public class DoubleReverseSsaChecker implements SsaChecker {
@@ -28,7 +27,7 @@ public class DoubleReverseSsaChecker implements SsaChecker {
         checkSsa((DoubleReverseSegmentedSortedArray)ssa, valueChunk.asDoubleChunk(), tableIndexChunk);
     }
 
-    static void checkSsa(DoubleReverseSegmentedSortedArray ssa, DoubleChunk<? extends Values> valueChunk, LongChunk<? extends Attributes.RowKeys> tableIndexChunk) {
+    static void checkSsa(DoubleReverseSegmentedSortedArray ssa, DoubleChunk<? extends Values> valueChunk, LongChunk<? extends RowKeys> tableIndexChunk) {
         ssa.validateInternal();
 
         //noinspection unchecked

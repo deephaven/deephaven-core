@@ -3,7 +3,8 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.table.impl.select.setinclusion;
 
-import io.deephaven.engine.chunk.*;
+import io.deephaven.chunk.*;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.util.type.TypeUtils;
 import gnu.trove.set.TDoubleSet;
 import gnu.trove.set.hash.TDoubleHashSet;
@@ -21,11 +22,11 @@ public class DoubleSetInclusionKernel implements SetInclusionKernel {
     }
 
     @Override
-    public void matchValues(Chunk<Attributes.Values> values, WritableBooleanChunk matches) {
+    public void matchValues(Chunk<Values> values, WritableBooleanChunk matches) {
         matchValues(values.asDoubleChunk(), matches);
     }
 
-    private void matchValues(DoubleChunk<Attributes.Values> values, WritableBooleanChunk matches) {
+    private void matchValues(DoubleChunk<Values> values, WritableBooleanChunk matches) {
         for (int ii = 0; ii < values.size(); ++ii) {
             matches.set(ii, liveValues.contains(values.get(ii)) == inclusion);
         }

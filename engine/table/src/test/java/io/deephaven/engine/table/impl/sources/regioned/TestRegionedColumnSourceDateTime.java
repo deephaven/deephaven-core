@@ -4,17 +4,17 @@
 
 package io.deephaven.engine.table.impl.sources.regioned;
 
-import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.time.DateTimeUtils;
-import io.deephaven.engine.time.TimeZone;
+import io.deephaven.chunk.attributes.Values;
+import io.deephaven.time.DateTime;
+import io.deephaven.time.DateTimeUtils;
+import io.deephaven.time.TimeZone;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.chunk.Attributes;
 import org.junit.Test;
 
 @SuppressWarnings("JUnit4AnnotatedMethodInJUnit3TestCase")
 public class TestRegionedColumnSourceDateTime
-        extends TstRegionedColumnSourceReferencing<DateTime, Attributes.Values, ColumnRegionLong<Attributes.Values>> {
+        extends TstRegionedColumnSourceReferencing<DateTime, Values, ColumnRegionLong<Values>> {
 
     public TestRegionedColumnSourceDateTime() {
         super(ColumnRegionLong.class);

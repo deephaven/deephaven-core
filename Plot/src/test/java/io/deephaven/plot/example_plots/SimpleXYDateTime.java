@@ -1,9 +1,9 @@
 package io.deephaven.plot.example_plots;
 
-import io.deephaven.engine.time.DateTimeUtils;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.plot.Figure;
 import io.deephaven.plot.PlotStyle;
-import io.deephaven.engine.time.DateTime;
+import io.deephaven.time.DateTime;
 
 import static io.deephaven.plot.PlottingConvenience.plot;
 

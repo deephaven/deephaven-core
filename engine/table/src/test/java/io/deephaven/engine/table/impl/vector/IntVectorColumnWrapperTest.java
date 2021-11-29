@@ -5,7 +5,7 @@ package io.deephaven.engine.table.impl.vector;
 
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.vector.IntVector;
+import io.deephaven.vector.IntVector;
 import junit.framework.TestCase;
 
 import static io.deephaven.util.QueryConstants.NULL_INT;

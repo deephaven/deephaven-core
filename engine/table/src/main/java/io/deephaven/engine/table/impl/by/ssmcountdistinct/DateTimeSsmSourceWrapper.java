@@ -1,9 +1,9 @@
 package io.deephaven.engine.table.impl.by.ssmcountdistinct;
 
-import io.deephaven.engine.vector.LongVector;
-import io.deephaven.engine.vector.ObjectVector;
-import io.deephaven.engine.vector.ObjectVectorDirect;
-import io.deephaven.engine.time.DateTime;
+import io.deephaven.vector.LongVector;
+import io.deephaven.vector.ObjectVector;
+import io.deephaven.vector.ObjectVectorDirect;
+import io.deephaven.time.DateTime;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.ColumnSourceGetDefaults;
 import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
@@ -12,7 +12,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Objects;
 
-import static io.deephaven.engine.time.DateTimeUtils.nanosToTime;
+import static io.deephaven.time.DateTimeUtils.nanosToTime;
 
 /**
  * A {@link SsmBackedColumnSource} for Longs.

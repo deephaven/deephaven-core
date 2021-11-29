@@ -4,20 +4,21 @@
 package io.deephaven.engine.page;
 
 import io.deephaven.base.verify.Require;
-import io.deephaven.engine.chunk.*;
+import io.deephaven.chunk.*;
+import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.rowset.RowSequence;
 import org.jetbrains.annotations.NotNull;
 
-public class FloatChunkPage<ATTR extends Attributes.Any> extends FloatChunk<ATTR> implements ChunkPage<ATTR> {
+public class FloatChunkPage<ATTR extends Any> extends FloatChunk<ATTR> implements ChunkPage<ATTR> {
 
     private final long mask;
     private final long firstRow;
 
-    public static <ATTR extends Attributes.Any> FloatChunkPage<ATTR> pageWrap(long beginRow, float[] data, int offset, int capacity, long mask) {
+    public static <ATTR extends Any> FloatChunkPage<ATTR> pageWrap(long beginRow, float[] data, int offset, int capacity, long mask) {
         return new FloatChunkPage<>(beginRow, data, offset, capacity, mask);
     }
 
-    public static <ATTR extends Attributes.Any> FloatChunkPage<ATTR> pageWrap(long beginRow, float[] data, long mask) {
+    public static <ATTR extends Any> FloatChunkPage<ATTR> pageWrap(long beginRow, float[] data, long mask) {
         return new FloatChunkPage<>(beginRow, data, 0, data.length, mask);
     }
 

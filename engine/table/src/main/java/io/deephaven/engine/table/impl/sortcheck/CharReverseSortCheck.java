@@ -1,19 +1,19 @@
 package io.deephaven.engine.table.impl.sortcheck;
 
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.util.compare.CharComparisons;
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.CharChunk;
-import io.deephaven.engine.chunk.Chunk;
+import io.deephaven.chunk.CharChunk;
+import io.deephaven.chunk.Chunk;
 
 public class CharReverseSortCheck implements SortCheck {
     static final SortCheck INSTANCE = new CharReverseSortCheck();
 
     @Override
-    public int sortCheck(Chunk<? extends Attributes.Values> valuesToCheck) {
+    public int sortCheck(Chunk<? extends Values> valuesToCheck) {
         return sortCheck(valuesToCheck.asCharChunk());
     }
 
-    private int sortCheck(CharChunk<? extends Attributes.Values> valuesToCheck) {
+    private int sortCheck(CharChunk<? extends Values> valuesToCheck) {
         if (valuesToCheck.size() == 0) {
             return -1;
         }

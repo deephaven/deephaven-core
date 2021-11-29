@@ -5,14 +5,15 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.impl.sort.LongSortKernel;
 import io.deephaven.engine.table.impl.sources.ObjectArraySource;
-import io.deephaven.engine.chunk.Attributes.*;
-import io.deephaven.engine.chunk.ChunkType;
-import io.deephaven.engine.chunk.WritableLongChunk;
-import io.deephaven.engine.chunk.sized.SizedLongChunk;
+import io.deephaven.chunk.ChunkType;
+import io.deephaven.chunk.WritableLongChunk;
+import io.deephaven.chunk.sized.SizedLongChunk;
+import io.deephaven.rowset.chunkattributes.RowKeys;
 
 import java.util.function.Consumer;
 

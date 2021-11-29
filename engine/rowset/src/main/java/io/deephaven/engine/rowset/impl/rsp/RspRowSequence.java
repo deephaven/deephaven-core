@@ -1,6 +1,6 @@
 package io.deephaven.engine.rowset.impl.rsp;
 
-import static io.deephaven.engine.chunk.Attributes.OrderedRowKeyRanges;
+import io.deephaven.rowset.chunkattributes.OrderedRowKeyRanges;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.RowSet;
@@ -9,8 +9,8 @@ import io.deephaven.engine.rowset.impl.TrackingWritableRowSetImpl;
 import io.deephaven.util.datastructures.LongAbortableConsumer;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.impl.RowSequenceAsChunkImpl;
-import io.deephaven.engine.chunk.Attributes.RowKeys;
-import io.deephaven.engine.chunk.WritableLongChunk;
+import io.deephaven.rowset.chunkattributes.RowKeys;
+import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.util.datastructures.LongRangeAbortableConsumer;
 import org.apache.commons.lang3.mutable.MutableLong;
 

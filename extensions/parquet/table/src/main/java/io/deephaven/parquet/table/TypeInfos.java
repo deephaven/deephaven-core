@@ -2,8 +2,8 @@ package io.deephaven.parquet.table;
 
 import io.deephaven.engine.table.impl.CodecLookup;
 import io.deephaven.engine.table.ColumnDefinition;
-import io.deephaven.engine.stringset.StringSet;
-import io.deephaven.engine.time.DateTime;
+import io.deephaven.stringset.StringSet;
+import io.deephaven.time.DateTime;
 import io.deephaven.util.codec.ExternalizableCodec;
 import io.deephaven.util.codec.SerializableCodec;
 import org.apache.commons.lang3.tuple.ImmutablePair;

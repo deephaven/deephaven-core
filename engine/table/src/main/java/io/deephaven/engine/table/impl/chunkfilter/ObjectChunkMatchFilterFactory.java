@@ -1,8 +1,8 @@
 package io.deephaven.engine.table.impl.chunkfilter;
 
-import io.deephaven.engine.chunk.*;
-import io.deephaven.engine.chunk.Attributes.OrderedRowKeys;
-import io.deephaven.engine.chunk.Attributes.Values;
+import io.deephaven.chunk.*;
+import io.deephaven.rowset.chunkattributes.OrderedRowKeys;
+import io.deephaven.chunk.attributes.Values;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -45,7 +45,7 @@ public class ObjectChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(ObjectChunk<Object, ? extends Values> values, LongChunk<Attributes.OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
+        public void filter(ObjectChunk<Object, ? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 if (Objects.equals(values.get(ii), value)) {
@@ -83,7 +83,7 @@ public class ObjectChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(ObjectChunk<Object, ? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<Attributes.OrderedRowKeys> results) {
+        public void filter(ObjectChunk<Object, ? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final Object checkValue = values.get(ii);
@@ -104,7 +104,7 @@ public class ObjectChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(ObjectChunk<Object, ? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<Attributes.OrderedRowKeys> results) {
+        public void filter(ObjectChunk<Object, ? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final Object checkValue = values.get(ii);
@@ -127,7 +127,7 @@ public class ObjectChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(ObjectChunk<Object, ? extends Values> values, LongChunk<Attributes.OrderedRowKeys> keys, WritableLongChunk<Attributes.OrderedRowKeys> results) {
+        public void filter(ObjectChunk<Object, ? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final Object checkValue = values.get(ii);
@@ -149,7 +149,7 @@ public class ObjectChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(ObjectChunk<Object, ? extends Values> values, LongChunk<Attributes.OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
+        public void filter(ObjectChunk<Object, ? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 final Object checkValue = values.get(ii);
@@ -168,7 +168,7 @@ public class ObjectChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(ObjectChunk<Object, ? extends Values> values, LongChunk<Attributes.OrderedRowKeys> keys, WritableLongChunk<Attributes.OrderedRowKeys> results) {
+        public void filter(ObjectChunk<Object, ? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 if (this.values.contains(values.get(ii))) {
@@ -186,7 +186,7 @@ public class ObjectChunkMatchFilterFactory {
         }
 
         @Override
-        public void filter(ObjectChunk<Object, ? extends Values> values, LongChunk<Attributes.OrderedRowKeys> keys, WritableLongChunk<Attributes.OrderedRowKeys> results) {
+        public void filter(ObjectChunk<Object, ? extends Values> values, LongChunk<OrderedRowKeys> keys, WritableLongChunk<OrderedRowKeys> results) {
             results.setSize(0);
             for (int ii = 0; ii < values.size(); ++ii) {
                 if (!this.values.contains(values.get(ii))) {

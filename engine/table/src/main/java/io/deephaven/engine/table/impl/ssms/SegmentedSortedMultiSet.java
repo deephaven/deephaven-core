@@ -1,13 +1,13 @@
 package io.deephaven.engine.table.impl.ssms;
 
 import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.chunk.ChunkType;
-import io.deephaven.engine.chunk.WritableChunk;
-import io.deephaven.engine.chunk.WritableIntChunk;
-import io.deephaven.engine.chunk.WritableLongChunk;
+import io.deephaven.chunk.ChunkType;
+import io.deephaven.chunk.WritableChunk;
+import io.deephaven.chunk.WritableIntChunk;
+import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
-import io.deephaven.engine.chunk.Attributes.ChunkLengths;
-import io.deephaven.engine.chunk.Attributes.Values;
+import io.deephaven.chunk.attributes.ChunkLengths;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.util.annotations.VisibleForTesting;
 import org.jetbrains.annotations.NotNull;
 

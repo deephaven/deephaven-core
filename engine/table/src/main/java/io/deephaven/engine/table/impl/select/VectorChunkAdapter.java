@@ -1,10 +1,11 @@
 package io.deephaven.engine.table.impl.select;
 
+import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.table.impl.DefaultChunkSource;
 import io.deephaven.engine.table.SharedContext;
-import io.deephaven.engine.vector.Vector;
+import io.deephaven.vector.Vector;
 import io.deephaven.engine.table.ChunkSource;
-import io.deephaven.engine.chunk.*;
+import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.RowSequence;
 import org.jetbrains.annotations.NotNull;
 
@@ -17,7 +18,7 @@ import org.jetbrains.annotations.NotNull;
  * first let the inner fill the chunk, then we overwrite each value (where non-null) with the result of
  * Vector#getDirect() invoked on that value.
  */
-public class VectorChunkAdapter<ATTR extends Attributes.Any> implements DefaultChunkSource<ATTR> {
+public class VectorChunkAdapter<ATTR extends Any> implements DefaultChunkSource<ATTR> {
     private final ChunkSource<ATTR> underlying;
 
     public VectorChunkAdapter(ChunkSource<ATTR> underlying) {

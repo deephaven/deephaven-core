@@ -7,7 +7,7 @@ package io.deephaven.engine.table.impl;
 import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.compilertools.CompilerTools;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.chunk.util.pools.ChunkPoolReleaseTracking;
+import io.deephaven.chunk.util.pools.ChunkPoolReleaseTracking;
 import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.engine.table.lang.QueryScope;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;

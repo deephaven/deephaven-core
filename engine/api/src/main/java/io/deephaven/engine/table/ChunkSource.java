@@ -1,9 +1,9 @@
 package io.deephaven.engine.table;
 
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.Chunk;
-import io.deephaven.engine.chunk.ChunkType;
-import io.deephaven.engine.chunk.WritableChunk;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.ChunkType;
+import io.deephaven.chunk.WritableChunk;
+import io.deephaven.chunk.attributes.Any;
 import io.deephaven.util.datastructures.LongRangeConsumer;
 import io.deephaven.engine.rowset.RowSequence;
 import org.jetbrains.annotations.NotNull;
@@ -12,7 +12,7 @@ import org.jetbrains.annotations.NotNull;
  *
  * @param <ATTR> the attribute describing what kind of chunks are produced by this source
  */
-public interface ChunkSource<ATTR extends Attributes.Any> extends FillContextMaker, GetContextMaker {
+public interface ChunkSource<ATTR extends Any> extends FillContextMaker, GetContextMaker {
 
     ChunkSource[] ZERO_LENGTH_CHUNK_SOURCE_ARRAY = new ChunkSource[0];
 
@@ -109,7 +109,7 @@ public interface ChunkSource<ATTR extends Attributes.Any> extends FillContextMak
      *
      * @param <ATTR>
      */
-    interface WithPrev<ATTR extends Attributes.Any> extends ChunkSource<ATTR> {
+    interface WithPrev<ATTR extends Any> extends ChunkSource<ATTR> {
         WithPrev[] ZERO_LENGTH_CHUNK_SOURCE_WITH_PREV_ARRAY = new WithPrev[0];
 
         // TODO: Deprecate or remove getPrevChunk and fillPrevChunk if/when we do away with getPrev methods

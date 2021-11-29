@@ -9,7 +9,7 @@ import io.deephaven.plot.errors.PlotUnsupportedOperationException;
 import io.deephaven.plot.util.ArgumentValidations;
 import io.deephaven.engine.table.DataColumn;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.time.DateTime;
+import io.deephaven.time.DateTime;
 import io.deephaven.gui.color.Paint;
 
 import java.io.Serializable;

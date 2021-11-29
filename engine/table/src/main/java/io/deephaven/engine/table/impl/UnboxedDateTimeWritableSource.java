@@ -2,7 +2,7 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.WritableColumnSource;
-import io.deephaven.engine.time.DateTime;
+import io.deephaven.time.DateTime;
 
 public class UnboxedDateTimeWritableSource extends UnboxedDateTimeColumnSource implements WritableColumnSource<Long> {
     private final WritableColumnSource<DateTime> alternateWritableSource;

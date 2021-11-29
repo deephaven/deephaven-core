@@ -1,5 +1,8 @@
 package io.deephaven.engine.table.impl.by;
 
+import io.deephaven.chunk.attributes.ChunkLengths;
+import io.deephaven.chunk.attributes.ChunkPositions;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.impl.SortingOrder;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.MatchPair;
@@ -10,11 +13,11 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.sources.LongArraySource;
 import io.deephaven.engine.table.impl.sources.ObjectArraySource;
 import io.deephaven.engine.table.impl.sources.RedirectedColumnSource;
-import io.deephaven.engine.chunk.*;
-import io.deephaven.engine.chunk.Attributes.*;
+import io.deephaven.chunk.*;
 import io.deephaven.engine.table.impl.ssa.SegmentedSortedArray;
 import io.deephaven.engine.table.impl.util.ChunkUtils;
 import io.deephaven.engine.table.impl.util.LongColumnSourceWritableRowRedirection;
+import io.deephaven.rowset.chunkattributes.RowKeys;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -48,9 +51,9 @@ public class SortedFirstOrLastChunkedOperator implements IterativeChunkedAggrega
 
     @Override
     public void addChunk(BucketedContext bucketedContext, Chunk<? extends Values> values,
-            LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations,
-            IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
-            WritableBooleanChunk<Values> stateModified) {
+                         LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations,
+                         IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+                         WritableBooleanChunk<Values> stateModified) {
         final SortedFirstOrLastBucketedContext context = (SortedFirstOrLastBucketedContext) bucketedContext;
         final int inputSize = inputRowKeys.size();
 

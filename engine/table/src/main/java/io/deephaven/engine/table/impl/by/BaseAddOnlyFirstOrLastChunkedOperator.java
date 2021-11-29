@@ -5,11 +5,11 @@ import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.sources.LongArraySource;
 import io.deephaven.engine.table.impl.sources.RedirectedColumnSource;
-import io.deephaven.engine.chunk.*;
-import io.deephaven.engine.chunk.Attributes.ChunkLengths;
-import io.deephaven.engine.chunk.Attributes.ChunkPositions;
-import io.deephaven.engine.chunk.Attributes.RowKeys;
-import io.deephaven.engine.chunk.Attributes.Values;
+import io.deephaven.chunk.*;
+import io.deephaven.chunk.attributes.ChunkLengths;
+import io.deephaven.chunk.attributes.ChunkPositions;
+import io.deephaven.rowset.chunkattributes.RowKeys;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.impl.util.LongColumnSourceWritableRowRedirection;
 
 import java.util.LinkedHashMap;
@@ -57,7 +57,7 @@ abstract class BaseAddOnlyFirstOrLastChunkedOperator implements IterativeChunked
 
     @Override
     public void shiftChunk(BucketedContext bucketedContext, Chunk<? extends Values> previousValues,
-            Chunk<? extends Values> newValues, LongChunk<? extends Attributes.RowKeys> preShiftRowKeys,
+            Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> preShiftRowKeys,
             LongChunk<? extends RowKeys> postShiftRowKeys, IntChunk<RowKeys> destinations,
             IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
             WritableBooleanChunk<Values> stateModified) {
@@ -66,15 +66,15 @@ abstract class BaseAddOnlyFirstOrLastChunkedOperator implements IterativeChunked
 
     @Override
     public void modifyRowKeys(BucketedContext context, LongChunk<? extends RowKeys> inputRowKeys,
-            IntChunk<Attributes.RowKeys> destinations, IntChunk<ChunkPositions> startPositions,
-            IntChunk<ChunkLengths> length,
-            WritableBooleanChunk<Values> stateModified) {
+                              IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions,
+                              IntChunk<ChunkLengths> length,
+                              WritableBooleanChunk<Values> stateModified) {
         throw new UnsupportedOperationException();
     }
 
     @Override
     public boolean removeChunk(SingletonContext singletonContext, int chunkSize, Chunk<? extends Values> values,
-            LongChunk<? extends Attributes.RowKeys> inputRowKeys, long destination) {
+                               LongChunk<? extends RowKeys> inputRowKeys, long destination) {
         throw new UnsupportedOperationException();
     }
 

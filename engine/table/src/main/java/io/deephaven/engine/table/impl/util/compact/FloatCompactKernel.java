@@ -3,9 +3,12 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.table.impl.util.compact;
 
+import io.deephaven.chunk.attributes.ChunkLengths;
+import io.deephaven.chunk.attributes.ChunkPositions;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.util.compare.FloatComparisons;
-import io.deephaven.engine.chunk.*;
-import io.deephaven.engine.chunk.Attributes.Any;
+import io.deephaven.chunk.*;
+import io.deephaven.chunk.attributes.Any;
 
 import static io.deephaven.util.QueryConstants.NULL_FLOAT;
 
@@ -36,33 +39,33 @@ public class FloatCompactKernel implements CompactKernel {
 
 
     @Override
-    public void compactAndCount(WritableChunk<? extends Attributes.Values> valueChunk, WritableIntChunk<Attributes.ChunkLengths> counts, boolean countNull) {
+    public void compactAndCount(WritableChunk<? extends Values> valueChunk, WritableIntChunk<ChunkLengths> counts, boolean countNull) {
         compactAndCount(valueChunk.asWritableFloatChunk(), counts, countNull);
     }
 
     @Override
-    public void compactAndCount(WritableChunk<? extends Attributes.Values> valueChunk, WritableIntChunk<Attributes.ChunkLengths> counts, IntChunk<Attributes.ChunkPositions> startPositions, WritableIntChunk<Attributes.ChunkLengths> lengths, boolean countNull) {
+    public void compactAndCount(WritableChunk<? extends Values> valueChunk, WritableIntChunk<ChunkLengths> counts, IntChunk<ChunkPositions> startPositions, WritableIntChunk<ChunkLengths> lengths, boolean countNull) {
         compactAndCount(valueChunk.asWritableFloatChunk(), counts, startPositions, lengths, countNull);
     }
 
-    public static void compactAndCount(WritableFloatChunk<? extends Attributes.Values> valueChunk, WritableIntChunk<Attributes.ChunkLengths> counts) {
+    public static void compactAndCount(WritableFloatChunk<? extends Values> valueChunk, WritableIntChunk<ChunkLengths> counts) {
          compactAndCount(valueChunk, counts, false);
     }
 
-    public static void compactAndCount(WritableFloatChunk<? extends Attributes.Values> valueChunk, WritableIntChunk<Attributes.ChunkLengths> counts, boolean countNull) {
+    public static void compactAndCount(WritableFloatChunk<? extends Values> valueChunk, WritableIntChunk<ChunkLengths> counts, boolean countNull) {
         final int newSize = compactAndCount(valueChunk, counts, 0, valueChunk.size(), countNull);
         valueChunk.setSize(newSize);
         counts.setSize(newSize);
     }
 
-    public static void compactAndCount(WritableFloatChunk<? extends Attributes.Values> valueChunk, WritableIntChunk<Attributes.ChunkLengths> counts, IntChunk<Attributes.ChunkPositions> startPositions, WritableIntChunk<Attributes.ChunkLengths> lengths, boolean countNull) {
+    public static void compactAndCount(WritableFloatChunk<? extends Values> valueChunk, WritableIntChunk<ChunkLengths> counts, IntChunk<ChunkPositions> startPositions, WritableIntChunk<ChunkLengths> lengths, boolean countNull) {
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int newSize = compactAndCount(valueChunk, counts, startPositions.get(ii), lengths.get(ii), countNull);
             lengths.set(ii, newSize);
         }
     }
 
-    public static int compactAndCount(WritableFloatChunk<? extends Attributes.Values> valueChunk, WritableIntChunk<Attributes.ChunkLengths> counts, final int start, final int length, boolean countNull) {
+    public static int compactAndCount(WritableFloatChunk<? extends Values> valueChunk, WritableIntChunk<ChunkLengths> counts, final int start, final int length, boolean countNull) {
         int wpos = -1;
         // region compactAndCount
         valueChunk.sort(start, length);

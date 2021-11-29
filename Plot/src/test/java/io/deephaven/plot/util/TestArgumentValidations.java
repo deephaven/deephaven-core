@@ -6,7 +6,7 @@ package io.deephaven.plot.util;
 
 
 import io.deephaven.base.testing.BaseArrayTestCase;
-import io.deephaven.engine.time.DateTime;
+import io.deephaven.time.DateTime;
 import io.deephaven.gui.color.Color;
 import io.deephaven.plot.datasets.data.IndexableNumericData;
 import io.deephaven.plot.datasets.data.IndexableNumericDataArrayInt;

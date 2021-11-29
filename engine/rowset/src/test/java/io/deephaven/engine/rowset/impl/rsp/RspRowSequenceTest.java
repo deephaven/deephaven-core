@@ -2,12 +2,11 @@ package io.deephaven.engine.rowset.impl.rsp;
 
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.Attributes.OrderedRowKeyRanges;
-import io.deephaven.engine.chunk.Attributes.OrderedRowKeys;
-import io.deephaven.engine.chunk.LongChunk;
-import io.deephaven.engine.chunk.WritableLongChunk;
-import io.deephaven.engine.chunk.util.pools.ChunkPoolReleaseTracking;
+import io.deephaven.rowset.chunkattributes.OrderedRowKeyRanges;
+import io.deephaven.rowset.chunkattributes.OrderedRowKeys;
+import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.WritableLongChunk;
+import io.deephaven.chunk.util.pools.ChunkPoolReleaseTracking;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSequenceFactory;
@@ -528,7 +527,7 @@ public class RspRowSequenceTest extends RowSequenceTestBase {
         try (final RowSequence.Iterator it = rowSet.getRowSequenceIterator()) {
             assertTrue(it.hasMore());
             final RowSequence subKeys = it.getNextRowSequenceWithLength(CHUNK_SIZE);
-            final LongChunk<Attributes.OrderedRowKeyRanges> ranges = subKeys.asRowKeyRangesChunk();
+            final LongChunk<OrderedRowKeyRanges> ranges = subKeys.asRowKeyRangesChunk();
             assertFalse(it.hasMore());
             assertEquals(4, ranges.size());
             assertEquals(130972, ranges.get(0));
@@ -568,7 +567,7 @@ public class RspRowSequenceTest extends RowSequenceTestBase {
         try (final RowSequence.Iterator it = rowSet.getRowSequenceIterator()) {
             assertTrue(it.hasMore());
             final RowSequence subKeys = it.getNextRowSequenceWithLength(CHUNK_SIZE);
-            final LongChunk<Attributes.OrderedRowKeyRanges> ranges = subKeys.asRowKeyRangesChunk();
+            final LongChunk<OrderedRowKeyRanges> ranges = subKeys.asRowKeyRangesChunk();
             assertFalse(it.hasMore());
             assertEquals(4, ranges.size());
             assertEquals(130972, ranges.get(0));

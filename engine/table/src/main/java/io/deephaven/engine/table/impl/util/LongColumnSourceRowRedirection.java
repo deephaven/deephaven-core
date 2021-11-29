@@ -1,12 +1,12 @@
 package io.deephaven.engine.table.impl.util;
 
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.Attributes.RowKeys;
+import io.deephaven.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.SharedContext;
-import io.deephaven.engine.chunk.WritableLongChunk;
+import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.util.QueryConstants;
 import org.jetbrains.annotations.NotNull;
 
@@ -49,7 +49,7 @@ public class LongColumnSourceRowRedirection<CST extends ColumnSource<Long>> impl
             @NotNull final ChunkSource.FillContext fillContext,
             @NotNull final WritableLongChunk<? extends RowKeys> innerRowKeys,
             @NotNull final RowSequence outerRowKeys) {
-        final WritableLongChunk<Attributes.Values> asValuesChunk = WritableLongChunk.upcast(innerRowKeys);
+        final WritableLongChunk<Values> asValuesChunk = WritableLongChunk.upcast(innerRowKeys);
         final FillContext effectiveContext = (FillContext) fillContext;
         columnSource.fillChunk(effectiveContext.colSrcCtx, asValuesChunk, outerRowKeys);
         for (int ii = 0; ii < innerRowKeys.size(); ++ii) {
@@ -64,7 +64,7 @@ public class LongColumnSourceRowRedirection<CST extends ColumnSource<Long>> impl
             @NotNull final ChunkSource.FillContext fillContext,
             @NotNull final WritableLongChunk<? extends RowKeys> innerRowKeys,
             @NotNull final RowSequence outerRowKeys) {
-        final WritableLongChunk<Attributes.Values> asValuesChunk =
+        final WritableLongChunk<Values> asValuesChunk =
                 WritableLongChunk.downcast(WritableLongChunk.upcast(innerRowKeys));
         final FillContext effectiveContext = (FillContext) fillContext;
         columnSource.fillPrevChunk(effectiveContext.colSrcCtx, asValuesChunk, outerRowKeys);

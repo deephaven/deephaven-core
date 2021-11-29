@@ -2,7 +2,7 @@ package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.tablelogger.ProcessMemoryLogLogger;
-import io.deephaven.engine.time.DateTimeUtils;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;

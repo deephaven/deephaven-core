@@ -10,7 +10,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.TableListener;
 import io.deephaven.engine.table.TableUpdate;
-import io.deephaven.engine.time.DateTimeUtils;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.updategraph.AbstractNotification;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.io.log.LogEntry;

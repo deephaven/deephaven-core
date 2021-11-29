@@ -10,6 +10,8 @@ import gnu.trove.map.hash.TObjectLongHashMap;
 import io.deephaven.base.Pair;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.attributes.Any;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.engine.rowset.*;
@@ -23,12 +25,12 @@ import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.updategraph.LogicalClock;
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.LongChunk;
-import io.deephaven.engine.chunk.WritableLongChunk;
-import io.deephaven.engine.chunk.WritableObjectChunk;
+import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.WritableLongChunk;
+import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.engine.table.TupleSource;
 import io.deephaven.engine.table.impl.TupleSourceFactory;
+import io.deephaven.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.util.QueryConstants;
 import org.jetbrains.annotations.NotNull;
 
@@ -294,14 +296,14 @@ public class SyncTableFilter {
         final RowSetBuilderSequential matchedBuilder = RowSetFactory.builderSequential();
         final RowSetBuilderSequential pendingBuilder = RowSetFactory.builderSequential();
 
-        try (final WritableLongChunk<Attributes.OrderedRowKeys> keyIndices =
+        try (final WritableLongChunk<OrderedRowKeys> keyIndices =
                 WritableLongChunk.makeWritableChunk(CHUNK_SIZE);
                 final RowSequence.Iterator rsIt = state.pendingRows.getRowSequenceIterator();
                 final ColumnSource.GetContext getContext = idSources.get(tableIndex).makeGetContext(CHUNK_SIZE)) {
             while (rsIt.hasMore()) {
                 final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(CHUNK_SIZE);
                 chunkOk.fillRowKeyChunk(keyIndices);
-                final LongChunk<? extends Attributes.Values> idChunk =
+                final LongChunk<? extends Values> idChunk =
                         idSources.get(tableIndex).getChunk(getContext, chunkOk).asLongChunk();
                 for (int ii = 0; ii < idChunk.size(); ++ii) {
                     final long id = idChunk.get(ii);
@@ -401,13 +403,13 @@ public class SyncTableFilter {
     private void consumeRows(final int tableIndex, final RowSet rowSet) {
         final ColumnSource<Long> idSource = idSources.get(tableIndex);
         // TODO(1606): migrate to using TupleSource.fillChunk
-        try (final WritableObjectChunk<Object, Attributes.Any> valuesChunk =
+        try (final WritableObjectChunk<Object, Any> valuesChunk =
                 WritableObjectChunk.makeWritableChunk(CHUNK_SIZE);
-                final WritableLongChunk<Attributes.Values> idChunk = WritableLongChunk.makeWritableChunk(CHUNK_SIZE);
-                final WritableLongChunk<Attributes.OrderedRowKeys> keyIndicesChunk =
+             final WritableLongChunk<Values> idChunk = WritableLongChunk.makeWritableChunk(CHUNK_SIZE);
+             final WritableLongChunk<OrderedRowKeys> keyIndicesChunk =
                         WritableLongChunk.makeWritableChunk(CHUNK_SIZE);
-                final RowSequence.Iterator rsIt = rowSet.getRowSequenceIterator();
-                final ColumnSource.FillContext fillContext = idSource.makeFillContext(CHUNK_SIZE)) {
+             final RowSequence.Iterator rsIt = rowSet.getRowSequenceIterator();
+             final ColumnSource.FillContext fillContext = idSource.makeFillContext(CHUNK_SIZE)) {
             while (rsIt.hasMore()) {
                 final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(CHUNK_SIZE);
                 chunkOk.fillRowKeyChunk(keyIndicesChunk);

@@ -1,12 +1,13 @@
 package io.deephaven.engine.rowset;
 
 import gnu.trove.procedure.TLongProcedure;
+import io.deephaven.rowset.chunkattributes.OrderedRowKeyRanges;
+import io.deephaven.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.util.datastructures.LongRangeConsumer;
 import io.deephaven.util.datastructures.LongRangeIterator;
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.LongChunk;
-import io.deephaven.engine.chunk.util.LongChunkIterator;
-import io.deephaven.engine.chunk.util.LongChunkRangeIterator;
+import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.util.LongChunkIterator;
+import io.deephaven.chunk.util.LongChunkRangeIterator;
 
 import java.util.PrimitiveIterator;
 
@@ -38,7 +39,7 @@ public interface RowSetBuilderSequential extends TLongProcedure, LongRangeConsum
         }
     }
 
-    default void appendOrderedRowKeysChunk(final LongChunk<Attributes.OrderedRowKeys> chunk) {
+    default void appendOrderedRowKeysChunk(final LongChunk<OrderedRowKeys> chunk) {
         appendKeys(new LongChunkIterator(chunk));
     }
 
@@ -49,7 +50,7 @@ public interface RowSetBuilderSequential extends TLongProcedure, LongRangeConsum
         }
     }
 
-    default void appendOrderedRowKeyRangesChunk(final LongChunk<Attributes.OrderedRowKeyRanges> chunk) {
+    default void appendOrderedRowKeyRangesChunk(final LongChunk<OrderedRowKeyRanges> chunk) {
         appendRanges(new LongChunkRangeIterator(chunk));
     }
 

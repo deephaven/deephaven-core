@@ -1,9 +1,9 @@
 package io.deephaven.engine.table.impl.sources;
 
-import io.deephaven.engine.chunk.Attributes.RowKeys;
-import io.deephaven.engine.chunk.Attributes.Values;
-import io.deephaven.engine.chunk.LongChunk;
-import io.deephaven.engine.chunk.WritableChunk;
+import io.deephaven.rowset.chunkattributes.RowKeys;
+import io.deephaven.chunk.attributes.Values;
+import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.WritableChunk;
 import io.deephaven.engine.table.ColumnSource;
 import org.jetbrains.annotations.NotNull;
 

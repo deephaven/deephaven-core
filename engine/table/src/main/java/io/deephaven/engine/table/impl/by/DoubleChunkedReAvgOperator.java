@@ -7,13 +7,17 @@
 
 package io.deephaven.engine.table.impl.by;
 
+import io.deephaven.chunk.attributes.ChunkLengths;
+import io.deephaven.chunk.attributes.ChunkPositions;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.sources.DoubleArraySource;
-import io.deephaven.engine.chunk.*;
-import io.deephaven.engine.chunk.Attributes.*;
+import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSequenceFactory;
+import io.deephaven.rowset.chunkattributes.OrderedRowKeys;
+import io.deephaven.rowset.chunkattributes.RowKeys;
 
 import java.util.Collections;
 import java.util.Map;

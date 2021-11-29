@@ -1,7 +1,7 @@
 package io.deephaven.stream;
 
-import io.deephaven.engine.chunk.Attributes.Values;
-import io.deephaven.engine.chunk.WritableChunk;
+import io.deephaven.chunk.attributes.Values;
+import io.deephaven.chunk.WritableChunk;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -14,7 +14,7 @@ public interface StreamConsumer extends StreamFailureConsumer {
      *
      * <p>
      * Ownership of {@code data} passes to the consumer, which must be sure to
-     * {@link io.deephaven.engine.chunk.util.pools.PoolableChunk#close close} each chunk when it's no longer needed.
+     * {@link io.deephaven.chunk.util.pools.PoolableChunk#close close} each chunk when it's no longer needed.
      *
      * <p>
      * Implementations will generally have a mechanism for determining the expected number and type of input chunks, but

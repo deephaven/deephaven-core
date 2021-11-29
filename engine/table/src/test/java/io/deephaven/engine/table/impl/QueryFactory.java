@@ -1,6 +1,6 @@
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.engine.time.DateTime;
+import io.deephaven.time.DateTime;
 
 import java.util.*;
 import java.util.stream.Collectors;

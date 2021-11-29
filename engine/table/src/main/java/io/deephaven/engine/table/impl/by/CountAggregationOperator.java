@@ -1,10 +1,13 @@
 package io.deephaven.engine.table.impl.by;
 
+import io.deephaven.chunk.attributes.ChunkLengths;
+import io.deephaven.chunk.attributes.ChunkPositions;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.util.NullSafeAddition;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.sources.LongArraySource;
-import io.deephaven.engine.chunk.*;
-import io.deephaven.engine.chunk.Attributes.*;
+import io.deephaven.chunk.*;
+import io.deephaven.rowset.chunkattributes.RowKeys;
 
 import java.util.Collections;
 import java.util.Map;
@@ -20,9 +23,9 @@ class CountAggregationOperator implements IterativeChunkedAggregationOperator {
 
     @Override
     public void addChunk(BucketedContext context, Chunk<? extends Values> values,
-            LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations,
-            IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
-            WritableBooleanChunk<Values> stateModified) {
+                         LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations,
+                         IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+                         WritableBooleanChunk<Values> stateModified) {
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
             final long destination = destinations.get(startPosition);

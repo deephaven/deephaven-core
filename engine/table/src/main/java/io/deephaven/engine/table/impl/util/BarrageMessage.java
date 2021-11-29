@@ -4,9 +4,9 @@
 
 package io.deephaven.engine.table.impl.util;
 
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.Chunk;
-import io.deephaven.engine.chunk.util.pools.PoolableChunk;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.attributes.Values;
+import io.deephaven.chunk.util.pools.PoolableChunk;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.util.SafeCloseable;
@@ -28,13 +28,13 @@ public class BarrageMessage implements SafeCloseable {
         public RowSet rowsModified;
         public Class<?> type;
         public Class<?> componentType;
-        public Chunk<Attributes.Values> data;
+        public Chunk<Values> data;
     }
 
     public static class AddColumnData {
         public Class<?> type;
         public Class<?> componentType;
-        public Chunk<Attributes.Values> data;
+        public Chunk<Values> data;
     }
 
     public long firstSeq = -1;

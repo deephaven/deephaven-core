@@ -3,8 +3,8 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.table.impl.util.copy;
 
-import io.deephaven.engine.chunk.Attributes.Values;
-import io.deephaven.engine.chunk.WritableShortChunk;
+import io.deephaven.chunk.attributes.Values;
+import io.deephaven.chunk.WritableShortChunk;
 import org.junit.Test;
 
 public class TestShortCopyKernel {

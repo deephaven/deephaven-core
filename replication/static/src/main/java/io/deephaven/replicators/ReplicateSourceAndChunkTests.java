@@ -35,8 +35,8 @@ public class ReplicateSourceAndChunkTests {
         fixupObjectColumnSourceTest(charToObject(
                 "engine/table/src/test/java/io/deephaven/engine/table/impl/sources/TestCharacterSparseArraySource.java"));
 
-        charToAll("engine/chunk/src/test/java/io/deephaven/engine/chunk/TestCharChunk.java");
-        fixupChunkTest(charToObject("engine/chunk/src/test/java/io/deephaven/engine/chunk/TestCharChunk.java"));
+        charToAll("engine/chunk/src/test/java/io/deephaven/chunk/TestCharChunk.java");
+        fixupChunkTest(charToObject("engine/chunk/src/test/java/io/deephaven/chunk/TestCharChunk.java"));
 
         charToAllButBoolean(
                 "engine/table/src/test/java/io/deephaven/engine/table/impl/sources/deltaaware/TestCharacterDeltaAwareColumnSource.java");
@@ -98,10 +98,10 @@ public class ReplicateSourceAndChunkTests {
                 + "fromValues == BooleanUtils.NULL_BOOLEAN_AS_BYTE ? null : fromValues == BooleanUtils.TRUE_BOOLEAN_AS_BYTE, fromChunk);"));
         lines = removeRegion(lines, "samecheck");
         lines = addImport(lines, "import io.deephaven.util.BooleanUtils;");
-        lines = addImport(lines, "import io.deephaven.engine.chunk.WritableObjectChunk;");
-        lines = addImport(lines, "import io.deephaven.engine.chunk.ObjectChunk;");
+        lines = addImport(lines, "import io.deephaven.chunk.WritableObjectChunk;");
+        lines = addImport(lines, "import io.deephaven.chunk.ObjectChunk;");
         if (!booleanPath.contains("Sparse")) {
-            lines = removeImport(lines, "import io.deephaven.engine.chunk.Attributes.OrderedRowKeyRanges;");
+            lines = removeImport(lines, "import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges;");
         }
         lines = simpleFixup(lines, "elementGet",
                 "getBoolean", "getByte");
@@ -138,7 +138,7 @@ public class ReplicateSourceAndChunkTests {
                 "asBooleanChunk", "asObjectChunk",
                 "values.get\\((.*)\\)", "io.deephaven.util.BooleanUtils.booleanAsByte(values.get($1))");
         lines = addImport(lines, "import io.deephaven.util.BooleanUtils;");
-        lines = addImport(lines, "import io.deephaven.engine.chunk.ObjectChunk;");
+        lines = addImport(lines, "import io.deephaven.chunk.ObjectChunk;");
         FileUtils.writeLines(booleanFile, lines);
     }
 }

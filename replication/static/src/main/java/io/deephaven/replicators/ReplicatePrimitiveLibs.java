@@ -21,14 +21,14 @@ import static io.deephaven.replication.ReplicatePrimitiveCode.*;
 public class ReplicatePrimitiveLibs {
     public static void main(String[] args) throws IOException {
         List<String> files = charToAllButBoolean(
-                "engine/function/src/main/java/io/deephaven/engine/function/CharacterPrimitives.java");
+                "engine/function/src/main/java/io/deephaven/function/CharacterPrimitives.java");
         fixup(files);
 
         shortToAllIntegralTypes(
-                "engine/function/src/main/java/io/deephaven/engine/function/ShortNumericPrimitives.java");
+                "engine/function/src/main/java/io/deephaven/function/ShortNumericPrimitives.java");
         floatToAllFloatingPoints(
-                "engine/function/src/main/java/io/deephaven/engine/function/FloatNumericPrimitives.java");
-        floatToAllFloatingPoints("engine/function/src/main/java/io/deephaven/engine/function/FloatFpPrimitives.java");
+                "engine/function/src/main/java/io/deephaven/function/FloatNumericPrimitives.java");
+        floatToAllFloatingPoints("engine/function/src/main/java/io/deephaven/function/FloatFpPrimitives.java");
     }
 
     private static void fixup(List<String> files) throws IOException {

@@ -5,9 +5,7 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.impl.AbstractColumnSource;
-import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
-import io.deephaven.engine.time.DateTime;
+import io.deephaven.time.DateTime;
 import org.jetbrains.annotations.NotNull;
 
 /**

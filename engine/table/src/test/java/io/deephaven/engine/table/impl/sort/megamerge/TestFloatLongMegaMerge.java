@@ -4,15 +4,16 @@
 package io.deephaven.engine.table.impl.sort.megamerge;
 
 import io.deephaven.engine.table.ChunkSource;
-import io.deephaven.engine.chunk.util.hashing.FloatChunkEquals;
-import io.deephaven.engine.chunk.util.hashing.LongChunkEquals;
+import io.deephaven.chunk.util.hashing.FloatChunkEquals;
+import io.deephaven.chunk.util.hashing.LongChunkEquals;
 import io.deephaven.engine.table.impl.sources.FloatArraySource;
 import io.deephaven.engine.table.impl.sources.LongArraySource;
-import io.deephaven.engine.chunk.*;
-import io.deephaven.engine.chunk.Attributes.Values;
+import io.deephaven.chunk.*;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.impl.util.ChunkUtils;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSequenceFactory;
+import io.deephaven.rowset.chunkattributes.RowKeys;
 import junit.framework.TestCase;
 import org.junit.Test;
 
@@ -38,13 +39,13 @@ public class TestFloatLongMegaMerge {
         int totalSize = chunkSize * chunkCount;
 
         try (final WritableFloatChunk<Values> allValues = WritableFloatChunk.makeWritableChunk(totalSize);
-             final WritableLongChunk<Attributes.RowKeys> allKeys = WritableLongChunk.makeWritableChunk(totalSize)) {
+             final WritableLongChunk<RowKeys> allKeys = WritableLongChunk.makeWritableChunk(totalSize)) {
 
             for (int chunk = 0; chunk < chunkCount; ++chunk) {
                 final int sizeAfterAddition = (chunk + 1) * chunkSize;
 
                 try (final WritableFloatChunk<Values> valuesChunk = WritableFloatChunk.makeWritableChunk(chunkSize);
-                     final WritableLongChunk<Attributes.RowKeys> keysChunk = WritableLongChunk.makeWritableChunk(chunkSize)) {
+                     final WritableLongChunk<RowKeys> keysChunk = WritableLongChunk.makeWritableChunk(chunkSize)) {
 
                     final Random random = new Random(0);
 

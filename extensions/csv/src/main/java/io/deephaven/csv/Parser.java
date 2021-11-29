@@ -1,6 +1,6 @@
 package io.deephaven.csv;
 
-import io.deephaven.engine.time.DateTimeUtils;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.qst.type.Type;
 
 import java.time.Duration;

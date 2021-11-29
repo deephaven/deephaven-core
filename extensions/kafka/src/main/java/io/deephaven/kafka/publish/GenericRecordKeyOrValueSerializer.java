@@ -1,11 +1,12 @@
 package io.deephaven.kafka.publish;
 
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.time.DateTime;
+import io.deephaven.time.DateTime;
 import io.deephaven.engine.util.string.StringUtils;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.chunk.*;
+import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
@@ -118,12 +119,12 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
 
         abstract void processField(
                 FieldContext fieldContext,
-                WritableObjectChunk<GenericRecord, Attributes.Values> avroChunk,
+                WritableObjectChunk<GenericRecord, Values> avroChunk,
                 RowSequence keys,
                 boolean isRemoval);
     }
 
-    private abstract static class GenericRecordFieldProcessorImpl<ChunkType extends Chunk<Attributes.Values>>
+    private abstract static class GenericRecordFieldProcessorImpl<ChunkType extends Chunk<Values>>
             extends GenericRecordFieldProcessor {
         private final ColumnSource<?> chunkSource;
 
@@ -155,7 +156,7 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
         @Override
         void processField(
                 final FieldContext fieldContext,
-                final WritableObjectChunk<GenericRecord, Attributes.Values> avroChunk,
+                final WritableObjectChunk<GenericRecord, Values> avroChunk,
                 final RowSequence keys,
                 final boolean previous) {
             final ContextImpl contextImpl = (ContextImpl) fieldContext;
@@ -173,11 +174,11 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
     }
 
     @FunctionalInterface
-    private interface GetFieldElementFun<ChunkType extends Chunk<Attributes.Values>> {
+    private interface GetFieldElementFun<ChunkType extends Chunk<Values>> {
         Object get(final int ii, final ChunkType inputChunk);
     }
 
-    private static <ChunkType extends Chunk<Attributes.Values>> GenericRecordFieldProcessor makeGenericFieldProcessor(
+    private static <ChunkType extends Chunk<Values>> GenericRecordFieldProcessor makeGenericFieldProcessor(
             final String fieldName,
             final ColumnSource<?> chunkSource,
             final GetFieldElementFun<ChunkType> fun) {
@@ -198,7 +199,7 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
         return makeGenericFieldProcessor(
                 fieldName,
                 chunkSource,
-                (final int ii, final ByteChunk<Attributes.Values> inputChunk) -> TypeUtils.box(inputChunk.get(ii)));
+                (final int ii, final ByteChunk<Values> inputChunk) -> TypeUtils.box(inputChunk.get(ii)));
     }
 
     private static GenericRecordFieldProcessor makeCharFieldProcessor(
@@ -207,7 +208,7 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
         return makeGenericFieldProcessor(
                 fieldName,
                 chunkSource,
-                (final int ii, final CharChunk<Attributes.Values> inputChunk) -> TypeUtils.box(inputChunk.get(ii)));
+                (final int ii, final CharChunk<Values> inputChunk) -> TypeUtils.box(inputChunk.get(ii)));
     }
 
     private static GenericRecordFieldProcessor makeShortFieldProcessor(
@@ -216,7 +217,7 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
         return makeGenericFieldProcessor(
                 fieldName,
                 chunkSource,
-                (final int ii, final ShortChunk<Attributes.Values> inputChunk) -> TypeUtils.box(inputChunk.get(ii)));
+                (final int ii, final ShortChunk<Values> inputChunk) -> TypeUtils.box(inputChunk.get(ii)));
     }
 
     private static GenericRecordFieldProcessor makeIntFieldProcessor(
@@ -225,7 +226,7 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
         return makeGenericFieldProcessor(
                 fieldName,
                 chunkSource,
-                (final int ii, final IntChunk<Attributes.Values> inputChunk) -> TypeUtils.box(inputChunk.get(ii)));
+                (final int ii, final IntChunk<Values> inputChunk) -> TypeUtils.box(inputChunk.get(ii)));
     }
 
     private static GenericRecordFieldProcessor makeLongFieldProcessor(
@@ -234,7 +235,7 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
         return makeGenericFieldProcessor(
                 fieldName,
                 chunkSource,
-                (final int ii, final LongChunk<Attributes.Values> inputChunk) -> TypeUtils.box(inputChunk.get(ii)));
+                (final int ii, final LongChunk<Values> inputChunk) -> TypeUtils.box(inputChunk.get(ii)));
     }
 
     private static GenericRecordFieldProcessor makeLongFieldProcessorWithInverseFactor(
@@ -242,7 +243,7 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
             final ColumnSource<?> chunkSource,
             final long denominator) {
         return makeGenericFieldProcessor(
-                fieldName, chunkSource, (final int ii, final LongChunk<Attributes.Values> inputChunk) -> {
+                fieldName, chunkSource, (final int ii, final LongChunk<Values> inputChunk) -> {
                     final long raw = inputChunk.get(ii);
                     if (raw == QueryConstants.NULL_LONG) {
                         return null;
@@ -257,7 +258,7 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
         return makeGenericFieldProcessor(
                 fieldName,
                 chunkSource,
-                (final int ii, final FloatChunk<Attributes.Values> inputChunk) -> TypeUtils.box(inputChunk.get(ii)));
+                (final int ii, final FloatChunk<Values> inputChunk) -> TypeUtils.box(inputChunk.get(ii)));
     }
 
     private static GenericRecordFieldProcessor makeDoubleFieldProcessor(
@@ -266,7 +267,7 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
         return makeGenericFieldProcessor(
                 fieldName,
                 chunkSource,
-                (final int ii, final DoubleChunk<Attributes.Values> inputChunk) -> TypeUtils.box(inputChunk.get(ii)));
+                (final int ii, final DoubleChunk<Values> inputChunk) -> TypeUtils.box(inputChunk.get(ii)));
     }
 
     private static GenericRecordFieldProcessor makeObjectFieldProcessor(
@@ -275,7 +276,7 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
         return makeGenericFieldProcessor(
                 fieldName,
                 chunkSource,
-                (final int ii, final ObjectChunk<?, Attributes.Values> inputChunk) -> inputChunk.get(ii));
+                (final int ii, final ObjectChunk<?, Values> inputChunk) -> inputChunk.get(ii));
     }
 
     private static class TimestampFieldProcessor extends GenericRecordFieldProcessor {
@@ -303,7 +304,7 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
         @Override
         public void processField(
                 final FieldContext fieldContext,
-                final WritableObjectChunk<GenericRecord, Attributes.Values> avroChunk,
+                final WritableObjectChunk<GenericRecord, Values> avroChunk,
                 final RowSequence keys,
                 final boolean isRemoval) {
             final long nanos = DateTime.now().getNanos();
@@ -374,8 +375,8 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
      * @return A List of Strings containing all of the parsed update statements
      */
     @Override
-    public ObjectChunk<GenericRecord, Attributes.Values> handleChunk(Context context, RowSequence toProcess,
-            boolean previous) {
+    public ObjectChunk<GenericRecord, Values> handleChunk(Context context, RowSequence toProcess,
+                                                          boolean previous) {
         final AvroContext avroContext = (AvroContext) context;
 
         avroContext.avroChunk.setSize(toProcess.intSize());
@@ -401,7 +402,7 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
 
     private final class AvroContext implements Context {
 
-        private final WritableObjectChunk<GenericRecord, Attributes.Values> avroChunk;
+        private final WritableObjectChunk<GenericRecord, Values> avroChunk;
         private final FieldContext[] fieldContexts;
 
         public AvroContext(int size) {

@@ -1,15 +1,15 @@
 package io.deephaven.engine.table.impl.by;
 
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.util.QueryConstants;
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.FloatChunk;
+import io.deephaven.chunk.FloatChunk;
 import org.apache.commons.lang3.mutable.MutableDouble;
 import org.apache.commons.lang3.mutable.MutableInt;
 
 class SumFloatChunk {
     private SumFloatChunk() {} // static use only
 
-    static double sumFloatChunk(FloatChunk<? extends Attributes.Values> values, int chunkStart, int chunkSize,
+    static double sumFloatChunk(FloatChunk<? extends Values> values, int chunkStart, int chunkSize,
                                 MutableInt chunkNormalCount,
                                 MutableInt chunkNanCount,
                                 MutableInt chunkInfinityCount,
@@ -33,7 +33,7 @@ class SumFloatChunk {
         return sum;
     }
 
-    static double sum2FloatChunk(FloatChunk<? extends Attributes.Values> values, int chunkStart, int chunkSize,
+    static double sum2FloatChunk(FloatChunk<? extends Values> values, int chunkStart, int chunkSize,
                                  MutableInt chunkNormalCount,
                                  MutableInt chunkNanCount,
                                  MutableInt chunkInfinityCount,
@@ -65,7 +65,7 @@ class SumFloatChunk {
         return sum;
     }
 
-    static double sumFloatChunkAbs(FloatChunk<? extends Attributes.Values> values, int chunkStart, int chunkSize,
+    static double sumFloatChunkAbs(FloatChunk<? extends Values> values, int chunkStart, int chunkSize,
                                    MutableInt chunkNormalCount,
                                    MutableInt chunkNanCount,
                                    MutableInt chunkInfinityCount) {

@@ -4,11 +4,15 @@
 
 package io.deephaven.engine.table.impl.util.freezeby;
 
+import io.deephaven.chunk.attributes.ChunkLengths;
+import io.deephaven.chunk.attributes.ChunkPositions;
+import io.deephaven.chunk.attributes.Values;
+import io.deephaven.rowset.chunkattributes.RowKeys;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.table.impl.by.IterativeChunkedAggregationOperator;
 import io.deephaven.engine.table.impl.sources.ByteArraySource;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.chunk.*;
+import io.deephaven.chunk.*;
 
 import java.util.Collections;
 import java.util.Map;
@@ -23,10 +27,10 @@ public class FreezeByCountOperator implements IterativeChunkedAggregationOperato
     }
 
     @Override
-    public void addChunk(BucketedContext context, Chunk<? extends Attributes.Values> values,
-            LongChunk<? extends Attributes.RowKeys> inputRowKeys, IntChunk<Attributes.RowKeys> destinations,
-            IntChunk<Attributes.ChunkPositions> startPositions, IntChunk<Attributes.ChunkLengths> length,
-            WritableBooleanChunk<Attributes.Values> stateModified) {
+    public void addChunk(BucketedContext context, Chunk<? extends Values> values,
+                         LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations,
+                         IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+                         WritableBooleanChunk<Values> stateModified) {
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int position = startPositions.get(ii);
             final int destination = destinations.get(position);
@@ -38,10 +42,10 @@ public class FreezeByCountOperator implements IterativeChunkedAggregationOperato
     }
 
     @Override
-    public void removeChunk(BucketedContext context, Chunk<? extends Attributes.Values> values,
-            LongChunk<? extends Attributes.RowKeys> inputRowKeys, IntChunk<Attributes.RowKeys> destinations,
-            IntChunk<Attributes.ChunkPositions> startPositions, IntChunk<Attributes.ChunkLengths> length,
-            WritableBooleanChunk<Attributes.Values> stateModified) {
+    public void removeChunk(BucketedContext context, Chunk<? extends Values> values,
+                            LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations,
+                            IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+                            WritableBooleanChunk<Values> stateModified) {
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int position = startPositions.get(ii);
             final int destination = destinations.get(position);
@@ -50,8 +54,8 @@ public class FreezeByCountOperator implements IterativeChunkedAggregationOperato
     }
 
     @Override
-    public boolean addChunk(SingletonContext context, int chunkSize, Chunk<? extends Attributes.Values> values,
-            LongChunk<? extends Attributes.RowKeys> inputRowKeys, long destination) {
+    public boolean addChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values,
+                            LongChunk<? extends RowKeys> inputRowKeys, long destination) {
         if (chunkSize != 1) {
             throw new IllegalStateException("FreezeBy only allows one row per state!");
         }
@@ -60,8 +64,8 @@ public class FreezeByCountOperator implements IterativeChunkedAggregationOperato
     }
 
     @Override
-    public boolean removeChunk(SingletonContext context, int chunkSize, Chunk<? extends Attributes.Values> values,
-            LongChunk<? extends Attributes.RowKeys> inputRowKeys, long destination) {
+    public boolean removeChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values,
+                               LongChunk<? extends RowKeys> inputRowKeys, long destination) {
         setEmpty(destination);
         return false;
     }

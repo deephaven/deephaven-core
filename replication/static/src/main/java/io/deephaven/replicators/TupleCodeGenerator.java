@@ -25,9 +25,9 @@ public class TupleCodeGenerator {
      * arbitrary n-tuples, and eliminate duplication between generateDouble and generateTriple.
      */
 
-    private static final String OUTPUT_PACKAGE = "io.deephaven.engine.tuple.generated";
+    private static final String OUTPUT_PACKAGE = "io.deephaven.tuple.generated";
     private static final File OUTPUT_RELATIVE_PATH =
-            new File("engine/tuple/src/main/java/io/deephaven/engine/tuple/generated");
+            new File("engine/tuple/src/main/java/io/deephaven/tuple/generated");
 
     private static final String LHS = "$lhs$";
     private static final String RHS = "$rhs$";
@@ -38,14 +38,14 @@ public class TupleCodeGenerator {
     private static final String NEW_LINE = System.getProperty("line.separator");
 
     private static final String[] DEFAULT_IMPORTS = new String[] {
-            "io.deephaven.engine.tuple.CanonicalizableTuple",
+            "io.deephaven.tuple.CanonicalizableTuple",
             "java.io.Externalizable",
             "java.io.IOException",
             "org.jetbrains.annotations.NotNull",
             "java.io.ObjectInput",
             "java.io.ObjectOutput",
-            "io.deephaven.engine.tuple.serialization.SerializationUtils",
-            "io.deephaven.engine.tuple.serialization.StreamingExternalizable",
+            "io.deephaven.tuple.serialization.SerializationUtils",
+            "io.deephaven.tuple.serialization.StreamingExternalizable",
             "gnu.trove.map.TIntObjectMap",
             "java.util.function.UnaryOperator"
     };
@@ -162,7 +162,7 @@ public class TupleCodeGenerator {
                     .map(c -> PRIMITIVE_CLASS_NAME_TO_ELEMENT_TYPE.getOrDefault(c, ElementType.OBJECT).getNameText())
                     .collect(Collectors.joining()) + CLASS_NAME_SUFFIX;
         }
-        return "io.deephaven.engine.tuple.ArrayTuple";
+        return "io.deephaven.tuple.ArrayTuple";
     }
 
     /**

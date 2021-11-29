@@ -1,15 +1,18 @@
 package io.deephaven.engine.table.impl.by.ssmcountdistinct;
 
+import io.deephaven.chunk.attributes.ChunkLengths;
+import io.deephaven.chunk.attributes.ChunkPositions;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.impl.by.IterativeChunkedAggregationOperator;
-import io.deephaven.engine.chunk.*;
+import io.deephaven.chunk.*;
 
 public class BucketSsmDistinctRollupContext extends SsmDistinctRollupContext
         implements IterativeChunkedAggregationOperator.BucketedContext {
-    public final WritableIntChunk<Attributes.ChunkLengths> lengthCopy;
-    final WritableIntChunk<Attributes.ChunkLengths> countCopy;
-    public final WritableIntChunk<Attributes.ChunkPositions> starts;
-    public final ResettableWritableChunk<Attributes.Values> valueResettable;
-    public final ResettableWritableIntChunk<Attributes.ChunkLengths> countResettable;
+    public final WritableIntChunk<ChunkLengths> lengthCopy;
+    final WritableIntChunk<ChunkLengths> countCopy;
+    public final WritableIntChunk<ChunkPositions> starts;
+    public final ResettableWritableChunk<Values> valueResettable;
+    public final ResettableWritableIntChunk<ChunkLengths> countResettable;
     public final WritableBooleanChunk<?> ssmsToMaybeClear;
 
     public BucketSsmDistinctRollupContext(ChunkType chunkType, int size) {

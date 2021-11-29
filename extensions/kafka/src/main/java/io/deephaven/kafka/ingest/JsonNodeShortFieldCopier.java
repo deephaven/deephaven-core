@@ -3,11 +3,11 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.kafka.ingest;
 
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.ObjectChunk;
-import io.deephaven.engine.chunk.WritableShortChunk;
-import io.deephaven.engine.chunk.WritableChunk;
+import io.deephaven.chunk.ObjectChunk;
+import io.deephaven.chunk.WritableShortChunk;
+import io.deephaven.chunk.WritableChunk;
 import com.fasterxml.jackson.databind.JsonNode;
+import io.deephaven.chunk.attributes.Values;
 
 public class JsonNodeShortFieldCopier implements FieldCopier {
     private final String fieldName;
@@ -18,10 +18,10 @@ public class JsonNodeShortFieldCopier implements FieldCopier {
 
     @Override
     public void copyField(
-            final ObjectChunk<Object, Attributes.Values> inputChunk, final WritableChunk<Attributes.Values> publisherChunk,
+            final ObjectChunk<Object, Values> inputChunk, final WritableChunk<Values> publisherChunk,
             final int sourceOffset, final int destOffset, final int length
     ) {
-        final WritableShortChunk<Attributes.Values> output = publisherChunk.asWritableShortChunk();
+        final WritableShortChunk<Values> output = publisherChunk.asWritableShortChunk();
         for (int ii = 0; ii < length; ++ii) {
             final JsonNode node = (JsonNode) inputChunk.get(ii + sourceOffset);
             output.set(ii + destOffset, JsonNodeUtil.getShort(node, fieldName, true, true));

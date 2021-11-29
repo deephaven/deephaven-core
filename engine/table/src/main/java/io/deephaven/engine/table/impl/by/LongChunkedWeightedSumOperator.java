@@ -3,15 +3,15 @@ package io.deephaven.engine.table.impl.by;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.util.NullSafeAddition;
-import io.deephaven.engine.chunk.util.hashing.ToLongCast;
-import io.deephaven.engine.chunk.util.hashing.ToLongFunctor;
+import io.deephaven.chunk.util.hashing.ToLongCast;
+import io.deephaven.chunk.util.hashing.ToLongFunctor;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.sources.LongArraySource;
-import io.deephaven.engine.chunk.Attributes.ChunkLengths;
-import io.deephaven.engine.chunk.Attributes.ChunkPositions;
-import io.deephaven.engine.chunk.Attributes.RowKeys;
-import io.deephaven.engine.chunk.Attributes.Values;
-import io.deephaven.engine.chunk.*;
+import io.deephaven.chunk.attributes.ChunkLengths;
+import io.deephaven.chunk.attributes.ChunkPositions;
+import io.deephaven.rowset.chunkattributes.RowKeys;
+import io.deephaven.chunk.attributes.Values;
+import io.deephaven.chunk.*;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableLong;
 
@@ -50,7 +50,7 @@ class LongChunkedWeightedSumOperator implements IterativeChunkedAggregationOpera
     }
 
     @Override
-    public void removeChunk(BucketedContext bucketedContext, Chunk<? extends Values> values, LongChunk<? extends RowKeys> inputRowKeys, IntChunk<Attributes.RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length, WritableBooleanChunk<Values> stateModified) {
+    public void removeChunk(BucketedContext bucketedContext, Chunk<? extends Values> values, LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length, WritableBooleanChunk<Values> stateModified) {
         final Context context = (Context)bucketedContext;
         final LongChunk<? extends Values> doubleValues = context.prevToLongCast.apply(values);
         final LongChunk<? extends Values> weightValues = weightOperator.getRemovedWeights();
@@ -62,7 +62,7 @@ class LongChunkedWeightedSumOperator implements IterativeChunkedAggregationOpera
     }
 
     @Override
-    public void modifyChunk(BucketedContext bucketedContext, Chunk<? extends Values> previousValues, Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> postShiftRowKeys, IntChunk<Attributes.RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length, WritableBooleanChunk<Values> stateModified) {
+    public void modifyChunk(BucketedContext bucketedContext, Chunk<? extends Values> previousValues, Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> postShiftRowKeys, IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length, WritableBooleanChunk<Values> stateModified) {
         final Context context = (Context)bucketedContext;
         final LongChunk<? extends Values> prevDoubleValues = context.prevToLongCast.apply(previousValues);
         final LongChunk<? extends Values> prevWeightValues = weightOperator.getRemovedWeights();

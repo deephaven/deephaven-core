@@ -6,7 +6,7 @@ package io.deephaven.parquet.table.region;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.sources.regioned.ColumnRegionShort;
 import io.deephaven.parquet.table.pagestore.ColumnChunkPageStore;
-import io.deephaven.engine.chunk.Attributes.Any;
+import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.page.ChunkPage;
 import org.jetbrains.annotations.NotNull;
 

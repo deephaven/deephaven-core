@@ -5,19 +5,19 @@
 package io.deephaven.extensions.barrage.chunk;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.Chunk;
-import io.deephaven.engine.chunk.util.pools.PoolableChunk;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.util.pools.PoolableChunk;
 
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
-public abstract class BaseChunkInputStreamGenerator<T extends Chunk<Attributes.Values>> implements ChunkInputStreamGenerator {
+public abstract class BaseChunkInputStreamGenerator<T extends Chunk<Values>> implements ChunkInputStreamGenerator {
     public static final byte[] PADDING_BUFFER = new byte[8];
     public static final int REMAINDER_MOD_8_MASK = 0x7;
 

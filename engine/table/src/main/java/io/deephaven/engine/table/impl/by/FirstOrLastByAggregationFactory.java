@@ -5,7 +5,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.api.util.NameValidator;
 import io.deephaven.engine.table.impl.BaseTable;
-import io.deephaven.engine.chunk.Attributes.Values;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.ChunkSource;
 import org.jetbrains.annotations.NotNull;
 

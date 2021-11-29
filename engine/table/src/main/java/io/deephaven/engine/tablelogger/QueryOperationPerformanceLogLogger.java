@@ -5,8 +5,8 @@
 package io.deephaven.engine.tablelogger;
 
 import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
-import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.time.DateTimeUtils;
+import io.deephaven.time.DateTime;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.util.ColumnsSpecHelper;
 import io.deephaven.tablelogger.*;
 

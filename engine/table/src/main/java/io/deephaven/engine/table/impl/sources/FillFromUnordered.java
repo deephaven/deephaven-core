@@ -1,10 +1,10 @@
 package io.deephaven.engine.table.impl.sources;
 
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.Attributes.Values;
-import io.deephaven.engine.chunk.LongChunk;
-import io.deephaven.engine.chunk.WritableChunk;
+import io.deephaven.chunk.attributes.Values;
+import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.WritableChunk;
 import io.deephaven.engine.table.ChunkSink;
+import io.deephaven.rowset.chunkattributes.RowKeys;
 import org.jetbrains.annotations.NotNull;
 
 public interface FillFromUnordered {
@@ -19,5 +19,5 @@ public interface FillFromUnordered {
     void fillFromChunkUnordered(
             @NotNull ChunkSink.FillFromContext context,
             @NotNull WritableChunk<? super Values> dest,
-            @NotNull LongChunk<? extends Attributes.RowKeys> keys);
+            @NotNull LongChunk<? extends RowKeys> keys);
 }

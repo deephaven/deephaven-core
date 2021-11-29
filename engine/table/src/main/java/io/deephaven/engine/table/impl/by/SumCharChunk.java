@@ -1,15 +1,15 @@
 package io.deephaven.engine.table.impl.by;
 
+import io.deephaven.chunk.attributes.Any;
 import io.deephaven.util.QueryConstants;
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.CharChunk;
+import io.deephaven.chunk.CharChunk;
 import org.apache.commons.lang3.mutable.MutableDouble;
 import org.apache.commons.lang3.mutable.MutableInt;
 
 public class SumCharChunk {
     private SumCharChunk() {} // static use only
 
-    static long sumCharChunk(CharChunk<? extends Attributes.Any> values, int chunkStart, int chunkSize, MutableInt nonNullCount) {
+    static long sumCharChunk(CharChunk<? extends Any> values, int chunkStart, int chunkSize, MutableInt nonNullCount) {
         final int end = chunkStart + chunkSize;
         long sum = 0;
         for (int ii = chunkStart; ii < end; ++ii) {
@@ -22,7 +22,7 @@ public class SumCharChunk {
         return sum;
     }
 
-    public static long sumCharChunk(CharChunk<? extends Attributes.Any> values, int chunkStart, int chunkSize) {
+    public static long sumCharChunk(CharChunk<? extends Any> values, int chunkStart, int chunkSize) {
         final int end = chunkStart + chunkSize;
         long sum = 0;
         for (int ii = chunkStart; ii < end; ++ii) {
@@ -37,7 +37,7 @@ public class SumCharChunk {
     /**
      * Produce the sum and sum of squares of a character chunk, as doubles.
      */
-    static double sum2CharChunk(CharChunk<? extends Attributes.Any> values, int chunkStart, int chunkSize, MutableInt nonNullCount, MutableDouble sum2out) {
+    static double sum2CharChunk(CharChunk<? extends Any> values, int chunkStart, int chunkSize, MutableInt nonNullCount, MutableDouble sum2out) {
         final int end = chunkStart + chunkSize;
         double sum = 0;
         double sum2 = 0;
@@ -66,7 +66,7 @@ public class SumCharChunk {
         }
     }
 
-    static long sumCharChunkAbs(CharChunk<? extends Attributes.Any> values, int chunkStart, int chunkSize, MutableInt nonNullCount) {
+    static long sumCharChunkAbs(CharChunk<? extends Any> values, int chunkStart, int chunkSize, MutableInt nonNullCount) {
         final int end = chunkStart + chunkSize;
         long sum = 0;
         for (int ii = chunkStart; ii < end; ++ii) {

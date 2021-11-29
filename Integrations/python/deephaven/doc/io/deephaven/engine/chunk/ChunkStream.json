@@ -1,8 +1,8 @@
 {
- "className": "io.deephaven.engine.chunk.ChunkStream",
+ "className": "io.deephaven.chunk.ChunkStream",
  "methods": {
-  "of": "*Overload 1*  \n  :param chunk: io.deephaven.engine.chunk.DoubleChunk<? extendsio.deephaven.engine.chunk.Attributes.Any>\n  :param offset: int\n  :param capacity: int\n  :return: java.util.stream.DoubleStream\n  \n*Overload 2*  \n  :param chunk: io.deephaven.engine.chunk.IntChunk<? extendsio.deephaven.engine.chunk.Attributes.Any>\n  :param offset: int\n  :param capacity: int\n  :return: java.util.stream.IntStream\n  \n*Overload 3*  \n  :param chunk: io.deephaven.engine.chunk.LongChunk<? extendsio.deephaven.engine.chunk.Attributes.Any>\n  :param offset: int\n  :param capacity: int\n  :return: java.util.stream.LongStream"
+  "of": "*Overload 1*  \n  :param chunk: io.deephaven.chunk.DoubleChunk<? extendsio.deephaven.chunk.Attributes.Any>\n  :param offset: int\n  :param capacity: int\n  :return: java.util.stream.DoubleStream\n  \n*Overload 2*  \n  :param chunk: io.deephaven.chunk.IntChunk<? extendsio.deephaven.chunk.Attributes.Any>\n  :param offset: int\n  :param capacity: int\n  :return: java.util.stream.IntStream\n  \n*Overload 3*  \n  :param chunk: io.deephaven.chunk.LongChunk<? extendsio.deephaven.chunk.Attributes.Any>\n  :param offset: int\n  :param capacity: int\n  :return: java.util.stream.LongStream"
  },
- "path": "io.deephaven.engine.chunk.ChunkStream",
+ "path": "io.deephaven.chunk.ChunkStream",
  "typeName": "class"
 }

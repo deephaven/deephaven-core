@@ -1,10 +1,11 @@
 package io.deephaven.engine.table.impl.util.unboxer;
 
-import io.deephaven.engine.chunk.*;
+import io.deephaven.chunk.*;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.util.type.TypeUtils;
 
 class CharUnboxer implements ChunkUnboxer.UnboxerKernel {
-    private final WritableCharChunk<Attributes.Values> primitiveChunk;
+    private final WritableCharChunk<Values> primitiveChunk;
 
     CharUnboxer(int capacity) {
         primitiveChunk = WritableCharChunk.makeWritableChunk(capacity);
@@ -16,19 +17,19 @@ class CharUnboxer implements ChunkUnboxer.UnboxerKernel {
     }
 
     @Override
-    public CharChunk<? extends Attributes.Values> unbox(ObjectChunk<?, ? extends Attributes.Values> boxed) {
+    public CharChunk<? extends Values> unbox(ObjectChunk<?, ? extends Values> boxed) {
         unboxTo(boxed, primitiveChunk, 0, 0);
         primitiveChunk.setSize(boxed.size());
         return primitiveChunk;
     }
 
     @Override
-    public void unboxTo(ObjectChunk<?, ? extends Attributes.Values> boxed, WritableChunk<? extends Attributes.Values> primitives, int sourceOffset, int destOffset) {
+    public void unboxTo(ObjectChunk<?, ? extends Values> boxed, WritableChunk<? extends Values> primitives, int sourceOffset, int destOffset) {
         unboxTo(boxed, primitives.asWritableCharChunk(), sourceOffset, destOffset);
     }
 
-    public static void unboxTo(ObjectChunk<?, ? extends Attributes.Values> boxed, WritableCharChunk<? extends Attributes.Values> primitives, int sourceOffset, int destOffset) {
-        final ObjectChunk<Character, ? extends Attributes.Values> charChunk = boxed.asObjectChunk();
+    public static void unboxTo(ObjectChunk<?, ? extends Values> boxed, WritableCharChunk<? extends Values> primitives, int sourceOffset, int destOffset) {
+        final ObjectChunk<Character, ? extends Values> charChunk = boxed.asObjectChunk();
         for (int ii = 0; ii < boxed.size(); ++ii) {
             primitives.set(ii + destOffset, TypeUtils.unbox(charChunk.get(ii + sourceOffset)));
         }

@@ -16,8 +16,8 @@ import io.deephaven.plot.util.tables.SwappableTable;
 import io.deephaven.plot.util.tables.TableMapHandle;
 import io.deephaven.gui.color.Color;
 import io.deephaven.gui.color.Paint;
-import io.deephaven.engine.time.calendar.BusinessCalendar;
-import io.deephaven.engine.time.calendar.Calendars;
+import io.deephaven.time.calendar.BusinessCalendar;
+import io.deephaven.time.calendar.Calendars;
 
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;

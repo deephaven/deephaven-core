@@ -3,12 +3,11 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.table.impl.join.stamp;
 
-import io.deephaven.util.QueryConstants;
 import io.deephaven.util.compare.CharComparisons;
 
-import io.deephaven.engine.chunk.*;
-import io.deephaven.engine.chunk.Attributes.RowKeys;
-import io.deephaven.engine.chunk.Attributes.Values;
+import io.deephaven.chunk.*;
+import io.deephaven.rowset.chunkattributes.RowKeys;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 
 

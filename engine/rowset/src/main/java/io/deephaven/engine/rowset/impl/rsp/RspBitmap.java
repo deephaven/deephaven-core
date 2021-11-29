@@ -1,8 +1,7 @@
 package io.deephaven.engine.rowset.impl.rsp;
 
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.Attributes.OrderedRowKeys;
-import io.deephaven.engine.chunk.LongChunk;
+import io.deephaven.rowset.chunkattributes.OrderedRowKeys;
+import io.deephaven.chunk.LongChunk;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.impl.OrderedLongSet;
@@ -180,7 +179,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
         collectRemovedIndicesIfAny(sortedRangesMu);
     }
 
-    private static int countContiguousHighBitsMatches(final LongChunk<Attributes.OrderedRowKeys> values,
+    private static int countContiguousHighBitsMatches(final LongChunk<OrderedRowKeys> values,
             final int offset, final int length,
             final long highBits) {
         for (int vi = 0; vi < length; ++vi) {
@@ -191,7 +190,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
         return length;
     }
 
-    private Container createOrUpdateContainerForValues(@NotNull final LongChunk<Attributes.OrderedRowKeys> values,
+    private Container createOrUpdateContainerForValues(@NotNull final LongChunk<OrderedRowKeys> values,
             final int offset, final int length,
             final boolean existing,
             final int keyIdx,
@@ -278,7 +277,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
         return bitmapContainer;
     }
 
-    private static Container addValuesToContainer(final LongChunk<Attributes.OrderedRowKeys> values,
+    private static Container addValuesToContainer(final LongChunk<OrderedRowKeys> values,
             final int offset, final int length,
             Container container) {
         if (container.getCardinality() <= length / 2) {
@@ -1357,7 +1356,7 @@ public class RspBitmap extends RspArray<RspBitmap> implements OrderedLongSet {
     }
 
     @Override
-    public final OrderedLongSet ixInsertSecondHalf(final LongChunk<Attributes.OrderedRowKeys> values,
+    public final OrderedLongSet ixInsertSecondHalf(final LongChunk<OrderedRowKeys> values,
             final int offset, final int length) {
         final RspBitmap ans = addValuesUnsafe(values, offset, length);
         ans.finishMutations();

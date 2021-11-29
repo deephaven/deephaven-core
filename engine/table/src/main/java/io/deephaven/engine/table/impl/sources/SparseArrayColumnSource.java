@@ -9,13 +9,12 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.util.type.ArrayTypeUtils;
-import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.Attributes.RowKeys;
-import io.deephaven.engine.chunk.Attributes.Values;
-import io.deephaven.engine.chunk.LongChunk;
-import io.deephaven.engine.chunk.Chunk;
-import io.deephaven.engine.chunk.WritableChunk;
+import io.deephaven.time.DateTime;
+import io.deephaven.rowset.chunkattributes.RowKeys;
+import io.deephaven.chunk.attributes.Values;
+import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.WritableChunk;
 import io.deephaven.engine.table.impl.sources.sparse.LongOneOrN;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
@@ -415,7 +414,7 @@ public abstract class SparseArrayColumnSource<T>
     public void fillChunkUnordered(
             @NotNull final FillContext context,
             @NotNull final WritableChunk<? super Values> dest,
-            @NotNull LongChunk<? extends Attributes.RowKeys> keys) {
+            @NotNull LongChunk<? extends RowKeys> keys) {
         fillByUnRowSequence(dest, keys);
     }
 
@@ -423,7 +422,7 @@ public abstract class SparseArrayColumnSource<T>
     public void fillPrevChunkUnordered(
             @NotNull final FillContext context,
             @NotNull final WritableChunk<? super Values> dest,
-            @NotNull LongChunk<? extends Attributes.RowKeys> keys) {
+            @NotNull LongChunk<? extends RowKeys> keys) {
         fillPrevByUnRowSequence(dest, keys);
     }
 

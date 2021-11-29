@@ -1,10 +1,10 @@
 package io.deephaven.engine.table.impl.sources.deltaaware;
 
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.chunk.ArrayGenerator;
+import io.deephaven.chunk.ArrayGenerator;
 import io.deephaven.engine.table.ChunkSource;
-import io.deephaven.engine.chunk.CharChunk;
-import io.deephaven.engine.chunk.Attributes.Values;
+import io.deephaven.chunk.CharChunk;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;

@@ -7,7 +7,7 @@ import io.deephaven.parquet.table.ParquetSchemaReader;
 import io.deephaven.parquet.table.metadata.ColumnTypeInfo;
 import io.deephaven.parquet.table.metadata.GroupingColumnInfo;
 import io.deephaven.parquet.table.metadata.TableInfo;
-import io.deephaven.engine.chunk.Attributes.Values;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.impl.sources.regioned.RegionedColumnSource;
 import io.deephaven.engine.table.impl.sources.regioned.RegionedPageStore;
 import io.deephaven.engine.rowset.RowSet;

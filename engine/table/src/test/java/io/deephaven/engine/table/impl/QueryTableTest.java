@@ -17,15 +17,15 @@ import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.indexer.RowSetIndexer;
-import io.deephaven.engine.time.DateTimeUtils;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.util.TableTools;
-import io.deephaven.engine.vector.*;
+import io.deephaven.vector.*;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.impl.select.MatchPairFactory;
 import io.deephaven.engine.table.lang.QueryScope;
 import io.deephaven.engine.table.impl.select.SelectColumnFactory;
 import io.deephaven.engine.table.impl.select.WhereFilterFactory;
-import io.deephaven.engine.time.DateTime;
+import io.deephaven.time.DateTime;
 import io.deephaven.parquet.table.ParquetTools;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.liveness.SingletonLivenessManager;
@@ -2356,7 +2356,7 @@ public class QueryTableTest extends QueryTableTestBase {
         final String diff4 = diff(t8, t7, 10);
         Assert.assertEquals("UngroupableColumnSources do not match!", "", diff4);
 
-        final Table t9 = t1.update("Array=new io.deephaven.engine.vector.IntVectorDirect(19, 40)");
+        final Table t9 = t1.update("Array=new io.deephaven.vector.IntVectorDirect(19, 40)");
         final Table t10 = t9.ungroup();
         final String diff5 = diff(t10, t6, 10);
         Assert.assertEquals("UngroupableColumnSources do not match!", "", diff5);

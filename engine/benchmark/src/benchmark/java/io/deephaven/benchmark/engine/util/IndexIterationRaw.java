@@ -1,10 +1,8 @@
 package io.deephaven.benchmark.engine.util;
 
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.Attributes.OrderedRowKeys;
-import io.deephaven.engine.chunk.LongChunk;
-import io.deephaven.engine.chunk.WritableLongChunk;
+import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.benchmarking.BenchUtil;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -52,8 +50,8 @@ public class IndexIterationRaw {
     long indexRanges[];
     RowSet rspRowSet;
 
-    private WritableLongChunk<Attributes.OrderedRowKeys> indexChunk;
-    private WritableLongChunk<Attributes.OrderedRowKeyRanges> rangeChunk;
+    private WritableLongChunk<OrderedRowKeys> indexChunk;
+    private WritableLongChunk<OrderedRowKeyRanges> rangeChunk;
     private long expectedSum;
 
     @Setup(Level.Trial)
@@ -105,7 +103,7 @@ public class IndexIterationRaw {
         return fillChunkDirectByItems(rowSequence.asRowKeyChunk());
     }
 
-    private long fillChunkDirectByRange(LongChunk<Attributes.OrderedRowKeyRanges> ranges) {
+    private long fillChunkDirectByRange(LongChunk<OrderedRowKeyRanges> ranges) {
         long sum = 0;
         int size = ranges.size();
         for (int i = 0; i < size; i += 2) {
@@ -118,7 +116,7 @@ public class IndexIterationRaw {
         return sum;
     }
 
-    private long fillChunkDirectByItems(LongChunk<Attributes.OrderedRowKeys> indices) {
+    private long fillChunkDirectByItems(LongChunk<OrderedRowKeys> indices) {
         long sum = 0;
         int size = indices.size();
         for (int i = 0; i < size; i++) {
@@ -311,7 +309,7 @@ public class IndexIterationRaw {
         print(sum);
     }
 
-    private void fillChunkOfRangesFromIndices(WritableLongChunk<Attributes.OrderedRowKeyRanges> ranges,
+    private void fillChunkOfRangesFromIndices(WritableLongChunk<OrderedRowKeyRanges> ranges,
             final int posInIndex,
             final int count) {
         ranges.setSize(0);

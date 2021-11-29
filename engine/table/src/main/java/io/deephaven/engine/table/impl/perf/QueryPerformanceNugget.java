@@ -4,7 +4,7 @@
 
 package io.deephaven.engine.table.impl.perf;
 
-import io.deephaven.engine.time.DateTimeUtils;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.table.impl.util.RuntimeMemory;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.profiling.ThreadProfiler;

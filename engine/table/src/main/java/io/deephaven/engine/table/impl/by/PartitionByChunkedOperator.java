@@ -1,6 +1,9 @@
 package io.deephaven.engine.table.impl.by;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.attributes.ChunkLengths;
+import io.deephaven.chunk.attributes.ChunkPositions;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.impl.WritableRowSetImpl;
 import io.deephaven.engine.table.*;
@@ -17,9 +20,10 @@ import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.ObjectArraySource;
-import io.deephaven.engine.chunk.Attributes.*;
-import io.deephaven.engine.chunk.*;
+import io.deephaven.chunk.*;
 import io.deephaven.engine.table.impl.SmartKeySource;
+import io.deephaven.rowset.chunkattributes.OrderedRowKeys;
+import io.deephaven.rowset.chunkattributes.RowKeys;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
@@ -146,9 +150,9 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
 
     @Override
     public void addChunk(final BucketedContext bucketedContext, final Chunk<? extends Values> values,
-            @NotNull final LongChunk<? extends RowKeys> inputRowKeys,
-            @NotNull final IntChunk<RowKeys> destinations, @NotNull final IntChunk<ChunkPositions> startPositions,
-            @NotNull final IntChunk<ChunkLengths> length, @NotNull final WritableBooleanChunk<Values> stateModified) {
+                         @NotNull final LongChunk<? extends RowKeys> inputRowKeys,
+                         @NotNull final IntChunk<RowKeys> destinations, @NotNull final IntChunk<ChunkPositions> startPositions,
+                         @NotNull final IntChunk<ChunkLengths> length, @NotNull final WritableBooleanChunk<Values> stateModified) {
         Assert.eqNull(values, "values");
         // noinspection unchecked
         final LongChunk<OrderedRowKeys> inputRowKeysAsOrdered = (LongChunk<OrderedRowKeys>) inputRowKeys;

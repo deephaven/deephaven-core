@@ -7,7 +7,7 @@
 
 package io.deephaven.engine.table.impl.sources.regioned;
 
-import io.deephaven.engine.chunk.Attributes;
+import io.deephaven.chunk.attributes.Values;
 
 import static io.deephaven.util.QueryConstants.NULL_BYTE;
 
@@ -15,7 +15,7 @@ import static io.deephaven.util.QueryConstants.NULL_BYTE;
  * Test class for {@link RegionedColumnSourceByte}.
  */
 @SuppressWarnings("JUnit4AnnotatedMethodInJUnit3TestCase")
-public class TestRegionedColumnSourceByte extends TstRegionedColumnSourcePrimitive<Byte, Attributes.Values, ColumnRegionByte<Attributes.Values>> {
+public class TestRegionedColumnSourceByte extends TstRegionedColumnSourcePrimitive<Byte, Values, ColumnRegionByte<Values>> {
 
     public TestRegionedColumnSourceByte() {
         super(ColumnRegionByte.class);

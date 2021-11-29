@@ -1,7 +1,7 @@
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.engine.function.*;
-import io.deephaven.engine.vector.*;
+import io.deephaven.function.*;
+import io.deephaven.vector.*;
 import io.deephaven.util.compare.CharComparisons;
 import io.deephaven.util.compare.DoubleComparisons;
 import io.deephaven.util.compare.ObjectComparisons;

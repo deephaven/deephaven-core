@@ -1,19 +1,19 @@
 package io.deephaven.engine.table.impl.tuplesource.generated;
 
 import io.deephaven.datastructures.util.SmartKey;
-import io.deephaven.engine.chunk.Attributes.Values;
-import io.deephaven.engine.chunk.ByteChunk;
-import io.deephaven.engine.chunk.Chunk;
-import io.deephaven.engine.chunk.FloatChunk;
-import io.deephaven.engine.chunk.LongChunk;
-import io.deephaven.engine.chunk.WritableChunk;
-import io.deephaven.engine.chunk.WritableObjectChunk;
+import io.deephaven.chunk.attributes.Values;
+import io.deephaven.chunk.ByteChunk;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.FloatChunk;
+import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.WritableChunk;
+import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.TupleSource;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.tuplesource.AbstractTupleSource;
 import io.deephaven.engine.table.impl.tuplesource.ThreeColumnTupleSourceFactory;
-import io.deephaven.engine.tuple.generated.ByteFloatLongTuple;
+import io.deephaven.tuple.generated.ByteFloatLongTuple;
 import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
 

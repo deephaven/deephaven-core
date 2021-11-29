@@ -2,11 +2,11 @@ package io.deephaven.engine.rowset.impl.rsp;
 
 import io.deephaven.configuration.Configuration;
 
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.WritableLongChunk;
+import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.engine.rowset.impl.rsp.container.Container;
 import io.deephaven.engine.rowset.impl.rsp.container.SearchRangeIterator;
 import io.deephaven.engine.rowset.impl.rsp.container.SingletonContainer;
+import io.deephaven.rowset.chunkattributes.OrderedRowKeyRanges;
 import io.deephaven.util.SafeCloseable;
 
 import static io.deephaven.engine.rowset.impl.rsp.RspArray.*;
@@ -77,7 +77,7 @@ public class RspRangeBatchIterator implements SafeCloseable {
     }
 
     private int flushBufToChunk(
-            final WritableLongChunk<Attributes.OrderedRowKeyRanges> chunk, final int chunkOffset, final int chunkDelta,
+            final WritableLongChunk<OrderedRowKeyRanges> chunk, final int chunkOffset, final int chunkDelta,
             final int chunkMaxCount) {
         final int bufDelta = Math.min(chunkMaxCount - chunkDelta, bufCount);
         int i = 0;
@@ -125,7 +125,7 @@ public class RspRangeBatchIterator implements SafeCloseable {
      * @param chunkOffset An offset inside the chunk to the position to start writing
      * @return The count of ranges written (which matches 2 times the number of elements written).
      */
-    public int fillRangeChunk(final WritableLongChunk<Attributes.OrderedRowKeyRanges> chunk, final int chunkOffset) {
+    public int fillRangeChunk(final WritableLongChunk<OrderedRowKeyRanges> chunk, final int chunkOffset) {
         final int chunkMaxCount = chunk.capacity();
         int chunkDelta = 0;
         // first, flush any leftovers in buf from previous calls.

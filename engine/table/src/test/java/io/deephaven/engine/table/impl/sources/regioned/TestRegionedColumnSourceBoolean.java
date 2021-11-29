@@ -4,9 +4,9 @@
 
 package io.deephaven.engine.table.impl.sources.regioned;
 
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.util.type.TypeUtils;
 import org.junit.Test;
 
@@ -14,7 +14,7 @@ import org.junit.Test;
  * Test class for {@link RegionedColumnSourceBoolean}.
  */
 @SuppressWarnings({"JUnit4AnnotatedMethodInJUnit3TestCase"})
-public class TestRegionedColumnSourceBoolean extends TstRegionedColumnSourceReferencing<Boolean, Attributes.Values, ColumnRegionByte<Attributes.Values>> {
+public class TestRegionedColumnSourceBoolean extends TstRegionedColumnSourceReferencing<Boolean, Values, ColumnRegionByte<Values>> {
 
     private ColumnSource<Byte> SUT_AS_BYTE;
 

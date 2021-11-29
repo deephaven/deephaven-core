@@ -11,11 +11,12 @@ import dagger.assisted.AssistedFactory;
 import dagger.assisted.AssistedInject;
 import io.deephaven.base.formatters.FormatBitSet;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.time.DateTimeUtils;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.util.*;
@@ -31,10 +32,9 @@ import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.table.impl.sources.ObjectArraySource;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.ChunkSink;
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.LongChunk;
-import io.deephaven.engine.chunk.ResettableWritableObjectChunk;
-import io.deephaven.engine.chunk.WritableChunk;
+import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.ResettableWritableObjectChunk;
+import io.deephaven.chunk.WritableChunk;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.grpc_api.util.Scheduler;
 import io.deephaven.internal.log.LoggerFactory;
@@ -1241,7 +1241,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
 
                 if (addColumnSet.get(ci)) {
                     final int chunkCapacity = localAdded.intSize("serializeItems");
-                    final WritableChunk<Attributes.Values> chunk =
+                    final WritableChunk<Values> chunk =
                             deltaColumn.getChunkType().makeWritableChunk(chunkCapacity);
                     try (final ChunkSource.FillContext fc = deltaColumn.makeFillContext(chunkCapacity)) {
                         deltaColumn.fillChunk(fc, chunk, localAdded);
@@ -1264,7 +1264,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
                     modifications.rowsModified = firstDelta.recordedMods.copy();
 
                     final int chunkCapacity = localModified.intSize("serializeItems");
-                    final WritableChunk<Attributes.Values> chunk =
+                    final WritableChunk<Values> chunk =
                             deltaColumn.getChunkType().makeWritableChunk(chunkCapacity);
                     try (final ChunkSource.FillContext fc = deltaColumn.makeFillContext(chunkCapacity)) {
                         deltaColumn.fillChunk(fc, chunk, localModified);
@@ -1445,7 +1445,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
 
                 if (addColumnSet.get(ci)) {
                     final ColumnInfo info = getColumnInfo.apply(ci);
-                    final WritableChunk<Attributes.Values> chunk =
+                    final WritableChunk<Values> chunk =
                             deltaColumn.getChunkType().makeWritableChunk(info.addedMapping.length);
                     try (final ChunkSource.FillContext fc = deltaColumn.makeFillContext(info.addedMapping.length)) {
                         ((FillUnordered) deltaColumn).fillChunkUnordered(fc, chunk,
@@ -1470,7 +1470,7 @@ public class BarrageMessageProducer<Options, MessageView> extends LivenessArtifa
                     final ColumnInfo info = getColumnInfo.apply(i);
                     modifications.rowsModified = info.recordedMods.copy();
 
-                    final WritableChunk<Attributes.Values> chunk =
+                    final WritableChunk<Values> chunk =
                             sourceColumn.getChunkType().makeWritableChunk(info.modifiedMapping.length);
                     try (final ChunkSource.FillContext fc = sourceColumn.makeFillContext(info.modifiedMapping.length)) {
                         ((FillUnordered) sourceColumn).fillChunkUnordered(fc, chunk,

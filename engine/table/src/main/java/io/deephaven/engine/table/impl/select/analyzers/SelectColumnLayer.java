@@ -1,16 +1,16 @@
 package io.deephaven.engine.table.impl.select.analyzers;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.TableUpdate;
-import io.deephaven.engine.time.DateTime;
+import io.deephaven.time.DateTime;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.impl.select.VectorChunkAdapter;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.ChunkSink;
 import io.deephaven.engine.table.WritableColumnSource;
-import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.table.ChunkSource;
-import io.deephaven.engine.chunk.WritableChunk;
+import io.deephaven.chunk.WritableChunk;
 import io.deephaven.engine.table.impl.util.ChunkUtils;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
@@ -27,7 +27,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
     /**
      * A memoized copy of selectColumn's data view. Use {@link SelectColumnLayer#getChunkSource()} to access.
      */
-    private ChunkSource<Attributes.Values> chunkSource;
+    private ChunkSource<Values> chunkSource;
 
     SelectColumnLayer(SelectAndViewAnalyzer inner, String name, SelectColumn sc,
             WritableColumnSource ws, WritableColumnSource underlying,
@@ -37,7 +37,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
         this.isRedirected = isRedirected;
     }
 
-    private ChunkSource<Attributes.Values> getChunkSource() {
+    private ChunkSource<Values> getChunkSource() {
         if (chunkSource == null) {
             // noinspection unchecked
             chunkSource = selectColumn.getDataView();
@@ -77,7 +77,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
         // Note that applyUpdate is called during initialization. If the table begins empty, we still want to force that
         // an initial call to getDataView() (via getChunkSource()) or else the formula will only be computed later when
         // data begins to flow; start-of-day is likely a bad time to find formula errors for our customers.
-        final ChunkSource<Attributes.Values> chunkSource = getChunkSource();
+        final ChunkSource<Values> chunkSource = getChunkSource();
 
         final boolean needGetContext = upstream.added().isNonempty() || modifiesAffectUs;
         final boolean needDestContext = preMoveKeys.isNonempty() || needGetContext;
@@ -96,7 +96,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                 // note: we cannot use a get context here as destination is identical to source
                 final int shiftContextSize = contextSize.applyAsInt(preMoveKeys.size());
                 try (final ChunkSource.FillContext srcContext = writableSource.makeFillContext(shiftContextSize);
-                        final WritableChunk<Attributes.Values> chunk =
+                        final WritableChunk<Values> chunk =
                                 writableSource.getChunkType().makeWritableChunk(shiftContextSize);
                         final RowSequence.Iterator srcIter = preMoveKeys.getRowSequenceIterator();
                         final RowSequence.Iterator destIter = postMoveKeys.getRowSequenceIterator()) {

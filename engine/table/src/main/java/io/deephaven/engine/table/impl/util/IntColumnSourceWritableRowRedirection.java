@@ -3,12 +3,12 @@ package io.deephaven.engine.table.impl.util;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.WritableColumnSource;
-import io.deephaven.engine.chunk.Attributes.RowKeys;
-import io.deephaven.engine.chunk.Attributes.Values;
+import io.deephaven.rowset.chunkattributes.RowKeys;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.SharedContext;
-import io.deephaven.engine.chunk.WritableIntChunk;
-import io.deephaven.engine.chunk.WritableLongChunk;
+import io.deephaven.chunk.WritableIntChunk;
+import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.util.QueryConstants;
 import org.jetbrains.annotations.NotNull;
 

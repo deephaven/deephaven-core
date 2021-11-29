@@ -3,7 +3,7 @@
  "methods": {
   "fromArray": ":param array: java.lang.Object\n:return: io.deephaven.engine.table.impl.preview.ArrayPreview",
   "fromPyListWrapper": ":param list: org.jpy.PyListWrapper\n:return: io.deephaven.engine.table.impl.preview.ArrayPreview",
-  "fromVector": ":param vector: io.deephaven.engine.vector.Vector<?>\n:return: io.deephaven.engine.table.impl.preview.ArrayPreview",
+  "fromVector": ":param vector: io.deephaven.vector.Vector<?>\n:return: io.deephaven.engine.table.impl.preview.ArrayPreview",
   "toString": ":return: java.lang.String"
  },
  "path": "io.deephaven.engine.table.impl.preview.ArrayPreview",

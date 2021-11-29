@@ -8,16 +8,16 @@
 package io.deephaven.extensions.barrage.chunk;
 
 import gnu.trove.iterator.TLongIterator;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import com.google.common.io.LittleEndianDataOutputStream;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.ByteChunk;
-import io.deephaven.engine.chunk.Chunk;
-import io.deephaven.engine.chunk.WritableByteChunk;
-import io.deephaven.engine.chunk.WritableLongChunk;
+import io.deephaven.chunk.ByteChunk;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.WritableByteChunk;
+import io.deephaven.chunk.WritableLongChunk;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.DataInput;
@@ -27,10 +27,10 @@ import java.util.Iterator;
 
 import static io.deephaven.util.QueryConstants.*;
 
-public class ByteChunkInputStreamGenerator extends BaseChunkInputStreamGenerator<ByteChunk<Attributes.Values>> {
+public class ByteChunkInputStreamGenerator extends BaseChunkInputStreamGenerator<ByteChunk<Values>> {
     private static final String DEBUG_NAME = "ByteChunkInputStreamGenerator";
 
-    ByteChunkInputStreamGenerator(final ByteChunk<Attributes.Values> chunk, final int elementSize) {
+    ByteChunkInputStreamGenerator(final ByteChunk<Values> chunk, final int elementSize) {
         super(chunk, elementSize);
     }
 
@@ -142,7 +142,7 @@ public class ByteChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
         ByteConversion IDENTITY = (byte a) -> a;
     }
 
-    static Chunk<Attributes.Values> extractChunkFromInputStream(
+    static Chunk<Values> extractChunkFromInputStream(
             final int elementSize,
             final BarrageSubscriptionOptions options,
             final Iterator<FieldNodeInfo> fieldNodeIter,
@@ -152,7 +152,7 @@ public class ByteChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
                 elementSize, options, ByteConversion.IDENTITY, fieldNodeIter, bufferInfoIter, is);
     }
 
-    static Chunk<Attributes.Values> extractChunkFromInputStreamWithConversion(
+    static Chunk<Values> extractChunkFromInputStreamWithConversion(
             final int elementSize,
             final BarrageSubscriptionOptions options,
             final ByteConversion conversion,
@@ -164,14 +164,14 @@ public class ByteChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
         final long validityBuffer = bufferInfoIter.next();
         final long payloadBuffer = bufferInfoIter.next();
 
-        final WritableByteChunk<Attributes.Values> chunk = WritableByteChunk.makeWritableChunk(nodeInfo.numElements);
+        final WritableByteChunk<Values> chunk = WritableByteChunk.makeWritableChunk(nodeInfo.numElements);
 
         if (nodeInfo.numElements == 0) {
             return chunk;
         }
 
         final int numValidityLongs = options.useDeephavenNulls() ? 0 : (nodeInfo.numElements + 63) / 64;
-        try (final WritableLongChunk<Attributes.Values> isValid = WritableLongChunk.makeWritableChunk(numValidityLongs)) {
+        try (final WritableLongChunk<Values> isValid = WritableLongChunk.makeWritableChunk(numValidityLongs)) {
             if (options.useDeephavenNulls() && validityBuffer != 0) {
                 throw new IllegalStateException("validity buffer is non-empty, but is unnecessary");
             }

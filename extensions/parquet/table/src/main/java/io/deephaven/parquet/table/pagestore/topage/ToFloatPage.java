@@ -3,17 +3,17 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.parquet.table.pagestore.topage;
 
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.ChunkType;
+import io.deephaven.chunk.ChunkType;
+import io.deephaven.chunk.attributes.Any;
 import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.util.QueryConstants.NULL_FLOAT_BOXED;
 
-public class ToFloatPage<ATTR extends Attributes.Any> implements ToPage<ATTR, float[]> {
+public class ToFloatPage<ATTR extends Any> implements ToPage<ATTR, float[]> {
 
     private static final ToFloatPage INSTANCE = new ToFloatPage<>();
 
-    public static <ATTR extends Attributes.Any> ToFloatPage<ATTR> create(Class<?> nativeType) {
+    public static <ATTR extends Any> ToFloatPage<ATTR> create(Class<?> nativeType) {
         if (nativeType == null || float.class.equals(nativeType)) {
             //noinspection unchecked
             return INSTANCE;

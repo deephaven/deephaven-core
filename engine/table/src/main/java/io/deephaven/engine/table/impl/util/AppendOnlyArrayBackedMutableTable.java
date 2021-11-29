@@ -1,5 +1,6 @@
 package io.deephaven.engine.table.impl.util;
 
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
@@ -10,7 +11,7 @@ import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.NullValueColumnSource;
 import io.deephaven.engine.table.ChunkSink;
-import io.deephaven.engine.chunk.*;
+import io.deephaven.chunk.*;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collections;
@@ -107,7 +108,7 @@ public class AppendOnlyArrayBackedMutableTable extends BaseArrayBackedMutableTab
                             arrayBackedColumnSource.makeFillFromContext(chunkCapacity);
                             final ChunkSource.GetContext getContext =
                                     sourceColumnSource.makeGetContext(chunkCapacity, sharedContext)) {
-                        final Chunk<? extends Attributes.Values> valuesChunk =
+                        final Chunk<? extends Values> valuesChunk =
                                 sourceColumnSource.getChunk(getContext, addRowSet);
                         arrayBackedColumnSource.fillFromChunk(ffc, valuesChunk, destinations);
                     }

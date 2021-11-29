@@ -1,7 +1,7 @@
 package io.deephaven.engine.table.impl.select.analyzers;
 
 import io.deephaven.engine.table.ColumnDefinition;
-import io.deephaven.engine.vector.Vector;
+import io.deephaven.vector.Vector;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.ColumnSource;

@@ -7,9 +7,9 @@ import io.deephaven.engine.table.impl.join.stamp.StampKernel;
 import io.deephaven.engine.table.impl.sort.LongSortKernel;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.chunk.Attributes.RowKeys;
-import io.deephaven.engine.chunk.Attributes.Values;
-import io.deephaven.engine.chunk.*;
+import io.deephaven.rowset.chunkattributes.RowKeys;
+import io.deephaven.chunk.attributes.Values;
+import io.deephaven.chunk.*;
 import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import io.deephaven.engine.rowset.RowSet;
 
@@ -37,7 +37,7 @@ class AsOfStampContext implements Context {
     private ChunkSource.FillContext rightFillContext;
 
     private final DupCompactKernel rightDupCompact;
-    private LongSortKernel<Values, Attributes.RowKeys> sortKernel;
+    private LongSortKernel<Values, RowKeys> sortKernel;
 
     private WritableLongChunk<RowKeys> leftRedirections;
 

@@ -1,9 +1,9 @@
 package io.deephaven.engine.table.impl.select.formula;
 
 import io.deephaven.engine.table.impl.select.Formula;
-import io.deephaven.engine.chunk.Attributes.Values;
-import io.deephaven.engine.chunk.Chunk;
-import io.deephaven.engine.chunk.WritableChunk;
+import io.deephaven.chunk.attributes.Values;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.WritableChunk;
 
 public interface FormulaKernel {
     Formula.FillContext makeFillContext(final int __chunkCapacity);

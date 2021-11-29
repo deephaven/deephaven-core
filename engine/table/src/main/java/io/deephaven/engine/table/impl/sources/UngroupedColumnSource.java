@@ -7,8 +7,8 @@ package io.deephaven.engine.table.impl.sources;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.updategraph.LogicalClock;
-import io.deephaven.engine.vector.ObjectVector;
-import io.deephaven.engine.vector.Vector;
+import io.deephaven.vector.ObjectVector;
+import io.deephaven.vector.Vector;
 import io.deephaven.engine.table.impl.sources.aggregate.AggregateColumnSource;
 
 @AbstractColumnSource.IsSerializable(value = true)

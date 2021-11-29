@@ -1,15 +1,16 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.vector.*;
-import io.deephaven.engine.chunk.util.hashing.ChunkEquals;
+import io.deephaven.vector.*;
+import io.deephaven.chunk.util.hashing.ChunkEquals;
 import io.deephaven.engine.table.impl.sources.SparseArrayColumnSource;
-import io.deephaven.engine.chunk.*;
+import io.deephaven.chunk.*;
 import io.deephaven.engine.table.impl.util.*;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableList;
@@ -311,7 +312,7 @@ public class TableUpdateValidator implements QueryTable.Operation {
         // transients
         ColumnSource.GetContext sourceGetContext;
         ColumnSource.FillContext sourceFillContext;
-        WritableObjectChunk<Object, Attributes.Values> sourceFillChunk;
+        WritableObjectChunk<Object, Values> sourceFillChunk;
         ColumnSource.GetContext expectedGetContext;
         ChunkSink.FillFromContext expectedFillFromContext;
         WritableBooleanChunk equalValuesDest;
@@ -342,7 +343,7 @@ public class TableUpdateValidator implements QueryTable.Operation {
             return sourceFillContext;
         }
 
-        private WritableObjectChunk<Object, Attributes.Values> sourceFillChunk() {
+        private WritableObjectChunk<Object, Values> sourceFillChunk() {
             if (sourceFillChunk == null) {
                 sourceFillChunk = isPrimitive ? null : WritableObjectChunk.makeWritableChunk(CHUNK_SIZE);
             }
@@ -405,9 +406,9 @@ public class TableUpdateValidator implements QueryTable.Operation {
 
         public void validateValues(final String what, final RowSequence toValidate, final boolean usePrev) {
             Assert.leq(toValidate.size(), "toValidate.size()", CHUNK_SIZE, "CHUNK_SIZE");
-            final Chunk<? extends Attributes.Values> expected =
+            final Chunk<? extends Values> expected =
                     expectedSource.getChunk(expectedGetContext(), toValidate);
-            final Chunk<? extends Attributes.Values> actual = getSourceChunk(toValidate, usePrev);
+            final Chunk<? extends Values> actual = getSourceChunk(toValidate, usePrev);
             chunkEquals.equal(expected, actual, equalValuesDest());
             MutableInt off = new MutableInt();
             toValidate.forAllRowKeys((i) -> {
@@ -431,7 +432,7 @@ public class TableUpdateValidator implements QueryTable.Operation {
             });
         }
 
-        private Chunk<? extends Attributes.Values> getSourceChunk(RowSequence rowSequence, boolean usePrev) {
+        private Chunk<? extends Values> getSourceChunk(RowSequence rowSequence, boolean usePrev) {
             return usePrev ? source.getPrevChunk(sourceGetContext(), rowSequence)
                     : source.getChunk(sourceGetContext(), rowSequence);
         }

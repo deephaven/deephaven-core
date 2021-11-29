@@ -6,9 +6,9 @@ package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.updategraph.LogicalClock;
-import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.table.ChunkSource;
-import io.deephaven.engine.chunk.WritableLongChunk;
+import io.deephaven.chunk.WritableLongChunk;
+import io.deephaven.rowset.chunkattributes.RowKeys;
 import org.jetbrains.annotations.NotNull;
 
 public class WritableSingleValueRowRedirection extends SingleValueRowRedirection {
@@ -61,7 +61,7 @@ public class WritableSingleValueRowRedirection extends SingleValueRowRedirection
     @Override
     public void fillPrevChunk(
             @NotNull ChunkSource.FillContext fillContext,
-            @NotNull WritableLongChunk<? extends Attributes.RowKeys> innerRowKeys,
+            @NotNull WritableLongChunk<? extends RowKeys> innerRowKeys,
             @NotNull RowSequence outerRowKeys) {
         final long fillValue =
                 (updatedClockTick > 0 && updatedClockTick == LogicalClock.DEFAULT.currentStep()) ? prevValue : value;

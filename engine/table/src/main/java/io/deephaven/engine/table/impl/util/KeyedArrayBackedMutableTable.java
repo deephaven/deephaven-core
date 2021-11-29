@@ -1,5 +1,6 @@
 package io.deephaven.engine.table.impl.util;
 
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -7,11 +8,12 @@ import io.deephaven.engine.exceptions.ArgumentException;
 import io.deephaven.engine.table.impl.chunkboxer.ChunkBoxer;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.sources.*;
-import io.deephaven.engine.chunk.*;
+import io.deephaven.chunk.*;
 import io.deephaven.engine.table.impl.TupleSourceFactory;
 import gnu.trove.impl.Constants;
 import gnu.trove.map.TObjectLongMap;
 import gnu.trove.map.hash.TObjectLongHashMap;
+import io.deephaven.rowset.chunkattributes.RowKeys;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
@@ -127,7 +129,7 @@ public class KeyedArrayBackedMutableTable extends BaseArrayBackedMutableTable {
     @Override
     protected void processPendingTable(Table table, boolean allowEdits, RowSetChangeRecorder rowSetChangeRecorder,
             Consumer<String> errorNotifier) {
-        final ChunkSource<Attributes.Values> keySource = makeKeySource(table);
+        final ChunkSource<Values> keySource = makeKeySource(table);
         final int chunkCapacity = table.intSize();
 
         final SharedContext sharedContext = SharedContext.makeSharedContext();
@@ -136,12 +138,12 @@ public class KeyedArrayBackedMutableTable extends BaseArrayBackedMutableTable {
         final StringBuilder errorBuilder = new StringBuilder();
 
         try (final RowSet addRowSet = table.getRowSet().copy();
-                final WritableLongChunk<Attributes.RowKeys> destinations =
+                final WritableLongChunk<RowKeys> destinations =
                         WritableLongChunk.makeWritableChunk(chunkCapacity)) {
             try (final ChunkSource.GetContext getContext = keySource.makeGetContext(chunkCapacity, sharedContext);
                     final ChunkBoxer.BoxerKernel boxer = ChunkBoxer.getBoxer(keySource.getChunkType(), chunkCapacity)) {
-                final Chunk<? extends Attributes.Values> keys = keySource.getChunk(getContext, addRowSet);
-                final ObjectChunk<?, ? extends Attributes.Values> boxed = boxer.box(keys);
+                final Chunk<? extends Values> keys = keySource.getChunk(getContext, addRowSet);
+                final ObjectChunk<?, ? extends Values> boxed = boxer.box(keys);
                 for (int ii = 0; ii < boxed.size(); ++ii) {
                     final Object key = boxed.get(ii);
                     long rowNumber = keyToRowMap.putIfAbsent(key, rowToInsert);
@@ -187,7 +189,7 @@ public class KeyedArrayBackedMutableTable extends BaseArrayBackedMutableTable {
                         arrayBackedColumnSource.makeFillFromContext(chunkCapacity);
                         final ChunkSource.GetContext getContext =
                                 sourceColumnSource.makeGetContext(chunkCapacity, sharedContext)) {
-                    final Chunk<? extends Attributes.Values> valuesChunk =
+                    final Chunk<? extends Values> valuesChunk =
                             sourceColumnSource.getChunk(getContext, addRowSet);
                     arrayBackedColumnSource.fillFromChunkUnordered(ffc, valuesChunk, destinations);
                 }
@@ -197,19 +199,19 @@ public class KeyedArrayBackedMutableTable extends BaseArrayBackedMutableTable {
 
     @Override
     protected void processPendingDelete(Table table, RowSetChangeRecorder rowSetChangeRecorder) {
-        final ChunkSource<Attributes.Values> keySource = makeKeySource(table);
+        final ChunkSource<Values> keySource = makeKeySource(table);
         final int chunkCapacity = table.intSize();
 
         final SharedContext sharedContext = SharedContext.makeSharedContext();
 
-        try (final WritableLongChunk<Attributes.RowKeys> destinations =
+        try (final WritableLongChunk<RowKeys> destinations =
                 WritableLongChunk.makeWritableChunk(chunkCapacity)) {
             try (final ChunkSource.GetContext getContext = keySource.makeGetContext(chunkCapacity, sharedContext);
                     final ChunkBoxer.BoxerKernel boxer = ChunkBoxer.getBoxer(keySource.getChunkType(), chunkCapacity);
                     final RowSet tableRowSet = table.getRowSet().copy();) {
 
-                final Chunk<? extends Attributes.Values> keys = keySource.getChunk(getContext, tableRowSet);
-                final ObjectChunk<?, ? extends Attributes.Values> boxed = boxer.box(keys);
+                final Chunk<? extends Values> keys = keySource.getChunk(getContext, tableRowSet);
+                final ObjectChunk<?, ? extends Values> boxed = boxer.box(keys);
                 destinations.setSize(0);
                 for (int ii = 0; ii < boxed.size(); ++ii) {
                     final Object key = boxed.get(ii);
@@ -226,7 +228,7 @@ public class KeyedArrayBackedMutableTable extends BaseArrayBackedMutableTable {
             for (ObjectArraySource<?> objectArraySource : arrayValueSources) {
                 try (final ChunkSink.FillFromContext ffc =
                         objectArraySource.makeFillFromContext(chunkCapacity);
-                        final WritableObjectChunk<?, Attributes.Values> nullChunk =
+                        final WritableObjectChunk<?, Values> nullChunk =
                                 WritableObjectChunk.makeWritableChunk(chunkCapacity);) {
                     nullChunk.fillWithNullValue(0, chunkCapacity);
                     objectArraySource.fillFromChunkUnordered(ffc, nullChunk, destinations);
@@ -235,7 +237,7 @@ public class KeyedArrayBackedMutableTable extends BaseArrayBackedMutableTable {
         }
     }
 
-    private ChunkSource<Attributes.Values> makeKeySource(Table table) {
+    private ChunkSource<Values> makeKeySource(Table table) {
         // noinspection unchecked
         return TupleSourceFactory.makeTupleSource(
                 keyColumnNames.stream().map(table::getColumnSource).toArray(ColumnSource[]::new));

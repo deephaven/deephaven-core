@@ -10,16 +10,17 @@ import io.deephaven.util.BooleanUtils;
 import io.deephaven.engine.table.impl.join.dupexpand.DupExpandKernel;
 import io.deephaven.engine.table.impl.sort.permute.PermuteKernel;
 import io.deephaven.engine.table.impl.sort.timsort.LongIntTimsortKernel;
-import io.deephaven.engine.chunk.Attributes.ChunkLengths;
-import io.deephaven.engine.chunk.Attributes.ChunkPositions;
-import io.deephaven.engine.chunk.*;
+import io.deephaven.chunk.attributes.ChunkLengths;
+import io.deephaven.chunk.attributes.ChunkPositions;
+import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
 
-import static io.deephaven.engine.chunk.Attributes.RowKeys;
-import static io.deephaven.engine.chunk.Attributes.Values;
+import io.deephaven.rowset.chunkattributes.RowKeys;
+
+import io.deephaven.chunk.attributes.Values;
 import static io.deephaven.util.QueryConstants.*;
 
 public class RedirectedColumnSource<T> extends AbstractColumnSource<T> implements UngroupableColumnSource {
@@ -478,7 +479,7 @@ public class RedirectedColumnSource<T> extends AbstractColumnSource<T> implement
             private final boolean shared;
 
             private final ChunkSource.FillContext rowRedirectionFillContext;
-            private final WritableLongChunk<Attributes.RowKeys> mappedKeys;
+            private final WritableLongChunk<RowKeys> mappedKeys;
 
             private final LongIntTimsortKernel.LongIntSortKernelContext<RowKeys, ChunkPositions> sortKernelContext;
             private final WritableLongChunk<RowKeys> sortedMappedKeys;

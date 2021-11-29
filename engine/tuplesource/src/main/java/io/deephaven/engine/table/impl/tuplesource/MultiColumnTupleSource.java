@@ -1,13 +1,13 @@
 package io.deephaven.engine.table.impl.tuplesource;
 
 import io.deephaven.datastructures.util.SmartKey;
-import io.deephaven.engine.chunk.Attributes.Values;
-import io.deephaven.engine.chunk.*;
+import io.deephaven.chunk.attributes.Values;
+import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.DefaultChunkSource;
 import io.deephaven.engine.table.impl.chunkboxer.ChunkBoxer;
-import io.deephaven.engine.tuple.ArrayTuple;
+import io.deephaven.tuple.ArrayTuple;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;
 

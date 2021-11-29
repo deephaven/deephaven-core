@@ -3,20 +3,20 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.table.impl.by;
 
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.util.QueryConstants;
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.DoubleChunk;
+import io.deephaven.chunk.DoubleChunk;
 import org.apache.commons.lang3.mutable.MutableDouble;
 import org.apache.commons.lang3.mutable.MutableInt;
 
 class SumDoubleChunk {
     private SumDoubleChunk() {} // static use only
 
-    static double sumDoubleChunk(DoubleChunk<? extends Attributes.Values> values, int chunkStart, int chunkSize,
-                                MutableInt chunkNormalCount,
-                                MutableInt chunkNanCount,
-                                MutableInt chunkInfinityCount,
-                                MutableInt chunkMinusInfinityCount) {
+    static double sumDoubleChunk(DoubleChunk<? extends Values> values, int chunkStart, int chunkSize,
+                                 MutableInt chunkNormalCount,
+                                 MutableInt chunkNanCount,
+                                 MutableInt chunkInfinityCount,
+                                 MutableInt chunkMinusInfinityCount) {
         final int end = chunkStart + chunkSize;
         double sum = 0;
         for (int ii = chunkStart; ii < end; ++ii) {
@@ -36,12 +36,12 @@ class SumDoubleChunk {
         return sum;
     }
 
-    static double sum2DoubleChunk(DoubleChunk<? extends Attributes.Values> values, int chunkStart, int chunkSize,
-                                 MutableInt chunkNormalCount,
-                                 MutableInt chunkNanCount,
-                                 MutableInt chunkInfinityCount,
-                                 MutableInt chunkMinusInfinityCount,
-                                 MutableDouble sum2out) {
+    static double sum2DoubleChunk(DoubleChunk<? extends Values> values, int chunkStart, int chunkSize,
+                                  MutableInt chunkNormalCount,
+                                  MutableInt chunkNanCount,
+                                  MutableInt chunkInfinityCount,
+                                  MutableInt chunkMinusInfinityCount,
+                                  MutableDouble sum2out) {
         final int end = chunkStart + chunkSize;
         double sum = 0;
         double sum2 = 0;
@@ -68,10 +68,10 @@ class SumDoubleChunk {
         return sum;
     }
 
-    static double sumDoubleChunkAbs(DoubleChunk<? extends Attributes.Values> values, int chunkStart, int chunkSize,
-                                   MutableInt chunkNormalCount,
-                                   MutableInt chunkNanCount,
-                                   MutableInt chunkInfinityCount) {
+    static double sumDoubleChunkAbs(DoubleChunk<? extends Values> values, int chunkStart, int chunkSize,
+                                    MutableInt chunkNormalCount,
+                                    MutableInt chunkNanCount,
+                                    MutableInt chunkInfinityCount) {
         final int end = chunkStart + chunkSize;
         double sum = 0;
         for (int ii = chunkStart; ii < end; ++ii) {

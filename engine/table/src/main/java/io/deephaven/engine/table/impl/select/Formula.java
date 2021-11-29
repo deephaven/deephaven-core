@@ -1,11 +1,11 @@
 package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.engine.table.ElementSource;
-import io.deephaven.engine.chunk.Attributes.Values;
-import io.deephaven.engine.chunk.Chunk;
-import io.deephaven.engine.chunk.ChunkType;
+import io.deephaven.chunk.attributes.Values;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.ChunkType;
 import io.deephaven.engine.table.Context;
-import io.deephaven.engine.chunk.WritableChunk;
+import io.deephaven.chunk.WritableChunk;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import org.jetbrains.annotations.NotNull;

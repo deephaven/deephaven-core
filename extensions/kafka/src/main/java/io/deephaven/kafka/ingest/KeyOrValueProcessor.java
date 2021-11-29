@@ -1,8 +1,8 @@
 package io.deephaven.kafka.ingest;
 
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.ObjectChunk;
-import io.deephaven.engine.chunk.WritableChunk;
+import io.deephaven.chunk.ObjectChunk;
+import io.deephaven.chunk.WritableChunk;
+import io.deephaven.chunk.attributes.Values;
 
 public interface KeyOrValueProcessor {
     /**
@@ -13,6 +13,6 @@ public interface KeyOrValueProcessor {
      * @param inputChunk the chunk containing the keys or values as Kafka deserialized them from the consumer record
      * @param publisherChunks the output chunks for this table that must be appended to.
      */
-    void handleChunk(ObjectChunk<Object, Attributes.Values> inputChunk,
-            WritableChunk<Attributes.Values>[] publisherChunks);
+    void handleChunk(ObjectChunk<Object, Values> inputChunk,
+            WritableChunk<Values>[] publisherChunks);
 }

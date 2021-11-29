@@ -1,8 +1,8 @@
 package io.deephaven.engine.page;
 
+import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.table.ChunkSource;
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.WritableChunk;
+import io.deephaven.chunk.WritableChunk;
 import io.deephaven.engine.rowset.RowSequence;
 import org.jetbrains.annotations.NotNull;
 
@@ -18,7 +18,7 @@ import org.jetbrains.annotations.NotNull;
  * Also, a new method {@link PagingChunkSource#fillChunkAppend(FillContext, WritableChunk, RowSequence.Iterator)} is
  * added, which supports doing a fillChunk incrementally across a series of pages.
  */
-public interface PagingChunkSource<ATTR extends Attributes.Any> extends ChunkSource<ATTR> {
+public interface PagingChunkSource<ATTR extends Any> extends ChunkSource<ATTR> {
 
     /**
      * This mask is applied to {@link RowSequence} which are passed into

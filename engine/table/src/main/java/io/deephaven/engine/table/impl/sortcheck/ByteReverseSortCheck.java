@@ -3,20 +3,20 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.table.impl.sortcheck;
 
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.util.compare.ByteComparisons;
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.ByteChunk;
-import io.deephaven.engine.chunk.Chunk;
+import io.deephaven.chunk.ByteChunk;
+import io.deephaven.chunk.Chunk;
 
 public class ByteReverseSortCheck implements SortCheck {
     static final SortCheck INSTANCE = new ByteReverseSortCheck();
 
     @Override
-    public int sortCheck(Chunk<? extends Attributes.Values> valuesToCheck) {
+    public int sortCheck(Chunk<? extends Values> valuesToCheck) {
         return sortCheck(valuesToCheck.asByteChunk());
     }
 
-    private int sortCheck(ByteChunk<? extends Attributes.Values> valuesToCheck) {
+    private int sortCheck(ByteChunk<? extends Values> valuesToCheck) {
         if (valuesToCheck.size() == 0) {
             return -1;
         }

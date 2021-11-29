@@ -4,6 +4,7 @@
 
 package io.deephaven.engine.util;
 
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.compilertools.CompilerTools;
 import io.deephaven.datastructures.util.CollectionUtil;
@@ -15,14 +16,13 @@ import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.time.DateTime;
+import io.deephaven.time.DateTime;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.table.impl.sources.UnionRedirection;
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.IntChunk;
+import io.deephaven.chunk.IntChunk;
 import io.deephaven.engine.table.impl.util.*;
 import io.deephaven.test.types.OutOfBandTest;
 import io.deephaven.util.ExceptionDetails;
@@ -907,14 +907,14 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
             // noinspection unchecked
             final ColumnSource<Integer> origCol = table.getColumnSource("Sentinel");
             final ColumnSource.GetContext origContext = origCol.makeGetContext(numElements);
-            final IntChunk<? extends Attributes.Values> origContent = usePrev
+            final IntChunk<? extends Values> origContent = usePrev
                     ? origCol.getPrevChunk(origContext, origRowSet).asIntChunk()
                     : origCol.getChunk(origContext, origRowSet).asIntChunk();
 
             // noinspection unchecked
             final ColumnSource<Integer> resCol = result.getColumnSource("Sentinel");
             final ColumnSource.GetContext resContext = resCol.makeGetContext(numElements * 3);
-            final IntChunk<? extends Attributes.Values> resContent = usePrev
+            final IntChunk<? extends Values> resContent = usePrev
                     ? resCol.getPrevChunk(resContext, resRowSet).asIntChunk()
                     : resCol.getChunk(resContext, resRowSet).asIntChunk();
 
@@ -962,14 +962,14 @@ public class TestTableTools extends TestCase implements UpdateErrorReporter {
             // noinspection unchecked
             final ColumnSource<Integer> origCol = table.getColumnSource("Sentinel");
             final ColumnSource.GetContext origContext = origCol.makeGetContext(numElements);
-            final IntChunk<? extends Attributes.Values> origContent = usePrev
+            final IntChunk<? extends Values> origContent = usePrev
                     ? origCol.getPrevChunk(origContext, rowSet).asIntChunk()
                     : origCol.getChunk(origContext, rowSet).asIntChunk();
 
             // noinspection unchecked
             final ColumnSource<Integer> resCol = result.getColumnSource("Sentinel");
             final ColumnSource.GetContext resContext = resCol.makeGetContext(numElements * 3);
-            final IntChunk<? extends Attributes.Values> resContent = usePrev
+            final IntChunk<? extends Values> resContent = usePrev
                     ? resCol.getPrevChunk(resContext, rowSet).asIntChunk()
                     : resCol.getChunk(resContext, rowSet).asIntChunk();
 

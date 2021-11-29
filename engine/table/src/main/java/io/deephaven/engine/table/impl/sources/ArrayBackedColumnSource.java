@@ -8,12 +8,13 @@ import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.DefaultGetContext;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.WritableColumnSource;
+import io.deephaven.rowset.chunkattributes.RowKeys;
 import io.deephaven.util.type.ArrayTypeUtils;
-import io.deephaven.engine.time.DateTime;
+import io.deephaven.time.DateTime;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
-import io.deephaven.engine.chunk.*;
-import io.deephaven.engine.chunk.Attributes.OrderedRowKeyRanges;
-import io.deephaven.engine.chunk.Attributes.Values;
+import io.deephaven.chunk.*;
+import io.deephaven.rowset.chunkattributes.OrderedRowKeyRanges;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableBooleanArraySource;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableByteArraySource;
 import io.deephaven.engine.table.impl.sources.immutable.ImmutableCharArraySource;
@@ -635,14 +636,14 @@ public abstract class ArrayBackedColumnSource<T>
     @Override
     public void fillChunkUnordered(@NotNull final FillContext context,
             @NotNull final WritableChunk<? super Values> destination,
-            @NotNull final LongChunk<? extends Attributes.RowKeys> keyIndices) {
+            @NotNull final LongChunk<? extends RowKeys> keyIndices) {
         fillSparseChunkUnordered(destination, keyIndices);
     }
 
     @Override
     public void fillPrevChunkUnordered(@NotNull final FillContext context,
             @NotNull final WritableChunk<? super Values> destination,
-            @NotNull final LongChunk<? extends Attributes.RowKeys> keyIndices) {
+            @NotNull final LongChunk<? extends RowKeys> keyIndices) {
         fillSparsePrevChunkUnordered(destination, keyIndices);
     }
 
@@ -665,10 +666,10 @@ public abstract class ArrayBackedColumnSource<T>
             @NotNull RowSequence indices);
 
     protected abstract void fillSparseChunkUnordered(@NotNull WritableChunk<? super Values> destination,
-            @NotNull LongChunk<? extends Attributes.RowKeys> indices);
+            @NotNull LongChunk<? extends RowKeys> indices);
 
     protected abstract void fillSparsePrevChunkUnordered(@NotNull WritableChunk<? super Values> destination,
-            @NotNull LongChunk<? extends Attributes.RowKeys> indices);
+            @NotNull LongChunk<? extends RowKeys> indices);
 
     @Override
     public Chunk<Values> getChunk(@NotNull final GetContext context, @NotNull final RowSequence rowSequence) {

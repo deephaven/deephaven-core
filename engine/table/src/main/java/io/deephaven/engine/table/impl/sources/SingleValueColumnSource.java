@@ -4,7 +4,7 @@
 
 package io.deephaven.engine.table.impl.sources;
 
-import io.deephaven.engine.chunk.Attributes;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.ChunkSink;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
@@ -16,7 +16,7 @@ import java.io.Serializable;
 
 @AbstractColumnSource.IsSerializable(value = true)
 public abstract class SingleValueColumnSource<T> extends AbstractColumnSource<T>
-        implements WritableColumnSource<T>, ChunkSink<Attributes.Values>, ShiftData.ShiftCallback, Serializable {
+        implements WritableColumnSource<T>, ChunkSink<Values>, ShiftData.ShiftCallback, Serializable {
 
     protected transient long changeTime;
     protected boolean isTrackingPrevValues;

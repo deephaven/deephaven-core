@@ -1,18 +1,18 @@
 package io.deephaven.engine.table.impl.select.analyzers;
 
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.chunk.Attributes;
 
 import java.util.Map;
 
 public abstract class SelectOrViewColumnLayer extends DependencyLayerBase {
-    private final ColumnSource<Attributes.Values> optionalUnderlying;
+    private final ColumnSource<Values> optionalUnderlying;
 
     SelectOrViewColumnLayer(SelectAndViewAnalyzer inner, String name, SelectColumn sc,
-            ColumnSource<Attributes.Values> ws, ColumnSource<Attributes.Values> optionalUnderlying,
-            String[] deps, ModifiedColumnSet mcsBuilder) {
+                            ColumnSource<Values> ws, ColumnSource<Values> optionalUnderlying,
+                            String[] deps, ModifiedColumnSet mcsBuilder) {
         super(inner, name, sc, ws, deps, mcsBuilder);
         this.optionalUnderlying = optionalUnderlying;
     }

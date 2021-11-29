@@ -3,18 +3,19 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.table.impl.sort.permute;
 
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.WritableLongChunk;
-import io.deephaven.engine.chunk.WritableIntChunk;
+import io.deephaven.chunk.WritableLongChunk;
+import io.deephaven.chunk.WritableIntChunk;
+import io.deephaven.chunk.attributes.Any;
+import io.deephaven.chunk.attributes.ChunkPositions;
 import junit.framework.TestCase;
 import org.junit.Test;
 
 public class TestLongPermuteKernel {
     @Test
     public void testReverse() {
-        final WritableLongChunk<Attributes.Any> inputValues = WritableLongChunk.makeWritableChunk(10);
-        final WritableIntChunk<Attributes.ChunkPositions> destinations = WritableIntChunk.makeWritableChunk(10);
-        final WritableLongChunk<Attributes.Any> outputValues = WritableLongChunk.makeWritableChunk(10);
+        final WritableLongChunk<Any> inputValues = WritableLongChunk.makeWritableChunk(10);
+        final WritableIntChunk<ChunkPositions> destinations = WritableIntChunk.makeWritableChunk(10);
+        final WritableLongChunk<Any> outputValues = WritableLongChunk.makeWritableChunk(10);
 
         inputValues.setSize(0);
         for (long value = startingValue(); inputValues.size() < 10; ++value) {
@@ -37,9 +38,9 @@ public class TestLongPermuteKernel {
 
     @Test
     public void testInterleave() {
-        final WritableLongChunk<Attributes.Any> inputValues = WritableLongChunk.makeWritableChunk(10);
-        final WritableIntChunk<Attributes.ChunkPositions> destinations = WritableIntChunk.makeWritableChunk(10);
-        final WritableLongChunk<Attributes.Any> outputValues = WritableLongChunk.makeWritableChunk(10);
+        final WritableLongChunk<Any> inputValues = WritableLongChunk.makeWritableChunk(10);
+        final WritableIntChunk<ChunkPositions> destinations = WritableIntChunk.makeWritableChunk(10);
+        final WritableLongChunk<Any> outputValues = WritableLongChunk.makeWritableChunk(10);
 
         inputValues.setSize(0);
         for (long value = startingValue(); inputValues.size() < 10; ++value) {
@@ -69,9 +70,9 @@ public class TestLongPermuteKernel {
 
     @Test
     public void testSpread() {
-        final WritableLongChunk<Attributes.Any> inputValues = WritableLongChunk.makeWritableChunk(10);
-        final WritableIntChunk<Attributes.ChunkPositions> destinations = WritableIntChunk.makeWritableChunk(10);
-        final WritableLongChunk<Attributes.Any> outputValues = WritableLongChunk.makeWritableChunk(20);
+        final WritableLongChunk<Any> inputValues = WritableLongChunk.makeWritableChunk(10);
+        final WritableIntChunk<ChunkPositions> destinations = WritableIntChunk.makeWritableChunk(10);
+        final WritableLongChunk<Any> outputValues = WritableLongChunk.makeWritableChunk(20);
         outputValues.fillWithValue(0, outputValues.size(), uninitializedValue());
 
         inputValues.setSize(0);

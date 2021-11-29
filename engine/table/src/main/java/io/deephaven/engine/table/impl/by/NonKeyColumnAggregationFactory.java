@@ -1,10 +1,10 @@
 package io.deephaven.engine.table.impl.by;
 
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.time.DateTime;
+import io.deephaven.time.DateTime;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
-import io.deephaven.engine.chunk.Attributes.Values;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.ChunkSource;
 import org.jetbrains.annotations.NotNull;
 

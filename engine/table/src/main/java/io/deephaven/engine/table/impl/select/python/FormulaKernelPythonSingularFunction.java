@@ -3,8 +3,8 @@ package io.deephaven.engine.table.impl.select.python;
 import io.deephaven.engine.table.impl.select.Formula.FillContext;
 import io.deephaven.engine.table.impl.select.FormulaKernelTypedBase;
 import io.deephaven.engine.table.impl.select.formula.FormulaKernel;
-import io.deephaven.engine.chunk.Attributes.Values;
-import io.deephaven.engine.chunk.*;
+import io.deephaven.chunk.attributes.Values;
+import io.deephaven.chunk.*;
 import org.jpy.PyObject;
 
 import java.util.Objects;

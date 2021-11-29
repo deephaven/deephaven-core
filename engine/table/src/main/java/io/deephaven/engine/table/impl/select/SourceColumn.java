@@ -6,7 +6,7 @@ package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.vector.Vector;
+import io.deephaven.vector.Vector;
 import io.deephaven.api.util.NameValidator;
 import io.deephaven.engine.table.impl.NoSuchColumnException;
 import io.deephaven.engine.table.impl.sources.SparseArrayColumnSource;

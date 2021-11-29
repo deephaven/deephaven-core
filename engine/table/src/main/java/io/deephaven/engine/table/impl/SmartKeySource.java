@@ -1,15 +1,13 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.datastructures.util.SmartKey;
-import io.deephaven.engine.chunk.Attributes.Values;
-import io.deephaven.engine.chunk.Chunk;
-import io.deephaven.engine.chunk.ObjectChunk;
-import io.deephaven.engine.chunk.WritableChunk;
-import io.deephaven.engine.chunk.WritableObjectChunk;
+import io.deephaven.chunk.attributes.Values;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.ObjectChunk;
+import io.deephaven.chunk.WritableChunk;
+import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.AbstractColumnSource;
-import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
 import io.deephaven.engine.table.impl.chunkboxer.ChunkBoxer;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.NotNull;

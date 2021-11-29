@@ -1,12 +1,12 @@
 {
  "className": "io.deephaven.engine.rowset.RowSequence",
  "methods": {
-  "asRowKeyChunk": "Get a LongChunk representation of the individual row keys in this RowSequence.\n\n:return: (io.deephaven.engine.chunk.LongChunk<io.deephaven.engine.chunk.Attributes.OrderedRowKeys>) A LongChunk containing the row keys in this RowSequence",
-  "asRowKeyRangesChunk": "Get a LongChunk representation of row key ranges in this RowSequence.\n\n:return: (io.deephaven.engine.chunk.LongChunk<io.deephaven.engine.chunk.Attributes.OrderedRowKeyRanges>) A LongChunk containing the row key ranges in this RowSequence",
+  "asRowKeyChunk": "Get a LongChunk representation of the individual row keys in this RowSequence.\n\n:return: (io.deephaven.chunk.LongChunk<io.deephaven.chunk.Attributes.OrderedRowKeys>) A LongChunk containing the row keys in this RowSequence",
+  "asRowKeyRangesChunk": "Get a LongChunk representation of row key ranges in this RowSequence.\n\n:return: (io.deephaven.chunk.LongChunk<io.deephaven.chunk.Attributes.OrderedRowKeyRanges>) A LongChunk containing the row key ranges in this RowSequence",
   "asRowSet": "Get a RowSet representation of this RowSequence.\n\n:return: (io.deephaven.engine.rowset.RowSet) A RowSet representation for the same row keys in the same order",
   "close": "Free any resources associated with this object.\n \n Using any RowSequence methods after close() is an error and may produce exceptions or undefined\n results.",
-  "fillRowKeyChunk": "Fill the supplied WritableLongChunk with individual row keys from this RowSequence.\n \n The chunk's capacity is assumed to be big enough.\n\n:param chunkToFill: (io.deephaven.engine.chunk.WritableLongChunk<? extendsio.deephaven.engine.chunk.Attributes.RowKeys>) - A chunk to fill with individual row keys",
-  "fillRowKeyRangesChunk": "Fill the supplied WritableLongChunk with row key ranges from this RowSequence.\n \n The chunk's capacity is assumed to be big enough.\n\n:param chunkToFill: (io.deephaven.engine.chunk.WritableLongChunk<io.deephaven.engine.chunk.Attributes.OrderedRowKeyRanges>) - A chunk to fill with row key ranges",
+  "fillRowKeyChunk": "Fill the supplied WritableLongChunk with individual row keys from this RowSequence.\n \n The chunk's capacity is assumed to be big enough.\n\n:param chunkToFill: (io.deephaven.chunk.WritableLongChunk<? extendsio.deephaven.chunk.Attributes.RowKeys>) - A chunk to fill with individual row keys",
+  "fillRowKeyRangesChunk": "Fill the supplied WritableLongChunk with row key ranges from this RowSequence.\n \n The chunk's capacity is assumed to be big enough.\n\n:param chunkToFill: (io.deephaven.chunk.WritableLongChunk<io.deephaven.chunk.Attributes.OrderedRowKeyRanges>) - A chunk to fill with row key ranges",
   "firstRowKey": "Get the first row key in this RowSequence.\n\n:return: (long) The first row key, or NULL_ROW_KEY if there is none.",
   "forAllRowKeyRanges": ":param lrc: io.deephaven.util.datastructures.LongRangeConsumer",
   "forAllRowKeys": ":param lc: java.util.function.LongConsumer",

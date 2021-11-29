@@ -1,20 +1,20 @@
 package io.deephaven.engine.rowset.impl;
 
 import io.deephaven.engine.rowset.*;
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.LongChunk;
-import io.deephaven.engine.chunk.WritableLongChunk;
-import io.deephaven.engine.chunk.util.LongChunkAppender;
-import io.deephaven.engine.chunk.util.LongChunkIterator;
+import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.WritableLongChunk;
+import io.deephaven.chunk.util.LongChunkAppender;
+import io.deephaven.chunk.util.LongChunkIterator;
 import io.deephaven.engine.rowset.impl.rsp.RspBitmap;
 import io.deephaven.engine.rowset.impl.singlerange.SingleRangeRowSequence;
 import io.deephaven.engine.rowset.impl.singlerange.SingleRange;
 import io.deephaven.engine.rowset.impl.sortedranges.SortedRanges;
+import io.deephaven.rowset.chunkattributes.OrderedRowKeyRanges;
 import org.junit.Test;
 
 import java.util.function.Consumer;
 
-import static io.deephaven.engine.chunk.Attributes.OrderedRowKeys;
+import io.deephaven.rowset.chunkattributes.OrderedRowKeys;
 import static org.junit.Assert.*;
 
 public class SingleRangeTest {
@@ -291,7 +291,7 @@ public class SingleRangeTest {
         final long end = 30;
         final RowSet ix = new TrackingWritableRowSetImpl(SingleRange.make(start, end));
         final RowSequence.Iterator rsIt = ix.getRowSequenceIterator();
-        final WritableLongChunk<Attributes.OrderedRowKeyRanges> chunk = WritableLongChunk.makeWritableChunk(2);
+        final WritableLongChunk<OrderedRowKeyRanges> chunk = WritableLongChunk.makeWritableChunk(2);
         int offset = 0;
         long prevRelPos = -1;
         final int step = 2;

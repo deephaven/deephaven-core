@@ -2,9 +2,10 @@ package io.deephaven.kafka.ingest;
 
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.chunk.*;
+import io.deephaven.chunk.*;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.impl.util.unboxer.ChunkUnboxer;
-import io.deephaven.engine.time.DateTimeUtils;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.kafka.StreamPublisherImpl;
 import io.deephaven.util.QueryConstants;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -165,13 +166,13 @@ public class KafkaStreamPublisher implements ConsumerRecordToStreamPublisherAdap
 
         final int chunkSize = Math.min(records.size(), chunks[0].capacity());
 
-        try (final WritableObjectChunk<Object, Attributes.Values> keyChunkCloseable = haveKey()
+        try (final WritableObjectChunk<Object, Values> keyChunkCloseable = haveKey()
                 ? WritableObjectChunk.makeWritableChunk(chunkSize)
                 : null;
-                final WritableObjectChunk<Object, Attributes.Values> valueChunkCloseable = haveValue()
+                final WritableObjectChunk<Object, Values> valueChunkCloseable = haveValue()
                         ? WritableObjectChunk.makeWritableChunk(chunkSize)
                         : null) {
-            WritableObjectChunk<Object, Attributes.Values> keyChunk;
+            WritableObjectChunk<Object, Values> keyChunk;
             if (keyChunkCloseable != null) {
                 keyChunkCloseable.setSize(0);
                 keyChunk = keyChunkCloseable;
@@ -180,7 +181,7 @@ public class KafkaStreamPublisher implements ConsumerRecordToStreamPublisherAdap
             } else {
                 keyChunk = null;
             }
-            WritableObjectChunk<Object, Attributes.Values> valueChunk;
+            WritableObjectChunk<Object, Values> valueChunk;
             if (valueChunkCloseable != null) {
                 valueChunkCloseable.setSize(0);
                 valueChunk = valueChunkCloseable;
@@ -190,13 +191,13 @@ public class KafkaStreamPublisher implements ConsumerRecordToStreamPublisherAdap
                 valueChunk = null;
             }
 
-            WritableIntChunk<Attributes.Values> partitionChunk = (kafkaPartitionColumnIndex >= 0)
+            WritableIntChunk<Values> partitionChunk = (kafkaPartitionColumnIndex >= 0)
                     ? chunks[kafkaPartitionColumnIndex].asWritableIntChunk()
                     : null;
-            WritableLongChunk<Attributes.Values> offsetChunk = offsetColumnIndex >= 0
+            WritableLongChunk<Values> offsetChunk = offsetColumnIndex >= 0
                     ? chunks[offsetColumnIndex].asWritableLongChunk()
                     : null;
-            WritableLongChunk<Attributes.Values> timestampChunk = timestampColumnIndex >= 0
+            WritableLongChunk<Values> timestampChunk = timestampColumnIndex >= 0
                     ? chunks[timestampColumnIndex].asWritableLongChunk()
                     : null;
 
@@ -294,17 +295,17 @@ public class KafkaStreamPublisher implements ConsumerRecordToStreamPublisherAdap
         }
 
         @Override
-        public void handleChunk(ObjectChunk<Object, Attributes.Values> inputChunk,
-                WritableChunk<Attributes.Values>[] publisherChunks) {
-            final WritableChunk<Attributes.Values> publisherChunk = publisherChunks[offset];
+        public void handleChunk(ObjectChunk<Object, Values> inputChunk,
+                WritableChunk<Values>[] publisherChunks) {
+            final WritableChunk<Values> publisherChunk = publisherChunks[offset];
             final int existingSize = publisherChunk.size();
             publisherChunk.setSize(existingSize + inputChunk.size());
             unboxer.unboxTo(inputChunk, publisherChunk, 0, existingSize);
         }
     }
 
-    void flushKeyChunk(WritableObjectChunk<Object, Attributes.Values> objectChunk,
-            WritableChunk<Attributes.Values>[] publisherChunks) {
+    void flushKeyChunk(WritableObjectChunk<Object, Values> objectChunk,
+            WritableChunk<Values>[] publisherChunks) {
         if (keyIsSimpleObject) {
             return;
         }
@@ -312,8 +313,8 @@ public class KafkaStreamPublisher implements ConsumerRecordToStreamPublisherAdap
         objectChunk.setSize(0);
     }
 
-    void flushValueChunk(WritableObjectChunk<Object, Attributes.Values> objectChunk,
-            WritableChunk<Attributes.Values>[] publisherChunks) {
+    void flushValueChunk(WritableObjectChunk<Object, Values> objectChunk,
+            WritableChunk<Values>[] publisherChunks) {
         if (valueIsSimpleObject) {
             return;
         }

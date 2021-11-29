@@ -1,7 +1,7 @@
 package io.deephaven.engine.table.impl.sources;
 
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.time.DateTime;
+import io.deephaven.time.DateTime;
 import org.jetbrains.annotations.NotNull;
 
 public class ReinterpretUtils {

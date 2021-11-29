@@ -1,7 +1,7 @@
 {
- "className": "io.deephaven.engine.chunk.Attributes",
+ "className": "io.deephaven.chunk.Attributes",
  "methods": {},
- "path": "io.deephaven.engine.chunk.Attributes",
+ "path": "io.deephaven.chunk.Attributes",
  "text": "Attributes that may apply to a Chunk.",
  "typeName": "class"
 }

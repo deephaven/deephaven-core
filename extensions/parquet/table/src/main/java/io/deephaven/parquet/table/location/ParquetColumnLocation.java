@@ -11,7 +11,7 @@ import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.Context;
 import io.deephaven.engine.table.impl.CodecLookup;
 import io.deephaven.engine.table.ColumnDefinition;
-import io.deephaven.engine.vector.Vector;
+import io.deephaven.vector.Vector;
 import io.deephaven.engine.table.impl.locations.TableDataException;
 import io.deephaven.engine.table.impl.locations.impl.AbstractColumnLocation;
 import io.deephaven.parquet.table.pagestore.ColumnChunkPageStore;
@@ -23,11 +23,11 @@ import io.deephaven.parquet.table.metadata.CodecInfo;
 import io.deephaven.parquet.table.metadata.ColumnTypeInfo;
 import io.deephaven.parquet.table.metadata.GroupingColumnInfo;
 import io.deephaven.parquet.table.metadata.TableInfo;
-import io.deephaven.engine.chunk.Attributes.Any;
-import io.deephaven.engine.chunk.Attributes.DictionaryKeys;
-import io.deephaven.engine.chunk.Attributes.UnorderedRowKeys;
-import io.deephaven.engine.chunk.Attributes.Values;
-import io.deephaven.engine.chunk.*;
+import io.deephaven.chunk.attributes.Any;
+import io.deephaven.engine.table.impl.chunkattributes.DictionaryKeys;
+import io.deephaven.rowset.chunkattributes.UnorderedRowKeys;
+import io.deephaven.chunk.attributes.Values;
+import io.deephaven.chunk.*;
 import io.deephaven.engine.table.impl.sources.regioned.*;
 import io.deephaven.engine.table.impl.chunkboxer.ChunkBoxer;
 import io.deephaven.engine.rowset.RowSequence;
@@ -405,14 +405,14 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
     private static final class MetaDataTableFactory {
 
         private final ColumnChunkPageStore<Values> keyColumn;
-        private final ColumnChunkPageStore<Attributes.UnorderedRowKeys> firstColumn;
-        private final ColumnChunkPageStore<Attributes.UnorderedRowKeys> lastColumn;
+        private final ColumnChunkPageStore<UnorderedRowKeys> firstColumn;
+        private final ColumnChunkPageStore<UnorderedRowKeys> lastColumn;
 
         private volatile Object metaData;
 
         private MetaDataTableFactory(@NotNull final ColumnChunkPageStore<Values> keyColumn,
-                @NotNull final ColumnChunkPageStore<Attributes.UnorderedRowKeys> firstColumn,
-                @NotNull final ColumnChunkPageStore<Attributes.UnorderedRowKeys> lastColumn) {
+                @NotNull final ColumnChunkPageStore<UnorderedRowKeys> firstColumn,
+                @NotNull final ColumnChunkPageStore<UnorderedRowKeys> lastColumn) {
             this.keyColumn = Require.neqNull(keyColumn, "keyColumn");
             this.firstColumn = Require.neqNull(firstColumn, "firstColumn");
             this.lastColumn = Require.neqNull(lastColumn, "lastColumn");
@@ -519,7 +519,7 @@ final class ParquetColumnLocation<ATTR extends Values> extends AbstractColumnLoc
 
                 @Override
                 public void build(@NotNull final ObjectChunk<?, ? extends Values> keyChunk,
-                        @NotNull final Chunk<? extends Attributes.UnorderedRowKeys> firstChunk,
+                        @NotNull final Chunk<? extends UnorderedRowKeys> firstChunk,
                         @NotNull final Chunk<? extends UnorderedRowKeys> lastChunk) {
                     final LongChunk<? extends UnorderedRowKeys> firstLongChunk =
                             firstChunk.asLongChunk();

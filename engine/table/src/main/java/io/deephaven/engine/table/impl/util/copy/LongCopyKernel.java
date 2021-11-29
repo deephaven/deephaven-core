@@ -3,9 +3,9 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.table.impl.util.copy;
 
-import io.deephaven.engine.chunk.*;
+import io.deephaven.chunk.*;
 
-import static io.deephaven.engine.chunk.Attributes.Any;
+import io.deephaven.chunk.attributes.Any;
 
 public class LongCopyKernel implements CopyKernel {
     public static final LongCopyKernel INSTANCE = new LongCopyKernel();

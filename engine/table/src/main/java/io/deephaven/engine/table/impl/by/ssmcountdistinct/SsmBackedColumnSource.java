@@ -1,6 +1,6 @@
 package io.deephaven.engine.table.impl.by.ssmcountdistinct;
 
-import io.deephaven.engine.vector.Vector;
+import io.deephaven.vector.Vector;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.sources.ObjectArraySource;
 import io.deephaven.engine.table.impl.ssms.SegmentedSortedMultiSet;

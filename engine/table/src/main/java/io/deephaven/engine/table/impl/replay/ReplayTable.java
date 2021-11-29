@@ -5,7 +5,7 @@
 package io.deephaven.engine.table.impl.replay;
 
 import io.deephaven.base.verify.Require;
-import io.deephaven.engine.time.DateTime;
+import io.deephaven.time.DateTime;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.rowset.RowSet;

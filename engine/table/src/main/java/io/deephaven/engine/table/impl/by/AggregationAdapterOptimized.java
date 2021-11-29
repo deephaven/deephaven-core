@@ -5,7 +5,7 @@ import io.deephaven.api.SortColumn;
 import io.deephaven.api.agg.*;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.by.AggregationFactory.AggregationElement;
-import io.deephaven.engine.tuple.generated.ByteDoubleTuple;
+import io.deephaven.tuple.generated.ByteDoubleTuple;
 
 import java.util.*;
 

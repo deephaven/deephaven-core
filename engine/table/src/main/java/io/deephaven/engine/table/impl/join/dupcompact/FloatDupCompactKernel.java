@@ -3,10 +3,11 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.table.impl.join.dupcompact;
 
+import io.deephaven.rowset.chunkattributes.RowKeys;
 import io.deephaven.util.compare.FloatComparisons;
 
-import io.deephaven.engine.chunk.*;
-import io.deephaven.engine.chunk.Attributes.Any;
+import io.deephaven.chunk.*;
+import io.deephaven.chunk.attributes.Any;
 
 public class FloatDupCompactKernel implements DupCompactKernel {
     static final FloatDupCompactKernel INSTANCE = new FloatDupCompactKernel();
@@ -14,11 +15,11 @@ public class FloatDupCompactKernel implements DupCompactKernel {
     private FloatDupCompactKernel() {} // use through the instance
 
     @Override
-    public int compactDuplicates(WritableChunk<? extends Any> chunkToCompact, WritableLongChunk<Attributes.RowKeys> keyIndices) {
+    public int compactDuplicates(WritableChunk<? extends Any> chunkToCompact, WritableLongChunk<RowKeys> keyIndices) {
         return compactDuplicates(chunkToCompact.asWritableFloatChunk(), keyIndices);
     }
 
-    private static int compactDuplicates(WritableFloatChunk<? extends Any> chunkToCompact, WritableLongChunk<Attributes.RowKeys> keyIndices) {
+    private static int compactDuplicates(WritableFloatChunk<? extends Any> chunkToCompact, WritableLongChunk<RowKeys> keyIndices) {
         final int inputSize = chunkToCompact.size();
         if (inputSize == 0) {
             return -1;

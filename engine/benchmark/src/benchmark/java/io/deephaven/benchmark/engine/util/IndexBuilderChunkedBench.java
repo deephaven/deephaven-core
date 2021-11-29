@@ -3,9 +3,10 @@ package io.deephaven.benchmark.engine.util;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
+import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges;
 import io.deephaven.util.datastructures.LongRangeIterator;
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.WritableLongChunk;
+import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.benchmarking.BenchUtil;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
@@ -23,8 +24,8 @@ import java.util.concurrent.TimeUnit;
 public class IndexBuilderChunkedBench {
     private RowSet ix = null;
     private static final int chunkSz = 1024;
-    private WritableLongChunk<Attributes.OrderedRowKeys> indicesChunk = null;
-    private WritableLongChunk<Attributes.OrderedRowKeyRanges> rangesChunk = null;
+    private WritableLongChunk<OrderedRowKeys> indicesChunk = null;
+    private WritableLongChunk<OrderedRowKeyRanges> rangesChunk = null;
 
     @Setup(Level.Trial)
     public void setup() {

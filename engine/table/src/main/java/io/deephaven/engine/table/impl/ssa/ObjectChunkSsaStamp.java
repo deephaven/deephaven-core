@@ -3,11 +3,9 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.table.impl.ssa;
 
-import java.util.Objects;
-
-import io.deephaven.engine.chunk.*;
-import io.deephaven.engine.chunk.Attributes.RowKeys;
-import io.deephaven.engine.chunk.Attributes.Values;
+import io.deephaven.chunk.*;
+import io.deephaven.rowset.chunkattributes.RowKeys;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import io.deephaven.engine.rowset.RowSetBuilderRandom;
@@ -22,11 +20,11 @@ public class ObjectChunkSsaStamp implements ChunkSsaStamp {
     private ObjectChunkSsaStamp() {} // use the instance
 
     @Override
-    public void processEntry(Chunk<Values> leftStampValues, Chunk<Attributes.RowKeys> leftStampKeys, SegmentedSortedArray ssa, WritableLongChunk<Attributes.RowKeys> rightKeysForLeft, boolean disallowExactMatch) {
+    public void processEntry(Chunk<Values> leftStampValues, Chunk<RowKeys> leftStampKeys, SegmentedSortedArray ssa, WritableLongChunk<RowKeys> rightKeysForLeft, boolean disallowExactMatch) {
         processEntry(leftStampValues.asObjectChunk(), leftStampKeys, (ObjectSegmentedSortedArray)ssa, rightKeysForLeft, disallowExactMatch);
     }
 
-    private static void processEntry(ObjectChunk<Object, Values> leftStampValues, Chunk<Attributes.RowKeys> leftStampKeys, ObjectSegmentedSortedArray ssa, WritableLongChunk<Attributes.RowKeys> rightKeysForLeft, boolean disallowExactMatch) {
+    private static void processEntry(ObjectChunk<Object, Values> leftStampValues, Chunk<RowKeys> leftStampKeys, ObjectSegmentedSortedArray ssa, WritableLongChunk<RowKeys> rightKeysForLeft, boolean disallowExactMatch) {
         final int leftSize = leftStampKeys.size();
         final long rightSize = ssa.size();
         if (rightSize == 0) {
@@ -66,11 +64,11 @@ public class ObjectChunkSsaStamp implements ChunkSsaStamp {
     }
 
     @Override
-    public void processRemovals(Chunk<Values> leftStampValues, LongChunk<Attributes.RowKeys> leftStampKeys, Chunk<? extends Values> rightStampChunk, LongChunk<Attributes.RowKeys> rightKeys, WritableLongChunk<Attributes.RowKeys> priorRedirections, WritableRowRedirection rowRedirection, RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch) {
+    public void processRemovals(Chunk<Values> leftStampValues, LongChunk<RowKeys> leftStampKeys, Chunk<? extends Values> rightStampChunk, LongChunk<RowKeys> rightKeys, WritableLongChunk<RowKeys> priorRedirections, WritableRowRedirection rowRedirection, RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch) {
         processRemovals(leftStampValues.asObjectChunk(), leftStampKeys, rightStampChunk.asObjectChunk(), rightKeys, priorRedirections, rowRedirection, modifiedBuilder, disallowExactMatch);
     }
 
-    private static void processRemovals(ObjectChunk<Object, Values> leftStampValues, LongChunk<Attributes.RowKeys> leftStampKeys, ObjectChunk<Object, ? extends Values> rightStampChunk, LongChunk<RowKeys> rightKeys, WritableLongChunk<Attributes.RowKeys> nextRedirections, WritableRowRedirection rowRedirection, RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch) {
+    private static void processRemovals(ObjectChunk<Object, Values> leftStampValues, LongChunk<RowKeys> leftStampKeys, ObjectChunk<Object, ? extends Values> rightStampChunk, LongChunk<RowKeys> rightKeys, WritableLongChunk<RowKeys> nextRedirections, WritableRowRedirection rowRedirection, RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch) {
         // When removing a row, record the stamp, redirection key, and prior redirection key.  Binary search
         // in the left for the removed key to find the smallest value geq the removed right.  Update all rows
         // with the removed redirection to the previous key.
@@ -103,11 +101,11 @@ public class ObjectChunkSsaStamp implements ChunkSsaStamp {
     }
 
     @Override
-    public void processInsertion(Chunk<Values> leftStampValues, LongChunk<Attributes.RowKeys> leftStampKeys, Chunk<? extends Values> rightStampChunk, LongChunk<Attributes.RowKeys> rightKeys, Chunk<Values> nextRightValue, WritableRowRedirection rowRedirection, RowSetBuilderRandom modifiedBuilder, boolean endsWithLastValue, boolean disallowExactMatch) {
+    public void processInsertion(Chunk<Values> leftStampValues, LongChunk<RowKeys> leftStampKeys, Chunk<? extends Values> rightStampChunk, LongChunk<RowKeys> rightKeys, Chunk<Values> nextRightValue, WritableRowRedirection rowRedirection, RowSetBuilderRandom modifiedBuilder, boolean endsWithLastValue, boolean disallowExactMatch) {
         processInsertion(leftStampValues.asObjectChunk(), leftStampKeys, rightStampChunk.asObjectChunk(), rightKeys, nextRightValue.asObjectChunk(), rowRedirection, modifiedBuilder, endsWithLastValue, disallowExactMatch);
     }
 
-    private static void processInsertion(ObjectChunk<Object, Values> leftStampValues, LongChunk<Attributes.RowKeys> leftStampKeys, ObjectChunk<Object, ? extends Values> rightStampChunk, LongChunk<Attributes.RowKeys> rightKeys, ObjectChunk<Object, Values> nextRightValue, WritableRowRedirection rowRedirection, RowSetBuilderRandom modifiedBuilder, boolean endsWithLastValue, boolean disallowExactMatch) {
+    private static void processInsertion(ObjectChunk<Object, Values> leftStampValues, LongChunk<RowKeys> leftStampKeys, ObjectChunk<Object, ? extends Values> rightStampChunk, LongChunk<RowKeys> rightKeys, ObjectChunk<Object, Values> nextRightValue, WritableRowRedirection rowRedirection, RowSetBuilderRandom modifiedBuilder, boolean endsWithLastValue, boolean disallowExactMatch) {
         // We've already filtered out duplicate right stamps by the time we get here, which means that the rightStampChunk
         // contains only values that are the last in any given run; and thus are possible matches.
 
@@ -148,11 +146,11 @@ public class ObjectChunkSsaStamp implements ChunkSsaStamp {
     }
 
     @Override
-    public int findModified(int first, Chunk<Values> leftStampValues, LongChunk<Attributes.RowKeys> leftStampKeys, RowRedirection rowRedirection, Chunk<? extends Values> rightStampChunk, LongChunk<Attributes.RowKeys> rightStampIndices, RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch) {
+    public int findModified(int first, Chunk<Values> leftStampValues, LongChunk<RowKeys> leftStampKeys, RowRedirection rowRedirection, Chunk<? extends Values> rightStampChunk, LongChunk<RowKeys> rightStampIndices, RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch) {
         return findModified(first, leftStampValues.asObjectChunk(), leftStampKeys, rowRedirection, rightStampChunk.asObjectChunk(), rightStampIndices, modifiedBuilder, disallowExactMatch);
     }
 
-    private static int findModified(int leftLowIdx, ObjectChunk<Object, Values> leftStampValues, LongChunk<Attributes.RowKeys> leftStampKeys, RowRedirection rowRedirection, ObjectChunk<Object, ? extends Values> rightStampChunk, LongChunk<Attributes.RowKeys> rightStampIndices, RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch) {
+    private static int findModified(int leftLowIdx, ObjectChunk<Object, Values> leftStampValues, LongChunk<RowKeys> leftStampKeys, RowRedirection rowRedirection, ObjectChunk<Object, ? extends Values> rightStampChunk, LongChunk<RowKeys> rightStampIndices, RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch) {
         for (int ii = 0; ii < rightStampChunk.size(); ++ii) {
             final Object rightStampValue = rightStampChunk.get(ii);
 
@@ -171,11 +169,11 @@ public class ObjectChunkSsaStamp implements ChunkSsaStamp {
     }
 
     @Override
-    public void applyShift(Chunk<Values> leftStampValues, LongChunk<Attributes.RowKeys> leftStampKeys, Chunk<? extends Values> rightStampChunk, LongChunk<Attributes.RowKeys> rightStampKeys, long shiftDelta, WritableRowRedirection rowRedirection, boolean disallowExactMatch) {
+    public void applyShift(Chunk<Values> leftStampValues, LongChunk<RowKeys> leftStampKeys, Chunk<? extends Values> rightStampChunk, LongChunk<RowKeys> rightStampKeys, long shiftDelta, WritableRowRedirection rowRedirection, boolean disallowExactMatch) {
         applyShift(leftStampValues.asObjectChunk(), leftStampKeys, rightStampChunk.asObjectChunk(), rightStampKeys, shiftDelta, rowRedirection, disallowExactMatch);
     }
 
-    private void applyShift(ObjectChunk<Object, Values> leftStampValues, LongChunk<Attributes.RowKeys> leftStampKeys, ObjectChunk<Object, ? extends Values> rightStampChunk, LongChunk<Attributes.RowKeys> rightStampKeys, long shiftDelta, WritableRowRedirection rowRedirection, boolean disallowExactMatch) {
+    private void applyShift(ObjectChunk<Object, Values> leftStampValues, LongChunk<RowKeys> leftStampKeys, ObjectChunk<Object, ? extends Values> rightStampChunk, LongChunk<RowKeys> rightStampKeys, long shiftDelta, WritableRowRedirection rowRedirection, boolean disallowExactMatch) {
         int leftLowIdx = 0;
         for (int ii = 0; ii < rightStampChunk.size(); ++ii) {
             final Object rightStampValue = rightStampChunk.get(ii);

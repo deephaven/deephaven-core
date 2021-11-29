@@ -1,11 +1,10 @@
 package io.deephaven.engine.table.impl.tuplesource;
 
 import io.deephaven.base.Pair;
-import io.deephaven.engine.chunk.ChunkType;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.TupleSource;
 import io.deephaven.engine.table.impl.TupleSourceFactory;
-import io.deephaven.engine.time.DateTime;
+import io.deephaven.time.DateTime;
 import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
 

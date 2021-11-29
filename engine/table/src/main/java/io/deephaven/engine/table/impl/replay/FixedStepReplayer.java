@@ -4,8 +4,8 @@
 
 package io.deephaven.engine.table.impl.replay;
 
-import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.time.DateTimeUtils;
+import io.deephaven.time.DateTime;
+import io.deephaven.time.DateTimeUtils;
 
 public class FixedStepReplayer extends Replayer {
     private long incrementNanos;

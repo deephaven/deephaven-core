@@ -1,10 +1,10 @@
 package io.deephaven.parquet.table.pagestore.topage;
 
-import io.deephaven.engine.stringset.LongBitmapStringSet;
-import io.deephaven.engine.chunk.Attributes.Any;
-import io.deephaven.engine.chunk.Attributes.DictionaryKeys;
-import io.deephaven.engine.chunk.ChunkType;
-import io.deephaven.engine.chunk.ObjectChunk;
+import io.deephaven.stringset.LongBitmapStringSet;
+import io.deephaven.chunk.attributes.Any;
+import io.deephaven.engine.table.impl.chunkattributes.DictionaryKeys;
+import io.deephaven.chunk.ChunkType;
+import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.parquet.base.ColumnChunkReader;
 import io.deephaven.parquet.base.ColumnPageReader;
 import io.deephaven.parquet.base.DataWithOffsets;

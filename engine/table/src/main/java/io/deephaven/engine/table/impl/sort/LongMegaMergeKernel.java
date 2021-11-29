@@ -1,13 +1,13 @@
 package io.deephaven.engine.table.impl.sort;
 
+import io.deephaven.chunk.attributes.Any;
+import io.deephaven.chunk.attributes.Indices;
 import io.deephaven.engine.table.Context;
 import io.deephaven.engine.table.impl.SortingOrder;
 import io.deephaven.engine.table.impl.sort.megamerge.*;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.LongArraySource;
-import io.deephaven.engine.chunk.*;
-
-import static io.deephaven.engine.chunk.Attributes.*;
+import io.deephaven.chunk.*;
 
 /**
  * The LongMegaMergeKernel merges sorted chunks into a column source, with a parallel long array of row keys.

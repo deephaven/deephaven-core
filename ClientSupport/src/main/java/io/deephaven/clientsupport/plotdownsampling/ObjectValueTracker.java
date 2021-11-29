@@ -2,13 +2,13 @@ package io.deephaven.clientsupport.plotdownsampling;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.sources.ObjectArraySource;
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.Chunk;
+import io.deephaven.chunk.Chunk;
 import org.jetbrains.annotations.Nullable;
 
 public final class ObjectValueTracker<T extends Comparable<T>> extends ValueTracker {
@@ -40,7 +40,7 @@ public final class ObjectValueTracker<T extends Comparable<T>> extends ValueTrac
     }
 
     @Override
-    public void append(int offset, long rowKey, Chunk<? extends Attributes.Values> valuesChunk, int indexInChunk, @Nullable WritableRowSet nulls) {
+    public void append(int offset, long rowKey, Chunk<? extends Values> valuesChunk, int indexInChunk, @Nullable WritableRowSet nulls) {
         final T val = valuesChunk.<T>asObjectChunk().get(indexInChunk);
         if (val == null) {
             if (nulls != null) {
@@ -66,7 +66,7 @@ public final class ObjectValueTracker<T extends Comparable<T>> extends ValueTrac
     }
 
     @Override
-    public void update(int offset, long rowKey, Chunk<? extends Attributes.Values> valuesChunk, int indexInChunk, @Nullable WritableRowSet nulls) {
+    public void update(int offset, long rowKey, Chunk<? extends Values> valuesChunk, int indexInChunk, @Nullable WritableRowSet nulls) {
         T val = valuesChunk.<T>asObjectChunk().get(indexInChunk);
         if (val == null) {
             if (nulls != null) {
@@ -122,7 +122,7 @@ public final class ObjectValueTracker<T extends Comparable<T>> extends ValueTrac
     }
 
     @Override
-    public void validate(int offset, long rowKey, Chunk<? extends Attributes.Values> valuesChunk, int indexInChunk, @Nullable RowSet nulls) {
+    public void validate(int offset, long rowKey, Chunk<? extends Values> valuesChunk, int indexInChunk, @Nullable RowSet nulls) {
         T val = valuesChunk.<T>asObjectChunk().get(indexInChunk);
         if (val == null) {
             // can't check if our min/max is valid, or anything about positions, only can confirm that this row key is in

@@ -3,10 +3,11 @@ package io.deephaven.engine.rowset.impl;
 import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.rowset.chunkattributes.OrderedRowKeyRanges;
+import io.deephaven.rowset.chunkattributes.RowKeys;
 import io.deephaven.util.datastructures.LongRangeConsumer;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.WritableLongChunk;
+import io.deephaven.chunk.WritableLongChunk;
 import gnu.trove.list.array.TLongArrayList;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.mutable.MutableLong;
@@ -34,7 +35,7 @@ public class RowSetUtils {
     }
 
     public static void fillKeyIndicesChunk(final RowSet index,
-            final WritableLongChunk<? extends Attributes.RowKeys> chunkToFill) {
+            final WritableLongChunk<? extends RowKeys> chunkToFill) {
         chunkToFill.setSize(0); // so that we can actually add from the beginning.
         index.forEachRowKey((final long v) -> {
             chunkToFill.add(v);
@@ -43,7 +44,7 @@ public class RowSetUtils {
     }
 
     public static void fillKeyRangesChunk(final RowSet index,
-            final WritableLongChunk<Attributes.OrderedRowKeyRanges> chunkToFill) {
+            final WritableLongChunk<OrderedRowKeyRanges> chunkToFill) {
         chunkToFill.setSize(0);
         index.forAllRowKeyRanges((final long start, final long end) -> {
             chunkToFill.add(start);

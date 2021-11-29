@@ -1,7 +1,7 @@
 package io.deephaven.engine.rowset;
 
-import io.deephaven.engine.chunk.Attributes.OrderedRowKeys;
-import io.deephaven.engine.chunk.LongChunk;
+import io.deephaven.rowset.chunkattributes.OrderedRowKeys;
+import io.deephaven.chunk.LongChunk;
 import org.jetbrains.annotations.NotNull;
 
 /**

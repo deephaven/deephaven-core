@@ -1,6 +1,6 @@
 package io.deephaven.stream;
 
-import io.deephaven.engine.chunk.WritableChunk;
+import io.deephaven.chunk.WritableChunk;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -14,7 +14,7 @@ public interface StreamPublisher {
      * will be used when sufficient data is accumulated or on {@link #flush()}.
      *
      * <p>
-     * {@code consumer} must typically be primed to expect the same {@link io.deephaven.engine.chunk.ChunkType chunk
+     * {@code consumer} must typically be primed to expect the same {@link io.deephaven.chunk.ChunkType chunk
      * types} that this produces, in the same order.
      *
      * @param consumer The consumer

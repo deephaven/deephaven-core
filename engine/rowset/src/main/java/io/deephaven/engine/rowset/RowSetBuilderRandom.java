@@ -4,12 +4,13 @@
 
 package io.deephaven.engine.rowset;
 
+import io.deephaven.rowset.chunkattributes.OrderedRowKeys;
+import io.deephaven.rowset.chunkattributes.RowKeys;
 import io.deephaven.util.datastructures.LongRangeIterator;
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.IntChunk;
-import io.deephaven.engine.chunk.LongChunk;
-import io.deephaven.engine.chunk.util.IntChunkLongIterator;
-import io.deephaven.engine.chunk.util.LongChunkIterator;
+import io.deephaven.chunk.IntChunk;
+import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.util.IntChunkLongIterator;
+import io.deephaven.chunk.util.LongChunkIterator;
 
 import java.util.PrimitiveIterator;
 
@@ -38,19 +39,19 @@ public interface RowSetBuilderRandom {
         }
     }
 
-    default void addRowKeysChunk(final LongChunk<? extends Attributes.RowKeys> chunk) {
+    default void addRowKeysChunk(final LongChunk<? extends RowKeys> chunk) {
         addKeys(new LongChunkIterator(chunk));
     }
 
-    default void addRowKeysChunk(final IntChunk<? extends Attributes.RowKeys> chunk) {
+    default void addRowKeysChunk(final IntChunk<? extends RowKeys> chunk) {
         addKeys(new IntChunkLongIterator(chunk));
     }
 
-    default void addOrderedRowKeysChunk(final LongChunk<? extends Attributes.OrderedRowKeys> chunk) {
+    default void addOrderedRowKeysChunk(final LongChunk<? extends OrderedRowKeys> chunk) {
         addRowKeysChunk(chunk);
     }
 
-    default void addOrderedRowKeysChunk(final IntChunk<? extends Attributes.OrderedRowKeys> chunk) {
+    default void addOrderedRowKeysChunk(final IntChunk<? extends OrderedRowKeys> chunk) {
         addRowKeysChunk(chunk);
     }
 

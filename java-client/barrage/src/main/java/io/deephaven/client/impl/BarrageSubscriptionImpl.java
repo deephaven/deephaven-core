@@ -20,7 +20,7 @@ import io.deephaven.extensions.barrage.util.BarrageStreamReader;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.liveness.ReferenceCountedLivenessNode;
-import io.deephaven.engine.chunk.ChunkType;
+import io.deephaven.chunk.ChunkType;
 import io.deephaven.engine.table.impl.util.BarrageMessage;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;

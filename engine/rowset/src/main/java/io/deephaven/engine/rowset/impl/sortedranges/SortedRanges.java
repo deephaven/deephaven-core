@@ -5,10 +5,10 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.impl.*;
+import io.deephaven.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.util.datastructures.LongAbortableConsumer;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.LongChunk;
+import io.deephaven.chunk.LongChunk;
 import io.deephaven.util.metrics.IntCounterMetric;
 import io.deephaven.engine.rowset.impl.rsp.RspBitmap;
 import io.deephaven.engine.rowset.impl.singlerange.SingleRange;
@@ -4454,14 +4454,14 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
     }
 
     @Override
-    public final OrderedLongSet ixInsertSecondHalf(final LongChunk<Attributes.OrderedRowKeys> keys, final int offset,
-            final int length) {
+    public final OrderedLongSet ixInsertSecondHalf(final LongChunk<OrderedRowKeys> keys, final int offset,
+                                                   final int length) {
         return ixInsert(OrderedLongSet.fromChunk(keys, offset, length, true));
     }
 
     @Override
-    public final OrderedLongSet ixRemoveSecondHalf(final LongChunk<Attributes.OrderedRowKeys> keys, final int offset,
-            final int length) {
+    public final OrderedLongSet ixRemoveSecondHalf(final LongChunk<OrderedRowKeys> keys, final int offset,
+                                                   final int length) {
         return ixRemove(OrderedLongSet.fromChunk(keys, offset, length, true));
     }
 

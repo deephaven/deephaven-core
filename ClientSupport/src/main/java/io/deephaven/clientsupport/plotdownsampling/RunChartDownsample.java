@@ -1,11 +1,13 @@
 package io.deephaven.clientsupport.plotdownsampling;
 
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
-import io.deephaven.engine.time.DateTime;
+import io.deephaven.rowset.chunkattributes.OrderedRowKeys;
+import io.deephaven.time.DateTime;
 import io.deephaven.hash.KeyedLongObjectHash;
 import io.deephaven.hash.KeyedLongObjectHashMap;
 import io.deephaven.hash.KeyedLongObjectKey;
@@ -18,10 +20,9 @@ import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.Chunk;
-import io.deephaven.engine.chunk.LongChunk;
-import io.deephaven.engine.function.LongNumericPrimitives;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.LongChunk;
+import io.deephaven.function.LongNumericPrimitives;
 import org.apache.commons.lang3.mutable.Mutable;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.Nullable;
@@ -542,9 +543,9 @@ public class RunChartDownsample implements Function<Table, Table> {
             final RowSequence.Iterator it = rowSet.getRowSequenceIterator();
             while (it.hasMore()) {
                 final RowSequence next = it.getNextRowSequenceWithLength(CHUNK_SIZE);
-                final LongChunk<Attributes.Values> xValueChunk = context.getXValues(next, usePrev);
-                final LongChunk<Attributes.OrderedRowKeys> keyChunk = next.asRowKeyChunk();
-                final Chunk<? extends Attributes.Values>[] valueChunks = context.getYValues(all, next, usePrev);
+                final LongChunk<Values> xValueChunk = context.getXValues(next, usePrev);
+                final LongChunk<OrderedRowKeys> keyChunk = next.asRowKeyChunk();
+                final Chunk<? extends Values>[] valueChunks = context.getYValues(all, next, usePrev);
 
                 long lastBin = 0;
                 BucketState bucket = null;
@@ -574,8 +575,8 @@ public class RunChartDownsample implements Function<Table, Table> {
 
             while (it.hasMore()) {
                 final RowSequence next = it.getNextRowSequenceWithLength(CHUNK_SIZE);
-                final LongChunk<Attributes.Values> dateChunk = context.getXValues(next, true);
-                final LongChunk<Attributes.OrderedRowKeys> keyChunk = next.asRowKeyChunk();
+                final LongChunk<Values> dateChunk = context.getXValues(next, true);
+                final LongChunk<OrderedRowKeys> keyChunk = next.asRowKeyChunk();
 
                 final long lastBin = 0;
                 BucketState bucket = null;
@@ -609,10 +610,10 @@ public class RunChartDownsample implements Function<Table, Table> {
 
             while (it.hasMore()) {
                 final RowSequence next = it.getNextRowSequenceWithLength(CHUNK_SIZE);
-                final LongChunk<Attributes.Values> oldDateChunk = context.getXValues(next, true);
-                final LongChunk<Attributes.Values> newDateChunk = context.getXValues(next, false);
-                final LongChunk<Attributes.OrderedRowKeys> keyChunk = next.asRowKeyChunk();
-                final Chunk<? extends Attributes.Values>[] valueChunks = context.getYValues(yColIndexes, next, false);
+                final LongChunk<Values> oldDateChunk = context.getXValues(next, true);
+                final LongChunk<Values> newDateChunk = context.getXValues(next, false);
+                final LongChunk<OrderedRowKeys> keyChunk = next.asRowKeyChunk();
+                final Chunk<? extends Values>[] valueChunks = context.getYValues(yColIndexes, next, false);
 
                 final long lastBin = 0;
                 BucketState bucket = null;

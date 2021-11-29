@@ -9,11 +9,11 @@ import io.deephaven.engine.table.impl.sort.timsort.TimsortUtils;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.ObjectArraySource;
 import io.deephaven.engine.table.impl.sources.LongArraySource;
-import io.deephaven.engine.chunk.Attributes.Any;
-import io.deephaven.engine.chunk.Attributes.Indices;
-import io.deephaven.engine.chunk.ObjectChunk;
-import io.deephaven.engine.chunk.Chunk;
-import io.deephaven.engine.chunk.LongChunk;
+import io.deephaven.chunk.attributes.Any;
+import io.deephaven.chunk.attributes.Indices;
+import io.deephaven.chunk.ObjectChunk;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.LongChunk;
 
 public class ObjectLongMegaMergeDescendingKernel {
     private ObjectLongMegaMergeDescendingKernel() {

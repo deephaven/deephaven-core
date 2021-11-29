@@ -1,14 +1,15 @@
 package io.deephaven.engine.table.impl.sources.deltaaware;
 
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.Chunk;
-import io.deephaven.engine.chunk.LongChunk;
-import io.deephaven.engine.chunk.WritableChunk;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.WritableChunk;
+import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.rowset.chunkattributes.OrderedRowKeyRanges;
 
-class ChunkMerger<ATTR extends Attributes.Any> {
+class ChunkMerger<ATTR extends Any> {
     // Copy the data back into the positions where it needs to go.
-    static <ATTR extends Attributes.Any> void merge(
+    static <ATTR extends Any> void merge(
             Chunk<? extends ATTR> bChunk, Chunk<? extends ATTR> dChunk,
             RowSequence bKeys, RowSequence dKeys,
             WritableChunk<? super ATTR> dest) {
@@ -29,7 +30,7 @@ class ChunkMerger<ATTR extends Attributes.Any> {
     }
 
     private final Chunk<? extends ATTR> src;
-    private final LongChunk<Attributes.OrderedRowKeyRanges> keyRanges;
+    private final LongChunk<OrderedRowKeyRanges> keyRanges;
     private int keyOffset;
     private int dataOffset;
 

@@ -6,7 +6,7 @@ package io.deephaven.grpc_api.session;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.AssertionFailure;
-import io.deephaven.engine.time.DateTimeUtils;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.liveness.LivenessScope;

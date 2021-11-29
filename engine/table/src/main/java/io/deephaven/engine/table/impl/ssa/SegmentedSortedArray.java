@@ -2,9 +2,9 @@ package io.deephaven.engine.table.impl.ssa;
 
 import io.deephaven.configuration.Configuration;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
-import io.deephaven.engine.chunk.*;
-import io.deephaven.engine.chunk.Attributes.Any;
-import io.deephaven.engine.chunk.Attributes.RowKeys;
+import io.deephaven.chunk.*;
+import io.deephaven.chunk.attributes.Any;
+import io.deephaven.rowset.chunkattributes.RowKeys;
 
 import java.util.function.LongConsumer;
 import java.util.function.Supplier;
@@ -55,7 +55,7 @@ public interface SegmentedSortedArray extends LongSizedDataStructure {
      * @param valuesToInsert the valuesToInsert to insert
      * @param indicesToInsert the corresponding indicesToInsert
      */
-    void insert(Chunk<? extends Any> valuesToInsert, LongChunk<? extends Attributes.RowKeys> indicesToInsert);
+    void insert(Chunk<? extends Any> valuesToInsert, LongChunk<? extends RowKeys> indicesToInsert);
 
     /**
      * Remove valuesToRemove from this SSA. The valuesToRemove to remove must be sorted.
@@ -63,7 +63,7 @@ public interface SegmentedSortedArray extends LongSizedDataStructure {
      * @param valuesToRemove the valuesToRemove to remove
      * @param indicesToRemove the corresponding indices
      */
-    void remove(Chunk<? extends Any> valuesToRemove, LongChunk<? extends Attributes.RowKeys> indicesToRemove);
+    void remove(Chunk<? extends Any> valuesToRemove, LongChunk<? extends RowKeys> indicesToRemove);
 
     /**
      * Remove the values and indices referenced in stampChunk and indicesToRemove. Fill priorRedirections with the
@@ -73,15 +73,15 @@ public interface SegmentedSortedArray extends LongSizedDataStructure {
      * @param indicesToRemove the indices (parallel to the values)
      * @param priorRedirections the output prior redirections (parallel to valeus/indices)
      */
-    void removeAndGetPrior(Chunk<? extends Any> stampChunk, LongChunk<? extends Attributes.RowKeys> indicesToRemove,
-            WritableLongChunk<? extends Attributes.RowKeys> priorRedirections);
+    void removeAndGetPrior(Chunk<? extends Any> stampChunk, LongChunk<? extends RowKeys> indicesToRemove,
+            WritableLongChunk<? extends RowKeys> priorRedirections);
 
     <T extends Any> int insertAndGetNextValue(Chunk<T> valuesToInsert, LongChunk<? extends RowKeys> indicesToInsert,
             WritableChunk<T> nextValue);
 
-    void applyShift(Chunk<? extends Any> stampChunk, LongChunk<? extends Attributes.RowKeys> keyChunk, long shiftDelta);
+    void applyShift(Chunk<? extends Any> stampChunk, LongChunk<? extends RowKeys> keyChunk, long shiftDelta);
 
-    void applyShiftReverse(Chunk<? extends Any> stampChunk, LongChunk<? extends Attributes.RowKeys> keyChunk,
+    void applyShiftReverse(Chunk<? extends Any> stampChunk, LongChunk<? extends RowKeys> keyChunk,
             long shiftDelta);
 
     int getNodeSize();

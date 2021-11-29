@@ -7,15 +7,15 @@ import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.SortingOrder;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.*;
-import io.deephaven.engine.chunk.util.hashing.ChunkEquals;
+import io.deephaven.chunk.util.hashing.ChunkEquals;
 import io.deephaven.engine.table.impl.sort.LongSortKernel;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.chunk.*;
-import io.deephaven.engine.chunk.Attributes.Any;
-import io.deephaven.engine.chunk.Attributes.RowKeys;
-import io.deephaven.engine.chunk.Attributes.Values;
-import io.deephaven.engine.chunk.sized.SizedChunk;
-import io.deephaven.engine.chunk.sized.SizedLongChunk;
+import io.deephaven.chunk.*;
+import io.deephaven.chunk.attributes.Any;
+import io.deephaven.rowset.chunkattributes.RowKeys;
+import io.deephaven.chunk.attributes.Values;
+import io.deephaven.chunk.sized.SizedChunk;
+import io.deephaven.chunk.sized.SizedLongChunk;
 import io.deephaven.engine.table.impl.ssa.ChunkSsaStamp;
 import io.deephaven.engine.table.impl.ssa.SegmentedSortedArray;
 import io.deephaven.engine.table.impl.ssa.SsaSsaStamp;
@@ -122,7 +122,7 @@ public class ZeroKeyChunkedAjMergedListener extends MergedListener {
                 leftAdditionsOrRemovals ? leftStampSource.makeFillContext(leftChunkSize) : null;
                 final WritableChunk<Values> leftStampValues =
                         leftAdditionsOrRemovals ? stampChunkType.makeWritableChunk(leftChunkSize) : null;
-                final WritableLongChunk<Attributes.RowKeys> leftStampKeys =
+                final WritableLongChunk<RowKeys> leftStampKeys =
                         leftAdditionsOrRemovals ? WritableLongChunk.makeWritableChunk(leftChunkSize) : null;
                 final LongSortKernel<Values, RowKeys> sortKernel = LongSortKernel.makeContext(stampChunkType, order,
                         Math.max(leftChunkSize, rightChunkSize), true)) {
@@ -186,7 +186,7 @@ public class ZeroKeyChunkedAjMergedListener extends MergedListener {
 
                 try (final ColumnSource.FillContext fillContext = rightStampSource.makeFillContext(rightChunkSize);
                         final WritableChunk<Values> rightStampValues = stampChunkType.makeWritableChunk(rightChunkSize);
-                        final WritableLongChunk<Attributes.RowKeys> rightStampKeys =
+                        final WritableLongChunk<RowKeys> rightStampKeys =
                                 WritableLongChunk.makeWritableChunk(rightChunkSize)) {
                     final RowSet rightRestampRemovals;
                     final RowSet rightRestampAdditions;
@@ -203,7 +203,7 @@ public class ZeroKeyChunkedAjMergedListener extends MergedListener {
                     // in the left for the removed key to find the smallest value geq the removed right. Update all rows
                     // with the removed redirection to the previous key.
                     try (final RowSequence.Iterator removeit = rightRestampRemovals.getRowSequenceIterator();
-                            final WritableLongChunk<Attributes.RowKeys> priorRedirections =
+                            final WritableLongChunk<RowKeys> priorRedirections =
                                     WritableLongChunk.makeWritableChunk(rightChunkSize)) {
                         while (removeit.hasMore()) {
                             final RowSequence chunkOk = removeit.getNextRowSequenceWithLength(rightChunkSize);
@@ -227,7 +227,7 @@ public class ZeroKeyChunkedAjMergedListener extends MergedListener {
                                         new SizedSafeCloseable<>(
                                                 sz -> LongSortKernel.makeContext(stampChunkType, order, sz, true));
                              final SizedChunk<Values> shiftRightStampValues = new SizedChunk<>(stampChunkType);
-                             final SizedLongChunk<Attributes.RowKeys> shiftRightStampKeys = new SizedLongChunk<>()) {
+                             final SizedLongChunk<RowKeys> shiftRightStampKeys = new SizedLongChunk<>()) {
                             final RowSetShiftData.Iterator sit = rightShifted.applyIterator();
                             while (sit.hasNext()) {
                                 sit.next();
@@ -283,7 +283,7 @@ public class ZeroKeyChunkedAjMergedListener extends MergedListener {
                     try (final WritableChunk<Values> stampChunk = stampChunkType.makeWritableChunk(rightChunkSize);
                             final WritableChunk<Values> nextRightValue =
                                     stampChunkType.makeWritableChunk(rightChunkSize);
-                            final WritableLongChunk<Attributes.RowKeys> insertedIndices =
+                            final WritableLongChunk<RowKeys> insertedIndices =
                                     WritableLongChunk.makeWritableChunk(rightChunkSize);
                             final WritableBooleanChunk<Any> retainStamps =
                                     WritableBooleanChunk.makeWritableChunk(rightChunkSize)) {
@@ -365,7 +365,7 @@ public class ZeroKeyChunkedAjMergedListener extends MergedListener {
                 }
 
                 try (final RowSequence.Iterator leftRsIt = leftRestampAdditions.getRowSequenceIterator();
-                        final WritableLongChunk<Attributes.RowKeys> rightKeysForLeft =
+                        final WritableLongChunk<RowKeys> rightKeysForLeft =
                                 WritableLongChunk.makeWritableChunk(leftChunkSize)) {
                     while (leftRsIt.hasMore()) {
                         assert leftFillContext != null;

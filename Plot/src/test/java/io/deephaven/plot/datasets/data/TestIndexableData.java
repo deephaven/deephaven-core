@@ -8,7 +8,7 @@ import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.plot.BaseFigureImpl;
 import io.deephaven.plot.util.tables.*;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.time.DateTime;
+import io.deephaven.time.DateTime;
 import io.deephaven.engine.util.TableTools;
 
 import java.util.ArrayList;

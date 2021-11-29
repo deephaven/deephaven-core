@@ -6,10 +6,10 @@ import io.deephaven.engine.rowset.impl.OrderedLongSet;
 import io.deephaven.engine.rowset.impl.OrderedLongSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.rowset.impl.RowSetUtils;
+import io.deephaven.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.util.datastructures.LongAbortableConsumer;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.LongChunk;
+import io.deephaven.chunk.LongChunk;
 import io.deephaven.engine.rowset.impl.rsp.RspArray;
 import io.deephaven.engine.rowset.impl.rsp.RspBitmap;
 import io.deephaven.engine.rowset.impl.sortedranges.SortedRanges;
@@ -165,14 +165,14 @@ public abstract class SingleRange implements OrderedLongSet {
     }
 
     @Override
-    public final OrderedLongSet ixInsertSecondHalf(final LongChunk<Attributes.OrderedRowKeys> keys, final int offset,
-            final int length) {
+    public final OrderedLongSet ixInsertSecondHalf(final LongChunk<OrderedRowKeys> keys, final int offset,
+                                                   final int length) {
         return OrderedLongSet.fromChunk(keys, offset, length, false).ixInsertRange(rangeStart(), rangeEnd());
     }
 
     @Override
-    public final OrderedLongSet ixRemoveSecondHalf(final LongChunk<Attributes.OrderedRowKeys> keys, final int offset,
-            final int length) {
+    public final OrderedLongSet ixRemoveSecondHalf(final LongChunk<OrderedRowKeys> keys, final int offset,
+                                                   final int length) {
         return ixRemove(OrderedLongSet.fromChunk(keys, offset, length, true));
     }
 

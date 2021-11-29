@@ -1,9 +1,12 @@
 package io.deephaven.engine.table.impl.sort.radix;
 
+import io.deephaven.chunk.attributes.Any;
+import io.deephaven.chunk.attributes.ChunkLengths;
+import io.deephaven.chunk.attributes.ChunkPositions;
+import io.deephaven.chunk.attributes.Indices;
 import io.deephaven.engine.table.impl.SortingOrder;
 import io.deephaven.engine.table.impl.sort.LongSortKernel;
-import io.deephaven.engine.chunk.*;
-import io.deephaven.engine.chunk.Attributes.*;
+import io.deephaven.chunk.*;
 
 public class BooleanLongRadixSortKernel {
     public static <ATTR extends Any, KEY_INDICES extends Indices> LongSortKernel<ATTR, KEY_INDICES> createContext(int size, SortingOrder order, boolean preserveValues) {

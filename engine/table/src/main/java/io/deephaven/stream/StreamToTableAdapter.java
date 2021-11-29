@@ -3,19 +3,20 @@ package io.deephaven.stream;
 import gnu.trove.list.array.TLongArrayList;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.attributes.Any;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
-import io.deephaven.engine.time.DateTime;
+import io.deephaven.time.DateTime;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.sources.*;
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.ChunkType;
-import io.deephaven.engine.chunk.WritableChunk;
+import io.deephaven.chunk.ChunkType;
+import io.deephaven.chunk.WritableChunk;
 import io.deephaven.engine.table.impl.sources.chunkcolumnsource.ChunkColumnSource;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
@@ -160,7 +161,7 @@ public class StreamToTableAdapter implements SafeCloseable, StreamConsumer, Runn
     @NotNull
     private static WritableChunk<?> makeChunk(ColumnDefinition<?> cd, int size) {
         final ChunkType chunkType = chunkTypeForColumn(cd);
-        WritableChunk<Attributes.Any> returnValue = chunkType.makeWritableChunk(size);
+        WritableChunk<Any> returnValue = chunkType.makeWritableChunk(size);
         returnValue.setSize(0);
         return returnValue;
     }
@@ -335,7 +336,7 @@ public class StreamToTableAdapter implements SafeCloseable, StreamConsumer, Runn
 
     @SafeVarargs
     @Override
-    public final void accept(@NotNull final WritableChunk<Attributes.Values>... data) {
+    public final void accept(@NotNull final WritableChunk<Values>... data) {
         if (!alive) {
             return;
         }

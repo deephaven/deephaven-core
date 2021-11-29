@@ -4,12 +4,12 @@
 
 package io.deephaven.engine.table.impl.sources;
 
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.ReverseOperation;
-import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.table.SharedContext;
-import io.deephaven.engine.chunk.WritableChunk;
+import io.deephaven.chunk.WritableChunk;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.impl.util.reverse.ReverseKernel;
 import org.jetbrains.annotations.NotNull;
@@ -156,7 +156,7 @@ public class ReversedColumnSource<T> extends AbstractColumnSource<T> {
 
     @Override
     public void fillChunk(@NotNull ColumnSource.FillContext _context,
-            @NotNull WritableChunk<? super Attributes.Values> destination,
+            @NotNull WritableChunk<? super Values> destination,
             @NotNull RowSequence rowSequence) {
         // noinspection unchecked
         final FillContext context = (FillContext) _context;
@@ -167,7 +167,7 @@ public class ReversedColumnSource<T> extends AbstractColumnSource<T> {
 
     @Override
     public void fillPrevChunk(@NotNull ColumnSource.FillContext _context,
-            @NotNull WritableChunk<? super Attributes.Values> destination,
+            @NotNull WritableChunk<? super Values> destination,
             @NotNull RowSequence rowSequence) {
         // noinspection unchecked
         final FillContext context = (FillContext) _context;

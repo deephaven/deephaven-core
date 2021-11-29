@@ -2,9 +2,10 @@ package io.deephaven.engine.table.impl.sources;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.Context;
 import io.deephaven.engine.table.SharedContext;
-import io.deephaven.engine.chunk.*;
+import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
@@ -118,7 +119,7 @@ public class SwitchColumnSource<T> extends AbstractColumnSource<T> {
 
     @Override
     public void fillChunk(@NotNull final FillContext context,
-            @NotNull final WritableChunk<? super Attributes.Values> destination,
+            @NotNull final WritableChunk<? super Values> destination,
             @NotNull final RowSequence rowSequence) {
         // noinspection unchecked
         currentSource.fillChunk(((SwitchFillContext) context).getCurrentContext(), destination, rowSequence);
@@ -126,7 +127,7 @@ public class SwitchColumnSource<T> extends AbstractColumnSource<T> {
 
     @Override
     public void fillPrevChunk(@NotNull final FillContext context,
-            @NotNull final WritableChunk<? super Attributes.Values> destination,
+            @NotNull final WritableChunk<? super Values> destination,
             @NotNull final RowSequence rowSequence) {
         if (prevInvalid()) {
             // noinspection unchecked
@@ -155,15 +156,15 @@ public class SwitchColumnSource<T> extends AbstractColumnSource<T> {
     }
 
     @Override
-    public Chunk<? extends Attributes.Values> getChunk(@NotNull final GetContext context,
-            @NotNull final RowSequence rowSequence) {
+    public Chunk<? extends Values> getChunk(@NotNull final GetContext context,
+                                            @NotNull final RowSequence rowSequence) {
         // noinspection unchecked
         return currentSource.getChunk(((SwitchGetContext) context).getCurrentContext(), rowSequence);
     }
 
     @Override
-    public Chunk<? extends Attributes.Values> getPrevChunk(@NotNull final GetContext context,
-            @NotNull final RowSequence rowSequence) {
+    public Chunk<? extends Values> getPrevChunk(@NotNull final GetContext context,
+                                                @NotNull final RowSequence rowSequence) {
         if (prevInvalid()) {
             // noinspection unchecked
             return currentSource.getPrevChunk(((SwitchGetContext) context).getCurrentContext(), rowSequence);

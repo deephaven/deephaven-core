@@ -1,10 +1,10 @@
 package io.deephaven.engine.table.impl.sort.partition;
 
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.WritableLongChunk;
+import io.deephaven.chunk.WritableLongChunk;
 import gnu.trove.list.array.TLongArrayList;
 import gnu.trove.set.hash.TLongHashSet;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.rowset.chunkattributes.RowKeys;
 
 import java.util.Random;
 
@@ -15,7 +15,7 @@ class PartitionUtils {
      */
     static void sampleIndexKeys(
             final long seed, final RowSet rowSet, final int sampleSize,
-            final WritableLongChunk<Attributes.RowKeys> sampledKeys) {
+            final WritableLongChunk<RowKeys> sampledKeys) {
         final Random random = new Random(seed);
         final TLongHashSet sample = new TLongHashSet(sampleSize);
         final long maxValue = rowSet.size();

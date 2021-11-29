@@ -1,14 +1,14 @@
 package io.deephaven.engine.rowset.impl.singlerange;
 
-import static io.deephaven.engine.chunk.Attributes.OrderedRowKeyRanges;
+import io.deephaven.rowset.chunkattributes.OrderedRowKeyRanges;
 
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.rowset.impl.WritableRowSetImpl;
 import io.deephaven.engine.rowset.impl.RowSequenceAsChunkImpl;
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.WritableLongChunk;
+import io.deephaven.chunk.WritableLongChunk;
+import io.deephaven.rowset.chunkattributes.RowKeys;
 
 public class SingleRangeRowSequence extends RowSequenceAsChunkImpl implements SingleRangeMixin {
     private long rangeStart;
@@ -70,7 +70,7 @@ public class SingleRangeRowSequence extends RowSequenceAsChunkImpl implements Si
     }
 
     @Override
-    public void fillRowKeyChunk(final WritableLongChunk<? extends Attributes.RowKeys> chunkToFill) {
+    public void fillRowKeyChunk(final WritableLongChunk<? extends RowKeys> chunkToFill) {
         final int n = intSize();
         for (int i = 0; i < n; ++i) {
             chunkToFill.set(i, rangeStart() + i);

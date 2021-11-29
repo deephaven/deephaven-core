@@ -3,16 +3,17 @@ package io.deephaven.engine.table.impl.select;
 import java.lang.*;
 import java.util.*;
 
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.IntChunk;
-import io.deephaven.engine.chunk.LongChunk;
-import io.deephaven.engine.chunk.WritableChunk;
-import io.deephaven.engine.chunk.WritableIntChunk;
-import io.deephaven.engine.chunk.WritableLongChunk;
+import io.deephaven.chunk.IntChunk;
+import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.WritableChunk;
+import io.deephaven.chunk.WritableIntChunk;
+import io.deephaven.chunk.WritableLongChunk;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.util.type.TypeUtils;
 
@@ -25,7 +26,7 @@ public class FormulaSample extends io.deephaven.engine.table.impl.select.Formula
 
     private final io.deephaven.engine.table.ColumnSource<java.lang.Long> II;
     private final io.deephaven.engine.table.ColumnSource<java.lang.Integer> I;
-    private final io.deephaven.engine.vector.LongVector II_;
+    private final io.deephaven.vector.LongVector II_;
     private final java.lang.Integer q;
     private final Map<Object, Object> __lazyResultCache;
 
@@ -84,30 +85,30 @@ public class FormulaSample extends io.deephaven.engine.table.impl.select.Formula
     }
 
     @Override
-    protected io.deephaven.engine.chunk.ChunkType getChunkType() {
-        return io.deephaven.engine.chunk.ChunkType.Long;
+    protected io.deephaven.chunk.ChunkType getChunkType() {
+        return io.deephaven.chunk.ChunkType.Long;
     }
 
     @Override
-    public void fillChunk(final FillContext __context, final WritableChunk<? super Attributes.Values> __destination, final RowSequence __rowSequence) {
+    public void fillChunk(final FillContext __context, final WritableChunk<? super Values> __destination, final RowSequence __rowSequence) {
         final FormulaFillContext __typedContext = (FormulaFillContext)__context;
-        final LongChunk<? extends Attributes.Values> __chunk__col__II = this.II.getChunk(__typedContext.__subContextII, __rowSequence).asLongChunk();
-        final IntChunk<? extends Attributes.Values> __chunk__col__I = this.I.getChunk(__typedContext.__subContextI, __rowSequence).asIntChunk();
+        final LongChunk<? extends Values> __chunk__col__II = this.II.getChunk(__typedContext.__subContextII, __rowSequence).asLongChunk();
+        final IntChunk<? extends Values> __chunk__col__I = this.I.getChunk(__typedContext.__subContextI, __rowSequence).asIntChunk();
         fillChunkHelper(false, __typedContext, __destination, __rowSequence, __chunk__col__II, __chunk__col__I);
     }
 
     @Override
-    public void fillPrevChunk(final FillContext __context, final WritableChunk<? super Attributes.Values> __destination, final RowSequence __rowSequence) {
+    public void fillPrevChunk(final FillContext __context, final WritableChunk<? super Values> __destination, final RowSequence __rowSequence) {
         final FormulaFillContext __typedContext = (FormulaFillContext)__context;
-        final LongChunk<? extends Attributes.Values> __chunk__col__II = this.II.getPrevChunk(__typedContext.__subContextII, __rowSequence).asLongChunk();
-        final IntChunk<? extends Attributes.Values> __chunk__col__I = this.I.getPrevChunk(__typedContext.__subContextI, __rowSequence).asIntChunk();
+        final LongChunk<? extends Values> __chunk__col__II = this.II.getPrevChunk(__typedContext.__subContextII, __rowSequence).asLongChunk();
+        final IntChunk<? extends Values> __chunk__col__I = this.I.getPrevChunk(__typedContext.__subContextI, __rowSequence).asIntChunk();
         fillChunkHelper(true, __typedContext, __destination, __rowSequence, __chunk__col__II, __chunk__col__I);
     }
 
     private void fillChunkHelper(final boolean __usePrev, final FormulaFillContext __context,
-            final WritableChunk<? super Attributes.Values> __destination,
-            final RowSequence __rowSequence, LongChunk<? extends Attributes.Values> __chunk__col__II, IntChunk<? extends Attributes.Values> __chunk__col__I) {
-        final WritableLongChunk<? super Attributes.Values> __typedDestination = __destination.asWritableLongChunk();
+                                 final WritableChunk<? super Values> __destination,
+                                 final RowSequence __rowSequence, LongChunk<? extends Values> __chunk__col__II, IntChunk<? extends Values> __chunk__col__I) {
+        final WritableLongChunk<? super Values> __typedDestination = __destination.asWritableLongChunk();
         try (final RowSet prev = __usePrev ? __rowSet.copyPrev() : null;
              final RowSet inverted = ((prev != null) ? prev : __rowSet).invert(__rowSequence.asRowSet())) {
             __context.__iChunk.setSize(0);
@@ -150,8 +151,8 @@ public class FormulaSample extends io.deephaven.engine.table.impl.select.Formula
     }
 
     private class FormulaFillContext implements io.deephaven.engine.table.impl.select.Formula.FillContext {
-        private final WritableIntChunk<Attributes.OrderedRowKeys> __iChunk;
-        private final WritableLongChunk<Attributes.OrderedRowKeys> __iiChunk;
+        private final WritableIntChunk<OrderedRowKeys> __iChunk;
+        private final WritableLongChunk<OrderedRowKeys> __iiChunk;
         private final ColumnSource.GetContext __subContextII;
         private final ColumnSource.GetContext __subContextI;
         FormulaFillContext(int __chunkCapacity) {

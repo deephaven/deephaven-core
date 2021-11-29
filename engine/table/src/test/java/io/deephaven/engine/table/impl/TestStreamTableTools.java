@@ -1,9 +1,9 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.time.DateTimeUtils;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.time.DateTime;
+import io.deephaven.time.DateTime;
 import io.deephaven.engine.util.TableTools;
 import junit.framework.TestCase;
 import org.junit.After;

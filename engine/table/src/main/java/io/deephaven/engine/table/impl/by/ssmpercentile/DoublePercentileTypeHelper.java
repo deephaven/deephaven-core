@@ -3,13 +3,14 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.table.impl.by.ssmpercentile;
 
+import io.deephaven.chunk.attributes.ChunkLengths;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.util.compare.DoubleComparisons;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.DoubleArraySource;
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.DoubleChunk;
-import io.deephaven.engine.chunk.Chunk;
-import io.deephaven.engine.chunk.IntChunk;
+import io.deephaven.chunk.DoubleChunk;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.IntChunk;
 import io.deephaven.engine.table.impl.ssms.DoubleSegmentedSortedMultiset;
 import io.deephaven.engine.table.impl.ssms.SegmentedSortedMultiSet;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -58,8 +59,8 @@ public class DoublePercentileTypeHelper implements SsmChunkedPercentileOperator.
     }
 
     @Override
-    public int pivot(SegmentedSortedMultiSet segmentedSortedMultiSet, Chunk<? extends Attributes.Values> valueCopy, IntChunk<Attributes.ChunkLengths> counts, int startPosition, int runLength, MutableInt leftOvers) {
-        final DoubleChunk<? extends Attributes.Values> asDoubleChunk = valueCopy.asDoubleChunk();
+    public int pivot(SegmentedSortedMultiSet segmentedSortedMultiSet, Chunk<? extends Values> valueCopy, IntChunk<ChunkLengths> counts, int startPosition, int runLength, MutableInt leftOvers) {
+        final DoubleChunk<? extends Values> asDoubleChunk = valueCopy.asDoubleChunk();
         final DoubleSegmentedSortedMultiset ssmLo = (DoubleSegmentedSortedMultiset)segmentedSortedMultiSet;
         final double hiValue = ssmLo.getMaxDouble();
 
@@ -76,8 +77,8 @@ public class DoublePercentileTypeHelper implements SsmChunkedPercentileOperator.
     }
 
     @Override
-    public int pivot(SegmentedSortedMultiSet segmentedSortedMultiSet, Chunk<? extends Attributes.Values> valueCopy, IntChunk<Attributes.ChunkLengths> counts, int startPosition, int runLength) {
-        final DoubleChunk<? extends Attributes.Values> asDoubleChunk = valueCopy.asDoubleChunk();
+    public int pivot(SegmentedSortedMultiSet segmentedSortedMultiSet, Chunk<? extends Values> valueCopy, IntChunk<ChunkLengths> counts, int startPosition, int runLength) {
+        final DoubleChunk<? extends Values> asDoubleChunk = valueCopy.asDoubleChunk();
         final DoubleSegmentedSortedMultiset ssmLo = (DoubleSegmentedSortedMultiset)segmentedSortedMultiSet;
         final double hiValue = ssmLo.getMaxDouble();
 
@@ -95,7 +96,7 @@ public class DoublePercentileTypeHelper implements SsmChunkedPercentileOperator.
      * @param searchValue the value to find
      * @return the highest index that is less than or equal to valuesToSearch
      */
-    private static int upperBound(DoubleChunk<? extends Attributes.Values> valuesToSearch, int lo, int hi, double searchValue) {
+    private static int upperBound(DoubleChunk<? extends Values> valuesToSearch, int lo, int hi, double searchValue) {
         while (lo < hi) {
             final int mid = (lo + hi) >>> 1;
             final double testValue = valuesToSearch.get(mid);

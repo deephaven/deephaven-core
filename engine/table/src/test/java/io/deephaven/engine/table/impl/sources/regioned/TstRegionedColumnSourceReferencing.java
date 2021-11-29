@@ -4,7 +4,7 @@
 
 package io.deephaven.engine.table.impl.sources.regioned;
 
-import io.deephaven.engine.chunk.Attributes;
+import io.deephaven.chunk.attributes.Values;
 import org.junit.Before;
 
 import java.lang.reflect.Array;
@@ -13,7 +13,7 @@ import java.lang.reflect.Array;
  * Base class for testing {@link RegionedColumnSourceArray} implementations.
  */
 @SuppressWarnings({"AnonymousInnerClassMayBeStatic"})
-public abstract class TstRegionedColumnSourceReferencing<DATA_TYPE, ATTR extends Attributes.Values, NATIVE_REGION_TYPE extends ColumnRegion<ATTR>>
+public abstract class TstRegionedColumnSourceReferencing<DATA_TYPE, ATTR extends Values, NATIVE_REGION_TYPE extends ColumnRegion<ATTR>>
         extends TstRegionedColumnSourcePrimitive<DATA_TYPE, ATTR, ColumnRegionReferencing<ATTR, NATIVE_REGION_TYPE>> {
 
     NATIVE_REGION_TYPE[] cr_n;

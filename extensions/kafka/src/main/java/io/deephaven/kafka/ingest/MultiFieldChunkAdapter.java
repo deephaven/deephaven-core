@@ -6,11 +6,11 @@ package io.deephaven.kafka.ingest;
 
 import gnu.trove.map.TObjectIntMap;
 import gnu.trove.map.hash.TObjectIntHashMap;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.ChunkType;
-import io.deephaven.engine.chunk.ObjectChunk;
-import io.deephaven.engine.chunk.WritableChunk;
+import io.deephaven.chunk.ChunkType;
+import io.deephaven.chunk.ObjectChunk;
+import io.deephaven.chunk.WritableChunk;
 
 import java.util.Map;
 import java.util.function.IntFunction;
@@ -55,8 +55,8 @@ public class MultiFieldChunkAdapter implements KeyOrValueProcessor {
 
 
     @Override
-    public void handleChunk(ObjectChunk<Object, Attributes.Values> inputChunk,
-            WritableChunk<Attributes.Values>[] publisherChunks) {
+    public void handleChunk(ObjectChunk<Object, Values> inputChunk,
+            WritableChunk<Values>[] publisherChunks) {
         if (!allowNulls) {
             for (int ii = 0; ii < inputChunk.size(); ++ii) {
                 if (inputChunk.get(ii) == null) {
@@ -65,7 +65,7 @@ public class MultiFieldChunkAdapter implements KeyOrValueProcessor {
             }
         }
         for (int cc = 0; cc < chunkOffsets.length; ++cc) {
-            final WritableChunk<Attributes.Values> publisherChunk = publisherChunks[chunkOffsets[cc]];
+            final WritableChunk<Values> publisherChunk = publisherChunks[chunkOffsets[cc]];
             final int existingSize = publisherChunk.size();
             publisherChunk.setSize(existingSize + inputChunk.size());
             fieldCopiers[cc].copyField(inputChunk, publisherChunk, 0, existingSize, inputChunk.size());

@@ -3,11 +3,12 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.table.impl.util.unboxer;
 
-import io.deephaven.engine.chunk.*;
+import io.deephaven.chunk.*;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.util.type.TypeUtils;
 
 class FloatUnboxer implements ChunkUnboxer.UnboxerKernel {
-    private final WritableFloatChunk<Attributes.Values> primitiveChunk;
+    private final WritableFloatChunk<Values> primitiveChunk;
 
     FloatUnboxer(int capacity) {
         primitiveChunk = WritableFloatChunk.makeWritableChunk(capacity);
@@ -19,19 +20,19 @@ class FloatUnboxer implements ChunkUnboxer.UnboxerKernel {
     }
 
     @Override
-    public FloatChunk<? extends Attributes.Values> unbox(ObjectChunk<?, ? extends Attributes.Values> boxed) {
+    public FloatChunk<? extends Values> unbox(ObjectChunk<?, ? extends Values> boxed) {
         unboxTo(boxed, primitiveChunk, 0, 0);
         primitiveChunk.setSize(boxed.size());
         return primitiveChunk;
     }
 
     @Override
-    public void unboxTo(ObjectChunk<?, ? extends Attributes.Values> boxed, WritableChunk<? extends Attributes.Values> primitives, int sourceOffset, int destOffset) {
+    public void unboxTo(ObjectChunk<?, ? extends Values> boxed, WritableChunk<? extends Values> primitives, int sourceOffset, int destOffset) {
         unboxTo(boxed, primitives.asWritableFloatChunk(), sourceOffset, destOffset);
     }
 
-    public static void unboxTo(ObjectChunk<?, ? extends Attributes.Values> boxed, WritableFloatChunk<? extends Attributes.Values> primitives, int sourceOffset, int destOffset) {
-        final ObjectChunk<Float, ? extends Attributes.Values> floatChunk = boxed.asObjectChunk();
+    public static void unboxTo(ObjectChunk<?, ? extends Values> boxed, WritableFloatChunk<? extends Values> primitives, int sourceOffset, int destOffset) {
+        final ObjectChunk<Float, ? extends Values> floatChunk = boxed.asObjectChunk();
         for (int ii = 0; ii < boxed.size(); ++ii) {
             primitives.set(ii + destOffset, TypeUtils.unbox(floatChunk.get(ii + sourceOffset)));
         }

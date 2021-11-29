@@ -1,12 +1,14 @@
 package io.deephaven.engine.table.impl.sort.timsort;
 
-import io.deephaven.engine.chunk.*;
-import io.deephaven.engine.chunk.Attributes.*;
+import io.deephaven.chunk.*;
+import io.deephaven.chunk.attributes.ChunkLengths;
+import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 
 import io.deephaven.engine.rowset.impl.PerfStats;
+import io.deephaven.rowset.chunkattributes.RowKeys;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Comparator;

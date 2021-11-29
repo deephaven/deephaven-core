@@ -1,5 +1,5 @@
 {
- "className": "io.deephaven.engine.time.calendar.DateStringUtils",
+ "className": "io.deephaven.time.calendar.DateStringUtils",
  "methods": {
   "isAfter": "Is one date after another?\n\n:param date1: (java.lang.String) - if null return false\n:param date2: (java.lang.String) - if null return false\n:return: (boolean) true if date1 is chronologically after date2; false otherwise.",
   "isAfterQuiet": "Is one date after another?\n\n This does not check that dates are formatted correctly. Could be disastrous if date1 and date2\n are not ISO-8601 compliant!\n\n:param date1: (java.lang.String) - if null return false\n:param date2: (java.lang.String) - if null return false\n:return: (boolean) true if date1 is chronologically after date2; false otherwise.",
@@ -11,7 +11,7 @@
   "plusDays": "Add a number of days from a given date.\n\n:param date: (java.lang.String) - date\n:param days: (int) - days to add\n:return: (java.lang.String) the day days after date",
   "plusDaysQuiet": "Add a number of days from a given date.\n\n This does not check that dates are formatted correctly.\n\n:param date: (java.lang.String) - date\n:param days: (int) - days to add\n:return: (java.lang.String) the day days after date"
  },
- "path": "io.deephaven.engine.time.calendar.DateStringUtils",
+ "path": "io.deephaven.time.calendar.DateStringUtils",
  "text": "Basic utilities for Date Strings.\n\n To comply with the ISO-8601 standard for dates, Strings should be of the form \"yyyy-MM-dd\"\n\n Quiet methods are functionally equivalent to their counterparts, but assume Date String validity to remove the\n overhead of checking.",
  "typeName": "class"
 }

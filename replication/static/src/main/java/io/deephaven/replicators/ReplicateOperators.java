@@ -74,7 +74,7 @@ public class ReplicateOperators {
         lines = ReplicationUtils.replaceRegion(lines, "resultColumn initialization", Collections.singletonList(
                 "        resultColumn = type == DateTime.class ? new DateTimeArraySource() : new LongArraySource();"));
         lines = ReplicationUtils.addImport(lines,
-                "import io.deephaven.engine.time.DateTime;",
+                "import io.deephaven.time.DateTime;",
                 "import io.deephaven.engine.table.impl.sources.DateTimeArraySource;",
                 "import io.deephaven.engine.table.impl.sources.LongArraySource;");
         FileUtils.writeLines(longAddOnlyMinMaxFile, lines);

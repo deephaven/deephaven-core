@@ -5,7 +5,7 @@ package io.deephaven.benchmark.engine.sort.timsort;
 
 import io.deephaven.engine.table.impl.sort.timsort.BaseTestObjectTimSortKernel;
 import io.deephaven.engine.table.impl.sort.timsort.TestTimSortKernel;
-import io.deephaven.engine.tuple.generated.ObjectLongTuple;
+import io.deephaven.tuple.generated.ObjectLongTuple;
 import org.openjdk.jmh.annotations.*;
 
 import java.util.*;

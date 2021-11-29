@@ -12,7 +12,7 @@ import io.deephaven.plot.datasets.data.IndexableNumericData;
 import io.deephaven.plot.errors.PlotIllegalArgumentException;
 import io.deephaven.plot.errors.PlotUnsupportedOperationException;
 import io.deephaven.plot.util.PlotUtils;
-import io.deephaven.engine.tuple.generated.ObjectIntTuple;
+import io.deephaven.tuple.generated.ObjectIntTuple;
 
 import java.util.Collection;
 import java.util.LinkedHashMap;

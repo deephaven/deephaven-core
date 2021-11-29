@@ -8,21 +8,20 @@ import gnu.trove.set.hash.THashSet;
 import java.util.Objects;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.vector.ObjectVector;
-import io.deephaven.engine.vector.ObjectVectorDirect;
-import io.deephaven.engine.vector.ObjectVector;
+import io.deephaven.chunk.attributes.Any;
+import io.deephaven.vector.ObjectVector;
+import io.deephaven.vector.ObjectVectorDirect;
 import io.deephaven.util.compare.ObjectComparisons;
 import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.engine.table.impl.by.SumIntChunk;
 import io.deephaven.engine.table.impl.sort.timsort.TimsortUtils;
-import io.deephaven.engine.chunk.*;
-import io.deephaven.engine.chunk.Attributes.ChunkLengths;
-import io.deephaven.engine.chunk.Attributes.Values;
+import io.deephaven.chunk.*;
+import io.deephaven.chunk.attributes.ChunkLengths;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.util.annotations.VisibleForTesting;
 import org.apache.commons.lang3.mutable.MutableInt;
 
 import java.util.Arrays;
-import java.util.Objects;
 
 
 public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMultiSet<Object>, ObjectVector {
@@ -698,7 +697,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
      * @param searchValue the value to find
      * @return the lowest index that is greater than or equal to valuesToSearch
      */
-    private static int gallopBound(ObjectChunk<Object, ? extends Attributes.Any> valuesToSearch, int lo, int hi, Object searchValue) {
+    private static int gallopBound(ObjectChunk<Object, ? extends Any> valuesToSearch, int lo, int hi, Object searchValue) {
         while (lo < hi) {
             final int mid = (lo + hi) >>> 1;
             final Object testValue = valuesToSearch.get(mid);
@@ -2139,7 +2138,7 @@ public final class ObjectSegmentedSortedMultiset implements SegmentedSortedMulti
 
     @Override
     public WritableLongChunk<?> countChunk() {
-        final WritableLongChunk<Attributes.Any> countChunk = WritableLongChunk.makeWritableChunk(intSize());
+        final WritableLongChunk<Any> countChunk = WritableLongChunk.makeWritableChunk(intSize());
         if (leafCount == 1) {
             countChunk.copyFromTypedArray(directoryCount, 0, 0, size);
         } else if (leafCount > 0) {

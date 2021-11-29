@@ -1,7 +1,7 @@
 {
  "className": "io.deephaven.engine.table.impl.replay.ReplayerInterface",
  "methods": {
-  "currentTime": "Simulated time.\n\n:return: (io.deephaven.engine.time.DateTime) simulated time.",
+  "currentTime": "Simulated time.\n\n:return: (io.deephaven.time.DateTime) simulated time.",
   "getHandle": "Gets a handle to the replayer.\n\n:return: (io.deephaven.engine.table.impl.replay.ReplayerHandle) handle to the replayer.",
   "isDone": "Has the replayer finished replaying all data.\n\n:return: (boolean) true if the replayer has finished replaying all data; false otherwise.",
   "replay": "Prepares a historical table for replaying.\n\n:param dataSource: (io.deephaven.engine.table.Table) - historical table to replay\n:param timeColumn: (java.lang.String) - column in the table containing timestamps\n:return: (io.deephaven.engine.table.Table) dynamic, replayed version of the table.",

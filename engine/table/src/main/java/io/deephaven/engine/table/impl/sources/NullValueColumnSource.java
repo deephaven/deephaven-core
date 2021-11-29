@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl.sources;
 
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableDefinition;
@@ -14,8 +15,7 @@ import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
 import io.deephaven.util.QueryConstants;
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.WritableChunk;
+import io.deephaven.chunk.WritableChunk;
 import io.deephaven.engine.table.impl.util.ShiftData;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -186,7 +186,7 @@ public class NullValueColumnSource<T> extends AbstractColumnSource<T> implements
     }
 
     @Override
-    public void fillChunk(@NotNull FillContext context, @NotNull WritableChunk<? super Attributes.Values> destination,
+    public void fillChunk(@NotNull FillContext context, @NotNull WritableChunk<? super Values> destination,
             @NotNull RowSequence rowSequence) {
         destination.setSize(rowSequence.intSize());
         destination.fillWithNullValue(0, rowSequence.intSize());
@@ -194,7 +194,7 @@ public class NullValueColumnSource<T> extends AbstractColumnSource<T> implements
 
     @Override
     public void fillPrevChunk(@NotNull FillContext context,
-            @NotNull WritableChunk<? super Attributes.Values> destination, @NotNull RowSequence rowSequence) {
+                              @NotNull WritableChunk<? super Values> destination, @NotNull RowSequence rowSequence) {
         fillChunk(context, destination, rowSequence);
     }
 }

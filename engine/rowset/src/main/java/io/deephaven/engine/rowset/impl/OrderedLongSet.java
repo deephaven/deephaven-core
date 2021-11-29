@@ -10,9 +10,8 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.util.datastructures.LongAbortableConsumer;
 import io.deephaven.util.datastructures.LongRangeConsumer;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.Attributes.OrderedRowKeys;
-import io.deephaven.engine.chunk.LongChunk;
+import io.deephaven.rowset.chunkattributes.OrderedRowKeys;
+import io.deephaven.chunk.LongChunk;
 import io.deephaven.engine.rowset.impl.singlerange.SingleRange;
 import io.deephaven.engine.rowset.impl.sortedranges.SortedRanges;
 import io.deephaven.engine.rowset.impl.rsp.RspBitmap;
@@ -40,8 +39,8 @@ public interface OrderedLongSet {
     OrderedLongSet ixInsertRange(long startKey, long endKey);
 
     @FinalDefault
-    default OrderedLongSet ixInsert(final LongChunk<Attributes.OrderedRowKeys> keys, final int offset,
-            final int length) {
+    default OrderedLongSet ixInsert(final LongChunk<OrderedRowKeys> keys, final int offset,
+                                    final int length) {
         if (length <= 1) {
             if (length == 0) {
                 return this;
@@ -70,8 +69,8 @@ public interface OrderedLongSet {
     OrderedLongSet ixRemoveRange(long startKey, long endKey);
 
     @FinalDefault
-    default OrderedLongSet ixRemove(final LongChunk<Attributes.OrderedRowKeys> keys, final int offset,
-            final int length) {
+    default OrderedLongSet ixRemove(final LongChunk<OrderedRowKeys> keys, final int offset,
+                                    final int length) {
         if (ixIsEmpty()) {
             return this;
         }
@@ -93,7 +92,7 @@ public interface OrderedLongSet {
         return ixRemoveSecondHalf(keys, offset, length);
     }
 
-    OrderedLongSet ixRemoveSecondHalf(LongChunk<Attributes.OrderedRowKeys> keys, int offset, int length);
+    OrderedLongSet ixRemoveSecondHalf(LongChunk<OrderedRowKeys> keys, int offset, int length);
 
     OrderedLongSet ixRemove(OrderedLongSet removed);
 
@@ -184,15 +183,15 @@ public interface OrderedLongSet {
     }
 
     /**
-     * Produce a {@link OrderedLongSet} from a slice of a {@link LongChunk} of {@link Attributes.OrderedRowKeys}.
+     * Produce a {@link OrderedLongSet} from a slice of a {@link LongChunk} of {@link OrderedRowKeys}.
      *
      * @param keys The {@link LongChunk} of {@link OrderedRowKeys} to build from
      * @param offset The offset in {@code keys} to begin building from
      * @param length The number of keys to include
      * @return A new {@link OrderedLongSet} containing the specified slice of {@code keys}
      */
-    static OrderedLongSet fromChunk(final LongChunk<Attributes.OrderedRowKeys> keys, final int offset, final int length,
-            final boolean disposable) {
+    static OrderedLongSet fromChunk(final LongChunk<OrderedRowKeys> keys, final int offset, final int length,
+                                    final boolean disposable) {
         if (length == 0) {
             return EMPTY;
         }
@@ -238,14 +237,14 @@ public interface OrderedLongSet {
         }
 
         @Override
-        public OrderedLongSet ixInsertSecondHalf(final LongChunk<Attributes.OrderedRowKeys> keys, final int offset,
-                final int length) {
+        public OrderedLongSet ixInsertSecondHalf(final LongChunk<OrderedRowKeys> keys, final int offset,
+                                                 final int length) {
             return fromChunk(keys, offset, length, false);
         }
 
         @Override
-        public OrderedLongSet ixRemoveSecondHalf(final LongChunk<Attributes.OrderedRowKeys> keys, final int offset,
-                final int length) {
+        public OrderedLongSet ixRemoveSecondHalf(final LongChunk<OrderedRowKeys> keys, final int offset,
+                                                 final int length) {
             throw new IllegalStateException();
         }
 

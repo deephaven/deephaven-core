@@ -1,7 +1,7 @@
 package io.deephaven.engine.table.impl.util.cast;
 
-import io.deephaven.engine.chunk.*;
-import io.deephaven.engine.chunk.Attributes.Any;
+import io.deephaven.chunk.*;
+import io.deephaven.chunk.attributes.Any;
 import io.deephaven.util.QueryConstants;
 
 /**
@@ -20,7 +20,7 @@ public class CharToDoubleCast implements ToDoubleCast {
     }
 
     @SuppressWarnings("unchecked")
-    private <T extends Attributes.Any> DoubleChunk<T> cast(CharChunk<T> input) {
+    private <T extends Any> DoubleChunk<T> cast(CharChunk<T> input) {
         castInto(input, result);
         return result;
     }

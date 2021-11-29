@@ -8,6 +8,7 @@ import com.google.common.annotations.VisibleForTesting;
 import gnu.trove.list.TLongList;
 import gnu.trove.list.linked.TLongLinkedList;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.*;
@@ -23,12 +24,14 @@ import io.deephaven.engine.updategraph.NotificationQueue;
 import io.deephaven.engine.table.impl.QueryTable;
 import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.engine.table.impl.sources.WritableRedirectedColumnSource;
-import io.deephaven.engine.chunk.*;
+import io.deephaven.chunk.*;
 import io.deephaven.engine.table.impl.util.*;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.log.LogEntry;
 import io.deephaven.io.log.LogLevel;
 import io.deephaven.io.logger.Logger;
+import io.deephaven.rowset.chunkattributes.OrderedRowKeys;
+import io.deephaven.rowset.chunkattributes.RowKeys;
 import io.deephaven.util.annotations.InternalUseOnly;
 import org.jetbrains.annotations.NotNull;
 
@@ -264,7 +267,7 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
                     // Update data chunk-wise:
                     for (int ii = 0; ii < update.addColumnData.length; ++ii) {
                         if (isSubscribedColumn(ii)) {
-                            final Chunk<? extends Attributes.Values> data = update.addColumnData[ii].data;
+                            final Chunk<? extends Values> data = update.addColumnData[ii].data;
                             Assert.eq(data.size(), "delta.includedAdditions.size()", destinationRowSet.size(),
                                     "destinationRowSet.size()");
                             try (final ChunkSink.FillFromContext ctxt =
@@ -287,7 +290,7 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
 
                 try (final ChunkSource.FillContext redirContext =
                         rowRedirection.makeFillContext(column.rowsModified.intSize(), null);
-                        final WritableLongChunk<Attributes.RowKeys> keys =
+                        final WritableLongChunk<RowKeys> keys =
                                 WritableLongChunk.makeWritableChunk(column.rowsModified.intSize())) {
                     rowRedirection.fillChunk(redirContext, keys, column.rowsModified);
                     for (int i = 0; i < keys.size(); ++i) {
@@ -365,7 +368,7 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
         }
 
         // Note: these are NOT OrderedRowKeys until after the call to .sort()
-        try (final WritableLongChunk<Attributes.OrderedRowKeys> redirectedRows =
+        try (final WritableLongChunk<OrderedRowKeys> redirectedRows =
                 WritableLongChunk.makeWritableChunk(rowsToFree.intSize("BarrageTable"))) {
             redirectedRows.setSize(0);
 

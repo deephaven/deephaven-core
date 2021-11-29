@@ -3,13 +3,14 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.table.impl.by.ssmpercentile;
 
+import io.deephaven.chunk.attributes.ChunkLengths;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.util.compare.FloatComparisons;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.impl.sources.FloatArraySource;
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.FloatChunk;
-import io.deephaven.engine.chunk.Chunk;
-import io.deephaven.engine.chunk.IntChunk;
+import io.deephaven.chunk.FloatChunk;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.IntChunk;
 import io.deephaven.engine.table.impl.ssms.FloatSegmentedSortedMultiset;
 import io.deephaven.engine.table.impl.ssms.SegmentedSortedMultiSet;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -58,8 +59,8 @@ public class FloatPercentileTypeHelper implements SsmChunkedPercentileOperator.P
     }
 
     @Override
-    public int pivot(SegmentedSortedMultiSet segmentedSortedMultiSet, Chunk<? extends Attributes.Values> valueCopy, IntChunk<Attributes.ChunkLengths> counts, int startPosition, int runLength, MutableInt leftOvers) {
-        final FloatChunk<? extends Attributes.Values> asFloatChunk = valueCopy.asFloatChunk();
+    public int pivot(SegmentedSortedMultiSet segmentedSortedMultiSet, Chunk<? extends Values> valueCopy, IntChunk<ChunkLengths> counts, int startPosition, int runLength, MutableInt leftOvers) {
+        final FloatChunk<? extends Values> asFloatChunk = valueCopy.asFloatChunk();
         final FloatSegmentedSortedMultiset ssmLo = (FloatSegmentedSortedMultiset)segmentedSortedMultiSet;
         final float hiValue = ssmLo.getMaxFloat();
 
@@ -76,8 +77,8 @@ public class FloatPercentileTypeHelper implements SsmChunkedPercentileOperator.P
     }
 
     @Override
-    public int pivot(SegmentedSortedMultiSet segmentedSortedMultiSet, Chunk<? extends Attributes.Values> valueCopy, IntChunk<Attributes.ChunkLengths> counts, int startPosition, int runLength) {
-        final FloatChunk<? extends Attributes.Values> asFloatChunk = valueCopy.asFloatChunk();
+    public int pivot(SegmentedSortedMultiSet segmentedSortedMultiSet, Chunk<? extends Values> valueCopy, IntChunk<ChunkLengths> counts, int startPosition, int runLength) {
+        final FloatChunk<? extends Values> asFloatChunk = valueCopy.asFloatChunk();
         final FloatSegmentedSortedMultiset ssmLo = (FloatSegmentedSortedMultiset)segmentedSortedMultiSet;
         final float hiValue = ssmLo.getMaxFloat();
 
@@ -95,7 +96,7 @@ public class FloatPercentileTypeHelper implements SsmChunkedPercentileOperator.P
      * @param searchValue the value to find
      * @return the highest index that is less than or equal to valuesToSearch
      */
-    private static int upperBound(FloatChunk<? extends Attributes.Values> valuesToSearch, int lo, int hi, float searchValue) {
+    private static int upperBound(FloatChunk<? extends Values> valuesToSearch, int lo, int hi, float searchValue) {
         while (lo < hi) {
             final int mid = (lo + hi) >>> 1;
             final float testValue = valuesToSearch.get(mid);

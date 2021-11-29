@@ -1,6 +1,7 @@
 package io.deephaven.kafka.publish;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.Table;
@@ -9,8 +10,7 @@ import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.table.impl.*;
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.ObjectChunk;
+import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.util.SafeCloseable;
@@ -133,14 +133,14 @@ public class PublishToKafka<K, V> extends LivenessArtifact {
             while (rowsIterator.hasMore()) {
                 final RowSequence chunkRowKeys = rowsIterator.getNextRowSequenceWithLength(chunkSize);
 
-                final ObjectChunk<K, Attributes.Values> keyChunk;
+                final ObjectChunk<K, Values> keyChunk;
                 if (keyContext != null) {
                     keyChunk = keySerializer.handleChunk(keyContext, chunkRowKeys, usePrevious);
                 } else {
                     keyChunk = null;
                 }
 
-                final ObjectChunk<V, Attributes.Values> valueChunk;
+                final ObjectChunk<V, Values> valueChunk;
                 if (valueContext != null) {
                     valueChunk = valueSerializer.handleChunk(valueContext, chunkRowKeys, usePrevious);
                 } else {

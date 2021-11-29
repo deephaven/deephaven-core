@@ -1,7 +1,10 @@
 package io.deephaven.engine.table.impl.sources;
 
-import static io.deephaven.engine.chunk.Attributes.RowKeys;
-import static io.deephaven.engine.chunk.Attributes.Values;
+import io.deephaven.rowset.chunkattributes.RowKeys;
+
+import io.deephaven.chunk.attributes.ChunkLengths;
+import io.deephaven.chunk.attributes.ChunkPositions;
+import io.deephaven.chunk.attributes.Values;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.ColumnSource;
@@ -10,15 +13,14 @@ import io.deephaven.engine.table.impl.CrossJoinStateManager;
 import io.deephaven.engine.table.impl.join.dupexpand.DupExpandKernel;
 import io.deephaven.engine.table.impl.sort.permute.PermuteKernel;
 import io.deephaven.engine.table.impl.sort.timsort.LongIntTimsortKernel;
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.ChunkStream;
-import io.deephaven.engine.chunk.LongChunk;
-import io.deephaven.engine.chunk.ResettableWritableChunk;
-import io.deephaven.engine.chunk.ResettableWritableLongChunk;
+import io.deephaven.chunk.ChunkStream;
+import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.ResettableWritableChunk;
+import io.deephaven.chunk.ResettableWritableLongChunk;
 import io.deephaven.engine.table.SharedContext;
-import io.deephaven.engine.chunk.WritableChunk;
-import io.deephaven.engine.chunk.WritableIntChunk;
-import io.deephaven.engine.chunk.WritableLongChunk;
+import io.deephaven.chunk.WritableChunk;
+import io.deephaven.chunk.WritableIntChunk;
+import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.rowset.RowSet;
@@ -459,14 +461,14 @@ public class CrossJoinRightColumnSource<T> extends AbstractColumnSource<T> imple
             private final boolean rightIsLive;
             private final boolean shared;
 
-            private final WritableLongChunk<Attributes.RowKeys> mappedKeys;
+            private final WritableLongChunk<RowKeys> mappedKeys;
 
-            private final LongIntTimsortKernel.LongIntSortKernelContext<Attributes.RowKeys, Attributes.ChunkPositions> sortKernelContext;
-            private final WritableLongChunk<Attributes.RowKeys> sortedMappedKeys;
-            private final WritableIntChunk<Attributes.ChunkPositions> mappedKeysOrder;
+            private final LongIntTimsortKernel.LongIntSortKernelContext<RowKeys, ChunkPositions> sortKernelContext;
+            private final WritableLongChunk<RowKeys> sortedMappedKeys;
+            private final WritableIntChunk<ChunkPositions> mappedKeysOrder;
             private final WritableLongChunk<RowKeys> compactedMappedKeys;
-            private final ResettableWritableLongChunk<Attributes.RowKeys> nonNullCompactedMappedKeys;
-            private final WritableIntChunk<Attributes.ChunkLengths> runLengths;
+            private final ResettableWritableLongChunk<RowKeys> nonNullCompactedMappedKeys;
+            private final WritableIntChunk<ChunkLengths> runLengths;
 
             private boolean mappedKeysReusable;
             private int totalKeyCount;

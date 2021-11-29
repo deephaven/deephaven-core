@@ -4,14 +4,15 @@
 
 package io.deephaven.extensions.barrage.chunk.array;
 
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.Chunk;
-import io.deephaven.engine.chunk.ChunkType;
-import io.deephaven.engine.chunk.IntChunk;
-import io.deephaven.engine.chunk.ObjectChunk;
-import io.deephaven.engine.chunk.WritableChunk;
-import io.deephaven.engine.chunk.WritableIntChunk;
-import io.deephaven.engine.chunk.WritableObjectChunk;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.ChunkType;
+import io.deephaven.chunk.IntChunk;
+import io.deephaven.chunk.ObjectChunk;
+import io.deephaven.chunk.WritableChunk;
+import io.deephaven.chunk.WritableIntChunk;
+import io.deephaven.chunk.WritableObjectChunk;
+import io.deephaven.chunk.attributes.Any;
+import io.deephaven.chunk.attributes.ChunkPositions;
 
 public interface ArrayExpansionKernel {
     /**
@@ -46,7 +47,7 @@ public interface ArrayExpansionKernel {
      * @param perElementLengthDest the destination IntChunk for which `dest.get(i + 1) - dest.get(i)` is equivalent to `source.get(i).length`
      * @return an unrolled/flattened chunk of T
      */
-    <T, A extends Attributes.Any> WritableChunk<A> expand(ObjectChunk<T, A> source, WritableIntChunk<Attributes.ChunkPositions> perElementLengthDest);
+    <T, A extends Any> WritableChunk<A> expand(ObjectChunk<T, A> source, WritableIntChunk<ChunkPositions> perElementLengthDest);
 
     /**
      * This contracts the source from a pair of `LongChunk` and `Chunk<T>` and produces a `Chunk<T[]>`. The returned
@@ -56,5 +57,5 @@ public interface ArrayExpansionKernel {
      * @param perElementLengthDest the source IntChunk for which `dest.get(i + 1) - dest.get(i)` is equivalent to `source.get(i).length`
      * @return a result chunk of T[]
      */
-    <T, A extends Attributes.Any> WritableObjectChunk<T, A> contract(Chunk<A> source, IntChunk<Attributes.ChunkPositions> perElementLengthDest);
+    <T, A extends Any> WritableObjectChunk<T, A> contract(Chunk<A> source, IntChunk<ChunkPositions> perElementLengthDest);
 }

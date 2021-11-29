@@ -4,8 +4,8 @@
 
 package io.deephaven.engine.table.impl.util;
 
-import io.deephaven.engine.vector.ObjectVector;
-import io.deephaven.engine.time.DateTime;
+import io.deephaven.vector.ObjectVector;
+import io.deephaven.time.DateTime;
 import io.deephaven.api.util.NameValidator;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.ColumnSource;

@@ -2,25 +2,28 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.attributes.Any;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.rowset.*;
-import io.deephaven.engine.chunk.util.hashing.ChunkEquals;
+import io.deephaven.chunk.util.hashing.ChunkEquals;
 import io.deephaven.engine.table.impl.join.BucketedChunkedAjMergedListener;
 import io.deephaven.engine.table.impl.join.JoinListenerRecorder;
 import io.deephaven.engine.table.impl.join.ZeroKeyChunkedAjMergedListener;
 import io.deephaven.engine.table.impl.sort.LongSortKernel;
 import io.deephaven.engine.table.impl.sources.*;
-import io.deephaven.engine.chunk.*;
-import io.deephaven.engine.chunk.sized.SizedBooleanChunk;
-import io.deephaven.engine.chunk.sized.SizedChunk;
-import io.deephaven.engine.chunk.sized.SizedLongChunk;
+import io.deephaven.chunk.*;
+import io.deephaven.chunk.sized.SizedBooleanChunk;
+import io.deephaven.chunk.sized.SizedChunk;
+import io.deephaven.chunk.sized.SizedLongChunk;
 import io.deephaven.engine.table.impl.ssa.ChunkSsaStamp;
 import io.deephaven.engine.table.impl.ssa.SegmentedSortedArray;
 import io.deephaven.engine.table.impl.ssa.SsaSsaStamp;
 import io.deephaven.engine.table.impl.util.*;
 import io.deephaven.engine.table.impl.util.compact.CompactKernel;
 import io.deephaven.engine.table.impl.util.compact.LongCompactKernel;
+import io.deephaven.rowset.chunkattributes.RowKeys;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseableList;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -29,8 +32,6 @@ import org.jetbrains.annotations.NotNull;
 import java.util.*;
 import java.util.function.Function;
 import java.util.function.Supplier;
-
-import static io.deephaven.engine.chunk.Attributes.*;
 
 public class AsOfJoinHelper {
 
@@ -766,14 +767,14 @@ public class AsOfJoinHelper {
                         asOfJoinStateManager.probeAdditions(restampAdditions, rightSources, slots, sequentialBuilders);
 
                 try (final SizedChunk<Values> nextRightValue = new SizedChunk<>(stampChunkType);
-                        final SizedChunk<Values> rightStampChunk = new SizedChunk<>(stampChunkType);
-                        final SizedLongChunk<RowKeys> insertedIndices = new SizedLongChunk<>();
-                        final SizedBooleanChunk<Any> retainStamps = new SizedBooleanChunk<>();
-                        final SizedSafeCloseable<ColumnSource.FillContext> rightStampFillContext =
+                     final SizedChunk<Values> rightStampChunk = new SizedChunk<>(stampChunkType);
+                     final SizedLongChunk<RowKeys> insertedIndices = new SizedLongChunk<>();
+                     final SizedBooleanChunk<Any> retainStamps = new SizedBooleanChunk<>();
+                     final SizedSafeCloseable<ColumnSource.FillContext> rightStampFillContext =
                                 new SizedSafeCloseable<>(rightStampSource::makeFillContext);
-                        final ResettableWritableLongChunk<RowKeys> leftKeyChunk =
+                     final ResettableWritableLongChunk<RowKeys> leftKeyChunk =
                                 ResettableWritableLongChunk.makeResettableChunk();
-                        final ResettableWritableChunk<Values> leftValuesChunk =
+                     final ResettableWritableChunk<Values> leftValuesChunk =
                                 rightStampSource.getChunkType().makeResettableWritableChunk()) {
                     final ChunkEquals stampChunkEquals = ChunkEquals.makeEqual(stampChunkType);
                     final CompactKernel stampCompact = CompactKernel.makeCompact(stampChunkType);

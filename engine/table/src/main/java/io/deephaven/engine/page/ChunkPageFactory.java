@@ -1,7 +1,7 @@
 package io.deephaven.engine.page;
 
-import io.deephaven.engine.chunk.Attributes.Any;
-import io.deephaven.engine.chunk.ChunkType;
+import io.deephaven.chunk.attributes.Any;
+import io.deephaven.chunk.ChunkType;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collections;

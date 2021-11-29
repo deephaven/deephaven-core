@@ -4,6 +4,8 @@
 
 package io.deephaven.engine.table.impl.sources;
 
+import io.deephaven.chunk.attributes.Any;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.impl.ShiftedRowSequence;
 import io.deephaven.engine.table.ColumnSource;
@@ -11,10 +13,9 @@ import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.hash.KeyedObjectHashMap;
 import io.deephaven.hash.KeyedObjectKey;
-import io.deephaven.engine.chunk.Attributes.*;
-import io.deephaven.engine.chunk.ResettableWritableChunk;
+import io.deephaven.chunk.ResettableWritableChunk;
 import io.deephaven.engine.table.SharedContext;
-import io.deephaven.engine.chunk.WritableChunk;
+import io.deephaven.chunk.WritableChunk;
 import io.deephaven.base.verify.Assert;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -344,8 +345,8 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
         final long[] startOfIndices = usePrev ? unionRedirection.prevStartOfIndices : unionRedirection.startOfIndices;
 
         try (final RowSequence.Iterator rsIt = rowSequence.getRowSequenceIterator();
-                final ResettableWritableChunk<Any> resettableDestination = getChunkType().makeResettableWritableChunk();
-                final ShiftedRowSequence okHelper = new ShiftedRowSequence()) {
+             final ResettableWritableChunk<Any> resettableDestination = getChunkType().makeResettableWritableChunk();
+             final ShiftedRowSequence okHelper = new ShiftedRowSequence()) {
             int offset = 0;
             for (int tid = startTid; tid <= lastTid; ++tid) {
                 final int capacityRemaining = Math.min(context.chunkCapacity, rsSize - offset);

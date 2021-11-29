@@ -1,6 +1,6 @@
 ///////////////////// Calendars /////////////////////
-import static io.deephaven.engine.time.calendar.Calendars.calendar
-import static io.deephaven.engine.time.calendar.Calendars.calendarNames
+import static io.deephaven.time.calendar.Calendars.calendar
+import static io.deephaven.time.calendar.Calendars.calendarNames
 
 //todo prefix name with CALENDAR?
 

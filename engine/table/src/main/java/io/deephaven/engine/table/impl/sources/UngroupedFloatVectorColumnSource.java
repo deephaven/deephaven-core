@@ -9,7 +9,7 @@ package io.deephaven.engine.table.impl.sources;
 
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
-import io.deephaven.engine.vector.FloatVector;
+import io.deephaven.vector.FloatVector;
 
 import static io.deephaven.util.QueryConstants.NULL_FLOAT;
 

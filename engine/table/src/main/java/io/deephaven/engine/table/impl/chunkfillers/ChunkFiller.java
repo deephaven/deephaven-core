@@ -2,12 +2,12 @@ package io.deephaven.engine.table.impl.chunkfillers;
 
 import io.deephaven.engine.table.ElementSource;
 import io.deephaven.engine.table.WritableColumnSource;
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.Attributes.Values;
-import io.deephaven.engine.chunk.ChunkType;
-import io.deephaven.engine.chunk.LongChunk;
-import io.deephaven.engine.chunk.WritableChunk;
+import io.deephaven.chunk.attributes.Values;
+import io.deephaven.chunk.ChunkType;
+import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.WritableChunk;
 import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.rowset.chunkattributes.RowKeys;
 
 public interface ChunkFiller {
 
@@ -40,14 +40,14 @@ public interface ChunkFiller {
 
     void fillByIndices(ElementSource src, RowSequence keys, WritableChunk<? super Values> dest);
 
-    void fillByIndices(ElementSource src, LongChunk<? extends Attributes.RowKeys> chunk,
+    void fillByIndices(ElementSource src, LongChunk<? extends RowKeys> chunk,
             WritableChunk<? super Values> dest);
 
     void fillPrevByRanges(ElementSource src, RowSequence keys, WritableChunk<? super Values> dest);
 
     void fillPrevByIndices(ElementSource src, RowSequence keys, WritableChunk<? super Values> dest);
 
-    void fillPrevByIndices(ElementSource src, LongChunk<? extends Attributes.RowKeys> chunk,
+    void fillPrevByIndices(ElementSource src, LongChunk<? extends RowKeys> chunk,
             WritableChunk<? super Values> dest);
 
     /**

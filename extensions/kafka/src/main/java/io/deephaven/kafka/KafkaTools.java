@@ -17,7 +17,7 @@ import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.updategraph.UpdateSourceCombiner;
 import io.deephaven.engine.updategraph.UpdateSourceRegistrar;
-import io.deephaven.engine.time.DateTime;
+import io.deephaven.time.DateTime;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.table.impl.LocalTableMap;

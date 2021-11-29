@@ -7,7 +7,7 @@ package io.deephaven.engine.table.impl.util;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableListener;
 import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
-import io.deephaven.engine.time.DateTime;
+import io.deephaven.time.DateTime;
 import io.deephaven.qst.column.header.ColumnHeader;
 import io.deephaven.qst.table.TableHeader;
 import io.deephaven.tablelogger.RowSetter;

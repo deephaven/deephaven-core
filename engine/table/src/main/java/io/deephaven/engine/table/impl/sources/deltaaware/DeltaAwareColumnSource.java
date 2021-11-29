@@ -13,8 +13,10 @@ import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.updategraph.UpdateCommitter;
 import io.deephaven.engine.table.impl.sources.*;
-import io.deephaven.engine.chunk.*;
-import io.deephaven.engine.chunk.Attributes.Values;
+import io.deephaven.chunk.*;
+import io.deephaven.chunk.attributes.Values;
+import io.deephaven.rowset.chunkattributes.OrderedRowKeyRanges;
+import io.deephaven.rowset.chunkattributes.RowKeys;
 import org.jetbrains.annotations.NotNull;
 
 // This worked-out example is a sketch of the problem we are trying to solve.
@@ -327,7 +329,7 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
 
     @Override
     public void fillFromChunkUnordered(@NotNull FillFromContext context, @NotNull Chunk<? extends Values> src,
-            @NotNull LongChunk<Attributes.RowKeys> keys) {
+            @NotNull LongChunk<RowKeys> keys) {
         throw new UnsupportedOperationException("TODO");
     }
 
@@ -551,7 +553,7 @@ public final class DeltaAwareColumnSource<T> extends AbstractColumnSource<T>
     private void commitValues() {
         try (
                 final FillFromContext baselineCtx = baseline.makeFillFromContext(preferredChunkSize);
-                final WritableLongChunk<Attributes.OrderedRowKeyRanges> orderedKeyRanges =
+                final WritableLongChunk<OrderedRowKeyRanges> orderedKeyRanges =
                         WritableLongChunk.makeWritableChunk(2);
                 final GetContext deltaCtx = delta.makeGetContext(preferredChunkSize);
                 final RowSequence.Iterator it = deltaRows.getRowSequenceIterator()) {

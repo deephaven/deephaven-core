@@ -6,8 +6,8 @@ package io.deephaven.kafka.ingest;
 
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.chunk.ChunkType;
+import io.deephaven.time.DateTime;
+import io.deephaven.chunk.ChunkType;
 
 import java.util.Map;
 import java.util.function.IntFunction;

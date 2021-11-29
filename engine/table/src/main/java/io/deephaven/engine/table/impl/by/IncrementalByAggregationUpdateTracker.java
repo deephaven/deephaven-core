@@ -11,9 +11,8 @@ import io.deephaven.engine.table.impl.sort.timsort.LongLongTimsortKernel;
 import io.deephaven.engine.table.impl.sources.IntegerArraySource;
 import io.deephaven.engine.table.impl.sources.LongArraySource;
 import io.deephaven.engine.table.impl.sources.ObjectArraySource;
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.Attributes.RowKeys;
-import io.deephaven.engine.chunk.WritableLongChunk;
+import io.deephaven.rowset.chunkattributes.RowKeys;
+import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.engine.table.impl.util.*;
 import org.jetbrains.annotations.NotNull;
 
@@ -533,7 +532,7 @@ class IncrementalByAggregationUpdateTracker {
         final RowSetShiftData shiftData;
         try (final WritableLongChunk<RowKeys> previousShiftedFirstKeys =
                 WritableLongChunk.makeWritableChunk(numStatesWithShifts);
-                final WritableLongChunk<Attributes.RowKeys> currentShiftedFirstKeys =
+                final WritableLongChunk<RowKeys> currentShiftedFirstKeys =
                         WritableLongChunk.makeWritableChunk(numStatesWithShifts)) {
             int shiftChunkPosition = 0;
             for (long ti = 0; ti < size; ++ti) {

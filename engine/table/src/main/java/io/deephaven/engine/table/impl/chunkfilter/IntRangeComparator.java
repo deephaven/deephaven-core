@@ -4,9 +4,9 @@
 package io.deephaven.engine.table.impl.chunkfilter;
 
 import io.deephaven.util.compare.IntComparisons;
-import io.deephaven.engine.chunk.*;
-import io.deephaven.engine.chunk.Attributes.OrderedRowKeys;
-import io.deephaven.engine.chunk.Attributes.Values;
+import io.deephaven.chunk.*;
+import io.deephaven.rowset.chunkattributes.OrderedRowKeys;
+import io.deephaven.chunk.attributes.Values;
 
 public class IntRangeComparator {
     private IntRangeComparator() {} // static use only

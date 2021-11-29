@@ -1,13 +1,14 @@
 package io.deephaven.clientsupport.plotdownsampling;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.impl.RowSetUtils;
+import io.deephaven.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.util.QueryConstants;
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.Chunk;
-import io.deephaven.engine.chunk.LongChunk;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.LongChunk;
 import org.apache.commons.lang3.mutable.MutableLong;
 
 import java.util.Arrays;
@@ -63,7 +64,7 @@ public class BucketState {
         return offset;
     }
 
-    public void append(final long rowIndex, final Chunk<? extends Attributes.Values>[] valueChunks,
+    public void append(final long rowIndex, final Chunk<? extends Values>[] valueChunks,
             final int chunkIndex) {
         rowSet.insert(rowIndex);
         for (int i = 0; i < values.length; i++) {
@@ -89,10 +90,10 @@ public class BucketState {
         }
     }
 
-    public void update(final long rowIndex, final Chunk<? extends Attributes.Values>[] valueChunks,
+    public void update(final long rowIndex, final Chunk<? extends Values>[] valueChunks,
             final int chunkIndex) {
         for (int i = 0; i < values.length; i++) {
-            final Chunk<? extends Attributes.Values> valueChunk = valueChunks[i];
+            final Chunk<? extends Values> valueChunk = valueChunks[i];
             if (valueChunk == null) {
                 continue;// skip, already decided to be unnecessary
             }
@@ -172,9 +173,9 @@ public class BucketState {
         final RowSequence.Iterator it = rowSet.getRowSequenceIterator();
         while (it.hasMore()) {
             final RowSequence next = it.getNextRowSequenceWithLength(RunChartDownsample.CHUNK_SIZE);
-            // LongChunk<Attributes.Values> dateChunk = context.getXValues(next, false);
-            final LongChunk<Attributes.OrderedRowKeys> keyChunk = next.asRowKeyChunk();
-            final Chunk<? extends Attributes.Values>[] valueChunks = context.getYValues(cols, next, false);
+            // LongChunk<Values> dateChunk = context.getXValues(next, false);
+            final LongChunk<OrderedRowKeys> keyChunk = next.asRowKeyChunk();
+            final Chunk<? extends Values>[] valueChunks = context.getYValues(cols, next, false);
 
             // find the max in this chunk, compare with existing, loop.
             // this loop uses the prepared "which columns actually need testing" array
@@ -276,8 +277,8 @@ public class BucketState {
         final RowSequence.Iterator it = rowSet.getRowSequenceIterator();
         while (it.hasMore()) {
             final RowSequence next = it.getNextRowSequenceWithLength(RunChartDownsample.CHUNK_SIZE);
-            final LongChunk<Attributes.OrderedRowKeys> keyChunk = next.asRowKeyChunk();
-            final Chunk<? extends Attributes.Values>[] valueChunks =
+            final LongChunk<OrderedRowKeys> keyChunk = next.asRowKeyChunk();
+            final Chunk<? extends Values>[] valueChunks =
                     context.getYValues(allYColumnIndexes, next, usePrev);
 
 

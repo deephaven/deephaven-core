@@ -2,7 +2,7 @@ package io.deephaven.engine.table.impl.preview;
 
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.vector.Vector;
+import io.deephaven.vector.Vector;
 import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.HierarchicalTable;
 import io.deephaven.engine.table.impl.select.FunctionalColumn;

@@ -1,9 +1,9 @@
 package io.deephaven.engine.rowset;
 
 
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.Attributes.OrderedRowKeyRanges;
-import io.deephaven.engine.chunk.LongChunk;
+import io.deephaven.rowset.chunkattributes.OrderedRowKeyRanges;
+import io.deephaven.chunk.LongChunk;
+import io.deephaven.rowset.chunkattributes.OrderedRowKeys;
 import org.junit.Test;
 
 import java.util.Random;
@@ -48,7 +48,7 @@ public class RowSequenceIteratorTest {
         while (wrapper.hasMore()) {
             final RowSequence rs = wrapper.getNextRowSequenceWithLength(chunkSize);
             final int localVPos = vPos;
-            LongChunk<Attributes.OrderedRowKeys> indices = rs.asRowKeyChunk();
+            LongChunk<OrderedRowKeys> indices = rs.asRowKeyChunk();
             for (int i = 0; i < indices.size(); i++) {
                 assertEquals(indices.get(i), values[vPos++]);
             }

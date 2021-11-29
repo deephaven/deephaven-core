@@ -5,10 +5,11 @@
 package io.deephaven.engine.table.impl.sources;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
-import io.deephaven.engine.chunk.*;
+import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.updategraph.UpdateCommitter;
 import io.deephaven.engine.table.impl.util.copy.CopyKernel;
@@ -61,7 +62,7 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T> {
     @Override
     public void fillPrevChunk(
             @NotNull final ColumnSource.FillContext context,
-            @NotNull final WritableChunk<? super Attributes.Values> destination,
+            @NotNull final WritableChunk<? super Values> destination,
             @NotNull final RowSequence rowSequence) {
         if (prevFlusher == null) {
             fillChunk(context, destination, rowSequence);
@@ -282,7 +283,7 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T> {
     }
 
     @Override
-    public void fillFromChunk(@NotNull FillFromContext context, @NotNull Chunk<? extends Attributes.Values> src,
+    public void fillFromChunk(@NotNull FillFromContext context, @NotNull Chunk<? extends Values> src,
             @NotNull RowSequence rowSequence) {
         if (rowSequence.getAverageRunLengthEstimate() < USE_RANGES_AVERAGE_RUN_LENGTH) {
             fillFromChunkByKeys(rowSequence, src);
@@ -291,9 +292,9 @@ abstract class ArraySourceHelper<T, UArray> extends ArrayBackedColumnSource<T> {
         }
     }
 
-    abstract void fillFromChunkByRanges(@NotNull RowSequence rowSequence, Chunk<? extends Attributes.Values> src);
+    abstract void fillFromChunkByRanges(@NotNull RowSequence rowSequence, Chunk<? extends Values> src);
 
-    abstract void fillFromChunkByKeys(@NotNull RowSequence rowSequence, Chunk<? extends Attributes.Values> src);
+    abstract void fillFromChunkByKeys(@NotNull RowSequence rowSequence, Chunk<? extends Values> src);
 
     abstract UArray allocateNullFilledBlock(int size);
 

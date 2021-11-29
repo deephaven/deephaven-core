@@ -6,7 +6,7 @@ package io.deephaven.plot.datasets.data;
 
 import io.deephaven.plot.errors.PlotInfo;
 import io.deephaven.plot.util.ArgumentValidations;
-import io.deephaven.engine.time.DateTime;
+import io.deephaven.time.DateTime;
 import gnu.trove.map.hash.TLongObjectHashMap;
 
 import static io.deephaven.util.QueryConstants.NULL_LONG;

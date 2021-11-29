@@ -9,7 +9,7 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.lang.QueryScopeParam;
-import io.deephaven.engine.vector.Vector;
+import io.deephaven.vector.Vector;
 import io.deephaven.engine.table.lang.QueryScope;
 import io.deephaven.engine.table.impl.vector.*;
 import io.deephaven.engine.table.impl.select.formula.*;

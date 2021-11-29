@@ -3,10 +3,11 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.table.impl.sources;
 
-import io.deephaven.engine.chunk.ObjectChunk;
+import io.deephaven.chunk.ObjectChunk;
 
-import io.deephaven.engine.chunk.WritableObjectChunk;
+import io.deephaven.chunk.WritableObjectChunk;
 
+import io.deephaven.rowset.chunkattributes.RowKeys;
 import io.deephaven.util.BooleanUtils;
 
 import io.deephaven.engine.rowset.RowSetFactory;
@@ -18,8 +19,8 @@ import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.impl.select.FormulaColumn;
-import io.deephaven.engine.chunk.*;
-import io.deephaven.engine.chunk.Attributes.Values;
+import io.deephaven.chunk.*;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.testutil.Shuffle;
 import junit.framework.TestCase;
 import org.junit.After;
@@ -31,7 +32,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.stream.LongStream;
 
-import static io.deephaven.engine.chunk.ArrayGenerator.indexDataGenerator;
+import static io.deephaven.chunk.ArrayGenerator.indexDataGenerator;
 import static io.deephaven.util.QueryConstants.NULL_BOOLEAN;
 import static junit.framework.TestCase.*;
 
@@ -553,7 +554,7 @@ public class TestBooleanArraySource {
 
         try (final ChunkSource.FillContext ctx = source.makeFillContext(keys.length);
              final WritableObjectChunk<Boolean, Values> dest = WritableObjectChunk.makeWritableChunk(keys.length);
-             final ResettableLongChunk<Attributes.RowKeys> rlc = ResettableLongChunk.makeResettableChunk()) {
+             final ResettableLongChunk<RowKeys> rlc = ResettableLongChunk.makeResettableChunk()) {
             rlc.resetFromTypedArray(keys, 0, keys.length);
             source.fillChunkUnordered(ctx, dest, rlc);
             assertEquals(keys.length, dest.size());

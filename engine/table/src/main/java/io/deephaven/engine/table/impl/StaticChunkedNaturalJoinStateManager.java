@@ -5,22 +5,26 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.verify.Require;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.chunk.*;
-import io.deephaven.engine.chunk.Attributes.*;
+import io.deephaven.chunk.*;
+import io.deephaven.chunk.attributes.Any;
+import io.deephaven.chunk.attributes.ChunkPositions;
+import io.deephaven.chunk.attributes.HashCodes;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.table.*;
+import io.deephaven.rowset.chunkattributes.OrderedRowKeys;
+import io.deephaven.rowset.chunkattributes.RowKeys;
 import io.deephaven.util.QueryConstants;
-import io.deephaven.engine.chunk.util.hashing.*;
+import io.deephaven.chunk.util.hashing.*;
 // this is ugly to have twice, but we do need it twice for replication
 // @StateChunkIdentityName@ from \QLongChunk\E
-import io.deephaven.engine.chunk.util.hashing.LongChunkEquals;
+import io.deephaven.chunk.util.hashing.LongChunkEquals;
 import io.deephaven.engine.table.impl.sort.permute.PermuteKernel;
 import io.deephaven.engine.table.impl.sort.timsort.LongIntTimsortKernel;
 import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.engine.table.impl.util.*;
 
 
-import io.deephaven.util.SafeCloseableArray;
 import org.jetbrains.annotations.NotNull;
 
 // region extra imports
@@ -196,7 +200,7 @@ class StaticChunkedNaturalJoinStateManager
         final ColumnSource.FillContext overflowOverflowFillContext;
 
         // the chunk of hashcodes
-        final WritableIntChunk<HashCode> hashChunk;
+        final WritableIntChunk<HashCodes> hashChunk;
         // the chunk of positions within our table
         final WritableLongChunk<RowKeys> tableLocationsChunk;
 
@@ -788,7 +792,7 @@ class StaticChunkedNaturalJoinStateManager
         }
     }
 
-    private void hashKeyChunks(WritableIntChunk<HashCode> hashChunk, Chunk<Values>[] sourceKeyChunks) {
+    private void hashKeyChunks(WritableIntChunk<HashCodes> hashChunk, Chunk<Values>[] sourceKeyChunks) {
         chunkHashers[0].hashInitial(sourceKeyChunks[0], hashChunk);
         for (int ii = 1; ii < sourceKeyChunks.length; ++ii) {
             chunkHashers[ii].hashUpdate(sourceKeyChunks[ii], hashChunk);
@@ -845,7 +849,7 @@ class StaticChunkedNaturalJoinStateManager
         final ColumnSource.FillContext[] overflowContexts;
 
         // the chunk of hashcodes
-        final WritableIntChunk<HashCode> hashChunk;
+        final WritableIntChunk<HashCodes> hashChunk;
         // the chunk of positions within our table
         final WritableLongChunk<RowKeys> tableLocationsChunk;
 
@@ -1170,7 +1174,7 @@ class StaticChunkedNaturalJoinStateManager
     }
     // endmixin decorationProbe
 
-    private void convertHashToTableLocations(WritableIntChunk<HashCode> hashChunk, WritableLongChunk<RowKeys> tablePositionsChunk) {
+    private void convertHashToTableLocations(WritableIntChunk<HashCodes> hashChunk, WritableLongChunk<RowKeys> tablePositionsChunk) {
 
         // turn hash codes into indices within our table
         for (int ii = 0; ii < hashChunk.size(); ++ii) {

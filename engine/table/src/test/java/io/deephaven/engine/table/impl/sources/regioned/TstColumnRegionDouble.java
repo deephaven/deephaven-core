@@ -7,11 +7,11 @@
 
 package io.deephaven.engine.table.impl.sources.regioned;
 
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.util.QueryConstants;
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.WritableDoubleChunk;
-import io.deephaven.engine.chunk.WritableChunk;
+import io.deephaven.chunk.WritableDoubleChunk;
+import io.deephaven.chunk.WritableChunk;
 import io.deephaven.engine.page.Page;
 import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
@@ -25,7 +25,7 @@ import java.util.function.Supplier;
 public class TstColumnRegionDouble {
 
     @SuppressWarnings("unused")
-    static class Identity implements ColumnRegionDouble<Attributes.Values>, Page.WithDefaults<Attributes.Values> {
+    static class Identity implements ColumnRegionDouble<Values>, Page.WithDefaults<Values> {
 
         @Override
         public long mask() {
@@ -38,8 +38,8 @@ public class TstColumnRegionDouble {
         }
 
         @Override
-        public void fillChunkAppend(@NotNull FillContext context, @NotNull WritableChunk<? super Attributes.Values> destination, @NotNull RowSequence rowSequence) {
-            WritableDoubleChunk<? super Attributes.Values> doubleDestination = destination.asWritableDoubleChunk();
+        public void fillChunkAppend(@NotNull FillContext context, @NotNull WritableChunk<? super Values> destination, @NotNull RowSequence rowSequence) {
+            WritableDoubleChunk<? super Values> doubleDestination = destination.asWritableDoubleChunk();
             int size = destination.size();
             int length = (int) rowSequence.size();
 
@@ -54,7 +54,7 @@ public class TstColumnRegionDouble {
         }
     }
 
-    public static class TestNull extends TstColumnRegionPrimative<ColumnRegionDouble<Attributes.Values>> {
+    public static class TestNull extends TstColumnRegionPrimative<ColumnRegionDouble<Values>> {
 
         @Override
         public void setUp() throws Exception {
@@ -72,7 +72,7 @@ public class TstColumnRegionDouble {
         }
     }
 
-    public static class TestDeferred extends TstColumnRegionPrimative.Deferred<ColumnRegionDouble<Attributes.Values>> {
+    public static class TestDeferred extends TstColumnRegionPrimative.Deferred<ColumnRegionDouble<Values>> {
 
         @Override
         public void setUp() throws Exception {

@@ -134,16 +134,16 @@ _boxedArrayTypes = {
 
 
 _javaTypeToVectorType = {
-    'java.lang.String': 'io.deephaven.engine.vector.ObjectVectorDirect',
-    'char': 'io.deephaven.engine.vector.CharVectorDirect',
-    'java.lang.Boolean': 'io.deephaven.engine.vector.ObjectVectorDirect',
-    'boolean': 'io.deephaven.engine.vector.ObjectVectorDirect',  # it really should be boxed...
-    'byte': 'io.deephaven.engine.vector.ByteVectorDirect',
-    'short': 'io.deephaven.engine.vector.ShortVectorDirect',
-    'int': 'io.deephaven.engine.vector.IntVectorDirect',
-    'long': 'io.deephaven.engine.vector.LongVectorDirect',
-    'float': 'io.deephaven.engine.vector.FloatVectorDirect',
-    'double': 'io.deephaven.engine.vector.DoubleVectorDirect',
+    'java.lang.String': 'io.deephaven.vector.ObjectVectorDirect',
+    'char': 'io.deephaven.vector.CharVectorDirect',
+    'java.lang.Boolean': 'io.deephaven.vector.ObjectVectorDirect',
+    'boolean': 'io.deephaven.vector.ObjectVectorDirect',  # it really should be boxed...
+    'byte': 'io.deephaven.vector.ByteVectorDirect',
+    'short': 'io.deephaven.vector.ShortVectorDirect',
+    'int': 'io.deephaven.vector.IntVectorDirect',
+    'long': 'io.deephaven.vector.LongVectorDirect',
+    'float': 'io.deephaven.vector.FloatVectorDirect',
+    'double': 'io.deephaven.vector.DoubleVectorDirect',
 }
 
 _javaTypeToImmutableColumnSource = {
@@ -429,7 +429,7 @@ def _arrayColumnSource(array, javaTypeString):
     if javaTypeString in _javaTypeToVectorType:
         arrayType = _javaTypeToVectorType[javaTypeString]
     elif javaTypeString in jpy.dtypes:
-        arrayType = 'io.deephaven.engine.vector.ObjectVectorDirect'
+        arrayType = 'io.deephaven.vector.ObjectVectorDirect'
 
     arrayCls = jpy.get_type(arrayType)
     if javaTypeString == 'java.lang.Boolean':
@@ -504,7 +504,7 @@ def _getJavaTypeFromArray(ndarray):
         else:
             return 'java.lang.String'
     elif dtype.startswith('datetime64'):
-        return 'io.deephaven.engine.time.DateTime'
+        return 'io.deephaven.time.DateTime'
     elif dtype == 'object':
         # infer type from the first non-stupid element
         goodElement = None
@@ -791,7 +791,7 @@ def _convertNdarrayToImmutableSource(data, name, convertUnknownToString=False):
         return _stringColumnSource(data, name, type(data[0]))
     elif javaType == 'java.lang.Boolean':
         return _booleanColumnSource(data, name, type(data[0]))
-    elif javaType == 'io.deephaven.engine.time.DateTime':
+    elif javaType == 'io.deephaven.time.DateTime':
         return __DatetimeColumnSource__, _makeJavaArray(data, 'long')
     elif javaType == 'datetime':
         return __DatetimeColumnSource__, jpy.array('long', [_datetimeToLong(el) for el in data])
@@ -890,7 +890,7 @@ class NULL_CONVERSION(object):
         return cls.ERROR
 
 def _isVectorType(type_name): \
-        return type_name.startswith('io.deephaven.engine.vector.') or \
+        return type_name.startswith('io.deephaven.vector.') or \
                type_name.startswith('io.deephaven.engine.table.impl.vector.')
 
 def _isVector(obj):

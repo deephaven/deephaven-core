@@ -1,7 +1,9 @@
 package io.deephaven.engine.table.impl.join.dupcompact;
 
+import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.table.Context;
-import io.deephaven.engine.chunk.*;
+import io.deephaven.chunk.*;
+import io.deephaven.rowset.chunkattributes.RowKeys;
 
 public interface DupCompactKernel extends Context {
     static DupCompactKernel makeDupCompact(ChunkType chunkType, boolean reverse) {
@@ -65,6 +67,6 @@ public interface DupCompactKernel extends Context {
      *
      * @return the first position of an out-of-order element, or -1 if all elements are in order
      */
-    int compactDuplicates(WritableChunk<? extends Attributes.Any> chunkToCompact,
-            WritableLongChunk<Attributes.RowKeys> keyIndices);
+    int compactDuplicates(WritableChunk<? extends Any> chunkToCompact,
+            WritableLongChunk<RowKeys> keyIndices);
 }

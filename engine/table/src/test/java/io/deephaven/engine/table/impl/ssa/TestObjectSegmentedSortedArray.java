@@ -9,11 +9,11 @@ import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.table.impl.*;
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.Attributes.RowKeys;
-import io.deephaven.engine.chunk.Attributes.Values;
-import io.deephaven.engine.chunk.ObjectChunk;
-import io.deephaven.engine.chunk.LongChunk;
+import io.deephaven.rowset.chunkattributes.OrderedRowKeys;
+import io.deephaven.rowset.chunkattributes.RowKeys;
+import io.deephaven.chunk.attributes.Values;
+import io.deephaven.chunk.ObjectChunk;
+import io.deephaven.chunk.LongChunk;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.test.types.ParallelTest;
@@ -224,7 +224,7 @@ public class TestObjectSegmentedSortedArray extends RefreshingTableTestCase {
         try (final ColumnSource.GetContext getContext = valueSource.makeGetContext(asObject.intSize());
              final RowSet asObjectRowSetCopy = asObject.getRowSet().copy()) {
             final ObjectChunk<Object, ? extends Values> valueChunk = valueSource.getChunk(getContext, asObjectRowSetCopy).asObjectChunk();
-            final LongChunk<Attributes.OrderedRowKeys> tableIndexChunk = asObjectRowSetCopy.asRowKeyChunk();
+            final LongChunk<OrderedRowKeys> tableIndexChunk = asObjectRowSetCopy.asRowKeyChunk();
 
             ssa.insert(valueChunk, tableIndexChunk);
 

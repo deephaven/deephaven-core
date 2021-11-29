@@ -1,13 +1,12 @@
 package io.deephaven.engine.rowset;
 
-import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.LongChunk;
-import io.deephaven.engine.chunk.WritableLongChunk;
-import io.deephaven.engine.rowset.RowSet;
-import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.engine.rowset.impl.RowSequenceKeyRangesChunkImpl;
 import io.deephaven.engine.rowset.impl.RowSequenceRowKeysChunkImpl;
+import io.deephaven.rowset.chunkattributes.OrderedRowKeyRanges;
+import io.deephaven.rowset.chunkattributes.OrderedRowKeys;
+import io.deephaven.rowset.chunkattributes.RowKeys;
 import io.deephaven.util.datastructures.LongAbortableConsumer;
 import io.deephaven.util.datastructures.LongRangeAbortableConsumer;
 
@@ -42,22 +41,22 @@ public class RowSequenceFactory {
         }
 
         @Override
-        public LongChunk<Attributes.OrderedRowKeys> asRowKeyChunk() {
+        public LongChunk<OrderedRowKeys> asRowKeyChunk() {
             return WritableLongChunk.getEmptyChunk();
         }
 
         @Override
-        public LongChunk<Attributes.OrderedRowKeyRanges> asRowKeyRangesChunk() {
+        public LongChunk<OrderedRowKeyRanges> asRowKeyRangesChunk() {
             return WritableLongChunk.getEmptyChunk();
         }
 
         @Override
-        public void fillRowKeyChunk(WritableLongChunk<? extends Attributes.RowKeys> chunkToFill) {
+        public void fillRowKeyChunk(WritableLongChunk<? extends RowKeys> chunkToFill) {
             chunkToFill.setSize(0);
         }
 
         @Override
-        public void fillRowKeyRangesChunk(WritableLongChunk<Attributes.OrderedRowKeyRanges> chunkToFill) {
+        public void fillRowKeyRangesChunk(WritableLongChunk<OrderedRowKeyRanges> chunkToFill) {
             chunkToFill.setSize(0);
         }
 
@@ -149,7 +148,7 @@ public class RowSequenceFactory {
      * @param longChunk A {@link LongChunk chunk} to wrap as a new {@link RowSequence} object.
      * @return A new {@link RowSequence} object, who does not own the passed chunk.
      */
-    public static RowSequence wrapRowKeysChunkAsRowSequence(final LongChunk<Attributes.OrderedRowKeys> longChunk) {
+    public static RowSequence wrapRowKeysChunkAsRowSequence(final LongChunk<OrderedRowKeys> longChunk) {
         return RowSequenceRowKeysChunkImpl.makeByWrapping(longChunk);
     }
 
@@ -160,7 +159,7 @@ public class RowSequenceFactory {
      * @return A new {@link RowSequence} object, who does not own the passed chunk.
      */
     public static RowSequence wrapKeyRangesChunkAsRowSequence(
-            final LongChunk<Attributes.OrderedRowKeyRanges> longChunk) {
+            final LongChunk<OrderedRowKeyRanges> longChunk) {
         return RowSequenceKeyRangesChunkImpl.makeByWrapping(longChunk);
     }
 
@@ -172,7 +171,7 @@ public class RowSequenceFactory {
      * @return A new {@link RowSequence} object, who owns the passed chunk.
      */
     public static RowSequence takeRowKeysChunkAndMakeRowSequence(
-            final WritableLongChunk<Attributes.OrderedRowKeys> longChunk) {
+            final WritableLongChunk<OrderedRowKeys> longChunk) {
         return RowSequenceRowKeysChunkImpl.makeByTaking(longChunk);
     }
 
@@ -184,7 +183,7 @@ public class RowSequenceFactory {
      * @return A new {@link RowSequence} object, who owns the passed chunk.
      */
     public static RowSequence takeKeyRangesChunkAndMakeRowSequence(
-            final WritableLongChunk<Attributes.OrderedRowKeyRanges> longChunk) {
+            final WritableLongChunk<OrderedRowKeyRanges> longChunk) {
         return RowSequenceKeyRangesChunkImpl.makeByTaking(longChunk);
     }
 

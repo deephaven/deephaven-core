@@ -7,7 +7,7 @@
 
 package io.deephaven.engine.table.impl.sources.regioned;
 
-import io.deephaven.engine.chunk.Attributes;
+import io.deephaven.chunk.attributes.Values;
 
 import static io.deephaven.util.QueryConstants.NULL_FLOAT;
 
@@ -15,7 +15,7 @@ import static io.deephaven.util.QueryConstants.NULL_FLOAT;
  * Test class for {@link RegionedColumnSourceFloat}.
  */
 @SuppressWarnings("JUnit4AnnotatedMethodInJUnit3TestCase")
-public class TestRegionedColumnSourceFloat extends TstRegionedColumnSourcePrimitive<Float, Attributes.Values, ColumnRegionFloat<Attributes.Values>> {
+public class TestRegionedColumnSourceFloat extends TstRegionedColumnSourcePrimitive<Float, Values, ColumnRegionFloat<Values>> {
 
     public TestRegionedColumnSourceFloat() {
         super(ColumnRegionFloat.class);

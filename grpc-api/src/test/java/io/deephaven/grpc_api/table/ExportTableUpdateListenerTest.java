@@ -3,7 +3,7 @@ package io.deephaven.grpc_api.table;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.time.DateTimeUtils;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.table.ModifiedColumnSet;

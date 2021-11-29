@@ -2,17 +2,18 @@ package io.deephaven.engine.table.impl.sort.radix;
 
 import io.deephaven.engine.table.impl.SortingOrder;
 import io.deephaven.engine.table.impl.sort.LongSortKernel;
-import io.deephaven.engine.chunk.*;
-import io.deephaven.engine.chunk.Attributes.Any;
-import io.deephaven.engine.chunk.Attributes.ChunkLengths;
-import io.deephaven.engine.chunk.Attributes.ChunkPositions;
+import io.deephaven.chunk.*;
+import io.deephaven.chunk.attributes.Any;
+import io.deephaven.chunk.attributes.ChunkLengths;
+import io.deephaven.chunk.attributes.ChunkPositions;
+import io.deephaven.rowset.chunkattributes.RowKeys;
 
 class ByteRadixSortKernel {
     public static LongSortKernel createContext(int size, SortingOrder order, boolean last) {
         return new ByteRadixSortContext(size, last, order);
     }
 
-    private static class ByteRadixSortContext<ATTR extends Any, KEY_INDICES extends Attributes.RowKeys> implements LongSortKernel<ATTR, KEY_INDICES> {
+    private static class ByteRadixSortContext<ATTR extends Any, KEY_INDICES extends RowKeys> implements LongSortKernel<ATTR, KEY_INDICES> {
         final WritableLongChunk<KEY_INDICES> [] keys;
         private final int size;
         private final boolean last;

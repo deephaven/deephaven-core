@@ -9,10 +9,11 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
-import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.time.DateTimeUtils;
-import io.deephaven.engine.chunk.*;
-import io.deephaven.engine.chunk.Attributes.Values;
+import io.deephaven.rowset.chunkattributes.RowKeys;
+import io.deephaven.time.DateTime;
+import io.deephaven.time.DateTimeUtils;
+import io.deephaven.chunk.*;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.impl.chunkfillers.ChunkFiller;
 import io.deephaven.engine.rowset.RowSequence;
 import org.jetbrains.annotations.NotNull;
@@ -104,13 +105,13 @@ public class DateTimeArraySource extends AbstractLongArraySource<DateTime> {
 
     @Override
     protected void fillSparseChunkUnordered(@NotNull final WritableChunk<? super Values> destGeneric,
-            @NotNull final LongChunk<? extends Attributes.RowKeys> indices) {
+            @NotNull final LongChunk<? extends RowKeys> indices) {
         super.fillSparseChunkUnordered(destGeneric, indices, DateTimeUtils::nanosToTime);
     }
 
     @Override
     protected void fillSparsePrevChunkUnordered(@NotNull final WritableChunk<? super Values> destGeneric,
-            @NotNull final LongChunk<? extends Attributes.RowKeys> indices) {
+            @NotNull final LongChunk<? extends RowKeys> indices) {
         super.fillSparsePrevChunkUnordered(destGeneric, indices, DateTimeUtils::nanosToTime);
     }
 
@@ -126,7 +127,7 @@ public class DateTimeArraySource extends AbstractLongArraySource<DateTime> {
 
     @Override
     public void fillFromChunkUnordered(@NotNull FillFromContext context, @NotNull Chunk<? extends Values> src,
-            @NotNull LongChunk<Attributes.RowKeys> keys) {
+            @NotNull LongChunk<RowKeys> keys) {
         super.<DateTime>fillFromChunkUnordered(src, keys, DateTimeUtils::nanos);
     }
 
@@ -207,14 +208,14 @@ public class DateTimeArraySource extends AbstractLongArraySource<DateTime> {
         @Override
         public void fillChunkUnordered(@NotNull final FillContext context,
                 @NotNull final WritableChunk<? super Values> destination,
-                @NotNull final LongChunk<? extends Attributes.RowKeys> keyIndices) {
+                @NotNull final LongChunk<? extends RowKeys> keyIndices) {
             fillSparseLongChunkUnordered(destination, keyIndices);
         }
 
         @Override
         public void fillPrevChunkUnordered(@NotNull final FillContext context,
                 @NotNull final WritableChunk<? super Values> destination,
-                @NotNull final LongChunk<? extends Attributes.RowKeys> keyIndices) {
+                @NotNull final LongChunk<? extends RowKeys> keyIndices) {
             fillSparsePrevLongChunkUnordered(destination, keyIndices);
         }
 
@@ -251,7 +252,7 @@ public class DateTimeArraySource extends AbstractLongArraySource<DateTime> {
 
         @Override
         public void fillFromChunkUnordered(@NotNull FillFromContext context, @NotNull Chunk<? extends Values> src,
-                @NotNull LongChunk<Attributes.RowKeys> keys) {
+                @NotNull LongChunk<RowKeys> keys) {
             DateTimeArraySource.super.fillFromChunkUnordered(context, src, keys);
         }
     }

@@ -11,6 +11,6 @@ import java.io.IOException;
 public class ReplicateVectorTests {
     public static void main(String[] args) throws IOException {
         ReplicatePrimitiveCode
-                .charToAllButBoolean("engine/vector/src/test/java/io/deephaven/engine/vector/CharVectorTest.java");
+                .charToAllButBoolean("engine/vector/src/test/java/io/deephaven/vector/CharVectorTest.java");
     }
 }

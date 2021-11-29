@@ -11,7 +11,7 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.tablelogger.UpdatePerformanceLogLogger;
-import io.deephaven.engine.time.DateTimeUtils;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.util.MemoryTableLogger;

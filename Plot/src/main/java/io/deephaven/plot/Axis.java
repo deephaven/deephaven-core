@@ -9,7 +9,7 @@ import io.deephaven.plot.axistransformations.AxisTransform;
 import io.deephaven.plot.axistransformations.AxisTransformBusinessCalendar;
 import io.deephaven.plot.filters.SelectableDataSet;
 import io.deephaven.gui.color.Paint;
-import io.deephaven.engine.time.calendar.BusinessCalendar;
+import io.deephaven.time.calendar.BusinessCalendar;
 
 import java.io.Serializable;
 

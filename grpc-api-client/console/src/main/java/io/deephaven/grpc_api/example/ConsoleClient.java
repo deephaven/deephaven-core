@@ -4,7 +4,7 @@
 
 package io.deephaven.grpc_api.example;
 
-import io.deephaven.engine.time.DateTimeUtils;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.grpc_api.console.ScopeTicketResolver;
 import io.deephaven.grpc_api.util.ExportTicketHelper;
 import io.deephaven.io.log.LogEntry;

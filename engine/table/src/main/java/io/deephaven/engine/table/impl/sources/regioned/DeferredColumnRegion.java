@@ -1,12 +1,12 @@
 package io.deephaven.engine.table.impl.sources.regioned;
 
-import io.deephaven.engine.chunk.Attributes;
+import io.deephaven.chunk.attributes.Any;
 
 /**
  * Adds region factory for deferred column regions implementations. Deferred regions serve as placeholders, constructing
  * (and usually swapping themselves for) the "real" region on first access.
  */
-interface DeferredColumnRegion<ATTR extends Attributes.Any, REGION_TYPE extends ColumnRegion<ATTR>>
+interface DeferredColumnRegion<ATTR extends Any, REGION_TYPE extends ColumnRegion<ATTR>>
         extends ColumnRegion<ATTR> {
 
     /**
@@ -16,7 +16,7 @@ interface DeferredColumnRegion<ATTR extends Attributes.Any, REGION_TYPE extends 
      */
     REGION_TYPE getResultRegion();
 
-    static <ATTR extends Attributes.Any, REGION_TYPE extends ColumnRegion<ATTR>, INNER_REGION_TYPE extends REGION_TYPE> REGION_TYPE materialize(
+    static <ATTR extends Any, REGION_TYPE extends ColumnRegion<ATTR>, INNER_REGION_TYPE extends REGION_TYPE> REGION_TYPE materialize(
             INNER_REGION_TYPE region) {
         // noinspection unchecked
         return region instanceof DeferredColumnRegion

@@ -5,7 +5,7 @@
 package io.deephaven.engine.table.impl.sources.aggregate;
 
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.vector.Vector;
+import io.deephaven.vector.Vector;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.sources.UngroupedColumnSource;

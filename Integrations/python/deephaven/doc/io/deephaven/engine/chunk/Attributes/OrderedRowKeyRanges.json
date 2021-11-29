@@ -1,7 +1,7 @@
 {
- "className": "io.deephaven.engine.chunk.Attributes$OrderedRowKeyRanges",
+ "className": "io.deephaven.chunk.Attributes$OrderedRowKeyRanges",
  "methods": {},
- "path": "io.deephaven.engine.chunk.Attributes.OrderedRowKeyRanges",
+ "path": "io.deephaven.chunk.Attributes.OrderedRowKeyRanges",
  "text": "The chunk contains row key ranges.\n\n These are to be represented as pairs of an inclusive start and an inclusive end in even and odd slots,\n respectively.",
  "typeName": "interface"
 }

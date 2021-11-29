@@ -6,8 +6,8 @@ package io.deephaven.modelfarm.util;
 
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.vector.*;
-import io.deephaven.engine.time.DateTime;
+import io.deephaven.vector.*;
+import io.deephaven.time.DateTime;
 
 /**
  * Utilities for building model farms.

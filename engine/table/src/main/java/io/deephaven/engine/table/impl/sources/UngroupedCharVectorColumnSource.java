@@ -6,7 +6,7 @@ package io.deephaven.engine.table.impl.sources;
 
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
-import io.deephaven.engine.vector.CharVector;
+import io.deephaven.vector.CharVector;
 
 import static io.deephaven.util.QueryConstants.NULL_CHAR;
 

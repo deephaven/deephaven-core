@@ -7,14 +7,14 @@ package io.deephaven.engine.table.impl.replay;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.time.DateTimeUtils;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.time.DateTime;
+import io.deephaven.time.DateTime;
 import io.deephaven.engine.table.impl.ShiftObliviousInstrumentedListener;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.updategraph.TerminalNotification;
-import io.deephaven.engine.time.TimeProvider;
+import io.deephaven.time.TimeProvider;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 
@@ -24,8 +24,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 
-import static io.deephaven.engine.time.DateTimeUtils.millisToNanos;
-import static io.deephaven.engine.time.DateTimeUtils.nanosToTime;
+import static io.deephaven.time.DateTimeUtils.millisToNanos;
+import static io.deephaven.time.DateTimeUtils.nanosToTime;
 
 /**
  * Replay historical data as simulated real-time data.

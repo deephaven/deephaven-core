@@ -5,9 +5,9 @@
 package io.deephaven.plot.axisformatters;
 
 import io.deephaven.base.testing.BaseArrayTestCase;
-import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.time.DateTimeUtils;
-import io.deephaven.engine.time.TimeZone;
+import io.deephaven.time.DateTime;
+import io.deephaven.time.DateTimeUtils;
+import io.deephaven.time.TimeZone;
 import junit.framework.TestCase;
 
 import java.text.NumberFormat;

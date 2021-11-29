@@ -4,14 +4,17 @@
 
 package io.deephaven.engine.table.impl.by.ssmminmax;
 
+import io.deephaven.chunk.attributes.ChunkLengths;
+import io.deephaven.chunk.attributes.ChunkPositions;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.engine.time.DateTime;
+import io.deephaven.rowset.chunkattributes.RowKeys;
+import io.deephaven.time.DateTime;
 import io.deephaven.engine.table.impl.by.IterativeChunkedAggregationOperator;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.sources.ObjectArraySource;
-import io.deephaven.engine.chunk.*;
-import io.deephaven.engine.chunk.Attributes.*;
+import io.deephaven.chunk.*;
 import io.deephaven.engine.table.impl.ssms.SegmentedSortedMultiSet;
 import io.deephaven.engine.table.impl.util.compact.CompactKernel;
 
@@ -93,9 +96,9 @@ public class SsmChunkedMinMaxOperator implements IterativeChunkedAggregationOper
 
     @Override
     public void addChunk(BucketedContext bucketedContext, Chunk<? extends Values> values,
-            LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations,
-            IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
-            WritableBooleanChunk<Values> stateModified) {
+                         LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations,
+                         IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+                         WritableBooleanChunk<Values> stateModified) {
         final BucketSsmMinMaxContext context = (BucketSsmMinMaxContext) bucketedContext;
 
         context.valueCopy.setSize(values.size());

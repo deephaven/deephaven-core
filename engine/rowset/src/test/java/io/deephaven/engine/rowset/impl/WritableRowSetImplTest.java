@@ -12,10 +12,11 @@ import io.deephaven.base.Pair;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.AssertionFailure;
 import io.deephaven.engine.rowset.*;
+import io.deephaven.rowset.chunkattributes.OrderedRowKeyRanges;
+import io.deephaven.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.util.datastructures.LongRangeIterator;
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.LongChunk;
-import io.deephaven.engine.chunk.WritableLongChunk;
+import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.engine.rowset.impl.rsp.RspArray;
 import io.deephaven.engine.rowset.impl.rsp.RspBitmap;
 import io.deephaven.engine.rowset.impl.rsp.container.ArrayContainer;
@@ -1199,7 +1200,7 @@ public class WritableRowSetImplTest extends TestCase {
                 ++step;
                 final String m = "step=" + step;
                 final RowSet rowSet = fromTreeIndexImpl(rhs.get());
-                final LongChunk<Attributes.OrderedRowKeys> asKeyIndicesChunk = rowSet.asRowKeyChunk();
+                final LongChunk<OrderedRowKeys> asKeyIndicesChunk = rowSet.asRowKeyChunk();
 
                 final WritableRowSet expectedAfterInsert = fromTreeIndexImpl(lhs.get());
                 expectedAfterInsert.validate(m);
@@ -1212,7 +1213,7 @@ public class WritableRowSetImplTest extends TestCase {
                 assertEquals(m, expectedAfterInsert, actualAfterInsert1);
 
                 final WritableRowSet actualAfterInsert2 = fromTreeIndexImpl(lhs.get());
-                try (final WritableLongChunk<Attributes.OrderedRowKeys> toBeSliced =
+                try (final WritableLongChunk<OrderedRowKeys> toBeSliced =
                         WritableLongChunk.makeWritableChunk(asKeyIndicesChunk.size() + 2048)) {
                     toBeSliced.copyFromChunk(asKeyIndicesChunk, 0, 1024, asKeyIndicesChunk.size());
                     actualAfterInsert2.insert(toBeSliced, 1024, asKeyIndicesChunk.size());
@@ -1230,7 +1231,7 @@ public class WritableRowSetImplTest extends TestCase {
                 assertEquals(m, expectedAfterRemove, actualAfterRemove1);
 
                 final WritableRowSet actualAfterRemove2 = fromTreeIndexImpl(lhs.get());
-                try (final WritableLongChunk<Attributes.OrderedRowKeys> toBeSliced =
+                try (final WritableLongChunk<OrderedRowKeys> toBeSliced =
                         WritableLongChunk.makeWritableChunk(asKeyIndicesChunk.size() + 2048)) {
                     toBeSliced.copyFromChunk(asKeyIndicesChunk, 0, 1024, asKeyIndicesChunk.size());
                     actualAfterRemove2.remove(toBeSliced, 1024, asKeyIndicesChunk.size());
@@ -2310,7 +2311,7 @@ public class WritableRowSetImplTest extends TestCase {
             b.appendKey(v);
         }
         final RowSet ix = b.build();
-        final WritableLongChunk<Attributes.OrderedRowKeys> kixchunk = WritableLongChunk.makeWritableChunk(vs.length);
+        final WritableLongChunk<OrderedRowKeys> kixchunk = WritableLongChunk.makeWritableChunk(vs.length);
         ix.fillRowKeyChunk(kixchunk);
         assertEquals(vs.length, kixchunk.size());
     }
@@ -2651,7 +2652,7 @@ public class WritableRowSetImplTest extends TestCase {
         rowSet.insertRange(130972, 131071);
         rowSet.insert(262144);
 
-        final LongChunk<Attributes.OrderedRowKeyRanges> ranges = rowSet.asRowKeyRangesChunk();
+        final LongChunk<OrderedRowKeyRanges> ranges = rowSet.asRowKeyRangesChunk();
         assertEquals(4, ranges.size());
         assertEquals(130972, ranges.get(0));
         assertEquals(131071, ranges.get(1));

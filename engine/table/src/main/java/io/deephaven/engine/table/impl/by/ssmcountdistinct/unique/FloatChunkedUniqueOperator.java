@@ -20,11 +20,11 @@ import io.deephaven.engine.table.impl.by.ssmcountdistinct.DistinctOperatorFactor
 import io.deephaven.engine.table.impl.by.ssmcountdistinct.SsmDistinctContext;
 import io.deephaven.engine.table.impl.sources.FloatArraySource;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.chunk.*;
-import io.deephaven.engine.chunk.Attributes.ChunkLengths;
-import io.deephaven.engine.chunk.Attributes.ChunkPositions;
-import io.deephaven.engine.chunk.Attributes.RowKeys;
-import io.deephaven.engine.chunk.Attributes.Values;
+import io.deephaven.chunk.*;
+import io.deephaven.chunk.attributes.ChunkLengths;
+import io.deephaven.chunk.attributes.ChunkPositions;
+import io.deephaven.rowset.chunkattributes.RowKeys;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.impl.ssms.FloatSegmentedSortedMultiset;
 import io.deephaven.engine.table.impl.ssms.SegmentedSortedMultiSet;
 import io.deephaven.engine.table.impl.util.compact.FloatCompactKernel;
@@ -105,8 +105,8 @@ public class FloatChunkedUniqueOperator implements IterativeChunkedAggregationOp
             final long destination = destinations.get(startPosition);
 
             final FloatSegmentedSortedMultiset ssm = ssmForSlot(destination);
-            final WritableChunk<? extends Attributes.Values> valueSlice = context.valueResettable.resetFromChunk(context.valueCopy, startPosition, runLength);
-            final WritableIntChunk<Attributes.ChunkLengths> countSlice = context.countResettable.resetFromChunk(context.counts, startPosition, runLength);
+            final WritableChunk<? extends Values> valueSlice = context.valueResettable.resetFromChunk(context.valueCopy, startPosition, runLength);
+            final WritableIntChunk<ChunkLengths> countSlice = context.countResettable.resetFromChunk(context.counts, startPosition, runLength);
             ssm.insert(valueSlice, countSlice);
             stateModified.set(ii, setResult(ssm, destination));
         }
@@ -125,8 +125,8 @@ public class FloatChunkedUniqueOperator implements IterativeChunkedAggregationOp
             final long destination = destinations.get(startPosition);
 
             final FloatSegmentedSortedMultiset ssm = ssmForSlot(destination);
-            final WritableChunk<? extends Attributes.Values> valueSlice = context.valueResettable.resetFromChunk(context.valueCopy, startPosition, runLength);
-            final WritableIntChunk<Attributes.ChunkLengths> countSlice = context.countResettable.resetFromChunk(context.counts, startPosition, runLength);
+            final WritableChunk<? extends Values> valueSlice = context.valueResettable.resetFromChunk(context.valueCopy, startPosition, runLength);
+            final WritableIntChunk<ChunkLengths> countSlice = context.countResettable.resetFromChunk(context.counts, startPosition, runLength);
             ssm.remove(removeContext, valueSlice, countSlice);
             if (ssm.size() == 0) {
                 clearSsm(destination);
@@ -150,8 +150,8 @@ public class FloatChunkedUniqueOperator implements IterativeChunkedAggregationOp
             final long destination = destinations.get(startPosition);
 
             final FloatSegmentedSortedMultiset ssm = ssmForSlot(destination);
-            final WritableChunk<? extends Attributes.Values> valueSlice = context.valueResettable.resetFromChunk(context.valueCopy, startPosition, runLength);
-            final WritableIntChunk<Attributes.ChunkLengths> countSlice = context.countResettable.resetFromChunk(context.counts, startPosition, runLength);
+            final WritableChunk<? extends Values> valueSlice = context.valueResettable.resetFromChunk(context.valueCopy, startPosition, runLength);
+            final WritableIntChunk<ChunkLengths> countSlice = context.countResettable.resetFromChunk(context.counts, startPosition, runLength);
             ssm.remove(removeContext, valueSlice, countSlice);
             if (ssm.size() == 0) {
                 context.ssmsToMaybeClear.set(ii, true);
@@ -174,8 +174,8 @@ public class FloatChunkedUniqueOperator implements IterativeChunkedAggregationOp
                 continue;
             }
 
-            final WritableChunk<? extends Attributes.Values> valueSlice = context.valueResettable.resetFromChunk(context.valueCopy, startPosition, runLength);
-            final WritableIntChunk<Attributes.ChunkLengths> countSlice = context.countResettable.resetFromChunk(context.counts, startPosition, runLength);
+            final WritableChunk<? extends Values> valueSlice = context.valueResettable.resetFromChunk(context.valueCopy, startPosition, runLength);
+            final WritableIntChunk<ChunkLengths> countSlice = context.countResettable.resetFromChunk(context.counts, startPosition, runLength);
             ssm.insert(valueSlice, countSlice);
             stateModified.set(ii, setResult(ssm, destination));
         }

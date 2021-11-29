@@ -5,9 +5,9 @@
 package io.deephaven.engine.rowset.impl;
 
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.chunk.Attributes.OrderedRowKeyRanges;
-import io.deephaven.engine.chunk.LongChunk;
-import io.deephaven.engine.chunk.WritableLongChunk;
+import io.deephaven.rowset.chunkattributes.OrderedRowKeyRanges;
+import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.engine.rowset.RowSequenceFactory;
 import org.junit.Test;
 

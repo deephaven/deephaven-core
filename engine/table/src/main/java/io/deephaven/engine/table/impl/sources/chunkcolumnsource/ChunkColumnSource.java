@@ -1,10 +1,10 @@
 package io.deephaven.engine.table.impl.sources.chunkcolumnsource;
 
 import gnu.trove.list.array.TLongArrayList;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.ChunkType;
-import io.deephaven.engine.chunk.WritableChunk;
+import io.deephaven.chunk.ChunkType;
+import io.deephaven.chunk.WritableChunk;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -112,7 +112,7 @@ public interface ChunkColumnSource<T> extends ColumnSource<T> {
      *
      * @param chunk the chunk of data to add
      */
-    void addChunk(@NotNull WritableChunk<? extends Attributes.Values> chunk);
+    void addChunk(@NotNull WritableChunk<? extends Values> chunk);
 
     /**
      * Reset the column source to be ready for reuse.

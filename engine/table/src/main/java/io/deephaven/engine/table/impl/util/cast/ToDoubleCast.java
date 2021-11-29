@@ -1,9 +1,9 @@
 package io.deephaven.engine.table.impl.util.cast;
 
-import io.deephaven.engine.chunk.util.hashing.*;
-import io.deephaven.engine.chunk.Chunk;
-import io.deephaven.engine.chunk.ChunkType;
-import io.deephaven.engine.chunk.DoubleChunk;
+import io.deephaven.chunk.util.hashing.*;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.ChunkType;
+import io.deephaven.chunk.DoubleChunk;
 import io.deephaven.util.SafeCloseable;
 
 public interface ToDoubleCast extends SafeCloseable {

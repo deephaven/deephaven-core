@@ -3,17 +3,19 @@ package io.deephaven.engine.table.impl.sources.deltaaware;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSequenceFactory;
+import io.deephaven.rowset.chunkattributes.OrderedRowKeyRanges;
+import io.deephaven.rowset.chunkattributes.OrderedRowKeys;
+import io.deephaven.rowset.chunkattributes.RowKeys;
 import io.deephaven.util.datastructures.LongAbortableConsumer;
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.LongChunk;
-import io.deephaven.engine.chunk.WritableLongChunk;
+import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.util.datastructures.LongRangeAbortableConsumer;
 
 class SoleKey implements RowSequence {
     private long key;
-    private final WritableLongChunk<Attributes.OrderedRowKeys> keyIndicesChunk;
-    private final WritableLongChunk<Attributes.OrderedRowKeyRanges> keyRangesChunk;
+    private final WritableLongChunk<OrderedRowKeys> keyIndicesChunk;
+    private final WritableLongChunk<OrderedRowKeyRanges> keyRangesChunk;
 
     SoleKey(final long key) {
         keyIndicesChunk = WritableLongChunk.makeWritableChunk(1);
@@ -55,23 +57,23 @@ class SoleKey implements RowSequence {
     }
 
     @Override
-    public LongChunk<Attributes.OrderedRowKeys> asRowKeyChunk() {
+    public LongChunk<OrderedRowKeys> asRowKeyChunk() {
         return keyIndicesChunk;
     }
 
     @Override
-    public LongChunk<Attributes.OrderedRowKeyRanges> asRowKeyRangesChunk() {
+    public LongChunk<OrderedRowKeyRanges> asRowKeyRangesChunk() {
         return keyRangesChunk;
     }
 
     @Override
-    public void fillRowKeyChunk(WritableLongChunk<? extends Attributes.RowKeys> chunkToFill) {
+    public void fillRowKeyChunk(WritableLongChunk<? extends RowKeys> chunkToFill) {
         chunkToFill.set(0, key);
         chunkToFill.setSize(1);
     }
 
     @Override
-    public void fillRowKeyRangesChunk(WritableLongChunk<Attributes.OrderedRowKeyRanges> chunkToFill) {
+    public void fillRowKeyRangesChunk(WritableLongChunk<OrderedRowKeyRanges> chunkToFill) {
         chunkToFill.set(0, key);
         chunkToFill.set(1, key);
         chunkToFill.setSize(2);

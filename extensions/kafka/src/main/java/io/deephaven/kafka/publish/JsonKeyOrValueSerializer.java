@@ -3,12 +3,13 @@ package io.deephaven.kafka.publish;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.time.DateTime;
+import io.deephaven.time.DateTime;
 import io.deephaven.engine.util.string.StringUtils;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.chunk.*;
+import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.SafeCloseable;
@@ -102,10 +103,10 @@ public class JsonKeyOrValueSerializer implements KeyOrValueSerializer<String> {
         abstract FieldContext makeContext(int size);
 
         abstract void processField(FieldContext fieldContext,
-                WritableObjectChunk<ObjectNode, Attributes.Values> jsonChunk, RowSequence keys, boolean isRemoval);
+                                   WritableObjectChunk<ObjectNode, Values> jsonChunk, RowSequence keys, boolean isRemoval);
     }
 
-    abstract class JSONFieldProcessorImpl<ChunkType extends Chunk<Attributes.Values>> extends JSONFieldProcessor {
+    abstract class JSONFieldProcessorImpl<ChunkType extends Chunk<Values>> extends JSONFieldProcessor {
         private final ColumnSource<?> chunkSource;
 
         public JSONFieldProcessorImpl(final String fieldName, final ColumnSource<?> chunkSource) {
@@ -136,7 +137,7 @@ public class JsonKeyOrValueSerializer implements KeyOrValueSerializer<String> {
         @Override
         void processField(
                 final FieldContext fieldContext,
-                final WritableObjectChunk<ObjectNode, Attributes.Values> jsonChunk,
+                final WritableObjectChunk<ObjectNode, Values> jsonChunk,
                 final RowSequence keys,
                 final boolean previous) {
             final ContextImpl contextImpl = (ContextImpl) fieldContext;
@@ -155,9 +156,9 @@ public class JsonKeyOrValueSerializer implements KeyOrValueSerializer<String> {
     }
 
     private JSONFieldProcessor makeByteFieldProcessor(final String fieldName, final ColumnSource<?> chunkSource) {
-        return new JSONFieldProcessorImpl<ByteChunk<Attributes.Values>>(fieldName, chunkSource) {
+        return new JSONFieldProcessorImpl<ByteChunk<Values>>(fieldName, chunkSource) {
             @Override
-            void outputField(final int ii, final ObjectNode node, final ByteChunk<Attributes.Values> inputChunk) {
+            void outputField(final int ii, final ObjectNode node, final ByteChunk<Values> inputChunk) {
                 final byte raw = inputChunk.get(ii);
                 if (raw == QueryConstants.NULL_BYTE) {
                     if (outputNulls) {
@@ -171,9 +172,9 @@ public class JsonKeyOrValueSerializer implements KeyOrValueSerializer<String> {
     }
 
     private JSONFieldProcessor makeCharFieldProcessor(final String fieldName, final ColumnSource<?> chunkSource) {
-        return new JSONFieldProcessorImpl<CharChunk<Attributes.Values>>(fieldName, chunkSource) {
+        return new JSONFieldProcessorImpl<CharChunk<Values>>(fieldName, chunkSource) {
             @Override
-            void outputField(final int ii, final ObjectNode node, final CharChunk<Attributes.Values> inputChunk) {
+            void outputField(final int ii, final ObjectNode node, final CharChunk<Values> inputChunk) {
                 final char raw = inputChunk.get(ii);
                 if (raw == QueryConstants.NULL_CHAR) {
                     if (outputNulls) {
@@ -187,9 +188,9 @@ public class JsonKeyOrValueSerializer implements KeyOrValueSerializer<String> {
     }
 
     private JSONFieldProcessor makeShortFieldProcessor(final String fieldName, final ColumnSource<?> chunkSource) {
-        return new JSONFieldProcessorImpl<ShortChunk<Attributes.Values>>(fieldName, chunkSource) {
+        return new JSONFieldProcessorImpl<ShortChunk<Values>>(fieldName, chunkSource) {
             @Override
-            void outputField(final int ii, final ObjectNode node, final ShortChunk<Attributes.Values> inputChunk) {
+            void outputField(final int ii, final ObjectNode node, final ShortChunk<Values> inputChunk) {
                 final short raw = inputChunk.get(ii);
                 if (raw == QueryConstants.NULL_SHORT) {
                     if (outputNulls) {
@@ -203,9 +204,9 @@ public class JsonKeyOrValueSerializer implements KeyOrValueSerializer<String> {
     }
 
     private JSONFieldProcessor makeIntFieldProcessor(final String fieldName, final ColumnSource<?> chunkSource) {
-        return new JSONFieldProcessorImpl<IntChunk<Attributes.Values>>(fieldName, chunkSource) {
+        return new JSONFieldProcessorImpl<IntChunk<Values>>(fieldName, chunkSource) {
             @Override
-            void outputField(final int ii, final ObjectNode node, final IntChunk<Attributes.Values> inputChunk) {
+            void outputField(final int ii, final ObjectNode node, final IntChunk<Values> inputChunk) {
                 final int raw = inputChunk.get(ii);
                 if (raw == QueryConstants.NULL_SHORT) {
                     if (outputNulls) {
@@ -219,9 +220,9 @@ public class JsonKeyOrValueSerializer implements KeyOrValueSerializer<String> {
     }
 
     private JSONFieldProcessor makeLongFieldProcessor(final String fieldName, final ColumnSource<?> chunkSource) {
-        return new JSONFieldProcessorImpl<LongChunk<Attributes.Values>>(fieldName, chunkSource) {
+        return new JSONFieldProcessorImpl<LongChunk<Values>>(fieldName, chunkSource) {
             @Override
-            void outputField(final int ii, final ObjectNode node, final LongChunk<Attributes.Values> inputChunk) {
+            void outputField(final int ii, final ObjectNode node, final LongChunk<Values> inputChunk) {
                 final long raw = inputChunk.get(ii);
                 if (raw == QueryConstants.NULL_LONG) {
                     if (outputNulls) {
@@ -235,9 +236,9 @@ public class JsonKeyOrValueSerializer implements KeyOrValueSerializer<String> {
     }
 
     private JSONFieldProcessor makeFloatFieldProcessor(final String fieldName, final ColumnSource<?> chunkSource) {
-        return new JSONFieldProcessorImpl<FloatChunk<Attributes.Values>>(fieldName, chunkSource) {
+        return new JSONFieldProcessorImpl<FloatChunk<Values>>(fieldName, chunkSource) {
             @Override
-            void outputField(final int ii, final ObjectNode node, final FloatChunk<Attributes.Values> inputChunk) {
+            void outputField(final int ii, final ObjectNode node, final FloatChunk<Values> inputChunk) {
                 final float raw = inputChunk.get(ii);
                 if (raw == QueryConstants.NULL_FLOAT) {
                     if (outputNulls) {
@@ -251,9 +252,9 @@ public class JsonKeyOrValueSerializer implements KeyOrValueSerializer<String> {
     }
 
     private JSONFieldProcessor makeDoubleFieldProcessor(final String fieldName, final ColumnSource<?> chunkSource) {
-        return new JSONFieldProcessorImpl<DoubleChunk<Attributes.Values>>(fieldName, chunkSource) {
+        return new JSONFieldProcessorImpl<DoubleChunk<Values>>(fieldName, chunkSource) {
             @Override
-            void outputField(final int ii, final ObjectNode node, final DoubleChunk<Attributes.Values> inputChunk) {
+            void outputField(final int ii, final ObjectNode node, final DoubleChunk<Values> inputChunk) {
                 final double raw = inputChunk.get(ii);
                 if (raw == QueryConstants.NULL_DOUBLE) {
                     if (outputNulls) {
@@ -275,9 +276,9 @@ public class JsonKeyOrValueSerializer implements KeyOrValueSerializer<String> {
             final String fieldName,
             final ColumnSource<?> chunkSource,
             final PutFun<T> putFun) {
-        return new JSONFieldProcessorImpl<ObjectChunk<T, Attributes.Values>>(fieldName, chunkSource) {
+        return new JSONFieldProcessorImpl<ObjectChunk<T, Values>>(fieldName, chunkSource) {
             @Override
-            void outputField(final int ii, final ObjectNode node, final ObjectChunk<T, Attributes.Values> inputChunk) {
+            void outputField(final int ii, final ObjectNode node, final ObjectChunk<T, Values> inputChunk) {
                 final T raw = inputChunk.get(ii);
                 if (raw == null) {
                     if (outputNulls) {
@@ -339,7 +340,7 @@ public class JsonKeyOrValueSerializer implements KeyOrValueSerializer<String> {
         @Override
         public void processField(
                 final FieldContext fieldContext,
-                final WritableObjectChunk<ObjectNode, Attributes.Values> jsonChunk,
+                final WritableObjectChunk<ObjectNode, Values> jsonChunk,
                 final RowSequence keys,
                 final boolean isRemoval) {
             final String nanosString = String.valueOf(DateTime.now().getNanos());
@@ -416,8 +417,8 @@ public class JsonKeyOrValueSerializer implements KeyOrValueSerializer<String> {
      * @return A List of Strings containing all of the parsed update statements
      */
     @Override
-    public ObjectChunk<String, Attributes.Values> handleChunk(Context context, RowSequence toProcess,
-            boolean previous) {
+    public ObjectChunk<String, Values> handleChunk(Context context, RowSequence toProcess,
+                                                   boolean previous) {
         final JsonContext jsonContext = (JsonContext) context;
 
         jsonContext.outputChunk.setSize(0);
@@ -450,8 +451,8 @@ public class JsonKeyOrValueSerializer implements KeyOrValueSerializer<String> {
 
     private final class JsonContext implements Context {
 
-        private final WritableObjectChunk<String, Attributes.Values> outputChunk;
-        private final WritableObjectChunk<ObjectNode, Attributes.Values> jsonChunk;
+        private final WritableObjectChunk<String, Values> outputChunk;
+        private final WritableObjectChunk<ObjectNode, Values> jsonChunk;
         private final FieldContext[] fieldContexts;
 
         public JsonContext(int size) {

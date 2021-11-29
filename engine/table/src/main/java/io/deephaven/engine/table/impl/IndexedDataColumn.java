@@ -5,7 +5,7 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.chunk.*;
+import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.iterators.ColumnIterator;

@@ -1,6 +1,6 @@
 package io.deephaven.engine.table.impl.sources.regioned;
 
-import io.deephaven.engine.chunk.Attributes.Any;
+import io.deephaven.chunk.attributes.Any;
 
 /**
  * Base {@link ColumnRegion} implementation.

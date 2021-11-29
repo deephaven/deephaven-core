@@ -1,8 +1,8 @@
 package io.deephaven.engine.table.impl.sources.regioned;
 
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.impl.locations.ColumnLocation;
-import io.deephaven.engine.chunk.*;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.OverridingMethodsMustInvokeSuper;
@@ -18,7 +18,7 @@ import javax.annotation.OverridingMethodsMustInvokeSuper;
  * source.
  * </p>
  */
-abstract class RegionedColumnSourceInner<DATA_TYPE, ATTR extends Attributes.Values, REGION_TYPE extends ColumnRegion<ATTR>, OUTER_DATA_TYPE, OUTER_REGION_TYPE extends ColumnRegion<ATTR>>
+abstract class RegionedColumnSourceInner<DATA_TYPE, ATTR extends Values, REGION_TYPE extends ColumnRegion<ATTR>, OUTER_DATA_TYPE, OUTER_REGION_TYPE extends ColumnRegion<ATTR>>
         extends RegionedColumnSourceBase<DATA_TYPE, ATTR, REGION_TYPE> {
 
     private final RegionedColumnSourceBase<OUTER_DATA_TYPE, ATTR, OUTER_REGION_TYPE> outerColumnSource;

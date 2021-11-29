@@ -17,20 +17,20 @@ import static io.deephaven.replication.ReplicationUtils.*;
 
 public class ReplicateHashing {
     public static void main(String[] args) throws IOException {
-        charToAll("engine/chunk/src/main/java/io/deephaven/engine/chunk/util/hashing/CharChunkHasher.java");
+        charToAll("engine/chunk/src/main/java/io/deephaven/chunk/util/hashing/CharChunkHasher.java");
         final String objectHasher =
-                charToObject("engine/chunk/src/main/java/io/deephaven/engine/chunk/util/hashing/CharChunkHasher.java");
+                charToObject("engine/chunk/src/main/java/io/deephaven/chunk/util/hashing/CharChunkHasher.java");
         fixupObjectChunkHasher(objectHasher);
 
-        charToIntegers("engine/chunk/src/main/java/io/deephaven/engine/chunk/util/hashing/CharToIntegerCast.java");
-        charToIntegers("engine/chunk/src/main/java/io/deephaven/engine/chunk/util/hashing/CharToLongCast.java");
+        charToIntegers("engine/chunk/src/main/java/io/deephaven/chunk/util/hashing/CharToIntegerCast.java");
+        charToIntegers("engine/chunk/src/main/java/io/deephaven/chunk/util/hashing/CharToLongCast.java");
         charToIntegers(
-                "engine/chunk/src/main/java/io/deephaven/engine/chunk/util/hashing/CharToIntegerCastWithOffset.java");
+                "engine/chunk/src/main/java/io/deephaven/chunk/util/hashing/CharToIntegerCastWithOffset.java");
         charToIntegers(
-                "engine/chunk/src/main/java/io/deephaven/engine/chunk/util/hashing/CharToLongCastWithOffset.java");
+                "engine/chunk/src/main/java/io/deephaven/chunk/util/hashing/CharToLongCastWithOffset.java");
 
         final List<String> paths = charToAll(
-                "engine/chunk/src/main/java/io/deephaven/engine/chunk/util/hashing/CharChunkEquals.java");
+                "engine/chunk/src/main/java/io/deephaven/chunk/util/hashing/CharChunkEquals.java");
         final String floatPath =
                 paths.stream().filter(p -> p.contains("Float")).findFirst().orElseThrow(FileNotFoundException::new);
         final String doublePath =
@@ -40,11 +40,11 @@ public class ReplicateHashing {
         fixupDoubleChunkEquals(doublePath);
 
         final String objectIdentityEquals =
-                charToObject("engine/chunk/src/main/java/io/deephaven/engine/chunk/util/hashing/CharChunkEquals.java");
+                charToObject("engine/chunk/src/main/java/io/deephaven/chunk/util/hashing/CharChunkEquals.java");
         fixupObjectChunkIdentityEquals(objectIdentityEquals);
 
         final String objectEquals =
-                charToObject("engine/chunk/src/main/java/io/deephaven/engine/chunk/util/hashing/CharChunkEquals.java");
+                charToObject("engine/chunk/src/main/java/io/deephaven/chunk/util/hashing/CharChunkEquals.java");
         fixupObjectChunkEquals(objectEquals);
 
         final List<String> compactKernels = charToAll(

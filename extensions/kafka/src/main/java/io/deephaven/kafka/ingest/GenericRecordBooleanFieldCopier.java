@@ -1,9 +1,9 @@
 package io.deephaven.kafka.ingest;
 
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.ObjectChunk;
-import io.deephaven.engine.chunk.WritableChunk;
-import io.deephaven.engine.chunk.WritableByteChunk;
+import io.deephaven.chunk.ObjectChunk;
+import io.deephaven.chunk.WritableChunk;
+import io.deephaven.chunk.WritableByteChunk;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.util.BooleanUtils;
 import org.apache.avro.generic.GenericRecord;
 
@@ -16,12 +16,12 @@ public class GenericRecordBooleanFieldCopier implements FieldCopier {
 
     @Override
     public void copyField(
-            final ObjectChunk<Object, Attributes.Values> inputChunk,
-            final WritableChunk<Attributes.Values> publisherChunk,
+            final ObjectChunk<Object, Values> inputChunk,
+            final WritableChunk<Values> publisherChunk,
             final int sourceOffset,
             final int destOffset,
             final int length) {
-        final WritableByteChunk<Attributes.Values> output = publisherChunk.asWritableByteChunk();
+        final WritableByteChunk<Values> output = publisherChunk.asWritableByteChunk();
         for (int ii = 0; ii < length; ++ii) {
             final GenericRecord genericRecord = (GenericRecord) inputChunk.get(ii + sourceOffset);
             final Boolean value = genericRecord == null ? null : (Boolean) genericRecord.get(fieldName);

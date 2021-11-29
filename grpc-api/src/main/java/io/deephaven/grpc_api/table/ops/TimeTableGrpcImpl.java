@@ -3,7 +3,7 @@ package io.deephaven.grpc_api.table.ops;
 import io.deephaven.base.verify.Assert;
 import com.google.rpc.Code;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.time.DateTimeUtils;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.impl.TimeTable;
 import io.deephaven.grpc_api.session.SessionState;

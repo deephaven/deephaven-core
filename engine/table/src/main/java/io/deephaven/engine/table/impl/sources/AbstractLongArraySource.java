@@ -5,9 +5,11 @@
 package io.deephaven.engine.table.impl.sources;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.chunk.*;
-import io.deephaven.engine.chunk.Attributes.RowKeys;
-import io.deephaven.engine.chunk.Attributes.Values;
+import io.deephaven.chunk.*;
+import io.deephaven.rowset.chunkattributes.OrderedRowKeyRanges;
+import io.deephaven.rowset.chunkattributes.OrderedRowKeys;
+import io.deephaven.rowset.chunkattributes.RowKeys;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
 import io.deephaven.util.SoftRecycler;
@@ -413,7 +415,7 @@ public abstract class AbstractLongArraySource<T> extends ArraySourceHelper<T, lo
     @Override
     void fillFromChunkByRanges(@NotNull RowSequence rowSequence, Chunk<? extends Values> src) {
         final LongChunk<? extends Values> chunk = src.asLongChunk();
-        final LongChunk<Attributes.OrderedRowKeyRanges> ranges = rowSequence.asRowKeyRangesChunk();
+        final LongChunk<OrderedRowKeyRanges> ranges = rowSequence.asRowKeyRangesChunk();
 
         final boolean hasPrev = prevFlusher != null;
 
@@ -485,7 +487,7 @@ public abstract class AbstractLongArraySource<T> extends ArraySourceHelper<T, lo
     @Override
     void fillFromChunkByKeys(@NotNull RowSequence rowSequence, Chunk<? extends Values> src) {
         final LongChunk<? extends Values> chunk = src.asLongChunk();
-        final LongChunk<Attributes.OrderedRowKeys> keys = rowSequence.asRowKeyChunk();
+        final LongChunk<OrderedRowKeys> keys = rowSequence.asRowKeyChunk();
 
         final boolean hasPrev = prevFlusher != null;
 
@@ -525,7 +527,7 @@ public abstract class AbstractLongArraySource<T> extends ArraySourceHelper<T, lo
 
     <T> void fillFromChunkByRanges(final @NotNull RowSequence rowSequence, final Chunk<? extends Values> src, final ToLongFunction<T> mapper) {
         final ObjectChunk<T, ? extends Values> chunk = src.asObjectChunk();
-        final LongChunk<Attributes.OrderedRowKeyRanges> ranges = rowSequence.asRowKeyRangesChunk();
+        final LongChunk<OrderedRowKeyRanges> ranges = rowSequence.asRowKeyRangesChunk();
 
         final boolean hasPrev = prevFlusher != null;
 
@@ -575,7 +577,7 @@ public abstract class AbstractLongArraySource<T> extends ArraySourceHelper<T, lo
 
     <T> void fillFromChunkByKeys(final @NotNull RowSequence rowSequence, final Chunk<? extends Values> src, final ToLongFunction<T> mapper) {
         final ObjectChunk<T, ? extends Values> chunk = src.asObjectChunk();
-        final LongChunk<Attributes.OrderedRowKeys> keys = rowSequence.asRowKeyChunk();
+        final LongChunk<OrderedRowKeys> keys = rowSequence.asRowKeyChunk();
 
         final boolean hasPrev = prevFlusher != null;
 

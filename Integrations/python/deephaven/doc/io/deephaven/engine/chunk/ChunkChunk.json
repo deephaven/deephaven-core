@@ -1,19 +1,19 @@
 {
- "className": "io.deephaven.engine.chunk.ChunkChunk",
+ "className": "io.deephaven.chunk.ChunkChunk",
  "methods": {
-  "asBooleanChunkChunk": ":return: io.deephaven.engine.chunk.BooleanChunkChunk<ChunkChunk.ATTR>",
-  "asByteChunkChunk": ":return: io.deephaven.engine.chunk.ByteChunkChunk<ChunkChunk.ATTR>",
-  "asCharChunkChunk": ":return: io.deephaven.engine.chunk.CharChunkChunk<ChunkChunk.ATTR>",
-  "asDoubleChunkChunk": ":return: io.deephaven.engine.chunk.DoubleChunkChunk<ChunkChunk.ATTR>",
-  "asFloatChunkChunk": ":return: io.deephaven.engine.chunk.FloatChunkChunk<ChunkChunk.ATTR>",
-  "asIntChunkChunk": ":return: io.deephaven.engine.chunk.IntChunkChunk<ChunkChunk.ATTR>",
-  "asLongChunkChunk": ":return: io.deephaven.engine.chunk.LongChunkChunk<ChunkChunk.ATTR>",
-  "asObjectChunkChunk": "Note: Java generics information - <T>\n\n:return: io.deephaven.engine.chunk.ObjectChunkChunk<T,ChunkChunk.ATTR>",
-  "asShortChunkChunk": ":return: io.deephaven.engine.chunk.ShortChunkChunk<ChunkChunk.ATTR>",
-  "getChunk": ":param pos: int\n:return: io.deephaven.engine.chunk.Chunk<ChunkChunk.ATTR>",
+  "asBooleanChunkChunk": ":return: io.deephaven.chunk.BooleanChunkChunk<ChunkChunk.ATTR>",
+  "asByteChunkChunk": ":return: io.deephaven.chunk.ByteChunkChunk<ChunkChunk.ATTR>",
+  "asCharChunkChunk": ":return: io.deephaven.chunk.CharChunkChunk<ChunkChunk.ATTR>",
+  "asDoubleChunkChunk": ":return: io.deephaven.chunk.DoubleChunkChunk<ChunkChunk.ATTR>",
+  "asFloatChunkChunk": ":return: io.deephaven.chunk.FloatChunkChunk<ChunkChunk.ATTR>",
+  "asIntChunkChunk": ":return: io.deephaven.chunk.IntChunkChunk<ChunkChunk.ATTR>",
+  "asLongChunkChunk": ":return: io.deephaven.chunk.LongChunkChunk<ChunkChunk.ATTR>",
+  "asObjectChunkChunk": "Note: Java generics information - <T>\n\n:return: io.deephaven.chunk.ObjectChunkChunk<T,ChunkChunk.ATTR>",
+  "asShortChunkChunk": ":return: io.deephaven.chunk.ShortChunkChunk<ChunkChunk.ATTR>",
+  "getChunk": ":param pos: int\n:return: io.deephaven.chunk.Chunk<ChunkChunk.ATTR>",
   "size": ":return: int",
-  "slice": ":param offset: int\n:param capacity: int\n:return: io.deephaven.engine.chunk.ChunkChunk<ChunkChunk.ATTR>"
+  "slice": ":param offset: int\n:param capacity: int\n:return: io.deephaven.chunk.ChunkChunk<ChunkChunk.ATTR>"
  },
- "path": "io.deephaven.engine.chunk.ChunkChunk",
+ "path": "io.deephaven.chunk.ChunkChunk",
  "typeName": "interface"
 }

@@ -14,7 +14,7 @@ import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetBuilderRandom;
-import io.deephaven.engine.vector.DoubleVector;
+import io.deephaven.vector.DoubleVector;
 import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.util.QueryConstants.NULL_DOUBLE;

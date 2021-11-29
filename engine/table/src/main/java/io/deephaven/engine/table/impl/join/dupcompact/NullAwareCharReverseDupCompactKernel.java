@@ -3,11 +3,11 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.table.impl.join.dupcompact;
 
-import io.deephaven.util.QueryConstants;
+import io.deephaven.rowset.chunkattributes.RowKeys;
 import io.deephaven.util.compare.CharComparisons;
 
-import io.deephaven.engine.chunk.*;
-import io.deephaven.engine.chunk.Attributes.Any;
+import io.deephaven.chunk.*;
+import io.deephaven.chunk.attributes.Any;
 
 public class NullAwareCharReverseDupCompactKernel implements DupCompactKernel {
     static final NullAwareCharReverseDupCompactKernel INSTANCE = new NullAwareCharReverseDupCompactKernel();
@@ -15,11 +15,11 @@ public class NullAwareCharReverseDupCompactKernel implements DupCompactKernel {
     private NullAwareCharReverseDupCompactKernel() {} // use through the instance
 
     @Override
-    public int compactDuplicates(WritableChunk<? extends Any> chunkToCompact, WritableLongChunk<Attributes.RowKeys> keyIndices) {
+    public int compactDuplicates(WritableChunk<? extends Any> chunkToCompact, WritableLongChunk<RowKeys> keyIndices) {
         return compactDuplicates(chunkToCompact.asWritableCharChunk(), keyIndices);
     }
 
-    private static int compactDuplicates(WritableCharChunk<? extends Any> chunkToCompact, WritableLongChunk<Attributes.RowKeys> keyIndices) {
+    private static int compactDuplicates(WritableCharChunk<? extends Any> chunkToCompact, WritableLongChunk<RowKeys> keyIndices) {
         final int inputSize = chunkToCompact.size();
         if (inputSize == 0) {
             return -1;

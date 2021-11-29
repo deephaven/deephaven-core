@@ -1,17 +1,16 @@
 package io.deephaven.engine.rowset.impl;
 
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.Attributes.OrderedRowKeys;
-import io.deephaven.engine.chunk.Attributes.OrderedRowKeyRanges;
-import io.deephaven.engine.chunk.LongChunk;
-import io.deephaven.engine.chunk.WritableLongChunk;
+import io.deephaven.rowset.chunkattributes.OrderedRowKeys;
+import io.deephaven.rowset.chunkattributes.OrderedRowKeyRanges;
+import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.WritableLongChunk;
 
 public abstract class RowSequenceAsChunkImpl implements RowSequence {
 
     private WritableLongChunk<OrderedRowKeys> keyIndicesChunk;
     private boolean keyIndicesChunkInvalidated;
-    private WritableLongChunk<Attributes.OrderedRowKeyRanges> keyRangesChunk;
+    private WritableLongChunk<OrderedRowKeyRanges> keyRangesChunk;
     private boolean keyRangesChunkInvalidated;
 
     private void makeKeyIndicesChunk() {
@@ -43,7 +42,7 @@ public abstract class RowSequenceAsChunkImpl implements RowSequence {
     }
 
     @Override
-    public final LongChunk<Attributes.OrderedRowKeys> asRowKeyChunk() {
+    public final LongChunk<OrderedRowKeys> asRowKeyChunk() {
         if (size() == 0) {
             return LongChunk.getEmptyChunk();
         }

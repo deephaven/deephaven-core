@@ -1,7 +1,7 @@
 {
  "className": "io.deephaven.engine.table.WritableColumnSource$SinkFiller",
  "methods": {
-  "create": ":param chunkType: io.deephaven.engine.chunk.ChunkType\n:return: io.deephaven.engine.table.WritableColumnSource.SinkFiller"
+  "create": ":param chunkType: io.deephaven.chunk.ChunkType\n:return: io.deephaven.engine.table.WritableColumnSource.SinkFiller"
  },
  "path": "io.deephaven.engine.table.WritableColumnSource.SinkFiller",
  "typeName": "class"

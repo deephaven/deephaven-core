@@ -6,11 +6,11 @@ import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.table.impl.*;
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.Attributes.RowKeys;
-import io.deephaven.engine.chunk.Attributes.Values;
-import io.deephaven.engine.chunk.CharChunk;
-import io.deephaven.engine.chunk.LongChunk;
+import io.deephaven.rowset.chunkattributes.OrderedRowKeys;
+import io.deephaven.rowset.chunkattributes.RowKeys;
+import io.deephaven.chunk.attributes.Values;
+import io.deephaven.chunk.CharChunk;
+import io.deephaven.chunk.LongChunk;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.test.types.ParallelTest;
@@ -221,7 +221,7 @@ public class TestCharSegmentedSortedArray extends RefreshingTableTestCase {
         try (final ColumnSource.GetContext getContext = valueSource.makeGetContext(asCharacter.intSize());
              final RowSet asCharRowSetCopy = asCharacter.getRowSet().copy()) {
             final CharChunk<? extends Values> valueChunk = valueSource.getChunk(getContext, asCharRowSetCopy).asCharChunk();
-            final LongChunk<Attributes.OrderedRowKeys> tableIndexChunk = asCharRowSetCopy.asRowKeyChunk();
+            final LongChunk<OrderedRowKeys> tableIndexChunk = asCharRowSetCopy.asRowKeyChunk();
 
             ssa.insert(valueChunk, tableIndexChunk);
 

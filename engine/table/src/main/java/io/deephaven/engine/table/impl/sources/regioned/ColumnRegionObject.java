@@ -1,10 +1,10 @@
 package io.deephaven.engine.table.impl.sources.regioned;
 
-import io.deephaven.engine.chunk.Attributes.Any;
-import io.deephaven.engine.chunk.Attributes.DictionaryKeys;
-import io.deephaven.engine.chunk.ChunkType;
-import io.deephaven.engine.chunk.WritableChunk;
-import io.deephaven.engine.chunk.WritableLongChunk;
+import io.deephaven.chunk.attributes.Any;
+import io.deephaven.engine.table.impl.chunkattributes.DictionaryKeys;
+import io.deephaven.chunk.ChunkType;
+import io.deephaven.chunk.WritableChunk;
+import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.engine.page.Page;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;

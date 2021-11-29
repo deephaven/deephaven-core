@@ -4,9 +4,10 @@
 
 package io.deephaven.engine.table.impl.sources;
 
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.ChunkSource;
-import io.deephaven.engine.chunk.*;
-import io.deephaven.engine.chunk.Attributes.RowKeys;
+import io.deephaven.chunk.*;
+import io.deephaven.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.WritableColumnSource;
@@ -119,7 +120,7 @@ public class WritableRedirectedColumnSource<T> extends RedirectedColumnSource<T>
     }
 
     @Override
-    public void fillFromChunk(@NotNull FillFromContext context, @NotNull Chunk<? extends Attributes.Values> src,
+    public void fillFromChunk(@NotNull FillFromContext context, @NotNull Chunk<? extends Values> src,
             @NotNull RowSequence rowSequence) {
         // noinspection unchecked
         final RedirectionFillFrom redirectionFillFrom = (RedirectionFillFrom) context;
@@ -131,7 +132,7 @@ public class WritableRedirectedColumnSource<T> extends RedirectedColumnSource<T>
 
     @Override
     public void fillFromChunkUnordered(@NotNull FillFromContext context,
-            @NotNull Chunk<? extends Attributes.Values> src, @NotNull LongChunk<RowKeys> keys) {
+                                       @NotNull Chunk<? extends Values> src, @NotNull LongChunk<RowKeys> keys) {
         // noinspection unchecked
         final RedirectionFillFrom redirectionFillFrom = (RedirectionFillFrom) context;
         rowRedirection.fillChunkUnordered(redirectionFillFrom.redirectionFillContext,

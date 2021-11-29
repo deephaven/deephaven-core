@@ -25,9 +25,9 @@ import wrapt
 
 
 _java_type_ = None  # None until the first define_symbols() call
-DBTimeZone = None  #: Deephaven timezone class (io.deephaven.engine.time.TimeZone).
-DateTime = None  #: Deephaven date-time class (io.deephaven.engine.time.DateTime).
-Period = None    #: Deephaven time period class (io.deephaven.engine.time.Period).
+DBTimeZone = None  #: Deephaven timezone class (io.deephaven.time.TimeZone).
+DateTime = None  #: Deephaven date-time class (io.deephaven.time.DateTime).
+Period = None    #: Deephaven time period class (io.deephaven.time.Period).
 
 SECOND = 1000000000  #: One second in nanoseconds.
 MINUTE = 60*SECOND   #: One minute in nanoseconds.
@@ -51,10 +51,10 @@ def _defineSymbols():
     if _java_type_ is not None:
         return
     # This will raise an exception if the desired object is not the classpath
-    _java_type_ = jpy.get_type("io.deephaven.engine.time.DateTimeUtils")
-    DBTimeZone = jpy.get_type("io.deephaven.engine.time.TimeZone")
-    DateTime = jpy.get_type("io.deephaven.engine.time.DateTime")
-    Period = jpy.get_type("io.deephaven.engine.time.Period")
+    _java_type_ = jpy.get_type("io.deephaven.time.DateTimeUtils")
+    DBTimeZone = jpy.get_type("io.deephaven.time.TimeZone")
+    DateTime = jpy.get_type("io.deephaven.time.DateTime")
+    Period = jpy.get_type("io.deephaven.time.Period")
 
 # every module method should be decorated with @_passThrough
 @wrapt.decorator
@@ -107,7 +107,7 @@ def autoEpochToTime(epoch):
      whose ABS is greater than 1000 * TimeConstants.MICROTIME_THRESHOLD will be treated as nanoseconds.
     
     :param epoch: (long) - The long Epoch offset value to convert.
-    :return: (io.deephaven.engine.time.DateTime) null, if the input is equal to QueryConstants.NULL_LONG, otherwise a DateTime based on
+    :return: (io.deephaven.time.DateTime) null, if the input is equal to QueryConstants.NULL_LONG, otherwise a DateTime based on
              the inferred conversion.
     """
     
@@ -120,10 +120,10 @@ def cappedTimeOffset(original, period, cap):
     Returns a DateTime value based on a starting value and a Period to add to it, but with a cap max
      value which is returned in case the starting value plus period exceeds the cap.
     
-    :param original: (io.deephaven.engine.time.DateTime) - The starting DateTime value.
-    :param period: (io.deephaven.engine.time.Period) - The Period to add to dateTime.
-    :param cap: (io.deephaven.engine.time.DateTime) - A DateTime value to use as the maximum return value.
-    :return: (io.deephaven.engine.time.DateTime) a null DateTime if either original or period are null; the starting DateTime plus the
+    :param original: (io.deephaven.time.DateTime) - The starting DateTime value.
+    :param period: (io.deephaven.time.Period) - The Period to add to dateTime.
+    :param cap: (io.deephaven.time.DateTime) - A DateTime value to use as the maximum return value.
+    :return: (io.deephaven.time.DateTime) a null DateTime if either original or period are null; the starting DateTime plus the
              specified period, if the result is not too large for a DateTime and does not exceed the cap value; the
              cap value if this is less than offset plus period. Throws a DateTimeOverflowException if the resultant value is more than max long nanoseconds from Epoch.
     """
@@ -157,7 +157,7 @@ def convertDateQuiet(*args):
       
     *Overload 2*  
       :param s: (java.lang.String) - the date string
-      :param dateStyle: (io.deephaven.engine.time.DateTimeUtils.DateStyle) - indicates how to interpret slash-delimited dates
+      :param dateStyle: (io.deephaven.time.DateTimeUtils.DateStyle) - indicates how to interpret slash-delimited dates
       :return: (java.time.LocalDate) the LocalDate
     """
     
@@ -171,7 +171,7 @@ def convertDateTime(s):
     
     :param s: (java.lang.String) - String to be converted, usually in the form yyyy-MM-ddThh:mm:ss and with optional sub-seconds after an
             optional decimal point, followed by a mandatory time zone character code
-    :return: io.deephaven.engine.time.DateTime
+    :return: io.deephaven.time.DateTime
     """
     
     return _java_type_.convertDateTime(s)
@@ -184,7 +184,7 @@ def convertDateTimeQuiet(s):
     
     :param s: (java.lang.String) - String to be converted, usually in the form yyyy-MM-ddThh:mm:ss and with optional sub-seconds after an
             optional decimal point, followed by a mandatory time zone character code
-    :return: (io.deephaven.engine.time.DateTime) A DateTime from the parsed String, or null if the format is not recognized or an exception occurs
+    :return: (io.deephaven.time.DateTime) A DateTime from the parsed String, or null if the format is not recognized or an exception occurs
     """
     
     return _java_type_.convertDateTimeQuiet(s)
@@ -197,7 +197,7 @@ def convertExpression(formula):
      instances.
     
     :param formula: (java.lang.String) - The formula to convert.
-    :return: (io.deephaven.engine.time.DateTimeUtils.Result) A DateTimeUtils.Result object, which includes the converted formula string, a string of instance variable
+    :return: (io.deephaven.time.DateTimeUtils.Result) A DateTimeUtils.Result object, which includes the converted formula string, a string of instance variable
              declarations, and a map describing the names and types of these instance variables.
     """
     
@@ -223,7 +223,7 @@ def convertPeriod(s):
     
     :param s: (java.lang.String) - The String to convert in the form of numbertype, e.g. 1W for one week, and Tnumbertype for times, e.g.
             T1M for one minute.
-    :return: io.deephaven.engine.time.Period
+    :return: io.deephaven.time.Period
     """
     
     return _java_type_.convertPeriod(s)
@@ -236,7 +236,7 @@ def convertPeriodQuiet(s):
     
     :param s: (java.lang.String) - The String to convert in the form of numbertype, e.g. 1W for one week, and Tnumbertype for times, e.g.
             T1M for one minute.
-    :return: (io.deephaven.engine.time.Period) null if the String cannot be parsed, otherwise a Period object.
+    :return: (io.deephaven.time.Period) null if the String cannot be parsed, otherwise a Period object.
     """
     
     return _java_type_.convertPeriodQuiet(s)
@@ -287,7 +287,7 @@ def currentDate(timeZone):
     """
     Returns a String of the current date in the specified TimeZone.
     
-    :param timeZone: (io.deephaven.engine.time.TimeZone) - The TimeZone to reference when evaluating the current date for "now".
+    :param timeZone: (io.deephaven.time.TimeZone) - The TimeZone to reference when evaluating the current date for "now".
     :return: (java.lang.String) A String in format yyyy-MM-dd.
     """
     
@@ -312,7 +312,7 @@ def currentTime():
     Provides the current date/time, or, if a custom timeProvider has been configured, provides the current
      time according to the custom provider.
     
-    :return: (io.deephaven.engine.time.DateTime) A DateTime of the current date and time from the system or from the configured alternate time
+    :return: (io.deephaven.time.DateTime) A DateTime of the current date and time from the system or from the configured alternate time
              provider.
     """
     
@@ -324,9 +324,9 @@ def dateAtMidnight(dateTime, timeZone):
     """
     Returns a DateTime for the requested DateTime at midnight in the specified time zone.
     
-    :param dateTime: (io.deephaven.engine.time.DateTime) - DateTime for which the new value at midnight should be calculated.
-    :param timeZone: (io.deephaven.engine.time.TimeZone) - TimeZone for which the new value at midnight should be calculated.
-    :return: (io.deephaven.engine.time.DateTime) A null DateTime if either input is null, otherwise a DateTime representing midnight for
+    :param dateTime: (io.deephaven.time.DateTime) - DateTime for which the new value at midnight should be calculated.
+    :param timeZone: (io.deephaven.time.TimeZone) - TimeZone for which the new value at midnight should be calculated.
+    :return: (io.deephaven.time.DateTime) A null DateTime if either input is null, otherwise a DateTime representing midnight for
              the date and time zone of the inputs.
     """
     
@@ -338,8 +338,8 @@ def dayOfMonth(dateTime, timeZone):
     """
     Returns an int value of the day of the month for a DateTime and specified time zone.
     
-    :param dateTime: (io.deephaven.engine.time.DateTime) - The DateTime for which to find the day of the month.
-    :param timeZone: (io.deephaven.engine.time.TimeZone) - The TimeZone to use when interpreting the date/time.
+    :param dateTime: (io.deephaven.time.DateTime) - The DateTime for which to find the day of the month.
+    :param timeZone: (io.deephaven.time.TimeZone) - The TimeZone to use when interpreting the date/time.
     :return: (int) A QueryConstants.NULL_INT if either input is null, otherwise, an int value of the day of the
              month represented by the DateTime when interpreted in the specified time zone.
     """
@@ -352,7 +352,7 @@ def dayOfMonthNy(dateTime):
     """
     Returns an int value of the day of the month for a DateTime in the New York time zone.
     
-    :param dateTime: (io.deephaven.engine.time.DateTime) - The DateTime for which to find the day of the month.
+    :param dateTime: (io.deephaven.time.DateTime) - The DateTime for which to find the day of the month.
     :return: (int) A QueryConstants.NULL_INT if the input is null, otherwise, an int value of the day of the month
              represented by the DateTime when interpreted in the New York time zone.
     """
@@ -366,8 +366,8 @@ def dayOfWeek(dateTime, timeZone):
     Returns an int value of the day of the week for a DateTime in the specified time zone, with 1 being
      Monday and 7 being Sunday.
     
-    :param dateTime: (io.deephaven.engine.time.DateTime) - The DateTime for which to find the day of the week.
-    :param timeZone: (io.deephaven.engine.time.TimeZone) - The TimeZone to use when interpreting the date/time.
+    :param dateTime: (io.deephaven.time.DateTime) - The DateTime for which to find the day of the week.
+    :param timeZone: (io.deephaven.time.TimeZone) - The TimeZone to use when interpreting the date/time.
     :return: (int) A QueryConstants.NULL_INT if either input is null, otherwise, an int value of the day of the week
              represented by the DateTime when interpreted in the specified time zone.
     """
@@ -381,7 +381,7 @@ def dayOfWeekNy(dateTime):
     Returns an int value of the day of the week for a DateTime in the New York time zone, with 1 being Monday
      and 7 being Sunday.
     
-    :param dateTime: (io.deephaven.engine.time.DateTime) - The DateTime for which to find the day of the week.
+    :param dateTime: (io.deephaven.time.DateTime) - The DateTime for which to find the day of the week.
     :return: (int) A QueryConstants.NULL_INT if the input is null, otherwise, an int value of the day of the week
              represented by the DateTime when interpreted in the New York time zone.
     """
@@ -394,8 +394,8 @@ def dayOfYear(dateTime, timeZone):
     """
     Returns an int value of the day of the year (Julian date) for a DateTime in the specified time zone.
     
-    :param dateTime: (io.deephaven.engine.time.DateTime) - The DateTime for which to find the day of the year.
-    :param timeZone: (io.deephaven.engine.time.TimeZone) - The TimeZone to use when interpreting the date/time.
+    :param dateTime: (io.deephaven.time.DateTime) - The DateTime for which to find the day of the year.
+    :param timeZone: (io.deephaven.time.TimeZone) - The TimeZone to use when interpreting the date/time.
     :return: (int) A QueryConstants.NULL_INT if either input is null, otherwise, an int value of the day of the year
              represented by the DateTime when interpreted in the specified time zone.
     """
@@ -408,7 +408,7 @@ def dayOfYearNy(dateTime):
     """
     Returns an int value of the day of the year (Julian date) for a DateTime in the New York time zone.
     
-    :param dateTime: (io.deephaven.engine.time.DateTime) - The DateTime for which to find the day of the year.
+    :param dateTime: (io.deephaven.time.DateTime) - The DateTime for which to find the day of the year.
     :return: (int) A QueryConstants.NULL_INT if the input is null, otherwise, an int value of the day of the year
              represented by the DateTime when interpreted in the New York time zone.
     """
@@ -421,8 +421,8 @@ def diffDay(start, end):
     """
     Returns a double value of the number of days difference between two DateTime values.
     
-    :param start: (io.deephaven.engine.time.DateTime) - The first DateTime.
-    :param end: (io.deephaven.engine.time.DateTime) - The second DateTime.
+    :param start: (io.deephaven.time.DateTime) - The first DateTime.
+    :param end: (io.deephaven.time.DateTime) - The second DateTime.
     :return: (double) QueryConstants.NULL_LONG if either input is null; a double value of the number of days obtained
              from the first DateTime value minus d2, if the intermediate value of nanoseconds difference
              between the two dates is not out of range for a long value; or throws a DateTimeOverflowException if the intermediate value would be more than min long or max long nanoseconds
@@ -442,8 +442,8 @@ def diffNanos(d1, d2):
     """
     Returns the difference in nanoseconds between two DateTime values.
     
-    :param d1: (io.deephaven.engine.time.DateTime) - The first DateTime.
-    :param d2: (io.deephaven.engine.time.DateTime) - The second DateTime.
+    :param d1: (io.deephaven.time.DateTime) - The first DateTime.
+    :param d2: (io.deephaven.time.DateTime) - The second DateTime.
     :return: (long) QueryConstants.NULL_LONG if either input is null; the long nanoseconds from Epoch value of the
              first DateTime minus d2, if the result is not out of range for a long value; or throws a
              DateTimeOverflowException if the resultant value would be more than min
@@ -463,8 +463,8 @@ def diffYear(start, end):
     """
     Returns a double value of the number of 365 day units difference between two DateTime values.
     
-    :param start: (io.deephaven.engine.time.DateTime) - The first DateTime.
-    :param end: (io.deephaven.engine.time.DateTime) - The second DateTime.
+    :param start: (io.deephaven.time.DateTime) - The first DateTime.
+    :param end: (io.deephaven.time.DateTime) - The second DateTime.
     :return: (double) QueryConstants.NULL_LONG if either input is null; a double value of the number of 365 day periods
              obtained from the first DateTime value minus d2, if the intermediate value of nanoseconds
              difference between the two dates is not out of range for a long value; or throws a
@@ -511,8 +511,8 @@ def format(*args):
     Returns a String date/time representation.
     
     *Overload 1*  
-      :param dateTime: (io.deephaven.engine.time.DateTime) - The DateTime to format as a String.
-      :param timeZone: (io.deephaven.engine.time.TimeZone) - The TimeZone to use when formatting the String.
+      :param dateTime: (io.deephaven.time.DateTime) - The DateTime to format as a String.
+      :param timeZone: (io.deephaven.time.TimeZone) - The TimeZone to use when formatting the String.
       :return: (java.lang.String) A null String if either input is null, otherwise a String formatted as yyyy-MM-ddThh:mm:ss.nnnnnnnnn TZ.
       
     *Overload 2*  
@@ -536,8 +536,8 @@ def formatDate(dateTime, timeZone):
     """
     Returns a String date representation of a DateTime interpreted for a specified time zone.
     
-    :param dateTime: (io.deephaven.engine.time.DateTime) - The DateTime to format as a String.
-    :param timeZone: (io.deephaven.engine.time.TimeZone) - The TimeZone to use when formatting the String.
+    :param dateTime: (io.deephaven.time.DateTime) - The DateTime to format as a String.
+    :param timeZone: (io.deephaven.time.TimeZone) - The TimeZone to use when formatting the String.
     :return: (java.lang.String) A null String if either input is null, otherwise a String formatted as yyyy-MM-dd.
     """
     
@@ -549,7 +549,7 @@ def formatDateNy(dateTime):
     """
     Returns a String date representation of a DateTime interpreted for the New York time zone.
     
-    :param dateTime: (io.deephaven.engine.time.DateTime) - The DateTime to format as a String.
+    :param dateTime: (io.deephaven.time.DateTime) - The DateTime to format as a String.
     :return: (java.lang.String) A null String if the input is null, otherwise a String formatted as yyyy-MM-dd.
     """
     
@@ -561,7 +561,7 @@ def formatNy(dateTime):
     """
     Returns a String date/time representation of a DateTime interpreted for the New York time zone.
     
-    :param dateTime: (io.deephaven.engine.time.DateTime) - The DateTime to format as a String.
+    :param dateTime: (io.deephaven.time.DateTime) - The DateTime to format as a String.
     :return: (java.lang.String) A null String if the input is null, otherwise a String formatted as yyyy-MM-ddThh:mm:ss.nnnnnnnnn NY.
     """
     
@@ -574,19 +574,19 @@ def getExcelDateTime(*args):
     Returns the Excel double time format representation of a DateTime.
     
     *Overload 1*  
-      :param dateTime: (io.deephaven.engine.time.DateTime) - The DateTime to convert.
-      :param timeZone: (io.deephaven.engine.time.TimeZone) - The TimeZone to use when interpreting the date/time.
+      :param dateTime: (io.deephaven.time.DateTime) - The DateTime to convert.
+      :param timeZone: (io.deephaven.time.TimeZone) - The TimeZone to use when interpreting the date/time.
       :return: (double) 0.0 if either input is null, otherwise, a double value containing the Excel double format representation
                of a DateTime in the specified time zone.
       
     *Overload 2*  
-      :param dateTime: (io.deephaven.engine.time.DateTime) - The DateTime to convert.
+      :param dateTime: (io.deephaven.time.DateTime) - The DateTime to convert.
       :param timeZone: (java.util.TimeZone) - The TimeZone to use when interpreting the date/time.
       :return: (double) 0.0 if either input is null, otherwise, a double value containing the Excel double format representation
                of a DateTime in the specified time zone.
       
     *Overload 3*  
-      :param dateTime: (io.deephaven.engine.time.DateTime) - The DateTime to convert.
+      :param dateTime: (io.deephaven.time.DateTime) - The DateTime to convert.
       :return: (double) 0.0 if the input is null, otherwise, a double value containing the Excel double format representation of
                a DateTime in the New York time zone.
     """
@@ -669,13 +669,13 @@ def getZonedDateTime(*args):
     Converts a DateTime to a ZonedDateTime.
     
     *Overload 1*  
-      :param dateTime: (io.deephaven.engine.time.DateTime) - The a DateTime to convert.
+      :param dateTime: (io.deephaven.time.DateTime) - The a DateTime to convert.
       :return: (java.time.ZonedDateTime) A ZonedDateTime using the default time zone for the session as indicated by
                TimeZone.TZ_DEFAULT.
       
     *Overload 2*  
-      :param dateTime: (io.deephaven.engine.time.DateTime) - The a DateTime to convert.
-      :param timeZone: (io.deephaven.engine.time.TimeZone) - The TimeZone to use for the conversion.
+      :param dateTime: (io.deephaven.time.DateTime) - The a DateTime to convert.
+      :param timeZone: (io.deephaven.time.TimeZone) - The TimeZone to use for the conversion.
       :return: (java.time.ZonedDateTime) A ZonedDateTime using the specified time zone.
     """
     
@@ -688,8 +688,8 @@ def hourOfDay(dateTime, timeZone):
     Returns an int value of the hour of the day for a DateTime in the specified time zone. The hour is on a
      24 hour clock (0 - 23).
     
-    :param dateTime: (io.deephaven.engine.time.DateTime) - The DateTime for which to find the hour of the day.
-    :param timeZone: (io.deephaven.engine.time.TimeZone) - The TimeZone to use when interpreting the date/time.
+    :param dateTime: (io.deephaven.time.DateTime) - The DateTime for which to find the hour of the day.
+    :param timeZone: (io.deephaven.time.TimeZone) - The TimeZone to use when interpreting the date/time.
     :return: (int) A QueryConstants.NULL_INT if either input is null, otherwise, an int value of the hour of the day
              represented by the DateTime when interpreted in the specified time zone.
     """
@@ -703,7 +703,7 @@ def hourOfDayNy(dateTime):
     Returns an int value of the hour of the day for a DateTime in the New York time zone. The hour is on a 24
      hour clock (0 - 23).
     
-    :param dateTime: (io.deephaven.engine.time.DateTime) - The DateTime for which to find the hour of the day.
+    :param dateTime: (io.deephaven.time.DateTime) - The DateTime for which to find the hour of the day.
     :return: (int) A QueryConstants.NULL_INT if the input is null, otherwise, an int value of the hour of the day
              represented by the DateTime when interpreted in the New York time zone.
     """
@@ -716,8 +716,8 @@ def isAfter(d1, d2):
     """
     Evaluates whether one DateTime value is later than a second DateTime value.
     
-    :param d1: (io.deephaven.engine.time.DateTime) - The first DateTime value to compare.
-    :param d2: (io.deephaven.engine.time.DateTime) - The second DateTime value to compare.
+    :param d1: (io.deephaven.time.DateTime) - The first DateTime value to compare.
+    :param d2: (io.deephaven.time.DateTime) - The second DateTime value to compare.
     :return: (boolean) Boolean true if d1 is later than d2, false if either value is null, or if d2 is equal to or later than
              d1.
     """
@@ -730,8 +730,8 @@ def isBefore(d1, d2):
     """
     Evaluates whether one DateTime value is earlier than a second DateTime value.
     
-    :param d1: (io.deephaven.engine.time.DateTime) - The first DateTime value to compare.
-    :param d2: (io.deephaven.engine.time.DateTime) - The second DateTime value to compare.
+    :param d1: (io.deephaven.time.DateTime) - The first DateTime value to compare.
+    :param d2: (io.deephaven.time.DateTime) - The second DateTime value to compare.
     :return: (boolean) Boolean true if d1 is earlier than d2, false if either value is null, or if d2 is equal to or earlier
              than d1.
     """
@@ -766,16 +766,16 @@ def lowerBin(*args):
      five minute window that contains the input date time.
     
     *Overload 1*  
-      :param dateTime: (io.deephaven.engine.time.DateTime) - The DateTime for which to evaluate the start of the containing window.
+      :param dateTime: (io.deephaven.time.DateTime) - The DateTime for which to evaluate the start of the containing window.
       :param intervalNanos: (long) - The size of the window in nanoseconds.
-      :return: (io.deephaven.engine.time.DateTime) Null if either input is null, otherwise a DateTime representing the start of the window.
+      :return: (io.deephaven.time.DateTime) Null if either input is null, otherwise a DateTime representing the start of the window.
       
     *Overload 2*  
-      :param dateTime: (io.deephaven.engine.time.DateTime) - The DateTime for which to evaluate the start of the containing window.
+      :param dateTime: (io.deephaven.time.DateTime) - The DateTime for which to evaluate the start of the containing window.
       :param intervalNanos: (long) - The size of the window in nanoseconds.
       :param offset: (long) - The window start offset in nanoseconds. For example, a value of MINUTE would offset all windows by
               one minute.
-      :return: (io.deephaven.engine.time.DateTime) Null if either input is null, otherwise a DateTime representing the start of the window.
+      :return: (io.deephaven.time.DateTime) Null if either input is null, otherwise a DateTime representing the start of the window.
     """
     
     return _java_type_.lowerBin(*args)
@@ -788,8 +788,8 @@ def microsOfMilli(dateTime, timeZone):
      provided dateTime in the specified time zone. Nanoseconds are rounded, not dropped --
      '20:41:39.123456700' has 457 micros, not 456.
     
-    :param dateTime: (io.deephaven.engine.time.DateTime) - The DateTime for which to find the microseconds.
-    :param timeZone: (io.deephaven.engine.time.TimeZone) - The TimeZone to use when interpreting the date/time.
+    :param dateTime: (io.deephaven.time.DateTime) - The DateTime for which to find the microseconds.
+    :param timeZone: (io.deephaven.time.TimeZone) - The TimeZone to use when interpreting the date/time.
     :return: (int) A QueryConstants.NULL_INT if either input is null, otherwise, an int value of microseconds since
              the top of the millisecond for the date/time represented by the DateTime when interpreted in the
              specified time zone.
@@ -805,7 +805,7 @@ def microsOfMilliNy(dateTime):
      provided dateTime in the New York time zone. Nanoseconds are rounded, not dropped -- '20:41:39.123456700'
      has 457 micros, not 456.
     
-    :param dateTime: (io.deephaven.engine.time.DateTime) - The DateTime for which to find the microseconds.
+    :param dateTime: (io.deephaven.time.DateTime) - The DateTime for which to find the microseconds.
     :return: (int) A QueryConstants.NULL_INT if the input is null, otherwise, an int value of microseconds since the
              top of the millisecond for the date/time represented by the DateTime when interpreted in the New
              York time zone.
@@ -834,7 +834,7 @@ def microsToTime(micros):
     Converts a value of microseconds from Epoch in the UTC time zone to a DateTime.
     
     :param micros: (long) - The long microseconds value to convert.
-    :return: (io.deephaven.engine.time.DateTime) QueryConstants.NULL_LONG if the input is null, otherwise, a DateTime representation of
+    :return: (io.deephaven.time.DateTime) QueryConstants.NULL_LONG if the input is null, otherwise, a DateTime representation of
              the input.
     """
     
@@ -846,7 +846,7 @@ def millis(dateTime):
     """
     Returns milliseconds since Epoch for a DateTime value.
     
-    :param dateTime: (io.deephaven.engine.time.DateTime) - The DateTime for which the milliseconds offset should be returned.
+    :param dateTime: (io.deephaven.time.DateTime) - The DateTime for which the milliseconds offset should be returned.
     :return: (long) A long value of milliseconds since Epoch, or a QueryConstants.NULL_LONG value if the
              DateTime is null.
     """
@@ -859,8 +859,8 @@ def millisOfDay(dateTime, timeZone):
     """
     Returns an int value of milliseconds since midnight for a DateTime in the specified time zone.
     
-    :param dateTime: (io.deephaven.engine.time.DateTime) - The DateTime for which to find the milliseconds since midnight.
-    :param timeZone: (io.deephaven.engine.time.TimeZone) - The TimeZone to use when interpreting the date/time.
+    :param dateTime: (io.deephaven.time.DateTime) - The DateTime for which to find the milliseconds since midnight.
+    :param timeZone: (io.deephaven.time.TimeZone) - The TimeZone to use when interpreting the date/time.
     :return: (int) A QueryConstants.NULL_INT if either input is null, otherwise, an int value of milliseconds since
              midnight for the date/time represented by the DateTime when interpreted in the specified time
              zone.
@@ -874,7 +874,7 @@ def millisOfDayNy(dateTime):
     """
     Returns an int value of milliseconds since midnight for a DateTime in the New York time zone.
     
-    :param dateTime: (io.deephaven.engine.time.DateTime) - The DateTime for which to find the milliseconds since midnight.
+    :param dateTime: (io.deephaven.time.DateTime) - The DateTime for which to find the milliseconds since midnight.
     :return: (int) A QueryConstants.NULL_INT if the input is null, otherwise, an int value of milliseconds since
              midnight for the date/time represented by the DateTime when interpreted in the New York time
              zone.
@@ -889,8 +889,8 @@ def millisOfSecond(dateTime, timeZone):
     Returns an int value of milliseconds since the top of the second for a DateTime in the specified time
      zone.
     
-    :param dateTime: (io.deephaven.engine.time.DateTime) - The DateTime for which to find the milliseconds.
-    :param timeZone: (io.deephaven.engine.time.TimeZone) - The TimeZone to use when interpreting the date/time.
+    :param dateTime: (io.deephaven.time.DateTime) - The DateTime for which to find the milliseconds.
+    :param timeZone: (io.deephaven.time.TimeZone) - The TimeZone to use when interpreting the date/time.
     :return: (int) A QueryConstants.NULL_INT if either input is null, otherwise, an int value of milliseconds since
              the top of the second for the date/time represented by the DateTime when interpreted in the
              specified time zone.
@@ -905,7 +905,7 @@ def millisOfSecondNy(dateTime):
     Returns an int value of milliseconds since the top of the second for a DateTime in the New York time
      zone.
     
-    :param dateTime: (io.deephaven.engine.time.DateTime) - The DateTime for which to find the milliseconds.
+    :param dateTime: (io.deephaven.time.DateTime) - The DateTime for which to find the milliseconds.
     :return: (int) A QueryConstants.NULL_INT if the input is null, otherwise, an int value of milliseconds since the
              top of the second for the date/time represented by the DateTime when interpreted in the New York
              time zone.
@@ -922,8 +922,8 @@ def millisToDateAtMidnight(millis, timeZone):
     
     :param millis: (long) - A long value of the number of milliseconds from Epoch for which the DateTime is to be
             calculated.
-    :param timeZone: (io.deephaven.engine.time.TimeZone) - TimeZone for which the new value at midnight should be calculated.
-    :return: (io.deephaven.engine.time.DateTime) A DateTime rounded down to midnight in the selected time zone for the specified number of
+    :param timeZone: (io.deephaven.time.TimeZone) - TimeZone for which the new value at midnight should be calculated.
+    :return: (io.deephaven.time.DateTime) A DateTime rounded down to midnight in the selected time zone for the specified number of
              milliseconds from Epoch.
     """
     
@@ -938,7 +938,7 @@ def millisToDateAtMidnightNy(millis):
     
     :param millis: (long) - A long value of the number of milliseconds from Epoch for which the DateTime is to be
             calculated.
-    :return: (io.deephaven.engine.time.DateTime) A DateTime rounded down to midnight in the New York time zone for the specified number of
+    :return: (io.deephaven.time.DateTime) A DateTime rounded down to midnight in the New York time zone for the specified number of
              milliseconds from Epoch.
     """
     
@@ -965,7 +965,7 @@ def millisToTime(millis):
     Converts a value of milliseconds from Epoch in the UTC time zone to a DateTime.
     
     :param millis: (long) - The long milliseconds value to convert.
-    :return: (io.deephaven.engine.time.DateTime) QueryConstants.NULL_LONG if the input is null, otherwise, a DateTime representation of
+    :return: (io.deephaven.time.DateTime) QueryConstants.NULL_LONG if the input is null, otherwise, a DateTime representation of
              the input.
     """
     
@@ -978,24 +978,24 @@ def minus(*args):
     Subtracts one time from another.
     
     *Overload 1*  
-      :param dateTime: (io.deephaven.engine.time.DateTime) - The starting DateTime value.
+      :param dateTime: (io.deephaven.time.DateTime) - The starting DateTime value.
       :param nanos: (long) - The long number of nanoseconds to subtract from dateTime.
-      :return: (io.deephaven.engine.time.DateTime) a null DateTime if either input is null; the starting DateTime minus the specified number
+      :return: (io.deephaven.time.DateTime) a null DateTime if either input is null; the starting DateTime minus the specified number
                of nanoseconds, if the result is not too negative for a DateTime; or throws a
                DateTimeOverflowException if the resultant value is more than min long
                nanoseconds from Epoch.
       
     *Overload 2*  
-      :param dateTime: (io.deephaven.engine.time.DateTime) - The starting DateTime value.
-      :param period: (io.deephaven.engine.time.Period) - The Period to subtract from dateTime.
-      :return: (io.deephaven.engine.time.DateTime) a null DateTime if either input is null; the starting DateTime minus the specified
+      :param dateTime: (io.deephaven.time.DateTime) - The starting DateTime value.
+      :param period: (io.deephaven.time.Period) - The Period to subtract from dateTime.
+      :return: (io.deephaven.time.DateTime) a null DateTime if either input is null; the starting DateTime minus the specified
                period, if the result is not too negative for a DateTime; or throws a
                DateTimeOverflowException if the resultant value is more than min long
                nanoseconds from Epoch.
       
     *Overload 3*  
-      :param d1: (io.deephaven.engine.time.DateTime) - The first DateTime.
-      :param d2: (io.deephaven.engine.time.DateTime) - The DateTime to subtract from d1.
+      :param d1: (io.deephaven.time.DateTime) - The first DateTime.
+      :param d2: (io.deephaven.time.DateTime) - The DateTime to subtract from d1.
       :return: (long) QueryConstants.NULL_LONG if either input is null; the long nanoseconds from Epoch value of the
                first DateTime minus d2, if the result is not out of range for a long value; or throws a
                DateTimeOverflowException if the resultant value would be more than min
@@ -1013,8 +1013,8 @@ def minuteOfDay(dateTime, timeZone):
     """
     Returns an int value of minutes since midnight for a DateTime in the specified time zone.
     
-    :param dateTime: (io.deephaven.engine.time.DateTime) - The DateTime for which to find the minutes.
-    :param timeZone: (io.deephaven.engine.time.TimeZone) - The TimeZone to use when interpreting the date/time.
+    :param dateTime: (io.deephaven.time.DateTime) - The DateTime for which to find the minutes.
+    :param timeZone: (io.deephaven.time.TimeZone) - The TimeZone to use when interpreting the date/time.
     :return: (int) A QueryConstants.NULL_INT if either input is null, otherwise, an int value of minutes since
              midnight for the date/time represented by the DateTime when interpreted in the specified time
              zone.
@@ -1028,7 +1028,7 @@ def minuteOfDayNy(dateTime):
     """
     Returns an int value of minutes since midnight for a DateTime in the New York time zone.
     
-    :param dateTime: (io.deephaven.engine.time.DateTime) - The DateTime for which to find the milliseconds since midnight.
+    :param dateTime: (io.deephaven.time.DateTime) - The DateTime for which to find the milliseconds since midnight.
     :return: (int) A QueryConstants.NULL_INT if the input is null, otherwise, an int value of minutes since midnight
              for the date/time represented by the DateTime when interpreted in the New York time zone.
     """
@@ -1041,8 +1041,8 @@ def minuteOfHour(dateTime, timeZone):
     """
     Returns an int value of minutes since the top of the hour for a DateTime in the specified time zone.
     
-    :param dateTime: (io.deephaven.engine.time.DateTime) - The DateTime for which to find the minutes.
-    :param timeZone: (io.deephaven.engine.time.TimeZone) - The TimeZone to use when interpreting the date/time.
+    :param dateTime: (io.deephaven.time.DateTime) - The DateTime for which to find the minutes.
+    :param timeZone: (io.deephaven.time.TimeZone) - The TimeZone to use when interpreting the date/time.
     :return: (int) A QueryConstants.NULL_INT if either input is null, otherwise, an int value of minutes since the
              top of the hour for the date/time represented by the DateTime when interpreted in the specified
              time zone.
@@ -1056,7 +1056,7 @@ def minuteOfHourNy(dateTime):
     """
     Returns an int value of minutes since the top of the hour for a DateTime in the New York time zone.
     
-    :param dateTime: (io.deephaven.engine.time.DateTime) - The DateTime for which to find the minutes.
+    :param dateTime: (io.deephaven.time.DateTime) - The DateTime for which to find the minutes.
     :return: (int) A QueryConstants.NULL_INT if the input is null, otherwise, an int value of minutes since the top
              of the hour for the date/time represented by the DateTime when interpreted in the New York time
              zone.
@@ -1070,8 +1070,8 @@ def monthOfYear(dateTime, timeZone):
     """
     Returns an int value for the month of a DateTime in the specified time zone.
     
-    :param dateTime: (io.deephaven.engine.time.DateTime) - The DateTime for which to find the month.
-    :param timeZone: (io.deephaven.engine.time.TimeZone) - The TimeZone to use when interpreting the date/time.
+    :param dateTime: (io.deephaven.time.DateTime) - The DateTime for which to find the month.
+    :param timeZone: (io.deephaven.time.TimeZone) - The TimeZone to use when interpreting the date/time.
     :return: (int) A QueryConstants.NULL_INT if either input is null, otherwise, an int value of the month for the
              date/time represented by the DateTime when interpreted in the specified time zone. January is 1,
              February is 2, etc.
@@ -1085,7 +1085,7 @@ def monthOfYearNy(dateTime):
     """
     Returns an int value for the month of a DateTime in the New York time zone.
     
-    :param dateTime: (io.deephaven.engine.time.DateTime) - The DateTime for which to find the month.
+    :param dateTime: (io.deephaven.time.DateTime) - The DateTime for which to find the month.
     :return: (int) A QueryConstants.NULL_INT if the input is null, otherwise, an int value of the month for the
              date/time represented by the DateTime when interpreted in the New York time zone.
     """
@@ -1099,7 +1099,7 @@ def nanos(*args):
     Returns nanoseconds since Epoch for a DateTime value.
     
     *Overload 1*  
-      :param dateTime: (io.deephaven.engine.time.DateTime) - The DateTime for which the nanoseconds offset should be returned.
+      :param dateTime: (io.deephaven.time.DateTime) - The DateTime for which the nanoseconds offset should be returned.
       :return: (long) A long value of nanoseconds since Epoch, or a NULL_LONG value if the DateTime is null.
       
     *Overload 2*  
@@ -1115,8 +1115,8 @@ def nanosOfDay(dateTime, timeZone):
     """
     Returns a long value of nanoseconds since midnight for a DateTime in the specified time zone.
     
-    :param dateTime: (io.deephaven.engine.time.DateTime) - The DateTime for which to find the nanoseconds since midnight.
-    :param timeZone: (io.deephaven.engine.time.TimeZone) - The TimeZone to use when interpreting the date/time.
+    :param dateTime: (io.deephaven.time.DateTime) - The DateTime for which to find the nanoseconds since midnight.
+    :param timeZone: (io.deephaven.time.TimeZone) - The TimeZone to use when interpreting the date/time.
     :return: (long) A QueryConstants.NULL_LONG if either input is null, otherwise, a long value of nanoseconds since
              midnight for the date/time represented by the DateTime when interpreted in the specified time
              zone.
@@ -1130,7 +1130,7 @@ def nanosOfDayNy(dateTime):
     """
     Returns a long value of nanoseconds since midnight for a DateTime in the New York time zone.
     
-    :param dateTime: (io.deephaven.engine.time.DateTime) - The DateTime for which to find the nanoseconds since midnight.
+    :param dateTime: (io.deephaven.time.DateTime) - The DateTime for which to find the nanoseconds since midnight.
     :return: (long) A QueryConstants.NULL_LONG if the input is null, otherwise, a long value of nanoseconds since
              midnight for the date/time represented by the DateTime when interpreted in the New York time
              zone.
@@ -1145,8 +1145,8 @@ def nanosOfSecond(dateTime, timeZone):
     Returns a long value of nanoseconds since the top of the second for a DateTime in the specified time
      zone.
     
-    :param dateTime: (io.deephaven.engine.time.DateTime) - The DateTime for which to find the nanoseconds.
-    :param timeZone: (io.deephaven.engine.time.TimeZone) - The TimeZone to use when interpreting the date/time.
+    :param dateTime: (io.deephaven.time.DateTime) - The DateTime for which to find the nanoseconds.
+    :param timeZone: (io.deephaven.time.TimeZone) - The TimeZone to use when interpreting the date/time.
     :return: (long) A QueryConstants.NULL_LONG if either input is null, otherwise, a long value of nanoseconds since
              the top of the second for the date/time represented by the DateTime when interpreted in the
              specified time zone.
@@ -1160,7 +1160,7 @@ def nanosOfSecondNy(dateTime):
     """
     Returns a long value of nanoseconds since the top of the second for a DateTime in the New York time zone.
     
-    :param dateTime: (io.deephaven.engine.time.DateTime) - The DateTime for which to find the nanoseconds.
+    :param dateTime: (io.deephaven.time.DateTime) - The DateTime for which to find the nanoseconds.
     :return: (long) A QueryConstants.NULL_LONG if the input is null, otherwise, a long value of nanoseconds since the
              top of the second for the date/time represented by the DateTime when interpreted in the New York
              time zone.
@@ -1201,7 +1201,7 @@ def nanosToTime(nanos):
     Converts a value of nanoseconds from Epoch to a DateTime.
     
     :param nanos: (long) - The long nanoseconds since Epoch value to convert.
-    :return: (io.deephaven.engine.time.DateTime) A DateTime for nanos, or null if nanos is equal to
+    :return: (io.deephaven.time.DateTime) A DateTime for nanos, or null if nanos is equal to
              NULL_LONG.
     """
     
@@ -1225,17 +1225,17 @@ def plus(*args):
     Adds one time from another.
     
     *Overload 1*  
-      :param dateTime: (io.deephaven.engine.time.DateTime) - The starting DateTime value.
+      :param dateTime: (io.deephaven.time.DateTime) - The starting DateTime value.
       :param nanos: (long) - The long number of nanoseconds to add to dateTime.
-      :return: (io.deephaven.engine.time.DateTime) a null DateTime if either input is null; the starting DateTime plus the specified number
+      :return: (io.deephaven.time.DateTime) a null DateTime if either input is null; the starting DateTime plus the specified number
                of nanoseconds, if the result is not too large for a DateTime; or throws a
                DateTimeOverflowException if the resultant value is more than max long
                nanoseconds from Epoch.
       
     *Overload 2*  
-      :param dateTime: (io.deephaven.engine.time.DateTime) - The starting DateTime value.
-      :param period: (io.deephaven.engine.time.Period) - The Period to add to dateTime.
-      :return: (io.deephaven.engine.time.DateTime) a null DateTime if either input is null; the starting DateTime plus the specified period,
+      :param dateTime: (io.deephaven.time.DateTime) - The starting DateTime value.
+      :param period: (io.deephaven.time.Period) - The Period to add to dateTime.
+      :return: (io.deephaven.time.DateTime) a null DateTime if either input is null; the starting DateTime plus the specified period,
                if the result is not too large for a DateTime; or throws a DateTimeOverflowException if the resultant value is more than max long nanoseconds from Epoch.
     """
     
@@ -1247,8 +1247,8 @@ def secondOfDay(dateTime, timeZone):
     """
     Returns an int value of seconds since midnight for a DateTime in the specified time zone.
     
-    :param dateTime: (io.deephaven.engine.time.DateTime) - The DateTime for which to find the seconds.
-    :param timeZone: (io.deephaven.engine.time.TimeZone) - The TimeZone to use when interpreting the date/time.
+    :param dateTime: (io.deephaven.time.DateTime) - The DateTime for which to find the seconds.
+    :param timeZone: (io.deephaven.time.TimeZone) - The TimeZone to use when interpreting the date/time.
     :return: (int) A QueryConstants.NULL_INT if either input is null, otherwise, an int value of seconds since
              midnight for the date/time represented by the DateTime when interpreted in the specified time
              zone.
@@ -1262,7 +1262,7 @@ def secondOfDayNy(dateTime):
     """
     Returns an int value of seconds since midnight for a DateTime in the New York time zone.
     
-    :param dateTime: (io.deephaven.engine.time.DateTime) - The DateTime for which to find the seconds.
+    :param dateTime: (io.deephaven.time.DateTime) - The DateTime for which to find the seconds.
     :return: (int) A QueryConstants.NULL_INT if either input is null, otherwise, an int value of seconds since
              midnight for the date/time represented by the DateTime when interpreted in the New York time
              zone.
@@ -1276,8 +1276,8 @@ def secondOfMinute(dateTime, timeZone):
     """
     Returns an int value of seconds since the top of the minute for a DateTime in the specified time zone.
     
-    :param dateTime: (io.deephaven.engine.time.DateTime) - The DateTime for which to find the seconds.
-    :param timeZone: (io.deephaven.engine.time.TimeZone) - The TimeZone to use when interpreting the date/time.
+    :param dateTime: (io.deephaven.time.DateTime) - The DateTime for which to find the seconds.
+    :param timeZone: (io.deephaven.time.TimeZone) - The TimeZone to use when interpreting the date/time.
     :return: (int) A QueryConstants.NULL_INT if either input is null, otherwise, an int value of seconds since the
              top of the minute for the date/time represented by the DateTime when interpreted in the specified
              time zone.
@@ -1291,7 +1291,7 @@ def secondOfMinuteNy(dateTime):
     """
     Returns an int value of seconds since the top of the minute for a DateTime in the New York time zone.
     
-    :param dateTime: (io.deephaven.engine.time.DateTime) - The DateTime for which to find the seconds.
+    :param dateTime: (io.deephaven.time.DateTime) - The DateTime for which to find the seconds.
     :return: (int) A QueryConstants.NULL_INT if the input is null, otherwise, an int value of seconds since the top
              of the minute for the date/time represented by the DateTime when interpreted in the New York time
              zone.
@@ -1320,7 +1320,7 @@ def secondsToTime(seconds):
     Converts a value of seconds from Epoch in the UTC time zone to a DateTime.
     
     :param seconds: (long) - The long seconds value to convert.
-    :return: (io.deephaven.engine.time.DateTime) QueryConstants.NULL_LONG if the input is null, otherwise, a DateTime representation of
+    :return: (io.deephaven.time.DateTime) QueryConstants.NULL_LONG if the input is null, otherwise, a DateTime representation of
              the input.
     """
     
@@ -1333,7 +1333,7 @@ def toDateTime(zonedDateTime):
     Converts a ZonedDateTime to a DateTime.
     
     :param zonedDateTime: (java.time.ZonedDateTime) - The a ZonedDateTime to convert.
-    :return: io.deephaven.engine.time.DateTime
+    :return: io.deephaven.time.DateTime
     """
     
     return _java_type_.toDateTime(zonedDateTime)
@@ -1347,16 +1347,16 @@ def upperBin(*args):
      minute window that contains the input date time.
     
     *Overload 1*  
-      :param dateTime: (io.deephaven.engine.time.DateTime) - The DateTime for which to evaluate the end of the containing window.
+      :param dateTime: (io.deephaven.time.DateTime) - The DateTime for which to evaluate the end of the containing window.
       :param intervalNanos: (long) - The size of the window in nanoseconds.
-      :return: (io.deephaven.engine.time.DateTime) Null if either input is null, otherwise a DateTime representing the end of the window.
+      :return: (io.deephaven.time.DateTime) Null if either input is null, otherwise a DateTime representing the end of the window.
       
     *Overload 2*  
-      :param dateTime: (io.deephaven.engine.time.DateTime) - The DateTime for which to evaluate the end of the containing window.
+      :param dateTime: (io.deephaven.time.DateTime) - The DateTime for which to evaluate the end of the containing window.
       :param intervalNanos: (long) - The size of the window in nanoseconds.
       :param offset: (long) - The window start offset in nanoseconds. For example, a value of MINUTE would offset all windows by
               one minute.
-      :return: (io.deephaven.engine.time.DateTime) Null if either input is null, otherwise a DateTime representing the end of the window.
+      :return: (io.deephaven.time.DateTime) Null if either input is null, otherwise a DateTime representing the end of the window.
     """
     
     return _java_type_.upperBin(*args)
@@ -1367,8 +1367,8 @@ def year(dateTime, timeZone):
     """
     Returns an int value of the year for a DateTime in the specified time zone.
     
-    :param dateTime: (io.deephaven.engine.time.DateTime) - The DateTime for which to find the year.
-    :param timeZone: (io.deephaven.engine.time.TimeZone) - The TimeZone to use when interpreting the date/time.
+    :param dateTime: (io.deephaven.time.DateTime) - The DateTime for which to find the year.
+    :param timeZone: (io.deephaven.time.TimeZone) - The TimeZone to use when interpreting the date/time.
     :return: (int) A QueryConstants.NULL_INT if either input is null, otherwise, an int value of the year for the
              date/time represented by the DateTime when interpreted in the specified time zone.
     """
@@ -1381,7 +1381,7 @@ def yearNy(dateTime):
     """
     Returns an int value of the year for a DateTime in the New York time zone.
     
-    :param dateTime: (io.deephaven.engine.time.DateTime) - The DateTime for which to find the year.
+    :param dateTime: (io.deephaven.time.DateTime) - The DateTime for which to find the year.
     :return: (int) A QueryConstants.NULL_INT if either input is null, otherwise, an int value of the year for the
              date/time represented by the DateTime when interpreted in the New York time zone.
     """
@@ -1394,8 +1394,8 @@ def yearOfCentury(dateTime, timeZone):
     """
     Returns an int value of the two-digit year for a DateTime in the specified time zone.
     
-    :param dateTime: (io.deephaven.engine.time.DateTime) - The DateTime for which to find the year.
-    :param timeZone: (io.deephaven.engine.time.TimeZone) - The TimeZone to use when interpreting the date/time.
+    :param dateTime: (io.deephaven.time.DateTime) - The DateTime for which to find the year.
+    :param timeZone: (io.deephaven.time.TimeZone) - The TimeZone to use when interpreting the date/time.
     :return: (int) A QueryConstants.NULL_INT if either input is null, otherwise, an int value of the two-digit year
              for the date/time represented by the DateTime when interpreted in the specified time zone.
     """
@@ -1408,7 +1408,7 @@ def yearOfCenturyNy(dateTime):
     """
     Returns an int value of the two-digit year for a DateTime in the New York time zone.
     
-    :param dateTime: (io.deephaven.engine.time.DateTime) - The DateTime for which to find the year.
+    :param dateTime: (io.deephaven.time.DateTime) - The DateTime for which to find the year.
     :return: (int) A QueryConstants.NULL_INT if either input is null, otherwise, an int value of the two-digit year
              for the date/time represented by the DateTime when interpreted in the New York time zone.
     """

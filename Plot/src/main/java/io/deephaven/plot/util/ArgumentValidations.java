@@ -13,7 +13,7 @@ import io.deephaven.plot.util.tables.TableHandle;
 import io.deephaven.engine.table.DataColumn;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.time.DateTime;
+import io.deephaven.time.DateTime;
 import io.deephaven.util.type.TypeUtils;
 import org.apache.commons.lang3.ClassUtils;
 

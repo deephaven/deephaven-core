@@ -1,15 +1,16 @@
 package io.deephaven.engine.table.impl.sources.regioned;
 
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.engine.table.impl.ColumnSourceGetDefaults;
-import io.deephaven.engine.chunk.*;
+import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.RowSequence;
 
 /**
  * Regioned column source implementation for columns of Booleans.
  */
 final class RegionedColumnSourceBoolean
-        extends RegionedColumnSourceReferencing<Boolean, Attributes.Values, Byte, ColumnRegionByte<Attributes.Values>>
+        extends RegionedColumnSourceReferencing<Boolean, Values, Byte, ColumnRegionByte<Values>>
         implements ColumnSourceGetDefaults.ForBoolean {
 
     public RegionedColumnSourceBoolean() {
@@ -18,10 +19,10 @@ final class RegionedColumnSourceBoolean
     }
 
     @Override
-    public void convertRegion(WritableChunk<? super Attributes.Values> destination,
-                              Chunk<? extends Attributes.Values> source, RowSequence rowSequence) {
-        WritableObjectChunk<Boolean, ? super Attributes.Values> objectChunk = destination.asWritableObjectChunk();
-        ByteChunk<? extends Attributes.Values> byteChunk = source.asByteChunk();
+    public void convertRegion(WritableChunk<? super Values> destination,
+                              Chunk<? extends Values> source, RowSequence rowSequence) {
+        WritableObjectChunk<Boolean, ? super Values> objectChunk = destination.asWritableObjectChunk();
+        ByteChunk<? extends Values> byteChunk = source.asByteChunk();
 
         final int size = destination.size();
         final int length = byteChunk.size();

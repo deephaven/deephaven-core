@@ -2,9 +2,9 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.vector.IntVector;
-import io.deephaven.engine.vector.ObjectVector;
-import io.deephaven.engine.vector.DoubleVector;
+import io.deephaven.vector.IntVector;
+import io.deephaven.vector.ObjectVector;
+import io.deephaven.vector.DoubleVector;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.lang.QueryScope;
 import io.deephaven.util.type.ArrayTypeUtils;

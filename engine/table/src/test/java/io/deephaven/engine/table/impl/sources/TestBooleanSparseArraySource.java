@@ -3,22 +3,19 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.table.impl.sources;
 
-import io.deephaven.engine.chunk.ObjectChunk;
+import io.deephaven.chunk.ObjectChunk;
 
-import io.deephaven.engine.chunk.WritableObjectChunk;
+import io.deephaven.chunk.WritableObjectChunk;
 
 import io.deephaven.util.BooleanUtils;
 
 import io.deephaven.engine.table.ChunkSink;
 import io.deephaven.engine.table.ChunkSource;
-import io.deephaven.engine.table.impl.DefaultGetContext;
 import io.deephaven.engine.table.impl.TestSourceSink;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.chunk.*;
-import io.deephaven.engine.chunk.Attributes.Values;
-import io.deephaven.engine.chunk.BooleanChunk;
-import io.deephaven.engine.chunk.WritableBooleanChunk;
+import io.deephaven.chunk.*;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;

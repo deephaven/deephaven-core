@@ -2,10 +2,10 @@ package io.deephaven.kafka.ingest;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import io.deephaven.UncheckedDeephavenException;
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.ObjectChunk;
-import io.deephaven.engine.chunk.WritableChunk;
-import io.deephaven.engine.chunk.WritableByteChunk;
+import io.deephaven.chunk.ObjectChunk;
+import io.deephaven.chunk.WritableChunk;
+import io.deephaven.chunk.WritableByteChunk;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.util.BooleanUtils;
 
 public class JsonNodeBooleanFieldCopier implements FieldCopier {
@@ -16,8 +16,8 @@ public class JsonNodeBooleanFieldCopier implements FieldCopier {
     }
 
     @Override
-    public void copyField(ObjectChunk<Object, Attributes.Values> inputChunk, WritableChunk<Attributes.Values> publisherChunk, int sourceOffset, int destOffset, int length) {
-        final WritableByteChunk<Attributes.Values> output = publisherChunk.asWritableByteChunk();
+    public void copyField(ObjectChunk<Object, Values> inputChunk, WritableChunk<Values> publisherChunk, int sourceOffset, int destOffset, int length) {
+        final WritableByteChunk<Values> output = publisherChunk.asWritableByteChunk();
         for (int ii = 0; ii < length; ++ii) {
             final JsonNode node = (JsonNode) inputChunk.get(ii + sourceOffset);
             final String valueAsString = JsonNodeUtil.getString(node, fieldName, true, true);

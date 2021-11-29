@@ -6,7 +6,7 @@ import io.deephaven.proto.backplane.script.grpc.CompletionItem
 import io.deephaven.util.process.ProcessEnvironment
 import io.deephaven.engine.table.Table
 import io.deephaven.engine.table.TableDefinition
-import io.deephaven.engine.time.DateTime
+import io.deephaven.time.DateTime
 import io.deephaven.lang.parse.CompletionParser
 import spock.lang.Specification
 import spock.lang.Unroll

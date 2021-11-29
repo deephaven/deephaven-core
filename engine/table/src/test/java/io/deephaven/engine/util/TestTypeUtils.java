@@ -1,7 +1,7 @@
 package io.deephaven.engine.util;
 
 import io.deephaven.base.verify.Require;
-import io.deephaven.engine.time.DateTime;
+import io.deephaven.time.DateTime;
 import junit.framework.TestCase;
 import org.apache.commons.lang3.ArrayUtils;
 

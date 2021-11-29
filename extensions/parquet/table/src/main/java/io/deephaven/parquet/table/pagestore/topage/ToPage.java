@@ -1,13 +1,14 @@
 package io.deephaven.parquet.table.pagestore.topage;
 
+import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.page.ChunkPageFactory;
-import io.deephaven.engine.vector.Vector;
+import io.deephaven.engine.table.impl.chunkattributes.DictionaryKeys;
+import io.deephaven.vector.Vector;
 import io.deephaven.engine.page.ChunkPage;
-import io.deephaven.engine.vector.VectorFactory;
-import io.deephaven.engine.stringset.LongBitmapStringSet;
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.Chunk;
-import io.deephaven.engine.chunk.ChunkType;
+import io.deephaven.vector.VectorFactory;
+import io.deephaven.stringset.LongBitmapStringSet;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.ChunkType;
 import io.deephaven.util.annotations.FinalDefault;
 import io.deephaven.parquet.base.ColumnPageReader;
 import org.jetbrains.annotations.NotNull;
@@ -17,7 +18,7 @@ import java.io.IOException;
 /**
  * This provides a translation layer from the parquet results into the appropriately typed Chunk's.
  */
-public interface ToPage<ATTR extends Attributes.Any, RESULT> {
+public interface ToPage<ATTR extends Any, RESULT> {
 
     /**
      * @return The native type for the elements of the arrays produced by this object.
@@ -94,7 +95,7 @@ public interface ToPage<ATTR extends Attributes.Any, RESULT> {
      *         iff {@link #getDictionaryChunk()} returns null.
      * @apiNote null iff {@link #getDictionaryChunk()} is null.
      */
-    default ToPage<Attributes.DictionaryKeys, long[]> getDictionaryKeysToPage() {
+    default ToPage<DictionaryKeys, long[]> getDictionaryKeysToPage() {
         return null;
     }
 
@@ -106,7 +107,7 @@ public interface ToPage<ATTR extends Attributes.Any, RESULT> {
         return null;
     }
 
-    abstract class Wrap<ATTR extends Attributes.Any, INNER_RESULT, OUTER_RESULT>
+    abstract class Wrap<ATTR extends Any, INNER_RESULT, OUTER_RESULT>
             implements ToPage<ATTR, OUTER_RESULT> {
 
         final ToPage<ATTR, INNER_RESULT> toPage;
@@ -135,7 +136,7 @@ public interface ToPage<ATTR extends Attributes.Any, RESULT> {
         }
 
         @Override
-        public ToPage<Attributes.DictionaryKeys, long[]> getDictionaryKeysToPage() {
+        public ToPage<DictionaryKeys, long[]> getDictionaryKeysToPage() {
             return toPage.getDictionaryKeysToPage();
         }
 

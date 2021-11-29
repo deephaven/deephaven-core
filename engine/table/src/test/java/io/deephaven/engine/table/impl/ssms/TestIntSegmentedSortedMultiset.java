@@ -14,9 +14,9 @@ import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.chunk.*;
-import io.deephaven.engine.chunk.Attributes.ChunkLengths;
-import io.deephaven.engine.chunk.Attributes.Values;
+import io.deephaven.chunk.*;
+import io.deephaven.chunk.attributes.ChunkLengths;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.impl.ssa.SsaTestHelpers;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.impl.util.compact.IntCompactKernel;
@@ -226,7 +226,7 @@ public class TestIntSegmentedSortedMultiset extends RefreshingTableTestCase {
             }
 
             try (final ColumnSource.FillContext fillContext = valueSource.makeFillContext(asInteger.intSize());
-                 final WritableIntChunk<Attributes.Values> valueChunk = WritableIntChunk.makeWritableChunk(asInteger.intSize())) {
+                 final WritableIntChunk<Values> valueChunk = WritableIntChunk.makeWritableChunk(asInteger.intSize())) {
                 valueSource.fillChunk(fillContext, valueChunk, asInteger.getRowSet());
                 valueChunk.sort();
                 final IntChunk<? extends Values> loValues = valueChunk.slice(0, LongSizedDataStructure.intSize("ssmLo", ssmLo.totalSize()));
@@ -264,7 +264,7 @@ public class TestIntSegmentedSortedMultiset extends RefreshingTableTestCase {
 
     private void checkSsmInitial(Table asInteger, IntSegmentedSortedMultiset ssm, ColumnSource<?> valueSource, boolean countNull, @NotNull final SsaTestHelpers.TestDescriptor desc) {
         try (final ColumnSource.FillContext fillContext = valueSource.makeFillContext(asInteger.intSize());
-             final WritableIntChunk<Attributes.Values> valueChunk = WritableIntChunk.makeWritableChunk(asInteger.intSize());
+             final WritableIntChunk<Values> valueChunk = WritableIntChunk.makeWritableChunk(asInteger.intSize());
              final WritableIntChunk<ChunkLengths> counts = WritableIntChunk.makeWritableChunk(asInteger.intSize())) {
             valueSource.fillChunk(fillContext, valueChunk, asInteger.getRowSet());
             valueChunk.sort();
@@ -280,7 +280,7 @@ public class TestIntSegmentedSortedMultiset extends RefreshingTableTestCase {
 
     private void checkSsm(Table asInteger, IntSegmentedSortedMultiset ssm, ColumnSource<?> valueSource, boolean countNull, @NotNull final SsaTestHelpers.TestDescriptor desc) {
         try (final ColumnSource.FillContext fillContext = valueSource.makeFillContext(asInteger.intSize());
-             final WritableIntChunk<Attributes.Values> valueChunk = WritableIntChunk.makeWritableChunk(asInteger.intSize())) {
+             final WritableIntChunk<Values> valueChunk = WritableIntChunk.makeWritableChunk(asInteger.intSize())) {
             valueSource.fillChunk(fillContext, valueChunk, asInteger.getRowSet());
             checkSsm(ssm, valueChunk, countNull, desc);
         }

@@ -1,10 +1,12 @@
 package io.deephaven.engine.table;
 
-import io.deephaven.engine.chunk.*;
+import io.deephaven.chunk.*;
+import io.deephaven.chunk.attributes.Any;
 import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.rowset.chunkattributes.RowKeys;
 import org.jetbrains.annotations.NotNull;
 
-public interface ChunkSink<ATTR extends Attributes.Any> extends ChunkSource<ATTR> {
+public interface ChunkSink<ATTR extends Any> extends ChunkSource<ATTR> {
 
     FillFromContext DEFAULT_FILL_FROM_INSTANCE = new FillFromContext() {};
 
@@ -30,7 +32,7 @@ public interface ChunkSink<ATTR extends Attributes.Any> extends ChunkSource<ATTR
      * @param keys A {@link LongChunk} representing the keys to be written
      */
     void fillFromChunkUnordered(@NotNull FillFromContext context, @NotNull Chunk<? extends ATTR> src,
-            @NotNull LongChunk<Attributes.RowKeys> keys);
+            @NotNull LongChunk<RowKeys> keys);
 
     /**
      * Make a context suitable for the {@link ChunkSink#fillFromChunk} method.

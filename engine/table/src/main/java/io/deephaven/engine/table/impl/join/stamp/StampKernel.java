@@ -2,8 +2,9 @@ package io.deephaven.engine.table.impl.join.stamp;
 
 import io.deephaven.engine.table.Context;
 import io.deephaven.engine.table.impl.SortingOrder;
-import io.deephaven.engine.chunk.*;
-import io.deephaven.engine.chunk.Attributes.Values;
+import io.deephaven.chunk.*;
+import io.deephaven.chunk.attributes.Values;
+import io.deephaven.rowset.chunkattributes.RowKeys;
 import org.jetbrains.annotations.NotNull;
 
 public interface StampKernel extends Context {
@@ -135,6 +136,6 @@ public interface StampKernel extends Context {
      * @param leftRedirections the resulting redirections from the stamping operation
      */
     void computeRedirections(Chunk<Values> leftStamps, Chunk<Values> rightStamps,
-            LongChunk<Attributes.RowKeys> rightKeyIndices,
-            WritableLongChunk<Attributes.RowKeys> leftRedirections);
+            LongChunk<RowKeys> rightKeyIndices,
+            WritableLongChunk<RowKeys> leftRedirections);
 }

@@ -2,7 +2,7 @@ package io.deephaven.engine.table.impl.vector;
 
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
 import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.vector.CharVector;
+import io.deephaven.vector.CharVector;
 import junit.framework.TestCase;
 
 import static io.deephaven.util.QueryConstants.NULL_CHAR;

@@ -1,13 +1,16 @@
 package io.deephaven.engine.table.impl.by;
 
+import io.deephaven.chunk.attributes.ChunkPositions;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.sort.permute.PermuteKernel;
 import io.deephaven.engine.table.impl.sort.timsort.LongIntTimsortKernel;
 import io.deephaven.engine.table.ChunkSink;
-import io.deephaven.engine.chunk.*;
+import io.deephaven.chunk.*;
 import io.deephaven.engine.table.impl.util.ChunkUtils;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSequenceFactory;
+import io.deephaven.rowset.chunkattributes.RowKeys;
 import io.deephaven.util.SafeCloseableList;
 import org.jetbrains.annotations.NotNull;
 
@@ -64,11 +67,11 @@ public abstract class CopyingPermutedStreamFirstOrLastChunkedOperator extends Ba
             final RowSequence.Iterator destinationsIterator = toClose.add(destinations.getRowSequenceIterator());
             final ChunkSource.FillContext redirectionsContext =
                     toClose.add(redirections.makeFillContext(COPY_CHUNK_SIZE));
-            final WritableLongChunk<Attributes.RowKeys> sourceIndices =
+            final WritableLongChunk<RowKeys> sourceIndices =
                     toClose.add(WritableLongChunk.makeWritableChunk(COPY_CHUNK_SIZE));
-            final WritableIntChunk<Attributes.ChunkPositions> sourceIndicesOrder =
+            final WritableIntChunk<ChunkPositions> sourceIndicesOrder =
                     toClose.add(WritableIntChunk.makeWritableChunk(COPY_CHUNK_SIZE));
-            final LongIntTimsortKernel.LongIntSortKernelContext<Attributes.RowKeys, Attributes.ChunkPositions> sortKernelContext =
+            final LongIntTimsortKernel.LongIntSortKernelContext<RowKeys, ChunkPositions> sortKernelContext =
                     toClose.add(LongIntTimsortKernel.createContext(COPY_CHUNK_SIZE));
             final SharedContext inputSharedContext = toClose.add(SharedContext.makeSharedContext());
             final ChunkSource.GetContext[] inputContexts =
@@ -76,7 +79,7 @@ public abstract class CopyingPermutedStreamFirstOrLastChunkedOperator extends Ba
             final ChunkSink.FillFromContext[] outputContexts =
                     toClose.addArray(new ChunkSink.FillFromContext[numResultColumns]);
             // noinspection unchecked
-            final WritableChunk<Attributes.Values>[] outputChunks =
+            final WritableChunk<Values>[] outputChunks =
                     toClose.addArray(new WritableChunk[numResultColumns]);
 
             for (int ci = 0; ci < numResultColumns; ++ci) {
@@ -98,7 +101,7 @@ public abstract class CopyingPermutedStreamFirstOrLastChunkedOperator extends Ba
                 try (final RowSequence sliceSources =
                         RowSequenceFactory.wrapRowKeysChunkAsRowSequence(WritableLongChunk.downcast(sourceIndices))) {
                     for (int ci = 0; ci < numResultColumns; ++ci) {
-                        final Chunk<? extends Attributes.Values> inputChunk =
+                        final Chunk<? extends Values> inputChunk =
                                 inputColumns[ci].getChunk(inputContexts[ci], sliceSources);
                         permuteKernels[ci].permute(inputChunk, sourceIndicesOrder, outputChunks[ci]);
                         outputColumns[ci].fillFromChunk(outputContexts[ci], outputChunks[ci], sliceDestinations);

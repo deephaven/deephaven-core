@@ -7,7 +7,7 @@
 
 package io.deephaven.engine.table.impl.sources.regioned;
 
-import io.deephaven.engine.chunk.Attributes;
+import io.deephaven.chunk.attributes.Values;
 
 import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
 
@@ -15,7 +15,7 @@ import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
  * Test class for {@link RegionedColumnSourceDouble}.
  */
 @SuppressWarnings("JUnit4AnnotatedMethodInJUnit3TestCase")
-public class TestRegionedColumnSourceDouble extends TstRegionedColumnSourcePrimitive<Double, Attributes.Values, ColumnRegionDouble<Attributes.Values>> {
+public class TestRegionedColumnSourceDouble extends TstRegionedColumnSourcePrimitive<Double, Values, ColumnRegionDouble<Values>> {
 
     public TestRegionedColumnSourceDouble() {
         super(ColumnRegionDouble.class);

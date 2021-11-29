@@ -4,15 +4,15 @@
 
 package io.deephaven.engine.table.impl.sources.regioned;
 
-import io.deephaven.engine.chunk.Attributes;
+import io.deephaven.chunk.attributes.Values;
 import org.junit.Test;
 
 /**
 * Base class for tests of {@link RegionedColumnSourceObject} implementations.
 */
 @SuppressWarnings({"JUnit4AnnotatedMethodInJUnit3TestCase"})
-public abstract class TstRegionedColumnSourceObject<DATA_TYPE> extends TstRegionedColumnSourcePrimitive<DATA_TYPE, Attributes.Values,
-        ColumnRegionObject<DATA_TYPE, Attributes.Values>> {
+public abstract class TstRegionedColumnSourceObject<DATA_TYPE> extends TstRegionedColumnSourcePrimitive<DATA_TYPE, Values,
+        ColumnRegionObject<DATA_TYPE, Values>> {
 
     TstRegionedColumnSourceObject(Value<?>[] values) {
         super(ColumnRegionObject.class);

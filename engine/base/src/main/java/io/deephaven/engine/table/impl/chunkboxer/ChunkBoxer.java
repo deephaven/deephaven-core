@@ -1,7 +1,7 @@
 package io.deephaven.engine.table.impl.chunkboxer;
 
-import io.deephaven.engine.chunk.*;
-import io.deephaven.engine.chunk.Attributes.Values;
+import io.deephaven.chunk.*;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.Context;
 import io.deephaven.util.type.TypeUtils;
 
@@ -58,7 +58,7 @@ public class ChunkBoxer {
     }
 
     private static abstract class BoxerCommon implements ChunkBoxer.BoxerKernel {
-        final WritableObjectChunk<Object, Attributes.Values> objectChunk;
+        final WritableObjectChunk<Object, Values> objectChunk;
 
         private BoxerCommon(int capacity) {
             objectChunk = WritableObjectChunk.makeWritableChunk(capacity);

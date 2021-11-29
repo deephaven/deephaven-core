@@ -470,7 +470,7 @@ def dateTimeCol(name, *data):
     Returns a ColumnHolder of type DateTime that can be used when creating in-memory tables.
     
     :param name: (java.lang.String) - name of the column
-    :param data: (io.deephaven.engine.time.DateTime...) - a list of values for the column
+    :param data: (io.deephaven.time.DateTime...) - a list of values for the column
     :return: (io.deephaven.engine.table.impl.util.ColumnHolder) a Deephaven ColumnHolder object
     """
     
@@ -829,7 +829,7 @@ def show(*args):
       
     *Overload 2*  
       :param source: (io.deephaven.engine.table.Table) - a Deephaven table object
-      :param timeZone: (io.deephaven.engine.time.TimeZone) - a TimeZone constant relative to which DateTime data should be adjusted
+      :param timeZone: (io.deephaven.time.TimeZone) - a TimeZone constant relative to which DateTime data should be adjusted
       :param columns: (java.lang.String...) - varargs of column names to display
       
     *Overload 3*  
@@ -840,20 +840,20 @@ def show(*args):
     *Overload 4*  
       :param source: (io.deephaven.engine.table.Table) - a Deephaven table object
       :param maxRowCount: (long) - the number of rows to return
-      :param timeZone: (io.deephaven.engine.time.TimeZone) - a TimeZone constant relative to which DateTime data should be adjusted
+      :param timeZone: (io.deephaven.time.TimeZone) - a TimeZone constant relative to which DateTime data should be adjusted
       :param columns: (java.lang.String...) - varargs of column names to display
       
     *Overload 5*  
       :param source: (io.deephaven.engine.table.Table) - a Deephaven table object
       :param maxRowCount: (long) - the number of rows to return
-      :param timeZone: (io.deephaven.engine.time.TimeZone) - a TimeZone constant relative to which DateTime data should be adjusted
+      :param timeZone: (io.deephaven.time.TimeZone) - a TimeZone constant relative to which DateTime data should be adjusted
       :param out: (java.io.PrintStream) - a PrintStream destination to which to print the data
       :param columns: (java.lang.String...) - varargs of column names to display
       
     *Overload 6*  
       :param source: (io.deephaven.engine.table.Table) - a Deephaven table object
       :param maxRowCount: (long) - the number of rows to return
-      :param timeZone: (io.deephaven.engine.time.TimeZone) - a TimeZone constant relative to which DateTime data should be adjusted
+      :param timeZone: (io.deephaven.time.TimeZone) - a TimeZone constant relative to which DateTime data should be adjusted
       :param delimiter: (java.lang.String) - a String value to use between printed values
       :param out: (java.io.PrintStream) - a PrintStream destination to which to print the data
       :param showRowSet: (boolean) - a boolean indicating whether to also print rowSet details
@@ -899,7 +899,7 @@ def showWithRowSet(*args):
     *Overload 3*  
       :param source: (io.deephaven.engine.table.Table) - a Deephaven table object
       :param maxRowCount: (long) - the number of rows to return
-      :param timeZone: (io.deephaven.engine.time.TimeZone) - a TimeZone constant relative to which DateTime data should be adjusted
+      :param timeZone: (io.deephaven.time.TimeZone) - a TimeZone constant relative to which DateTime data should be adjusted
       :param out: (java.io.PrintStream) - a PrintStream destination to which to print the data
       :param columns: (java.lang.String...) - varargs of column names to display
       
@@ -938,14 +938,14 @@ def string(*args):
       
     *Overload 3*  
       :param t: (io.deephaven.engine.table.Table) - a Deephaven table object
-      :param timeZone: (io.deephaven.engine.time.TimeZone) - a TimeZone constant relative to which DateTime data should be adjusted
+      :param timeZone: (io.deephaven.time.TimeZone) - a TimeZone constant relative to which DateTime data should be adjusted
       :param columns: (java.lang.String...) - varargs of columns to include in the result
       :return: (java.lang.String) a String
       
     *Overload 4*  
       :param t: (io.deephaven.engine.table.Table) - a Deephaven table object
       :param size: (int) - the number of rows to return
-      :param timeZone: (io.deephaven.engine.time.TimeZone) - a TimeZone constant relative to which DateTime data should be adjusted
+      :param timeZone: (io.deephaven.time.TimeZone) - a TimeZone constant relative to which DateTime data should be adjusted
       :param columns: (java.lang.String...) - varargs of columns to include in the result
       :return: (java.lang.String) a String
     """
@@ -981,12 +981,12 @@ def timeTable(*args):
       :return: (io.deephaven.engine.table.Table) time table
       
     *Overload 3*  
-      :param startTime: (io.deephaven.engine.time.DateTime) - start time for adding new rows
+      :param startTime: (io.deephaven.time.DateTime) - start time for adding new rows
       :param period: (java.lang.String) - time interval between new row additions
       :return: (io.deephaven.engine.table.Table) time table
       
     *Overload 4*  
-      :param startTime: (io.deephaven.engine.time.DateTime) - start time for adding new rows
+      :param startTime: (io.deephaven.time.DateTime) - start time for adding new rows
       :param period: (java.lang.String) - time interval between new row additions
       :param replayer: (io.deephaven.engine.table.impl.replay.ReplayerInterface) - data replayer
       :return: (io.deephaven.engine.table.Table) time table
@@ -1012,12 +1012,12 @@ def timeTable(*args):
       :return: (io.deephaven.engine.table.Table) time table
       
     *Overload 9*  
-      :param startTime: (io.deephaven.engine.time.DateTime) - start time for adding new rows
+      :param startTime: (io.deephaven.time.DateTime) - start time for adding new rows
       :param periodNanos: (long) - time interval between new row additions in nanoseconds.
       :return: (io.deephaven.engine.table.Table) time table
       
     *Overload 10*  
-      :param startTime: (io.deephaven.engine.time.DateTime) - start time for adding new rows
+      :param startTime: (io.deephaven.time.DateTime) - start time for adding new rows
       :param periodNanos: (long) - time interval between new row additions in nanoseconds.
       :param replayer: (io.deephaven.engine.table.impl.replay.ReplayerInterface) - data replayer
       :return: (io.deephaven.engine.table.Table) time table
@@ -1034,8 +1034,8 @@ def timeTable(*args):
       :return: (io.deephaven.engine.table.Table) time table
       
     *Overload 13*  
-      :param timeProvider: (io.deephaven.engine.time.TimeProvider) - the time provider
-      :param startTime: (io.deephaven.engine.time.DateTime) - start time for adding new rows
+      :param timeProvider: (io.deephaven.time.TimeProvider) - the time provider
+      :param startTime: (io.deephaven.time.DateTime) - start time for adding new rows
       :param periodNanos: (long) - time interval between new row additions in nanoseconds.
       :return: (io.deephaven.engine.table.Table) time table
     """

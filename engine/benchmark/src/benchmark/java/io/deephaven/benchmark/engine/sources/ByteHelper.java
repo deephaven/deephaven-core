@@ -3,9 +3,9 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.benchmark.engine.sources;
 
-import io.deephaven.engine.chunk.Attributes.OrderedRowKeys;
-import io.deephaven.engine.chunk.LongChunk;
-import io.deephaven.engine.chunk.WritableByteChunk;
+import io.deephaven.chunk.Attributes.OrderedRowKeys;
+import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.WritableByteChunk;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.WritableColumnSource;

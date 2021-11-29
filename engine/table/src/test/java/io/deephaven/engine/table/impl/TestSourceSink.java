@@ -1,10 +1,10 @@
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.engine.chunk.*;
-import io.deephaven.engine.chunk.util.hashing.ChunkEquals;
+import io.deephaven.chunk.*;
+import io.deephaven.chunk.util.hashing.ChunkEquals;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ChunkSink;
-import io.deephaven.engine.chunk.Attributes.Values;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSequenceFactory;
 import junit.framework.TestCase;

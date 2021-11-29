@@ -1,9 +1,9 @@
 package io.deephaven.engine.table.impl.sources.regioned;
 
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.impl.locations.ColumnLocation;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.SharedContext;
 import org.jetbrains.annotations.NotNull;
@@ -15,12 +15,12 @@ import javax.annotation.OverridingMethodsMustInvokeSuper;
  * Base class for a column of {@code DATA_TYPE} which is a wrapped {@code NATIVE_DATA_TYPE}. The column owns the
  * underlying native column and its resources.
  */
-abstract class RegionedColumnSourceReferencing<DATA_TYPE, ATTR extends Attributes.Values, NATIVE_DATA_TYPE, NATIVE_REGION_TYPE extends ColumnRegion<ATTR>>
+abstract class RegionedColumnSourceReferencing<DATA_TYPE, ATTR extends Values, NATIVE_DATA_TYPE, NATIVE_REGION_TYPE extends ColumnRegion<ATTR>>
         extends RegionedColumnSourceArray<DATA_TYPE, ATTR, ColumnRegionReferencing<ATTR, NATIVE_REGION_TYPE>>
         implements ColumnRegionReferencingImpl.Converter<ATTR> {
 
     @FunctionalInterface
-    interface NativeSourceCreator<DATA_TYPE, ATTR extends Attributes.Values, NATIVE_DATA_TYPE, NATIVE_REGION_TYPE extends ColumnRegion<ATTR>> {
+    interface NativeSourceCreator<DATA_TYPE, ATTR extends Values, NATIVE_DATA_TYPE, NATIVE_REGION_TYPE extends ColumnRegion<ATTR>> {
         NativeColumnSource<DATA_TYPE, ATTR, NATIVE_DATA_TYPE, NATIVE_REGION_TYPE> create(
                 RegionedColumnSourceBase<DATA_TYPE, ATTR, ColumnRegionReferencing<ATTR, NATIVE_REGION_TYPE>> outerSource);
     }
@@ -69,7 +69,7 @@ abstract class RegionedColumnSourceReferencing<DATA_TYPE, ATTR extends Attribute
         return makeFillContext(this, chunkCapacity, sharedContext);
     }
 
-    abstract static class NativeColumnSource<DATA_TYPE, ATTR extends Attributes.Values, NATIVE_DATA_TYPE, NATIVE_REGION_TYPE extends ColumnRegion<ATTR>>
+    abstract static class NativeColumnSource<DATA_TYPE, ATTR extends Values, NATIVE_DATA_TYPE, NATIVE_REGION_TYPE extends ColumnRegion<ATTR>>
             extends
             RegionedColumnSourceInner<NATIVE_DATA_TYPE, ATTR, NATIVE_REGION_TYPE, DATA_TYPE, ColumnRegionReferencing<ATTR, NATIVE_REGION_TYPE>>
             implements MakeRegion<ATTR, NATIVE_REGION_TYPE> {

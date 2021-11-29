@@ -8,23 +8,25 @@ import io.deephaven.api.RawString;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.filter.FilterAnd;
 import io.deephaven.api.filter.FilterOr;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.exceptions.CancellationException;
 import io.deephaven.engine.table.ShiftObliviousListener;
 import io.deephaven.engine.table.impl.QueryTableTestBase.TableComparator;
 import io.deephaven.engine.table.impl.chunkfilter.ChunkFilter;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.time.DateTimeUtils;
+import io.deephaven.rowset.chunkattributes.OrderedRowKeys;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.impl.select.MatchPairFactory;
 import io.deephaven.engine.table.lang.QueryScope;
-import io.deephaven.engine.time.DateTime;
+import io.deephaven.time.DateTime;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.impl.verify.TableAssertions;
 import io.deephaven.engine.table.impl.select.*;
 import io.deephaven.engine.table.impl.chunkfilter.IntRangeComparator;
 import io.deephaven.engine.updategraph.LogicalClock;
 import io.deephaven.engine.table.impl.sources.UnionRedirection;
-import io.deephaven.engine.chunk.*;
+import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.test.junit4.EngineCleanup;
@@ -682,8 +684,8 @@ public class QueryTableWhereTest {
         }
 
         @Override
-        public void filter(Chunk<? extends Attributes.Values> values, LongChunk<Attributes.OrderedRowKeys> keys,
-                WritableLongChunk<Attributes.OrderedRowKeys> results) {
+        public void filter(Chunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
+                           WritableLongChunk<OrderedRowKeys> results) {
             if (++invokes == 1) {
                 latch.countDown();
             }

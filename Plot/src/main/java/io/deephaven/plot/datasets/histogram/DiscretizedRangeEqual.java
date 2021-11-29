@@ -4,7 +4,7 @@
 
 package io.deephaven.plot.datasets.histogram;
 
-import io.deephaven.engine.function.DoubleFpPrimitives;
+import io.deephaven.function.DoubleFpPrimitives;
 
 import java.io.Serializable;
 

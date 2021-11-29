@@ -9,7 +9,7 @@ package io.deephaven.engine.table.impl.vector;
 
 import io.deephaven.base.ClampUtil;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.vector.DoubleVector;
+import io.deephaven.vector.DoubleVector;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.rowset.RowSet;

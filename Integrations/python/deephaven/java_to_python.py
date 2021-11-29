@@ -57,7 +57,7 @@ def _fillRectangular(javaArray, shape, basicType, convertNulls):
                 # convert each leaf
                 for i, leafElement in enumerate(arrElement):
                     ndElement[i] = convertJavaArray(leafElement.toArray(), convertNulls=convertNulls)
-            elif basicType == 'io.deephaven.engine.time.DateTime':
+            elif basicType == 'io.deephaven.time.DateTime':
                 # get long array
                 longs = jpy.get_type(__arrayConversionUtility__).translateArrayDateTimeToLong(arrElement)
                 ndElement[:] = longs
@@ -94,7 +94,7 @@ def _fillRectangular(javaArray, shape, basicType, convertNulls):
         out = numpy.empty(shape, dtype=numpy.object)
         fillValuesIn(0, out, javaArray)  # recursively fill
         return out
-    elif basicType == 'io.deephaven.engine.time.DateTime':
+    elif basicType == 'io.deephaven.time.DateTime':
         out = numpy.empty(shape, dtype='datetime64[ns]')
         fillValuesIn(0, out, javaArray)  # recursively fill
         return out
@@ -463,7 +463,7 @@ def columnToSeries(table, columnName, convertNulls=NULL_CONVERSION.ERROR):
     if nparray is None:
         return None
 
-    if columnType == 'io.deephaven.engine.time.DateTime':
+    if columnType == 'io.deephaven.time.DateTime':
         # NOTE: I think that we should localize to UTC, and then let the user convert that if they want to...
         #       Note that localizing does not actually effect the underlying numpy array,
         #       but only a pandas construct on top

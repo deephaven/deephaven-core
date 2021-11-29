@@ -1,9 +1,9 @@
 package io.deephaven.engine.table.impl.tuplesource;
 
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.Chunk;
-import io.deephaven.engine.chunk.ChunkType;
-import io.deephaven.engine.chunk.WritableChunk;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.ChunkType;
+import io.deephaven.chunk.WritableChunk;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.Context;
@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.stream.Stream;
 
 public abstract class AbstractTupleSource<TUPLE_TYPE>
-        implements TupleSource<TUPLE_TYPE>, DefaultChunkSource.WithPrev<Attributes.Values> {
+        implements TupleSource<TUPLE_TYPE>, DefaultChunkSource.WithPrev<Values> {
 
     private final ColumnSource[] columnSources;
     private final List<ColumnSource> listColumnSources;
@@ -43,11 +43,11 @@ public abstract class AbstractTupleSource<TUPLE_TYPE>
 
     @Override
     public final void fillChunk(@NotNull FillContext context,
-            @NotNull WritableChunk<? super Attributes.Values> destination, @NotNull RowSequence rowSequence) {
+                                @NotNull WritableChunk<? super Values> destination, @NotNull RowSequence rowSequence) {
         // noinspection unchecked
         TupleFillContext tupleFillContext = (TupleFillContext) context;
         GetContext[] getContexts = tupleFillContext.getContexts;
-        Chunk<Attributes.Values>[] chunks = tupleFillContext.chunks;
+        Chunk<Values>[] chunks = tupleFillContext.chunks;
 
         for (int i = 0; i < columnSources.length; ++i) {
             // noinspection unchecked
@@ -59,11 +59,11 @@ public abstract class AbstractTupleSource<TUPLE_TYPE>
 
     @Override
     public final void fillPrevChunk(@NotNull FillContext context,
-            @NotNull WritableChunk<? super Attributes.Values> destination, @NotNull RowSequence rowSequence) {
+                                    @NotNull WritableChunk<? super Values> destination, @NotNull RowSequence rowSequence) {
         // noinspection unchecked
         TupleFillContext tupleFillContext = (TupleFillContext) context;
         GetContext[] getContexts = tupleFillContext.getContexts;
-        Chunk<Attributes.Values>[] chunks = tupleFillContext.chunks;
+        Chunk<Values>[] chunks = tupleFillContext.chunks;
 
         for (int i = 0; i < columnSources.length; ++i) {
             // noinspection unchecked
@@ -73,13 +73,13 @@ public abstract class AbstractTupleSource<TUPLE_TYPE>
         convertChunks(destination, rowSequence.intSize(), chunks);
     }
 
-    protected abstract void convertChunks(@NotNull WritableChunk<? super Attributes.Values> destination, int chunkSize,
-            Chunk<Attributes.Values>[] chunks);
+    protected abstract void convertChunks(@NotNull WritableChunk<? super Values> destination, int chunkSize,
+                                          Chunk<Values>[] chunks);
 
     class TupleFillContext implements FillContext {
 
         GetContext[] getContexts;
-        Chunk<Attributes.Values>[] chunks;
+        Chunk<Values>[] chunks;
 
         TupleFillContext(int chunkCapacity, SharedContext sharedContext) {
 

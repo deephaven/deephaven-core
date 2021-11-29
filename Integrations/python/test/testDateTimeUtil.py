@@ -32,7 +32,7 @@ class TestDateTimeUtil(unittest.TestCase):
         Test suite for getting DateTime object representing the current time
         """
 
-        tz = jpy.get_type('io.deephaven.engine.time.TimeZone').TZ_NY
+        tz = jpy.get_type('io.deephaven.time.TimeZone').TZ_NY
         with self.subTest(msg="currentTime"):
             junk = DateTimeUtils.currentTime()
         with self.subTest(msg="currentDate"):
@@ -105,7 +105,7 @@ class TestDateTimeUtil(unittest.TestCase):
         with self.subTest(msg="getExcelDateTime(DateTime)"):
             junk = DateTimeUtils.getExcelDateTime(now)
 
-        tz = jpy.get_type('io.deephaven.engine.time.TimeZone').TZ_NY
+        tz = jpy.get_type('io.deephaven.time.TimeZone').TZ_NY
         with self.subTest(msg="getExcelDateTime(DateTime, DbTimeZone)"):
             junk = DateTimeUtils.getExcelDateTime(now, tz)
         with self.subTest(msg="getExcelDateTime(DateTime, TimeZone)"):
@@ -123,7 +123,7 @@ class TestDateTimeUtil(unittest.TestCase):
         with self.subTest(msg="getZonedDateTime(DateTime)"):
             junk = DateTimeUtils.getZonedDateTime(now)  # will have TZ_DEFAULT applied
 
-        tz = jpy.get_type('io.deephaven.engine.time.TimeZone').TZ_NY
+        tz = jpy.get_type('io.deephaven.time.TimeZone').TZ_NY
         with self.subTest(msg="getZonedDateTime(DateTime, DbTimeZone)"):
             zoned = DateTimeUtils.getZonedDateTime(now, tz)
         with self.subTest(msg="toDateTime(ZonedDateTime)"):
@@ -134,7 +134,7 @@ class TestDateTimeUtil(unittest.TestCase):
         Coverage test suite for various date part extractions
         """
 
-        tz = jpy.get_type('io.deephaven.engine.time.TimeZone').TZ_NY
+        tz = jpy.get_type('io.deephaven.time.TimeZone').TZ_NY
         # get current time
         now = DateTimeUtils.currentTime()
 
@@ -274,7 +274,7 @@ class TestDateTimeUtil(unittest.TestCase):
         Test suite for date formatting
         """
 
-        tz = jpy.get_type('io.deephaven.engine.time.TimeZone').TZ_NY
+        tz = jpy.get_type('io.deephaven.time.TimeZone').TZ_NY
         # get current time
         now = DateTimeUtils.currentTime()
 

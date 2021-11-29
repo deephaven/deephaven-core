@@ -21,7 +21,7 @@ public class ReplicateVectors {
     public static void main(String[] args) throws IOException {
         Map<String, Long> serialVersionUIDs = Collections.emptyMap();
 
-        final String charVectorJavaPath = "engine/vector/src/main/java/io/deephaven/engine/vector/CharVector.java";
+        final String charVectorJavaPath = "engine/vector/src/main/java/io/deephaven/vector/CharVector.java";
 
         ReplicatePrimitiveCode.charToAllButBooleanAndFloats(charVectorJavaPath, serialVersionUIDs);
 
@@ -42,13 +42,13 @@ public class ReplicateVectors {
         FileUtils.writeLines(doubleFile, doubleLines);
 
         ReplicatePrimitiveCode.charToAllButBoolean(
-                "engine/vector/src/main/java/io/deephaven/engine/vector/CharVectorDirect.java",
+                "engine/vector/src/main/java/io/deephaven/vector/CharVectorDirect.java",
                 serialVersionUIDs);
         ReplicatePrimitiveCode.charToAllButBoolean(
-                "engine/vector/src/main/java/io/deephaven/engine/vector/CharVectorSlice.java",
+                "engine/vector/src/main/java/io/deephaven/vector/CharVectorSlice.java",
                 serialVersionUIDs);
         ReplicatePrimitiveCode.charToAllButBoolean(
-                "engine/vector/src/main/java/io/deephaven/engine/vector/CharSubVector.java",
+                "engine/vector/src/main/java/io/deephaven/vector/CharSubVector.java",
                 serialVersionUIDs);
     }
 }

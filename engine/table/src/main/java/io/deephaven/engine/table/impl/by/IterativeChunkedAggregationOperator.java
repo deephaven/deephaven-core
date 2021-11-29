@@ -5,11 +5,11 @@
 package io.deephaven.engine.table.impl.by;
 
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.engine.chunk.*;
-import io.deephaven.engine.chunk.Attributes.ChunkLengths;
-import io.deephaven.engine.chunk.Attributes.ChunkPositions;
-import io.deephaven.engine.chunk.Attributes.RowKeys;
-import io.deephaven.engine.chunk.Attributes.Values;
+import io.deephaven.chunk.*;
+import io.deephaven.chunk.attributes.ChunkLengths;
+import io.deephaven.chunk.attributes.ChunkPositions;
+import io.deephaven.rowset.chunkattributes.RowKeys;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.table.ColumnSource;
@@ -45,10 +45,10 @@ public interface IterativeChunkedAggregationOperator {
      *        destination has been modified
      */
     void addChunk(BucketedContext context, Chunk<? extends Values> values,
-            LongChunk<? extends Attributes.RowKeys> inputRowKeys,
-            IntChunk<Attributes.RowKeys> destinations, IntChunk<ChunkPositions> startPositions,
-            IntChunk<ChunkLengths> length,
-            WritableBooleanChunk<Values> stateModified);
+                  LongChunk<? extends RowKeys> inputRowKeys,
+                  IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions,
+                  IntChunk<ChunkLengths> length,
+                  WritableBooleanChunk<Values> stateModified);
 
     /**
      * Remove a chunk of data previously aggregated into the result columns.
@@ -64,7 +64,7 @@ public interface IterativeChunkedAggregationOperator {
      *        destination has been modified
      */
     void removeChunk(BucketedContext context, Chunk<? extends Values> values,
-            LongChunk<? extends Attributes.RowKeys> inputRowKeys,
+            LongChunk<? extends RowKeys> inputRowKeys,
             IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
             WritableBooleanChunk<Values> stateModified);
 
@@ -116,12 +116,12 @@ public interface IterativeChunkedAggregationOperator {
      *        destination has been modified
      */
     default void shiftChunk(BucketedContext context, Chunk<? extends Values> previousValues,
-            Chunk<? extends Values> newValues,
-            LongChunk<? extends Attributes.RowKeys> preShiftRowKeys,
-            LongChunk<? extends Attributes.RowKeys> postShiftRowKeys,
-            IntChunk<Attributes.RowKeys> destinations, IntChunk<ChunkPositions> startPositions,
-            IntChunk<ChunkLengths> length,
-            WritableBooleanChunk<Values> stateModified) {
+                            Chunk<? extends Values> newValues,
+                            LongChunk<? extends RowKeys> preShiftRowKeys,
+                            LongChunk<? extends RowKeys> postShiftRowKeys,
+                            IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions,
+                            IntChunk<ChunkLengths> length,
+                            WritableBooleanChunk<Values> stateModified) {
         // we don't actually care
     }
 
@@ -154,7 +154,7 @@ public interface IterativeChunkedAggregationOperator {
      * @return true if the state was modified, false otherwise
      */
     boolean addChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values,
-            LongChunk<? extends Attributes.RowKeys> inputRowKeys, long destination);
+                     LongChunk<? extends RowKeys> inputRowKeys, long destination);
 
     /**
      * Remove a chunk of data previously aggregated into the result columns.
@@ -204,7 +204,7 @@ public interface IterativeChunkedAggregationOperator {
      */
     default boolean shiftChunk(SingletonContext context, Chunk<? extends Values> previousValues,
             Chunk<? extends Values> newValues,
-            LongChunk<? extends RowKeys> preShiftRowKeys, LongChunk<? extends Attributes.RowKeys> postShiftRowKeys,
+            LongChunk<? extends RowKeys> preShiftRowKeys, LongChunk<? extends RowKeys> postShiftRowKeys,
             long destination) {
         // we don't actually care
         return false;
@@ -219,7 +219,7 @@ public interface IterativeChunkedAggregationOperator {
      * @param destination the destination that was modified
      * @return true if the result should be considered modified
      */
-    default boolean modifyRowKeys(SingletonContext context, LongChunk<? extends Attributes.RowKeys> rowKeys,
+    default boolean modifyRowKeys(SingletonContext context, LongChunk<? extends RowKeys> rowKeys,
             long destination) {
         return false;
     }

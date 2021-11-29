@@ -2,6 +2,10 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
+import io.deephaven.chunk.attributes.Any;
+import io.deephaven.chunk.attributes.ChunkLengths;
+import io.deephaven.chunk.attributes.ChunkPositions;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.rowset.RowSequence;
@@ -14,6 +18,7 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.sort.LongMegaMergeKernel;
 import io.deephaven.engine.table.impl.sources.*;
 import io.deephaven.engine.table.impl.util.*;
+import io.deephaven.rowset.chunkattributes.RowKeys;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.engine.table.impl.sort.findruns.FindRunsKernel;
@@ -23,8 +28,7 @@ import io.deephaven.engine.table.impl.sort.LongSortKernel;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.sources.LongArraySource;
 import io.deephaven.engine.table.impl.sources.LongSparseArraySource;
-import io.deephaven.engine.chunk.*;
-import io.deephaven.engine.chunk.Attributes.*;
+import io.deephaven.chunk.*;
 import io.deephaven.engine.table.impl.sources.regioned.SymbolTableSource;
 import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.util.type.TypeUtils;
@@ -357,7 +361,7 @@ public class SortHelpers {
         final SparseSymbolMapping mapping;
 
         try (final WritableLongChunk<Values> originalSymbol = WritableLongChunk.makeWritableChunk(symbolEntries);
-                final WritableIntChunk<Values> mappedIndex = WritableIntChunk.makeWritableChunk(symbolEntries)) {
+             final WritableIntChunk<Values> mappedIndex = WritableIntChunk.makeWritableChunk(symbolEntries)) {
             final ColumnSource idSource = idMapping.getColumnSource(SymbolTableSource.ID_COLUMN_NAME);
             try (final ColumnSource.FillContext idContext = idSource.makeFillContext(symbolEntries)) {
                 idSource.fillChunk(idContext, originalSymbol, idMapping.getRowSet());

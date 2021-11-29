@@ -1,10 +1,11 @@
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.time.DateTimeUtils;
+import io.deephaven.time.DateTime;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.table.impl.locations.ColumnLocation;
 import io.deephaven.engine.table.impl.locations.TableKey;
 import io.deephaven.engine.table.impl.locations.TableLocation;
@@ -13,7 +14,6 @@ import io.deephaven.engine.table.impl.locations.impl.*;
 import io.deephaven.engine.table.impl.select.MatchFilter;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.table.impl.sources.regioned.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import org.jetbrains.annotations.NotNull;
@@ -127,49 +127,49 @@ public class TestPartitioningColumns {
                 }
 
                 @Override
-                public ColumnRegionChar<Attributes.Values> makeColumnRegionChar(
+                public ColumnRegionChar<Values> makeColumnRegionChar(
                         @NotNull ColumnDefinition<?> columnDefinition) {
                     throw new UnsupportedOperationException();
                 }
 
                 @Override
-                public ColumnRegionByte<Attributes.Values> makeColumnRegionByte(
+                public ColumnRegionByte<Values> makeColumnRegionByte(
                         @NotNull ColumnDefinition<?> columnDefinition) {
                     throw new UnsupportedOperationException();
                 }
 
                 @Override
-                public ColumnRegionShort<Attributes.Values> makeColumnRegionShort(
+                public ColumnRegionShort<Values> makeColumnRegionShort(
                         @NotNull ColumnDefinition<?> columnDefinition) {
                     throw new UnsupportedOperationException();
                 }
 
                 @Override
-                public ColumnRegionInt<Attributes.Values> makeColumnRegionInt(
+                public ColumnRegionInt<Values> makeColumnRegionInt(
                         @NotNull ColumnDefinition<?> columnDefinition) {
                     throw new UnsupportedOperationException();
                 }
 
                 @Override
-                public ColumnRegionLong<Attributes.Values> makeColumnRegionLong(
+                public ColumnRegionLong<Values> makeColumnRegionLong(
                         @NotNull ColumnDefinition<?> columnDefinition) {
                     throw new UnsupportedOperationException();
                 }
 
                 @Override
-                public ColumnRegionFloat<Attributes.Values> makeColumnRegionFloat(
+                public ColumnRegionFloat<Values> makeColumnRegionFloat(
                         @NotNull ColumnDefinition<?> columnDefinition) {
                     throw new UnsupportedOperationException();
                 }
 
                 @Override
-                public ColumnRegionDouble<Attributes.Values> makeColumnRegionDouble(
+                public ColumnRegionDouble<Values> makeColumnRegionDouble(
                         @NotNull ColumnDefinition<?> columnDefinition) {
                     throw new UnsupportedOperationException();
                 }
 
                 @Override
-                public <TYPE> ColumnRegionObject<TYPE, Attributes.Values> makeColumnRegionObject(
+                public <TYPE> ColumnRegionObject<TYPE, Values> makeColumnRegionObject(
                         @NotNull ColumnDefinition<TYPE> columnDefinition) {
                     throw new UnsupportedOperationException();
                 }

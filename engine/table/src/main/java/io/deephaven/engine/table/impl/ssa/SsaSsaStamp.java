@@ -1,8 +1,8 @@
 package io.deephaven.engine.table.impl.ssa;
 
-import io.deephaven.engine.chunk.*;
-import io.deephaven.engine.chunk.Attributes.RowKeys;
-import io.deephaven.engine.chunk.Attributes.Values;
+import io.deephaven.chunk.*;
+import io.deephaven.rowset.chunkattributes.RowKeys;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.impl.util.WritableRowRedirection;
 import io.deephaven.engine.table.impl.util.RowRedirection;
 import io.deephaven.engine.rowset.RowSetBuilderRandom;
@@ -64,12 +64,12 @@ public interface SsaSsaStamp {
             WritableRowRedirection rowRedirection, RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch);
 
     void processInsertion(SegmentedSortedArray leftSsa, Chunk<? extends Values> rightStampChunk,
-            LongChunk<Attributes.RowKeys> rightKeys, Chunk<Values> nextRightValue,
-            WritableRowRedirection rowRedirection,
-            RowSetBuilderRandom modifiedBuilder, boolean endsWithLastValue, boolean disallowExactMatch);
+                          LongChunk<RowKeys> rightKeys, Chunk<Values> nextRightValue,
+                          WritableRowRedirection rowRedirection,
+                          RowSetBuilderRandom modifiedBuilder, boolean endsWithLastValue, boolean disallowExactMatch);
 
     void findModified(SegmentedSortedArray leftSsa, RowRedirection rowRedirection,
-            Chunk<? extends Values> rightStampChunk, LongChunk<Attributes.RowKeys> rightStampIndices,
+            Chunk<? extends Values> rightStampChunk, LongChunk<RowKeys> rightStampIndices,
             RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch);
 
     void applyShift(SegmentedSortedArray leftSsa, Chunk<? extends Values> rightStampChunk,

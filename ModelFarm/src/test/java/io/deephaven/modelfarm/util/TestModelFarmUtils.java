@@ -7,9 +7,9 @@ package io.deephaven.modelfarm.util;
 import io.deephaven.base.testing.BaseArrayTestCase;
 import io.deephaven.base.verify.RequirementFailure;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.time.DateTimeUtils;
-import io.deephaven.engine.vector.*;
-import io.deephaven.engine.time.DateTime;
+import io.deephaven.time.DateTimeUtils;
+import io.deephaven.vector.*;
+import io.deephaven.time.DateTime;
 import io.deephaven.engine.util.TableTools;
 
 public class TestModelFarmUtils extends BaseArrayTestCase {

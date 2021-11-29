@@ -1,7 +1,7 @@
 {
- "className": "io.deephaven.engine.chunk.Attributes$Values",
+ "className": "io.deephaven.chunk.Attributes$Values",
  "methods": {},
- "path": "io.deephaven.engine.chunk.Attributes.Values",
+ "path": "io.deephaven.chunk.Attributes.Values",
  "text": "The chunk contains individual values.",
  "typeName": "interface"
 }

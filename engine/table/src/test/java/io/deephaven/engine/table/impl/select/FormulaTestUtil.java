@@ -2,10 +2,10 @@ package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.vector.ByteVectorDirect;
-import io.deephaven.engine.vector.ObjectVector;
-import io.deephaven.engine.vector.ObjectVectorDirect;
-import io.deephaven.engine.vector.IntVectorDirect;
+import io.deephaven.vector.ByteVectorDirect;
+import io.deephaven.vector.ObjectVector;
+import io.deephaven.vector.ObjectVectorDirect;
+import io.deephaven.vector.IntVectorDirect;
 import io.deephaven.engine.table.lang.QueryLibrary;
 import io.deephaven.engine.table.lang.QueryScope;
 import io.deephaven.util.type.ArrayTypeUtils;

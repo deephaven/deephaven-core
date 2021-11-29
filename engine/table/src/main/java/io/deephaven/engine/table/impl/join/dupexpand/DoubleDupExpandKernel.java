@@ -3,7 +3,9 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.table.impl.join.dupexpand;
 
-import io.deephaven.engine.chunk.*;
+import io.deephaven.chunk.*;
+import io.deephaven.chunk.attributes.Any;
+import io.deephaven.chunk.attributes.ChunkLengths;
 
 public class DoubleDupExpandKernel implements DupExpandKernel {
     public static final DoubleDupExpandKernel INSTANCE = new DoubleDupExpandKernel();
@@ -11,11 +13,11 @@ public class DoubleDupExpandKernel implements DupExpandKernel {
     private DoubleDupExpandKernel() {} // use through the instance
 
     @Override
-    public void expandDuplicates(int expandedSize, WritableChunk<? extends Attributes.Any> chunkToExpand, IntChunk<Attributes.ChunkLengths> keyRunLengths) {
+    public void expandDuplicates(int expandedSize, WritableChunk<? extends Any> chunkToExpand, IntChunk<ChunkLengths> keyRunLengths) {
         expandDuplicates(expandedSize, chunkToExpand.asWritableDoubleChunk(), keyRunLengths);
     }
 
-    public static void expandDuplicates(int expandedSize, WritableDoubleChunk<? extends Attributes.Any> chunkToExpand, IntChunk<Attributes.ChunkLengths> keyRunLengths) {
+    public static void expandDuplicates(int expandedSize, WritableDoubleChunk<? extends Any> chunkToExpand, IntChunk<ChunkLengths> keyRunLengths) {
         if (expandedSize == 0) {
             return;
         }

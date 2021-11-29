@@ -3,9 +3,10 @@ package io.deephaven.engine.table.impl.sources.regioned;
 import io.deephaven.base.verify.Require;
 
 import javax.annotation.OverridingMethodsMustInvokeSuper;
+
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.impl.locations.ColumnLocation;
-import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.util.annotations.TestUseOnly;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -15,12 +16,12 @@ import java.util.function.Supplier;
 /**
  * Base class for all {@link RegionedColumnSource} implementations with column regions stored in an array.
  */
-abstract class RegionedColumnSourceArray<DATA_TYPE, ATTR extends Attributes.Values, REGION_TYPE extends ColumnRegion<ATTR>>
+abstract class RegionedColumnSourceArray<DATA_TYPE, ATTR extends Values, REGION_TYPE extends ColumnRegion<ATTR>>
         extends RegionedColumnSourceBase<DATA_TYPE, ATTR, REGION_TYPE>
         implements MakeRegion<ATTR, REGION_TYPE> {
 
     @FunctionalInterface
-    interface MakeDeferred<ATTR extends Attributes.Values, REGION_TYPE extends ColumnRegion<ATTR>> {
+    interface MakeDeferred<ATTR extends Values, REGION_TYPE extends ColumnRegion<ATTR>> {
         REGION_TYPE make(final long pageMask, Supplier<REGION_TYPE> supplier);
     }
 
@@ -32,7 +33,7 @@ abstract class RegionedColumnSourceArray<DATA_TYPE, ATTR extends Attributes.Valu
     @SuppressWarnings("rawtypes")
     private static final ColumnRegion[] EMPTY = new ColumnRegion[0];
 
-    private static <ATTR extends Attributes.Values, REGION_TYPE extends ColumnRegion<ATTR>> REGION_TYPE[] allocateRegionArray(
+    private static <ATTR extends Values, REGION_TYPE extends ColumnRegion<ATTR>> REGION_TYPE[] allocateRegionArray(
             int length) {
         // noinspection unchecked
         return (REGION_TYPE[]) (length == 0 ? EMPTY : new ColumnRegion[length]);

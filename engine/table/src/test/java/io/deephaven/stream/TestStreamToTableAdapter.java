@@ -1,18 +1,19 @@
 package io.deephaven.stream;
 
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.time.DateTimeUtils;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.time.DateTime;
+import io.deephaven.time.DateTime;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.impl.SimpleListener;
 import io.deephaven.engine.table.impl.TstUtils;
-import io.deephaven.engine.chunk.*;
+import io.deephaven.chunk.*;
 import io.deephaven.util.BooleanUtils;
 import junit.framework.TestCase;
 import org.apache.commons.lang3.mutable.MutableBoolean;
@@ -58,11 +59,11 @@ public class TestStreamToTableAdapter {
         TstUtils.assertTableEquals(empty, result);
         TestCase.assertEquals(0, listener.getCount());
 
-        final WritableChunk<Attributes.Values>[] chunks = new WritableChunk[4];
-        WritableObjectChunk<Object, Attributes.Values> woc;
-        WritableIntChunk<Attributes.Values> wic;
-        WritableLongChunk<Attributes.Values> wlc;
-        WritableDoubleChunk<Attributes.Values> wdc;
+        final WritableChunk<Values>[] chunks = new WritableChunk[4];
+        WritableObjectChunk<Object, Values> woc;
+        WritableIntChunk<Values> wic;
+        WritableLongChunk<Values> wlc;
+        WritableDoubleChunk<Values> wdc;
 
         chunks[0] = woc = WritableObjectChunk.makeWritableChunk(2);
         chunks[1] = wic = WritableIntChunk.makeWritableChunk(2);
@@ -233,18 +234,18 @@ public class TestStreamToTableAdapter {
         TstUtils.assertTableEquals(empty, result);
         TestCase.assertEquals(0, listener.getCount());
 
-        final WritableChunk<Attributes.Values>[] chunks = new WritableChunk[3];
-        final WritableObjectChunk<Object, Attributes.Values> woc = WritableObjectChunk.makeWritableChunk(3);
+        final WritableChunk<Values>[] chunks = new WritableChunk[3];
+        final WritableObjectChunk<Object, Values> woc = WritableObjectChunk.makeWritableChunk(3);
         chunks[0] = woc;
         woc.set(0, "Collins");
         woc.set(1, "Armstrong");
         woc.set(2, "Aldrin");
-        final WritableByteChunk<Attributes.Values> wic = WritableByteChunk.makeWritableChunk(3);
+        final WritableByteChunk<Values> wic = WritableByteChunk.makeWritableChunk(3);
         chunks[1] = wic;
         wic.set(0, BooleanUtils.booleanAsByte(true));
         wic.set(1, BooleanUtils.booleanAsByte(false));
         wic.set(2, BooleanUtils.booleanAsByte(null));
-        final WritableLongChunk<Attributes.Values> wlc = WritableLongChunk.makeWritableChunk(3);
+        final WritableLongChunk<Values> wlc = WritableLongChunk.makeWritableChunk(3);
         chunks[2] = wlc;
         final DateTime dt1 = DateTimeUtils.convertDateTime("2021-04-28T12:00:00 NY");
         wlc.set(0, dt1.getNanos());
@@ -302,12 +303,12 @@ public class TestStreamToTableAdapter {
         TstUtils.assertTableEquals(empty, result);
         TestCase.assertEquals(0, listener.getCount());
 
-        final WritableChunk<Attributes.Values>[] chunks = new WritableChunk[2];
-        final WritableObjectChunk<String[], Attributes.Values> woc = WritableObjectChunk.makeWritableChunk(2);
+        final WritableChunk<Values>[] chunks = new WritableChunk[2];
+        final WritableObjectChunk<String[], Values> woc = WritableObjectChunk.makeWritableChunk(2);
         chunks[0] = woc;
         woc.set(0, new String[] {"Gagarin", "Tereshkova"});
         woc.set(1, new String[] {});
-        final WritableObjectChunk<int[], Attributes.Values> wic = WritableObjectChunk.makeWritableChunk(2);
+        final WritableObjectChunk<int[], Values> wic = WritableObjectChunk.makeWritableChunk(2);
         chunks[1] = wic;
         wic.set(0, new int[] {1, 2, 3});
         wic.set(1, new int[] {4, 5, 6});
@@ -365,8 +366,8 @@ public class TestStreamToTableAdapter {
         final long[] exVals = new long[4048];
         int pos = 0;
 
-        final WritableChunk<Attributes.Values>[] chunks = new WritableChunk[1];
-        WritableLongChunk<Attributes.Values> wlc;
+        final WritableChunk<Values>[] chunks = new WritableChunk[1];
+        WritableLongChunk<Values> wlc;
         chunks[0] = wlc = WritableLongChunk.makeWritableChunk(2048);
         wlc.setSize(2048);
         for (int ii = 0; ii < wlc.size(); ++ii) {

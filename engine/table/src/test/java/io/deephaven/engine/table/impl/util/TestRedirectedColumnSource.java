@@ -18,11 +18,12 @@ import io.deephaven.engine.table.ColumnSource;
 import static io.deephaven.engine.util.TableTools.intCol;
 import static io.deephaven.engine.table.impl.TstUtils.assertTableEquals;
 import static io.deephaven.engine.table.impl.TstUtils.prevTable;
-import static io.deephaven.engine.chunk.Attributes.Values;
 
-import io.deephaven.engine.chunk.ByteChunk;
+import io.deephaven.chunk.attributes.Values;
+
+import io.deephaven.chunk.ByteChunk;
 import io.deephaven.engine.table.ChunkSource;
-import io.deephaven.engine.chunk.WritableObjectChunk;
+import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.engine.table.impl.select.IncrementalReleaseFilter;
 
 import gnu.trove.list.TByteList;

@@ -3,19 +3,19 @@
  * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.parquet.table.pagestore.topage;
 
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.ChunkType;
+import io.deephaven.chunk.ChunkType;
+import io.deephaven.chunk.attributes.Any;
 import org.jetbrains.annotations.NotNull;
 
 import static io.deephaven.util.QueryConstants.NULL_SHORT;
 
-public class ToShortPageFromInt<ATTR extends Attributes.Any> implements ToPage<ATTR, short[]> {
+public class ToShortPageFromInt<ATTR extends Any> implements ToPage<ATTR, short[]> {
 
     private static final ToShortPageFromInt INSTANCE = new ToShortPageFromInt<>();
 
     private static final Integer NULL_SHORT_AS_INT = (int) NULL_SHORT;
 
-    public static <ATTR extends Attributes.Any> ToShortPageFromInt<ATTR> create(Class<?> nativeType) {
+    public static <ATTR extends Any> ToShortPageFromInt<ATTR> create(Class<?> nativeType) {
         if (nativeType == null || short.class.equals(nativeType)) {
             //noinspection unchecked
             return INSTANCE;

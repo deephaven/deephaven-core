@@ -6,8 +6,8 @@ package io.deephaven.engine.table.impl.sources.regioned;
 
 import io.deephaven.base.testing.BaseCachedJMockTestCase;
 import io.deephaven.base.verify.RequirementFailure;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.impl.locations.GroupingProvider;
-import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.engine.rowset.RowSet;
 import junit.framework.TestCase;
 import org.junit.After;
@@ -26,7 +26,7 @@ import static io.deephaven.util.QueryConstants.*;
  * Base class for testing {@link RegionedColumnSourceArray} implementations.
  */
 @SuppressWarnings({"AnonymousInnerClassMayBeStatic", "JUnit4AnnotatedMethodInJUnit3TestCase"})
-public abstract class TstRegionedColumnSourcePrimitive<DATA_TYPE, ATTR extends Attributes.Values, REGION_TYPE extends ColumnRegion<ATTR>>
+public abstract class TstRegionedColumnSourcePrimitive<DATA_TYPE, ATTR extends Values, REGION_TYPE extends ColumnRegion<ATTR>>
         extends BaseCachedJMockTestCase {
 
     static final byte[] TEST_BYTES =

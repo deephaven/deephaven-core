@@ -1,17 +1,18 @@
 package io.deephaven.engine.table.impl.by.ssmcountdistinct;
 
+import io.deephaven.chunk.attributes.ChunkLengths;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.impl.by.IterativeChunkedAggregationOperator;
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.ChunkType;
-import io.deephaven.engine.chunk.sized.SizedChunk;
-import io.deephaven.engine.chunk.sized.SizedIntChunk;
+import io.deephaven.chunk.ChunkType;
+import io.deephaven.chunk.sized.SizedChunk;
+import io.deephaven.chunk.sized.SizedIntChunk;
 import io.deephaven.engine.table.impl.ssms.SegmentedSortedMultiSet;
 
 public class SsmDistinctRollupContext implements IterativeChunkedAggregationOperator.SingletonContext {
     public final SegmentedSortedMultiSet.RemoveContext removeContext =
             SegmentedSortedMultiSet.makeRemoveContext(DistinctOperatorFactory.NODE_SIZE);
-    public final SizedChunk<Attributes.Values> valueCopy;
-    public final SizedIntChunk<Attributes.ChunkLengths> counts;
+    public final SizedChunk<Values> valueCopy;
+    public final SizedIntChunk<ChunkLengths> counts;
 
     public SsmDistinctRollupContext(ChunkType chunkType) {
         valueCopy = new SizedChunk<>(chunkType);

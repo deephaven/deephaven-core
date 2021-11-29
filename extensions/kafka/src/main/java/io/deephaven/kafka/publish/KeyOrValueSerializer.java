@@ -1,7 +1,7 @@
 package io.deephaven.kafka.publish;
 
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.ObjectChunk;
+import io.deephaven.chunk.ObjectChunk;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.util.SafeCloseable;
 
@@ -20,8 +20,8 @@ public interface KeyOrValueSerializer<SERIALIZED_TYPE> {
      *
      * @return A chunk of serialized data keys or values, with {@code ObjectChunk.size() == rowSequence.size()}
      */
-    ObjectChunk<SERIALIZED_TYPE, Attributes.Values> handleChunk(Context context, RowSequence rowSequence,
-            boolean previous);
+    ObjectChunk<SERIALIZED_TYPE, Values> handleChunk(Context context, RowSequence rowSequence,
+                                                     boolean previous);
 
     /**
      * Create a context for calling {@link #handleChunk(Context, RowSequence, boolean)}.

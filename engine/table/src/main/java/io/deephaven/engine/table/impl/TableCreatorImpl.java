@@ -6,8 +6,8 @@ import io.deephaven.engine.table.TableFactory;
 import io.deephaven.engine.table.impl.util.AppendOnlyArrayBackedMutableTable;
 import io.deephaven.engine.table.impl.util.KeyedArrayBackedMutableTable;
 import io.deephaven.engine.util.TableTools;
-import io.deephaven.engine.time.DateTime;
-import io.deephaven.engine.time.DateTimeUtils;
+import io.deephaven.time.DateTime;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.qst.TableCreator;
 import io.deephaven.qst.table.EmptyTable;
 import io.deephaven.qst.table.InMemoryAppendOnlyInputTable;
@@ -53,7 +53,7 @@ public enum TableCreatorImpl implements TableCreator<Table> {
 
     @Override
     public final Table of(TimeTable timeTable) {
-        final io.deephaven.engine.time.TimeProvider provider = TimeProviderAdapter
+        final io.deephaven.time.TimeProvider provider = TimeProviderAdapter
                 .of(timeTable.timeProvider());
         final DateTime firstTime = timeTable.startTime().map(DateTime::of).orElse(null);
         return TableTools.timeTable(provider, firstTime, timeTable.interval().toNanos());
@@ -130,15 +130,15 @@ public enum TableCreatorImpl implements TableCreator<Table> {
 
     static class TimeProviderAdapter implements TimeProvider.Visitor {
 
-        public static io.deephaven.engine.time.TimeProvider of(TimeProvider provider) {
+        public static io.deephaven.time.TimeProvider of(TimeProvider provider) {
             return provider.walk(new TimeProviderAdapter()).getOut();
         }
 
-        private static final io.deephaven.engine.time.TimeProvider SYSTEM_PROVIDER = DateTimeUtils::currentTime;
+        private static final io.deephaven.time.TimeProvider SYSTEM_PROVIDER = DateTimeUtils::currentTime;
 
-        private io.deephaven.engine.time.TimeProvider out;
+        private io.deephaven.time.TimeProvider out;
 
-        public io.deephaven.engine.time.TimeProvider getOut() {
+        public io.deephaven.time.TimeProvider getOut() {
             return Objects.requireNonNull(out);
         }
 

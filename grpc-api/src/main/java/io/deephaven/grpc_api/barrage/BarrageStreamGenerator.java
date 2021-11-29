@@ -14,6 +14,7 @@ import io.deephaven.barrage.flatbuf.BarrageMessageType;
 import io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
 import io.deephaven.barrage.flatbuf.BarrageModColumnMetadata;
 import io.deephaven.barrage.flatbuf.BarrageUpdateMetadata;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.impl.ExternalizableRowSetUtils;
@@ -22,14 +23,13 @@ import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.engine.table.impl.util.*;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.util.DefensiveDrainable;
-import io.deephaven.engine.chunk.WritableLongChunk;
-import io.deephaven.engine.chunk.WritableObjectChunk;
+import io.deephaven.chunk.WritableLongChunk;
+import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.grpc_api.util.MessageHelper;
 import org.apache.arrow.flatbuf.Buffer;
 import org.apache.arrow.flatbuf.FieldNode;
 import org.apache.arrow.flatbuf.RecordBatch;
 import io.deephaven.engine.table.TableDefinition;
-import io.deephaven.engine.chunk.Attributes;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.extensions.barrage.chunk.ChunkInputStreamGenerator;
@@ -325,9 +325,9 @@ public class BarrageStreamGenerator implements
         final long numRows;
         final int nodesOffset;
         final int buffersOffset;
-        try (final WritableObjectChunk<ChunkInputStreamGenerator.FieldNodeInfo, Attributes.Values> nodeOffsets =
+        try (final WritableObjectChunk<ChunkInputStreamGenerator.FieldNodeInfo, Values> nodeOffsets =
                 WritableObjectChunk.makeWritableChunk(addColumnData.length);
-                final WritableLongChunk<Attributes.Values> bufferInfos =
+                final WritableLongChunk<Values> bufferInfos =
                         WritableLongChunk.makeWritableChunk(addColumnData.length * 3)) {
             nodeOffsets.setSize(0);
             bufferInfos.setSize(0);

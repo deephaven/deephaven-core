@@ -4,7 +4,7 @@
 
 package io.deephaven.engine.table.impl.sources;
 
-import io.deephaven.engine.stringset.LongBitmapStringSet;
+import io.deephaven.stringset.LongBitmapStringSet;
 import io.deephaven.engine.table.ColumnSource;
 
 import java.util.function.ToIntFunction;

@@ -1,7 +1,7 @@
 package io.deephaven.parquet.table.pagestore.topage;
 
-import io.deephaven.engine.chunk.Attributes.Any;
-import io.deephaven.engine.chunk.ChunkType;
+import io.deephaven.chunk.attributes.Any;
+import io.deephaven.chunk.ChunkType;
 import io.deephaven.util.codec.ObjectCodec;
 import org.apache.parquet.column.Dictionary;
 import org.apache.parquet.io.api.Binary;

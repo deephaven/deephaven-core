@@ -5,14 +5,14 @@
 package io.deephaven.engine.rowset.impl;
 
 import io.deephaven.engine.rowset.*;
+import io.deephaven.rowset.chunkattributes.RowKeys;
 import io.deephaven.util.datastructures.LongAbortableConsumer;
 import io.deephaven.util.datastructures.SizeException;
-import io.deephaven.engine.chunk.Attributes;
-import io.deephaven.engine.chunk.Attributes.OrderedRowKeys;
-import io.deephaven.engine.chunk.Attributes.OrderedRowKeyRanges;
-import io.deephaven.engine.chunk.LongChunk;
-import io.deephaven.engine.chunk.OrderedChunkUtils;
-import io.deephaven.engine.chunk.WritableLongChunk;
+import io.deephaven.rowset.chunkattributes.OrderedRowKeys;
+import io.deephaven.rowset.chunkattributes.OrderedRowKeyRanges;
+import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.OrderedChunkUtils;
+import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.util.datastructures.LongRangeAbortableConsumer;
 
 public class RowSequenceKeyRangesChunkImpl implements RowSequence {
@@ -40,12 +40,12 @@ public class RowSequenceKeyRangesChunkImpl implements RowSequence {
         }
     }
 
-    private RowSequenceKeyRangesChunkImpl(final WritableLongChunk<Attributes.OrderedRowKeyRanges> backingChunkToOwn) {
+    private RowSequenceKeyRangesChunkImpl(final WritableLongChunk<OrderedRowKeyRanges> backingChunkToOwn) {
         this(backingChunkToOwn, backingChunkToOwn);
     }
 
     public static RowSequenceKeyRangesChunkImpl makeByTaking(
-            final WritableLongChunk<Attributes.OrderedRowKeyRanges> backingChunkToOwn) {
+            final WritableLongChunk<OrderedRowKeyRanges> backingChunkToOwn) {
         return new RowSequenceKeyRangesChunkImpl(backingChunkToOwn);
     }
 
@@ -57,7 +57,7 @@ public class RowSequenceKeyRangesChunkImpl implements RowSequence {
         return new RowSequenceKeyRangesChunkImpl(backingChunk);
     }
 
-    private RowSequenceKeyRangesChunkImpl(final LongChunk<Attributes.OrderedRowKeyRanges> backingChunk,
+    private RowSequenceKeyRangesChunkImpl(final LongChunk<OrderedRowKeyRanges> backingChunk,
             final WritableLongChunk<OrderedRowKeyRanges> toReleaseChunk,
             final long minKeyValue,
             final long maxKeyValue) {
@@ -90,7 +90,7 @@ public class RowSequenceKeyRangesChunkImpl implements RowSequence {
 
     }
 
-    private RowSequenceKeyRangesChunkImpl(final WritableLongChunk<Attributes.OrderedRowKeyRanges> backingChunkToOwn,
+    private RowSequenceKeyRangesChunkImpl(final WritableLongChunk<OrderedRowKeyRanges> backingChunkToOwn,
             final long minKeyValue,
             final long maxKeyValue) {
         this(backingChunkToOwn, backingChunkToOwn, minKeyValue, maxKeyValue);
@@ -373,7 +373,7 @@ public class RowSequenceKeyRangesChunkImpl implements RowSequence {
     }
 
     @Override
-    public void fillRowKeyChunk(final WritableLongChunk<? extends Attributes.RowKeys> chunkToFill) {
+    public void fillRowKeyChunk(final WritableLongChunk<? extends RowKeys> chunkToFill) {
         chunkToFill.setSize(0);
         perKeyIndex((v) -> {
             chunkToFill.add(v);

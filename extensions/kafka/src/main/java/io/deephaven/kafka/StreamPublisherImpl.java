@@ -1,7 +1,7 @@
 package io.deephaven.kafka;
 
-import io.deephaven.engine.chunk.ChunkType;
-import io.deephaven.engine.chunk.WritableChunk;
+import io.deephaven.chunk.ChunkType;
+import io.deephaven.chunk.WritableChunk;
 import io.deephaven.stream.StreamConsumer;
 import io.deephaven.stream.StreamPublisher;
 import org.jetbrains.annotations.NotNull;

@@ -1,6 +1,7 @@
 package io.deephaven.engine.table.impl;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.datastructures.util.CollectionUtil;
 import com.google.common.collect.Maps;
 import io.deephaven.engine.table.ModifiedColumnSet;
@@ -10,7 +11,7 @@ import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.select.MatchPairFactory;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.chunk.*;
+import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.test.types.OutOfBandTest;
@@ -590,8 +591,8 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         final int CHUNK_SIZE = 4;
         final ColumnSource<Integer> column = jt.getColumnSource("I", int.class);
         try (final ColumnSource.FillContext context = column.makeFillContext(CHUNK_SIZE);
-                final WritableIntChunk<Attributes.Values> dest = WritableIntChunk.makeWritableChunk(CHUNK_SIZE);
-                final ResettableWritableIntChunk<Attributes.Values> rdest =
+             final WritableIntChunk<Values> dest = WritableIntChunk.makeWritableChunk(CHUNK_SIZE);
+             final ResettableWritableIntChunk<Values> rdest =
                         ResettableWritableIntChunk.makeResettableChunk()) {
 
             rdest.resetFromChunk(dest, 0, 4);

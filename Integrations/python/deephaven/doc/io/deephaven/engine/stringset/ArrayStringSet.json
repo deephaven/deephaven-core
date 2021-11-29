@@ -1,5 +1,5 @@
 {
- "className": "io.deephaven.engine.stringset.ArrayStringSet",
+ "className": "io.deephaven.stringset.ArrayStringSet",
  "methods": {
   "contains": ":param value: java.lang.String\n:return: boolean",
   "containsAll": ":param values: java.lang.String...\n:return: boolean",
@@ -14,7 +14,7 @@
   "toString": ":return: java.lang.String",
   "values": ":return: java.lang.String[]"
  },
- "path": "io.deephaven.engine.stringset.ArrayStringSet",
+ "path": "io.deephaven.stringset.ArrayStringSet",
  "text": "Array-backed StringSet implementation.",
  "typeName": "class"
 }

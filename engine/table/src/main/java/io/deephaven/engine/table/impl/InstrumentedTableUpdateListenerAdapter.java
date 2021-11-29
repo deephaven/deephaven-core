@@ -8,7 +8,7 @@ import io.deephaven.base.cache.RetentionCache;
 import io.deephaven.base.verify.Require;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableUpdate;
-import io.deephaven.engine.time.DateTimeUtils;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.liveness.Liveness;
 import io.deephaven.engine.table.impl.util.AsyncErrorLogger;
 import io.deephaven.engine.table.impl.util.AsyncClientErrorNotifier;

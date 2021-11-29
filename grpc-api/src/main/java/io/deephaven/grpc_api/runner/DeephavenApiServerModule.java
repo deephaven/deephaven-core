@@ -4,7 +4,7 @@ import dagger.Module;
 import dagger.Provides;
 import dagger.multibindings.ElementsIntoSet;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
-import io.deephaven.engine.chunk.util.pools.MultiChunkPool;
+import io.deephaven.chunk.util.pools.MultiChunkPool;
 import io.deephaven.grpc_api.appmode.AppMode;
 import io.deephaven.grpc_api.appmode.AppModeModule;
 import io.deephaven.grpc_api.arrow.ArrowModule;

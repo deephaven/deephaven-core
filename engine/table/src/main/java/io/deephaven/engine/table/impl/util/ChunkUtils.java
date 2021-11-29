@@ -5,8 +5,9 @@
 package io.deephaven.engine.table.impl.util;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.engine.chunk.*;
-import io.deephaven.engine.chunk.Attributes.Any;
+import io.deephaven.chunk.*;
+import io.deephaven.chunk.attributes.Any;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.table.ChunkSink;
 import io.deephaven.engine.table.ChunkSource;
@@ -23,7 +24,7 @@ public class ChunkUtils {
     /**
      * Produce a pretty key for error messages from an element within parallel chunks.
      */
-    public static String extractKeyStringFromChunks(ChunkType[] keyChunkTypes, Chunk<Attributes.Values>[] chunks,
+    public static String extractKeyStringFromChunks(ChunkType[] keyChunkTypes, Chunk<Values>[] chunks,
             int chunkPosition) {
         final StringBuilder builder = new StringBuilder();
         if (chunks.length != 1) {
@@ -45,7 +46,7 @@ public class ChunkUtils {
     /**
      * Produce a pretty key for error messages from an element within parallel chunks.
      */
-    public static String extractKeyStringFromChunk(ChunkType keyChunkType, Chunk<? extends Attributes.Values> chunk,
+    public static String extractKeyStringFromChunk(ChunkType keyChunkType, Chunk<? extends Values> chunk,
             int chunkPosition) {
         final StringBuilder builder = new StringBuilder();
         extractStringOne(chunkPosition, builder, keyChunkType, chunk);
@@ -55,12 +56,12 @@ public class ChunkUtils {
     /**
      * Produce a pretty key for error messages from an element within parallel chunks.
      */
-    public static String extractKeyStringFromChunk(Chunk<? extends Attributes.Values> chunk, int chunkPosition) {
+    public static String extractKeyStringFromChunk(Chunk<? extends Values> chunk, int chunkPosition) {
         return extractKeyStringFromChunk(chunk.getChunkType(), chunk, chunkPosition);
     }
 
     private static void extractStringOne(int chunkPosition, StringBuilder builder, ChunkType keyChunkType,
-            Chunk<? extends Attributes.Values> chunk) {
+            Chunk<? extends Values> chunk) {
         switch (keyChunkType) {
             case Boolean:
                 builder.append(chunk.asBooleanChunk().get(chunkPosition));
@@ -368,9 +369,9 @@ public class ChunkUtils {
      * @param destAllKeys The destination keys. It is ok for srcAllKeys == destAllKeys.
      * @param usePrev Should we read previous values from src
      */
-    public static void copyData(ChunkSource.WithPrev<? extends Attributes.Values> src, RowSequence srcAllKeys,
-            WritableColumnSource<?> dest,
-            RowSequence destAllKeys, boolean usePrev) {
+    public static void copyData(ChunkSource.WithPrev<? extends Values> src, RowSequence srcAllKeys,
+                                WritableColumnSource<?> dest,
+                                RowSequence destAllKeys, boolean usePrev) {
         if (src == dest) {
             throw new UnsupportedOperationException("This method isn't safe when src == dest");
         }
@@ -394,7 +395,7 @@ public class ChunkUtils {
                 final RowSequence destNextKeys = destIter.getNextRowSequenceWithLength(minSize);
                 Assert.eq(srcNextKeys.size(), "srcNextKeys.size()", destNextKeys.size(), "destNextKeys.size()");
 
-                final Chunk<? extends Attributes.Values> chunk =
+                final Chunk<? extends Values> chunk =
                         usePrev ? src.getPrevChunk(srcContext, srcNextKeys) : src.getChunk(srcContext, srcNextKeys);
                 dest.fillFromChunk(destContext, chunk, destNextKeys);
             }
@@ -412,9 +413,9 @@ public class ChunkUtils {
      * @param destAllKeys The destination keys. It is ok for srcAllKeys == destAllKeys.
      * @param usePrev Should we read previous values from src
      */
-    public static void copyData(ChunkSource.WithPrev<? extends Attributes.Values>[] sources, RowSequence srcAllKeys,
-            WritableColumnSource<?>[] destinations,
-            RowSequence destAllKeys, boolean usePrev) {
+    public static void copyData(ChunkSource.WithPrev<? extends Values>[] sources, RowSequence srcAllKeys,
+                                WritableColumnSource<?>[] destinations,
+                                RowSequence destAllKeys, boolean usePrev) {
         if (srcAllKeys.size() != destAllKeys.size()) {
             final String msg = String.format("Expected srcAllKeys.size() == destAllKeys.size(), but got %d and %d",
                     srcAllKeys.size(), destAllKeys.size());
@@ -459,7 +460,7 @@ public class ChunkUtils {
 
                 sharedContext.reset();
                 for (int cc = 0; cc < sources.length; ++cc) {
-                    final Chunk<? extends Attributes.Values> chunk =
+                    final Chunk<? extends Values> chunk =
                             usePrev ? sources[cc].getPrevChunk(sourceContexts[cc], srcNextKeys)
                                     : sources[cc].getChunk(sourceContexts[cc], srcNextKeys);
                     destinations[cc].fillFromChunk(destContexts[cc], chunk, destNextKeys);
@@ -468,7 +469,7 @@ public class ChunkUtils {
         }
     }
 
-    public static <T extends Attributes.Values> void fillWithNullValue(ChunkSink<T> dest, RowSequence allKeys) {
+    public static <T extends Values> void fillWithNullValue(ChunkSink<T> dest, RowSequence allKeys) {
         final int minSize = Math.min(allKeys.intSize(), COPY_DATA_CHUNK_SIZE);
         if (minSize == 0) {
             return;
@@ -492,7 +493,7 @@ public class ChunkUtils {
      *
      * @return a chunk of integers from 0 to chunkSize - 1
      */
-    public static <T extends Attributes.Any> WritableIntChunk<T> makeInOrderIntChunk(int chunkSize) {
+    public static <T extends Any> WritableIntChunk<T> makeInOrderIntChunk(int chunkSize) {
         final WritableIntChunk<T> inOrderChunk = WritableIntChunk.makeWritableChunk(chunkSize);
         fillInOrder(inOrderChunk);
         return inOrderChunk;
