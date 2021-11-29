@@ -23,6 +23,11 @@ public interface Filter extends Serializable {
         return expressions.stream().map(RawString::of).collect(Collectors.toList());
     }
 
+    static Collection<? extends Filter> from_(String... expressions) {
+        // This is for Python to invoke "from" without syntax errors.
+        return from(expressions);
+    }
+
     static FilterIsNull isNull(ColumnName column) {
         return FilterIsNull.of(column);
     }

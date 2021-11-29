@@ -8,11 +8,13 @@
 ##############################################################################
 
 import sys
-import tempfile
-import os
+import jpy
 
 from deephaven import TableTools, Aggregation, Plot, Calendars
 from deephaven.Plot import figure_wrapper
+
+_JTWD = jpy.get_type("io.deephaven.engine.table.impl.TableWithDefaults")
+_JAggHolder = jpy.get_type("io.deephaven.engine.table.impl.TableWithDefaults$AggHolder")
 
 if sys.version_info[0] < 3:
     import unittest2 as unittest
@@ -150,10 +152,12 @@ class TestFigureWrapper(unittest.TestCase):
         figure = figure_wrapper.FigureWrapper(1, 1)
         with self.subTest("catErrorBar"):
             figure = figure.catErrorBar("Cat Error Bar",
-                                        self.table.aggBy([
-                                            Aggregation.AggAvg("avgPrice=price"),
-                                            Aggregation.AggMin("minPrice=price"),
-                                            Aggregation.AggMax("maxPrice=price")], "Sym"),
+                                        _JTWD.aggBy(self.table,
+                                                    _JAggHolder(*[
+                                                        Aggregation.AggAvg("avgPrice=price"),
+                                                        Aggregation.AggMin("minPrice=price"),
+                                                        Aggregation.AggMax("maxPrice=price")]),
+                                                    "Sym"),
                                         "Sym", "avgPrice", "minPrice", "maxPrice")
         del figure
 

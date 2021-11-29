@@ -12,7 +12,7 @@ import jpy
 import numpy
 import pandas
 
-from .conversion_utils import _nullValues, NULL_CHAR, NULL_CONVERSION, _arrayTypes, \
+from .conversion_utils import _nullValues, NULL_BYTE, NULL_CHAR, NULL_CONVERSION, _arrayTypes, \
     _isStr, _isVectorType, _isVector, _isJavaArray, _getJavaArrayDetails
 from .TableTools import emptyTable
 
@@ -140,12 +140,12 @@ def _handleNulls(nparray, javaArrayType, convertNulls):
         if convertNulls == NULL_CONVERSION.PASS:
             return nparray > 0  # any instance of None got converted to False
         if convertNulls == NULL_CONVERSION.ERROR:
-            if -1 in nparray:
+            if NULL_BYTE in nparray:
                 raise ValueError("The input java.lang.Boolean array contains a null element, and convertNulls=ERROR")
             else:
                 return nparray > 0
         if convertNulls == NULL_CONVERSION.CONVERT:
-            if -1 in nparray:
+            if NULL_BYTE in nparray:
                 newarray = numpy.full(nparray.shape, None, dtype=numpy.object)
                 numpy.copyto(newarray, (nparray > 0), casting='unsafe', where=(nparray >= 0))
                 return newarray

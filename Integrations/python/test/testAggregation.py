@@ -7,8 +7,12 @@
 ##############################################################################
 
 import sys
+import jpy
 
 from deephaven import TableTools, Aggregation
+
+_JTWD = jpy.get_type("io.deephaven.engine.table.impl.TableWithDefaults")
+_JAggHolder = jpy.get_type("io.deephaven.engine.table.impl.TableWithDefaults$AggHolder")
 
 if sys.version_info[0] < 3:
     import unittest2 as unittest
@@ -29,7 +33,7 @@ class TestAggregation(unittest.TestCase):
         tab = tab.update("dumb=(int)(i/5)", "var=(int)i", "weights=(double)1.0/(i+1)")
 
         # try the various aggregate methods - just a coverage test
-        tab.aggBy([
+        _JTWD.aggBy(tab, _JAggHolder(*[
             Aggregation.AggGroup("aggGroup=var"),
             Aggregation.AggAvg("aggAvg=var"),
             Aggregation.AggCount("aggCount"),
@@ -43,6 +47,6 @@ class TestAggregation(unittest.TestCase):
             Aggregation.AggSum("aggSum=var"),
             Aggregation.AggAbsSum("aggAbsSum=var"),
             Aggregation.AggVar("aggVar=var"),
-            Aggregation.AggWAvg("var", "weights")], "dumb")
+            Aggregation.AggWAvg("var", "weights")]), "dumb")
         # TODO: AggFormula - this is terrible
         del tab
