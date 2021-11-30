@@ -405,11 +405,11 @@ public class SyncTableFilter {
         // TODO(1606): migrate to using TupleSource.fillChunk
         try (final WritableObjectChunk<Object, Any> valuesChunk =
                 WritableObjectChunk.makeWritableChunk(CHUNK_SIZE);
-             final WritableLongChunk<Values> idChunk = WritableLongChunk.makeWritableChunk(CHUNK_SIZE);
-             final WritableLongChunk<OrderedRowKeys> keyIndicesChunk =
+                final WritableLongChunk<Values> idChunk = WritableLongChunk.makeWritableChunk(CHUNK_SIZE);
+                final WritableLongChunk<OrderedRowKeys> keyIndicesChunk =
                         WritableLongChunk.makeWritableChunk(CHUNK_SIZE);
-             final RowSequence.Iterator rsIt = rowSet.getRowSequenceIterator();
-             final ColumnSource.FillContext fillContext = idSource.makeFillContext(CHUNK_SIZE)) {
+                final RowSequence.Iterator rsIt = rowSet.getRowSequenceIterator();
+                final ColumnSource.FillContext fillContext = idSource.makeFillContext(CHUNK_SIZE)) {
             while (rsIt.hasMore()) {
                 final RowSequence chunkOk = rsIt.getNextRowSequenceWithLength(CHUNK_SIZE);
                 chunkOk.fillRowKeyChunk(keyIndicesChunk);

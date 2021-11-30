@@ -30,23 +30,23 @@ import java.util.stream.Collectors;
 
 public abstract class BaseTestByteTimSortKernel extends TestTimSortKernel {
     // region getJavaComparator
-    static Comparator<ByteLongTuple> getJavaComparator() {
+    public static Comparator<ByteLongTuple> getJavaComparator() {
         return Comparator.comparing(ByteLongTuple::getFirstElement);
     }
     // endregion getJavaComparator
 
     // region getJavaMultiComparator
-    static Comparator<ByteLongLongTuple> getJavaMultiComparator() {
+    public static Comparator<ByteLongLongTuple> getJavaMultiComparator() {
         return Comparator.comparing(ByteLongLongTuple::getFirstElement).thenComparing(ByteLongLongTuple::getSecondElement);
     }
     // endregion getJavaMultiComparator
 
+    public static class ByteSortKernelStuff extends SortKernelStuff<ByteLongTuple> {
 
-    static class ByteSortKernelStuff extends SortKernelStuff<ByteLongTuple> {
-        final WritableByteChunk<Any> byteChunk;
+        private final WritableByteChunk<Any> byteChunk;
         private final ByteLongTimsortKernel.ByteLongSortKernelContext context;
 
-        ByteSortKernelStuff(List<ByteLongTuple> javaTuples) {
+        public ByteSortKernelStuff(List<ByteLongTuple> javaTuples) {
             super(javaTuples.size());
             final int size = javaTuples.size();
             byteChunk = WritableByteChunk.makeWritableChunk(size);
@@ -56,7 +56,7 @@ public abstract class BaseTestByteTimSortKernel extends TestTimSortKernel {
         }
 
         @Override
-        void run() {
+        public void run() {
             ByteLongTimsortKernel.sort(context, rowKeys, byteChunk);
         }
 
@@ -67,7 +67,8 @@ public abstract class BaseTestByteTimSortKernel extends TestTimSortKernel {
     }
 
     public static class BytePartitionKernelStuff extends PartitionKernelStuff<ByteLongTuple> {
-        final WritableByteChunk valuesChunk;
+
+        private final WritableByteChunk valuesChunk;
         private final BytePartitionKernel.PartitionKernelContext context;
         private final RowSet rowSet;
         private final ColumnSource<Byte> columnSource;
@@ -115,9 +116,11 @@ public abstract class BaseTestByteTimSortKernel extends TestTimSortKernel {
         }
     }
 
-    static class ByteMergeStuff extends MergeStuff<ByteLongTuple> {
-        final byte arrayValues[];
-        ByteMergeStuff(List<ByteLongTuple> javaTuples) {
+    public static class ByteMergeStuff extends MergeStuff<ByteLongTuple> {
+
+        private final byte arrayValues[];
+
+        public ByteMergeStuff(List<ByteLongTuple> javaTuples) {
             super(javaTuples);
             arrayValues = new byte[javaTuples.size()];
             for (int ii = 0; ii < javaTuples.size(); ++ii) {
@@ -125,7 +128,7 @@ public abstract class BaseTestByteTimSortKernel extends TestTimSortKernel {
             }
         }
 
-        void run() {
+        public void run() {
             // region mergesort
             MergeSort.mergeSort(posarray, posarray2, 0, arrayValues.length, 0, (pos1, pos2) -> Byte.compare(arrayValues[(int)pos1], arrayValues[(int)pos2]));
             // endregion mergesort
@@ -182,7 +185,7 @@ public abstract class BaseTestByteTimSortKernel extends TestTimSortKernel {
         }
 
         @Override
-        void run() {
+        public void run() {
             ByteLongTimsortKernel.sort(context, rowKeys, primaryChunk, offsets, lengths);
             ByteFindRunsKernel.findRuns(primaryChunk, offsets, lengths, offsetsOut, lengthsOut);
 //            dumpChunk(primaryChunk);

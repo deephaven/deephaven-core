@@ -1,7 +1,7 @@
 {
  "className": "io.deephaven.engine.table.impl.ssa.ByteReverseSsaChecker",
  "methods": {
-  "checkSsa": ":param ssa: io.deephaven.engine.table.impl.ssa.SegmentedSortedArray\n:param valueChunk: io.deephaven.chunk.Chunk<? extendsio.deephaven.chunk.Attributes.Values>\n:param tableIndexChunk: io.deephaven.chunk.LongChunk<? extendsio.deephaven.chunk.Attributes.RowKeys>"
+  "checkSsa": ":param ssa: io.deephaven.engine.table.impl.ssa.SegmentedSortedArray\n:param valueChunk: io.deephaven.chunk.Chunk<? extendsio.deephaven.chunk.attributes.Values>\n:param tableIndexChunk: io.deephaven.chunk.LongChunk<? extendsio.deephaven.engine.rowset.chunkattributes.RowKeys>"
  },
  "path": "io.deephaven.engine.table.impl.ssa.ByteReverseSsaChecker",
  "typeName": "class"

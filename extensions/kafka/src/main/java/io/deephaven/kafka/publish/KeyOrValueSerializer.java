@@ -21,7 +21,7 @@ public interface KeyOrValueSerializer<SERIALIZED_TYPE> {
      * @return A chunk of serialized data keys or values, with {@code ObjectChunk.size() == rowSequence.size()}
      */
     ObjectChunk<SERIALIZED_TYPE, Values> handleChunk(Context context, RowSequence rowSequence,
-                                                     boolean previous);
+            boolean previous);
 
     /**
      * Create a context for calling {@link #handleChunk(Context, RowSequence, boolean)}.

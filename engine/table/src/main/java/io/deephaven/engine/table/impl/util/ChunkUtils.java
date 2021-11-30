@@ -370,8 +370,8 @@ public class ChunkUtils {
      * @param usePrev Should we read previous values from src
      */
     public static void copyData(ChunkSource.WithPrev<? extends Values> src, RowSequence srcAllKeys,
-                                WritableColumnSource<?> dest,
-                                RowSequence destAllKeys, boolean usePrev) {
+            WritableColumnSource<?> dest,
+            RowSequence destAllKeys, boolean usePrev) {
         if (src == dest) {
             throw new UnsupportedOperationException("This method isn't safe when src == dest");
         }
@@ -414,8 +414,8 @@ public class ChunkUtils {
      * @param usePrev Should we read previous values from src
      */
     public static void copyData(ChunkSource.WithPrev<? extends Values>[] sources, RowSequence srcAllKeys,
-                                WritableColumnSource<?>[] destinations,
-                                RowSequence destAllKeys, boolean usePrev) {
+            WritableColumnSource<?>[] destinations,
+            RowSequence destAllKeys, boolean usePrev) {
         if (srcAllKeys.size() != destAllKeys.size()) {
             final String msg = String.format("Expected srcAllKeys.size() == destAllKeys.size(), but got %d and %d",
                     srcAllKeys.size(), destAllKeys.size());

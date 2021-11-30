@@ -361,7 +361,7 @@ public class SortHelpers {
         final SparseSymbolMapping mapping;
 
         try (final WritableLongChunk<Values> originalSymbol = WritableLongChunk.makeWritableChunk(symbolEntries);
-             final WritableIntChunk<Values> mappedIndex = WritableIntChunk.makeWritableChunk(symbolEntries)) {
+                final WritableIntChunk<Values> mappedIndex = WritableIntChunk.makeWritableChunk(symbolEntries)) {
             final ColumnSource idSource = idMapping.getColumnSource(SymbolTableSource.ID_COLUMN_NAME);
             try (final ColumnSource.FillContext idContext = idSource.makeFillContext(symbolEntries)) {
                 idSource.fillChunk(idContext, originalSymbol, idMapping.getRowSet());

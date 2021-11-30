@@ -67,12 +67,12 @@ public class StreamFirstChunkedOperator extends BaseStreamFirstOrLastChunkedOper
 
     @Override
     public void addChunk(final BucketedContext context, // Unused
-                         final Chunk<? extends Values> values, // Unused
-                         @NotNull final LongChunk<? extends RowKeys> inputRowKeys,
-                         @NotNull final IntChunk<RowKeys> destinations,
-                         @NotNull final IntChunk<ChunkPositions> startPositions,
-                         final IntChunk<ChunkLengths> length, // Unused
-                         @NotNull final WritableBooleanChunk<Values> stateModified) {
+            final Chunk<? extends Values> values, // Unused
+            @NotNull final LongChunk<? extends RowKeys> inputRowKeys,
+            @NotNull final IntChunk<RowKeys> destinations,
+            @NotNull final IntChunk<ChunkPositions> startPositions,
+            final IntChunk<ChunkLengths> length, // Unused
+            @NotNull final WritableBooleanChunk<Values> stateModified) {
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
             final long destination = destinations.get(startPosition);

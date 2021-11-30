@@ -44,9 +44,9 @@ class ChunkedWeightedAverageOperator implements IterativeChunkedAggregationOpera
 
     @Override
     public void addChunk(BucketedContext bucketedContext, Chunk<? extends Values> values,
-                         LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations,
-                         IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
-                         WritableBooleanChunk<Values> stateModified) {
+            LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations,
+            IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+            WritableBooleanChunk<Values> stateModified) {
         final Context context = (Context) bucketedContext;
         final DoubleChunk<? extends Values> doubleValues = context.toDoubleCast.cast(values);
         final DoubleChunk<? extends Values> weightValues = weightOperator.getAddedWeights();

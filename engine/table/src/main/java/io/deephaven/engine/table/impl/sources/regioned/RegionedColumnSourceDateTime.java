@@ -22,7 +22,7 @@ final class RegionedColumnSourceDateTime
 
     @Override
     public void convertRegion(WritableChunk<? super Values> destination,
-                              Chunk<? extends Values> source, RowSequence rowSequence) {
+            Chunk<? extends Values> source, RowSequence rowSequence) {
         WritableObjectChunk<DateTime, ? super Values> objectChunk = destination.asWritableObjectChunk();
         LongChunk<? extends Values> longChunk = source.asLongChunk();
 

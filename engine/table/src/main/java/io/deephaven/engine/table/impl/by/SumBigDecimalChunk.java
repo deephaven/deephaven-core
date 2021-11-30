@@ -11,7 +11,7 @@ class SumBigDecimalChunk {
     private SumBigDecimalChunk() {} // static use only
 
     static BigDecimal sumBigDecimalChunk(ObjectChunk<BigDecimal, ? extends Values> values, int chunkStart,
-                                         int chunkSize, MutableInt chunkNonNull) {
+            int chunkSize, MutableInt chunkNonNull) {
         BigDecimal partialSum = BigDecimal.ZERO;
         for (int ii = chunkStart; ii < chunkStart + chunkSize; ++ii) {
             final BigDecimal value = values.get(ii);
@@ -24,7 +24,7 @@ class SumBigDecimalChunk {
     }
 
     static BigDecimal sumBigDecimalChunkAbs(ObjectChunk<BigDecimal, ? extends Values> values, int chunkStart,
-                                            int chunkSize, MutableInt chunkNonNull) {
+            int chunkSize, MutableInt chunkNonNull) {
         BigDecimal partialSum = BigDecimal.ZERO;
         for (int ii = chunkStart; ii < chunkStart + chunkSize; ++ii) {
             final BigDecimal value = values.get(ii);
@@ -37,7 +37,7 @@ class SumBigDecimalChunk {
     }
 
     static BigDecimal sum2BigDecimalChunk(ObjectChunk<BigDecimal, ? extends Values> values, int chunkStart,
-                                          int chunkSize, MutableInt chunkNonNull, MutableObject<BigDecimal> sum2out) {
+            int chunkSize, MutableInt chunkNonNull, MutableObject<BigDecimal> sum2out) {
         final int end = chunkStart + chunkSize;
         BigDecimal sum = BigDecimal.ZERO;
         BigDecimal sum2 = BigDecimal.ZERO;

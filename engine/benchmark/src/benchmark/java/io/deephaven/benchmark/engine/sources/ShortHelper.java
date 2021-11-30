@@ -1,6 +1,8 @@
-/* ---------------------------------------------------------------------------------------------------------------------
+/*
+ * ---------------------------------------------------------------------------------------------------------------------
  * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharHelper and regenerate
- * ------------------------------------------------------------------------------------------------------------------ */
+ * ------------------------------------------------------------------------------------------------------------------
+ */
 package io.deephaven.benchmark.engine.sources;
 
 import io.deephaven.chunk.LongChunk;
@@ -52,7 +54,7 @@ class ShortHelper implements FillBenchmarkHelper {
     public void getFromArray(Blackhole bh, int fetchSize, LongChunk<OrderedRowKeys> keys) {
         final WritableShortChunk result = WritableShortChunk.makeWritableChunk(fetchSize);
         for (int ii = 0; ii < keys.size(); ++ii) {
-            result.set(ii, shortArray[(int)keys.get(ii)]);
+            result.set(ii, shortArray[(int) keys.get(ii)]);
         }
         bh.consume(result);
     }
@@ -77,7 +79,7 @@ class ShortHelper implements FillBenchmarkHelper {
 
     private short makeValue(Random random) {
         // region makeValue
-        return (short)(random.nextInt('Z' - 'A') + 'A');
+        return (short) (random.nextInt('Z' - 'A') + 'A');
         // region makeValue
     }
 }

@@ -157,14 +157,14 @@ public class SwitchColumnSource<T> extends AbstractColumnSource<T> {
 
     @Override
     public Chunk<? extends Values> getChunk(@NotNull final GetContext context,
-                                            @NotNull final RowSequence rowSequence) {
+            @NotNull final RowSequence rowSequence) {
         // noinspection unchecked
         return currentSource.getChunk(((SwitchGetContext) context).getCurrentContext(), rowSequence);
     }
 
     @Override
     public Chunk<? extends Values> getPrevChunk(@NotNull final GetContext context,
-                                                @NotNull final RowSequence rowSequence) {
+            @NotNull final RowSequence rowSequence) {
         if (prevInvalid()) {
             // noinspection unchecked
             return currentSource.getPrevChunk(((SwitchGetContext) context).getCurrentContext(), rowSequence);

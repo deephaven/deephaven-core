@@ -345,8 +345,8 @@ public class UnionColumnSource<T> extends AbstractColumnSource<T> {
         final long[] startOfIndices = usePrev ? unionRedirection.prevStartOfIndices : unionRedirection.startOfIndices;
 
         try (final RowSequence.Iterator rsIt = rowSequence.getRowSequenceIterator();
-             final ResettableWritableChunk<Any> resettableDestination = getChunkType().makeResettableWritableChunk();
-             final ShiftedRowSequence okHelper = new ShiftedRowSequence()) {
+                final ResettableWritableChunk<Any> resettableDestination = getChunkType().makeResettableWritableChunk();
+                final ShiftedRowSequence okHelper = new ShiftedRowSequence()) {
             int offset = 0;
             for (int tid = startTid; tid <= lastTid; ++tid) {
                 final int capacityRemaining = Math.min(context.chunkCapacity, rsSize - offset);

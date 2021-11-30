@@ -11,8 +11,8 @@ public abstract class SelectOrViewColumnLayer extends DependencyLayerBase {
     private final ColumnSource<Values> optionalUnderlying;
 
     SelectOrViewColumnLayer(SelectAndViewAnalyzer inner, String name, SelectColumn sc,
-                            ColumnSource<Values> ws, ColumnSource<Values> optionalUnderlying,
-                            String[] deps, ModifiedColumnSet mcsBuilder) {
+            ColumnSource<Values> ws, ColumnSource<Values> optionalUnderlying,
+            String[] deps, ModifiedColumnSet mcsBuilder) {
         super(inner, name, sc, ws, deps, mcsBuilder);
         this.optionalUnderlying = optionalUnderlying;
     }

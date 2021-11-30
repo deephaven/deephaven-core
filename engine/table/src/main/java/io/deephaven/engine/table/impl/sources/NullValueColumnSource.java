@@ -194,7 +194,7 @@ public class NullValueColumnSource<T> extends AbstractColumnSource<T> implements
 
     @Override
     public void fillPrevChunk(@NotNull FillContext context,
-                              @NotNull WritableChunk<? super Values> destination, @NotNull RowSequence rowSequence) {
+            @NotNull WritableChunk<? super Values> destination, @NotNull RowSequence rowSequence) {
         fillChunk(context, destination, rowSequence);
     }
 }

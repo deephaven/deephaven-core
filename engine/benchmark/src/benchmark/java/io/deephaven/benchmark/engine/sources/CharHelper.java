@@ -49,7 +49,7 @@ class CharHelper implements FillBenchmarkHelper {
     public void getFromArray(Blackhole bh, int fetchSize, LongChunk<OrderedRowKeys> keys) {
         final WritableCharChunk result = WritableCharChunk.makeWritableChunk(fetchSize);
         for (int ii = 0; ii < keys.size(); ++ii) {
-            result.set(ii, charArray[(int)keys.get(ii)]);
+            result.set(ii, charArray[(int) keys.get(ii)]);
         }
         bh.consume(result);
     }
@@ -74,7 +74,7 @@ class CharHelper implements FillBenchmarkHelper {
 
     private char makeValue(Random random) {
         // region makeValue
-        return (char)(random.nextInt('Z' - 'A') + 'A');
+        return (char) (random.nextInt('Z' - 'A') + 'A');
         // region makeValue
     }
 }

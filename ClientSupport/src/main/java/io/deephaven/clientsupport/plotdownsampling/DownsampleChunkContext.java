@@ -86,7 +86,7 @@ public class DownsampleChunkContext implements AutoCloseable {
      *         yColumnSources, with only the indexes in yCols populated.
      */
     public Chunk<? extends Values>[] getYValues(final int[] yCols, final RowSequence keys,
-                                                final boolean usePrev) {
+            final boolean usePrev) {
         Arrays.fill(valuesArray, null);
         for (final int yCol : yCols) {
             valuesArray[yCol] = getYValues(yCol, keys, usePrev);
@@ -103,7 +103,7 @@ public class DownsampleChunkContext implements AutoCloseable {
      * @return a chunk containing the values specified
      */
     public Chunk<? extends Values> getYValues(final int yColIndex, final RowSequence keys,
-                                              final boolean usePrev) {
+            final boolean usePrev) {
         final ColumnSource<?> columnSource = yColumnSources.get(yColIndex);
         final ChunkSource.GetContext getContext = yContexts[yColIndex];
         Assert.neqNull(getContext, "yContexts.get(yColIndex)");

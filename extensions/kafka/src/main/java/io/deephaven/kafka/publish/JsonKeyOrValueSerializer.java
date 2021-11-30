@@ -103,7 +103,7 @@ public class JsonKeyOrValueSerializer implements KeyOrValueSerializer<String> {
         abstract FieldContext makeContext(int size);
 
         abstract void processField(FieldContext fieldContext,
-                                   WritableObjectChunk<ObjectNode, Values> jsonChunk, RowSequence keys, boolean isRemoval);
+                WritableObjectChunk<ObjectNode, Values> jsonChunk, RowSequence keys, boolean isRemoval);
     }
 
     abstract class JSONFieldProcessorImpl<ChunkType extends Chunk<Values>> extends JSONFieldProcessor {
@@ -418,7 +418,7 @@ public class JsonKeyOrValueSerializer implements KeyOrValueSerializer<String> {
      */
     @Override
     public ObjectChunk<String, Values> handleChunk(Context context, RowSequence toProcess,
-                                                   boolean previous) {
+            boolean previous) {
         final JsonContext jsonContext = (JsonContext) context;
 
         jsonContext.outputChunk.setSize(0);

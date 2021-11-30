@@ -102,55 +102,55 @@ public abstract class BaseStreamFirstOrLastChunkedOperator implements IterativeC
 
     @Override
     public final void removeChunk(BucketedContext bucketedContext, Chunk<? extends Values> values,
-                                  LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations,
-                                  IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
-                                  WritableBooleanChunk<Values> stateModified) {
+            LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations,
+            IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+            WritableBooleanChunk<Values> stateModified) {
         throw new UnsupportedOperationException();
     }
 
     @Override
     public final void modifyChunk(BucketedContext bucketedContext, Chunk<? extends Values> previousValues,
-                                  Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> postShiftRowKeys,
-                                  IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions,
-                                  IntChunk<ChunkLengths> length, WritableBooleanChunk<Values> stateModified) {
+            Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> postShiftRowKeys,
+            IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions,
+            IntChunk<ChunkLengths> length, WritableBooleanChunk<Values> stateModified) {
         throw new IllegalStateException();
     }
 
     @Override
     public final void shiftChunk(BucketedContext bucketedContext, Chunk<? extends Values> previousValues,
-                                 Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> preShiftRowKeys,
-                                 LongChunk<? extends RowKeys> postShiftRowKeys, IntChunk<RowKeys> destinations,
-                                 IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
-                                 WritableBooleanChunk<Values> stateModified) {
+            Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> preShiftRowKeys,
+            LongChunk<? extends RowKeys> postShiftRowKeys, IntChunk<RowKeys> destinations,
+            IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+            WritableBooleanChunk<Values> stateModified) {
         throw new UnsupportedOperationException();
     }
 
     @Override
     public final void modifyRowKeys(BucketedContext context, LongChunk<? extends RowKeys> inputRowKeys,
-                                    IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions,
-                                    IntChunk<ChunkLengths> length, WritableBooleanChunk<Values> stateModified) {
+            IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions,
+            IntChunk<ChunkLengths> length, WritableBooleanChunk<Values> stateModified) {
         throw new UnsupportedOperationException();
     }
 
     @Override
     public final boolean removeChunk(SingletonContext singletonContext, int chunkSize,
-                                     Chunk<? extends Values> values, LongChunk<? extends RowKeys> inputRowKeys,
-                                     long destination) {
+            Chunk<? extends Values> values, LongChunk<? extends RowKeys> inputRowKeys,
+            long destination) {
         throw new UnsupportedOperationException();
     }
 
     @Override
     public final boolean modifyChunk(SingletonContext singletonContext, int chunkSize,
-                                     Chunk<? extends Values> previousValues, Chunk<? extends Values> newValues,
-                                     LongChunk<? extends RowKeys> postShiftRowKeys, long destination) {
+            Chunk<? extends Values> previousValues, Chunk<? extends Values> newValues,
+            LongChunk<? extends RowKeys> postShiftRowKeys, long destination) {
         throw new IllegalStateException();
     }
 
     @Override
     public final boolean shiftChunk(SingletonContext singletonContext,
-                                    Chunk<? extends Values> previousValues, Chunk<? extends Values> newValues,
-                                    LongChunk<? extends RowKeys> preShiftRowKeys,
-                                    LongChunk<? extends RowKeys> postShiftRowKeys, long destination) {
+            Chunk<? extends Values> previousValues, Chunk<? extends Values> newValues,
+            LongChunk<? extends RowKeys> preShiftRowKeys,
+            LongChunk<? extends RowKeys> postShiftRowKeys, long destination) {
         throw new UnsupportedOperationException();
     }
 

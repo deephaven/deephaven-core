@@ -168,7 +168,8 @@ public class GroupByBenchmark {
     @Benchmark
     public Table partitionByStatic(@NotNull final Blackhole bh) {
         final TableMap result =
-                UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() -> table.partitionBy(keyName.split("[, ]+")));
+                UpdateGraphProcessor.DEFAULT.sharedLock()
+                        .computeLocked(() -> table.partitionBy(keyName.split("[, ]+")));
         bh.consume(result);
         return state.setResult(TableTools.emptyTable(0));
     }

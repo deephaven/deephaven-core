@@ -1,7 +1,6 @@
 package io.deephaven.benchmark.engine;
 
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.select.SelectFilterFactory;
 import io.deephaven.engine.table.impl.select.WhereFilter;
 import io.deephaven.benchmarking.BenchUtil;
 import io.deephaven.benchmarking.BenchmarkTable;
@@ -9,6 +8,7 @@ import io.deephaven.benchmarking.BenchmarkTools;
 import io.deephaven.benchmarking.BenchmarkTableBuilder;
 import io.deephaven.benchmarking.generator.EnumStringColumnGenerator;
 import io.deephaven.benchmarking.runner.TableBenchmarkState;
+import io.deephaven.engine.table.impl.select.WhereFilterFactory;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.BenchmarkParams;
 
@@ -113,7 +113,7 @@ public class WhereBenchmark {
                 throw new IllegalStateException("Can't touch this.");
         }
 
-        whereFilter = SelectFilterFactory.getExpression(filterString);
+        whereFilter = WhereFilterFactory.getExpression(filterString);
     }
 
     @TearDown(Level.Trial)

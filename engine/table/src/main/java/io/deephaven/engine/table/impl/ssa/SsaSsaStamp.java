@@ -64,9 +64,9 @@ public interface SsaSsaStamp {
             WritableRowRedirection rowRedirection, RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch);
 
     void processInsertion(SegmentedSortedArray leftSsa, Chunk<? extends Values> rightStampChunk,
-                          LongChunk<RowKeys> rightKeys, Chunk<Values> nextRightValue,
-                          WritableRowRedirection rowRedirection,
-                          RowSetBuilderRandom modifiedBuilder, boolean endsWithLastValue, boolean disallowExactMatch);
+            LongChunk<RowKeys> rightKeys, Chunk<Values> nextRightValue,
+            WritableRowRedirection rowRedirection,
+            RowSetBuilderRandom modifiedBuilder, boolean endsWithLastValue, boolean disallowExactMatch);
 
     void findModified(SegmentedSortedArray leftSsa, RowRedirection rowRedirection,
             Chunk<? extends Values> rightStampChunk, LongChunk<RowKeys> rightStampIndices,

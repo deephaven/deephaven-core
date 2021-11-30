@@ -100,7 +100,7 @@ public class RowKeyChunkUtils {
      * @return the generated chunk
      */
     public static LongChunk<OrderedRowKeys> convertToOrderedKeyIndices(int srcOffset,
-                                                                       final LongChunk<OrderedRowKeyRanges> chunk) {
+            final LongChunk<OrderedRowKeyRanges> chunk) {
         srcOffset += srcOffset % 2; // ensure that we are using the correct range edges
 
         long numElements = 0;
@@ -129,7 +129,7 @@ public class RowKeyChunkUtils {
      * @param dest the chunk to fill with indices
      */
     public static void convertToOrderedKeyIndices(int srcOffset, final LongChunk<OrderedRowKeyRanges> chunk,
-                                                  final WritableLongChunk<OrderedRowKeys> dest, int destOffset) {
+            final WritableLongChunk<OrderedRowKeys> dest, int destOffset) {
         srcOffset += srcOffset & 1; // ensure that we are using the correct range edges
 
         for (int idx = srcOffset; idx + 1 < chunk.size() && destOffset < dest.size(); idx += 2) {

@@ -30,23 +30,23 @@ import java.util.stream.Collectors;
 
 public abstract class BaseTestShortTimSortKernel extends TestTimSortKernel {
     // region getJavaComparator
-    static Comparator<ShortLongTuple> getJavaComparator() {
+    public static Comparator<ShortLongTuple> getJavaComparator() {
         return Comparator.comparing(ShortLongTuple::getFirstElement);
     }
     // endregion getJavaComparator
 
     // region getJavaMultiComparator
-    static Comparator<ShortLongLongTuple> getJavaMultiComparator() {
+    public static Comparator<ShortLongLongTuple> getJavaMultiComparator() {
         return Comparator.comparing(ShortLongLongTuple::getFirstElement).thenComparing(ShortLongLongTuple::getSecondElement);
     }
     // endregion getJavaMultiComparator
 
+    public static class ShortSortKernelStuff extends SortKernelStuff<ShortLongTuple> {
 
-    static class ShortSortKernelStuff extends SortKernelStuff<ShortLongTuple> {
-        final WritableShortChunk<Any> shortChunk;
+        private final WritableShortChunk<Any> shortChunk;
         private final ShortLongTimsortKernel.ShortLongSortKernelContext context;
 
-        ShortSortKernelStuff(List<ShortLongTuple> javaTuples) {
+        public ShortSortKernelStuff(List<ShortLongTuple> javaTuples) {
             super(javaTuples.size());
             final int size = javaTuples.size();
             shortChunk = WritableShortChunk.makeWritableChunk(size);
@@ -56,7 +56,7 @@ public abstract class BaseTestShortTimSortKernel extends TestTimSortKernel {
         }
 
         @Override
-        void run() {
+        public void run() {
             ShortLongTimsortKernel.sort(context, rowKeys, shortChunk);
         }
 
@@ -67,7 +67,8 @@ public abstract class BaseTestShortTimSortKernel extends TestTimSortKernel {
     }
 
     public static class ShortPartitionKernelStuff extends PartitionKernelStuff<ShortLongTuple> {
-        final WritableShortChunk valuesChunk;
+
+        private final WritableShortChunk valuesChunk;
         private final ShortPartitionKernel.PartitionKernelContext context;
         private final RowSet rowSet;
         private final ColumnSource<Short> columnSource;
@@ -115,9 +116,11 @@ public abstract class BaseTestShortTimSortKernel extends TestTimSortKernel {
         }
     }
 
-    static class ShortMergeStuff extends MergeStuff<ShortLongTuple> {
-        final short arrayValues[];
-        ShortMergeStuff(List<ShortLongTuple> javaTuples) {
+    public static class ShortMergeStuff extends MergeStuff<ShortLongTuple> {
+
+        private final short arrayValues[];
+
+        public ShortMergeStuff(List<ShortLongTuple> javaTuples) {
             super(javaTuples);
             arrayValues = new short[javaTuples.size()];
             for (int ii = 0; ii < javaTuples.size(); ++ii) {
@@ -125,7 +128,7 @@ public abstract class BaseTestShortTimSortKernel extends TestTimSortKernel {
             }
         }
 
-        void run() {
+        public void run() {
             // region mergesort
             MergeSort.mergeSort(posarray, posarray2, 0, arrayValues.length, 0, (pos1, pos2) -> Short.compare(arrayValues[(int)pos1], arrayValues[(int)pos2]));
             // endregion mergesort
@@ -182,7 +185,7 @@ public abstract class BaseTestShortTimSortKernel extends TestTimSortKernel {
         }
 
         @Override
-        void run() {
+        public void run() {
             ShortLongTimsortKernel.sort(context, rowKeys, primaryChunk, offsets, lengths);
             ShortFindRunsKernel.findRuns(primaryChunk, offsets, lengths, offsetsOut, lengthsOut);
 //            dumpChunk(primaryChunk);

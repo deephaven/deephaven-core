@@ -22,7 +22,7 @@ public class SimpleKeyOrValueSerializer<SERIALIZED_TYPE> implements KeyOrValueSe
     @SuppressWarnings({"unchecked", "rawtypes"})
     @Override
     public ObjectChunk<SERIALIZED_TYPE, Values> handleChunk(Context context, RowSequence rowSequence,
-                                                            boolean previous) {
+            boolean previous) {
         final SimpleContext simpleContext = (SimpleContext) context;
         final Chunk chunk = source.getChunk(simpleContext.sourceGetContext, rowSequence);
         return boxer.box(chunk);

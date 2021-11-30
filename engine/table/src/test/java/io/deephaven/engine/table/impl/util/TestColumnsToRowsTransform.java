@@ -91,8 +91,8 @@ public class TestColumnsToRowsTransform extends RefreshingTableTestCase {
         // noinspection unchecked
         final ColumnSource<Integer> valueSource = filtered.getColumnSource("Value");
         try (final WritableIntChunk<Values> destination = WritableIntChunk.makeWritableChunk(2);
-             final SharedContext sharedContext = SharedContext.makeSharedContext();
-             final ChunkSource.FillContext f1 = valueSource.makeFillContext(2, sharedContext)) {
+                final SharedContext sharedContext = SharedContext.makeSharedContext();
+                final ChunkSource.FillContext f1 = valueSource.makeFillContext(2, sharedContext)) {
             valueSource.fillChunk(f1, destination, filtered.getRowSet());
             System.out.println(destination.get(0));
             System.out.println(destination.get(1));

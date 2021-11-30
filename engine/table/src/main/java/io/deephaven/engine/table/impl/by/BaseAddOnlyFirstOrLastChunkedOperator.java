@@ -66,15 +66,15 @@ abstract class BaseAddOnlyFirstOrLastChunkedOperator implements IterativeChunked
 
     @Override
     public void modifyRowKeys(BucketedContext context, LongChunk<? extends RowKeys> inputRowKeys,
-                              IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions,
-                              IntChunk<ChunkLengths> length,
-                              WritableBooleanChunk<Values> stateModified) {
+            IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions,
+            IntChunk<ChunkLengths> length,
+            WritableBooleanChunk<Values> stateModified) {
         throw new UnsupportedOperationException();
     }
 
     @Override
     public boolean removeChunk(SingletonContext singletonContext, int chunkSize, Chunk<? extends Values> values,
-                               LongChunk<? extends RowKeys> inputRowKeys, long destination) {
+            LongChunk<? extends RowKeys> inputRowKeys, long destination) {
         throw new UnsupportedOperationException();
     }
 

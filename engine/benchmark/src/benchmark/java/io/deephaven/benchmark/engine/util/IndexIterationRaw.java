@@ -1,12 +1,14 @@
 package io.deephaven.benchmark.engine.util;
 
+import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.chunk.LongChunk;
 import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.benchmarking.BenchUtil;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
-import org.junit.Assert;
+import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges;
+import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
 import org.openjdk.jmh.runner.RunnerException;
@@ -202,7 +204,7 @@ public class IndexIterationRaw {
     boolean printed = false;
 
     private void print(double sum) {
-        Assert.assertEquals(sum, expectedSum, 0.0001 * expectedSum);
+        Assert.assertion(Math.abs(sum - expectedSum) < Math.abs(0.0001 * expectedSum), "sum == expectedSum");
         if (!printed) {
             System.out.println("Sum = " + sum);
             printed = true;

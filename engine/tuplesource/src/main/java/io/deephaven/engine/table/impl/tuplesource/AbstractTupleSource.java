@@ -43,7 +43,7 @@ public abstract class AbstractTupleSource<TUPLE_TYPE>
 
     @Override
     public final void fillChunk(@NotNull FillContext context,
-                                @NotNull WritableChunk<? super Values> destination, @NotNull RowSequence rowSequence) {
+            @NotNull WritableChunk<? super Values> destination, @NotNull RowSequence rowSequence) {
         // noinspection unchecked
         TupleFillContext tupleFillContext = (TupleFillContext) context;
         GetContext[] getContexts = tupleFillContext.getContexts;
@@ -59,7 +59,7 @@ public abstract class AbstractTupleSource<TUPLE_TYPE>
 
     @Override
     public final void fillPrevChunk(@NotNull FillContext context,
-                                    @NotNull WritableChunk<? super Values> destination, @NotNull RowSequence rowSequence) {
+            @NotNull WritableChunk<? super Values> destination, @NotNull RowSequence rowSequence) {
         // noinspection unchecked
         TupleFillContext tupleFillContext = (TupleFillContext) context;
         GetContext[] getContexts = tupleFillContext.getContexts;
@@ -74,7 +74,7 @@ public abstract class AbstractTupleSource<TUPLE_TYPE>
     }
 
     protected abstract void convertChunks(@NotNull WritableChunk<? super Values> destination, int chunkSize,
-                                          Chunk<Values>[] chunks);
+            Chunk<Values>[] chunks);
 
     class TupleFillContext implements FillContext {
 

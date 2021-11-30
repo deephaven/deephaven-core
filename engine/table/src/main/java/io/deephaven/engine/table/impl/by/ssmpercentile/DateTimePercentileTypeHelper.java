@@ -57,7 +57,7 @@ public class DateTimePercentileTypeHelper implements SsmChunkedPercentileOperato
 
     @Override
     public int pivot(SegmentedSortedMultiSet segmentedSortedMultiSet, Chunk<? extends Values> valueCopy,
-                     IntChunk<ChunkLengths> counts, int startPosition, int runLength, MutableInt leftOvers) {
+            IntChunk<ChunkLengths> counts, int startPosition, int runLength, MutableInt leftOvers) {
         final LongChunk<? extends Values> asLongChunk = valueCopy.asLongChunk();
         final LongSegmentedSortedMultiset ssmLo = (LongSegmentedSortedMultiset) segmentedSortedMultiSet;
         final long hiValue = ssmLo.getMaxLong();
@@ -76,7 +76,7 @@ public class DateTimePercentileTypeHelper implements SsmChunkedPercentileOperato
 
     @Override
     public int pivot(SegmentedSortedMultiSet segmentedSortedMultiSet, Chunk<? extends Values> valueCopy,
-                     IntChunk<ChunkLengths> counts, int startPosition, int runLength) {
+            IntChunk<ChunkLengths> counts, int startPosition, int runLength) {
         final LongChunk<? extends Values> asLongChunk = valueCopy.asLongChunk();
         final LongSegmentedSortedMultiset ssmLo = (LongSegmentedSortedMultiset) segmentedSortedMultiSet;
         final long hiValue = ssmLo.getMaxLong();
@@ -96,7 +96,7 @@ public class DateTimePercentileTypeHelper implements SsmChunkedPercentileOperato
      * @return the highest index that is less than or equal to valuesToSearch
      */
     private static int upperBound(LongChunk<? extends Values> valuesToSearch, int lo, int hi,
-                                  long searchValue) {
+            long searchValue) {
         while (lo < hi) {
             final int mid = (lo + hi) >>> 1;
             final long testValue = valuesToSearch.get(mid);

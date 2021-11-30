@@ -235,8 +235,8 @@ public class SumByBenchmark {
         final Aggregation maxCols = AggMax(IntStream.range(1, valueCount + 1)
                 .mapToObj(ii -> "Max" + ii + "=ValueToSum" + ii).toArray(String[]::new));
 
-        final Table result = UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() ->
-                table.aggBy(List.of(minCols, maxCols), keyColumnNames));
+        final Table result = UpdateGraphProcessor.DEFAULT.sharedLock()
+                .computeLocked(() -> table.aggBy(List.of(minCols, maxCols), keyColumnNames));
         bh.consume(result);
         return state.setResult(TableTools.emptyTable(0));
     }
@@ -249,8 +249,8 @@ public class SumByBenchmark {
                 .mapToObj(ii -> "Max" + ii + "=ValueToSum" + ii).toArray(String[]::new));
 
         final Table result = IncrementalBenchmark.incrementalBenchmark(
-                (t) -> UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() ->
-                        t.aggBy(List.of(minCols, maxCols), keyColumnNames)),
+                (t) -> UpdateGraphProcessor.DEFAULT.sharedLock()
+                        .computeLocked(() -> t.aggBy(List.of(minCols, maxCols), keyColumnNames)),
                 table);
         bh.consume(result);
         return state.setResult(TableTools.emptyTable(0));
@@ -264,8 +264,8 @@ public class SumByBenchmark {
                 .mapToObj(ii -> "Max" + ii + "=ValueToSum" + ii).toArray(String[]::new));
 
         final Table result = IncrementalBenchmark.rollingBenchmark(
-                (t) -> UpdateGraphProcessor.DEFAULT.sharedLock().computeLocked(() ->
-                        t.aggBy(List.of(minCols, maxCols), keyColumnNames)),
+                (t) -> UpdateGraphProcessor.DEFAULT.sharedLock()
+                        .computeLocked(() -> t.aggBy(List.of(minCols, maxCols), keyColumnNames)),
                 table);
         bh.consume(result);
         return state.setResult(TableTools.emptyTable(0));

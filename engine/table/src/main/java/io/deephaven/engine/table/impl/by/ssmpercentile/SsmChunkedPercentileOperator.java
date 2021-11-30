@@ -155,7 +155,7 @@ public class SsmChunkedPercentileOperator implements IterativeChunkedAggregation
         boolean setResultNull(long destination);
 
         int pivot(SegmentedSortedMultiSet ssmLo, Chunk<? extends Values> valueCopy, IntChunk<ChunkLengths> counts,
-                  int startPosition, int runLength, MutableInt leftOvers);
+                int startPosition, int runLength, MutableInt leftOvers);
 
         int pivot(SegmentedSortedMultiSet segmentedSortedMultiSet, Chunk<? extends Values> valueCopy,
                 IntChunk<ChunkLengths> counts, int startPosition, int runLength);
@@ -163,9 +163,9 @@ public class SsmChunkedPercentileOperator implements IterativeChunkedAggregation
 
     @Override
     public void addChunk(BucketedContext bucketedContext, Chunk<? extends Values> values,
-                         LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations,
-                         IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
-                         WritableBooleanChunk<Values> stateModified) {
+            LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations,
+            IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+            WritableBooleanChunk<Values> stateModified) {
         final BucketSsmMinMaxContext context = (BucketSsmMinMaxContext) bucketedContext;
 
         context.valueCopy.setSize(values.size());

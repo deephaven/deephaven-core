@@ -1,7 +1,7 @@
 {
  "className": "io.deephaven.parquet.table.pagestore.topage.ToBooleanAsBytePage",
  "methods": {
-  "create": "Note: Java generics information - <ATTR extends io.deephaven.chunk.Attributes.Any>\n\n:param nativeType: java.lang.Class<?>\n:return: io.deephaven.parquet.table.pagestore.topage.ToBooleanAsBytePage<ATTR>",
+  "create": "Note: Java generics information - <ATTR extends io.deephaven.chunk.attributes.Any>\n\n:param nativeType: java.lang.Class<?>\n:return: io.deephaven.parquet.table.pagestore.topage.ToBooleanAsBytePage<ATTR>",
   "getChunkType": ":return: (io.deephaven.chunk.ChunkType) The chunk type used to wrap the arrays produced by this object.",
   "getNativeComponentType": ":return: (java.lang.Class<java.lang.Boolean>) The native type for the elements of engine arrays produced by this object.",
   "getNativeType": ":return: (java.lang.Class<java.lang.Byte>) The native type for the elements of the arrays produced by this object.",

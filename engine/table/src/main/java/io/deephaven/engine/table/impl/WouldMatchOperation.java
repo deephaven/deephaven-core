@@ -292,7 +292,7 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
 
         @Override
         public void fillChunk(@NotNull FillContext context,
-                              @NotNull WritableChunk<? super Values> destination, @NotNull RowSequence rowSequence) {
+                @NotNull WritableChunk<? super Values> destination, @NotNull RowSequence rowSequence) {
             try (final RowSet keysToCheck = rowSequence.asRowSet();
                     final RowSet intersection = keysToCheck.intersect(source)) {
                 fillChunkInternal(keysToCheck, intersection, rowSequence.intSize(), destination);
@@ -301,10 +301,10 @@ public class WouldMatchOperation implements QueryTable.MemoizableOperation<Query
 
         @Override
         public void fillPrevChunk(@NotNull FillContext context,
-                                  @NotNull WritableChunk<? super Values> destination, @NotNull RowSequence rowSequence) {
+                @NotNull WritableChunk<? super Values> destination, @NotNull RowSequence rowSequence) {
             try (final RowSet keysToCheck = rowSequence.asRowSet();
-                 final RowSet sourcePrev = source.copyPrev();
-                 final RowSet intersection = keysToCheck.intersect(sourcePrev)) {
+                    final RowSet sourcePrev = source.copyPrev();
+                    final RowSet intersection = keysToCheck.intersect(sourcePrev)) {
                 fillChunkInternal(keysToCheck, intersection, rowSequence.intSize(), destination);
             }
         }

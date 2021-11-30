@@ -1,12 +1,12 @@
 package io.deephaven.benchmark.engine;
 
 import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.select.SelectFilterFactory;
 import io.deephaven.benchmarking.BenchmarkTable;
 import io.deephaven.benchmarking.BenchmarkTools;
 import io.deephaven.benchmarking.BenchmarkTableBuilder;
 import io.deephaven.benchmarking.generator.EnumStringColumnGenerator;
 import io.deephaven.benchmarking.runner.TableBenchmarkState;
+import io.deephaven.engine.table.impl.select.WhereFilterFactory;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.BenchmarkParams;
 
@@ -320,7 +320,7 @@ public class UpdateBenchmark {
             setupTable = setupTable.select(columnList);
         }
         if (!filterString.isEmpty()) {
-            setupTable = setupTable.where(SelectFilterFactory.getExpression(filterString));
+            setupTable = setupTable.where(WhereFilterFactory.getExpression(filterString));
         }
         if (sort) {
             setupTable = setupTable.sort("C2");

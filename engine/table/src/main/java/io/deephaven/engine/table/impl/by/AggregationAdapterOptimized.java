@@ -10,8 +10,8 @@ import io.deephaven.tuple.generated.ByteDoubleTuple;
 import java.util.*;
 
 /**
- * Utility for converting collections of {@link Aggregation aggregations} to collections of
- * {@link AggregationElement}, grouping compatible aggregations in order to allow optimizations at execution time.
+ * Utility for converting collections of {@link Aggregation aggregations} to collections of {@link AggregationElement},
+ * grouping compatible aggregations in order to allow optimizations at execution time.
  */
 class AggregationAdapterOptimized implements Aggregation.Visitor {
 
@@ -37,8 +37,8 @@ class AggregationAdapterOptimized implements Aggregation.Visitor {
     private final Map<ColumnName, List<Pair>> wSums = new HashMap<>();
 
     /**
-     * We'll do our best to maintain the original aggregation ordering. This will maintain the user-specified order
-     * as long as the user aggregation types were all next to each other.
+     * We'll do our best to maintain the original aggregation ordering. This will maintain the user-specified order as
+     * long as the user aggregation types were all next to each other.
      * <p>
      * ie:
      * <p>
@@ -87,13 +87,15 @@ class AggregationAdapterOptimized implements Aggregation.Visitor {
 
     private void buildWSums(List<AggregationElement> aggs) {
         for (Map.Entry<ColumnName, List<Pair>> e : wSums.entrySet()) {
-            aggs.add(AggregationFactory.Agg(new WeightedSumSpecImpl(e.getKey().name()), MatchPair.fromPairs(e.getValue())));
+            aggs.add(AggregationFactory.Agg(new WeightedSumSpecImpl(e.getKey().name()),
+                    MatchPair.fromPairs(e.getValue())));
         }
     }
 
     private void buildWAvgs(List<AggregationElement> aggs) {
         for (Map.Entry<ColumnName, List<Pair>> e : wAvgs.entrySet()) {
-            aggs.add(AggregationFactory.Agg(new WeightedAverageSpecImpl(e.getKey().name()), MatchPair.fromPairs(e.getValue())));
+            aggs.add(AggregationFactory.Agg(new WeightedAverageSpecImpl(e.getKey().name()),
+                    MatchPair.fromPairs(e.getValue())));
         }
     }
 
@@ -154,7 +156,8 @@ class AggregationAdapterOptimized implements Aggregation.Visitor {
 
     private void buildMedians(List<AggregationElement> aggs) {
         for (Map.Entry<Boolean, List<Pair>> e : medians.entrySet()) {
-            aggs.add(AggregationFactory.Agg(new PercentileBySpecImpl(0.50d, e.getKey()), MatchPair.fromPairs(e.getValue())));
+            aggs.add(AggregationFactory.Agg(new PercentileBySpecImpl(0.50d, e.getKey()),
+                    MatchPair.fromPairs(e.getValue())));
         }
     }
 

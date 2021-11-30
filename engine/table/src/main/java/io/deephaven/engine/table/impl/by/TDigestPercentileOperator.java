@@ -98,9 +98,9 @@ public class TDigestPercentileOperator implements IterativeChunkedAggregationOpe
 
     @Override
     public void removeChunk(BucketedContext bucketedContext, Chunk<? extends Values> values,
-                            LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations,
-                            IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
-                            WritableBooleanChunk<Values> stateModified) {
+            LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations,
+            IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+            WritableBooleanChunk<Values> stateModified) {
         throw new UnsupportedOperationException("t-digest Approximate percentiles do not support data removal.");
     }
 
@@ -114,7 +114,7 @@ public class TDigestPercentileOperator implements IterativeChunkedAggregationOpe
 
     @Override
     public boolean addChunk(SingletonContext singletonContext, int chunkSize, Chunk<? extends Values> values,
-                            LongChunk<? extends RowKeys> inputRowKeys, long destination) {
+            LongChunk<? extends RowKeys> inputRowKeys, long destination) {
         final TDigestContext tDigestContext = (TDigestContext) singletonContext;
         final TDigest digest = digestForSlot(destination);
         final DoubleChunk<? extends Values> doubleValues = tDigestContext.toDoubleCast.cast(values);

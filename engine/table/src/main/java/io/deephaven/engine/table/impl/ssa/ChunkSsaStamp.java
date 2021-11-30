@@ -57,12 +57,12 @@ public interface ChunkSsaStamp {
     }
 
     void processEntry(Chunk<Values> leftStampValues, Chunk<RowKeys> leftStampKeys, SegmentedSortedArray ssa,
-                      WritableLongChunk<RowKeys> rightKeysForLeft, boolean disallowExactMatch);
+            WritableLongChunk<RowKeys> rightKeysForLeft, boolean disallowExactMatch);
 
     void processRemovals(Chunk<Values> leftStampValues, LongChunk<RowKeys> leftStampKeys,
-                         Chunk<? extends Values> rightStampChunk, LongChunk<RowKeys> rightKeys,
-                         WritableLongChunk<RowKeys> priorRedirections, WritableRowRedirection rowRedirection,
-                         RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch);
+            Chunk<? extends Values> rightStampChunk, LongChunk<RowKeys> rightKeys,
+            WritableLongChunk<RowKeys> priorRedirections, WritableRowRedirection rowRedirection,
+            RowSetBuilderRandom modifiedBuilder, boolean disallowExactMatch);
 
     void processInsertion(Chunk<Values> leftStampValues, LongChunk<RowKeys> leftStampKeys,
             Chunk<? extends Values> rightStampChunk, LongChunk<RowKeys> rightKeys, Chunk<Values> nextRightValue,

@@ -1,7 +1,0 @@
-{
- "className": "io.deephaven.chunk.Attributes$Indices",
- "methods": {},
- "path": "io.deephaven.chunk.Attributes.Indices",
- "text": "The chunk contains indices, e.g. positions or keys designating indices in a data structure.",
- "typeName": "interface"
-}

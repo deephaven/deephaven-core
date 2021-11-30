@@ -35,27 +35,27 @@ public class FreezeByOperator implements IterativeChunkedAggregationOperator {
 
     @Override
     public void addChunk(BucketedContext context, Chunk<? extends Values> values,
-                         LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations,
-                         IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
-                         WritableBooleanChunk<Values> stateModified) {
+            LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations,
+            IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+            WritableBooleanChunk<Values> stateModified) {
         helper.addChunk(values, startPositions, destinations, length);
     }
 
     @Override
     public void removeChunk(BucketedContext context, Chunk<? extends Values> values,
-                            LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations,
-                            IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
-                            WritableBooleanChunk<Values> stateModified) {}
+            LongChunk<? extends RowKeys> inputRowKeys, IntChunk<RowKeys> destinations,
+            IntChunk<ChunkPositions> startPositions, IntChunk<ChunkLengths> length,
+            WritableBooleanChunk<Values> stateModified) {}
 
     @Override
     public void modifyChunk(BucketedContext context, Chunk<? extends Values> previousValues,
-                            Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> postShiftRowKeys,
-                            IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions,
-                            IntChunk<ChunkLengths> length, WritableBooleanChunk<Values> stateModified) {}
+            Chunk<? extends Values> newValues, LongChunk<? extends RowKeys> postShiftRowKeys,
+            IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions,
+            IntChunk<ChunkLengths> length, WritableBooleanChunk<Values> stateModified) {}
 
     @Override
     public boolean addChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values,
-                            LongChunk<? extends RowKeys> inputRowKeys, long destination) {
+            LongChunk<? extends RowKeys> inputRowKeys, long destination) {
         helper.addChunk(values, destination);
         return false;
     }
@@ -63,14 +63,14 @@ public class FreezeByOperator implements IterativeChunkedAggregationOperator {
 
     @Override
     public boolean removeChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values,
-                               LongChunk<? extends RowKeys> inputRowKeys, long destination) {
+            LongChunk<? extends RowKeys> inputRowKeys, long destination) {
         return false;
     }
 
     @Override
     public boolean modifyChunk(SingletonContext context, int chunkSize,
-                               Chunk<? extends Values> previousValues, Chunk<? extends Values> newValues,
-                               LongChunk<? extends RowKeys> postShiftRowKeys, long destination) {
+            Chunk<? extends Values> previousValues, Chunk<? extends Values> newValues,
+            LongChunk<? extends RowKeys> postShiftRowKeys, long destination) {
         return false;
     }
 
@@ -129,7 +129,7 @@ public class FreezeByOperator implements IterativeChunkedAggregationOperator {
 
     interface FreezeByHelper {
         void addChunk(Chunk<? extends Values> values, IntChunk<ChunkPositions> startPositions,
-                      IntChunk<RowKeys> destinations, IntChunk<ChunkLengths> length);
+                IntChunk<RowKeys> destinations, IntChunk<ChunkLengths> length);
 
         void addChunk(Chunk<? extends Values> values, long destination);
 

@@ -45,10 +45,10 @@ public interface IterativeChunkedAggregationOperator {
      *        destination has been modified
      */
     void addChunk(BucketedContext context, Chunk<? extends Values> values,
-                  LongChunk<? extends RowKeys> inputRowKeys,
-                  IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions,
-                  IntChunk<ChunkLengths> length,
-                  WritableBooleanChunk<Values> stateModified);
+            LongChunk<? extends RowKeys> inputRowKeys,
+            IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions,
+            IntChunk<ChunkLengths> length,
+            WritableBooleanChunk<Values> stateModified);
 
     /**
      * Remove a chunk of data previously aggregated into the result columns.
@@ -116,12 +116,12 @@ public interface IterativeChunkedAggregationOperator {
      *        destination has been modified
      */
     default void shiftChunk(BucketedContext context, Chunk<? extends Values> previousValues,
-                            Chunk<? extends Values> newValues,
-                            LongChunk<? extends RowKeys> preShiftRowKeys,
-                            LongChunk<? extends RowKeys> postShiftRowKeys,
-                            IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions,
-                            IntChunk<ChunkLengths> length,
-                            WritableBooleanChunk<Values> stateModified) {
+            Chunk<? extends Values> newValues,
+            LongChunk<? extends RowKeys> preShiftRowKeys,
+            LongChunk<? extends RowKeys> postShiftRowKeys,
+            IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions,
+            IntChunk<ChunkLengths> length,
+            WritableBooleanChunk<Values> stateModified) {
         // we don't actually care
     }
 
@@ -154,7 +154,7 @@ public interface IterativeChunkedAggregationOperator {
      * @return true if the state was modified, false otherwise
      */
     boolean addChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values,
-                     LongChunk<? extends RowKeys> inputRowKeys, long destination);
+            LongChunk<? extends RowKeys> inputRowKeys, long destination);
 
     /**
      * Remove a chunk of data previously aggregated into the result columns.

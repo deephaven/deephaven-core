@@ -1,0 +1,7 @@
+{
+ "className": "io.deephaven.chunk.attributes.ChunkPositions",
+ "methods": {},
+ "path": "io.deephaven.chunk.attributes.ChunkPositions",
+ "text": "Attribute that specifies that a Chunk contains positions within some other Chunk.",
+ "typeName": "interface"
+}

@@ -42,9 +42,6 @@ import static junit.framework.TestCase.*;
 @Category(OutOfBandTest.class)
 public class TestFormulaColumn {
 
-    private static final boolean ENABLE_COMPILER_TOOLS_LOGGING = Configuration.getInstance()
-            .getBooleanForClassWithDefault(TestFormulaColumn.class, "CompilerTools.logEnabled", false);
-
     @Parameterized.Parameters(name = "useKernelFormulasProperty = {0}")
     public static Collection<Object[]> data() {
         return Arrays.asList(new Object[] {false}, new Object[] {true});
@@ -52,7 +49,6 @@ public class TestFormulaColumn {
 
     private final Table testDataTable;
     private final Map<String, ColumnDefinition<?>> availableColumns;
-    private boolean compilerToolsLogEnabledInitial = false;
     private final boolean useKernelFormulas;
     private boolean kernelFormulasSavedValue;
 

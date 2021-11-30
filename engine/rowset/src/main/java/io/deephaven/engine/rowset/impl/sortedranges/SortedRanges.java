@@ -4455,13 +4455,13 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
 
     @Override
     public final OrderedLongSet ixInsertSecondHalf(final LongChunk<OrderedRowKeys> keys, final int offset,
-                                                   final int length) {
+            final int length) {
         return ixInsert(OrderedLongSet.fromChunk(keys, offset, length, true));
     }
 
     @Override
     public final OrderedLongSet ixRemoveSecondHalf(final LongChunk<OrderedRowKeys> keys, final int offset,
-                                                   final int length) {
+            final int length) {
         return ixRemove(OrderedLongSet.fromChunk(keys, offset, length, true));
     }
 

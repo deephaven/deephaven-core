@@ -594,7 +594,7 @@ public class QueryTable extends BaseTable {
 
     @Override
     public Table aggBy(final Collection<? extends Aggregation> aggregations,
-                       final Collection<? extends Selectable> groupByColumns) {
+            final Collection<? extends Selectable> groupByColumns) {
         final List<AggregationFactory.AggregationElement> optimized =
                 AggregationFactory.AggregationElement.optimizeAndConvert(aggregations);
 
@@ -1695,7 +1695,7 @@ public class QueryTable extends BaseTable {
             // - create parallel arrays of pre-shift-keys and post-shift-keys so we can move them in chunks
 
             try (final WritableRowSet toClear = dependent.rowSet.copyPrev();
-                 final SelectAndViewAnalyzer.UpdateHelper updateHelper =
+                    final SelectAndViewAnalyzer.UpdateHelper updateHelper =
                             new SelectAndViewAnalyzer.UpdateHelper(dependent.rowSet, upstream)) {
                 toClear.remove(dependent.rowSet);
                 analyzer.applyUpdate(upstream, toClear, updateHelper);

@@ -73,7 +73,7 @@ enum EmptyTupleSource implements TupleSource<EmptyTuple>, DefaultChunkSource.Wit
 
     @Override
     public void fillPrevChunk(@NotNull FillContext context,
-                              @NotNull WritableChunk<? super Values> destination, @NotNull RowSequence rowSequence) {
+            @NotNull WritableChunk<? super Values> destination, @NotNull RowSequence rowSequence) {
         fillChunk(context, destination, rowSequence);
     }
 }

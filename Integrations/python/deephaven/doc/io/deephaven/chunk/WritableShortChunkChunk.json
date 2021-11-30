@@ -1,0 +1,14 @@
+{
+ "className": "io.deephaven.chunk.WritableShortChunkChunk",
+ "methods": {
+  "getWritableChunk": ":param pos: int\n:return: io.deephaven.chunk.WritableShortChunk<WritableShortChunkChunk.ATTR>",
+  "makeArray": "Note: Java generics information - <ATTR extends io.deephaven.chunk.attributes.Any>\n\n:param capacity: int\n:return: io.deephaven.chunk.WritableShortChunk<ATTR>[]",
+  "makeWritableChunk": "Note: Java generics information - <ATTR extends io.deephaven.chunk.attributes.Any>\n\n:param size: int\n:return: io.deephaven.chunk.WritableShortChunkChunk<ATTR>",
+  "set": "*Overload 1*  \n  :param index: int\n  :param value: io.deephaven.chunk.WritableShortChunk<WritableShortChunkChunk.ATTR>\n  \n*Overload 2*  \n  :param j: int\n  :param i: int\n  :param value: short",
+  "setWritableChunk": ":param pos: int\n:param value: io.deephaven.chunk.WritableChunk<WritableShortChunkChunk.ATTR>",
+  "slice": ":param offset: int\n:param capacity: int\n:return: io.deephaven.chunk.WritableShortChunkChunk<WritableShortChunkChunk.ATTR>",
+  "writableChunkWrap": "*Overload 1*  \n  Note: Java generics information - <ATTR extends io.deephaven.chunk.attributes.Any>\n  \n  :param data: io.deephaven.chunk.WritableShortChunk<ATTR>[]\n  :return: io.deephaven.chunk.WritableShortChunkChunk<ATTR>\n  \n*Overload 2*  \n  Note: Java generics information - <ATTR extends io.deephaven.chunk.attributes.Any>\n  \n  :param data: io.deephaven.chunk.WritableShortChunk<ATTR>[]\n  :param offset: int\n  :param size: int\n  :return: io.deephaven.chunk.WritableShortChunkChunk<ATTR>"
+ },
+ "path": "io.deephaven.chunk.WritableShortChunkChunk",
+ "typeName": "class"
+}

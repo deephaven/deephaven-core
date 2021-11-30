@@ -7,23 +7,21 @@ description 'Engine Benchmark: Benchmarks for Engine modules'
 sourceSets {
     test {
         java {
-            srcDir 'benchmark'
+            srcDir 'src/benchmark/java'
         }
     }
 }
 
 dependencies {
-    testImplementation project(':engine-table')
+    testImplementation project(':engine-tuple'),
+            project(':engine-table'),
+            project(':BenchmarkSupport'),
+            TestTools.projectDependency(project, 'engine-rowset'),
+            TestTools.projectDependency(project, 'engine-table')
 
     testRuntime project(path: ':configs'),
             project(path: ':test-configs'),
-            project(':BenchmarkSupport'),
-            TestTools.projectDependency(project, 'engine-table'),
             'org.openjdk.jmh:jmh-generator-annprocess:1.21'
-
-//    testRuntimeOnly project(':Numerics')
-//    testRuntimeOnly project(':log-to-slf4j')
-//    Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
 }
 
 spotless {

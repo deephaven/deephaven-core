@@ -148,7 +148,7 @@ public class TestChunkColumnSource {
     @Test
     public void testFillMultipleRanges() {
         try (final WritableCharChunk<Values> charChunk1 = WritableCharChunk.makeWritableChunk(1024);
-             final WritableCharChunk<Values> charChunk2 = WritableCharChunk.makeWritableChunk(1024)) {
+                final WritableCharChunk<Values> charChunk2 = WritableCharChunk.makeWritableChunk(1024)) {
             for (int ii = 0; ii < 1024; ++ii) {
                 charChunk1.set(ii, (char) (1024 + ii));
                 charChunk2.set(ii, (char) (2048 + ii));
@@ -238,7 +238,7 @@ public class TestChunkColumnSource {
     }
 
     private void checkDoubles(WritableDoubleChunk<Values> doubleChunk1,
-                              WritableDoubleChunk<Values> doubleChunk2, ChunkColumnSource<?> doubleColumnSource) {
+            WritableDoubleChunk<Values> doubleChunk2, ChunkColumnSource<?> doubleColumnSource) {
         final WritableDoubleChunk<Values> destChunk = WritableDoubleChunk.makeWritableChunk(2048);
         try (final ChunkSource.FillContext doubleFillContext = doubleColumnSource.makeFillContext(2048)) {
             doubleColumnSource.fillChunk(doubleFillContext, destChunk, RowSequenceFactory.forRange(0, 2047));
@@ -332,7 +332,7 @@ public class TestChunkColumnSource {
     }
 
     private void checkLongs(WritableLongChunk<Values> longChunk1,
-                            WritableLongChunk<Values> longChunk2, ChunkColumnSource<?> longColumnSource) {
+            WritableLongChunk<Values> longChunk2, ChunkColumnSource<?> longColumnSource) {
         final WritableLongChunk<Values> destChunk = WritableLongChunk.makeWritableChunk(2048);
         try (final ChunkSource.FillContext longFillContext = longColumnSource.makeFillContext(2048)) {
             longColumnSource.fillChunk(longFillContext, destChunk, RowSequenceFactory.forRange(0, 2047));

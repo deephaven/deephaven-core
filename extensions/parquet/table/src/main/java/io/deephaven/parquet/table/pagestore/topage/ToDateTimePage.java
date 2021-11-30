@@ -22,7 +22,7 @@ public abstract class ToDateTimePage<ATTR extends Any> extends ToLongPage<ATTR> 
 
     @SuppressWarnings("unchecked")
     public static <ATTR extends Any> ToPage<ATTR, DateTime[]> create(@NotNull final Class<?> nativeType,
-                                                                     final LogicalTypeAnnotation.TimeUnit unit) {
+            final LogicalTypeAnnotation.TimeUnit unit) {
         if (DateTime.class.equals(nativeType)) {
             switch (unit) {
                 case MILLIS:

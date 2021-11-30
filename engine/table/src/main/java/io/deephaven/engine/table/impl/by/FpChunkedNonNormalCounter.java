@@ -273,7 +273,7 @@ abstract class FpChunkedNonNormalCounter {
 
         @Override
         public void fillChunk(@NotNull FillContext context,
-                              @NotNull WritableChunk<? super Values> destination, @NotNull RowSequence rowSequence) {
+                @NotNull WritableChunk<? super Values> destination, @NotNull RowSequence rowSequence) {
             final LongArraySource longArraySource = sourceSupplier.get();
             if (longArraySource == null) {
                 destination.fillWithNullValue(0, rowSequence.intSize());
@@ -284,7 +284,7 @@ abstract class FpChunkedNonNormalCounter {
 
         @Override
         public void fillPrevChunk(@NotNull FillContext context,
-                                  @NotNull WritableChunk<? super Values> destination, @NotNull RowSequence rowSequence) {
+                @NotNull WritableChunk<? super Values> destination, @NotNull RowSequence rowSequence) {
             final LongArraySource longArraySource = sourceSupplier.get();
             if (longArraySource == null) {
                 destination.fillWithNullValue(0, rowSequence.intSize());
@@ -295,7 +295,7 @@ abstract class FpChunkedNonNormalCounter {
 
         @Override
         public Chunk<? extends Values> getChunk(@NotNull GetContext context,
-                                                @NotNull RowSequence rowSequence) {
+                @NotNull RowSequence rowSequence) {
             final LongArraySource longArraySource = sourceSupplier.get();
             if (longArraySource == null) {
                 return doNullFill((DefaultGetContext) context, rowSequence.intSize());
@@ -326,7 +326,7 @@ abstract class FpChunkedNonNormalCounter {
 
         @Override
         public Chunk<? extends Values> getPrevChunk(@NotNull GetContext context,
-                                                    @NotNull RowSequence rowSequence) {
+                @NotNull RowSequence rowSequence) {
             final LongArraySource longArraySource = sourceSupplier.get();
             if (longArraySource == null) {
                 return doNullFill((DefaultGetContext) context, rowSequence.intSize());
@@ -337,7 +337,7 @@ abstract class FpChunkedNonNormalCounter {
 
         @Override
         public Chunk<? extends Values> getPrevChunk(@NotNull GetContext context, long firstKey,
-                                                    long lastKey) {
+                long lastKey) {
             final LongArraySource longArraySource = sourceSupplier.get();
             if (longArraySource == null) {
                 return doNullFill((DefaultGetContext) context,

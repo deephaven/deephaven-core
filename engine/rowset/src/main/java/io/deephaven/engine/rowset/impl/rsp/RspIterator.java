@@ -211,7 +211,7 @@ public class RspIterator implements PrimitiveIterator.OfLong, SafeCloseable {
 
                 @Override
                 public int copyTo(final WritableLongChunk<? extends RowKeys> chunk, final int offset,
-                                  final int max) {
+                        final int max) {
                     int c = 0;
                     final long last = Math.min(curr + max - 1, end);
                     while (curr <= last) {

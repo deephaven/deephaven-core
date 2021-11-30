@@ -1,7 +1,0 @@
-{
- "className": "io.deephaven.chunk.Attributes$RowKeys",
- "methods": {},
- "path": "io.deephaven.chunk.Attributes.RowKeys",
- "text": "The chunk contains row keys, which may be ordered or unordered.",
- "typeName": "interface"
-}

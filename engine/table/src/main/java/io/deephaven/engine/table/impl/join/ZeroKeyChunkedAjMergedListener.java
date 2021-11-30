@@ -220,14 +220,14 @@ public class ZeroKeyChunkedAjMergedListener extends MergedListener {
                     final RowSetShiftData rightShifted = rightRecorder.getShifted();
                     if (rightShifted.nonempty()) {
                         try (final RowSet fullPrevRowSet = rightTable.getRowSet().copyPrev();
-                             final RowSet previousToShift = fullPrevRowSet.minus(rightRestampRemovals);
-                             final SizedSafeCloseable<ColumnSource.FillContext> shiftFillContext =
+                                final RowSet previousToShift = fullPrevRowSet.minus(rightRestampRemovals);
+                                final SizedSafeCloseable<ColumnSource.FillContext> shiftFillContext =
                                         new SizedSafeCloseable<>(rightStampSource::makeFillContext);
-                             final SizedSafeCloseable<LongSortKernel<Values, RowKeys>> shiftSortContext =
+                                final SizedSafeCloseable<LongSortKernel<Values, RowKeys>> shiftSortContext =
                                         new SizedSafeCloseable<>(
                                                 sz -> LongSortKernel.makeContext(stampChunkType, order, sz, true));
-                             final SizedChunk<Values> shiftRightStampValues = new SizedChunk<>(stampChunkType);
-                             final SizedLongChunk<RowKeys> shiftRightStampKeys = new SizedLongChunk<>()) {
+                                final SizedChunk<Values> shiftRightStampValues = new SizedChunk<>(stampChunkType);
+                                final SizedLongChunk<RowKeys> shiftRightStampKeys = new SizedLongChunk<>()) {
                             final RowSetShiftData.Iterator sit = rightShifted.applyIterator();
                             while (sit.hasNext()) {
                                 sit.next();

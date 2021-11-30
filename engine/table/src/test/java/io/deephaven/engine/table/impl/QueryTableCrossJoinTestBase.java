@@ -591,8 +591,8 @@ public abstract class QueryTableCrossJoinTestBase extends QueryTableTestBase {
         final int CHUNK_SIZE = 4;
         final ColumnSource<Integer> column = jt.getColumnSource("I", int.class);
         try (final ColumnSource.FillContext context = column.makeFillContext(CHUNK_SIZE);
-             final WritableIntChunk<Values> dest = WritableIntChunk.makeWritableChunk(CHUNK_SIZE);
-             final ResettableWritableIntChunk<Values> rdest =
+                final WritableIntChunk<Values> dest = WritableIntChunk.makeWritableChunk(CHUNK_SIZE);
+                final ResettableWritableIntChunk<Values> rdest =
                         ResettableWritableIntChunk.makeResettableChunk()) {
 
             rdest.resetFromChunk(dest, 0, 4);

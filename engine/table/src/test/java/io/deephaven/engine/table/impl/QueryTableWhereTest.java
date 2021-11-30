@@ -685,7 +685,7 @@ public class QueryTableWhereTest {
 
         @Override
         public void filter(Chunk<? extends Values> values, LongChunk<OrderedRowKeys> keys,
-                           WritableLongChunk<OrderedRowKeys> results) {
+                WritableLongChunk<OrderedRowKeys> results) {
             if (++invokes == 1) {
                 latch.countDown();
             }

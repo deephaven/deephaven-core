@@ -44,8 +44,8 @@ public interface CopyKernel {
      * @param length the number of elements to copy
      */
     <T extends Any> void conditionalCopy(WritableChunk<T> output, Object baseInput, Object overInput,
-                                         long[] useOverInput,
-                                         int srcOffset, int dstOffset, int length);
+            long[] useOverInput,
+            int srcOffset, int dstOffset, int length);
 
     class Utils {
         /**

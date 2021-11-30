@@ -1,0 +1,7 @@
+{
+ "className": "io.deephaven.engine.table.impl.chunkattributes.StringSetBitmasks",
+ "methods": {},
+ "path": "io.deephaven.engine.table.impl.chunkattributes.StringSetBitmasks",
+ "text": "Attribute that specifies that a Chunk contains long values which are StringSets endoded as a bitmask.",
+ "typeName": "interface"
+}

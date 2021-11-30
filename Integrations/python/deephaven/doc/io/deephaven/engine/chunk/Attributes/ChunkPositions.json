@@ -1,6 +1,0 @@
-{
- "className": "io.deephaven.chunk.Attributes$ChunkPositions",
- "methods": {},
- "path": "io.deephaven.chunk.Attributes.ChunkPositions",
- "typeName": "interface"
-}

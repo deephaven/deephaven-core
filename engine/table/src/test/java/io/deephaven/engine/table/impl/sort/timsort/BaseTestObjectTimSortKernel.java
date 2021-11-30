@@ -33,25 +33,25 @@ import java.util.stream.Collectors;
 
 public abstract class BaseTestObjectTimSortKernel extends TestTimSortKernel {
     // region getJavaComparator
-    static Comparator<ObjectLongTuple> getJavaComparator() {
+    public static Comparator<ObjectLongTuple> getJavaComparator() {
         // noinspection unchecked
         return Comparator.comparing(x -> (Comparable)x.getFirstElement());
     }
     // endregion getJavaComparator
 
     // region getJavaMultiComparator
-    static Comparator<ObjectLongLongTuple> getJavaMultiComparator() {
+    public static Comparator<ObjectLongLongTuple> getJavaMultiComparator() {
         // noinspection unchecked
         return Comparator.comparing(x -> (Comparable)((ObjectLongLongTuple)x).getFirstElement()).thenComparing(x -> ((ObjectLongLongTuple)x).getSecondElement());
     }
     // endregion getJavaMultiComparator
 
+    public static class ObjectSortKernelStuff extends SortKernelStuff<ObjectLongTuple> {
 
-    static class ObjectSortKernelStuff extends SortKernelStuff<ObjectLongTuple> {
-        final WritableObjectChunk<Object, Any> ObjectChunk;
+        private final WritableObjectChunk<Object, Any> ObjectChunk;
         private final ObjectLongTimsortKernel.ObjectLongSortKernelContext context;
 
-        ObjectSortKernelStuff(List<ObjectLongTuple> javaTuples) {
+        public ObjectSortKernelStuff(List<ObjectLongTuple> javaTuples) {
             super(javaTuples.size());
             final int size = javaTuples.size();
             ObjectChunk = WritableObjectChunk.makeWritableChunk(size);
@@ -61,7 +61,7 @@ public abstract class BaseTestObjectTimSortKernel extends TestTimSortKernel {
         }
 
         @Override
-        void run() {
+        public void run() {
             ObjectLongTimsortKernel.sort(context, rowKeys, ObjectChunk);
         }
 
@@ -72,7 +72,8 @@ public abstract class BaseTestObjectTimSortKernel extends TestTimSortKernel {
     }
 
     public static class ObjectPartitionKernelStuff extends PartitionKernelStuff<ObjectLongTuple> {
-        final WritableObjectChunk valuesChunk;
+
+        private final WritableObjectChunk valuesChunk;
         private final ObjectPartitionKernel.PartitionKernelContext context;
         private final RowSet rowSet;
         private final ColumnSource<Object> columnSource;
@@ -115,9 +116,11 @@ public abstract class BaseTestObjectTimSortKernel extends TestTimSortKernel {
         }
     }
 
-    static class ObjectMergeStuff extends MergeStuff<ObjectLongTuple> {
-        final Object arrayValues[];
-        ObjectMergeStuff(List<ObjectLongTuple> javaTuples) {
+    public static class ObjectMergeStuff extends MergeStuff<ObjectLongTuple> {
+
+        private final Object arrayValues[];
+
+        public ObjectMergeStuff(List<ObjectLongTuple> javaTuples) {
             super(javaTuples);
             arrayValues = new Object[javaTuples.size()];
             for (int ii = 0; ii < javaTuples.size(); ++ii) {
@@ -125,7 +128,7 @@ public abstract class BaseTestObjectTimSortKernel extends TestTimSortKernel {
             }
         }
 
-        void run() {
+        public void run() {
             // region mergesort
             // noinspection unchecked
             MergeSort.mergeSort(posarray, posarray2, 0, arrayValues.length, 0, (pos1, pos2) -> Objects.compare((Comparable)arrayValues[(int)pos1], (Comparable)arrayValues[(int)pos2], Comparator.naturalOrder()));
@@ -183,7 +186,7 @@ public abstract class BaseTestObjectTimSortKernel extends TestTimSortKernel {
         }
 
         @Override
-        void run() {
+        public void run() {
             ObjectLongTimsortKernel.sort(context, rowKeys, primaryChunk, offsets, lengths);
             ObjectFindRunsKernel.findRuns(primaryChunk, offsets, lengths, offsetsOut, lengthsOut);
 //            dumpChunk(primaryChunk);

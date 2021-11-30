@@ -8,10 +8,34 @@
 
 package io.deephaven.plot;
 
+import groovy.lang.Closure;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.TableMap;
 import io.deephaven.gui.color.Color;
+import io.deephaven.plot.Figure;
+import io.deephaven.plot.FigureFactory;
+import io.deephaven.plot.Figure;
+import io.deephaven.plot.Font;
+import io.deephaven.plot.Font.FontStyle;
+import io.deephaven.plot.LineStyle;
+import io.deephaven.plot.LineStyle.LineEndStyle;
+import io.deephaven.plot.LineStyle.LineJoinStyle;
+import io.deephaven.plot.PlotStyle;
+import io.deephaven.plot.axistransformations.AxisTransform;
 import io.deephaven.plot.axistransformations.AxisTransforms;
 import io.deephaven.plot.composite.ScatterPlotMatrix;
+import io.deephaven.plot.datasets.data.IndexableData;
+import io.deephaven.plot.datasets.data.IndexableNumericData;
+import io.deephaven.plot.filters.SelectableDataSet;
+import io.deephaven.plot.filters.SelectableDataSetOneClick;
 import io.deephaven.plot.filters.Selectables;
+import io.deephaven.time.DateTime;
+import java.lang.Comparable;
+import java.lang.String;
+import java.util.Date;
+import java.util.List;
+import java.util.function.DoubleUnaryOperator;
 
 /** 
 * A library of methods for constructing plots.
@@ -455,7 +479,7 @@ public class PlottingConvenience {
     /**
     * See {@link io.deephaven.plot.Figure#catErrorBar} 
     **/
-    public static <T0 extends java.lang.Comparable> io.deephaven.plot.Figure catErrorBar(java.lang.Comparable seriesName, T0[] categories, io.deephaven.time.DateTime[] values, io.deephaven.time.DateTime[] yLow, io.deephaven.time.DateTime[] yHigh ) {
+    public static <T0 extends java.lang.Comparable> io.deephaven.plot.Figure catErrorBar( java.lang.Comparable seriesName, T0[] categories, io.deephaven.time.DateTime[] values, io.deephaven.time.DateTime[] yLow, io.deephaven.time.DateTime[] yHigh ) {
         return FigureFactory.figure().catErrorBar( seriesName, categories, values, yLow, yHigh );
     }
 
@@ -882,56 +906,56 @@ public class PlottingConvenience {
     /**
     * See {@link io.deephaven.plot.Figure#errorBarX} 
     **/
-    public static <T3 extends java.lang.Number> io.deephaven.plot.Figure errorBarX(java.lang.Comparable seriesName, io.deephaven.time.DateTime[] x, io.deephaven.time.DateTime[] xLow, io.deephaven.time.DateTime[] xHigh, T3[] y ) {
+    public static <T3 extends java.lang.Number> io.deephaven.plot.Figure errorBarX( java.lang.Comparable seriesName, io.deephaven.time.DateTime[] x, io.deephaven.time.DateTime[] xLow, io.deephaven.time.DateTime[] xHigh, T3[] y ) {
         return FigureFactory.figure().errorBarX( seriesName, x, xLow, xHigh, y );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#errorBarX} 
     **/
-    public static  io.deephaven.plot.Figure errorBarX(java.lang.Comparable seriesName, io.deephaven.time.DateTime[] x, io.deephaven.time.DateTime[] xLow, io.deephaven.time.DateTime[] xHigh, double[] y ) {
+    public static  io.deephaven.plot.Figure errorBarX( java.lang.Comparable seriesName, io.deephaven.time.DateTime[] x, io.deephaven.time.DateTime[] xLow, io.deephaven.time.DateTime[] xHigh, double[] y ) {
         return FigureFactory.figure().errorBarX( seriesName, x, xLow, xHigh, y );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#errorBarX} 
     **/
-    public static  io.deephaven.plot.Figure errorBarX(java.lang.Comparable seriesName, io.deephaven.time.DateTime[] x, io.deephaven.time.DateTime[] xLow, io.deephaven.time.DateTime[] xHigh, float[] y ) {
+    public static  io.deephaven.plot.Figure errorBarX( java.lang.Comparable seriesName, io.deephaven.time.DateTime[] x, io.deephaven.time.DateTime[] xLow, io.deephaven.time.DateTime[] xHigh, float[] y ) {
         return FigureFactory.figure().errorBarX( seriesName, x, xLow, xHigh, y );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#errorBarX} 
     **/
-    public static  io.deephaven.plot.Figure errorBarX(java.lang.Comparable seriesName, io.deephaven.time.DateTime[] x, io.deephaven.time.DateTime[] xLow, io.deephaven.time.DateTime[] xHigh, int[] y ) {
+    public static  io.deephaven.plot.Figure errorBarX( java.lang.Comparable seriesName, io.deephaven.time.DateTime[] x, io.deephaven.time.DateTime[] xLow, io.deephaven.time.DateTime[] xHigh, int[] y ) {
         return FigureFactory.figure().errorBarX( seriesName, x, xLow, xHigh, y );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#errorBarX} 
     **/
-    public static  io.deephaven.plot.Figure errorBarX(java.lang.Comparable seriesName, io.deephaven.time.DateTime[] x, io.deephaven.time.DateTime[] xLow, io.deephaven.time.DateTime[] xHigh, long[] y ) {
+    public static  io.deephaven.plot.Figure errorBarX( java.lang.Comparable seriesName, io.deephaven.time.DateTime[] x, io.deephaven.time.DateTime[] xLow, io.deephaven.time.DateTime[] xHigh, long[] y ) {
         return FigureFactory.figure().errorBarX( seriesName, x, xLow, xHigh, y );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#errorBarX} 
     **/
-    public static  io.deephaven.plot.Figure errorBarX(java.lang.Comparable seriesName, io.deephaven.time.DateTime[] x, io.deephaven.time.DateTime[] xLow, io.deephaven.time.DateTime[] xHigh, io.deephaven.time.DateTime[] y ) {
+    public static  io.deephaven.plot.Figure errorBarX( java.lang.Comparable seriesName, io.deephaven.time.DateTime[] x, io.deephaven.time.DateTime[] xLow, io.deephaven.time.DateTime[] xHigh, io.deephaven.time.DateTime[] y ) {
         return FigureFactory.figure().errorBarX( seriesName, x, xLow, xHigh, y );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#errorBarX} 
     **/
-    public static  io.deephaven.plot.Figure errorBarX(java.lang.Comparable seriesName, io.deephaven.time.DateTime[] x, io.deephaven.time.DateTime[] xLow, io.deephaven.time.DateTime[] xHigh, short[] y ) {
+    public static  io.deephaven.plot.Figure errorBarX( java.lang.Comparable seriesName, io.deephaven.time.DateTime[] x, io.deephaven.time.DateTime[] xLow, io.deephaven.time.DateTime[] xHigh, short[] y ) {
         return FigureFactory.figure().errorBarX( seriesName, x, xLow, xHigh, y );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#errorBarX} 
     **/
-    public static <T3 extends java.lang.Number> io.deephaven.plot.Figure errorBarX(java.lang.Comparable seriesName, io.deephaven.time.DateTime[] x, io.deephaven.time.DateTime[] xLow, io.deephaven.time.DateTime[] xHigh, java.util.List<T3> y ) {
+    public static <T3 extends java.lang.Number> io.deephaven.plot.Figure errorBarX( java.lang.Comparable seriesName, io.deephaven.time.DateTime[] x, io.deephaven.time.DateTime[] xLow, io.deephaven.time.DateTime[] xHigh, java.util.List<T3> y ) {
         return FigureFactory.figure().errorBarX( seriesName, x, xLow, xHigh, y );
     }
 
@@ -1071,7 +1095,7 @@ public class PlottingConvenience {
     /**
     * See {@link io.deephaven.plot.Figure#errorBarXY} 
     **/
-    public static <T0 extends java.lang.Number,T1 extends java.lang.Number,T2 extends java.lang.Number> io.deephaven.plot.Figure errorBarXY(java.lang.Comparable seriesName, T0[] x, T1[] xLow, T2[] xHigh, io.deephaven.time.DateTime[] y, io.deephaven.time.DateTime[] yLow, io.deephaven.time.DateTime[] yHigh ) {
+    public static <T0 extends java.lang.Number,T1 extends java.lang.Number,T2 extends java.lang.Number> io.deephaven.plot.Figure errorBarXY( java.lang.Comparable seriesName, T0[] x, T1[] xLow, T2[] xHigh, io.deephaven.time.DateTime[] y, io.deephaven.time.DateTime[] yLow, io.deephaven.time.DateTime[] yHigh ) {
         return FigureFactory.figure().errorBarXY( seriesName, x, xLow, xHigh, y, yLow, yHigh );
     }
 
@@ -1092,7 +1116,7 @@ public class PlottingConvenience {
     /**
     * See {@link io.deephaven.plot.Figure#errorBarXY} 
     **/
-    public static  io.deephaven.plot.Figure errorBarXY(java.lang.Comparable seriesName, double[] x, double[] xLow, double[] xHigh, io.deephaven.time.DateTime[] y, io.deephaven.time.DateTime[] yLow, io.deephaven.time.DateTime[] yHigh ) {
+    public static  io.deephaven.plot.Figure errorBarXY( java.lang.Comparable seriesName, double[] x, double[] xLow, double[] xHigh, io.deephaven.time.DateTime[] y, io.deephaven.time.DateTime[] yLow, io.deephaven.time.DateTime[] yHigh ) {
         return FigureFactory.figure().errorBarXY( seriesName, x, xLow, xHigh, y, yLow, yHigh );
     }
 
@@ -1113,7 +1137,7 @@ public class PlottingConvenience {
     /**
     * See {@link io.deephaven.plot.Figure#errorBarXY} 
     **/
-    public static  io.deephaven.plot.Figure errorBarXY(java.lang.Comparable seriesName, float[] x, float[] xLow, float[] xHigh, io.deephaven.time.DateTime[] y, io.deephaven.time.DateTime[] yLow, io.deephaven.time.DateTime[] yHigh ) {
+    public static  io.deephaven.plot.Figure errorBarXY( java.lang.Comparable seriesName, float[] x, float[] xLow, float[] xHigh, io.deephaven.time.DateTime[] y, io.deephaven.time.DateTime[] yLow, io.deephaven.time.DateTime[] yHigh ) {
         return FigureFactory.figure().errorBarXY( seriesName, x, xLow, xHigh, y, yLow, yHigh );
     }
 
@@ -1134,7 +1158,7 @@ public class PlottingConvenience {
     /**
     * See {@link io.deephaven.plot.Figure#errorBarXY} 
     **/
-    public static  io.deephaven.plot.Figure errorBarXY(java.lang.Comparable seriesName, int[] x, int[] xLow, int[] xHigh, io.deephaven.time.DateTime[] y, io.deephaven.time.DateTime[] yLow, io.deephaven.time.DateTime[] yHigh ) {
+    public static  io.deephaven.plot.Figure errorBarXY( java.lang.Comparable seriesName, int[] x, int[] xLow, int[] xHigh, io.deephaven.time.DateTime[] y, io.deephaven.time.DateTime[] yLow, io.deephaven.time.DateTime[] yHigh ) {
         return FigureFactory.figure().errorBarXY( seriesName, x, xLow, xHigh, y, yLow, yHigh );
     }
 
@@ -1155,7 +1179,7 @@ public class PlottingConvenience {
     /**
     * See {@link io.deephaven.plot.Figure#errorBarXY} 
     **/
-    public static  io.deephaven.plot.Figure errorBarXY(java.lang.Comparable seriesName, long[] x, long[] xLow, long[] xHigh, io.deephaven.time.DateTime[] y, io.deephaven.time.DateTime[] yLow, io.deephaven.time.DateTime[] yHigh ) {
+    public static  io.deephaven.plot.Figure errorBarXY( java.lang.Comparable seriesName, long[] x, long[] xLow, long[] xHigh, io.deephaven.time.DateTime[] y, io.deephaven.time.DateTime[] yLow, io.deephaven.time.DateTime[] yHigh ) {
         return FigureFactory.figure().errorBarXY( seriesName, x, xLow, xHigh, y, yLow, yHigh );
     }
 
@@ -1169,56 +1193,56 @@ public class PlottingConvenience {
     /**
     * See {@link io.deephaven.plot.Figure#errorBarXY} 
     **/
-    public static <T3 extends java.lang.Number,T4 extends java.lang.Number,T5 extends java.lang.Number> io.deephaven.plot.Figure errorBarXY(java.lang.Comparable seriesName, io.deephaven.time.DateTime[] x, io.deephaven.time.DateTime[] xLow, io.deephaven.time.DateTime[] xHigh, T3[] y, T4[] yLow, T5[] yHigh ) {
+    public static <T3 extends java.lang.Number,T4 extends java.lang.Number,T5 extends java.lang.Number> io.deephaven.plot.Figure errorBarXY( java.lang.Comparable seriesName, io.deephaven.time.DateTime[] x, io.deephaven.time.DateTime[] xLow, io.deephaven.time.DateTime[] xHigh, T3[] y, T4[] yLow, T5[] yHigh ) {
         return FigureFactory.figure().errorBarXY( seriesName, x, xLow, xHigh, y, yLow, yHigh );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#errorBarXY} 
     **/
-    public static  io.deephaven.plot.Figure errorBarXY(java.lang.Comparable seriesName, io.deephaven.time.DateTime[] x, io.deephaven.time.DateTime[] xLow, io.deephaven.time.DateTime[] xHigh, double[] y, double[] yLow, double[] yHigh ) {
+    public static  io.deephaven.plot.Figure errorBarXY( java.lang.Comparable seriesName, io.deephaven.time.DateTime[] x, io.deephaven.time.DateTime[] xLow, io.deephaven.time.DateTime[] xHigh, double[] y, double[] yLow, double[] yHigh ) {
         return FigureFactory.figure().errorBarXY( seriesName, x, xLow, xHigh, y, yLow, yHigh );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#errorBarXY} 
     **/
-    public static  io.deephaven.plot.Figure errorBarXY(java.lang.Comparable seriesName, io.deephaven.time.DateTime[] x, io.deephaven.time.DateTime[] xLow, io.deephaven.time.DateTime[] xHigh, float[] y, float[] yLow, float[] yHigh ) {
+    public static  io.deephaven.plot.Figure errorBarXY( java.lang.Comparable seriesName, io.deephaven.time.DateTime[] x, io.deephaven.time.DateTime[] xLow, io.deephaven.time.DateTime[] xHigh, float[] y, float[] yLow, float[] yHigh ) {
         return FigureFactory.figure().errorBarXY( seriesName, x, xLow, xHigh, y, yLow, yHigh );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#errorBarXY} 
     **/
-    public static  io.deephaven.plot.Figure errorBarXY(java.lang.Comparable seriesName, io.deephaven.time.DateTime[] x, io.deephaven.time.DateTime[] xLow, io.deephaven.time.DateTime[] xHigh, int[] y, int[] yLow, int[] yHigh ) {
+    public static  io.deephaven.plot.Figure errorBarXY( java.lang.Comparable seriesName, io.deephaven.time.DateTime[] x, io.deephaven.time.DateTime[] xLow, io.deephaven.time.DateTime[] xHigh, int[] y, int[] yLow, int[] yHigh ) {
         return FigureFactory.figure().errorBarXY( seriesName, x, xLow, xHigh, y, yLow, yHigh );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#errorBarXY} 
     **/
-    public static  io.deephaven.plot.Figure errorBarXY(java.lang.Comparable seriesName, io.deephaven.time.DateTime[] x, io.deephaven.time.DateTime[] xLow, io.deephaven.time.DateTime[] xHigh, long[] y, long[] yLow, long[] yHigh ) {
+    public static  io.deephaven.plot.Figure errorBarXY( java.lang.Comparable seriesName, io.deephaven.time.DateTime[] x, io.deephaven.time.DateTime[] xLow, io.deephaven.time.DateTime[] xHigh, long[] y, long[] yLow, long[] yHigh ) {
         return FigureFactory.figure().errorBarXY( seriesName, x, xLow, xHigh, y, yLow, yHigh );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#errorBarXY} 
     **/
-    public static  io.deephaven.plot.Figure errorBarXY(java.lang.Comparable seriesName, io.deephaven.time.DateTime[] x, io.deephaven.time.DateTime[] xLow, io.deephaven.time.DateTime[] xHigh, io.deephaven.time.DateTime[] y, io.deephaven.time.DateTime[] yLow, io.deephaven.time.DateTime[] yHigh ) {
+    public static  io.deephaven.plot.Figure errorBarXY( java.lang.Comparable seriesName, io.deephaven.time.DateTime[] x, io.deephaven.time.DateTime[] xLow, io.deephaven.time.DateTime[] xHigh, io.deephaven.time.DateTime[] y, io.deephaven.time.DateTime[] yLow, io.deephaven.time.DateTime[] yHigh ) {
         return FigureFactory.figure().errorBarXY( seriesName, x, xLow, xHigh, y, yLow, yHigh );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#errorBarXY} 
     **/
-    public static  io.deephaven.plot.Figure errorBarXY(java.lang.Comparable seriesName, io.deephaven.time.DateTime[] x, io.deephaven.time.DateTime[] xLow, io.deephaven.time.DateTime[] xHigh, short[] y, short[] yLow, short[] yHigh ) {
+    public static  io.deephaven.plot.Figure errorBarXY( java.lang.Comparable seriesName, io.deephaven.time.DateTime[] x, io.deephaven.time.DateTime[] xLow, io.deephaven.time.DateTime[] xHigh, short[] y, short[] yLow, short[] yHigh ) {
         return FigureFactory.figure().errorBarXY( seriesName, x, xLow, xHigh, y, yLow, yHigh );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#errorBarXY} 
     **/
-    public static <T3 extends java.lang.Number,T4 extends java.lang.Number,T5 extends java.lang.Number> io.deephaven.plot.Figure errorBarXY(java.lang.Comparable seriesName, io.deephaven.time.DateTime[] x, io.deephaven.time.DateTime[] xLow, io.deephaven.time.DateTime[] xHigh, java.util.List<T3> y, java.util.List<T4> yLow, java.util.List<T5> yHigh ) {
+    public static <T3 extends java.lang.Number,T4 extends java.lang.Number,T5 extends java.lang.Number> io.deephaven.plot.Figure errorBarXY( java.lang.Comparable seriesName, io.deephaven.time.DateTime[] x, io.deephaven.time.DateTime[] xLow, io.deephaven.time.DateTime[] xHigh, java.util.List<T3> y, java.util.List<T4> yLow, java.util.List<T5> yHigh ) {
         return FigureFactory.figure().errorBarXY( seriesName, x, xLow, xHigh, y, yLow, yHigh );
     }
 
@@ -1281,7 +1305,7 @@ public class PlottingConvenience {
     /**
     * See {@link io.deephaven.plot.Figure#errorBarXY} 
     **/
-    public static  io.deephaven.plot.Figure errorBarXY(java.lang.Comparable seriesName, short[] x, short[] xLow, short[] xHigh, io.deephaven.time.DateTime[] y, io.deephaven.time.DateTime[] yLow, io.deephaven.time.DateTime[] yHigh ) {
+    public static  io.deephaven.plot.Figure errorBarXY( java.lang.Comparable seriesName, short[] x, short[] xLow, short[] xHigh, io.deephaven.time.DateTime[] y, io.deephaven.time.DateTime[] yLow, io.deephaven.time.DateTime[] yHigh ) {
         return FigureFactory.figure().errorBarXY( seriesName, x, xLow, xHigh, y, yLow, yHigh );
     }
 
@@ -1302,7 +1326,7 @@ public class PlottingConvenience {
     /**
     * See {@link io.deephaven.plot.Figure#errorBarXY} 
     **/
-    public static <T0 extends java.lang.Number,T1 extends java.lang.Number,T2 extends java.lang.Number> io.deephaven.plot.Figure errorBarXY(java.lang.Comparable seriesName, java.util.List<T0> x, java.util.List<T1> xLow, java.util.List<T2> xHigh, io.deephaven.time.DateTime[] y, io.deephaven.time.DateTime[] yLow, io.deephaven.time.DateTime[] yHigh ) {
+    public static <T0 extends java.lang.Number,T1 extends java.lang.Number,T2 extends java.lang.Number> io.deephaven.plot.Figure errorBarXY( java.lang.Comparable seriesName, java.util.List<T0> x, java.util.List<T1> xLow, java.util.List<T2> xHigh, io.deephaven.time.DateTime[] y, io.deephaven.time.DateTime[] yLow, io.deephaven.time.DateTime[] yHigh ) {
         return FigureFactory.figure().errorBarXY( seriesName, x, xLow, xHigh, y, yLow, yHigh );
     }
 
@@ -1358,7 +1382,7 @@ public class PlottingConvenience {
     /**
     * See {@link io.deephaven.plot.Figure#errorBarY} 
     **/
-    public static <T0 extends java.lang.Number> io.deephaven.plot.Figure errorBarY(java.lang.Comparable seriesName, T0[] x, io.deephaven.time.DateTime[] y, io.deephaven.time.DateTime[] yLow, io.deephaven.time.DateTime[] yHigh ) {
+    public static <T0 extends java.lang.Number> io.deephaven.plot.Figure errorBarY( java.lang.Comparable seriesName, T0[] x, io.deephaven.time.DateTime[] y, io.deephaven.time.DateTime[] yLow, io.deephaven.time.DateTime[] yHigh ) {
         return FigureFactory.figure().errorBarY( seriesName, x, y, yLow, yHigh );
     }
 
@@ -1379,7 +1403,7 @@ public class PlottingConvenience {
     /**
     * See {@link io.deephaven.plot.Figure#errorBarY} 
     **/
-    public static  io.deephaven.plot.Figure errorBarY(java.lang.Comparable seriesName, double[] x, io.deephaven.time.DateTime[] y, io.deephaven.time.DateTime[] yLow, io.deephaven.time.DateTime[] yHigh ) {
+    public static  io.deephaven.plot.Figure errorBarY( java.lang.Comparable seriesName, double[] x, io.deephaven.time.DateTime[] y, io.deephaven.time.DateTime[] yLow, io.deephaven.time.DateTime[] yHigh ) {
         return FigureFactory.figure().errorBarY( seriesName, x, y, yLow, yHigh );
     }
 
@@ -1400,7 +1424,7 @@ public class PlottingConvenience {
     /**
     * See {@link io.deephaven.plot.Figure#errorBarY} 
     **/
-    public static  io.deephaven.plot.Figure errorBarY(java.lang.Comparable seriesName, float[] x, io.deephaven.time.DateTime[] y, io.deephaven.time.DateTime[] yLow, io.deephaven.time.DateTime[] yHigh ) {
+    public static  io.deephaven.plot.Figure errorBarY( java.lang.Comparable seriesName, float[] x, io.deephaven.time.DateTime[] y, io.deephaven.time.DateTime[] yLow, io.deephaven.time.DateTime[] yHigh ) {
         return FigureFactory.figure().errorBarY( seriesName, x, y, yLow, yHigh );
     }
 
@@ -1421,7 +1445,7 @@ public class PlottingConvenience {
     /**
     * See {@link io.deephaven.plot.Figure#errorBarY} 
     **/
-    public static  io.deephaven.plot.Figure errorBarY(java.lang.Comparable seriesName, int[] x, io.deephaven.time.DateTime[] y, io.deephaven.time.DateTime[] yLow, io.deephaven.time.DateTime[] yHigh ) {
+    public static  io.deephaven.plot.Figure errorBarY( java.lang.Comparable seriesName, int[] x, io.deephaven.time.DateTime[] y, io.deephaven.time.DateTime[] yLow, io.deephaven.time.DateTime[] yHigh ) {
         return FigureFactory.figure().errorBarY( seriesName, x, y, yLow, yHigh );
     }
 
@@ -1442,7 +1466,7 @@ public class PlottingConvenience {
     /**
     * See {@link io.deephaven.plot.Figure#errorBarY} 
     **/
-    public static  io.deephaven.plot.Figure errorBarY(java.lang.Comparable seriesName, long[] x, io.deephaven.time.DateTime[] y, io.deephaven.time.DateTime[] yLow, io.deephaven.time.DateTime[] yHigh ) {
+    public static  io.deephaven.plot.Figure errorBarY( java.lang.Comparable seriesName, long[] x, io.deephaven.time.DateTime[] y, io.deephaven.time.DateTime[] yLow, io.deephaven.time.DateTime[] yHigh ) {
         return FigureFactory.figure().errorBarY( seriesName, x, y, yLow, yHigh );
     }
 
@@ -1456,56 +1480,56 @@ public class PlottingConvenience {
     /**
     * See {@link io.deephaven.plot.Figure#errorBarY} 
     **/
-    public static <T1 extends java.lang.Number,T2 extends java.lang.Number,T3 extends java.lang.Number> io.deephaven.plot.Figure errorBarY(java.lang.Comparable seriesName, io.deephaven.time.DateTime[] x, T1[] y, T2[] yLow, T3[] yHigh ) {
+    public static <T1 extends java.lang.Number,T2 extends java.lang.Number,T3 extends java.lang.Number> io.deephaven.plot.Figure errorBarY( java.lang.Comparable seriesName, io.deephaven.time.DateTime[] x, T1[] y, T2[] yLow, T3[] yHigh ) {
         return FigureFactory.figure().errorBarY( seriesName, x, y, yLow, yHigh );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#errorBarY} 
     **/
-    public static  io.deephaven.plot.Figure errorBarY(java.lang.Comparable seriesName, io.deephaven.time.DateTime[] x, double[] y, double[] yLow, double[] yHigh ) {
+    public static  io.deephaven.plot.Figure errorBarY( java.lang.Comparable seriesName, io.deephaven.time.DateTime[] x, double[] y, double[] yLow, double[] yHigh ) {
         return FigureFactory.figure().errorBarY( seriesName, x, y, yLow, yHigh );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#errorBarY} 
     **/
-    public static  io.deephaven.plot.Figure errorBarY(java.lang.Comparable seriesName, io.deephaven.time.DateTime[] x, float[] y, float[] yLow, float[] yHigh ) {
+    public static  io.deephaven.plot.Figure errorBarY( java.lang.Comparable seriesName, io.deephaven.time.DateTime[] x, float[] y, float[] yLow, float[] yHigh ) {
         return FigureFactory.figure().errorBarY( seriesName, x, y, yLow, yHigh );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#errorBarY} 
     **/
-    public static  io.deephaven.plot.Figure errorBarY(java.lang.Comparable seriesName, io.deephaven.time.DateTime[] x, int[] y, int[] yLow, int[] yHigh ) {
+    public static  io.deephaven.plot.Figure errorBarY( java.lang.Comparable seriesName, io.deephaven.time.DateTime[] x, int[] y, int[] yLow, int[] yHigh ) {
         return FigureFactory.figure().errorBarY( seriesName, x, y, yLow, yHigh );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#errorBarY} 
     **/
-    public static  io.deephaven.plot.Figure errorBarY(java.lang.Comparable seriesName, io.deephaven.time.DateTime[] x, long[] y, long[] yLow, long[] yHigh ) {
+    public static  io.deephaven.plot.Figure errorBarY( java.lang.Comparable seriesName, io.deephaven.time.DateTime[] x, long[] y, long[] yLow, long[] yHigh ) {
         return FigureFactory.figure().errorBarY( seriesName, x, y, yLow, yHigh );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#errorBarY} 
     **/
-    public static  io.deephaven.plot.Figure errorBarY(java.lang.Comparable seriesName, io.deephaven.time.DateTime[] x, io.deephaven.time.DateTime[] y, io.deephaven.time.DateTime[] yLow, io.deephaven.time.DateTime[] yHigh ) {
+    public static  io.deephaven.plot.Figure errorBarY( java.lang.Comparable seriesName, io.deephaven.time.DateTime[] x, io.deephaven.time.DateTime[] y, io.deephaven.time.DateTime[] yLow, io.deephaven.time.DateTime[] yHigh ) {
         return FigureFactory.figure().errorBarY( seriesName, x, y, yLow, yHigh );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#errorBarY} 
     **/
-    public static  io.deephaven.plot.Figure errorBarY(java.lang.Comparable seriesName, io.deephaven.time.DateTime[] x, short[] y, short[] yLow, short[] yHigh ) {
+    public static  io.deephaven.plot.Figure errorBarY( java.lang.Comparable seriesName, io.deephaven.time.DateTime[] x, short[] y, short[] yLow, short[] yHigh ) {
         return FigureFactory.figure().errorBarY( seriesName, x, y, yLow, yHigh );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#errorBarY} 
     **/
-    public static <T1 extends java.lang.Number,T2 extends java.lang.Number,T3 extends java.lang.Number> io.deephaven.plot.Figure errorBarY(java.lang.Comparable seriesName, io.deephaven.time.DateTime[] x, java.util.List<T1> y, java.util.List<T2> yLow, java.util.List<T3> yHigh ) {
+    public static <T1 extends java.lang.Number,T2 extends java.lang.Number,T3 extends java.lang.Number> io.deephaven.plot.Figure errorBarY( java.lang.Comparable seriesName, io.deephaven.time.DateTime[] x, java.util.List<T1> y, java.util.List<T2> yLow, java.util.List<T3> yHigh ) {
         return FigureFactory.figure().errorBarY( seriesName, x, y, yLow, yHigh );
     }
 
@@ -1568,7 +1592,7 @@ public class PlottingConvenience {
     /**
     * See {@link io.deephaven.plot.Figure#errorBarY} 
     **/
-    public static  io.deephaven.plot.Figure errorBarY(java.lang.Comparable seriesName, short[] x, io.deephaven.time.DateTime[] y, io.deephaven.time.DateTime[] yLow, io.deephaven.time.DateTime[] yHigh ) {
+    public static  io.deephaven.plot.Figure errorBarY( java.lang.Comparable seriesName, short[] x, io.deephaven.time.DateTime[] y, io.deephaven.time.DateTime[] yLow, io.deephaven.time.DateTime[] yHigh ) {
         return FigureFactory.figure().errorBarY( seriesName, x, y, yLow, yHigh );
     }
 
@@ -1589,7 +1613,7 @@ public class PlottingConvenience {
     /**
     * See {@link io.deephaven.plot.Figure#errorBarY} 
     **/
-    public static <T0 extends java.lang.Number> io.deephaven.plot.Figure errorBarY(java.lang.Comparable seriesName, java.util.List<T0> x, io.deephaven.time.DateTime[] y, io.deephaven.time.DateTime[] yLow, io.deephaven.time.DateTime[] yHigh ) {
+    public static <T0 extends java.lang.Number> io.deephaven.plot.Figure errorBarY( java.lang.Comparable seriesName, java.util.List<T0> x, io.deephaven.time.DateTime[] y, io.deephaven.time.DateTime[] yLow, io.deephaven.time.DateTime[] yHigh ) {
         return FigureFactory.figure().errorBarY( seriesName, x, y, yLow, yHigh );
     }
 
@@ -1820,49 +1844,49 @@ public class PlottingConvenience {
     /**
     * See {@link io.deephaven.plot.Figure#ohlcPlot} 
     **/
-    public static <T1 extends java.lang.Number,T2 extends java.lang.Number,T3 extends java.lang.Number,T4 extends java.lang.Number> io.deephaven.plot.Figure ohlcPlot(java.lang.Comparable seriesName, io.deephaven.time.DateTime[] time, T1[] open, T2[] high, T3[] low, T4[] close ) {
+    public static <T1 extends java.lang.Number,T2 extends java.lang.Number,T3 extends java.lang.Number,T4 extends java.lang.Number> io.deephaven.plot.Figure ohlcPlot( java.lang.Comparable seriesName, io.deephaven.time.DateTime[] time, T1[] open, T2[] high, T3[] low, T4[] close ) {
         return FigureFactory.figure().ohlcPlot( seriesName, time, open, high, low, close );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#ohlcPlot} 
     **/
-    public static  io.deephaven.plot.Figure ohlcPlot(java.lang.Comparable seriesName, io.deephaven.time.DateTime[] time, double[] open, double[] high, double[] low, double[] close ) {
+    public static  io.deephaven.plot.Figure ohlcPlot( java.lang.Comparable seriesName, io.deephaven.time.DateTime[] time, double[] open, double[] high, double[] low, double[] close ) {
         return FigureFactory.figure().ohlcPlot( seriesName, time, open, high, low, close );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#ohlcPlot} 
     **/
-    public static  io.deephaven.plot.Figure ohlcPlot(java.lang.Comparable seriesName, io.deephaven.time.DateTime[] time, float[] open, float[] high, float[] low, float[] close ) {
+    public static  io.deephaven.plot.Figure ohlcPlot( java.lang.Comparable seriesName, io.deephaven.time.DateTime[] time, float[] open, float[] high, float[] low, float[] close ) {
         return FigureFactory.figure().ohlcPlot( seriesName, time, open, high, low, close );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#ohlcPlot} 
     **/
-    public static  io.deephaven.plot.Figure ohlcPlot(java.lang.Comparable seriesName, io.deephaven.time.DateTime[] time, int[] open, int[] high, int[] low, int[] close ) {
+    public static  io.deephaven.plot.Figure ohlcPlot( java.lang.Comparable seriesName, io.deephaven.time.DateTime[] time, int[] open, int[] high, int[] low, int[] close ) {
         return FigureFactory.figure().ohlcPlot( seriesName, time, open, high, low, close );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#ohlcPlot} 
     **/
-    public static  io.deephaven.plot.Figure ohlcPlot(java.lang.Comparable seriesName, io.deephaven.time.DateTime[] time, long[] open, long[] high, long[] low, long[] close ) {
+    public static  io.deephaven.plot.Figure ohlcPlot( java.lang.Comparable seriesName, io.deephaven.time.DateTime[] time, long[] open, long[] high, long[] low, long[] close ) {
         return FigureFactory.figure().ohlcPlot( seriesName, time, open, high, low, close );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#ohlcPlot} 
     **/
-    public static  io.deephaven.plot.Figure ohlcPlot(java.lang.Comparable seriesName, io.deephaven.time.DateTime[] time, short[] open, short[] high, short[] low, short[] close ) {
+    public static  io.deephaven.plot.Figure ohlcPlot( java.lang.Comparable seriesName, io.deephaven.time.DateTime[] time, short[] open, short[] high, short[] low, short[] close ) {
         return FigureFactory.figure().ohlcPlot( seriesName, time, open, high, low, close );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#ohlcPlot} 
     **/
-    public static <T1 extends java.lang.Number,T2 extends java.lang.Number,T3 extends java.lang.Number,T4 extends java.lang.Number> io.deephaven.plot.Figure ohlcPlot(java.lang.Comparable seriesName, io.deephaven.time.DateTime[] time, java.util.List<T1> open, java.util.List<T2> high, java.util.List<T3> low, java.util.List<T4> close ) {
+    public static <T1 extends java.lang.Number,T2 extends java.lang.Number,T3 extends java.lang.Number,T4 extends java.lang.Number> io.deephaven.plot.Figure ohlcPlot( java.lang.Comparable seriesName, io.deephaven.time.DateTime[] time, java.util.List<T1> open, java.util.List<T2> high, java.util.List<T3> low, java.util.List<T4> close ) {
         return FigureFactory.figure().ohlcPlot( seriesName, time, open, high, low, close );
     }
 
@@ -2401,63 +2425,63 @@ public class PlottingConvenience {
     /**
     * See {@link io.deephaven.plot.Figure#plot} 
     **/
-    public static <T1 extends java.lang.Number> io.deephaven.plot.Figure plot(java.lang.Comparable seriesName, io.deephaven.time.DateTime[] x, T1[] y ) {
+    public static <T1 extends java.lang.Number> io.deephaven.plot.Figure plot( java.lang.Comparable seriesName, io.deephaven.time.DateTime[] x, T1[] y ) {
         return FigureFactory.figure().plot( seriesName, x, y );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#plot} 
     **/
-    public static  io.deephaven.plot.Figure plot(java.lang.Comparable seriesName, io.deephaven.time.DateTime[] x, double[] y ) {
+    public static  io.deephaven.plot.Figure plot( java.lang.Comparable seriesName, io.deephaven.time.DateTime[] x, double[] y ) {
         return FigureFactory.figure().plot( seriesName, x, y );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#plot} 
     **/
-    public static  io.deephaven.plot.Figure plot(java.lang.Comparable seriesName, io.deephaven.time.DateTime[] x, float[] y ) {
+    public static  io.deephaven.plot.Figure plot( java.lang.Comparable seriesName, io.deephaven.time.DateTime[] x, float[] y ) {
         return FigureFactory.figure().plot( seriesName, x, y );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#plot} 
     **/
-    public static  io.deephaven.plot.Figure plot(java.lang.Comparable seriesName, io.deephaven.time.DateTime[] x, int[] y ) {
+    public static  io.deephaven.plot.Figure plot( java.lang.Comparable seriesName, io.deephaven.time.DateTime[] x, int[] y ) {
         return FigureFactory.figure().plot( seriesName, x, y );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#plot} 
     **/
-    public static  io.deephaven.plot.Figure plot(java.lang.Comparable seriesName, io.deephaven.time.DateTime[] x, long[] y ) {
+    public static  io.deephaven.plot.Figure plot( java.lang.Comparable seriesName, io.deephaven.time.DateTime[] x, long[] y ) {
         return FigureFactory.figure().plot( seriesName, x, y );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#plot} 
     **/
-    public static  io.deephaven.plot.Figure plot(java.lang.Comparable seriesName, io.deephaven.time.DateTime[] x, io.deephaven.time.DateTime[] y ) {
+    public static  io.deephaven.plot.Figure plot( java.lang.Comparable seriesName, io.deephaven.time.DateTime[] x, io.deephaven.time.DateTime[] y ) {
         return FigureFactory.figure().plot( seriesName, x, y );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#plot} 
     **/
-    public static  io.deephaven.plot.Figure plot(java.lang.Comparable seriesName, io.deephaven.time.DateTime[] x, java.util.Date[] y ) {
+    public static  io.deephaven.plot.Figure plot( java.lang.Comparable seriesName, io.deephaven.time.DateTime[] x, java.util.Date[] y ) {
         return FigureFactory.figure().plot( seriesName, x, y );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#plot} 
     **/
-    public static  io.deephaven.plot.Figure plot(java.lang.Comparable seriesName, io.deephaven.time.DateTime[] x, short[] y ) {
+    public static  io.deephaven.plot.Figure plot( java.lang.Comparable seriesName, io.deephaven.time.DateTime[] x, short[] y ) {
         return FigureFactory.figure().plot( seriesName, x, y );
     }
 
     /**
     * See {@link io.deephaven.plot.Figure#plot} 
     **/
-    public static <T1 extends java.lang.Number> io.deephaven.plot.Figure plot(java.lang.Comparable seriesName, io.deephaven.time.DateTime[] x, java.util.List<T1> y ) {
+    public static <T1 extends java.lang.Number> io.deephaven.plot.Figure plot( java.lang.Comparable seriesName, io.deephaven.time.DateTime[] x, java.util.List<T1> y ) {
         return FigureFactory.figure().plot( seriesName, x, y );
     }
 

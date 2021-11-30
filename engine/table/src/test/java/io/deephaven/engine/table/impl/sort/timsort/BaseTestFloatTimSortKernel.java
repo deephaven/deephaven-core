@@ -30,23 +30,23 @@ import java.util.stream.Collectors;
 
 public abstract class BaseTestFloatTimSortKernel extends TestTimSortKernel {
     // region getJavaComparator
-    static Comparator<FloatLongTuple> getJavaComparator() {
+    public static Comparator<FloatLongTuple> getJavaComparator() {
         return Comparator.comparing(FloatLongTuple::getFirstElement);
     }
     // endregion getJavaComparator
 
     // region getJavaMultiComparator
-    static Comparator<FloatLongLongTuple> getJavaMultiComparator() {
+    public static Comparator<FloatLongLongTuple> getJavaMultiComparator() {
         return Comparator.comparing(FloatLongLongTuple::getFirstElement).thenComparing(FloatLongLongTuple::getSecondElement);
     }
     // endregion getJavaMultiComparator
 
+    public static class FloatSortKernelStuff extends SortKernelStuff<FloatLongTuple> {
 
-    static class FloatSortKernelStuff extends SortKernelStuff<FloatLongTuple> {
-        final WritableFloatChunk<Any> floatChunk;
+        private final WritableFloatChunk<Any> floatChunk;
         private final FloatLongTimsortKernel.FloatLongSortKernelContext context;
 
-        FloatSortKernelStuff(List<FloatLongTuple> javaTuples) {
+        public FloatSortKernelStuff(List<FloatLongTuple> javaTuples) {
             super(javaTuples.size());
             final int size = javaTuples.size();
             floatChunk = WritableFloatChunk.makeWritableChunk(size);
@@ -56,7 +56,7 @@ public abstract class BaseTestFloatTimSortKernel extends TestTimSortKernel {
         }
 
         @Override
-        void run() {
+        public void run() {
             FloatLongTimsortKernel.sort(context, rowKeys, floatChunk);
         }
 
@@ -67,7 +67,8 @@ public abstract class BaseTestFloatTimSortKernel extends TestTimSortKernel {
     }
 
     public static class FloatPartitionKernelStuff extends PartitionKernelStuff<FloatLongTuple> {
-        final WritableFloatChunk valuesChunk;
+
+        private final WritableFloatChunk valuesChunk;
         private final FloatPartitionKernel.PartitionKernelContext context;
         private final RowSet rowSet;
         private final ColumnSource<Float> columnSource;
@@ -115,9 +116,11 @@ public abstract class BaseTestFloatTimSortKernel extends TestTimSortKernel {
         }
     }
 
-    static class FloatMergeStuff extends MergeStuff<FloatLongTuple> {
-        final float arrayValues[];
-        FloatMergeStuff(List<FloatLongTuple> javaTuples) {
+    public static class FloatMergeStuff extends MergeStuff<FloatLongTuple> {
+
+        private final float arrayValues[];
+
+        public FloatMergeStuff(List<FloatLongTuple> javaTuples) {
             super(javaTuples);
             arrayValues = new float[javaTuples.size()];
             for (int ii = 0; ii < javaTuples.size(); ++ii) {
@@ -125,7 +128,7 @@ public abstract class BaseTestFloatTimSortKernel extends TestTimSortKernel {
             }
         }
 
-        void run() {
+        public void run() {
             // region mergesort
             MergeSort.mergeSort(posarray, posarray2, 0, arrayValues.length, 0, (pos1, pos2) -> Float.compare(arrayValues[(int)pos1], arrayValues[(int)pos2]));
             // endregion mergesort
@@ -182,7 +185,7 @@ public abstract class BaseTestFloatTimSortKernel extends TestTimSortKernel {
         }
 
         @Override
-        void run() {
+        public void run() {
             FloatLongTimsortKernel.sort(context, rowKeys, primaryChunk, offsets, lengths);
             FloatFindRunsKernel.findRuns(primaryChunk, offsets, lengths, offsetsOut, lengthsOut);
 //            dumpChunk(primaryChunk);

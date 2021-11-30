@@ -132,7 +132,7 @@ public class WritableRedirectedColumnSource<T> extends RedirectedColumnSource<T>
 
     @Override
     public void fillFromChunkUnordered(@NotNull FillFromContext context,
-                                       @NotNull Chunk<? extends Values> src, @NotNull LongChunk<RowKeys> keys) {
+            @NotNull Chunk<? extends Values> src, @NotNull LongChunk<RowKeys> keys) {
         // noinspection unchecked
         final RedirectionFillFrom redirectionFillFrom = (RedirectionFillFrom) context;
         rowRedirection.fillChunkUnordered(redirectionFillFrom.redirectionFillContext,

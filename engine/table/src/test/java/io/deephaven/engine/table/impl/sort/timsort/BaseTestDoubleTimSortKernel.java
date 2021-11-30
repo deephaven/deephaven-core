@@ -30,23 +30,23 @@ import java.util.stream.Collectors;
 
 public abstract class BaseTestDoubleTimSortKernel extends TestTimSortKernel {
     // region getJavaComparator
-    static Comparator<DoubleLongTuple> getJavaComparator() {
+    public static Comparator<DoubleLongTuple> getJavaComparator() {
         return Comparator.comparing(DoubleLongTuple::getFirstElement);
     }
     // endregion getJavaComparator
 
     // region getJavaMultiComparator
-    static Comparator<DoubleLongLongTuple> getJavaMultiComparator() {
+    public static Comparator<DoubleLongLongTuple> getJavaMultiComparator() {
         return Comparator.comparing(DoubleLongLongTuple::getFirstElement).thenComparing(DoubleLongLongTuple::getSecondElement);
     }
     // endregion getJavaMultiComparator
 
+    public static class DoubleSortKernelStuff extends SortKernelStuff<DoubleLongTuple> {
 
-    static class DoubleSortKernelStuff extends SortKernelStuff<DoubleLongTuple> {
-        final WritableDoubleChunk<Any> doubleChunk;
+        private final WritableDoubleChunk<Any> doubleChunk;
         private final DoubleLongTimsortKernel.DoubleLongSortKernelContext context;
 
-        DoubleSortKernelStuff(List<DoubleLongTuple> javaTuples) {
+        public DoubleSortKernelStuff(List<DoubleLongTuple> javaTuples) {
             super(javaTuples.size());
             final int size = javaTuples.size();
             doubleChunk = WritableDoubleChunk.makeWritableChunk(size);
@@ -56,7 +56,7 @@ public abstract class BaseTestDoubleTimSortKernel extends TestTimSortKernel {
         }
 
         @Override
-        void run() {
+        public void run() {
             DoubleLongTimsortKernel.sort(context, rowKeys, doubleChunk);
         }
 
@@ -67,7 +67,8 @@ public abstract class BaseTestDoubleTimSortKernel extends TestTimSortKernel {
     }
 
     public static class DoublePartitionKernelStuff extends PartitionKernelStuff<DoubleLongTuple> {
-        final WritableDoubleChunk valuesChunk;
+
+        private final WritableDoubleChunk valuesChunk;
         private final DoublePartitionKernel.PartitionKernelContext context;
         private final RowSet rowSet;
         private final ColumnSource<Double> columnSource;
@@ -115,9 +116,11 @@ public abstract class BaseTestDoubleTimSortKernel extends TestTimSortKernel {
         }
     }
 
-    static class DoubleMergeStuff extends MergeStuff<DoubleLongTuple> {
-        final double arrayValues[];
-        DoubleMergeStuff(List<DoubleLongTuple> javaTuples) {
+    public static class DoubleMergeStuff extends MergeStuff<DoubleLongTuple> {
+
+        private final double arrayValues[];
+
+        public DoubleMergeStuff(List<DoubleLongTuple> javaTuples) {
             super(javaTuples);
             arrayValues = new double[javaTuples.size()];
             for (int ii = 0; ii < javaTuples.size(); ++ii) {
@@ -125,7 +128,7 @@ public abstract class BaseTestDoubleTimSortKernel extends TestTimSortKernel {
             }
         }
 
-        void run() {
+        public void run() {
             // region mergesort
             MergeSort.mergeSort(posarray, posarray2, 0, arrayValues.length, 0, (pos1, pos2) -> Double.compare(arrayValues[(int)pos1], arrayValues[(int)pos2]));
             // endregion mergesort
@@ -182,7 +185,7 @@ public abstract class BaseTestDoubleTimSortKernel extends TestTimSortKernel {
         }
 
         @Override
-        void run() {
+        public void run() {
             DoubleLongTimsortKernel.sort(context, rowKeys, primaryChunk, offsets, lengths);
             DoubleFindRunsKernel.findRuns(primaryChunk, offsets, lengths, offsetsOut, lengthsOut);
 //            dumpChunk(primaryChunk);

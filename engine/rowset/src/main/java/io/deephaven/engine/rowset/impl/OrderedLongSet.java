@@ -40,7 +40,7 @@ public interface OrderedLongSet {
 
     @FinalDefault
     default OrderedLongSet ixInsert(final LongChunk<OrderedRowKeys> keys, final int offset,
-                                    final int length) {
+            final int length) {
         if (length <= 1) {
             if (length == 0) {
                 return this;
@@ -70,7 +70,7 @@ public interface OrderedLongSet {
 
     @FinalDefault
     default OrderedLongSet ixRemove(final LongChunk<OrderedRowKeys> keys, final int offset,
-                                    final int length) {
+            final int length) {
         if (ixIsEmpty()) {
             return this;
         }
@@ -191,7 +191,7 @@ public interface OrderedLongSet {
      * @return A new {@link OrderedLongSet} containing the specified slice of {@code keys}
      */
     static OrderedLongSet fromChunk(final LongChunk<OrderedRowKeys> keys, final int offset, final int length,
-                                    final boolean disposable) {
+            final boolean disposable) {
         if (length == 0) {
             return EMPTY;
         }
@@ -238,13 +238,13 @@ public interface OrderedLongSet {
 
         @Override
         public OrderedLongSet ixInsertSecondHalf(final LongChunk<OrderedRowKeys> keys, final int offset,
-                                                 final int length) {
+                final int length) {
             return fromChunk(keys, offset, length, false);
         }
 
         @Override
         public OrderedLongSet ixRemoveSecondHalf(final LongChunk<OrderedRowKeys> keys, final int offset,
-                                                 final int length) {
+                final int length) {
             throw new IllegalStateException();
         }
 

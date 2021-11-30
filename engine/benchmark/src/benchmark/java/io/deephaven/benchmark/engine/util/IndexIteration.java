@@ -5,6 +5,8 @@ import io.deephaven.chunk.*;
 import io.deephaven.benchmarking.BenchUtil;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges;
+import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.infra.Blackhole;
 import org.openjdk.jmh.runner.RunnerException;
@@ -157,7 +159,7 @@ public class IndexIteration {
         fillChunkDirectByItems(rowSequence.asRowKeyChunk(), doubleChunk, sourceId);
     }
 
-    private void fillChunkDirectByRange(LongChunk<Attributes.OrderedRowKeyRanges> ranges,
+    private void fillChunkDirectByRange(LongChunk<OrderedRowKeyRanges> ranges,
             WritableDoubleChunk doubleChunk,
             int sourceId) {
         int pos = 0;
@@ -171,7 +173,7 @@ public class IndexIteration {
         doubleChunk.setSize(pos);
     }
 
-    private void fillChunkDirectByItems(LongChunk<Attributes.OrderedRowKeys> indices, WritableDoubleChunk doubleChunk,
+    private void fillChunkDirectByItems(LongChunk<OrderedRowKeys> indices, WritableDoubleChunk doubleChunk,
             int sourceId) {
         final int size = indices.size();
         doubleChunk.setSize(0);

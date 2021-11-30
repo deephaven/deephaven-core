@@ -170,8 +170,8 @@ class FormulaChunkedOperator implements IterativeChunkedAggregationOperator {
 
     @Override
     public boolean removeChunk(final SingletonContext singletonContext, final int chunkSize,
-                               final Chunk<? extends Values> values,
-                               @NotNull final LongChunk<? extends RowKeys> inputRowKeys, final long destination) {
+            final Chunk<? extends Values> values,
+            @NotNull final LongChunk<? extends RowKeys> inputRowKeys, final long destination) {
         if (delegateToBy) {
             return groupBy.removeChunk(singletonContext, chunkSize, values, inputRowKeys, destination);
         } else {

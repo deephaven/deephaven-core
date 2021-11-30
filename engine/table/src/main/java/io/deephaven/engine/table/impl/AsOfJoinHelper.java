@@ -695,7 +695,7 @@ public class AsOfJoinHelper {
                 // After all the removals are done, we do the shifts
                 if (upstream.shifted().nonempty()) {
                     try (final RowSet fullPrevRowSet = rightTable.getRowSet().copyPrev();
-                         final RowSet previousToShift = fullPrevRowSet.minus(restampRemovals)) {
+                            final RowSet previousToShift = fullPrevRowSet.minus(restampRemovals)) {
                         if (previousToShift.isNonempty()) {
                             try (final ResettableWritableLongChunk<RowKeys> leftKeyChunk =
                                     ResettableWritableLongChunk.makeResettableChunk();
@@ -767,14 +767,14 @@ public class AsOfJoinHelper {
                         asOfJoinStateManager.probeAdditions(restampAdditions, rightSources, slots, sequentialBuilders);
 
                 try (final SizedChunk<Values> nextRightValue = new SizedChunk<>(stampChunkType);
-                     final SizedChunk<Values> rightStampChunk = new SizedChunk<>(stampChunkType);
-                     final SizedLongChunk<RowKeys> insertedIndices = new SizedLongChunk<>();
-                     final SizedBooleanChunk<Any> retainStamps = new SizedBooleanChunk<>();
-                     final SizedSafeCloseable<ColumnSource.FillContext> rightStampFillContext =
+                        final SizedChunk<Values> rightStampChunk = new SizedChunk<>(stampChunkType);
+                        final SizedLongChunk<RowKeys> insertedIndices = new SizedLongChunk<>();
+                        final SizedBooleanChunk<Any> retainStamps = new SizedBooleanChunk<>();
+                        final SizedSafeCloseable<ColumnSource.FillContext> rightStampFillContext =
                                 new SizedSafeCloseable<>(rightStampSource::makeFillContext);
-                     final ResettableWritableLongChunk<RowKeys> leftKeyChunk =
+                        final ResettableWritableLongChunk<RowKeys> leftKeyChunk =
                                 ResettableWritableLongChunk.makeResettableChunk();
-                     final ResettableWritableChunk<Values> leftValuesChunk =
+                        final ResettableWritableChunk<Values> leftValuesChunk =
                                 rightStampSource.getChunkType().makeResettableWritableChunk()) {
                     final ChunkEquals stampChunkEquals = ChunkEquals.makeEqual(stampChunkType);
                     final CompactKernel stampCompact = CompactKernel.makeCompact(stampChunkType);
@@ -1342,14 +1342,14 @@ public class AsOfJoinHelper {
             WritableRowRedirection rowRedirection, boolean disallowExactMatch) {
 
         try (final RowSet fullPrevRowSet = table.getRowSet().copyPrev();
-             final RowSet previousToShift = fullPrevRowSet.minus(restampRemovals);
-             final SizedSafeCloseable<ColumnSource.FillContext> shiftFillContext =
+                final RowSet previousToShift = fullPrevRowSet.minus(restampRemovals);
+                final SizedSafeCloseable<ColumnSource.FillContext> shiftFillContext =
                         new SizedSafeCloseable<>(stampSource::makeFillContext);
-             final SizedSafeCloseable<LongSortKernel<Values, RowKeys>> shiftSortKernel =
+                final SizedSafeCloseable<LongSortKernel<Values, RowKeys>> shiftSortKernel =
                         new SizedSafeCloseable<>(sz -> LongSortKernel.makeContext(stampSource.getChunkType(),
                                 ssa.isReversed() ? SortingOrder.Descending : SortingOrder.Ascending, sz, true));
-             final SizedChunk<Values> rightStampValues = new SizedChunk<>(stampSource.getChunkType());
-             final SizedLongChunk<RowKeys> rightStampKeys = new SizedLongChunk<>()) {
+                final SizedChunk<Values> rightStampValues = new SizedChunk<>(stampSource.getChunkType());
+                final SizedLongChunk<RowKeys> rightStampKeys = new SizedLongChunk<>()) {
 
             final RowSetShiftData.Iterator sit = shiftData.applyIterator();
             while (sit.hasNext()) {

@@ -79,7 +79,8 @@ class IncrementalBenchmark {
         final InstrumentedTableUpdateListenerAdapter failureListener;
         if (DynamicNode.isDynamicAndIsRefreshing(result)) {
             failureListener =
-                    new InstrumentedTableUpdateListenerAdapter("Failure ShiftObliviousListener", (Table) result, false) {
+                    new InstrumentedTableUpdateListenerAdapter("Failure ShiftObliviousListener", (Table) result,
+                            false) {
                         @Override
                         public void onUpdate(TableUpdate upstream) {}
 

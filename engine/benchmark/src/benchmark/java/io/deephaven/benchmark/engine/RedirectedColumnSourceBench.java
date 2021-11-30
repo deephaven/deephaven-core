@@ -1,5 +1,6 @@
 package io.deephaven.benchmark.engine;
 
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.impl.select.IncrementalReleaseFilter;
@@ -52,7 +53,7 @@ public class RedirectedColumnSourceBench extends RedirectionBenchBase {
         builder = BenchmarkTools.persistentTableBuilder("Juancho", tableSize);
         builder.setSeed(0xDEADBEEF)
                 .addColumn(BenchmarkTools.stringCol("PartCol", 4, 5, 7, 0xFEEDBEEF));
-        final WritableChunk<Attributes.Values> chunk;
+        final WritableChunk<Values> chunk;
         final Consumer<String> builderAddColumn;
         final int nSelectCols;
         switch (fillColsType) {

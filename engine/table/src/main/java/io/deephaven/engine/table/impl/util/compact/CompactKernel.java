@@ -37,7 +37,7 @@ public interface CompactKernel {
      * @param countNull if the compaction should count nulls or not
      */
     void compactAndCount(WritableChunk<? extends Values> valueChunk,
-                         WritableIntChunk<ChunkLengths> counts, boolean countNull);
+            WritableIntChunk<ChunkLengths> counts, boolean countNull);
 
     /**
      * For each run in valuesChunk, sort it, eliminate duplicates, and write the number of times a value occurred into
@@ -49,8 +49,8 @@ public interface CompactKernel {
      * @param lengths the length of each run, input and output
      */
     default void compactAndCount(WritableChunk<? extends Values> valueChunk,
-                                 WritableIntChunk<ChunkLengths> counts, IntChunk<ChunkPositions> startPositions,
-                                 WritableIntChunk<ChunkLengths> lengths) {
+            WritableIntChunk<ChunkLengths> counts, IntChunk<ChunkPositions> startPositions,
+            WritableIntChunk<ChunkLengths> lengths) {
         compactAndCount(valueChunk, counts, startPositions, lengths, false);
     }
 
@@ -65,8 +65,8 @@ public interface CompactKernel {
      * @param countNull if the compaction should count nulls or not
      */
     void compactAndCount(WritableChunk<? extends Values> valueChunk,
-                         WritableIntChunk<ChunkLengths> counts, IntChunk<ChunkPositions> startPositions,
-                         WritableIntChunk<ChunkLengths> lengths, boolean countNull);
+            WritableIntChunk<ChunkLengths> counts, IntChunk<ChunkPositions> startPositions,
+            WritableIntChunk<ChunkLengths> lengths, boolean countNull);
 
     static CompactKernel makeCompact(ChunkType chunkType) {
         switch (chunkType) {

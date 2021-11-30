@@ -53,7 +53,7 @@ abstract class RegionedColumnSourceBase<DATA_TYPE, ATTR extends Values, REGION_T
      */
     @Override
     public void fillPrevChunk(@NotNull FillContext context,
-                              @NotNull WritableChunk<? super Values> destination, @NotNull RowSequence rowSequence) {
+            @NotNull WritableChunk<? super Values> destination, @NotNull RowSequence rowSequence) {
         fillChunk(context, destination, rowSequence);
     }
 

@@ -159,7 +159,7 @@ public class ContextWithChunk<ATTR extends Any, CONTEXT extends Context> impleme
      * verification code.
      */
     public static <ATTR extends Any> boolean isMyResettableChunk(@NotNull Context context,
-                                                                 Chunk<ATTR> chunk) {
+            Chunk<ATTR> chunk) {
         // noinspection unchecked
         ContextWithChunk<ATTR, ?> getContext = (ContextWithChunk<ATTR, ?>) context;
         return !chunk.isAlias(getContext.writableChunk) && chunk.isAlias(getContext.resettableWritableChunk);

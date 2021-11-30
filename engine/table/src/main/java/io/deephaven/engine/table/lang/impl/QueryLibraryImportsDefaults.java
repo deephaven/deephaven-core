@@ -1,55 +1,109 @@
 package io.deephaven.engine.table.lang.impl;
 
-import io.deephaven.function.*;
-import io.deephaven.engine.rowset.*;
+import io.deephaven.base.string.cache.CompressedString;
+import io.deephaven.chunk.ByteChunk;
+import io.deephaven.chunk.CharChunk;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.DoubleChunk;
+import io.deephaven.chunk.FloatChunk;
+import io.deephaven.chunk.IntChunk;
+import io.deephaven.chunk.LongChunk;
+import io.deephaven.chunk.ObjectChunk;
+import io.deephaven.chunk.ShortChunk;
+import io.deephaven.chunk.WritableByteChunk;
+import io.deephaven.chunk.WritableCharChunk;
+import io.deephaven.chunk.WritableChunk;
+import io.deephaven.chunk.WritableDoubleChunk;
+import io.deephaven.chunk.WritableFloatChunk;
+import io.deephaven.chunk.WritableIntChunk;
+import io.deephaven.chunk.WritableLongChunk;
+import io.deephaven.chunk.WritableObjectChunk;
+import io.deephaven.chunk.WritableShortChunk;
+import io.deephaven.chunk.attributes.Any;
+import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetBuilderRandom;
+import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.TrackingRowSet;
+import io.deephaven.engine.rowset.TrackingWritableRowSet;
+import io.deephaven.engine.rowset.WritableRowSet;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.Context;
 import io.deephaven.engine.table.DataColumn;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtils;
+import io.deephaven.engine.table.impl.select.ConditionFilter;
+import io.deephaven.engine.table.impl.verify.TableAssertions;
 import io.deephaven.engine.table.lang.QueryLibraryImports;
 import io.deephaven.engine.table.lang.QueryScopeParam;
-import io.deephaven.time.DateTimeUtils;
-import io.deephaven.vector.VectorConversions;
-import io.deephaven.util.datastructures.LongSizedDataStructure;
-import io.deephaven.engine.table.Context;
+import io.deephaven.engine.util.ColorUtilImpl;
+import io.deephaven.function.BinSearch;
+import io.deephaven.function.BooleanPrimitives;
+import io.deephaven.function.ByteNumericPrimitives;
+import io.deephaven.function.BytePrimitives;
+import io.deephaven.function.Casting;
+import io.deephaven.function.CharacterPrimitives;
+import io.deephaven.function.ComparePrimitives;
+import io.deephaven.function.DoubleFpPrimitives;
+import io.deephaven.function.DoubleNumericPrimitives;
+import io.deephaven.function.DoublePrimitives;
+import io.deephaven.function.FloatFpPrimitives;
+import io.deephaven.function.FloatNumericPrimitives;
+import io.deephaven.function.FloatPrimitives;
+import io.deephaven.function.IntegerNumericPrimitives;
+import io.deephaven.function.IntegerPrimitives;
+import io.deephaven.function.LongNumericPrimitives;
+import io.deephaven.function.LongPrimitives;
+import io.deephaven.function.ObjectPrimitives;
+import io.deephaven.function.PrimitiveParseUtil;
+import io.deephaven.function.ShortNumericPrimitives;
+import io.deephaven.function.ShortPrimitives;
+import io.deephaven.gui.color.Color;
 import io.deephaven.time.DateTime;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.time.Period;
 import io.deephaven.time.TimeZone;
-import io.deephaven.engine.util.ColorUtilImpl;
+import io.deephaven.time.calendar.StaticCalendarMethods;
+import io.deephaven.util.QueryConstants;
+import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.util.type.ArrayTypeUtils;
+import io.deephaven.util.type.TypeUtils;
+import io.deephaven.vector.VectorConversions;
+import org.joda.time.LocalTime;
 
+import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class QueryLibraryImportsDefaults implements QueryLibraryImports {
 
     @Override
     public Set<Package> packages() {
-        final ClassLoader classLoader = getClass().getClassLoader();
         return new LinkedHashSet<>(Arrays.asList(
-                classLoader.getDefinedPackage("java.lang"),
-                classLoader.getDefinedPackage("java.util"),
-                classLoader.getDefinedPackage("io.deephaven.chunk.attributes"),
-                classLoader.getDefinedPackage("io.deephaven.engine.rowset.chunkattributes")
-        ));
+                Object.class.getPackage(),
+                Arrays.class.getPackage(),
+                Any.class.getPackage(),
+                RowKeys.class.getPackage()));
     }
 
     @Override
     public Set<Class<?>> classes() {
         return new LinkedHashSet<>(Arrays.asList(
-                java.lang.reflect.Array.class,
-                io.deephaven.util.type.TypeUtils.class,
+                Array.class,
+                TypeUtils.class,
                 Table.class,
                 DataColumn.class,
                 ArrayTypeUtils.class,
                 VectorConversions.class,
                 DateTime.class,
                 DateTimeUtils.class,
-                io.deephaven.base.string.cache.CompressedString.class,
+                CompressedString.class,
                 java.util.Arrays.class,
-                org.joda.time.LocalTime.class,
+                LocalTime.class,
                 Period.class,
                 QueryScopeParam.class,
                 ColumnSource.class,
@@ -61,35 +115,34 @@ public class QueryLibraryImportsDefaults implements QueryLibraryImports {
                 RowSetBuilderRandom.class,
                 RowSetBuilderSequential.class,
                 LongSizedDataStructure.class,
-                java.util.concurrent.ConcurrentHashMap.class,
-                io.deephaven.chunk.Chunk.class,
-                io.deephaven.chunk.ByteChunk.class,
-                io.deephaven.chunk.CharChunk.class,
-                io.deephaven.chunk.ShortChunk.class,
-                io.deephaven.chunk.IntChunk.class,
-                io.deephaven.chunk.LongChunk.class,
-                io.deephaven.chunk.FloatChunk.class,
-                io.deephaven.chunk.DoubleChunk.class,
-                io.deephaven.chunk.ObjectChunk.class,
-                io.deephaven.chunk.WritableChunk.class,
-                io.deephaven.chunk.WritableByteChunk.class,
-                io.deephaven.chunk.WritableCharChunk.class,
-                io.deephaven.chunk.WritableShortChunk.class,
-                io.deephaven.chunk.WritableIntChunk.class,
-                io.deephaven.chunk.WritableLongChunk.class,
-                io.deephaven.chunk.WritableFloatChunk.class,
-                io.deephaven.chunk.WritableDoubleChunk.class,
-                io.deephaven.chunk.WritableObjectChunk.class,
+                ConcurrentHashMap.class,
+                Chunk.class,
+                ByteChunk.class,
+                CharChunk.class,
+                ShortChunk.class,
+                IntChunk.class,
+                LongChunk.class,
+                FloatChunk.class,
+                DoubleChunk.class,
+                ObjectChunk.class,
+                WritableChunk.class,
+                WritableByteChunk.class,
+                WritableCharChunk.class,
+                WritableShortChunk.class,
+                WritableIntChunk.class,
+                WritableLongChunk.class,
+                WritableFloatChunk.class,
+                WritableDoubleChunk.class,
+                WritableObjectChunk.class,
                 Context.class,
-                io.deephaven.engine.table.impl.select.ConditionFilter.FilterKernel.class,
-                RowSequence.class
-        ));
+                ConditionFilter.FilterKernel.class,
+                RowSequence.class));
     }
 
     @Override
     public Set<Class<?>> statics() {
         return new LinkedHashSet<>(Arrays.asList(
-                io.deephaven.util.QueryConstants.class,
+                QueryConstants.class,
                 BytePrimitives.class,
                 ByteNumericPrimitives.class,
                 CharacterPrimitives.class,
@@ -114,11 +167,10 @@ public class QueryLibraryImportsDefaults implements QueryLibraryImports {
                 QueryLanguageFunctionUtils.class,
                 DateTimeUtils.class,
                 TimeZone.class,
-                io.deephaven.base.string.cache.CompressedString.class,
-                io.deephaven.gui.color.Color.class,
+                CompressedString.class,
+                Color.class,
                 ColorUtilImpl.class,
-                io.deephaven.engine.table.impl.verify.TableAssertions.class,
-                io.deephaven.time.calendar.StaticCalendarMethods.class
-        ));
+                TableAssertions.class,
+                StaticCalendarMethods.class));
     }
 }

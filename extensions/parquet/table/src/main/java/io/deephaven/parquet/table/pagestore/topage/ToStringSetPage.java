@@ -17,7 +17,7 @@ public class ToStringSetPage<ATTR extends Any, STRING_ARRAY>
         extends ToPage.Wrap<ATTR, STRING_ARRAY, StringSet[]> {
 
     public static <ATTR extends Any> ToPage<ATTR, StringSet[]> create(@NotNull Class<?> nativeType,
-                                                                      @NotNull ToPage<ATTR, ?> toPage) {
+            @NotNull ToPage<ATTR, ?> toPage) {
         Class<?> columnComponentType = toPage.getNativeType();
 
         if (!StringSet.class.isAssignableFrom(nativeType)) {

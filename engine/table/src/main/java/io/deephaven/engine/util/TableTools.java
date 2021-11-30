@@ -182,7 +182,7 @@ public class TableTools {
      * @param columns varargs of column names to display
      */
     public static void show(Table source, long maxRowCount, io.deephaven.time.TimeZone timeZone, PrintStream out,
-                            String... columns) {
+            String... columns) {
         show(source, maxRowCount, timeZone, "|", out, false, columns);
     }
 

@@ -376,7 +376,7 @@ public class GenericRecordKeyOrValueSerializer implements KeyOrValueSerializer<G
      */
     @Override
     public ObjectChunk<GenericRecord, Values> handleChunk(Context context, RowSequence toProcess,
-                                                          boolean previous) {
+            boolean previous) {
         final AvroContext avroContext = (AvroContext) context;
 
         avroContext.avroChunk.setSize(toProcess.intSize());
