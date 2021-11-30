@@ -136,7 +136,7 @@ _COMBOAGGREGATEREQUEST_AGGTYPE = _descriptor.EnumDescriptor(
       type=None,
       create_key=_descriptor._internal_create_key),
     _descriptor.EnumValueDescriptor(
-      name='ARRAY', index=2, number=2,
+      name='GROUP', index=2, number=2,
       serialized_options=None,
       type=None,
       create_key=_descriptor._internal_create_key),

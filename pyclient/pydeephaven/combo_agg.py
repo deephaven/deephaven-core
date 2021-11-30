@@ -111,7 +111,7 @@ class ComboAggregation:
         Returns:
             self
         """
-        self._aggregates.append(CommonAgg(agg_type=AggType.ARRAY, match_pairs=cols))
+        self._aggregates.append(CommonAgg(agg_type=AggType.GROUP, match_pairs=cols))
         return self
 
     def avg(self, cols: List[str]):

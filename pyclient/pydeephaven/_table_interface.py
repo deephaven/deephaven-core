@@ -366,7 +366,7 @@ class TableInterface(ABC):
         Raises:
             DHError
         """
-        table_op = DedicatedAggOp(AggType.ARRAY, column_names=by)
+        table_op = DedicatedAggOp(AggType.GROUP, column_names=by)
         return self.table_op_handler(table_op)
 
     def ungroup(self, cols: List[str] = [], null_fill: bool = True):
