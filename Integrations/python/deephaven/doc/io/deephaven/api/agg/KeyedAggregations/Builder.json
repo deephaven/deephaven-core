@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.api.agg.KeyedAggregations$Builder",
+ "methods": {
+  "addAllPairs": ":param elements: java.lang.Iterable<? extendsio.deephaven.api.agg.Pair>\n:return: io.deephaven.api.agg.KeyedAggregations.Builder",
+  "addPairs": "*Overload 1*  \n  :param element: io.deephaven.api.agg.Pair\n  :return: io.deephaven.api.agg.KeyedAggregations.Builder\n  \n*Overload 2*  \n  :param elements: io.deephaven.api.agg.Pair...\n  :return: io.deephaven.api.agg.KeyedAggregations.Builder",
+  "build": ":return: io.deephaven.api.agg.KeyedAggregations",
+  "key": ":param key: io.deephaven.api.agg.key.Key\n:return: io.deephaven.api.agg.KeyedAggregations.Builder"
+ },
+ "path": "io.deephaven.api.agg.KeyedAggregations.Builder",
+ "typeName": "interface"
+}

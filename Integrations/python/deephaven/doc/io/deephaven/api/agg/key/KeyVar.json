@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.api.agg.key.KeyVar",
+ "methods": {
+  "of": ":return: io.deephaven.api.agg.key.KeyVar",
+  "walk": "Note: Java generics information - <V extends io.deephaven.api.agg.key.Key.Visitor>\n\n:param visitor: V\n:return: V"
+ },
+ "path": "io.deephaven.api.agg.key.KeyVar",
+ "typeName": "class"
+}

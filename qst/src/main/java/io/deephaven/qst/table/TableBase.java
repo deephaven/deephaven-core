@@ -9,9 +9,10 @@ import io.deephaven.api.ReverseAsOfJoinRule;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.SortColumn;
 import io.deephaven.api.agg.Aggregation;
+import io.deephaven.api.agg.key.Key;
+import io.deephaven.api.agg.key.KeyGroup;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.qst.TableCreationLogic;
-import io.deephaven.qst.table.TableSchema.Visitor;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -403,22 +404,18 @@ public abstract class TableBase implements TableSpec {
     }
 
     @Override
-    public final GroupByTable groupBy() {
-        return GroupByTable.builder().parent(this).build();
+    public final SingleAggregationTable groupBy() {
+        return fullAggBy(KeyGroup.of());
     }
 
     @Override
-    public final GroupByTable groupBy(String... groupByColumns) {
-        GroupByTable.Builder builder = GroupByTable.builder().parent(this);
-        for (String groupByColumn : groupByColumns) {
-            builder.addColumns(Selectable.parse(groupByColumn));
-        }
-        return builder.build();
+    public final SingleAggregationTable groupBy(String... groupByColumns) {
+        return fullAggBy(KeyGroup.of(), groupByColumns);
     }
 
     @Override
-    public final GroupByTable groupBy(Collection<? extends Selectable> groupByColumns) {
-        return GroupByTable.builder().parent(this).addAllColumns(groupByColumns).build();
+    public final SingleAggregationTable groupBy(Collection<? extends Selectable> groupByColumns) {
+        return fullAggBy(KeyGroup.of(), groupByColumns);
     }
 
     @Override
@@ -480,4 +477,21 @@ public abstract class TableBase implements TableSpec {
                 : Arrays.stream(string.split(",")).map(String::trim).filter(s -> !s.isEmpty())
                         .collect(Collectors.toList());
     }
+
+    private SingleAggregationTable fullAggBy(Key key) {
+        return SingleAggregationTable.builder().parent(this).key(key).build();
+    }
+
+    private SingleAggregationTable fullAggBy(Key key, String... groupByColumns) {
+        SingleAggregationTable.Builder builder = SingleAggregationTable.builder().parent(this).key(key);
+        for (String groupByColumn : groupByColumns) {
+            builder.addColumns(Selectable.parse(groupByColumn));
+        }
+        return builder.build();
+    }
+
+    private SingleAggregationTable fullAggBy(Key key, Collection<? extends Selectable> groupByColumns) {
+        return SingleAggregationTable.builder().parent(this).key(key).addAllColumns(groupByColumns).build();
+    }
+
 }

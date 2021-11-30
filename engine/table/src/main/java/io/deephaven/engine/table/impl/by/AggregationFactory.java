@@ -5,14 +5,24 @@
 package io.deephaven.engine.table.impl.by;
 
 import io.deephaven.api.agg.Aggregation;
-import io.deephaven.api.agg.Multi;
+import io.deephaven.api.agg.AggregationOptimizer;
+import io.deephaven.api.agg.KeyedAggregations;
 import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.ChunkType;
+import io.deephaven.chunk.attributes.Values;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.datastructures.util.SmartKey;
-import io.deephaven.chunk.attributes.Values;
-import io.deephaven.chunk.ChunkType;
-import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.*;
+import io.deephaven.engine.table.ChunkSource;
+import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.MatchPair;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.BaseTable;
+import io.deephaven.engine.table.impl.EmptyTableMap;
+import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.ReverseLookup;
+import io.deephaven.engine.table.impl.RollupAttributeCopier;
+import io.deephaven.engine.table.impl.RollupInfo;
 import io.deephaven.engine.table.impl.by.ssmminmax.SsmChunkedMinMaxOperator;
 import io.deephaven.engine.table.impl.select.MatchPairFactory;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
@@ -24,7 +34,15 @@ import org.jetbrains.annotations.NotNull;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.OptionalInt;
 import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -599,16 +617,13 @@ public class AggregationFactory implements AggregationSpec {
     public interface AggregationElement {
 
         /**
-         * Equivalent to {@code convertOrdered(Collections.singleton(aggregation))} or
-         * {@code optimizeAndConvert(Collections.singleton(aggregation))}.
+         * Converts an {@link Aggregation} to an {@link AggregationElement}.
          *
          * @param aggregation The {@link Aggregation aggregation}
-         * @return A list of {@link AggregationElement aggregation elements}
-         * @see #optimizeAndConvert(Collection)
-         * @see #convert(Collection)
+         * @return The {@link AggregationElement aggregation element}
          */
-        static List<AggregationElement> convert(Aggregation aggregation) {
-            return optimizeAndConvert(Collections.singleton(aggregation));
+        static AggregationElement of(Aggregation aggregation) {
+            return AggregationElementAdapter.of(aggregation);
         }
 
         /**
@@ -621,17 +636,16 @@ public class AggregationFactory implements AggregationSpec {
          *
          * @param aggregations The {@link Aggregation aggregation}
          * @return A list of {@link AggregationElement aggregation elements}
-         * @see #convert(Aggregation)
+         * @see AggregationOptimizer#of(Collection)
+         * @see #of(Aggregation)
          * @see #convert(Collection)
          */
         static List<AggregationElement> optimizeAndConvert(Collection<? extends Aggregation> aggregations) {
-            AggregationAdapterOptimized builder = new AggregationAdapterOptimized();
-            aggregations.forEach(a -> a.walk(builder));
-            return builder.build();
+            return convert(AggregationOptimizer.of(aggregations));
         }
 
         /**
-         * Converts and the aggregations, only collapsing {@link Multi multi} aggregations into single
+         * Converts and the aggregations, only collapsing {@link KeyedAggregations multi} aggregations into single
          * {@link AggregationElement elements}, leaving singular aggregations as they are.
          *
          * <p>
@@ -639,13 +653,15 @@ public class AggregationFactory implements AggregationSpec {
          *
          * @param aggregations The {@link Aggregation aggregation}
          * @return A list of {@link AggregationElement aggregation elements}
-         * @see #convert(Aggregation)
+         * @see #of(Aggregation)
          * @see #optimizeAndConvert(Collection)
          */
         static List<AggregationElement> convert(Collection<? extends Aggregation> aggregations) {
-            AggregationAdapterOrdered builder = new AggregationAdapterOrdered();
-            aggregations.forEach(a -> a.walk(builder));
-            return builder.build();
+            final List<AggregationElement> out = new ArrayList<>(aggregations.size());
+            for (Aggregation aggregation : aggregations) {
+                out.add(AggregationElementAdapter.of(aggregation));
+            }
+            return out;
         }
 
         AggregationSpec getSpec();

@@ -1,0 +1,12 @@
+{
+ "className": "io.deephaven.api.agg.KeyedAggregations",
+ "methods": {
+  "builder": ":return: io.deephaven.api.agg.KeyedAggregations.Builder",
+  "key": ":return: io.deephaven.api.agg.key.Key",
+  "pairs": ":return: java.util.List<io.deephaven.api.agg.Pair>",
+  "walk": "Note: Java generics information - <V extends io.deephaven.api.agg.Aggregation.Visitor>\n\n:param visitor: V\n:return: V"
+ },
+ "path": "io.deephaven.api.agg.KeyedAggregations",
+ "text": "Keyed aggregations is an Aggregation that is composed of a key and multiple pairs.",
+ "typeName": "class"
+}

@@ -1,8 +1,7 @@
 package io.deephaven.qst.table;
 
-import io.deephaven.api.Selectable;
-import io.deephaven.api.agg.Aggregation;
 import io.deephaven.annotations.NodeStyle;
+import io.deephaven.api.agg.Aggregation;
 import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Immutable;
 
@@ -20,10 +19,6 @@ public abstract class AggregationTable extends ByTableBase {
         return ImmutableAggregationTable.builder();
     }
 
-    public abstract TableSpec parent();
-
-    public abstract List<Selectable> columns();
-
     public abstract List<Aggregation> aggregations();
 
     @Override
@@ -39,21 +34,11 @@ public abstract class AggregationTable extends ByTableBase {
         }
     }
 
-    public interface Builder {
-        Builder parent(TableSpec parent);
-
-        Builder addColumns(Selectable element);
-
-        Builder addColumns(Selectable... elements);
-
-        Builder addAllColumns(Iterable<? extends Selectable> elements);
-
+    public interface Builder extends ByTableBase.Builder<AggregationTable, Builder> {
         Builder addAggregations(Aggregation element);
 
         Builder addAggregations(Aggregation... elements);
 
         Builder addAllAggregations(Iterable<? extends Aggregation> elements);
-
-        AggregationTable build();
     }
 }

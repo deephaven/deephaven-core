@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.api.agg.key.KeyBase",
+ "methods": {
+  "aggregation": "*Overload 1*  \n  :param pair: io.deephaven.api.agg.Pair\n  :return: io.deephaven.api.agg.KeyedAggregation\n  \n*Overload 2*  \n  :param pairs: io.deephaven.api.agg.Pair...\n  :return: io.deephaven.api.agg.KeyedAggregations\n  \n*Overload 3*  \n  :param pairs: java.util.Collection<? extendsio.deephaven.api.agg.Pair>\n  :return: io.deephaven.api.agg.KeyedAggregations"
+ },
+ "path": "io.deephaven.api.agg.key.KeyBase",
+ "typeName": "class"
+}
