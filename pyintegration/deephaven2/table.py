@@ -78,8 +78,8 @@ class Table:
     """
 
     def __init__(self, j_table):
-        self._j_table = j_table
-        self._definition = self._j_table.getDefinition()
+        self.j_table = j_table
+        self._definition = self.j_table.getDefinition()
         self._schema = None
 
     def __repr__(self):
@@ -91,18 +91,12 @@ class Table:
 
     # to make the table visible to DH script session, internal use only
     def get_dh_table(self):
-        return self._j_table
-
-    def write_csv(self: Table, path: str, cols: List[str] = []) -> None:
-        try:
-            _JTableTools.writeCsv(self._j_table, path, *cols)
-        except Exception as e:
-            raise DHError("write csv failed.") from e
+        return self.j_table
 
     @property
     def size(self) -> int:
         """ The current number of rows in the table. """
-        return self._j_table.size()
+        return self.j_table.size()
 
     @property
     def is_refreshing(self) -> bool:
@@ -141,7 +135,7 @@ class Table:
             DHError
         """
         try:
-            return _JTableTools.string(self._j_table, num_rows, *cols)
+            return _JTableTools.string(self.j_table, num_rows, *cols)
         except Exception as e:
             raise DHError(e, "table to_string failed") from e
 
@@ -171,7 +165,7 @@ class Table:
             DHError
         """
         try:
-            return Table(j_table=self._j_table.dropColumns(*cols))
+            return Table(j_table=self.j_table.dropColumns(*cols))
         except Exception as e:
             raise DHError(e, "table drop_columns operation failed.") from e
 
@@ -189,7 +183,7 @@ class Table:
             DHError
         """
         try:
-            return Table(j_table=self._j_table.moveColumns(idx, *cols))
+            return Table(j_table=self.j_table.moveColumns(idx, *cols))
         except Exception as e:
             raise DHError(e, "table move_columns operation failed.") from e
 
@@ -207,7 +201,7 @@ class Table:
             DHError
         """
         try:
-            return Table(j_table=self._j_table.moveColumnsDown(*cols))
+            return Table(j_table=self.j_table.moveColumnsDown(*cols))
         except Exception as e:
             raise DHError(e, "table move_columns_down operation failed.") from e
 
@@ -225,7 +219,7 @@ class Table:
             DHError
         """
         try:
-            return Table(j_table=self._j_table.moveColumnsUp(*cols))
+            return Table(j_table=self.j_table.moveUpColumns(*cols))
         except Exception as e:
             raise DHError(e, "table move_columns_up operation failed.") from e
 
@@ -242,7 +236,7 @@ class Table:
             DHError
         """
         try:
-            return Table(j_table=self._j_table.renameColumns(*cols))
+            return Table(j_table=self.j_table.renameColumns(*cols))
         except Exception as e:
             raise DHError(e, "table rename_columns operation failed.") from e
 
@@ -259,7 +253,7 @@ class Table:
             DHError
         """
         try:
-            return Table(j_table=self._j_table.update(*formulas))
+            return Table(j_table=self.j_table.update(*formulas))
         except Exception as e:
             raise DHError(e, "table update operation failed.") from e
 
@@ -276,7 +270,7 @@ class Table:
             DHError
         """
         try:
-            return Table(j_table=self._j_table.lazyUpdate(*formulas))
+            return Table(j_table=self.j_table.lazyUpdate(*formulas))
         except Exception as e:
             raise DHError(e, "table lazy_update operation failed.") from e
 
@@ -293,7 +287,7 @@ class Table:
             DHError
         """
         try:
-            return Table(j_table=self._j_table.view(*formulas))
+            return Table(j_table=self.j_table.view(*formulas))
         except Exception as e:
             raise DHError(e, "table view operation failed.") from e
 
@@ -310,7 +304,7 @@ class Table:
             DHError
         """
         try:
-            return Table(j_table=self._j_table.updateView(*formulas))
+            return Table(j_table=self.j_table.updateView(*formulas))
         except Exception as e:
             raise DHError(e, "table update_view operation failed.") from e
 
@@ -329,8 +323,8 @@ class Table:
         """
         try:
             if not formulas:
-                return Table(j_table=self._j_table.select())
-            return Table(j_table=self._j_table.select(*formulas))
+                return Table(j_table=self.j_table.select())
+            return Table(j_table=self.j_table.select(*formulas))
         except Exception as e:
             raise DHError(e, "table select operation failed.") from e
 
@@ -349,7 +343,7 @@ class Table:
             DHError
         """
         try:
-            return Table(j_table=self._j_table.selectDistinct(*cols))
+            return Table(j_table=self.j_table.selectDistinct(*cols))
         except Exception as e:
             raise DHError(e, "table select_distinct operation failed.") from e
 
@@ -373,7 +367,7 @@ class Table:
             DHError
         """
         try:
-            return Table(j_table=self._j_table.where(*filters))
+            return Table(j_table=self.j_table.where(*filters))
         except Exception as e:
             raise DHError(e, "table where operation failed.") from e
 
@@ -392,7 +386,7 @@ class Table:
             DHError
         """
         try:
-            return Table(j_table=self._j_table.whereIn(filter_table._j_table, *cols))
+            return Table(j_table=self.j_table.whereIn(filter_table.j_table, *cols))
         except Exception as e:
             raise DHError(e, "table where_in operation failed.") from e
 
@@ -411,7 +405,7 @@ class Table:
             DHError
         """
         try:
-            return Table(j_table=self._j_table.whereNotIn(filter_table._j_table, *cols))
+            return Table(j_table=self.j_table.whereNotIn(filter_table.j_table, *cols))
         except Exception as e:
             raise DHError(e, "table where_not_in operation failed.") from e
 
@@ -429,7 +423,7 @@ class Table:
             DHError
         """
         try:
-            return Table(j_table=self._j_table.where(_JFilterOr.of(_JFilter.from_(*filters))))
+            return Table(j_table=self.j_table.where(_JFilterOr.of(_JFilter.from_(*filters))))
         except Exception as e:
             raise DHError(e, "table where_one_of operation failed.") from e
 
@@ -446,7 +440,7 @@ class Table:
             DHError
         """
         try:
-            return Table(j_table=self._j_table.head(num_rows))
+            return Table(j_table=self.j_table.head(num_rows))
         except Exception as e:
             raise DHError(e, "table head operation failed.") from e
 
@@ -463,7 +457,7 @@ class Table:
             DHError
         """
         try:
-            return Table(j_table=self._j_table.headPct(pct))
+            return Table(j_table=self.j_table.headPct(pct))
         except Exception as e:
             raise DHError(e, "table head_pct operation failed.") from e
 
@@ -480,7 +474,7 @@ class Table:
             DHError
         """
         try:
-            return Table(j_table=self._j_table.tail(num_rows))
+            return Table(j_table=self.j_table.tail(num_rows))
         except Exception as e:
             raise DHError(e, "table tail operation failed.") from e
 
@@ -497,7 +491,7 @@ class Table:
             DHError
         """
         try:
-            return Table(j_table=self._j_table.tailPct(pct))
+            return Table(j_table=self.j_table.tailPct(pct))
         except Exception as e:
             raise DHError(e, "table tail_pct operation failed.") from e
 
@@ -518,7 +512,7 @@ class Table:
             DHError
         """
         try:
-            return self._j_table.restrictSortTo(*cols)
+            return self.j_table.restrictSortTo(*cols)
         except Exception as e:
             raise DHError(e, "table restrict_sort_to operation failed.") from e
 
@@ -536,7 +530,7 @@ class Table:
             DHError
         """
         try:
-            return Table(j_table=self._j_table.sortDescending(*order_by))
+            return Table(j_table=self.j_table.sortDescending(*order_by))
         except Exception as e:
             raise DHError(e, "table sort_descending operation failed.") from e
 
@@ -550,7 +544,7 @@ class Table:
             DHError
         """
         try:
-            return Table(j_table=self._j_table.reverse())
+            return Table(j_table=self.j_table.reverse())
         except Exception as e:
             raise DHError(e, "table reverse operation failed.") from e
 
@@ -576,9 +570,9 @@ class Table:
         try:
             if order:
                 sort_columns = [sort_column(col, dir_) for col, dir_ in zip(order_by, order)]
-                return Table(j_table=_JTWD.sort(self._j_table, *sort_columns))
+                return Table(j_table=_JTWD.sort(self.j_table, *sort_columns))
             else:
-                return Table(j_table=self._j_table.sort(*order_by))
+                return Table(j_table=self.j_table.sort(*order_by))
         except Exception as e:
             raise DHError(e, "table sort operation failed.") from e
 
@@ -609,9 +603,9 @@ class Table:
         """
         try:
             if joins:
-                return Table(j_table=self._j_table.naturalJoin(table._j_table, ",".join(on), ",".join(joins)))
+                return Table(j_table=self.j_table.naturalJoin(table.j_table, ",".join(on), ",".join(joins)))
             else:
-                return Table(j_table=self._j_table.naturalJoin(table._j_table, ",".join(on)))
+                return Table(j_table=self.j_table.naturalJoin(table.j_table, ",".join(on)))
         except Exception as e:
             raise DHError(e, "table natural_join operation failed.") from e
 
@@ -636,9 +630,9 @@ class Table:
         """
         try:
             if joins:
-                return Table(j_table=self._j_table.exactJoin(table._j_table, ",".join(on), ",".join(joins)))
+                return Table(j_table=self.j_table.exactJoin(table.j_table, ",".join(on), ",".join(joins)))
             else:
-                return Table(j_table=self._j_table.exactJoin(table._j_table, ",".join(on)))
+                return Table(j_table=self.j_table.exactJoin(table.j_table, ",".join(on)))
         except Exception as e:
             raise DHError(e, "table exact_join operation failed.") from e
 
@@ -663,9 +657,9 @@ class Table:
         """
         try:
             if joins:
-                return Table(j_table=self._j_table.leftJoin(table._j_table, ",".join(on), ",".join(joins)))
+                return Table(j_table=self.j_table.leftJoin(table.j_table, ",".join(on), ",".join(joins)))
             else:
-                return Table(j_table=self._j_table.leftJoin(table._j_table, ",".join(on)))
+                return Table(j_table=self.j_table.leftJoin(table.j_table, ",".join(on)))
         except Exception as e:
             raise DHError(e, "table left_join operation failed.") from e
 
@@ -690,9 +684,9 @@ class Table:
         """
         try:
             if joins:
-                return Table(j_table=self._j_table.join(table._j_table, ",".join(on), ",".join(joins)))
+                return Table(j_table=self.j_table.join(table.j_table, ",".join(on), ",".join(joins)))
             else:
-                return Table(j_table=self._j_table.join(table._j_table, ",".join(on)))
+                return Table(j_table=self.j_table.join(table.j_table, ",".join(on)))
         except Exception as e:
             raise DHError(e, "table join operation failed.") from e
 
@@ -718,9 +712,9 @@ class Table:
         """
         try:
             if joins:
-                return Table(j_table=self._j_table.aj(table._j_table, ",".join(on), ",".join(joins)))
+                return Table(j_table=self.j_table.aj(table.j_table, ",".join(on), ",".join(joins)))
             else:
-                return Table(j_table=self._j_table.aj(table._j_table, ",".join(on)))
+                return Table(j_table=self.j_table.aj(table.j_table, ",".join(on)))
         except Exception as e:
             raise DHError(e, "table as-of join operation failed.") from e
 
@@ -746,9 +740,9 @@ class Table:
         """
         try:
             if joins:
-                return Table(j_table=self._j_table.raj(table._j_table, ",".join(on), ",".join(joins)))
+                return Table(j_table=self.j_table.raj(table.j_table, ",".join(on), ",".join(joins)))
             else:
-                return Table(j_table=self._j_table.raj(table._j_table, ",".join(on)))
+                return Table(j_table=self.j_table.raj(table.j_table, ",".join(on)))
         except Exception as e:
             raise DHError(e, "table reverse-as-of join operation failed.") from e
 
@@ -771,7 +765,7 @@ class Table:
             DHError
         """
         try:
-            return Table(j_table=self._j_table.headBy(num_rows, *by))
+            return Table(j_table=self.j_table.headBy(num_rows, *by))
         except Exception as e:
             raise DHError(e, "table head_by operation failed.") from e
 
@@ -789,7 +783,7 @@ class Table:
             DHError
         """
         try:
-            return Table(j_table=self._j_table.tailBy(num_rows, *by))
+            return Table(j_table=self.j_table.tailBy(num_rows, *by))
         except Exception as e:
             raise DHError(e, "table tail_by operation failed.") from e
 
@@ -808,9 +802,9 @@ class Table:
         """
         try:
             if by:
-                return Table(j_table=self._j_table.groupBy(*by))
+                return Table(j_table=self.j_table.groupBy(*by))
             else:
-                return Table(j_table=self._j_table.groupBy())
+                return Table(j_table=self.j_table.groupBy())
         except Exception as e:
             raise DHError(e, "table group operation failed.") from e
 
@@ -830,9 +824,9 @@ class Table:
         """
         try:
             if cols:
-                return Table(j_table=self._j_table.ungroup(*cols))
+                return Table(j_table=self.j_table.ungroup(*cols))
             else:
-                return Table(j_table=self._j_table.ungroup())
+                return Table(j_table=self.j_table.ungroup())
         except Exception as e:
             raise DHError(e, "table ungroup operation failed.") from e
 
@@ -850,9 +844,9 @@ class Table:
         """
         try:
             if by:
-                return Table(j_table=self._j_table.firstBy(*by))
+                return Table(j_table=self.j_table.firstBy(*by))
             else:
-                return Table(j_table=self._j_table.firstBy())
+                return Table(j_table=self.j_table.firstBy())
         except Exception as e:
             raise DHError(e, "table first_by operation failed.") from e
 
@@ -870,9 +864,9 @@ class Table:
         """
         try:
             if by:
-                return Table(j_table=self._j_table.lastBy(*by))
+                return Table(j_table=self.j_table.lastBy(*by))
             else:
-                return Table(j_table=self._j_table.lastBy())
+                return Table(j_table=self.j_table.lastBy())
         except Exception as e:
             raise DHError(e, "table last_by operation failed.") from e
 
@@ -890,9 +884,9 @@ class Table:
         """
         try:
             if by:
-                return Table(j_table=self._j_table.sumBy(*by))
+                return Table(j_table=self.j_table.sumBy(*by))
             else:
-                return Table(j_table=self._j_table.sumBy())
+                return Table(j_table=self.j_table.sumBy())
         except Exception as e:
             raise DHError(e, "table sum_by operation failed.") from e
 
@@ -910,9 +904,9 @@ class Table:
         """
         try:
             if by:
-                return Table(j_table=self._j_table.avgBy(*by))
+                return Table(j_table=self.j_table.avgBy(*by))
             else:
-                return Table(j_table=self._j_table.avgBy())
+                return Table(j_table=self.j_table.avgBy())
         except Exception as e:
             raise DHError(e, "table avg_by operation failed.") from e
 
@@ -930,9 +924,9 @@ class Table:
         """
         try:
             if by:
-                return Table(j_table=self._j_table.stdBy(*by))
+                return Table(j_table=self.j_table.stdBy(*by))
             else:
-                return Table(j_table=self._j_table.stdBy())
+                return Table(j_table=self.j_table.stdBy())
         except Exception as e:
             raise DHError(e, "table std_by operation failed.") from e
 
@@ -950,9 +944,9 @@ class Table:
         """
         try:
             if by:
-                return Table(j_table=self._j_table.varBy(*by))
+                return Table(j_table=self.j_table.varBy(*by))
             else:
-                return Table(j_table=self._j_table.varBy())
+                return Table(j_table=self.j_table.varBy())
         except Exception as e:
             raise DHError(e, "table var_by operation failed.") from e
 
@@ -970,9 +964,9 @@ class Table:
         """
         try:
             if by:
-                return Table(j_table=self._j_table.medianBy(*by))
+                return Table(j_table=self.j_table.medianBy(*by))
             else:
-                return Table(j_table=self._j_table.medianBy())
+                return Table(j_table=self.j_table.medianBy())
         except Exception as e:
             raise DHError(e, "table median_by operation failed.") from e
 
@@ -990,9 +984,9 @@ class Table:
         """
         try:
             if by:
-                return Table(j_table=self._j_table.minBy(*by))
+                return Table(j_table=self.j_table.minBy(*by))
             else:
-                return Table(j_table=self._j_table.minBy())
+                return Table(j_table=self.j_table.minBy())
         except Exception as e:
             raise DHError(e, "table min_by operation failed.") from e
 
@@ -1010,9 +1004,9 @@ class Table:
         """
         try:
             if by:
-                return Table(j_table=self._j_table.maxBy(*by))
+                return Table(j_table=self.j_table.maxBy(*by))
             else:
-                return Table(j_table=self._j_table.maxBy())
+                return Table(j_table=self.j_table.maxBy())
         except Exception as e:
             raise DHError(e, "table max_by operation failed.") from e
 
@@ -1031,9 +1025,9 @@ class Table:
         """
         try:
             if by:
-                return Table(j_table=self._j_table.countBy(col, *by))
+                return Table(j_table=self.j_table.countBy(col, *by))
             else:
-                return Table(j_table=self._j_table.countBy(col))
+                return Table(j_table=self.j_table.countBy(col))
         except Exception as e:
             raise DHError(e, "table count_by operation failed.") from e
 
@@ -1052,7 +1046,7 @@ class Table:
             DHError
         """
         try:
-            return Table(j_table=_JTWD.aggBy(self._j_table, _JAggHolder(*[agg.j_agg for agg in aggs]), *by))
+            return Table(j_table=_JTWD.aggBy(self.j_table, _JAggHolder(*[agg.j_agg for agg in aggs]), *by))
         except Exception as e:
             raise DHError(e, "table agg_by operation failed.") from e
     # endregion

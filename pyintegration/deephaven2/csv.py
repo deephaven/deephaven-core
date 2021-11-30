@@ -18,6 +18,7 @@ _JCsvSpecs = jpy.get_type("io.deephaven.csv.CsvSpecs")
 _JInferenceSpecs = jpy.get_type("io.deephaven.csv.InferenceSpecs")
 _JTableHeader = jpy.get_type("io.deephaven.qst.table.TableHeader")
 _JCharset = jpy.get_type("java.nio.charset.Charset")
+_JTableTools = jpy.get_type("io.deephaven.db.tables.utils.TableTools")
 
 
 class Inference(Enum):
@@ -126,4 +127,7 @@ def write(table: Table, path: str, cols: List[str] = []) -> None:
     Raises:
         DHError
     """
-    table.write_csv(path, cols)
+    try:
+        _JTableTools.writeCsv(table.j_table, path, *cols)
+    except Exception as e:
+        raise DHError("write csv failed.") from e
