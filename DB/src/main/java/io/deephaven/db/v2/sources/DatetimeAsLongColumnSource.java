@@ -12,7 +12,7 @@ import io.deephaven.db.v2.utils.OrderedKeys;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Reinterpret result {@link ColumnSource} implementations that translates {@link Boolean} to {@code byte} values.
+ * Reinterpret result {@link ColumnSource} implementations that translates {@link DBDateTime} to {@code long} values.
  */
 @AbstractColumnSource.IsSerializable(value = true)
 public class DatetimeAsLongColumnSource extends AbstractColumnSource<Long> implements MutableColumnSourceGetDefaults.ForLong {

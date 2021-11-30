@@ -4,6 +4,13 @@ import io.deephaven.db.tables.CodecLookup;
 import io.deephaven.db.tables.ColumnDefinition;
 import io.deephaven.db.tables.libs.StringSet;
 import io.deephaven.db.tables.utils.DBDateTime;
+import io.deephaven.db.util.tuples.generated.IntIntTuple;
+import io.deephaven.db.v2.sources.ColumnSource;
+import io.deephaven.db.v2.sources.chunk.Attributes;
+import io.deephaven.db.v2.sources.chunk.ChunkSource;
+import io.deephaven.db.v2.sources.chunk.ObjectChunk;
+import io.deephaven.db.v2.utils.Index;
+import io.deephaven.db.v2.utils.OrderedKeys;
 import io.deephaven.util.codec.ExternalizableCodec;
 import io.deephaven.util.codec.SerializableCodec;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -17,7 +24,9 @@ import org.apache.parquet.schema.Types.PrimitiveBuilder;
 
 import javax.validation.constraints.NotNull;
 import java.io.Externalizable;
+import java.math.BigDecimal;
 import java.util.*;
+import java.util.function.Supplier;
 
 /**
  * Contains the necessary information to convert a Deephaven table into a Parquet table. Both the schema translation,
@@ -87,15 +96,102 @@ class TypeInfos {
         }
         // Impute an appropriate codec for the data type
         final Class<?> dataType = columnDefinition.getDataType();
+        if (BigDecimal.class.equals(dataType)) {
+            return null;
+        }
         if (Externalizable.class.isAssignableFrom(dataType)) {
             return new ImmutablePair<>(ExternalizableCodec.class.getName(), dataType.getName());
         }
         return new ImmutablePair<>(SerializableCodec.class.getName(), null);
     }
 
-    static TypeInfo getTypeInfo(
+    private static IntIntTuple getPrecisionAndScale(final Index index, final ColumnSource<BigDecimal> source) {
+        final int sz = 4096;
+        final ChunkSource.GetContext context = source.makeGetContext(sz);
+        // we first compute max(precision - scale) and max(scale), which corresponds to max(digits left of the decimal point),
+        // max(digits right of the decimal point).   Then we convert to (precision, scale) before returning.
+        int maxPrecisionMinusScale = 0;
+        int maxScale = 0;
+        try (final OrderedKeys.Iterator it = index.getOrderedKeysIterator()) {
+            final OrderedKeys ok = it.getNextOrderedKeysWithLength(sz);
+            final ObjectChunk<BigDecimal, ? extends Attributes.Values> chunk = source.getChunk(context, ok).asObjectChunk();
+            for (int i = 0; i < chunk.size(); ++i) {
+                final BigDecimal x = chunk.get(i);
+                final int precision = x.precision();
+                final int scale = x.scale();
+                final int precisionMinusScale = precision - scale;
+                if (precisionMinusScale > maxPrecisionMinusScale) {
+                    maxPrecisionMinusScale = precisionMinusScale;
+                }
+                if (scale > maxScale) {
+                    maxScale = scale;
+                }
+            }
+        }
+        return new IntIntTuple(maxPrecisionMinusScale + maxScale, maxScale);
+    }
+
+    static IntIntTuple getPrecisionAndScale(
+            final Map<String, Map<ParquetTableWriter.CacheTags, Object>> computedCache,
+            final String columnName,
+            final Index index,
+            Supplier<ColumnSource<BigDecimal>> columnSourceSupplier) {
+        Map<ParquetTableWriter.CacheTags, Object> columnCache = computedCache.get(columnName);
+        if (columnCache != null) {
+            final Object cached = columnCache.get(ParquetTableWriter.CacheTags.DECIMAL_ARGS);
+            if (cached != null) {
+                return (IntIntTuple) cached;
+            }
+        }
+        // noinspection unchecked
+        final IntIntTuple ans = getPrecisionAndScale(index, columnSourceSupplier.get());
+        if (columnCache == null) {
+            columnCache = new HashMap<>();
+            computedCache.put(columnName, columnCache);
+        }
+        columnCache.put(ParquetTableWriter.CacheTags.DECIMAL_ARGS, ans);
+        return ans;
+    }
+
+    static TypeInfo bigDecimalTypeInfo(
+            final Map<String, Map<ParquetTableWriter.CacheTags, Object>> computedCache,
             @NotNull final ColumnDefinition<?> column,
+            final Index index,
+            final Map<String, ? extends ColumnSource<?>> columnSourceMap) {
+        final String columnName = column.getName();
+        // noinspection unchecked
+        final IntIntTuple precisionAndScale = getPrecisionAndScale(
+                computedCache, columnName, index, () -> (ColumnSource<BigDecimal>) columnSourceMap.get(columnName));
+        final int precision = precisionAndScale.getFirstElement();
+        final int scale = precisionAndScale.getSecondElement();
+        final Set<Class<?>> clazzes = Collections.singleton(BigDecimal.class);
+        return new TypeInfo() {
+            @Override
+            public Set<Class<?>> getTypes() {
+                return clazzes;
+            }
+
+            @Override
+            public PrimitiveBuilder<PrimitiveType> getBuilder(boolean required, boolean repeating, Class dataType) {
+                if (!isValidFor(dataType)) {
+                    throw new IllegalArgumentException("Invalid data type " + dataType);
+                }
+                return type(PrimitiveTypeName.BINARY, required, repeating)
+                        .as(LogicalTypeAnnotation.decimalType(scale, precision));
+            }
+        };
+    }
+
+    static TypeInfo getTypeInfo(
+            final Map<String, Map<ParquetTableWriter.CacheTags, Object>> computedCache,
+            @NotNull final ColumnDefinition<?> column,
+            final Index index,
+            final Map<String, ? extends ColumnSource<?>> columnSourceMap,
             @NotNull final ParquetInstructions instructions) {
+        final Class<?> dataType = column.getDataType();
+        if (BigDecimal.class.equals(dataType)) {
+            return bigDecimalTypeInfo(computedCache, column, index, columnSourceMap);
+        }
         return lookupTypeInfo(column, instructions);
     }
 

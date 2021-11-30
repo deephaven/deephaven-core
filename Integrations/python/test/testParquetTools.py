@@ -13,6 +13,7 @@ import time
 import shutil
 
 from deephaven import TableTools, ParquetTools
+import deephaven.Types as dh
 
 
 if sys.version_info[0] < 3:
@@ -85,6 +86,25 @@ class TestParquetTools(unittest.TestCase):
                 time.sleep(0.01)  # avoid race condition on file existence...
                 self.assertFalse(os.path.exists(fileLocation2))
         shutil.rmtree(baseDir)
+
+    def testDecimal(self):
+        jbigdecimal = jpy.get_type('java.math.BigDecimal')
+        table = dh.table_of([[jbigdecimal.valueOf(301, 2)],
+                                [jbigdecimal.valueOf(201,2)],
+                                [jbigdecimal.valueOf(101,2)]],
+                               [('decimal_value', dh.bigdecimal)])
+        self.assertIsNotNone(table)
+        baseDir = os.path.join(self.rootDir, "testCreation")
+        fileLocation = os.path.join(baseDir, 'table1.parquet')
+        if os.path.exists(fileLocation):
+            shutil.rmtree(fileLocation)
+        time.sleep(0.01)  # avoid race condition on file existence...
+
+        ParquetTools.writeTable(table, fileLocation)
+        time.sleep(0.01)  # avoid race condition on file existence...
+        self.assertTrue(os.path.exists(fileLocation))
+        shutil.rmtree(baseDir)
+        time.sleep(0.01)  # avoid race condition on file existence...
 
     @classmethod
     def tearDownClass(cls):

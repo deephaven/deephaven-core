@@ -7,6 +7,7 @@ import io.deephaven.db.tables.libs.StringSet;
 import io.deephaven.db.tables.select.QueryScope;
 import io.deephaven.db.tables.utils.DBDateTime;
 import io.deephaven.db.tables.utils.TableTools;
+import io.deephaven.db.util.tuples.generated.IntIntTuple;
 import io.deephaven.db.v2.InMemoryTable;
 import io.deephaven.db.v2.QueryTable;
 import io.deephaven.db.v2.locations.parquet.local.TrackedSeekableChannelsProvider;
@@ -26,6 +27,7 @@ import io.deephaven.db.v2.sources.chunk.*;
 import io.deephaven.db.v2.utils.Index;
 import io.deephaven.db.v2.utils.OrderedKeys;
 import io.deephaven.util.QueryConstants;
+import io.deephaven.util.codec.BigDecimalParquetBytesCodec;
 import io.deephaven.util.codec.ObjectCodec;
 import io.deephaven.util.type.TypeUtils;
 import gnu.trove.list.array.TLongArrayList;
@@ -45,6 +47,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.lang.reflect.Field;
+import java.math.BigDecimal;
 import java.nio.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -241,21 +244,23 @@ public class ParquetTableWriter {
 
         final CompressionCodecName compressionCodecName =
                 CompressionCodecName.valueOf(writeInstructions.getCompressionCodecName());
-        ParquetFileWriter parquetFileWriter = getParquetFileWriter(definition, path, writeInstructions, tableMeta,
-                tableInfoBuilder, compressionCodecName);
-
         final Table t = pretransformTable(table, definition);
+        final Index index = t.getIndex();
+        final Map<String, ? extends ColumnSource<?>> columnSourceMap = t.getColumnSourceMap();
+        final Map<String, Map<CacheTags, Object>> computedCache = new HashMap<>();
+        final ParquetFileWriter parquetFileWriter = getParquetFileWriter(computedCache, definition, index, columnSourceMap, path, writeInstructions, tableMeta,
+                tableInfoBuilder, compressionCodecName);
         final long nrows = t.size();
         if (nrows > 0) {
             RowGroupWriter rowGroupWriter = parquetFileWriter.addRowGroup(nrows);
             // noinspection rawtypes
-            for (Map.Entry<String, ? extends ColumnSource> nameToSource : t.getColumnSourceMap().entrySet()) {
+            for (Map.Entry<String, ? extends ColumnSource> nameToSource : columnSourceMap.entrySet()) {
                 String name = nameToSource.getKey();
                 // noinspection rawtypes
                 ColumnSource columnSource = nameToSource.getValue();
                 try {
                     // noinspection unchecked
-                    writeColumnSource(t.getIndex(), rowGroupWriter, name, columnSource,
+                    writeColumnSource(computedCache, index, rowGroupWriter, name, columnSource,
                             definition.getColumn(name), writeInstructions);
                 } catch (IllegalAccessException e) {
                     throw new RuntimeException("Failed to write column " + name, e);
@@ -292,15 +297,22 @@ public class ParquetTableWriter {
         return t;
     }
 
+    enum CacheTags {
+        DECIMAL_ARGS
+    }
+
     @NotNull
     private static ParquetFileWriter getParquetFileWriter(
+            final Map<String, Map<CacheTags, Object>> computedCache,
             final TableDefinition definition,
+            final Index index,
+            final Map<String, ? extends ColumnSource<?>> columnSourceMap,
             final String path,
             final ParquetInstructions writeInstructions,
             final Map<String, String> tableMeta,
             final TableInfo.Builder tableInfoBuilder,
             final CompressionCodecName codecName) throws IOException {
-        final MappedSchema mappedSchema = MappedSchema.create(definition, writeInstructions);
+        final MappedSchema mappedSchema = MappedSchema.create(computedCache, definition, index, columnSourceMap, writeInstructions);
         final Map<String, String> extraMetaData = new HashMap<>(tableMeta);
         for (final ColumnDefinition<?> column : definition.getColumns()) {
             final String colName = column.getName();
@@ -340,6 +352,7 @@ public class ParquetTableWriter {
     }
 
     private static <DATA_TYPE> void writeColumnSource(
+            final Map<String, Map<CacheTags, Object>> computedCache,
             final Index tableIndex,
             final RowGroupWriter rowGroupWriter,
             final String name,
@@ -397,7 +410,7 @@ public class ParquetTableWriter {
                 valueChunkSize.add(runningSize);
                 originalChunkSize.add(originalRowsCount);
             }
-            rowStepGetter = new Supplier<Integer>() {
+            rowStepGetter = new Supplier<>() {
                 int step;
 
                 @Override
@@ -405,7 +418,7 @@ public class ParquetTableWriter {
                     return originalChunkSize.get(step++);
                 }
             };
-            valuesStepGetter = new Supplier<Integer>() {
+            valuesStepGetter = new Supplier<>() {
                 int step;
 
                 @Override
@@ -427,11 +440,11 @@ public class ParquetTableWriter {
             // noinspection unchecked
             columnSource = (ColumnSource<DATA_TYPE>) ReinterpretUtilities.dateTimeToLongSource(columnSource);
             columnType = columnSource.getType();
-        }
-        if (columnType == Boolean.class) {
+        } else if (columnType == Boolean.class) {
             // noinspection unchecked
             columnSource = (ColumnSource<DATA_TYPE>) ReinterpretUtilities.booleanToByteSource(columnSource);
         }
+
         ColumnWriter columnWriter = rowGroupWriter.addColumn(name);
 
         boolean usedDictionary = false;
@@ -515,7 +528,7 @@ public class ParquetTableWriter {
         }
         if (!usedDictionary) {
             try (final TransferObject<?> transferObject =
-                    getDestinationBuffer(columnSource, columnDefinition, targetSize, columnType, writeInstructions)) {
+                    getDestinationBuffer(computedCache, index, columnSource, columnDefinition, targetSize, columnType, writeInstructions)) {
                 final boolean supportNulls = supportNulls(columnType);
                 final Object bufferToWrite = transferObject.getBuffer();
                 final Object nullValue = getNullValue(columnType);
@@ -614,8 +627,9 @@ public class ParquetTableWriter {
         }
     }
 
-
     private static <DATA_TYPE> TransferObject<?> getDestinationBuffer(
+            final Map<String, Map<CacheTags, Object>> computedCache,
+            final Index index,
             final ColumnSource<DATA_TYPE> columnSource,
             final ColumnDefinition<DATA_TYPE> columnDefinition,
             final int targetSize,
@@ -649,6 +663,14 @@ public class ParquetTableWriter {
             return new ByteTransfer(columnSource, targetSize);
         } else if (String.class.equals(columnType)) {
             return new StringTransfer(columnSource, targetSize);
+        } else if (BigDecimal.class.equals(columnType)) {
+            // noinspection unchecked
+            final ColumnSource<BigDecimal> bigDecimalColumnSource = (ColumnSource<BigDecimal>) columnSource;
+            final IntIntTuple precisionAndScale = TypeInfos.getPrecisionAndScale(
+                    computedCache, columnDefinition.getName(), index, () -> bigDecimalColumnSource);
+            final ObjectCodec<BigDecimal> codec = new BigDecimalParquetBytesCodec(
+                    precisionAndScale.getFirstElement(), precisionAndScale.getSecondElement(), -1);
+            return new CodecTransfer<>(bigDecimalColumnSource, codec, targetSize);
         }
         final ObjectCodec<? super DATA_TYPE> codec = CodecLookup.lookup(columnDefinition, instructions);
         return new CodecTransfer<>(columnSource, codec, targetSize);

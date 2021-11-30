@@ -211,7 +211,7 @@ public class KafkaTools {
                 return;
             case RECORD:
                 // Linearize any nesting.
-                for (final Schema.Field nestedField : field.schema().getFields()) {
+                for (final Schema.Field nestedField : fieldSchema.getFields()) {
                     pushColumnTypesFromAvroField(
                             columnsOut, mappedOut,
                             prefix + fieldName + NESTED_FIELD_NAME_SEPARATOR,

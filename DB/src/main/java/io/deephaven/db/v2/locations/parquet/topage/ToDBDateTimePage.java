@@ -83,7 +83,7 @@ public abstract class ToDBDateTimePage<ATTR extends Attributes.Any> extends ToLo
         }
 
         @Override
-        public final long[] convertResult(@NotNull final Object result) {
+        public long[] convertResult(@NotNull final Object result) {
             return convertResultHelper(result, DBTimeUtils::microsToNanos);
         }
     }
@@ -96,7 +96,7 @@ public abstract class ToDBDateTimePage<ATTR extends Attributes.Any> extends ToLo
         }
 
         @Override
-        public final long[] convertResult(@NotNull final Object result) {
+        public long[] convertResult(@NotNull final Object result) {
             return convertResultHelper(result, DBTimeUtils::millisToNanos);
         }
     }
