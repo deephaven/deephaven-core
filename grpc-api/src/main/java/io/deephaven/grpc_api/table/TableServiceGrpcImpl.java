@@ -5,7 +5,7 @@
 package io.deephaven.grpc_api.table;
 
 import com.google.rpc.Code;
-import io.deephaven.db.tables.Table;
+import io.deephaven.engine.table.Table;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.grpc_api.session.SessionService;
 import io.deephaven.grpc_api.session.SessionState;
@@ -371,7 +371,7 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
         return ExportedTableCreationResponse.newBuilder()
                 .setSuccess(true)
                 .setResultId(tableRef)
-                .setIsStatic(!table.isLive())
+                .setIsStatic(!table.isRefreshing())
                 .setSize(table.size())
                 .setSchemaHeader(BarrageUtil.schemaBytesFromTable(table))
                 .build();

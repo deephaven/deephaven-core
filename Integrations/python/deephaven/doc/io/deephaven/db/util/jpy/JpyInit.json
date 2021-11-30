@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.db.util.jpy.JpyInit",
- "methods": {
-  "init": "*Overload 1*  \n  :param log: io.deephaven.io.logger.Logger\n  \n*Overload 2*  \n  :param log: io.deephaven.io.logger.Logger\n  :param jpyConfig: io.deephaven.jpy.JpyConfigExt"
- },
- "path": "io.deephaven.db.util.jpy.JpyInit",
- "text": "Initializes Jpy.\n\n A guarded initialization via JpyConfigExt.startPython()",
- "typeName": "class"
-}

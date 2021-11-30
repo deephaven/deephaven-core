@@ -1,0 +1,14 @@
+{
+ "className": "io.deephaven.proto.backplane.grpc.CreateInputTableRequest$InputTableKindOrBuilder",
+ "methods": {
+  "getInMemoryAppendOnly": ".io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryAppendOnly in_memory_append_only = 1;\n\n:return: (io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryAppendOnly) The inMemoryAppendOnly.",
+  "getInMemoryAppendOnlyOrBuilder": ".io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryAppendOnly in_memory_append_only = 1;\n\n:return: io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryAppendOnlyOrBuilder",
+  "getInMemoryKeyBacked": ".io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryKeyBacked in_memory_key_backed = 2;\n\n:return: (io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryKeyBacked) The inMemoryKeyBacked.",
+  "getInMemoryKeyBackedOrBuilder": ".io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryKeyBacked in_memory_key_backed = 2;\n\n:return: io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryKeyBackedOrBuilder",
+  "getKindCase": ":return: io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.KindCase",
+  "hasInMemoryAppendOnly": ".io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryAppendOnly in_memory_append_only = 1;\n\n:return: (boolean) Whether the inMemoryAppendOnly field is set.",
+  "hasInMemoryKeyBacked": ".io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryKeyBacked in_memory_key_backed = 2;\n\n:return: (boolean) Whether the inMemoryKeyBacked field is set."
+ },
+ "path": "io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKindOrBuilder",
+ "typeName": "interface"
+}

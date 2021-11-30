@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.db.v2.utils.IndexShiftData$SingleElementShiftCallback",
- "methods": {
-  "shift": "Process the shift.\n\n:param key: (long) - the key to shift\n:param shiftDelta: (long) - amount key has moved by"
- },
- "path": "io.deephaven.db.v2.utils.IndexShiftData.SingleElementShiftCallback",
- "typeName": "interface"
-}

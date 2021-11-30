@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.parquet.table.layout.KeyValuePartitionLayout",
+ "methods": {
+  "findKeys": "Find keys and deliver them to the locationKeyObserver.\n\n:param locationKeyObserver: (java.util.function.Consumer<KeyValuePartitionLayout.TLK>) - Per-key callback",
+  "toString": ":return: java.lang.String"
+ },
+ "path": "io.deephaven.parquet.table.layout.KeyValuePartitionLayout",
+ "text": "Location finder that will traverse a directory hierarchy and infer partitions from\n key-value pairs in the directory names, for example:\n \n \n tableRootDirectory/Country=France/City=Paris/parisData.parquet\n \n \n Traversal is depth-first, and assumes that target files will only be found at a single depth.",
+ "typeName": "class"
+}

@@ -1,6 +1,8 @@
 {
  "className": "io.deephaven.api.filter.Filter",
  "methods": {
+  "from": "*Overload 1*  \n  :param expressions: java.lang.String...\n  :return: java.util.Collection<? extends io.deephaven.api.filter.Filter>\n  \n*Overload 2*  \n  :param expressions: java.util.Collection<java.lang.String>\n  :return: java.util.Collection<? extends io.deephaven.api.filter.Filter>",
+  "from_": ":param expressions: java.lang.String...\n:return: java.util.Collection<? extends io.deephaven.api.filter.Filter>",
   "isNotNull": ":param column: io.deephaven.api.ColumnName\n:return: io.deephaven.api.filter.FilterIsNotNull",
   "isNull": ":param column: io.deephaven.api.ColumnName\n:return: io.deephaven.api.filter.FilterIsNull",
   "not": "*Overload 1*  \n  :param filter: io.deephaven.api.filter.Filter\n  :return: io.deephaven.api.filter.FilterNot\n  \n*Overload 2*  \n  :return: io.deephaven.api.filter.FilterNot",

@@ -1,0 +1,6 @@
+{
+ "className": "io.deephaven.engine.table.impl.util.copy.CopyKernel$Utils",
+ "methods": {},
+ "path": "io.deephaven.engine.table.impl.util.copy.CopyKernel.Utils",
+ "typeName": "class"
+}

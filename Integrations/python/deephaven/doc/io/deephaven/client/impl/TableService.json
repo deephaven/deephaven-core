@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.client.impl.TableService",
+ "methods": {
+  "batch": "A batch table handle manager.\n\n*Overload 1*  \n  :return: (io.deephaven.client.impl.TableHandleManager) a batch manager\n  \n*Overload 2*  \n  :param mixinStacktraces: (boolean) - if stacktraces should be mixin\n  :return: (io.deephaven.client.impl.TableHandleManager) a batch manager",
+  "export": "**Incompatible overloads text - text from the first overload:**\n\nCreates a new export with a logging listener.\n\n \n Equivalent to export(ExportsRequest.logging(table)).get(0).\n\n*Overload 1*  \n  :param table: (io.deephaven.qst.table.TableSpec) - the table\n  :return: (io.deephaven.client.impl.Export) the export\n  \n*Overload 2*  \n  :param request: (io.deephaven.client.impl.ExportsRequest) - the request\n  :return: (java.util.List<io.deephaven.client.impl.Export>) the exports",
+  "serial": "A serial table handle manager.\n\n:return: (io.deephaven.client.impl.TableHandleManager) a serial manager"
+ },
+ "path": "io.deephaven.client.impl.TableService",
+ "typeName": "interface"
+}

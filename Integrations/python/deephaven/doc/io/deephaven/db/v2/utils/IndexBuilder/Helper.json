@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.db.v2.utils.IndexBuilder$Helper",
- "methods": {
-  "add": ":param builder: io.deephaven.db.v2.utils.IndexBuilder\n:param idx: io.deephaven.db.v2.utils.Index"
- },
- "path": "io.deephaven.db.v2.utils.IndexBuilder.Helper",
- "typeName": "class"
-}

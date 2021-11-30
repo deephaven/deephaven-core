@@ -1,8 +1,9 @@
 {
  "className": "io.deephaven.grpc_api.runner.DeephavenApiServerModule",
  "methods": {
-  "provideLiveTableMonitor": ":return: io.deephaven.db.tables.live.LiveTableMonitor",
-  "provideScheduler": ":param poolSize: int\n:return: io.deephaven.grpc_api.util.Scheduler"
+  "provideAppMode": ":return: io.deephaven.grpc_api.appmode.AppMode",
+  "provideScheduler": ":param poolSize: int\n:return: io.deephaven.grpc_api.util.Scheduler",
+  "provideUpdateGraphProcessor": ":return: io.deephaven.engine.updategraph.UpdateGraphProcessor"
  },
  "path": "io.deephaven.grpc_api.runner.DeephavenApiServerModule",
  "typeName": "class"

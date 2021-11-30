@@ -197,8 +197,8 @@ public:
   static Aggregate absSum(std::vector<std::string> columnSpecs);
 
   template<typename ...Args>
-  static Aggregate array(Args &&... args);
-  static Aggregate array(std::vector<std::string> columnSpecs);
+  static Aggregate group(Args &&... args);
+  static Aggregate group(std::vector<std::string> columnSpecs);
 
   template<typename ...Args>
   static Aggregate avg(Args &&... args);
@@ -277,8 +277,8 @@ Aggregate aggAbsSum(Args &&... args) {
 }
 
 template<typename ...Args>
-Aggregate aggArray(Args &&... args) {
-  return Aggregate::array(std::forward<Args>(args)...);
+Aggregate aggGroup(Args &&... args) {
+  return Aggregate::group(std::forward<Args>(args)...);
 }
 
 template<typename ...Args>
@@ -1174,11 +1174,11 @@ Aggregate Aggregate::absSum(Args &&... args) {
 }
 
 template<typename ...Args>
-Aggregate Aggregate::array(Args &&... args) {
+Aggregate Aggregate::group(Args &&... args) {
   std::vector<std::string> columnSpecs = {
       internal::ConvertToString::toString(std::forward<Args>(args))...
   };
-  return array(std::move(columnSpecs));
+  return group(std::move(columnSpecs));
 }
 
 template<typename ...Args>

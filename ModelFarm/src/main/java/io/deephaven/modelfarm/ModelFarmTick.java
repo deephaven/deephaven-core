@@ -6,7 +6,7 @@ package io.deephaven.modelfarm;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.db.v2.utils.Index;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 
@@ -66,20 +66,20 @@ public class ModelFarmTick<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE extends RowData
         super(nThreads, model, dataManager);
         this.maxQueueSize = maxQueueSize;
         this.queue = new ArrayDeque<>(this.maxQueueSize);
-        this.mostRecentDataGetter = getMostRecentDataFactory(GetDataLockType.LTM_LOCK_ALREADY_HELD);
+        this.mostRecentDataGetter = getMostRecentDataFactory(GetDataLockType.UGP_LOCK_ALREADY_HELD);
     }
 
     @Override
-    protected void onDataUpdate(Index added, Index removed, Index modified) {
+    protected void onDataUpdate(RowSet added, RowSet removed, RowSet modified) {
         final Set<KEYTYPE> keys = new HashSet<>();
 
-        for (Index.Iterator it = added.iterator(); it.hasNext();) {
+        for (RowSet.Iterator it = added.iterator(); it.hasNext();) {
             final long i = it.nextLong();
             final KEYTYPE key = dataManager.uniqueIdCurrent(i);
             keys.add(key);
         }
 
-        for (Index.Iterator it = modified.iterator(); it.hasNext();) {
+        for (RowSet.Iterator it = modified.iterator(); it.hasNext();) {
             final long i = it.nextLong();
             final KEYTYPE key = dataManager.uniqueIdCurrent(i);
             keys.add(key);

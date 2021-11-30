@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.db.util.ScriptSession$Listener",
- "methods": {
-  "onScopeChanges": ":param scriptSession: io.deephaven.db.util.ScriptSession\n:param changes: io.deephaven.db.util.ScriptSession.Changes"
- },
- "path": "io.deephaven.db.util.ScriptSession.Listener",
- "typeName": "interface"
-}

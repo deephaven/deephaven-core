@@ -9,6 +9,10 @@ import gnu.trove.list.array.TLongArrayList;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.barrage.flatbuf.BarrageMessageType;
 import io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.RowSetShiftData;
+import io.deephaven.engine.table.impl.util.*;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.chunk.ChunkInputStreamGenerator;
 import io.deephaven.extensions.barrage.table.BarrageTable;
@@ -17,14 +21,11 @@ import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.extensions.barrage.util.FlatBufferIteratorAdapter;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.db.tables.Table;
-import io.deephaven.db.util.LongSizedDataStructure;
-import io.deephaven.db.util.liveness.SingletonLivenessManager;
-import io.deephaven.db.v2.QueryTable;
-import io.deephaven.db.v2.sources.chunk.ChunkType;
-import io.deephaven.db.v2.utils.BarrageMessage;
-import io.deephaven.db.v2.utils.Index;
-import io.deephaven.db.v2.utils.IndexShiftData;
+import io.deephaven.engine.table.Table;
+import io.deephaven.util.datastructures.LongSizedDataStructure;
+import io.deephaven.engine.liveness.SingletonLivenessManager;
+import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.chunk.ChunkType;
 import io.deephaven.grpc_api.barrage.BarrageMessageProducer;
 import io.deephaven.grpc_api.barrage.BarrageStreamGenerator;
 import io.deephaven.grpc_api.session.SessionState;
@@ -152,8 +153,8 @@ public class ArrowFlightUtil {
                 }
                 final TLongIterator bufferInfoIter = bufferInfo.iterator();
 
-                msg.rowsRemoved = Index.FACTORY.getEmptyIndex();
-                msg.shifted = IndexShiftData.EMPTY;
+                msg.rowsRemoved = RowSetFactory.empty();
+                msg.shifted = RowSetShiftData.EMPTY;
 
                 // include all columns as add-columns
                 int numRowsAdded = LongSizedDataStructure.intSize("RecordBatch.length()", batch.length());
@@ -179,8 +180,8 @@ public class ArrowFlightUtil {
                 }
 
                 msg.rowsAdded =
-                        Index.FACTORY.getIndexByRange(resultTable.size(), resultTable.size() + numRowsAdded - 1);
-                msg.rowsIncluded = msg.rowsAdded.clone();
+                        RowSetFactory.fromRange(resultTable.size(), resultTable.size() + numRowsAdded - 1);
+                msg.rowsIncluded = msg.rowsAdded.copy();
                 msg.modColumnData = ZERO_MOD_COLUMNS;
 
                 resultTable.handleBarrageMessage(msg);
@@ -409,12 +410,10 @@ public class ArrowFlightUtil {
                     hasColumns ? BitSet.valueOf(subscriptionRequest.columnsAsByteBuffer()) : null;
 
             isViewport = subscriptionRequest.viewportVector() != null;
-            final Index viewport =
+            final RowSet viewport =
                     isViewport ? BarrageProtoUtil.toIndex(subscriptionRequest.viewportAsByteBuffer()) : null;
 
-            if (!bmp.addSubscription(listener, optionsAdapter.adapt(subscriptionRequest), columns, viewport)) {
-                throw new IllegalStateException("listener is already a subscriber!");
-            }
+            bmp.addSubscription(listener, optionsAdapter.adapt(subscriptionRequest), columns, viewport);
 
             for (final BarrageSubscriptionRequest request : preExportSubscriptions) {
                 apply(request);
@@ -435,7 +434,7 @@ public class ArrowFlightUtil {
                     hasColumns ? BitSet.valueOf(subscriptionRequest.columnsAsByteBuffer()) : new BitSet();
 
             final boolean hasViewport = subscriptionRequest.viewportVector() != null;
-            final Index viewport =
+            final RowSet viewport =
                     isViewport ? BarrageProtoUtil.toIndex(subscriptionRequest.viewportAsByteBuffer()) : null;
 
             final boolean subscriptionFound;

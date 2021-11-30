@@ -1,7 +1,0 @@
-{
- "className": "io.deephaven.db.v2.select.SelectFilter$PreviousFilteringNotSupported",
- "methods": {},
- "path": "io.deephaven.db.v2.select.SelectFilter.PreviousFilteringNotSupported",
- "text": "This exception is thrown when a where() filter is incapable of handling previous values, and thus needs to be\n executed while under the LTM lock.",
- "typeName": "class"
-}

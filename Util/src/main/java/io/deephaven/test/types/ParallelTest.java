@@ -13,8 +13,8 @@ package io.deephaven.test.types;
  * TestType which calls this.adapter.setUp()/tearDown() as appropriate. d) add an appropriate junit runner. If you do
  * not need anything fancy, use: {@code @RunWith(org.junit.runners.BlockJUnit4ClassRunner.class)}
  *
- * If you extend and use our existing JUnit3 test fixtures like LiveTableTestCase, you can use
- * {@link io.deephaven.test.junit4.JUnit4LiveTableTestCase} as an example.
+ * If you extend and use our existing JUnit3 test fixtures like RefreshingTableTestCase, you can use
+ * {@link io.deephaven.test.junit4.JUnit4RefreshingTableTestCase} as an example.
  */
 @SuppressWarnings("JavadocReference")
 public interface ParallelTest {

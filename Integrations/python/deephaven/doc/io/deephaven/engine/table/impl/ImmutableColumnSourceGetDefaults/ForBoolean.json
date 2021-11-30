@@ -1,0 +1,7 @@
+{
+ "className": "io.deephaven.engine.table.impl.ImmutableColumnSourceGetDefaults$ForBoolean",
+ "methods": {},
+ "path": "io.deephaven.engine.table.impl.ImmutableColumnSourceGetDefaults.ForBoolean",
+ "text": "Default interface for immutable Boolean ColumnSource implementations.",
+ "typeName": "interface"
+}

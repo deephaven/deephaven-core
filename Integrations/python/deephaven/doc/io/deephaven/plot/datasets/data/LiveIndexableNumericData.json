@@ -1,0 +1,7 @@
+{
+ "className": "io.deephaven.plot.datasets.data.LiveIndexableNumericData",
+ "methods": {},
+ "path": "io.deephaven.plot.datasets.data.LiveIndexableNumericData",
+ "text": "An IndexableNumericData backed by a table.",
+ "typeName": "class"
+}

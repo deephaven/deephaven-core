@@ -4,21 +4,22 @@ import com.github.javaparser.ParseProblemException;
 import com.github.javaparser.ParseResult;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.db.tables.ColumnDefinition;
-import io.deephaven.db.tables.SelectValidationResult;
-import io.deephaven.db.tables.Table;
-import io.deephaven.db.tables.lang.DBLanguageFunctionUtil;
-import io.deephaven.db.tables.lang.DBLanguageParser;
-import io.deephaven.db.tables.lang.DBLanguageParser.Result;
-import io.deephaven.db.tables.select.SelectColumnFactory;
-import io.deephaven.db.tables.select.SelectFilterFactory;
-import io.deephaven.db.tables.utils.DBDateTime;
-import io.deephaven.db.tables.utils.DBTimeUtils;
-import io.deephaven.db.util.DBColorUtilImpl;
-import io.deephaven.db.v2.BaseTable;
-import io.deephaven.db.v2.select.*;
-import io.deephaven.db.v2.select.analyzers.SelectAndViewAnalyzer;
-import io.deephaven.db.v2.select.codegen.FormulaAnalyzer;
+import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.impl.lang.QueryLanguageFunctionUtils;
+import io.deephaven.engine.table.impl.SelectValidationResult;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.lang.QueryLanguageParser;
+import io.deephaven.engine.table.impl.lang.QueryLanguageParser.Result;
+import io.deephaven.engine.table.impl.select.SelectColumnFactory;
+import io.deephaven.engine.table.impl.select.WhereFilterFactory;
+import io.deephaven.time.DateTime;
+import io.deephaven.time.DateTimeUtils;
+import io.deephaven.engine.util.ColorUtilImpl;
+import io.deephaven.engine.table.impl.BaseTable;
+import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.select.*;
+import io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer;
+import io.deephaven.engine.table.impl.select.codegen.FormulaAnalyzer;
 import io.deephaven.libs.GroovyStaticImports;
 import com.github.javaparser.JavaParser;
 import com.github.javaparser.ast.expr.Expression;
@@ -46,10 +47,10 @@ public class ColumnExpressionValidator extends GenericVisitorAdapter<Void, Void>
         // list all static methods in supported util classes:
         whitelistedStaticMethods = Stream
                 .of(
-                        DBLanguageFunctionUtil.class,
+                        QueryLanguageFunctionUtils.class,
                         GroovyStaticImports.class,
-                        DBTimeUtils.class,
-                        DBColorUtilImpl.class)
+                        DateTimeUtils.class,
+                        ColorUtilImpl.class)
                 .map(Class::getDeclaredMethods)
                 .flatMap(Arrays::stream)
                 .filter(m -> Modifier.isStatic(m.getModifiers()) && Modifier.isPublic(m.getModifiers()))
@@ -57,11 +58,11 @@ public class ColumnExpressionValidator extends GenericVisitorAdapter<Void, Void>
                 .collect(Collectors.collectingAndThen(Collectors.toSet(), Collections::unmodifiableSet));
 
         // list all non-inherited instance methods in supported data classes:
-        // DBDateTime
+        // DateTime
         // String
         whitelistedInstanceMethods = Stream
                 .of(
-                        DBDateTime.class,
+                        DateTime.class,
                         String.class)
                 .map(Class::getDeclaredMethods)
                 .flatMap(Arrays::stream)
@@ -70,11 +71,11 @@ public class ColumnExpressionValidator extends GenericVisitorAdapter<Void, Void>
                 .collect(Collectors.collectingAndThen(Collectors.toSet(), Collections::unmodifiableSet));
     }
 
-    public static SelectFilter[] validateSelectFilters(final String[] conditionalExpressions, final Table table) {
-        final SelectFilter[] selectFilters = SelectFilterFactory.getExpressions(conditionalExpressions);
+    public static WhereFilter[] validateSelectFilters(final String[] conditionalExpressions, final Table table) {
+        final WhereFilter[] whereFilters = WhereFilterFactory.getExpressions(conditionalExpressions);
         final List<String> dummyAssignments = new ArrayList<>();
-        for (int ii = 0; ii < selectFilters.length; ++ii) {
-            final SelectFilter sf = selectFilters[ii];
+        for (int ii = 0; ii < whereFilters.length; ++ii) {
+            final WhereFilter sf = whereFilters[ii];
             if (sf instanceof ConditionFilter) {
                 dummyAssignments
                         .add(String.format("__boolean_placeholder_%d__ = (%s)", ii, conditionalExpressions[ii]));
@@ -85,7 +86,7 @@ public class ColumnExpressionValidator extends GenericVisitorAdapter<Void, Void>
             final SelectColumn[] selectColumns = SelectColumnFactory.getExpressions(daArray);
             validateColumnExpressions(selectColumns, daArray, table);
         }
-        return selectFilters;
+        return whereFilters;
     }
 
     public static void validateColumnExpressions(final SelectColumn[] selectColumns,
@@ -93,7 +94,7 @@ public class ColumnExpressionValidator extends GenericVisitorAdapter<Void, Void>
             final Table table) {
         assert (selectColumns.length == originalExpressions.length);
 
-        final SelectValidationResult validationResult = table.validateSelect(selectColumns);
+        final SelectValidationResult validationResult = ((QueryTable) table.coalesce()).validateSelect(selectColumns);
         SelectAndViewAnalyzer top = validationResult.getAnalyzer();
         // We need the cloned columns because the SelectAndViewAnalyzer has left state behind in them
         // (namely the "realColumn" of the SwitchColumn) that we want to look at in validateSelectColumnHelper.
@@ -132,16 +133,16 @@ public class ColumnExpressionValidator extends GenericVisitorAdapter<Void, Void>
         final String formulaString = originalExpression.substring(indexOfEquals + 1);
 
         final Result compiledFormula;
-        final DBTimeUtils.Result timeConversionResult;
+        final DateTimeUtils.Result timeConversionResult;
         try {
-            timeConversionResult = DBTimeUtils.convertExpression(formulaString);
+            timeConversionResult = DateTimeUtils.convertExpression(formulaString);
             compiledFormula = FormulaAnalyzer.getCompiledFormula(availableColumns, timeConversionResult, null);
         } catch (final Exception e) {
             // in theory not possible, since we already parsed it once
             throw new IllegalStateException("Error occurred while re-compiling formula for whitelist", e);
         }
         final boolean isAddOnly = table instanceof BaseTable && ((BaseTable) table).isAddOnly();
-        if (table.isLive() && !(isAddOnly && table.isFlat())) {
+        if (table.isRefreshing() && !(isAddOnly && table.isFlat())) {
             final Set<String> disallowedVariables = new HashSet<>();
             disallowedVariables.add("i");
             disallowedVariables.add("ii");
@@ -159,10 +160,10 @@ public class ColumnExpressionValidator extends GenericVisitorAdapter<Void, Void>
     private static final JavaParser staticJavaParser = new JavaParser();
 
     private static void validateInvocations(String expression) {
-        // copied, modified from DBLanguageParser.java
+        // copied, modified from QueryLanguageParser.java
         // before parsing, finish Deephaven-specific language features:
-        expression = DBLanguageParser.convertBackticks(expression);
-        expression = DBLanguageParser.convertSingleEquals(expression);
+        expression = QueryLanguageParser.convertBackticks(expression);
+        expression = QueryLanguageParser.convertSingleEquals(expression);
 
         // then, parse into an AST
         final ParseResult<Expression> result;

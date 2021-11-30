@@ -1,0 +1,13 @@
+{
+ "className": "io.deephaven.engine.table.impl.SwapListenerBase",
+ "methods": {
+  "getErrorNotification": "Creates a notification for the exception.\n\n:param originalException: (java.lang.Throwable) - exception\n:param sourceEntry: (io.deephaven.engine.table.TableListener.Entry) - performance tracking\n:return: (io.deephaven.engine.updategraph.NotificationQueue.ErrorNotification) exception notification",
+  "makeSnapshotControl": ":return: io.deephaven.engine.table.impl.remote.ConstructSnapshot.SnapshotControl",
+  "onFailure": "Notification of exceptions.\n\n:param originalException: (java.lang.Throwable) - exception\n:param sourceEntry: (io.deephaven.engine.table.TableListener.Entry) - performance tracking",
+  "setListenerAndResult": "Set the listener that will eventually become the listener, if we have a successful swap.\n\n:param listener: (SwapListenerBase.T) - The listener that we will eventually forward all updates to\n:param resultTable: (io.deephaven.engine.table.impl.NotificationStepReceiver) - The table that will result from this operation",
+  "subscribeForUpdates": "Invoke TableWithDefaults.listenForUpdates(ShiftObliviousListener) for the appropriate subclass of\n SwapListenerBase."
+ },
+ "path": "io.deephaven.engine.table.impl.SwapListenerBase",
+ "text": "Watch for ticks and when initialization is complete forward to the eventual listener.\n\n The SwapListenerBase is attached to a table so that we can listen for updates during the UGP cycle; and if any\n updates occur, we'll be able to notice them and retry initialization. If no ticks were received before the result is\n ready, then we should forward all calls to our eventual listener.\n\n Callers should use our start and end functions. The start function is called at the beginning of a data snapshot; and\n allows us to setup our state variables. At the end of the snapshot attempt, end() is called; and if there were no\n clock changes, we were not gotNotification, and no notifications were enqueued; then we have a successful snapshot\n and can return true. We then set the currentListener, so that all future calls are forwarded to the listener.\n\n Use either ShiftObliviousSwapListener or SwapListener depending on which ShiftObliviousListener\n interface you are using.",
+ "typeName": "class"
+}

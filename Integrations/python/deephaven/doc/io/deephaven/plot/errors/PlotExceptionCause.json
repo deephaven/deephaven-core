@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.plot.errors.PlotExceptionCause",
+ "methods": {
+  "getPlotInfo": ":return: io.deephaven.plot.errors.PlotInfo"
+ },
+ "path": "io.deephaven.plot.errors.PlotExceptionCause",
+ "text": "Cause of a plotting exception. Has information about the plot.",
+ "typeName": "interface"
+}

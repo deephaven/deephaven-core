@@ -1,6 +1,7 @@
 package io.deephaven.api;
 
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -29,11 +30,11 @@ public interface JoinMatch extends Serializable {
     }
 
     static JoinMatch parse(String x) {
-        if (ColumnName.isValidParsedColumnName(x)) {
+        final int ix = x.indexOf('=');
+        if (ix < 0) {
             return ColumnName.parse(x);
         }
-        final int ix = x.indexOf('=');
-        if (ix < 0 || ix + 1 == x.length()) {
+        if (ix + 1 == x.length()) {
             throw new IllegalArgumentException(String.format(
                     "Unable to parse match '%s', expected form '<left>==<right>' or `<left>=<right>`",
                     x));
@@ -47,6 +48,10 @@ public interface JoinMatch extends Serializable {
         ColumnName left = ColumnName.parse(x.substring(0, ix));
         ColumnName right = ColumnName.parse(x.substring(ix2 + 1));
         return of(left, right);
+    }
+
+    static List<JoinMatch> from(String... values) {
+        return JoinMatch.from(Arrays.asList(values));
     }
 
     static List<JoinMatch> from(Collection<String> values) {

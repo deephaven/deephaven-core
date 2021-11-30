@@ -3,7 +3,7 @@ plugins {
 }
 
 dependencies {
-  compileOnly project(':DB')
+  compileOnly project(':engine-table')
   compileOnly project(':Util')
 
   compileOnly 'javax.inject:javax.inject:1'

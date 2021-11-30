@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.engine.table.impl.ssa.SsaChecker",
+ "methods": {
+  "checkSsa": "*Overload 1*  \n  :param ssa: io.deephaven.engine.table.impl.ssa.SegmentedSortedArray\n  :param columnSource: io.deephaven.engine.table.ColumnSource<?>\n  :param rowSequence: io.deephaven.engine.rowset.RowSequence\n  \n*Overload 2*  \n  :param ssa: io.deephaven.engine.table.impl.ssa.SegmentedSortedArray\n  :param valueChunk: io.deephaven.chunk.Chunk<? extendsio.deephaven.chunk.attributes.Values>\n  :param tableIndexChunk: io.deephaven.chunk.LongChunk<? extendsio.deephaven.engine.rowset.chunkattributes.RowKeys>"
+ },
+ "path": "io.deephaven.engine.table.impl.ssa.SsaChecker",
+ "typeName": "interface"
+}

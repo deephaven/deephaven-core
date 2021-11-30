@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.db.v2.sortcheck.IntReverseSortCheck",
- "methods": {
-  "sortCheck": "Verify that the provided values are in order.\n\n:param valuesToCheck: (io.deephaven.db.v2.sources.chunk.Chunk<? extendsio.deephaven.db.v2.sources.chunk.Attributes.Values>) - a chunk of values to check for out of order elements\n:return: (int) the first position of an out-of-order element, or -1 if all elements are in order"
- },
- "path": "io.deephaven.db.v2.sortcheck.IntReverseSortCheck",
- "typeName": "class"
-}

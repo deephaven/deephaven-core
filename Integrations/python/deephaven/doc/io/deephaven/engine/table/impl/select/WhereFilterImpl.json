@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.table.impl.select.WhereFilterImpl",
+ "methods": {
+  "isAutomatedFilter": "The database system may automatically generate a filter, for example, when applying an ACL to a table. There are\n certain operations which may bypass these filters.\n\n This function returns whether or not this filter is automated.\n\n:return: (boolean) true if this filter was automatically applied by the database system. False otherwise.",
+  "setAutomatedFilter": "The database system may automatically generate a filter, for example, when applying an ACL to a table. There are\n certain operations which may bypass these filters.\n\n This function indicates that this filter is automated.\n\n:param value: (boolean) - true if this filter was automatically applied by the database system. False otherwise."
+ },
+ "path": "io.deephaven.engine.table.impl.select.WhereFilterImpl",
+ "typeName": "class"
+}

@@ -12,7 +12,7 @@ import jpy
 from deephaven2 import DHError
 
 _JQstType = jpy.get_type("io.deephaven.qst.type.Type")
-_JTableTools = jpy.get_type("io.deephaven.db.tables.utils.TableTools")
+_JTableTools = jpy.get_type("io.deephaven.engine.util.TableTools")
 
 
 def _qst_custom_type(cls_name: str):
@@ -22,7 +22,7 @@ def _qst_custom_type(cls_name: str):
 class DType(Enum):
     """ An Enum for supported data types in Deephaven with type aliases to mirror the same ones in numpy or pyarrow.
 
-    The complex types such as BigDecimal, DBPeriod can be called to create Java objects of the same types, e.g.
+    The complex types such as BigDecimal, Period can be called to create Java objects of the same types, e.g.
         big_decimal = BigDecimal(12.88)
 
     """
@@ -43,9 +43,9 @@ class DType(Enum):
     float64 = double
     string = _JQstType.stringType(), "java.lang.String"
     BigDecimal = _qst_custom_type("java.math.BigDecimal"), "java.math.BigDecimal"
-    StringSet = _qst_custom_type("io.deephaven.db.tables.libs.StringSet"), "io.deephaven.db.tables.libs.StringSet"
-    DBDateTime = _qst_custom_type("io.deephaven.db.tables.utils.DBDateTime"), "io.deephaven.db.tables.utils.DBDateTime"
-    DBPeriod = _qst_custom_type("io.deephaven.db.tables.utils.DBPeriod"), "io.deephaven.db.tables.utils.DBPeriod"
+    StringSet = _qst_custom_type("io.deephaven.stringset.StringSet"), "io.deephaven.stringset.StringSet"
+    DateTime = _qst_custom_type("io.deephaven.time.DateTime"), "io.deephaven.time.DateTime"
+    Period = _qst_custom_type("io.deephaven.time.Period"), "io.deephaven.time.Period"
 
     def __new__(cls, qst_type, j_type):
         obj = object.__new__(cls)
@@ -122,5 +122,5 @@ float64 = DType.float64
 string = DType.string
 BigDecimal = DType.BigDecimal
 StringSet = DType.StringSet
-DBDateTime = DType.DBDateTime
-DBPeriod = DType.DBPeriod
+DateTime = DType.DateTime
+Period = DType.Period

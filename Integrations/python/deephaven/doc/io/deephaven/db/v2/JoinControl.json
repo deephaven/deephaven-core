@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.db.v2.JoinControl",
- "methods": {
-  "leftChunkSize": ":return: int",
-  "rightChunkSize": ":return: int"
- },
- "path": "io.deephaven.db.v2.JoinControl",
- "typeName": "class"
-}

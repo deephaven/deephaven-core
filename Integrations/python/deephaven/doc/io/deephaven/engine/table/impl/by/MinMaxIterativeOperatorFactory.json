@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.engine.table.impl.by.MinMaxIterativeOperatorFactory",
+ "methods": {
+  "getChunkedOperator": ":param type: java.lang.Class\n:param name: java.lang.String\n:param exposeInternalColumns: boolean\n:return: io.deephaven.engine.table.impl.by.IterativeChunkedAggregationOperator",
+  "toString": ":return: java.lang.String"
+ },
+ "path": "io.deephaven.engine.table.impl.by.MinMaxIterativeOperatorFactory",
+ "text": "Factory for iterative sum aggregations.",
+ "typeName": "class"
+}

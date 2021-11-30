@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.parquet.table.pagestore.PageCache",
+ "methods": {
+  "castAttr": "Note: Java generics information - <ATTR2 extends io.deephaven.chunk.attributes.Any>\n\n:return: io.deephaven.parquet.table.pagestore.PageCache<ATTR2>",
+  "getNullPage": "Note: Java generics information - <ATTR extends io.deephaven.chunk.attributes.Any>\n\n:return: (java.lang.ref.WeakReference<io.deephaven.parquet.table.pagestore.PageCache.IntrusivePage<ATTR>>) The null page sentinel"
+ },
+ "path": "io.deephaven.parquet.table.pagestore.PageCache",
+ "text": "Page cache data structure.",
+ "typeName": "class"
+}

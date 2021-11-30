@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.utils.BigDecimalUtils",
- "methods": {
-  "sqrt": "Uses Babylonian method to determine the square root of a BigDecimal\n\n:param x: (java.math.BigDecimal) - the number to find the square root of\n:param scale: (int) - the desired scale for division and epsilon\n:return: (java.math.BigDecimal) the square root of x"
- },
- "path": "io.deephaven.utils.BigDecimalUtils",
- "text": "Computes the square root of a BigDecimal using Babylonian method.",
- "typeName": "class"
-}

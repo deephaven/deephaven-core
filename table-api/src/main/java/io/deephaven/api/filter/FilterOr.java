@@ -5,6 +5,7 @@ import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Parameter;
 
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Spliterator;
@@ -23,6 +24,10 @@ public abstract class FilterOr extends FilterBase implements Iterable<Filter> {
 
     public static FilterOr of(Filter... filters) {
         return builder().addFilters(filters).build();
+    }
+
+    public static FilterOr of(Iterable<? extends Filter> filters) {
+        return builder().addAllFilters(filters).build();
     }
 
     /**

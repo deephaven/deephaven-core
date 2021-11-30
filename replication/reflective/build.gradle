@@ -1,0 +1,14 @@
+plugins {
+    id 'java-library'
+}
+
+description 'Reflective Replicators: Source code generators and replicators with compile-time dependencies on their inputs'
+
+dependencies {
+    implementation project(':replication-util'),
+            project(':engine-table')
+}
+
+task replicateAll {
+    dependsOn Tasks.registerMainExecTask(project, 'replicateHashTable', 'io.deephaven.replicators.ReplicateHashTable')
+}

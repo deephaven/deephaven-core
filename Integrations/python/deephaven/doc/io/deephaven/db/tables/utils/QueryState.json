@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.db.tables.utils.QueryState",
- "methods": {
-  "valueOf": "Returns the enum constant of this type with the specified name.\nThe string must match exactly an identifier used to declare an\nenum constant in this type.  (Extraneous whitespace characters are \nnot permitted.)\n\n:param name: (java.lang.String) - the name of the enum constant to be returned.\n:return: (io.deephaven.db.tables.utils.QueryState) the enum constant with the specified name",
-  "values": "Returns an array containing the constants of this enum type, in\nthe order they are declared.\n\n:return: (io.deephaven.db.tables.utils.QueryState[]) an array containing the constants of this enum type, in the order they are declared"
- },
- "path": "io.deephaven.db.tables.utils.QueryState",
- "typeName": "enum"
-}

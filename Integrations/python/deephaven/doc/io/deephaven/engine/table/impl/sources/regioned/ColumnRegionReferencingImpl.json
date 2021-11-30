@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.engine.table.impl.sources.regioned.ColumnRegionReferencingImpl",
+ "methods": {
+  "fillChunkAppend": "Appends the values referenced by orderKeys onto destination. orderKeys are assumed to\n be entirely contained on this Page.\n\n:param context: io.deephaven.engine.table.ChunkSource.FillContext\n:param destination: io.deephaven.chunk.WritableChunk<? superColumnRegionReferencingImpl.ATTR>\n:param rowSequence: io.deephaven.engine.rowset.RowSequence",
+  "getReferencedRegion": ":return: ColumnRegionReferencingImpl.REFERENCED_COLUMN_REGION",
+  "mask": "This mask is applied to RowSequence which are passed into\n ChunkSource.getChunk(ChunkSource.GetContext, RowSequence) and\n ChunkSource.fillChunk(ChunkSource.FillContext, WritableChunk, RowSequence). This allows the PagingChunkSources to be cached, and reused even if they are properly relocated in key space.\n\n:return: (long) the mask for this page, which must be a bitmask representing the some number of lower order bits of a\n         long.",
+  "releaseCachedResources": "Release any resources held for caching purposes. Implementations need not guarantee that they are safe for normal\n use concurrently with invocations of this method."
+ },
+ "path": "io.deephaven.engine.table.impl.sources.regioned.ColumnRegionReferencingImpl",
+ "typeName": "class"
+}

@@ -1,0 +1,13 @@
+{
+ "className": "io.deephaven.util.compare.FloatComparisons",
+ "methods": {
+  "compare": ":param lhs: float\n:param rhs: float\n:return: int",
+  "eq": ":param lhs: float\n:param rhs: float\n:return: boolean",
+  "geq": ":param lhs: float\n:param rhs: float\n:return: boolean",
+  "gt": ":param lhs: float\n:param rhs: float\n:return: boolean",
+  "leq": ":param lhs: float\n:param rhs: float\n:return: boolean",
+  "lt": ":param lhs: float\n:param rhs: float\n:return: boolean"
+ },
+ "path": "io.deephaven.util.compare.FloatComparisons",
+ "typeName": "class"
+}

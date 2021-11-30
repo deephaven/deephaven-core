@@ -1,0 +1,7 @@
+{
+ "className": "io.deephaven.engine.table.impl.EvenlyDividedTableMap",
+ "methods": {},
+ "path": "io.deephaven.engine.table.impl.EvenlyDividedTableMap",
+ "text": "Divide a table evenly into slices and put the slices into a TableMap.\n\n This enables the use of parallelism on a table without the full cost of a partitionBy operation.",
+ "typeName": "class"
+}

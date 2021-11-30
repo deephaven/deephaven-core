@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.engine.table.impl.select.StringContainsFilter",
+ "methods": {
+  "copy": "Create a copy of this WhereFilter.\n\n:return: (io.deephaven.engine.table.impl.select.StringContainsFilter) an independent copy of this WhereFilter.",
+  "renameFilter": ":param newName: java.lang.String\n:return: io.deephaven.engine.table.impl.select.StringContainsFilter",
+  "toString": ":return: java.lang.String"
+ },
+ "path": "io.deephaven.engine.table.impl.select.StringContainsFilter",
+ "text": "WhereFilter that implements String.contains(valueToMatch), for use in QuickFilter so that we can bypass compilation\n on small tables.",
+ "typeName": "class"
+}

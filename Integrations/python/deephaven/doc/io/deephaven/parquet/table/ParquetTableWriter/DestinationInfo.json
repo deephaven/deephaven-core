@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.parquet.table.ParquetTableWriter$DestinationInfo",
+ "methods": {
+  "getColumnNameToGroupToRange": "Get a map from column name to the column's \"group to range\" map.\n\n:return: (java.util.Map<java.lang.String,java.util.Map<?,long[]>>) Get this destination's grouping information",
+  "getInputTable": "Get the input table that should be read for this destination.\n\n:return: (io.deephaven.engine.table.Table) The input table",
+  "getOutputPath": "Get the output path name for this destination.\n\n:return: (java.lang.String) The output path"
+ },
+ "path": "io.deephaven.parquet.table.ParquetTableWriter.DestinationInfo",
+ "text": "Information about a writing destination (e.g. a particular output partition). Couples destination path, input\n table data, and grouping information.",
+ "typeName": "class"
+}

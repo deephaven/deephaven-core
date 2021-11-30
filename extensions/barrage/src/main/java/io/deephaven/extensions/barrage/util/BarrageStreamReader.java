@@ -13,14 +13,15 @@ import io.deephaven.barrage.flatbuf.BarrageMessageType;
 import io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
 import io.deephaven.barrage.flatbuf.BarrageModColumnMetadata;
 import io.deephaven.barrage.flatbuf.BarrageUpdateMetadata;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.impl.ExternalizableRowSetUtils;
+import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.RowSetShiftData;
+import io.deephaven.engine.table.impl.util.*;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.chunk.ChunkInputStreamGenerator;
-import io.deephaven.db.util.LongSizedDataStructure;
-import io.deephaven.db.v2.sources.chunk.ChunkType;
-import io.deephaven.db.v2.utils.BarrageMessage;
-import io.deephaven.db.v2.utils.ExternalizableIndexUtils;
-import io.deephaven.db.v2.utils.Index;
-import io.deephaven.db.v2.utils.IndexShiftData;
+import io.deephaven.util.datastructures.LongSizedDataStructure;
+import io.deephaven.chunk.ChunkType;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import org.apache.arrow.flatbuf.Message;
@@ -95,7 +96,7 @@ public class BarrageStreamReader implements BarrageMessageConsumer.StreamReader<
                         if (msg.isSnapshot) {
                             final ByteBuffer effectiveViewport = metadata.effectiveViewportAsByteBuffer();
                             if (effectiveViewport != null) {
-                                msg.snapshotIndex = extractIndex(effectiveViewport);
+                                msg.snapshotRowSet = extractIndex(effectiveViewport);
                             }
                             msg.snapshotColumns = extractBitSet(metadata.effectiveColumnSetAsByteBuffer());
                         }
@@ -107,7 +108,7 @@ public class BarrageStreamReader implements BarrageMessageConsumer.StreamReader<
                         msg.shifted = extractIndexShiftData(metadata.shiftDataAsByteBuffer());
 
                         final ByteBuffer rowsIncluded = metadata.addedRowsIncludedAsByteBuffer();
-                        msg.rowsIncluded = rowsIncluded != null ? extractIndex(rowsIncluded) : msg.rowsAdded.clone();
+                        msg.rowsIncluded = rowsIncluded != null ? extractIndex(rowsIncluded) : msg.rowsAdded.copy();
                         msg.addColumnData = new BarrageMessage.AddColumnData[columnTypes.length];
                         for (int ci = 0; ci < msg.addColumnData.length; ++ci) {
                             msg.addColumnData[ci] = new BarrageMessage.AddColumnData();
@@ -227,14 +228,14 @@ public class BarrageStreamReader implements BarrageMessageConsumer.StreamReader<
         }
     }
 
-    private static Index extractIndex(final ByteBuffer bb) throws IOException {
+    private static RowSet extractIndex(final ByteBuffer bb) throws IOException {
         if (bb == null) {
-            return Index.FACTORY.getEmptyIndex();
+            return RowSetFactory.empty();
         }
         // noinspection UnstableApiUsage
         try (final LittleEndianDataInputStream is =
                 new LittleEndianDataInputStream(new ByteBufferBackedInputStream(bb))) {
-            return ExternalizableIndexUtils.readExternalCompressedDelta(is);
+            return ExternalizableRowSetUtils.readExternalCompressedDelta(is);
         }
     }
 
@@ -242,24 +243,24 @@ public class BarrageStreamReader implements BarrageMessageConsumer.StreamReader<
         return BitSet.valueOf(bb);
     }
 
-    private static IndexShiftData extractIndexShiftData(final ByteBuffer bb) throws IOException {
-        final IndexShiftData.Builder builder = new IndexShiftData.Builder();
+    private static RowSetShiftData extractIndexShiftData(final ByteBuffer bb) throws IOException {
+        final RowSetShiftData.Builder builder = new RowSetShiftData.Builder();
 
-        final Index sIndex, eIndex, dIndex;
+        final RowSet sRowSet, eRowSet, dRowSet;
         // noinspection UnstableApiUsage
         try (final LittleEndianDataInputStream is =
                 new LittleEndianDataInputStream(new ByteBufferBackedInputStream(bb))) {
-            sIndex = ExternalizableIndexUtils.readExternalCompressedDelta(is);
-            eIndex = ExternalizableIndexUtils.readExternalCompressedDelta(is);
-            dIndex = ExternalizableIndexUtils.readExternalCompressedDelta(is);
+            sRowSet = ExternalizableRowSetUtils.readExternalCompressedDelta(is);
+            eRowSet = ExternalizableRowSetUtils.readExternalCompressedDelta(is);
+            dRowSet = ExternalizableRowSetUtils.readExternalCompressedDelta(is);
         }
 
-        try (final Index.Iterator sit = sIndex.iterator();
-                final Index.Iterator eit = eIndex.iterator();
-                final Index.Iterator dit = dIndex.iterator()) {
+        try (final RowSet.Iterator sit = sRowSet.iterator();
+                final RowSet.Iterator eit = eRowSet.iterator();
+                final RowSet.Iterator dit = dRowSet.iterator()) {
             while (sit.hasNext()) {
                 if (!eit.hasNext() || !dit.hasNext()) {
-                    throw new IllegalStateException("IndexShiftData is inconsistent");
+                    throw new IllegalStateException("RowSetShiftData is inconsistent");
                 }
                 final long next = sit.nextLong();
                 builder.shiftRange(next, eit.nextLong(), dit.nextLong() - next);

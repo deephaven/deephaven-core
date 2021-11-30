@@ -7,7 +7,7 @@ class Util {
 
     static final byte NULL_BYTE = Byte.MIN_VALUE;
 
-    static final byte NULL_BOOL = (byte) -1;
+    static final byte NULL_BOOL = NULL_BYTE;
     static final byte TRUE_BOOL = (byte) 1;
     static final byte FALSE_BOOL = (byte) 0;
 

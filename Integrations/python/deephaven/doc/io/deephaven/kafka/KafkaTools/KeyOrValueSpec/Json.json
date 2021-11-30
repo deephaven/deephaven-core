@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.kafka.KafkaTools$KeyOrValueSpec$Json",
- "methods": {
-  "dataFormat": "Data format for this Spec.\n\n:return: (io.deephaven.kafka.KafkaTools.DataFormat) Data format for this Spec"
- },
- "path": "io.deephaven.kafka.KafkaTools.KeyOrValueSpec.Json",
- "typeName": "class"
-}

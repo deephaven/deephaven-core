@@ -8,11 +8,11 @@ configurations {
 
 dependencies {
     compileOnly project(':Base')
-    compileOnly project(':DB')
+    compileOnly project(':engine-table')
 
     compileOnly 'javax.inject:javax.inject:1'
 
     api 'io.deephaven:SuanShu:0.1.0'
 
-    testImplementation project(':DB')
+    testImplementation project(':engine-table')
 }

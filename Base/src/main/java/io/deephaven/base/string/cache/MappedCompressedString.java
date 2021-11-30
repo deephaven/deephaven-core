@@ -170,13 +170,13 @@ public final class MappedCompressedString extends AbstractCompressedString<Mappe
         keys = new SimpleReference<?>[oldKeys.length * 2];
         values = new int[keys.length];
 
-        for (int oki = 0; oki < oldKeys.length; ++oki) {
-            final SimpleReference<?> key = oldKeys[oki];
+        for (int rsi = 0; rsi < oldKeys.length; ++rsi) {
+            final SimpleReference<?> key = oldKeys[rsi];
             if (key.get() == null) {
                 continue;
             }
-            if (putIfAbsentInternal(key, oldValues[oki], false) != NULL_MAPPING_VALUE) {
-                throw new IllegalStateException("BUG: Mapping for <" + oldKeys[oki] + ',' + oldValues[oki]
+            if (putIfAbsentInternal(key, oldValues[rsi], false) != NULL_MAPPING_VALUE) {
+                throw new IllegalStateException("BUG: Mapping for <" + oldKeys[rsi] + ',' + oldValues[rsi]
                         + "> already present during rehash!");
             }
         }

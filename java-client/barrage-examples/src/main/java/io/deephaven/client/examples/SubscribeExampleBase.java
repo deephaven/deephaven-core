@@ -1,13 +1,13 @@
 package io.deephaven.client.examples;
 
 import io.deephaven.client.impl.BarrageSubscription;
+import io.deephaven.engine.table.TableUpdate;
+import io.deephaven.engine.table.impl.InstrumentedTableUpdateListener;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.client.impl.BarrageSession;
 import io.deephaven.client.impl.TableHandle;
 import io.deephaven.client.impl.TableHandleManager;
 import io.deephaven.extensions.barrage.table.BarrageTable;
-import io.deephaven.db.v2.InstrumentedShiftAwareListener;
-import io.deephaven.db.v2.utils.UpdatePerformanceTracker;
 import io.deephaven.qst.TableCreationLogic;
 import io.deephaven.util.process.ProcessEnvironment;
 /*
@@ -47,17 +47,16 @@ abstract class SubscribeExampleBase extends BarrageClientExampleBase {
             final BarrageTable table = subscription.entireTable();
             final CountDownLatch countDownLatch = new CountDownLatch(1);
 
-            table.listenForUpdates(new InstrumentedShiftAwareListener("example-listener") {
+            table.listenForUpdates(new InstrumentedTableUpdateListener("example-listener") {
                 @Override
-                protected void onFailureInternal(final Throwable originalException,
-                        final UpdatePerformanceTracker.Entry sourceEntry) {
+                protected void onFailureInternal(final Throwable originalException, final Entry sourceEntry) {
                     System.out.println("exiting due to onFailureInternal:");
                     originalException.printStackTrace();
                     countDownLatch.countDown();
                 }
 
                 @Override
-                public void onUpdate(final Update upstream) {
+                public void onUpdate(final TableUpdate upstream) {
                     System.out.println("Received table update:");
                     System.out.println(upstream);
                 }

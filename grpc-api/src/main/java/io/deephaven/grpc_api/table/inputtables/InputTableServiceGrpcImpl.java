@@ -1,9 +1,9 @@
 package io.deephaven.grpc_api.table.inputtables;
 
 import com.google.rpc.Code;
-import io.deephaven.db.tables.Table;
-import io.deephaven.db.tables.TableDefinition;
-import io.deephaven.db.util.config.MutableInputTable;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.util.config.MutableInputTable;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.grpc_api.session.SessionService;
 import io.deephaven.grpc_api.session.SessionState;

@@ -1,0 +1,7 @@
+{
+ "className": "io.deephaven.engine.table.impl.join.JoinListenerRecorder",
+ "methods": {},
+ "path": "io.deephaven.engine.table.impl.join.JoinListenerRecorder",
+ "text": "This is a listener that writes down the indices that were updated on a given clock cycle, and then notifies another\n listener. The intention is that you would have two of these, one for the left side and another for the right side of\n the join. The ListenerRecorders are created before the MergedJoinListener, so that they are always fired first in the\n priority queue. Once the MergedJoinListener is fired, it can examine the indices that were recorded into added and\n removed, and thus know what has changed on the left, and also what has changed on the right at the same time to\n produce a consistent output table.",
+ "typeName": "class"
+}

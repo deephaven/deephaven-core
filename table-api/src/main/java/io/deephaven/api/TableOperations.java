@@ -381,8 +381,8 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
      * updates.
      *
      * <p>
-     * An io.deephaven.db.v2.utils.OutOfKeySpaceException is thrown when the total number of bits needed to express the
-     * result table exceeds that needed to represent Long.MAX_VALUE. There are a few work arounds:
+     * An io.deephaven.engine.table.impl.util.OutOfKeySpaceException is thrown when the total number of bits needed to
+     * express the result table exceeds that needed to represent Long.MAX_VALUE. There are a few work arounds:
      *
      * <p>
      * - If the left table is sparse, consider flattening the left table.
@@ -540,12 +540,23 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
 
     // -------------------------------------------------------------------------------------------
 
-    TOPS by();
+    TOPS groupBy();
 
-    TOPS by(String... groupByColumns);
+    TOPS groupBy(String... groupByColumns);
 
-    TOPS by(Collection<? extends Selectable> groupByColumns);
+    TOPS groupBy(Collection<? extends Selectable> groupByColumns);
 
-    TOPS by(Collection<? extends Selectable> groupByColumns,
-            Collection<? extends Aggregation> aggregations);
+    // -------------------------------------------------------------------------------------------
+
+    TOPS aggBy(Aggregation aggregation);
+
+    TOPS aggBy(Aggregation aggregation, String... groupByColumns);
+
+    TOPS aggBy(Aggregation aggregation, Collection<? extends Selectable> groupByColumns);
+
+    TOPS aggBy(Collection<? extends Aggregation> aggregations);
+
+    TOPS aggBy(Collection<? extends Aggregation> aggregations, String... groupByColumns);
+
+    TOPS aggBy(Collection<? extends Aggregation> aggregations, Collection<? extends Selectable> groupByColumns);
 }

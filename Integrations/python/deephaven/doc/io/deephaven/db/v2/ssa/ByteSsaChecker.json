@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.db.v2.ssa.ByteSsaChecker",
- "methods": {
-  "checkSsa": ":param ssa: io.deephaven.db.v2.ssa.SegmentedSortedArray\n:param valueChunk: io.deephaven.db.v2.sources.chunk.Chunk<? extendsio.deephaven.db.v2.sources.chunk.Attributes.Values>\n:param tableIndexChunk: io.deephaven.db.v2.sources.chunk.LongChunk<? extendsio.deephaven.db.v2.sources.chunk.Attributes.KeyIndices>"
- },
- "path": "io.deephaven.db.v2.ssa.ByteSsaChecker",
- "typeName": "class"
-}

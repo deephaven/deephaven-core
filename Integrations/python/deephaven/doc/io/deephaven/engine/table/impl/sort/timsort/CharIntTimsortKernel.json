@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.engine.table.impl.sort.timsort.CharIntTimsortKernel",
+ "methods": {
+  "createContext": "Note: Java generics information - <ATTR extends io.deephaven.chunk.attributes.Any,\nKEY_INDICES extends io.deephaven.chunk.attributes.Indices>\n\n:param size: int\n:return: io.deephaven.engine.table.impl.sort.timsort.CharIntTimsortKernel.CharIntSortKernelContext<ATTR,KEY_INDICES>",
+  "sort": "Sort the values in valuesToSort permuting the indexKeys chunk in the same way.\n\n The offsetsIn chunk is contains the offset of runs to sort in indexKeys; and the lengthsIn contains the length\n of the runs.  This allows the kernel to be used for a secondary column sort, chaining it together with fewer\n runs sorted on each pass.\n\nNote: Java generics information - <ATTR extends io.deephaven.chunk.attributes.Any,\nKEY_INDICES extends io.deephaven.chunk.attributes.Indices>\n\n:param context: io.deephaven.engine.table.impl.sort.timsort.CharIntTimsortKernel.CharIntSortKernelContext<ATTR,KEY_INDICES>\n:param indexKeys: io.deephaven.chunk.WritableIntChunk<KEY_INDICES>\n:param valuesToSort: io.deephaven.chunk.WritableCharChunk<ATTR>"
+ },
+ "path": "io.deephaven.engine.table.impl.sort.timsort.CharIntTimsortKernel",
+ "text": "This implements a timsort kernel for Characters.\n\n https://bugs.python.org/file4451/timsort.txt and https://en.wikipedia.org/wiki/Timsort do a decent job of describing\n the algorithm.",
+ "typeName": "class"
+}

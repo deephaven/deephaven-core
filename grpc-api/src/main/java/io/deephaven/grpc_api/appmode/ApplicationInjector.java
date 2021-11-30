@@ -2,7 +2,7 @@ package io.deephaven.grpc_api.appmode;
 
 import io.deephaven.appmode.ApplicationConfig;
 import io.deephaven.appmode.ApplicationState;
-import io.deephaven.db.util.liveness.LivenessScopeStack;
+import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.grpc_api.console.GlobalSessionProvider;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;

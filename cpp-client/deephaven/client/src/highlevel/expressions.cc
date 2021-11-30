@@ -244,8 +244,8 @@ DateTimeExpression::DateTimeExpression(std::string_view value) :
     DateTimeExpression(impl::DateTimeExpressionImpl::createFromLiteral(std::string(value.data(), value.size()))) {}
 DateTimeExpression::DateTimeExpression(std::string value) :
     DateTimeExpression(impl::DateTimeExpressionImpl::createFromLiteral(std::move(value))) {}
-DateTimeExpression::DateTimeExpression(const DBDateTime &value) :
-    DateTimeExpression(impl::DateTimeExpressionImpl::createFromDBDateTime(value)) {}
+DateTimeExpression::DateTimeExpression(const DateTime &value) :
+    DateTimeExpression(impl::DateTimeExpressionImpl::createFromDateTime(value)) {}
 DateTimeExpression::DateTimeExpression(std::shared_ptr<impl::DateTimeExpressionImpl> impl) :
     Expression(std::move(impl)) {}
 DateTimeExpression::~DateTimeExpression() = default;

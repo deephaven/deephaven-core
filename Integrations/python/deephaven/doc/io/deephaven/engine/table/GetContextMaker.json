@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.engine.table.GetContextMaker",
+ "methods": {
+  "makeGetContext": "**Incompatible overloads text - text from the first overload:**\n\nAllocate a new ChunkSource.GetContext for retrieving chunks from this FillContextMaker, typically\n a ChunkSource without a SharedContext.\n\n*Overload 1*  \n  :param chunkCapacity: (int) - The maximum size required for any WritableChunk allocated as part of the result.\n  :param sharedContext: (io.deephaven.engine.table.SharedContext) - Shared store of intermediate results.\n  :return: (io.deephaven.engine.table.ChunkSource.GetContext) A context for use with get operations\n  \n*Overload 2*  \n  :param chunkCapacity: (int) - The maximum size required for any WritableChunk allocated as part of the result.\n  :return: (io.deephaven.engine.table.ChunkSource.GetContext) A context for use with get operations"
+ },
+ "path": "io.deephaven.engine.table.GetContextMaker",
+ "typeName": "interface"
+}

@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.db.v2.sources.MutableColumnSourceGetDefaults$ForLong",
- "methods": {
-  "getPrev": ":param index: long\n:return: java.lang.Long"
- },
- "path": "io.deephaven.db.v2.sources.MutableColumnSourceGetDefaults.ForLong",
- "text": "Default interface for mutable long ColumnSource implementations.",
- "typeName": "interface"
-}

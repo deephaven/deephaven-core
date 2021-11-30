@@ -7,7 +7,7 @@ allManualDocs = {}
 ########################################################################################################################
 # TableTools custom methods population
 
-pathName = "io.deephaven.db.tables.utils.TableTools"
+pathName = "io.deephaven.engine.util.TableTools"
 className = pathName
 dd = {
     "className": className,
@@ -23,7 +23,7 @@ methodD['charCol'] = """Creates a new ColumnHolder of type `char` that can be us
 
 :param name: name for the column
 :param data: variable argument for the data
-:return: (io.deephaven.db.v2.utils.ColumnHolder) a Deephaven ColumnHolder object
+:return: (io.deephaven.engine.table.impl.util.ColumnHolder) a Deephaven ColumnHolder object
 
 `data` structure:
   * an int
@@ -36,7 +36,7 @@ methodD['byteCol'] = """Creates a new ColumnHolder of type `byte` that can be us
 
 :param name: name for the column
 :param data: variable argument for the data
-:return: (io.deephaven.db.v2.utils.ColumnHolder) a Deephaven ColumnHolder object
+:return: (io.deephaven.engine.table.impl.util.ColumnHolder) a Deephaven ColumnHolder object
 
 data structure:
   * an int or list of ints
@@ -48,7 +48,7 @@ methodD['shortCol'] = """Creates a new ColumnHolder of type `short` that can be 
     
 :param name: name for the column
 :param data: variable argument for the data
-:return: (io.deephaven.db.v2.utils.ColumnHolder) a Deephaven ColumnHolder object
+:return: (io.deephaven.engine.table.impl.util.ColumnHolder) a Deephaven ColumnHolder object
 
 data structure:
   * an int or list of ints
@@ -60,7 +60,7 @@ methodD['intCol'] = """Creates a new ColumnHolder of type `int` that can be used
 
 :param name: name for the column
 :param data: variable argument for the data
-:return: (io.deephaven.db.v2.utils.ColumnHolder) a Deephaven ColumnHolder object
+:return: (io.deephaven.engine.table.impl.util.ColumnHolder) a Deephaven ColumnHolder object
 
 data structure:
   * an int or list of ints
@@ -72,7 +72,7 @@ methodD['longCol'] = """Creates a new ColumnHolder of type `long` that can be us
 
 :param name: name for the column
 :param data: variable argument for the data
-:return: (io.deephaven.db.v2.utils.ColumnHolder) a Deephaven ColumnHolder object
+:return: (io.deephaven.engine.table.impl.util.ColumnHolder) a Deephaven ColumnHolder object
 
 data structure:
   * an int or list of ints
@@ -84,7 +84,7 @@ methodD['floatCol'] = """Creates a new ColumnHolder of type `float` that can be 
 
 :param name: name for the column
 :param data: variable argument for the data
-:return: (io.deephaven.db.v2.utils.ColumnHolder) a Deephaven ColumnHolder object
+:return: (io.deephaven.engine.table.impl.util.ColumnHolder) a Deephaven ColumnHolder object
 
 data structure:
   * a int or float or list of ints or floats
@@ -96,7 +96,7 @@ methodD['doubleCol'] = """Creates a new ColumnHolder of type `double` that can b
 
 :param name: name for the column
 :param data: variable argument for the data
-:return: (io.deephaven.db.v2.utils.ColumnHolder) a Deephaven ColumnHolder object
+:return: (io.deephaven.engine.table.impl.util.ColumnHolder) a Deephaven ColumnHolder object
 
 data structure:
   * an int or float or list of ints or floats
@@ -108,7 +108,7 @@ methodD['col'] = """Returns a ColumnHolder that can be used when creating in-mem
 
 :param name: name for the column
 :param data: variable argument for the data
-:return: (io.deephaven.db.v2.utils.ColumnHolder) a Deephaven ColumnHolder object
+:return: (io.deephaven.engine.table.impl.util.ColumnHolder) a Deephaven ColumnHolder object
 
 data structure:
   * an int, bool, float, datetime, date, string or iterable of (one) such
@@ -118,7 +118,7 @@ data structure:
 methodD['colSource'] = """Creates a column of appropriate type, used for creating in-memory tables.
     
 :param data: variable argument for the data
-:return: (io.deephaven.db.v2.sources.ColumnSource<T>) a Deephaven ColumnSource of inferred type
+:return: (io.deephaven.engine.table.impl.sources.ColumnSource<T>) a Deephaven ColumnSource of inferred type
 
 data structure:
   * a java object, or list of java objects
@@ -128,7 +128,7 @@ data structure:
 methodD['objColSource'] = """Creates a column of appropriate object type, used for creating in-memory tables.
 
 :param data: variable argument for the data
-:return: (io.deephaven.db.v2.sources.ColumnSource) a Deephaven ColumnSource of inferred type
+:return: (io.deephaven.engine.table.impl.sources.ColumnSource) a Deephaven ColumnSource of inferred type
 data structure:
     * a java object, or list of java objects
     * an int, bool, float, datetime, date, string or iterable of (one) such

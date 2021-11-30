@@ -426,7 +426,7 @@ class Query(TableInterface):
         """
         return super().count(col)
 
-    def combo_by(self, by: List[str], agg: ComboAggregation):
+    def agg_by(self, agg: ComboAggregation, by: List[str]):
         """ Add a Combined Aggregation operation to the query.
 
         Args:
@@ -436,4 +436,4 @@ class Query(TableInterface):
         Returns:
             self
         """
-        return super().combo_by(by, agg)
+        return super().agg_by(agg, by)

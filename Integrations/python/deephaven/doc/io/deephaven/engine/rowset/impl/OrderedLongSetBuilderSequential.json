@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.engine.rowset.impl.OrderedLongSetBuilderSequential",
+ "methods": {
+  "appendTreeIndexImpl": ":param shiftAmount: long\n:param ix: io.deephaven.engine.rowset.impl.OrderedLongSet\n:param acquire: boolean",
+  "getRspBitmap": ":return: io.deephaven.engine.rowset.impl.rsp.RspBitmap",
+  "getTreeIndexImpl": ":return: io.deephaven.engine.rowset.impl.OrderedLongSet"
+ },
+ "path": "io.deephaven.engine.rowset.impl.OrderedLongSetBuilderSequential",
+ "typeName": "class"
+}

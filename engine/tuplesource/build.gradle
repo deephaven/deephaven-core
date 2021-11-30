@@ -1,0 +1,20 @@
+plugins {
+    id 'java-library'
+}
+
+description 'Engine TupleSource: Library of TupleSource implementations for combining multiple ColumnSources'
+
+dependencies {
+    api project(':engine-tuple'),
+            project(':engine-api')
+
+    implementation project(':engine-base')
+}
+
+spotless {
+    java {
+        targetExclude(
+                '**/generated/**',
+        )
+    }
+}

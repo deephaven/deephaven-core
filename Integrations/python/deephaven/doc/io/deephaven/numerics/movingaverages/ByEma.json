@@ -1,9 +1,9 @@
 {
  "className": "io.deephaven.numerics.movingaverages.ByEma",
  "methods": {
-  "update": "*Overload 1*  \n  :param value: double\n  :return: double\n  \n*Overload 2*  \n  :param value: double\n  :param by: java.lang.Object...\n  :return: double\n  \n*Overload 3*  \n  :param timestamp: io.deephaven.db.tables.utils.DBDateTime\n  :param value: double\n  :return: double\n  \n*Overload 4*  \n  :param timestamp: io.deephaven.db.tables.utils.DBDateTime\n  :param value: double\n  :param by: java.lang.Object...\n  :return: double\n  \n*Overload 5*  \n  :param timestampNanos: long\n  :param value: double\n  :param by: java.lang.Object...\n  :return: double"
+  "update": "*Overload 1*  \n  :param value: double\n  :return: double\n  \n*Overload 2*  \n  :param value: double\n  :param by: java.lang.Object...\n  :return: double\n  \n*Overload 3*  \n  :param timestamp: io.deephaven.time.DateTime\n  :param value: double\n  :return: double\n  \n*Overload 4*  \n  :param timestamp: io.deephaven.time.DateTime\n  :param value: double\n  :param by: java.lang.Object...\n  :return: double\n  \n*Overload 5*  \n  :param timestampNanos: long\n  :param value: double\n  :param by: java.lang.Object...\n  :return: double"
  },
  "path": "io.deephaven.numerics.movingaverages.ByEma",
- "text": "A DB aware EMA which can compute \"by\" emas without grouping and then ungrouping.",
+ "text": "An EMA which can compute aggregated EMAs without grouping and then ungrouping.",
  "typeName": "class"
 }

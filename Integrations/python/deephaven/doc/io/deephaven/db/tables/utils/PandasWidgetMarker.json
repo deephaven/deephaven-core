@@ -1,7 +1,0 @@
-{
- "className": "io.deephaven.db.tables.utils.PandasWidgetMarker",
- "methods": {},
- "path": "io.deephaven.db.tables.utils.PandasWidgetMarker",
- "text": "Marker interface for Controller to understand that it is looking at a Pandas Widget and how it should be handled in\n the open api.",
- "typeName": "interface"
-}

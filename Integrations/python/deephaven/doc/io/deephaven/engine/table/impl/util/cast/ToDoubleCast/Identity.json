@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.engine.table.impl.util.cast.ToDoubleCast$Identity",
+ "methods": {
+  "cast": "Note: Java generics information - <T>\n\n:param extend: io.deephaven.chunk.Chunk<?\n:return: io.deephaven.chunk.DoubleChunk<? extends T>"
+ },
+ "path": "io.deephaven.engine.table.impl.util.cast.ToDoubleCast.Identity",
+ "typeName": "class"
+}

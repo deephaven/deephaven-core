@@ -1,0 +1,12 @@
+{
+ "className": "io.deephaven.util.ClockFactory",
+ "methods": {
+  "get": "Get the current Clock.\n\n:return: (io.deephaven.base.clock.Clock) the current Clock",
+  "getDefault": "Get the default (System) Clock.\n\n:return: (io.deephaven.base.clock.Clock) the default Clock",
+  "reset": "Reset the Clock that will be returned by get() to the default value.",
+  "set": "Set the Clock that will be returned by get().\n\n:param newTimesource: io.deephaven.base.clock.Clock"
+ },
+ "path": "io.deephaven.util.ClockFactory",
+ "text": "This is a hook to enable testing and simulation. Users of Clock should use this factory to get an instance. When they\n do, it is possible to change the class behavior from a test harness.\n\n Note: This would be better housed as a member of Clock.",
+ "typeName": "class"
+}

@@ -1,7 +1,7 @@
 package io.deephaven.grpc_api.uri;
 
-import io.deephaven.db.tables.Table;
-import io.deephaven.db.tables.utils.ParquetTools;
+import io.deephaven.engine.table.Table;
+import io.deephaven.parquet.table.ParquetTools;
 import io.deephaven.uri.UriHelper;
 
 import javax.inject.Inject;

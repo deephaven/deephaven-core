@@ -35,8 +35,8 @@ public class AggregationOutputs implements Aggregation.Visitor {
     }
 
     @Override
-    public void visit(Array array) {
-        visitPair(array.pair());
+    public void visit(Group group) {
+        visitPair(group.pair());
     }
 
     @Override

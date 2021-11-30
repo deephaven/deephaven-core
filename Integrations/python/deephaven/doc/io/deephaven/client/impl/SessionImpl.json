@@ -1,6 +1,7 @@
 {
  "className": "io.deephaven.client.impl.SessionImpl",
  "methods": {
+  "addToInputTable": "Add source to the input table destination.\n\n:param destination: (io.deephaven.client.impl.HasTicketId) - the input table\n:param source: (io.deephaven.client.impl.HasTicketId) - the source to add\n:return: (java.util.concurrent.CompletableFuture<java.lang.Void>) the future",
   "auth": ":return: io.deephaven.client.impl.AuthenticationInfo",
   "batch": "A batch table handle manager.\n\n*Overload 1*  \n  :return: (io.deephaven.client.impl.TableHandleManager) a batch manager\n  \n*Overload 2*  \n  :param mixinStacktrace: (boolean) - if stacktraces should be mixin\n  :return: (io.deephaven.client.impl.TableHandleManager) a batch manager",
   "batchCount": ":return: long",
@@ -9,10 +10,11 @@
   "console": "Creates a new console session of script type type.\n\n \n Note: the server does not currently support independent console sessions. See\n Issue 1172.\n\n:param type: (java.lang.String) - the script type\n:return: (java.util.concurrent.CompletableFuture<? extends io.deephaven.client.impl.ConsoleSession>) the console session future",
   "create": ":param config: io.deephaven.client.impl.SessionImplConfig\n:return: io.deephaven.client.impl.SessionImpl",
   "createFuture": ":param config: io.deephaven.client.impl.SessionImplConfig\n:return: java.util.concurrent.CompletableFuture<io.deephaven.client.impl.SessionImpl>",
+  "deleteFromInputTable": "Delete source from the input table destination.\n\n:param destination: (io.deephaven.client.impl.HasTicketId) - the input table\n:param source: (io.deephaven.client.impl.HasTicketId) - the source to delete\n:return: (java.util.concurrent.CompletableFuture<java.lang.Void>) the future",
   "export": "Creates new exports according to the request.\n\n:param request: (io.deephaven.client.impl.ExportsRequest) - the request\n:return: (java.util.List<io.deephaven.client.impl.Export>) the exports",
-  "newTicket": "Advanced usage, creates a new ticket for this session, but must be managed by the caller. Useful for more\n advanced integrations, particularly around doPut. Callers are responsible for releasing\n the ticket if necessary.\n\n:return: (io.deephaven.proto.backplane.grpc.Ticket) the new ticket",
-  "publish": "Publishes ticket into the global scope with name.\n\n:param name: (java.lang.String) - the name, must conform to SourceVersion.isName(CharSequence)\n:param ticket: (io.deephaven.client.impl.HasTicket) - the ticket\n:return: (java.util.concurrent.CompletableFuture<java.lang.Void>) the publish completable future",
-  "release": "Releases a ticket.\n\n \n Note: this should only be called in combination with tickets returned from Session.newTicket().\n\n:param ticket: (io.deephaven.proto.backplane.grpc.Ticket) - the ticket\n:return: (java.util.concurrent.CompletableFuture<java.lang.Void>) the future",
+  "newExportId": "Advanced usage, creates a new export ID for this session, but must be managed by the caller. Useful for\n more advanced integrations, particularly around doPut. Callers are responsible for releasing the export ID if necessary.\n\n:return: (io.deephaven.client.impl.ExportId) the new export ID",
+  "publish": "Publishes ticket into the global scope with name.\n\n:param name: (java.lang.String) - the name, must conform to SourceVersion.isName(CharSequence)\n:param ticketId: (io.deephaven.client.impl.HasTicketId) - the export ID\n:return: (java.util.concurrent.CompletableFuture<java.lang.Void>) the publish completable future",
+  "release": "Releases an export ID.\n\n \n Note: this should only be called in combination with exports returned from Session.newExportId().\n\n:param exportId: (io.deephaven.client.impl.ExportId) - the export ID\n:return: (java.util.concurrent.CompletableFuture<java.lang.Void>) the future",
   "releaseCount": ":return: long",
   "serial": "A serial table handle manager.\n\n:return: (io.deephaven.client.impl.TableHandleManager) a serial manager"
  },

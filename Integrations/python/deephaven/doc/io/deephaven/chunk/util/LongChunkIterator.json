@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.chunk.util.LongChunkIterator",
+ "methods": {
+  "hasNext": ":return: boolean",
+  "nextLong": ":return: long"
+ },
+ "path": "io.deephaven.chunk.util.LongChunkIterator",
+ "typeName": "class"
+}

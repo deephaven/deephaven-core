@@ -1,0 +1,16 @@
+{
+ "className": "io.deephaven.engine.util.PythonScopeJpyImpl",
+ "methods": {
+  "containsKey": "Finds out if a variable is in scope\n\n:param name: (java.lang.String) - the name of the python variable\n:return: (boolean) true iff the scope contains the variable",
+  "convert": "Converts a pyObject into an appropriate Java object for use outside of JPy.\n \n If we're a List, Dictionary, or Callable, then we wrap them in a java object.\n \n If it is a primitive (or a wrapped Java object); we convert it to the java object.\n \n Otherwise we return the raw PyObject and the user can do with it what they will.\n\n:param pyObject: (org.jpy.PyObject) - the JPy wrapped PyObject.\n:return: (java.lang.Object) a Java object representing the underlying JPy object.",
+  "convertStringKey": "The helper method to turn a raw key into a string key.\n \n Note: this assumes that all the keys are strings, which is not always true. Indices can also be tuples. TODO:\n revise interface as appropriate if this becomes an issue.\n\n:param key: (org.jpy.PyObject) - the raw key\n:return: (java.lang.String) the string key",
+  "convertValue": "The helper method to turn a raw value into an implementation specific object.\n \n This method should NOT convert PyObj of None type to null - we need to preserve the None object so it works with\n other Optional return values.\n\n:param value: (org.jpy.PyObject) - the raw value\n:return: (java.lang.Object) the converted object value",
+  "getEntriesRaw": "Retrieves all keys and values from the given scope.\n \n No conversion is done.\n\n:return: (java.util.stream.Stream<java.util.Map.Entry<org.jpy.PyObject,org.jpy.PyObject>>) the keys and values",
+  "getKeysRaw": "Retrieves all keys from the give scope.\n \n No conversion is done.\n \n Technically, the keys can be tuples...\n\n:return: (java.util.stream.Stream<org.jpy.PyObject>) the keys",
+  "getValueRaw": "Retrieves a value from the given scope.\n \n No conversion is done.\n\n:param name: (java.lang.String) - the name of the python variable\n:return: (java.util.Optional<org.jpy.PyObject>) the value, or empty",
+  "globals": ":return: org.jpy.PyDictWrapper",
+  "ofMainGlobals": ":return: io.deephaven.engine.util.PythonScopeJpyImpl"
+ },
+ "path": "io.deephaven.engine.util.PythonScopeJpyImpl",
+ "typeName": "class"
+}

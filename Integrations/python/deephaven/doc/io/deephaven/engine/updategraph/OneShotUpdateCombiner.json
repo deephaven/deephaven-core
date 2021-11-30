@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.engine.updategraph.OneShotUpdateCombiner",
+ "methods": {
+  "addSource": "Add a source to this registrar.\n\n:param updateSource: (java.lang.Runnable) - The table to add",
+  "removeSource": "Remove a source from this registrar.\n\n:param updateSource: (java.lang.Runnable) - The table to remove",
+  "requestRefresh": "Passes through to the update graph processor."
+ },
+ "path": "io.deephaven.engine.updategraph.OneShotUpdateCombiner",
+ "text": "Update source that combines multiple sources. Each registered source is invoked exactly once on the next\n run() and then automatically de-registered.",
+ "typeName": "class"
+}

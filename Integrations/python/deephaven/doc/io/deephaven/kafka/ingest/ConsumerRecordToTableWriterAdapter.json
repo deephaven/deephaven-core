@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.kafka.ingest.ConsumerRecordToTableWriterAdapter",
- "methods": {
-  "consumeRecord": "Consume a Kafka record, producing zero or more rows in the output.\n\n:param record: (org.apache.kafka.clients.consumer.ConsumerRecord<?,?>) - the record received from KafkaConsumer.poll(Duration)."
- },
- "path": "io.deephaven.kafka.ingest.ConsumerRecordToTableWriterAdapter",
- "text": "Converter from a stream of Kafka records to a table writer.\n\n Typically, this should be created by a factory that takes a TableWriter as its input.",
- "typeName": "interface"
-}

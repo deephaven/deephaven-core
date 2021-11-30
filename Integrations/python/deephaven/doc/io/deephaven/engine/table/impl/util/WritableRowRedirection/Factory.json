@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.engine.table.impl.util.WritableRowRedirection$Factory",
+ "methods": {
+  "createRowRedirection": "*Overload 1*  \n  :param initialCapacity: int\n  :return: io.deephaven.engine.table.impl.util.WritableRowRedirection\n  \n*Overload 2*  \n  :param map: (gnu.trove.map.TLongLongMap) - The initial TLongLongMap to use for backing the result WritableRowRedirection. Needs to\n          have the same dynamic type as that returned by createUnderlyingMapWithCapacity(int).\n  :return: io.deephaven.engine.table.impl.util.RowRedirection",
+  "createUnderlyingMapWithCapacity": ":param initialCapacity: int\n:return: gnu.trove.map.TLongLongMap"
+ },
+ "path": "io.deephaven.engine.table.impl.util.WritableRowRedirection.Factory",
+ "text": "Factory for producing WritableRowSets and their components.",
+ "typeName": "interface"
+}

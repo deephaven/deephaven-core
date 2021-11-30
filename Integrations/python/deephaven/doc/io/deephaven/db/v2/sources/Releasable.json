@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.db.v2.sources.Releasable",
- "methods": {
-  "releaseCachedResources": "Release any resources held for caching purposes. Implementations need not guarantee that they are safe for normal\n use concurrently with invocations of this method."
- },
- "path": "io.deephaven.db.v2.sources.Releasable",
- "text": "Interface for regions and regioned column sources that support releasing cached resources.",
- "typeName": "interface"
-}

@@ -1,12 +1,12 @@
 package io.deephaven.lang.completion
 
-import io.deephaven.db.util.VariableProvider
+import io.deephaven.engine.util.VariableProvider
 import io.deephaven.io.logger.Logger
 import io.deephaven.proto.backplane.script.grpc.CompletionItem
 import io.deephaven.util.process.ProcessEnvironment
-import io.deephaven.db.tables.Table
-import io.deephaven.db.tables.TableDefinition
-import io.deephaven.db.tables.utils.DBDateTime
+import io.deephaven.engine.table.Table
+import io.deephaven.engine.table.TableDefinition
+import io.deephaven.time.DateTime
 import io.deephaven.lang.parse.CompletionParser
 import spock.lang.Specification
 import spock.lang.Unroll
@@ -31,7 +31,7 @@ class ColumnExpressionCompletionHandlerTest extends Specification implements Chu
                 (0..1) * getVariableNames() >> ['t']
                 (0..1) * getVariableType('t') >> Table
                 (0..1) * getTableDefinition('t') >> new TableDefinition(
-                        [String, DBDateTime], ['Date', 'DateTime']
+                        [String, DateTime], ['Date', 'DateTime']
                 )
             }
 

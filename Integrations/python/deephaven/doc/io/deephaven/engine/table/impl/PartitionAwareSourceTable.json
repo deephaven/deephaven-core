@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.engine.table.impl.PartitionAwareSourceTable",
+ "methods": {
+  "selectDistinct": ":param groupByColumns: java.util.Collection<? extendsio.deephaven.api.Selectable>\n:return: io.deephaven.engine.table.Table",
+  "where": ":param filters: java.util.Collection<? extendsio.deephaven.api.filter.Filter>\n:return: io.deephaven.engine.table.Table"
+ },
+ "path": "io.deephaven.engine.table.impl.PartitionAwareSourceTable",
+ "text": "A source table that can filter partitions before coalescing. Refer to TableLocationKey for an explanation of\n partitioning.",
+ "typeName": "class"
+}

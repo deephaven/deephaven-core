@@ -1,7 +1,7 @@
 {
  "className": "io.deephaven.kafka.ingest.JsonNodeChunkAdapter",
  "methods": {
-  "make": "Create a JsonRecordChunkAdapter.\n\n:param definition: (io.deephaven.db.tables.TableDefinition) - the definition of the output table\n:param chunkTypeForIndex: (java.util.function.IntFunction<io.deephaven.db.v2.sources.chunk.ChunkType>) - a function from column index to chunk type\n:param fieldNamesToColumnNames: (java.util.Map<java.lang.String,java.lang.String>) - a map from JSON field names to Deephaven column names\n:param allowNulls: (boolean) - true if null records should be allowed, if false then an ISE is thrown\n:return: (io.deephaven.kafka.ingest.JsonNodeChunkAdapter) a JsonRecordChunkAdapter for the given definition and column mapping"
+  "make": "Create a JsonRecordChunkAdapter.\n\n:param definition: (io.deephaven.engine.table.TableDefinition) - the definition of the output table\n:param chunkTypeForIndex: (java.util.function.IntFunction<io.deephaven.chunk.ChunkType>) - a function from column index to chunk type\n:param fieldNamesToColumnNames: (java.util.Map<java.lang.String,java.lang.String>) - a map from JSON field names to Deephaven column names\n:param allowNulls: (boolean) - true if null records should be allowed, if false then an ISE is thrown\n:return: (io.deephaven.kafka.ingest.JsonNodeChunkAdapter) a JsonRecordChunkAdapter for the given definition and column mapping"
  },
  "path": "io.deephaven.kafka.ingest.JsonNodeChunkAdapter",
  "typeName": "class"

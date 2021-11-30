@@ -1,0 +1,13 @@
+{
+ "className": "io.deephaven.engine.rowset.impl.rsp.IndexRangeIteratorView",
+ "methods": {
+  "advance": ":param v: int\n:return: boolean",
+  "end": ":return: int",
+  "hasNext": ":return: boolean",
+  "search": ":param comp: io.deephaven.engine.rowset.impl.rsp.container.ContainerUtil.TargetComparator\n:return: boolean",
+  "start": ":return: int",
+  "underlyingIterFinished": ":return: boolean"
+ },
+ "path": "io.deephaven.engine.rowset.impl.rsp.IndexRangeIteratorView",
+ "typeName": "class"
+}

@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.db.v2.utils.ChunkBoxer$BoxerKernel",
- "methods": {
-  "box": "Convert all primitives to an object.\n\n:param primitives: (io.deephaven.db.v2.sources.chunk.Chunk<? extendsio.deephaven.db.v2.sources.chunk.Attributes.Values>) - the primitives to convert\n:return: (io.deephaven.db.v2.sources.chunk.ObjectChunk<?,? extends io.deephaven.db.v2.sources.chunk.Attributes.Values>) a chunk containing primitives as an object"
- },
- "path": "io.deephaven.db.v2.utils.ChunkBoxer.BoxerKernel",
- "text": "Return a chunk that contains boxed Objects representing the primitive values in primitives.",
- "typeName": "interface"
-}

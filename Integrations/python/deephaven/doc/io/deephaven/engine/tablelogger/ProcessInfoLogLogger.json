@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.engine.tablelogger.ProcessInfoLogLogger",
+ "methods": {
+  "getColumnNames": ":return: java.lang.String[]",
+  "getDefaultTableName": ":return: java.lang.String",
+  "getTableDefinition": ":return: io.deephaven.engine.table.TableDefinition",
+  "log": "*Overload 1*  \n  :param id: java.lang.String\n  :param type: java.lang.String\n  :param key: java.lang.String\n  :param value: java.lang.String\n  \n*Overload 2*  \n  :param flags: io.deephaven.tablelogger.Row.Flags\n  :param id: java.lang.String\n  :param type: java.lang.String\n  :param key: java.lang.String\n  :param value: java.lang.String"
+ },
+ "path": "io.deephaven.engine.tablelogger.ProcessInfoLogLogger",
+ "typeName": "class"
+}

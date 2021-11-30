@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.util.PythonScopeJpyImpl$NumbaCallableWrapper",
+ "methods": {
+  "getParamTypes": ":return: java.util.List<java.lang.Class<?>>",
+  "getReturnType": ":return: java.lang.Class<?>"
+ },
+ "path": "io.deephaven.engine.util.PythonScopeJpyImpl.NumbaCallableWrapper",
+ "typeName": "class"
+}

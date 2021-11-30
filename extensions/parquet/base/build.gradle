@@ -1,0 +1,21 @@
+plugins {
+    id 'java-library'
+}
+
+description 'Parquet Base: Libraries for working with Parquet files'
+
+dependencies {
+    api project(':ParquetHadoop')
+
+    implementation project(':Util')
+
+    testImplementation 'junit:junit:4.13.2'
+}
+
+spotless {
+    java {
+        targetExclude(
+                '**/*ChunkedWriter.java',
+        )
+    }
+}

@@ -1,10 +1,9 @@
 package io.deephaven.lang.completion;
 
 import io.deephaven.base.verify.Require;
-import io.deephaven.db.tables.ColumnDefinition;
-import io.deephaven.db.tables.TableDefinition;
-import io.deephaven.db.tables.utils.DBDateTime;
-import io.deephaven.db.util.VariableProvider;
+import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.util.VariableProvider;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.lang.generated.ChunkerAssign;

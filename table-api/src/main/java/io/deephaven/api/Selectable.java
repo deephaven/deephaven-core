@@ -1,6 +1,7 @@
 package io.deephaven.api;
 
 import io.deephaven.api.expression.Expression;
+import io.deephaven.api.util.NameValidator;
 
 import java.io.Serializable;
 import java.util.Arrays;
@@ -26,11 +27,11 @@ public interface Selectable extends Serializable {
     }
 
     static Selectable parse(String x) {
-        if (ColumnName.isValidParsedColumnName(x)) {
+        final int ix = x.indexOf('=');
+        if (ix < 0) {
             return ColumnName.parse(x);
         }
-        final int ix = x.indexOf('=');
-        if (ix < 0 || ix + 1 == x.length()) {
+        if (ix + 1 == x.length()) {
             throw new IllegalArgumentException(String.format(
                     "Unable to parse formula '%s', expected form '<newColumn>=<expression>'", x));
         }

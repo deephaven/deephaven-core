@@ -48,8 +48,8 @@ def abs_sum(cols: List[str]) -> Aggregation:
     return Aggregation(j_aggregation=_JAggregation.AggAbsSum(*cols))
 
 
-def array(cols: List[str]) -> Aggregation:
-    """ Create an Array aggregation.
+def group(cols: List[str]) -> Aggregation:
+    """ Create a Group aggregation.
 
     Args:
         cols (List[str]): the columns to aggregate on, can be renaming expressions, i.e. "new_col = col"
@@ -57,7 +57,7 @@ def array(cols: List[str]) -> Aggregation:
     Returns:
         an aggregation
     """
-    return Aggregation(j_aggregation=_JAggregation.AggArray(*cols))
+    return Aggregation(j_aggregation=_JAggregation.AggGroup(*cols))
 
 
 def avg(cols: List[str]) -> Aggregation:

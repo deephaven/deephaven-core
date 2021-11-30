@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.db.v2.InstrumentedListenerBase$ErrorNotification",
- "methods": {
-  "append": ":param output: io.deephaven.base.log.LogOutput\n:return: io.deephaven.base.log.LogOutput",
-  "canExecute": "Can this notification be executed? That is, are all of it's dependencies satisfied.\n\n:param step: (long) - The step for which we are testing satisfaction\n:return: (boolean) true if this notification can be executed, false if it has unmet dependencies"
- },
- "path": "io.deephaven.db.v2.InstrumentedListenerBase.ErrorNotification",
- "typeName": "class"
-}

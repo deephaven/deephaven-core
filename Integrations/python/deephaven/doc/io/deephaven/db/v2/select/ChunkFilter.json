@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.db.v2.select.ChunkFilter",
- "methods": {
-  "applyChunkFilter": "Apply a chunk filter to an Index and column source, producing a new Index that is responsive to the filter.\n\n:param selection: (io.deephaven.db.v2.utils.Index) - the Index to filter\n:param columnSource: (io.deephaven.db.v2.sources.ColumnSource<?>) - the column source to filter\n:param usePrev: (boolean) - should we use previous values from the column source?\n:param chunkFilter: (io.deephaven.db.v2.select.ChunkFilter) - the chunk filter to apply\n:return: (io.deephaven.db.v2.utils.Index) a new Index representing the filtered values",
-  "filter": "Filter a chunk of values, setting parallel values in results to \"true\" or \"false\".\n\n The results chunk must have capacity at least as large as values.size(); and the result size will be set to\n values.size() on return.\n\n:param values: (io.deephaven.db.v2.sources.chunk.Chunk<? extendsio.deephaven.db.v2.sources.chunk.Attributes.Values>) - the values to filter\n:param keys: io.deephaven.db.v2.sources.chunk.LongChunk<io.deephaven.db.v2.sources.chunk.Attributes.OrderedKeyIndices>\n:param results: (io.deephaven.db.v2.sources.chunk.WritableLongChunk<io.deephaven.db.v2.sources.chunk.Attributes.OrderedKeyIndices>) - a boolean chunk with true values for items that match the filter, and false otherwise"
- },
- "path": "io.deephaven.db.v2.select.ChunkFilter",
- "typeName": "interface"
-}

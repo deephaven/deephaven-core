@@ -273,7 +273,7 @@ public class SubscriptionTableData {
                         Js.asArrayLike(destArray).setAt((int) destPos, LongWrapper.of(value));
                     }
                 };
-            case "io.deephaven.db.tables.utils.DBDateTime":
+            case "io.deephaven.time.DateTime":
                 return (destArray, destPos, srcArray, srcPos) -> {
                     long value = Js.asArrayLike(srcArray).getAnyAt(srcPos).asLong();
                     if (value == QueryConstants.NULL_LONG) {

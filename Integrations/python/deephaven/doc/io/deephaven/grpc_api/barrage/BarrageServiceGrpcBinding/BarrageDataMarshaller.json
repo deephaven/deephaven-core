@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.grpc_api.barrage.BarrageServiceGrpcBinding$BarrageDataMarshaller",
- "methods": {
-  "parse": ":param stream: java.io.InputStream\n:return: io.deephaven.db.v2.utils.BarrageMessage",
-  "stream": ":param value: io.deephaven.db.v2.utils.BarrageMessage\n:return: java.io.InputStream"
- },
- "path": "io.deephaven.grpc_api.barrage.BarrageServiceGrpcBinding.BarrageDataMarshaller",
- "typeName": "class"
-}

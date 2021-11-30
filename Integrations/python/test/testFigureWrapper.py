@@ -8,11 +8,13 @@
 ##############################################################################
 
 import sys
-import tempfile
-import os
+import jpy
 
-from deephaven import TableTools, ComboAggregateFactory, Plot, Calendars
+from deephaven import TableTools, Aggregation, Plot, Calendars
 from deephaven.Plot import figure_wrapper
+
+_JTWD = jpy.get_type("io.deephaven.engine.table.impl.TableWithDefaults")
+_JAggHolder = jpy.get_type("io.deephaven.engine.table.impl.TableWithDefaults$AggHolder")
 
 if sys.version_info[0] < 3:
     import unittest2 as unittest
@@ -32,7 +34,7 @@ class TestFigureWrapper(unittest.TestCase):
         """
         Inherited method allowing initialization of test environment
         """
-        self.table = TableTools.emptyTable(200).update("timestamp=new DBDateTime((long)(i/2)*1000000000)",
+        self.table = TableTools.emptyTable(200).update("timestamp=new DateTime((long)(i/2)*1000000000)",
                                                        "Sym=((i%2 == 0) ? `MSFT` : `AAPL`)",
                                                        "price=(double)((i%2 == 0) ? 100.0 + (i/2) + 5*Math.random() : 250.0 + (i/2) + 10*Math.random())")
         # TODO: maybe we should test the direct data plotting functionality? vs table reference?
@@ -128,8 +130,7 @@ class TestFigureWrapper(unittest.TestCase):
 
         figure = figure_wrapper.FigureWrapper(1, 1)
         with self.subTest("piePlot"):
-            figure = figure.piePlot("Pie", self.table.by(
-                ComboAggregateFactory.AggCombo(ComboAggregateFactory.AggAvg("price")), "Sym"), "Sym", "price")
+            figure = figure.piePlot("Pie", self.table.aggBy(Aggregation.AggAvg("price"), "Sym"), "Sym", "price")
 
         figure = figure_wrapper.FigureWrapper(1, 1)
         with self.subTest("ohlcPlot"):
@@ -151,10 +152,12 @@ class TestFigureWrapper(unittest.TestCase):
         figure = figure_wrapper.FigureWrapper(1, 1)
         with self.subTest("catErrorBar"):
             figure = figure.catErrorBar("Cat Error Bar",
-                                        self.table.by(ComboAggregateFactory.AggCombo(
-                                            ComboAggregateFactory.AggAvg("avgPrice=price"),
-                                            ComboAggregateFactory.AggMin("minPrice=price"),
-                                            ComboAggregateFactory.AggMax("maxPrice=price")), "Sym"),
+                                        _JTWD.aggBy(self.table,
+                                                    _JAggHolder(*[
+                                                        Aggregation.AggAvg("avgPrice=price"),
+                                                        Aggregation.AggMin("minPrice=price"),
+                                                        Aggregation.AggMax("maxPrice=price")]),
+                                                    "Sym"),
                                         "Sym", "avgPrice", "minPrice", "maxPrice")
         del figure
 
@@ -422,7 +425,7 @@ class TestFigureWrapper(unittest.TestCase):
 
         # NB: the error message:
         #   java.lang.UnsupportedOperationException: Series type does not support this method.
-        #   seriesType=class io.deephaven.db.plot.datasets.xy.XYDataSeriesTableArray
+        #   seriesType=class io.deephaven.plot.datasets.xy.XYDataSeriesTableArray
         #   method='@Override public  FigureImpl pointsVisible( java.lang.Boolean visible, java.lang.Object... keys )'
 
         # TODO: seriesNamingFunction(*args)?,pointColorByY(func, *keys)?

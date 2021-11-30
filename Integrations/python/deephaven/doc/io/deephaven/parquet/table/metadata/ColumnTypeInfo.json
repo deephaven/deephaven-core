@@ -1,0 +1,12 @@
+{
+ "className": "io.deephaven.parquet.table.metadata.ColumnTypeInfo",
+ "methods": {
+  "builder": ":return: io.deephaven.parquet.table.metadata.ColumnTypeInfo.Builder",
+  "codec": ":return: (java.util.Optional<io.deephaven.parquet.table.metadata.CodecInfo>) Optional codec info for binary types",
+  "columnName": ":return: (java.lang.String) The column name",
+  "specialType": ":return: (java.util.Optional<io.deephaven.parquet.table.metadata.ColumnTypeInfo.SpecialType>) Optional type hint for complex types"
+ },
+ "path": "io.deephaven.parquet.table.metadata.ColumnTypeInfo",
+ "text": "Representation class for per-column type information stored in key-value metadata for Deephaven-written Parquet\n files.\n \n Currently only used for columns requiring non-default deserialization or type selection",
+ "typeName": "class"
+}

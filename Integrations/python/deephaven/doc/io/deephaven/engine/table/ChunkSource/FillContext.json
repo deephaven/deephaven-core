@@ -1,0 +1,7 @@
+{
+ "className": "io.deephaven.engine.table.ChunkSource$FillContext",
+ "methods": {},
+ "path": "io.deephaven.engine.table.ChunkSource.FillContext",
+ "text": "Marker interface for Contexts that are used in\n ChunkSource.fillChunk(FillContext, WritableChunk, RowSequence).",
+ "typeName": "interface"
+}

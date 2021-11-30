@@ -56,7 +56,7 @@ public class QueryConstants {
     public static final byte NULL_BYTE = Byte.MIN_VALUE;
 
     /**
-     * Null boxed Byte value.
+     * Null boxed Byte value.F
      */
     public static final Byte NULL_BYTE_BOXED = NULL_BYTE;
 

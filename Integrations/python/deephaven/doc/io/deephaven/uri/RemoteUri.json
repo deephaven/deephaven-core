@@ -1,0 +1,15 @@
+{
+ "className": "io.deephaven.uri.RemoteUri",
+ "methods": {
+  "isValidScheme": ":param scheme: java.lang.String\n:return: boolean",
+  "isWellFormed": ":param uri: java.net.URI\n:return: boolean",
+  "of": "Parses the uri into a remote URI.\n\n \n For Deephaven scheme formats, the format looks the same as the local versions, except with a host specified. For\n example, dh://host/scope/my_table.\n\n \n The proxy format is of the form dh://host?uri=${innerUri}; where innerUri is the URI to be\n proxied. When innerUri is a Deephaven scheme, is does not need to be URL encoded; for example,\n dh://gateway?uri=dh://host/scope/my_table. Inner URIs that aren't a Deephaven scheme need to be URL\n encoded; for example, dh://gateway?uri=parquet%3A%2F%2F%2Fdata%2Ftest.parquet.\n\n*Overload 1*  \n  :param target: io.deephaven.uri.DeephavenTarget\n  :param uri: io.deephaven.uri.StructuredUri\n  :return: io.deephaven.uri.RemoteUri\n  \n*Overload 2*  \n  :param uri: (java.net.URI) - the URI\n  :return: (io.deephaven.uri.RemoteUri) the remote URI",
+  "target": "The Deephaven target.\n\n:return: (io.deephaven.uri.DeephavenTarget) the target",
+  "toString": "The URI string.\n\n:return: (java.lang.String) the URI string",
+  "uri": "The inner URI. As opposed to DeephavenUriBase.toURI(), which represents this as a URI.\n\n:return: (io.deephaven.uri.StructuredUri) the inner URI",
+  "walk": "Note: Java generics information - <V extends io.deephaven.uri.StructuredUri.Visitor>\n\n:param visitor: V\n:return: V"
+ },
+ "path": "io.deephaven.uri.RemoteUri",
+ "text": "A remote Deephaven URI represents a structured link for resolving remote Deephaven resources. Is composed of a\n target and remote uri.\n\n \n For example, dh://host/scope/my_table.",
+ "typeName": "class"
+}

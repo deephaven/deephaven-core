@@ -13,9 +13,13 @@ from deephaven2.column import Column
 from deephaven2.agg import Aggregation
 from deephaven2.constants import SortDirection
 
-_JTableTools = jpy.get_type("io.deephaven.db.tables.utils.TableTools")
-_JSortPair = jpy.get_type("io.deephaven.db.tables.SortPair")
-
+_JTableTools = jpy.get_type("io.deephaven.engine.util.TableTools")
+_JColumnName = jpy.get_type("io.deephaven.api.ColumnName")
+_JSortColumn = jpy.get_type("io.deephaven.api.SortColumn")
+_JFilter = jpy.get_type("io.deephaven.api.filter.Filter")
+_JFilterOr = jpy.get_type("io.deephaven.api.filter.FilterOr")
+_JTWD = jpy.get_type("io.deephaven.engine.table.impl.TableWithDefaults")
+_JAggHolder = jpy.get_type("io.deephaven.engine.table.impl.TableWithDefaults$AggHolder")
 
 #
 # module level functions
@@ -93,6 +97,11 @@ class Table:
     def size(self) -> int:
         """ The current number of rows in the table. """
         return self._j_table.size()
+
+    @property
+    def is_refreshing(self) -> bool:
+        """ Whether this table is refreshing. """
+        return self._j_table.isRefreshing()
 
     @property
     def columns(self):
@@ -192,7 +201,7 @@ class Table:
             DHError
         """
         try:
-            return Table(j_table=self._j_table.moveDownColumns(*cols))
+            return Table(j_table=self._j_table.moveColumnsDown(*cols))
         except Exception as e:
             raise DHError(e, "table move_columns_down operation failed.") from e
 
@@ -210,7 +219,7 @@ class Table:
             DHError
         """
         try:
-            return Table(j_table=self._j_table.moveUpColumns(*cols))
+            return Table(j_table=self._j_table.moveColumnsUp(*cols))
         except Exception as e:
             raise DHError(e, "table move_columns_up operation failed.") from e
 
@@ -358,10 +367,7 @@ class Table:
             DHError
         """
         try:
-            if not filters:
-                return Table(j_table=self._j_table.where())
-            else:
-                return Table(j_table=self._j_table.where(*filters))
+            return Table(j_table=self._j_table.where(*filters))
         except Exception as e:
             raise DHError(e, "table where operation failed.") from e
 
@@ -417,10 +423,7 @@ class Table:
             DHError
         """
         try:
-            if not filters:
-                return Table(j_table=self._j_table.whereOneOf())
-            else:
-                return Table(j_table=self._j_table.whereOneOf(*filters))
+            return Table(j_table=self._j_table.where(_JFilterOr.of(_JFilter.from_(*filters))))
         except Exception as e:
             raise DHError(e, "table where_one_of operation failed.") from e
 
@@ -561,13 +564,13 @@ class Table:
             DHError
         """
 
-        def sort_pair(col, dir_):
-            return _JSortPair.descending(col) if dir_ == SortDirection.DESCENDING else _JSortPair.ascending(col)
+        def sort_column(col, dir_):
+            return _JSortColumn.desc(_JColumnName.of(col)) if dir_ == SortDirection.DESCENDING else _JSortColumn.asc(_JColumnName.of(col))
 
         try:
             if order:
-                sort_pairs = [sort_pair(col, dir_) for col, dir_ in zip(order_by, order)]
-                return Table(j_table=self._j_table.sort(*sort_pairs))
+                sort_columns = [sort_column(col, dir_) for col, dir_ in zip(order_by, order)]
+                return Table(j_table=_JTWD.sort(self._j_table, *sort_columns))
             else:
                 return Table(j_table=self._j_table.sort(*order_by))
         except Exception as e:
@@ -1028,8 +1031,8 @@ class Table:
         except Exception as e:
             raise DHError(e, "table count_by operation failed.") from e
 
-    def combo_by(self, aggs: List[Aggregation], by: List[str]) -> Table:
-        """ The combo_by method creates a new table containing grouping columns and grouped data. The resulting
+    def agg_by(self, aggs: List[Aggregation], by: List[str]) -> Table:
+        """ The agg_by method creates a new ta  ble containing grouping columns and grouped data. The resulting
         grouped data is defined by the aggregations specified.
 
         Args:
@@ -1043,7 +1046,7 @@ class Table:
             DHError
         """
         try:
-            return Table(j_table=self._j_table.aggBy([agg.j_agg for agg in aggs], *by))
+            return Table(j_table=_JTWD.aggBy(self._j_table, _JAggHolder(*[agg.j_agg for agg in aggs]), *by))
         except Exception as e:
-            raise DHError(e, "table combo_by operation failed.") from e
+            raise DHError(e, "table agg_by operation failed.") from e
     # endregion

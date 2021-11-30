@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.grpc_api.barrage.BarrageClientModule",
+ "methods": {
+  "providesAllocator": ":return: org.apache.arrow.memory.BufferAllocator",
+  "providesScheduler": ":return: java.util.concurrent.ScheduledExecutorService"
+ },
+ "path": "io.deephaven.grpc_api.barrage.BarrageClientModule",
+ "typeName": "interface"
+}

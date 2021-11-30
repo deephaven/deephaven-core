@@ -1,0 +1,13 @@
+{
+ "className": "io.deephaven.time.Period",
+ "methods": {
+  "compareTo": ":param dateTime: io.deephaven.time.Period\n:return: int",
+  "equals": ":param period: java.lang.Object\n:return: boolean",
+  "getJodaPeriod": ":return: org.joda.time.Period",
+  "hashCode": ":return: int",
+  "isPositive": ":return: boolean",
+  "toString": ":return: java.lang.String"
+ },
+ "path": "io.deephaven.time.Period",
+ "typeName": "class"
+}

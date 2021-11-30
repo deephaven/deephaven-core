@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.db.v2.utils.AdaptiveBuilder",
- "methods": {
-  "add": "*Overload 1*  \n  :param ix: io.deephaven.db.v2.utils.sortedranges.SortedRanges\n  :param acquire: boolean\n  \n*Overload 2*  \n  :param ix: io.deephaven.db.v2.utils.rsp.RspBitmap\n  :param acquire: boolean"
- },
- "path": "io.deephaven.db.v2.utils.AdaptiveBuilder",
- "typeName": "class"
-}

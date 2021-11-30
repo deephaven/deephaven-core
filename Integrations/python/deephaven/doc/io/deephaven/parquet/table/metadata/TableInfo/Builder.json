@@ -1,0 +1,13 @@
+{
+ "className": "io.deephaven.parquet.table.metadata.TableInfo$Builder",
+ "methods": {
+  "addAllColumnTypes": ":param columnTypes: java.lang.Iterable<? extendsio.deephaven.parquet.table.metadata.ColumnTypeInfo>\n:return: io.deephaven.parquet.table.metadata.TableInfo.Builder",
+  "addAllGroupingColumns": ":param groupingColumns: java.lang.Iterable<? extendsio.deephaven.parquet.table.metadata.GroupingColumnInfo>\n:return: io.deephaven.parquet.table.metadata.TableInfo.Builder",
+  "addColumnTypes": "*Overload 1*  \n  :param columnType: io.deephaven.parquet.table.metadata.ColumnTypeInfo\n  :return: io.deephaven.parquet.table.metadata.TableInfo.Builder\n  \n*Overload 2*  \n  :param columnTypes: io.deephaven.parquet.table.metadata.ColumnTypeInfo...\n  :return: io.deephaven.parquet.table.metadata.TableInfo.Builder",
+  "addGroupingColumns": "*Overload 1*  \n  :param groupingColumn: io.deephaven.parquet.table.metadata.GroupingColumnInfo\n  :return: io.deephaven.parquet.table.metadata.TableInfo.Builder\n  \n*Overload 2*  \n  :param groupingColumns: io.deephaven.parquet.table.metadata.GroupingColumnInfo...\n  :return: io.deephaven.parquet.table.metadata.TableInfo.Builder",
+  "build": ":return: io.deephaven.parquet.table.metadata.TableInfo",
+  "version": ":param version: java.lang.String\n:return: io.deephaven.parquet.table.metadata.TableInfo.Builder"
+ },
+ "path": "io.deephaven.parquet.table.metadata.TableInfo.Builder",
+ "typeName": "interface"
+}
