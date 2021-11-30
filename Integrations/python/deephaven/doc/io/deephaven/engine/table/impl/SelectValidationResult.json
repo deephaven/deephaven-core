@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.table.impl.SelectValidationResult",
+ "methods": {
+  "getAnalyzer": ":return: io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer",
+  "getClonedColumns": ":return: io.deephaven.engine.table.impl.select.SelectColumn[]"
+ },
+ "path": "io.deephaven.engine.table.impl.SelectValidationResult",
+ "typeName": "class"
+}

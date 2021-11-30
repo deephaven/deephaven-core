@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.engine.table.impl.snapshot.SnapshotInternalListener",
+ "methods": {
+  "canExecute": ":param step: long\n:return: boolean",
+  "doSnapshot": ":param notifyListeners: boolean\n:param usePrev: boolean",
+  "onUpdate": "Process notification of table changes.\n\n:param upstream: (io.deephaven.engine.table.TableUpdate) - The set of upstream table updates."
+ },
+ "path": "io.deephaven.engine.table.impl.snapshot.SnapshotInternalListener",
+ "typeName": "class"
+}

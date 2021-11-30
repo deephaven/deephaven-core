@@ -1,0 +1,7 @@
+{
+ "className": "io.deephaven.plot.errors.PlotRenderingException",
+ "methods": {},
+ "path": "io.deephaven.plot.errors.PlotRenderingException",
+ "text": "RuntimeException which occurs when rendering the plot.",
+ "typeName": "class"
+}

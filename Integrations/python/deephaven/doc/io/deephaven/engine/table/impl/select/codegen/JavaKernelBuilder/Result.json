@@ -1,0 +1,6 @@
+{
+ "className": "io.deephaven.engine.table.impl.select.codegen.JavaKernelBuilder$Result",
+ "methods": {},
+ "path": "io.deephaven.engine.table.impl.select.codegen.JavaKernelBuilder.Result",
+ "typeName": "class"
+}

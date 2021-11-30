@@ -8,16 +8,16 @@
 package io.deephaven.extensions.barrage.chunk;
 
 import gnu.trove.iterator.TLongIterator;
+import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
-import io.deephaven.db.v2.sources.chunk.ShortChunk;
 import com.google.common.io.LittleEndianDataOutputStream;
 import io.deephaven.UncheckedDeephavenException;
-import io.deephaven.db.util.LongSizedDataStructure;
-import io.deephaven.db.v2.sources.chunk.Attributes;
-import io.deephaven.db.v2.sources.chunk.Chunk;
-import io.deephaven.db.v2.sources.chunk.WritableShortChunk;
-import io.deephaven.db.v2.sources.chunk.WritableLongChunk;
-import io.deephaven.db.v2.utils.Index;
+import io.deephaven.util.datastructures.LongSizedDataStructure;
+import io.deephaven.chunk.ShortChunk;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.WritableShortChunk;
+import io.deephaven.chunk.WritableLongChunk;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.DataInput;
@@ -27,20 +27,20 @@ import java.util.Iterator;
 
 import static io.deephaven.util.QueryConstants.*;
 
-public class ShortChunkInputStreamGenerator extends BaseChunkInputStreamGenerator<ShortChunk<Attributes.Values>> {
+public class ShortChunkInputStreamGenerator extends BaseChunkInputStreamGenerator<ShortChunk<Values>> {
     private static final String DEBUG_NAME = "ShortChunkInputStreamGenerator";
 
-    ShortChunkInputStreamGenerator(final ShortChunk<Attributes.Values> chunk, final int elementSize) {
+    ShortChunkInputStreamGenerator(final ShortChunk<Values> chunk, final int elementSize) {
         super(chunk, elementSize);
     }
 
     @Override
-    public DrainableColumn getInputStream(final BarrageSubscriptionOptions options, final @Nullable Index subset) {
+    public DrainableColumn getInputStream(final BarrageSubscriptionOptions options, final @Nullable RowSet subset) {
         return new ShortChunkInputStream(options, subset);
     }
 
     private class ShortChunkInputStream extends BaseChunkInputStream {
-        private ShortChunkInputStream(final BarrageSubscriptionOptions options, final Index subset) {
+        private ShortChunkInputStream(final BarrageSubscriptionOptions options, final RowSet subset) {
             super(chunk, options, subset);
         }
 
@@ -53,7 +53,7 @@ public class ShortChunkInputStreamGenerator extends BaseChunkInputStreamGenerato
             }
             if (cachedNullCount == -1) {
                 cachedNullCount = 0;
-                subset.forAllLongs(row -> {
+                subset.forAllRowKeys(row -> {
                     if (chunk.get((int) row) == NULL_SHORT) {
                         ++cachedNullCount;
                     }
@@ -101,7 +101,7 @@ public class ShortChunkInputStreamGenerator extends BaseChunkInputStreamGenerato
                     context.accumulator = 0;
                     context.count = 0;
                 };
-                subset.forAllLongs(row -> {
+                subset.forAllRowKeys(row -> {
                     if (chunk.get((int) row) != NULL_SHORT) {
                         context.accumulator |= 1L << context.count;
                     }
@@ -117,7 +117,7 @@ public class ShortChunkInputStreamGenerator extends BaseChunkInputStreamGenerato
             }
 
                 // write the included values
-                subset.forAllLongs(row -> {
+                subset.forAllRowKeys(row -> {
                     try {
                         final short val = chunk.get((int) row);
                         dos.writeShort(val);
@@ -142,7 +142,7 @@ public class ShortChunkInputStreamGenerator extends BaseChunkInputStreamGenerato
         ShortConversion IDENTITY = (short a) -> a;
     }
 
-    static Chunk<Attributes.Values> extractChunkFromInputStream(
+    static Chunk<Values> extractChunkFromInputStream(
             final int elementSize,
             final BarrageSubscriptionOptions options,
             final Iterator<FieldNodeInfo> fieldNodeIter,
@@ -152,7 +152,7 @@ public class ShortChunkInputStreamGenerator extends BaseChunkInputStreamGenerato
                 elementSize, options, ShortConversion.IDENTITY, fieldNodeIter, bufferInfoIter, is);
     }
 
-    static Chunk<Attributes.Values> extractChunkFromInputStreamWithConversion(
+    static Chunk<Values> extractChunkFromInputStreamWithConversion(
             final int elementSize,
             final BarrageSubscriptionOptions options,
             final ShortConversion conversion,
@@ -164,14 +164,14 @@ public class ShortChunkInputStreamGenerator extends BaseChunkInputStreamGenerato
         final long validityBuffer = bufferInfoIter.next();
         final long payloadBuffer = bufferInfoIter.next();
 
-        final WritableShortChunk<Attributes.Values> chunk = WritableShortChunk.makeWritableChunk(nodeInfo.numElements);
+        final WritableShortChunk<Values> chunk = WritableShortChunk.makeWritableChunk(nodeInfo.numElements);
 
         if (nodeInfo.numElements == 0) {
             return chunk;
         }
 
         final int numValidityLongs = options.useDeephavenNulls() ? 0 : (nodeInfo.numElements + 63) / 64;
-        try (final WritableLongChunk<Attributes.Values> isValid = WritableLongChunk.makeWritableChunk(numValidityLongs)) {
+        try (final WritableLongChunk<Values> isValid = WritableLongChunk.makeWritableChunk(numValidityLongs)) {
             if (options.useDeephavenNulls() && validityBuffer != 0) {
                 throw new IllegalStateException("validity buffer is non-empty, but is unnecessary");
             }

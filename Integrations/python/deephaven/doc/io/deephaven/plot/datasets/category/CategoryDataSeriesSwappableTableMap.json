@@ -1,0 +1,16 @@
+{
+ "className": "io.deephaven.plot.datasets.category.CategoryDataSeriesSwappableTableMap",
+ "methods": {
+  "categories": "Gets the categories of the dataset.\n\n:return: (java.util.Collection<java.lang.Comparable>) all categories in the dataset",
+  "copy": "Create a copy of the series on a different set of axes.\n\n:param axes: (io.deephaven.plot.AxesImpl) - new axes.\n:return: (io.deephaven.plot.datasets.category.CategoryDataSeriesSwappableTableMap) copy of the series on a different set of axes.",
+  "getCategoryCol": ":return: java.lang.String",
+  "getCategoryLocation": "Get the row key of the specified series.\n\n:param category: java.lang.Comparable\n:return: long",
+  "getNumericCol": ":return: java.lang.String",
+  "getSwappableTable": ":return: io.deephaven.plot.util.tables.SwappableTable",
+  "getValue": "Gets the numeric value corresponding to the given category.\n\n:param category: (java.lang.Comparable) - category\n:return: (java.lang.Number) numeric value corresponding to the given category",
+  "size": "Gets the size of this data set.\n\n:return: (int) size of this data set"
+ },
+ "path": "io.deephaven.plot.datasets.category.CategoryDataSeriesSwappableTableMap",
+ "text": "A dataset for SwappableTable based categorical data.",
+ "typeName": "class"
+}

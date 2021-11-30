@@ -5,12 +5,13 @@
 package io.deephaven.grpc_api.table;
 
 import com.google.rpc.Code;
-import io.deephaven.db.v2.BaseTable;
-import io.deephaven.db.v2.InstrumentedShiftAwareListener;
-import io.deephaven.db.v2.NotificationStepReceiver;
-import io.deephaven.db.v2.ShiftAwareSwapListener;
-import io.deephaven.db.v2.utils.Index;
-import io.deephaven.db.v2.utils.UpdatePerformanceTracker;
+import io.deephaven.engine.table.TableUpdate;
+import io.deephaven.engine.table.impl.BaseTable;
+import io.deephaven.engine.table.impl.InstrumentedTableUpdateListener;
+import io.deephaven.engine.table.impl.NotificationStepReceiver;
+import io.deephaven.engine.table.impl.SwapListener;
+import io.deephaven.engine.rowset.TrackingRowSet;
+import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.grpc_api.session.SessionState;
 import io.deephaven.grpc_api.util.ExportTicketHelper;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
@@ -32,9 +33,9 @@ import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyExecute;
 /**
  * Manage the lifecycle of exports that are Tables.
  *
- * Initially we receive a refresh of exports from the session state. This allows us to timely notify the observer of
- * existing table sizes for both static tables and tables that won't tick frequently. When the refresh is complete we
- * are sent a notification for exportId == 0 (which is otherwise an invalid export id).
+ * Initially we receive a run of exports from the session state. This allows us to timely notify the observer of
+ * existing table sizes for both static tables and tables that won't tick frequently. When the run is complete we are
+ * sent a notification for exportId == 0 (which is otherwise an invalid export id).
  */
 public class ExportedTableUpdateListener implements StreamObserver<ExportNotification> {
 
@@ -113,14 +114,14 @@ public class ExportedTableUpdateListener implements StreamObserver<ExportNotific
 
     /**
      * Initialize the listener for a newly exported table. This method is synchronized to prevent a race from the table
-     * ticking before we append the initial refresh msg.
+     * ticking before we append the initial run msg.
      *
      * @param ticket of the table being exported
      * @param exportId the export id of the table being exported
      * @param table the table that was just exported
      */
     private synchronized void onNewTableExport(final Ticket ticket, final int exportId, final BaseTable table) {
-        if (!table.isLive()) {
+        if (!table.isRefreshing()) {
             sendUpdateMessage(ticket, table.size(), null);
             return;
         }
@@ -130,7 +131,7 @@ public class ExportedTableUpdateListener implements StreamObserver<ExportNotific
             return;
         }
 
-        final ShiftAwareSwapListener swapListener = new ShiftAwareSwapListener(table);
+        final SwapListener swapListener = new SwapListener(table);
         swapListener.subscribeForUpdates();
         final ListenerImpl listener = new ListenerImpl(table, exportId, swapListener);
         listener.tryRetainReference();
@@ -139,15 +140,15 @@ public class ExportedTableUpdateListener implements StreamObserver<ExportNotific
         final MutableLong initSize = new MutableLong();
         table.initializeWithSnapshot(logPrefix, swapListener, (usePrev, beforeClockValue) -> {
             swapListener.setListenerAndResult(listener, NOOP_NOTIFICATION_STEP_RECEIVER);
-            final Index index = table.getIndex();
-            initSize.setValue(usePrev ? index.sizePrev() : index.size());
+            final TrackingRowSet rowSet = table.getRowSet();
+            initSize.setValue(usePrev ? rowSet.sizePrev() : rowSet.size());
             return true;
         });
         sendUpdateMessage(ticket, initSize.longValue(), null);
     }
 
     /**
-     * Append an update message to the batch being built this cycle. If this is the first update on this LTM cycle then
+     * Append an update message to the batch being built this cycle. If this is the first update on this UGP cycle then
      * this also adds the terminal notification to flush the outstanding updates.
      *
      * @param ticket ticket of the table that has updated
@@ -179,14 +180,14 @@ public class ExportedTableUpdateListener implements StreamObserver<ExportNotific
     /**
      * The table listener implementation that propagates updates to our internal queue.
      */
-    private class ListenerImpl extends InstrumentedShiftAwareListener {
+    private class ListenerImpl extends InstrumentedTableUpdateListener {
         final private BaseTable table;
         final private int exportId;
 
         @ReferentialIntegrity
-        final ShiftAwareSwapListener swapListener;
+        final SwapListener swapListener;
 
-        private ListenerImpl(final BaseTable table, final int exportId, final ShiftAwareSwapListener swapListener) {
+        private ListenerImpl(final BaseTable table, final int exportId, final SwapListener swapListener) {
             super("ExportedTableUpdateListener (" + exportId + ")");
             this.table = table;
             this.exportId = exportId;
@@ -195,12 +196,12 @@ public class ExportedTableUpdateListener implements StreamObserver<ExportNotific
         }
 
         @Override
-        public void onUpdate(final Update upstream) {
+        public void onUpdate(final TableUpdate upstream) {
             sendUpdateMessage(ExportTicketHelper.wrapExportIdInTicket(exportId), table.size(), null);
         }
 
         @Override
-        public void onFailureInternal(final Throwable error, final UpdatePerformanceTracker.Entry sourceEntry) {
+        public void onFailureInternal(final Throwable error, final Entry sourceEntry) {
             sendUpdateMessage(ExportTicketHelper.wrapExportIdInTicket(exportId), table.size(), error);
         }
     }

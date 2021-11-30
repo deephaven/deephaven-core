@@ -83,8 +83,8 @@ except Exception as e:
 @_passThrough
 def ByEmaSimple(nullBehavior, nanBehavior, mode, timeScale, timeUnit, type=None):
     """
-    Constructor for a DB aware Exponential Moving Average (EMA) which performs a `by` ema calculation without the
-    added inefficiency of explicitly performing the grouping and then ungrouping operations.
+    Constructor for an engine aware Exponential Moving Average (EMA) which performs a `groupBy` ema calculation without
+    the added inefficiency of explicitly performing the grouping and then ungrouping operations.
 
     :param nullBehavior: enum value 'BD_RESET', 'BD_SKIP', 'BD_PROCESS' which determines calculation behavior
       upon encountering a null value.

@@ -4,8 +4,8 @@ import io.deephaven.hash.KeyedIntObjectHash;
 import io.deephaven.hash.KeyedIntObjectKey;
 import io.deephaven.hash.KeyedObjectHash;
 import io.deephaven.hash.KeyedObjectKey;
-import io.deephaven.db.tables.Table;
-import io.deephaven.db.util.liveness.SingletonLivenessManager;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.liveness.SingletonLivenessManager;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.HashMap;
@@ -138,7 +138,7 @@ public enum TreeTableClientTableManager {
 
         private TableState(@NotNull final Table table) {
             this.table = table;
-            if (table.isLive()) {
+            if (table.isRefreshing()) {
                 manage(table);
             }
         }

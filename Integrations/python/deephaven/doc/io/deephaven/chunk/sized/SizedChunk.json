@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.chunk.sized.SizedChunk",
+ "methods": {
+  "ensureCapacity": "Ensure the underlying chunk has a capacity of at least capacity.\n\n The data and size of the returned chunk are undefined.\n\n:param capacity: (int) - the minimum capacity for the chunk.\n:return: (io.deephaven.chunk.WritableChunk<SizedChunk.T>) the underlying chunk",
+  "ensureCapacityPreserve": "Ensure the underlying chunk has a capacity of at least capacity.\n\n If the chunk has existing data, then it is copied to the new chunk.\n\n If the underlying chunk already exists, then the size of the chunk is the original size. If the chunk did not\n exist, then the size of the returned chunk is zero.\n\n:param capacity: (int) - the minimum capacity for the chunk.\n:return: (io.deephaven.chunk.WritableChunk<SizedChunk.T>) the underlying chunk",
+  "get": "Get the underlying chunk.\n\n:return: (io.deephaven.chunk.WritableChunk<SizedChunk.T>) the underlying chunk."
+ },
+ "path": "io.deephaven.chunk.sized.SizedChunk",
+ "text": "A dynamically typed chunk that can be resized.",
+ "typeName": "class"
+}

@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.db.v2.locations.parquet.topage.ReplicateToPage",
- "methods": {
-  "main": ":param args: java.lang.String..."
- },
- "path": "io.deephaven.db.v2.locations.parquet.topage.ReplicateToPage",
- "text": "Code generation for basic ToPage implementations.",
- "typeName": "class"
-}

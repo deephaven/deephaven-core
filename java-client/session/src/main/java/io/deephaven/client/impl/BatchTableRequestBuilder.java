@@ -13,7 +13,7 @@ import io.deephaven.api.SortColumn.Order;
 import io.deephaven.api.Strings;
 import io.deephaven.api.agg.AbsSum;
 import io.deephaven.api.agg.Aggregation;
-import io.deephaven.api.agg.Array;
+import io.deephaven.api.agg.Group;
 import io.deephaven.api.agg.Avg;
 import io.deephaven.api.agg.Count;
 import io.deephaven.api.agg.CountDistinct;
@@ -82,41 +82,8 @@ import io.deephaven.proto.backplane.grpc.TableReference;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.proto.backplane.grpc.TimeTableRequest;
 import io.deephaven.proto.backplane.grpc.UnstructuredFilterTableRequest;
-import io.deephaven.qst.table.AggregationTable;
-import io.deephaven.qst.table.AsOfJoinTable;
-import io.deephaven.qst.table.ByTable;
-import io.deephaven.qst.table.ByTableBase;
-import io.deephaven.qst.table.EmptyTable;
-import io.deephaven.qst.table.ExactJoinTable;
-import io.deephaven.qst.table.HeadTable;
-import io.deephaven.qst.table.InMemoryAppendOnlyInputTable;
-import io.deephaven.qst.table.InMemoryKeyBackedInputTable;
-import io.deephaven.qst.table.InputTable;
-import io.deephaven.qst.table.JoinTable;
-import io.deephaven.qst.table.LeftJoinTable;
-import io.deephaven.qst.table.MergeTable;
-import io.deephaven.qst.table.NaturalJoinTable;
-import io.deephaven.qst.table.NewTable;
-import io.deephaven.qst.table.ReverseAsOfJoinTable;
-import io.deephaven.qst.table.ReverseTable;
-import io.deephaven.qst.table.SelectTable;
-import io.deephaven.qst.table.SingleParentTable;
-import io.deephaven.qst.table.SnapshotTable;
-import io.deephaven.qst.table.SortTable;
-import io.deephaven.qst.table.TableHeader;
-import io.deephaven.qst.table.TableSchema;
-import io.deephaven.qst.table.TableSpec;
-import io.deephaven.qst.table.TailTable;
-import io.deephaven.qst.table.TicketTable;
+import io.deephaven.qst.table.*;
 import io.deephaven.qst.table.TimeProvider.Visitor;
-import io.deephaven.qst.table.TimeProviderSystem;
-import io.deephaven.qst.table.TimeTable;
-import io.deephaven.qst.table.UpdateTable;
-import io.deephaven.qst.table.UpdateViewTable;
-import io.deephaven.qst.table.ViewTable;
-import io.deephaven.qst.table.WhereInTable;
-import io.deephaven.qst.table.WhereNotInTable;
-import io.deephaven.qst.table.WhereTable;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -417,8 +384,8 @@ class BatchTableRequestBuilder {
         }
 
         @Override
-        public void visit(ByTable byTable) {
-            out = op(Builder::setComboAggregate, singleAgg(byTable, AggType.ARRAY));
+        public void visit(GroupByTable groupByTable) {
+            out = op(Builder::setComboAggregate, singleAgg(groupByTable, AggType.GROUP));
         }
 
         @Override
@@ -605,8 +572,8 @@ class BatchTableRequestBuilder {
         }
 
         @Override
-        public void visit(Array array) {
-            out = of(AggType.ARRAY, array.pair()).build();
+        public void visit(Group group) {
+            out = of(AggType.GROUP, group.pair()).build();
         }
 
         @Override

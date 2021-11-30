@@ -212,5 +212,5 @@ class TableTestCase(BaseTestCase):
                      .pct(percentile=0.5, cols=["PctC = c"])
                      .weighted_avg(wcol="d", cols=["WavGD = d"]))
 
-        result_table = test_table.combo_by(by=["a"], agg=combo_agg)
+        result_table = test_table.agg_by(agg=combo_agg, by=["a"])
         self.assertEqual(result_table.size, num_distinct_a)

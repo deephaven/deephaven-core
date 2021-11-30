@@ -1,6 +1,0 @@
-{
- "className": "io.deephaven.db.v2.parquet.ParquetSchemaReader$ParquetMessageDefinition",
- "methods": {},
- "path": "io.deephaven.db.v2.parquet.ParquetSchemaReader.ParquetMessageDefinition",
- "typeName": "class"
-}

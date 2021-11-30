@@ -26,7 +26,7 @@ def _map_arrow_type(arrow_type):
         pa.time32('s'): '',
         pa.time32('ms'): '',
         pa.time64('us'): '',
-        pa.time64('ns'): 'io.deephaven.db.tables.utils.DBDateTime',
+        pa.time64('ns'): 'io.deephaven.time.DateTime',
         pa.timestamp('us', tz=None): '',
         pa.timestamp('ns', tz=None): '',
         pa.date32(): 'java.time.LocalDate',
@@ -52,7 +52,7 @@ def _map_arrow_type(arrow_type):
     if not dh_type:
         # if this is a case of timestamp with tz specified
         if isinstance(arrow_type, pa.TimestampType):
-            dh_type = "io.deephaven.db.tables.utils.DBDateTime"
+            dh_type = "io.deephaven.time.DateTime"
 
     if not dh_type:
         raise DHError(f'unsupported arrow data type : {arrow_type}')

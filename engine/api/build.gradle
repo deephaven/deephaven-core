@@ -1,0 +1,36 @@
+plugins {
+    id 'java-library'
+}
+
+description 'Engine API: Engine API module, suitable as a compile-time dependency for most queries'
+
+dependencies {
+    api project(':qst'),
+            project(':engine-chunk'),
+            project(':engine-vector'),
+            project(':engine-time'),
+            project(':engine-updategraph'),
+            project(':engine-rowset')
+
+    implementation 'com.github.f4b6a3:uuid-creator:3.6.0'
+
+    compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
+
+    testImplementation 'junit:junit:4.13.2'
+}
+
+spotless {
+    java {
+        targetExclude(
+                '**/*Boolean*.java',
+                '**/*Byte*.java',
+                '**/*Char*.java',
+                '**/*Short*.java',
+                '**/*Int*.java',
+                '**/*Long*.java',
+                '**/*Float*.java',
+                '**/*Double*.java',
+                '**/*Object*.java',
+        )
+    }
+}

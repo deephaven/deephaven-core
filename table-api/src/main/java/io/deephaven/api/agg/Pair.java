@@ -19,14 +19,9 @@ public interface Pair extends Serializable {
     }
 
     static Pair parse(String x) {
-        if (ColumnName.isValidParsedColumnName(x)) {
-            return ColumnName.parse(x);
-        }
         final int ix = x.indexOf('=');
         if (ix < 0) {
-            throw new IllegalArgumentException(String.format(
-                    "Unable to parse agg pair '%s', expected form '<inAndOut>' or '<output>=<input>'",
-                    x));
+            return ColumnName.parse(x);
         }
         ColumnName output = ColumnName.parse(x.substring(0, ix));
         ColumnName input = ColumnName.parse(x.substring(ix + 1));

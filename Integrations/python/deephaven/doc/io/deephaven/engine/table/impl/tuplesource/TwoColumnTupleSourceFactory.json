@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.table.impl.tuplesource.TwoColumnTupleSourceFactory",
+ "methods": {
+  "create": "Create a TupleSource of the appropriate type.\n\n:param columnSource1: (io.deephaven.engine.table.ColumnSource<TwoColumnTupleSourceFactory.COLUMN_SOURCE_1_TYPE>) - The first column source\n:param columnSource2: (io.deephaven.engine.table.ColumnSource<TwoColumnTupleSourceFactory.COLUMN_SOURCE_2_TYPE>) - The second column source\n:return: (io.deephaven.engine.table.TupleSource<TwoColumnTupleSourceFactory.TUPLE_TYPE>) The new tuple factory"
+ },
+ "path": "io.deephaven.engine.table.impl.tuplesource.TwoColumnTupleSourceFactory",
+ "text": "TupleSource factory for two column sources.",
+ "typeName": "interface"
+}

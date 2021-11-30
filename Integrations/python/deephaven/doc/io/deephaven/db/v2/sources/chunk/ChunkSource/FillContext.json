@@ -1,7 +1,0 @@
-{
- "className": "io.deephaven.db.v2.sources.chunk.ChunkSource$FillContext",
- "methods": {},
- "path": "io.deephaven.db.v2.sources.chunk.ChunkSource.FillContext",
- "text": "Marker interface for Contexts that are used in\n ChunkSource.fillChunk(FillContext, WritableChunk, OrderedKeys).",
- "typeName": "interface"
-}

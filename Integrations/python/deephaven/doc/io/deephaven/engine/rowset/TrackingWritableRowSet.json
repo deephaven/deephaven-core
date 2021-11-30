@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.rowset.TrackingWritableRowSet",
+ "methods": {
+  "initializePreviousValue": "Initializes our previous value from the current value.\n \n This call is used by operations that manipulate a TrackingWritableRowSet while constructing it, but need to set\n the state at the end of the initial operation to the current state.\n \n Calling this in other circumstances will yield undefined results."
+ },
+ "path": "io.deephaven.engine.rowset.TrackingWritableRowSet",
+ "text": "Tracking, writable RowSet.",
+ "typeName": "interface"
+}

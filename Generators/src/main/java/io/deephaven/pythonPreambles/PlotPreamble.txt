@@ -35,7 +35,7 @@ def _defineSymbols():
     global _plotting_convenience_
     if _plotting_convenience_ is None:
         # an exception will be raised if not in the jvm classpath
-        _plotting_convenience_ = jpy.get_type("io.deephaven.db.plot.PlottingConvenience")
+        _plotting_convenience_ = jpy.get_type("io.deephaven.plot.PlottingConvenience")
 
 
 @wrapt.decorator
@@ -72,6 +72,6 @@ def colorTable():
             .updateView("Colors = colorNames()") \
             .ungroup() \
             .updateView("Paint = io.deephaven.gui.color.Color.color(Colors).javaColor()") \
-            .formatColumns("Colors = io.deephaven.db.util.DBColorUtil.bgfga(Paint.getRed(), Paint.getGreen(), Paint.getBlue())") \
+            .formatColumns("Colors = io.deephaven.engine.util.ColorUtil.bgfga(Paint.getRed(), Paint.getGreen(), Paint.getBlue())") \
             .dropColumns("Paint")
 

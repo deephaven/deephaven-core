@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.engine.table.impl.lang.QueryLanguageParser$VisitArgs",
+ "methods": {
+  "append": "Convenience method: forwards argument to 'builder' if 'builder' is not null\n\n*Overload 1*  \n  :param s: java.lang.String\n  :return: io.deephaven.engine.table.impl.lang.QueryLanguageParser.VisitArgs\n  \n*Overload 2*  \n  :param c: char\n  :return: io.deephaven.engine.table.impl.lang.QueryLanguageParser.VisitArgs\n  \n*Overload 3*  \n  :param va: io.deephaven.engine.table.impl.lang.QueryLanguageParser.VisitArgs\n  :return: io.deephaven.engine.table.impl.lang.QueryLanguageParser.VisitArgs",
+  "cloneWithCastingContext": ":param pythonCastContext: java.lang.Class<?>\n:return: io.deephaven.engine.table.impl.lang.QueryLanguageParser.VisitArgs",
+  "create": ":return: io.deephaven.engine.table.impl.lang.QueryLanguageParser.VisitArgs",
+  "hasStringBuilder": ":return: boolean"
+ },
+ "path": "io.deephaven.engine.table.impl.lang.QueryLanguageParser.VisitArgs",
+ "typeName": "class"
+}

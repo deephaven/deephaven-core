@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.engine.util.NullSafeAddition",
+ "methods": {
+  "minusLong": ":param a: long\n:param b: long\n:return: long",
+  "plusDouble": ":param a: double\n:param b: double\n:return: double",
+  "plusLong": ":param a: long\n:param b: long\n:return: long"
+ },
+ "path": "io.deephaven.engine.util.NullSafeAddition",
+ "typeName": "class"
+}

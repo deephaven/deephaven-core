@@ -1,10 +1,20 @@
 {
  "className": "io.deephaven.client.impl.FieldAdapter",
  "methods": {
-  "of": "**Incompatible overloads text - text from the first overload:**\n\nConvert a column into a FieldVector.\n\n*Overload 1*  \n  :param column: (io.deephaven.qst.column.Column<?>) - the column\n  :param allocator: (org.apache.arrow.memory.BufferAllocator) - the allocator\n  :return: (org.apache.arrow.vector.FieldVector) the field vector\n  \n*Overload 2*  \n  :param name: (java.lang.String) - the column name\n  :param array: (io.deephaven.qst.array.Array<?>) - the array\n  :param allocator: (org.apache.arrow.memory.BufferAllocator) - the allocator\n  :return: (org.apache.arrow.vector.FieldVector) the field vector",
-  "visit": "*Overload 1*  \n  :param primitive: io.deephaven.qst.array.PrimitiveArray<?>\n  \n*Overload 2*  \n  :param generic: io.deephaven.qst.array.GenericArray<?>\n  \n*Overload 3*  \n  :param byteArray: io.deephaven.qst.array.ByteArray\n  \n*Overload 4*  \n  :param booleanArray: io.deephaven.qst.array.BooleanArray\n  \n*Overload 5*  \n  :param charArray: io.deephaven.qst.array.CharArray\n  \n*Overload 6*  \n  :param shortArray: io.deephaven.qst.array.ShortArray\n  \n*Overload 7*  \n  :param intArray: io.deephaven.qst.array.IntArray\n  \n*Overload 8*  \n  :param longArray: io.deephaven.qst.array.LongArray\n  \n*Overload 9*  \n  :param floatArray: io.deephaven.qst.array.FloatArray\n  \n*Overload 10*  \n  :param doubleArray: io.deephaven.qst.array.DoubleArray"
+  "booleanField": ":param name: java.lang.String\n:return: org.apache.arrow.vector.types.pojo.Field",
+  "byteField": ":param name: java.lang.String\n:return: org.apache.arrow.vector.types.pojo.Field",
+  "charField": ":param name: java.lang.String\n:return: org.apache.arrow.vector.types.pojo.Field",
+  "doubleField": ":param name: java.lang.String\n:return: org.apache.arrow.vector.types.pojo.Field",
+  "floatField": ":param name: java.lang.String\n:return: org.apache.arrow.vector.types.pojo.Field",
+  "instantField": ":param name: java.lang.String\n:return: org.apache.arrow.vector.types.pojo.Field",
+  "intField": ":param name: java.lang.String\n:return: org.apache.arrow.vector.types.pojo.Field",
+  "longField": ":param name: java.lang.String\n:return: org.apache.arrow.vector.types.pojo.Field",
+  "of": "Convert a header into a Field.\n\n:param header: (io.deephaven.qst.column.header.ColumnHeader<?>) - the header\n:return: (org.apache.arrow.vector.types.pojo.Field) the field",
+  "shortField": ":param name: java.lang.String\n:return: org.apache.arrow.vector.types.pojo.Field",
+  "stringField": ":param name: java.lang.String\n:return: org.apache.arrow.vector.types.pojo.Field",
+  "visit": "*Overload 1*  \n  :param primitive: io.deephaven.qst.type.PrimitiveType<?>\n  \n*Overload 2*  \n  :param generic: io.deephaven.qst.type.GenericType<?>\n  \n*Overload 3*  \n  :param byteType: io.deephaven.qst.type.ByteType\n  \n*Overload 4*  \n  :param booleanType: io.deephaven.qst.type.BooleanType\n  \n*Overload 5*  \n  :param charType: io.deephaven.qst.type.CharType\n  \n*Overload 6*  \n  :param shortType: io.deephaven.qst.type.ShortType\n  \n*Overload 7*  \n  :param intType: io.deephaven.qst.type.IntType\n  \n*Overload 8*  \n  :param longType: io.deephaven.qst.type.LongType\n  \n*Overload 9*  \n  :param floatType: io.deephaven.qst.type.FloatType\n  \n*Overload 10*  \n  :param doubleType: io.deephaven.qst.type.DoubleType"
  },
  "path": "io.deephaven.client.impl.FieldAdapter",
- "text": "Utilities for creating FieldVector.",
+ "text": "Utilities for creating a Field.",
  "typeName": "class"
 }

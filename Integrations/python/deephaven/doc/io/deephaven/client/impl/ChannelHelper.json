@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.client.impl.ChannelHelper",
+ "methods": {
+  "channel": ":param target: io.deephaven.uri.DeephavenTarget\n:return: io.grpc.ManagedChannel",
+  "channelBuilder": ":param target: io.deephaven.uri.DeephavenTarget\n:return: io.grpc.ManagedChannelBuilder<?>",
+  "port": ":param target: io.deephaven.uri.DeephavenTarget\n:return: int"
+ },
+ "path": "io.deephaven.client.impl.ChannelHelper",
+ "typeName": "class"
+}

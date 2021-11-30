@@ -1,0 +1,20 @@
+{
+ "className": "io.deephaven.chunk.ResettableWritableChunk",
+ "methods": {
+  "asResettableWritableBooleanChunk": ":return: io.deephaven.chunk.ResettableWritableBooleanChunk<ResettableWritableChunk.ATTR_BASE>",
+  "asResettableWritableByteChunk": ":return: io.deephaven.chunk.ResettableWritableByteChunk<ResettableWritableChunk.ATTR_BASE>",
+  "asResettableWritableCharChunk": ":return: io.deephaven.chunk.ResettableWritableCharChunk<ResettableWritableChunk.ATTR_BASE>",
+  "asResettableWritableDoubleChunk": ":return: io.deephaven.chunk.ResettableWritableDoubleChunk<ResettableWritableChunk.ATTR_BASE>",
+  "asResettableWritableFloatChunk": ":return: io.deephaven.chunk.ResettableWritableFloatChunk<ResettableWritableChunk.ATTR_BASE>",
+  "asResettableWritableIntChunk": ":return: io.deephaven.chunk.ResettableWritableIntChunk<ResettableWritableChunk.ATTR_BASE>",
+  "asResettableWritableLongChunk": ":return: io.deephaven.chunk.ResettableWritableLongChunk<ResettableWritableChunk.ATTR_BASE>",
+  "asResettableWritableObjectChunk": "Note: Java generics information - <T>\n\n:return: io.deephaven.chunk.ResettableWritableObjectChunk<T,ResettableWritableChunk.ATTR_BASE>",
+  "asResettableWritableShortChunk": ":return: io.deephaven.chunk.ResettableWritableShortChunk<ResettableWritableChunk.ATTR_BASE>",
+  "clear": "Reset this chunk to empty storage.\n\nNote: Java generics information - <ATTR extends ResettableWritableChunk.ATTR_BASE>\n\n:return: io.deephaven.chunk.WritableChunk<ATTR>",
+  "resetFromArray": "**Incompatible overloads text - text from the first overload:**\n\nReset the data and bounds of this chunk to a range or sub-range of the specified array.\n\n*Overload 1*  \n  Note: Java generics information - <ATTR extends ResettableWritableChunk.ATTR_BASE>\n  \n  :param array: (java.lang.Object) - The array\n  :param offset: (int) - The offset into array\n  :param capacity: (int) - The capacity this should have after reset\n  :return: (io.deephaven.chunk.WritableChunk<ATTR>) this\n  \n*Overload 2*  \n  Note: Java generics information - <ATTR extends ResettableWritableChunk.ATTR_BASE>\n  \n  :param array: (java.lang.Object) - The array\n  :return: (io.deephaven.chunk.WritableChunk<ATTR>) this",
+  "resetFromChunk": "Reset the data and bounds of this chunk to a range or sub-range of the specified WritableChunk.\n\nNote: Java generics information - <ATTR extends ResettableWritableChunk.ATTR_BASE>\n\n:param other: (io.deephaven.chunk.WritableChunk<ATTR>) - The other WritableChunk\n:param offset: (int) - The offset into other\n:param capacity: (int) - The capacity this should have after reset\n:return: (io.deephaven.chunk.WritableChunk<ATTR>) this"
+ },
+ "path": "io.deephaven.chunk.ResettableWritableChunk",
+ "text": "WritableChunk that may have its backing storage reset to a slice of that belonging to another\n WritableChunk or a native array.",
+ "typeName": "interface"
+}

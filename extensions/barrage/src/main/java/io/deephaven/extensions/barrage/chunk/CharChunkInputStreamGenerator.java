@@ -5,16 +5,16 @@
 package io.deephaven.extensions.barrage.chunk;
 
 import gnu.trove.iterator.TLongIterator;
+import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
-import io.deephaven.db.v2.sources.chunk.CharChunk;
 import com.google.common.io.LittleEndianDataOutputStream;
 import io.deephaven.UncheckedDeephavenException;
-import io.deephaven.db.util.LongSizedDataStructure;
-import io.deephaven.db.v2.sources.chunk.Attributes;
-import io.deephaven.db.v2.sources.chunk.Chunk;
-import io.deephaven.db.v2.sources.chunk.WritableCharChunk;
-import io.deephaven.db.v2.sources.chunk.WritableLongChunk;
-import io.deephaven.db.v2.utils.Index;
+import io.deephaven.util.datastructures.LongSizedDataStructure;
+import io.deephaven.chunk.CharChunk;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.WritableCharChunk;
+import io.deephaven.chunk.WritableLongChunk;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.DataInput;
@@ -24,20 +24,20 @@ import java.util.Iterator;
 
 import static io.deephaven.util.QueryConstants.*;
 
-public class CharChunkInputStreamGenerator extends BaseChunkInputStreamGenerator<CharChunk<Attributes.Values>> {
+public class CharChunkInputStreamGenerator extends BaseChunkInputStreamGenerator<CharChunk<Values>> {
     private static final String DEBUG_NAME = "CharChunkInputStreamGenerator";
 
-    CharChunkInputStreamGenerator(final CharChunk<Attributes.Values> chunk, final int elementSize) {
+    CharChunkInputStreamGenerator(final CharChunk<Values> chunk, final int elementSize) {
         super(chunk, elementSize);
     }
 
     @Override
-    public DrainableColumn getInputStream(final BarrageSubscriptionOptions options, final @Nullable Index subset) {
+    public DrainableColumn getInputStream(final BarrageSubscriptionOptions options, final @Nullable RowSet subset) {
         return new CharChunkInputStream(options, subset);
     }
 
     private class CharChunkInputStream extends BaseChunkInputStream {
-        private CharChunkInputStream(final BarrageSubscriptionOptions options, final Index subset) {
+        private CharChunkInputStream(final BarrageSubscriptionOptions options, final RowSet subset) {
             super(chunk, options, subset);
         }
 
@@ -50,7 +50,7 @@ public class CharChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
             }
             if (cachedNullCount == -1) {
                 cachedNullCount = 0;
-                subset.forAllLongs(row -> {
+                subset.forAllRowKeys(row -> {
                     if (chunk.get((int) row) == NULL_CHAR) {
                         ++cachedNullCount;
                     }
@@ -98,7 +98,7 @@ public class CharChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
                     context.accumulator = 0;
                     context.count = 0;
                 };
-                subset.forAllLongs(row -> {
+                subset.forAllRowKeys(row -> {
                     if (chunk.get((int) row) != NULL_CHAR) {
                         context.accumulator |= 1L << context.count;
                     }
@@ -114,7 +114,7 @@ public class CharChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
             }
 
                 // write the included values
-                subset.forAllLongs(row -> {
+                subset.forAllRowKeys(row -> {
                     try {
                         final char val = chunk.get((int) row);
                         dos.writeChar(val);
@@ -139,7 +139,7 @@ public class CharChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
         CharConversion IDENTITY = (char a) -> a;
     }
 
-    static Chunk<Attributes.Values> extractChunkFromInputStream(
+    static Chunk<Values> extractChunkFromInputStream(
             final int elementSize,
             final BarrageSubscriptionOptions options,
             final Iterator<FieldNodeInfo> fieldNodeIter,
@@ -149,7 +149,7 @@ public class CharChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
                 elementSize, options, CharConversion.IDENTITY, fieldNodeIter, bufferInfoIter, is);
     }
 
-    static Chunk<Attributes.Values> extractChunkFromInputStreamWithConversion(
+    static Chunk<Values> extractChunkFromInputStreamWithConversion(
             final int elementSize,
             final BarrageSubscriptionOptions options,
             final CharConversion conversion,
@@ -161,14 +161,14 @@ public class CharChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
         final long validityBuffer = bufferInfoIter.next();
         final long payloadBuffer = bufferInfoIter.next();
 
-        final WritableCharChunk<Attributes.Values> chunk = WritableCharChunk.makeWritableChunk(nodeInfo.numElements);
+        final WritableCharChunk<Values> chunk = WritableCharChunk.makeWritableChunk(nodeInfo.numElements);
 
         if (nodeInfo.numElements == 0) {
             return chunk;
         }
 
         final int numValidityLongs = options.useDeephavenNulls() ? 0 : (nodeInfo.numElements + 63) / 64;
-        try (final WritableLongChunk<Attributes.Values> isValid = WritableLongChunk.makeWritableChunk(numValidityLongs)) {
+        try (final WritableLongChunk<Values> isValid = WritableLongChunk.makeWritableChunk(numValidityLongs)) {
             if (options.useDeephavenNulls() && validityBuffer != 0) {
                 throw new IllegalStateException("validity buffer is non-empty, but is unnecessary");
             }

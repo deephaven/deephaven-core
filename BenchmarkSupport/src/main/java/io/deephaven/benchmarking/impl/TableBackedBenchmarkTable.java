@@ -1,6 +1,6 @@
 package io.deephaven.benchmarking.impl;
 
-import io.deephaven.db.tables.Table;
+import io.deephaven.engine.table.Table;
 import io.deephaven.benchmarking.generator.ColumnGenerator;
 
 import java.io.File;

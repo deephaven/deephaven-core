@@ -35,14 +35,12 @@ class TableTestCase(BaseTestCase):
     def test_time_table(self):
         t = time_table("00:00:01")
         self.assertEqual(1, len(t.columns))
-        sleep(2)
-        self.assertLessEqual(2, t.size)
-        self.assertLessEqual(2, len(t.to_string(num_rows=20).split("\n")))
+        self.assertTrue(t.is_refreshing)
 
         t = time_table("00:00:01", start_time="2021-11-06T13:21:00 NY")
-        start_size = t.size
-        sleep(2)
-        self.assertLess(start_size, t.size)
+        self.assertEqual(1, len(t.columns))
+        self.assertTrue(t.is_refreshing)
+        self.assertEqual("2021-11-06T13:21:00.000000000 NY", t._j_table.getColumnSource("Timestamp").get(0).toString())
 
     def test_repr(self):
         print(self.test_table)
@@ -122,9 +120,6 @@ class TableTestCase(BaseTestCase):
     def test_where(self):
         filtered_table = self.test_table.where(filters=["a > 10", "b < 100"])
         self.assertLessEqual(filtered_table.size, self.test_table.size)
-
-        filtered_table = self.test_table.where()
-        self.assertEqual(filtered_table.size, self.test_table.size)
 
         with self.assertRaises(DHError) as cm:
             filtered_table = self.test_table.where(filters="a > 10")
@@ -236,14 +231,12 @@ class TableTestCase(BaseTestCase):
             result_table = op(self.test_table, num_rows=1, by=["a"])
             self.assertLessEqual(result_table.size, self.test_table.size)
 
-    @unittest.skip("Wait for the completion of Ryan's db reorg project.")
     def test_group_by(self):
         grouped_table = self.test_table.group_by(by=["a", "c"])
         self.assertLessEqual(grouped_table.size, self.test_table.size)
         grouped_table = self.test_table.group_by()
         self.assertLessEqual(grouped_table.size, 1)
 
-    @unittest.skip("Wait for the completion of Ryan's db reorg project.")
     def test_ungroup(self):
         grouped_table = self.test_table.group_by(by=["a", "c"])
         ungrouped_table = grouped_table.ungroup(cols=["b"])
@@ -267,16 +260,15 @@ class TableTestCase(BaseTestCase):
         result_table = self.test_table.count_by(col="b", by=["a"])
         self.assertEqual(result_table.size, num_distinct_a)
 
-    @unittest.skip("Wait for the completion of Ryan's db reorg project.")
-    def test_combo_agg(self):
+    def test_agg_by(self):
         num_distinct_a = self.test_table.select_distinct(cols=["a"]).size
 
-        combo_agg = [sum_(cols=["SumC=c"]),
-                     avg(cols=["AvgB = b", "AvgD = d"]),
-                     pct(percentile=0.5, cols=["PctC = c"]),
-                     weighted_avg(wcol="d", cols=["WavGD = d"])]
+        aggs = [sum_(cols=["SumC=c"]),
+                avg(cols=["AvgB = b", "AvgD = d"]),
+                pct(percentile=0.5, cols=["PctC = c"]),
+                weighted_avg(wcol="d", cols=["WavGD = d"])]
 
-        result_table = self.test_table.combo_by(aggs=combo_agg, by=["a"])
+        result_table = self.test_table.agg_by(aggs=aggs, by=["a"])
         self.assertEqual(result_table.size, num_distinct_a)
 
 

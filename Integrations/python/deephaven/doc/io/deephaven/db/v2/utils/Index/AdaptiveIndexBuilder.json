@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.db.v2.utils.Index$AdaptiveIndexBuilder",
- "methods": {
-  "getIndex": ":return: io.deephaven.db.v2.utils.Index"
- },
- "path": "io.deephaven.db.v2.utils.Index.AdaptiveIndexBuilder",
- "typeName": "class"
-}

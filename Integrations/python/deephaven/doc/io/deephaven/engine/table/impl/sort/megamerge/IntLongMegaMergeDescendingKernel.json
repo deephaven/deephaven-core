@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.table.impl.sort.megamerge.IntLongMegaMergeDescendingKernel",
+ "methods": {
+  "createContext": "Note: Java generics information - <ATTR extends io.deephaven.chunk.attributes.Any,\nKEY_INDICES extends io.deephaven.chunk.attributes.Indices>\n\n:return: io.deephaven.engine.table.impl.sort.megamerge.IntLongMegaMergeDescendingKernel.IntLongMegaMergeDescendingKernelContext<ATTR,KEY_INDICES>",
+  "merge": "Note: Java generics information - <ATTR extends io.deephaven.chunk.attributes.Any,\nKEY_INDICES extends io.deephaven.chunk.attributes.Indices>\n\n:param destinationKeys: io.deephaven.engine.table.impl.sources.LongArraySource\n:param destinationValues: io.deephaven.engine.table.impl.sources.IntegerArraySource\n:param destinationOffset: long\n:param destinationSize: long\n:param keysChunk: io.deephaven.chunk.LongChunk<KEY_INDICES>\n:param valuesChunk: io.deephaven.chunk.IntChunk<ATTR>"
+ },
+ "path": "io.deephaven.engine.table.impl.sort.megamerge.IntLongMegaMergeDescendingKernel",
+ "typeName": "class"
+}

@@ -1,0 +1,14 @@
+{
+ "className": "io.deephaven.engine.util.file.TrackedSeekableByteChannel",
+ "methods": {
+  "isOpen": ":return: boolean",
+  "position": "*Overload 1*  \n  :return: long\n  \n*Overload 2*  \n  :param newPosition: long\n  :return: java.nio.channels.SeekableByteChannel",
+  "read": ":param destination: java.nio.ByteBuffer\n:return: int",
+  "size": ":return: long",
+  "truncate": ":param size: long\n:return: java.nio.channels.SeekableByteChannel",
+  "write": ":param source: java.nio.ByteBuffer\n:return: int"
+ },
+ "path": "io.deephaven.engine.util.file.TrackedSeekableByteChannel",
+ "text": "SeekableByteChannel wrapper around FileHandle with support for re-opening the handle in case it\n has been closed asynchronously.\n Note the applications must be sure to use read(ByteBuffer), write(ByteBuffer), and\n position(long) in a thread safe manner, using external synchronization or other means.",
+ "typeName": "class"
+}

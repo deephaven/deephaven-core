@@ -1,6 +1,6 @@
 package io.deephaven.benchmarking.generator;
 
-import io.deephaven.db.tables.ColumnDefinition;
+import io.deephaven.engine.table.ColumnDefinition;
 
 /**
  * The basic implementation of a {@link ColumnGenerator<String>}.

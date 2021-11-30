@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.table.impl.sources.regioned.ColumnRegionFloat$Constant",
+ "methods": {
+  "fillChunkAppend": "Appends the values repeating value length times to destination.\n\n:param context: io.deephaven.engine.table.ChunkSource.FillContext\n:param destination: io.deephaven.chunk.WritableChunk<? superColumnRegionFloat.Constant.ATTR>\n:param length: int",
+  "getFloat": "Get a single float from this region.\n\n:param elementIndex: (long) - Element row key in the table's address space\n:return: (float) The float value at the specified element row key"
+ },
+ "path": "io.deephaven.engine.table.impl.sources.regioned.ColumnRegionFloat.Constant",
+ "typeName": "class"
+}

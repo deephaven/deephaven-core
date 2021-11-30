@@ -2,7 +2,7 @@ package io.deephaven.lang.completion
 
 import groovy.transform.CompileDynamic
 import groovy.transform.CompileStatic
-import io.deephaven.db.util.VariableProvider
+import io.deephaven.engine.util.VariableProvider
 import io.deephaven.io.logger.Logger
 import io.deephaven.lang.generated.Node
 import io.deephaven.lang.generated.Token

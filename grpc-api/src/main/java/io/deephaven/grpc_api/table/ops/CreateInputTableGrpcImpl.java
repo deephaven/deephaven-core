@@ -2,10 +2,10 @@ package io.deephaven.grpc_api.table.ops;
 
 import com.google.rpc.Code;
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.db.tables.Table;
-import io.deephaven.db.tables.TableDefinition;
-import io.deephaven.db.v2.utils.AppendOnlyArrayBackedMutableTable;
-import io.deephaven.db.v2.utils.KeyedArrayBackedMutableTable;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.impl.util.AppendOnlyArrayBackedMutableTable;
+import io.deephaven.engine.table.impl.util.KeyedArrayBackedMutableTable;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.grpc_api.session.SessionState;

@@ -9,7 +9,8 @@
   "iterator": ":return: java.util.Iterator<io.deephaven.qst.column.header.ColumnHeader<?>>",
   "numColumns": ":return: int",
   "of": "*Overload 1*  \n  :param headers: io.deephaven.qst.column.header.ColumnHeader<?>...\n  :return: io.deephaven.qst.table.TableHeader\n  \n*Overload 2*  \n  :param headers: java.lang.Iterable<io.deephaven.qst.column.header.ColumnHeader<?>>\n  :return: io.deephaven.qst.table.TableHeader",
-  "spliterator": ":return: java.util.Spliterator<io.deephaven.qst.column.header.ColumnHeader<?>>"
+  "spliterator": ":return: java.util.Spliterator<io.deephaven.qst.column.header.ColumnHeader<?>>",
+  "walk": "Note: Java generics information - <V extends io.deephaven.qst.table.TableSchema.Visitor>\n\n:param visitor: V\n:return: V"
  },
  "path": "io.deephaven.qst.table.TableHeader",
  "text": "A table header is a list of column headers. Each column header will have a distinct name.",

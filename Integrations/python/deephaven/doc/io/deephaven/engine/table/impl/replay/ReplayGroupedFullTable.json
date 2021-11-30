@@ -1,0 +1,6 @@
+{
+ "className": "io.deephaven.engine.table.impl.replay.ReplayGroupedFullTable",
+ "methods": {},
+ "path": "io.deephaven.engine.table.impl.replay.ReplayGroupedFullTable",
+ "typeName": "class"
+}

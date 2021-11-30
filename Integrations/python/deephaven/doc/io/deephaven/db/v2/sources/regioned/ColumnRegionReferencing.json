@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.db.v2.sources.regioned.ColumnRegionReferencing",
- "methods": {
-  "getChunkType": "Get the most suitable ChunkType for use with this ChunkSource.\n\n:return: (io.deephaven.db.v2.sources.chunk.ChunkType) The ChunkType",
-  "getReferencedRegion": ":return: ColumnRegionReferencing.REFERENCED_COLUMN_REGION"
- },
- "path": "io.deephaven.db.v2.sources.regioned.ColumnRegionReferencing",
- "typeName": "interface"
-}

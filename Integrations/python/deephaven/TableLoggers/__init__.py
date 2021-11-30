@@ -34,7 +34,7 @@ def _defineSymbols():
     global _java_type_
     if _java_type_ is None:
         # This will raise an exception if the desired object is not the classpath
-        _java_type_ = jpy.get_type("io.deephaven.db.v2.utils.TableLoggers")
+        _java_type_ = jpy.get_type("io.deephaven.engine.table.impl.util.TableLoggers")
 
 
 # every module method should be decorated with @_passThrough
@@ -66,7 +66,7 @@ def processInfoLog():
     """
     Return a static table with process information for the current engine process.
     
-    :return: (io.deephaven.db.v2.QueryTable) A table with process information for the current engine process.
+    :return: (io.deephaven.engine.table.impl.QueryTable) A table with process information for the current engine process.
     """
     
     return _java_type_.processInfoLog()
@@ -77,7 +77,7 @@ def processMemoryLog():
     """
     Return a table with process memory utilization and garbage collection data.
     
-    :return: (io.deephaven.db.v2.QueryTable) A table with memory and GC data.
+    :return: (io.deephaven.engine.table.impl.QueryTable) A table with memory and GC data.
     """
     
     return _java_type_.processMemoryLog()
@@ -88,7 +88,7 @@ def processMetricsLog():
     """
     Return a table with metrics collected for the current engine process.
     
-    :return: (io.deephaven.db.v2.QueryTable) A table with metrics fopr the current engine process.
+    :return: (io.deephaven.engine.table.impl.QueryTable) A table with metrics fopr the current engine process.
     """
     
     return _java_type_.processMetricsLog()
@@ -99,7 +99,7 @@ def queryOperationPerformanceLog():
     """
     Return a table with individual subquery performance data.
     
-    :return: (io.deephaven.db.v2.QueryTable) A table with subquery performance data.
+    :return: (io.deephaven.engine.table.impl.QueryTable) A table with subquery performance data.
     """
     
     return _java_type_.queryOperationPerformanceLog()
@@ -111,7 +111,7 @@ def queryPerformanceLog():
     Return a table with query performance data. Individual sub-operations in the query are referenced in
      QueryOperationPerformanceLog.
     
-    :return: (io.deephaven.db.v2.QueryTable) A table with query performance data.
+    :return: (io.deephaven.engine.table.impl.QueryTable) A table with query performance data.
     """
     
     return _java_type_.queryPerformanceLog()
@@ -124,7 +124,7 @@ def updatePerformanceLog():
     
      Note this table will only tick if/since startUpdatePerformanceLog is called.
     
-    :return: (io.deephaven.db.v2.QueryTable) A table with update performance data.
+    :return: (io.deephaven.engine.table.impl.QueryTable) A table with update performance data.
     """
     
     return _java_type_.updatePerformanceLog()

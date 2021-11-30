@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.db.v2.NotificationStepSource",
- "methods": {
-  "getLastNotificationStep": "Get the last logical clock step on which this element dispatched a notification.\n\n:return: (long) The last notification step"
- },
- "path": "io.deephaven.db.v2.NotificationStepSource",
- "text": "Elements of a Deephaven query DAG that can supply their notification step.",
- "typeName": "interface"
-}

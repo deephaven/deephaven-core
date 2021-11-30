@@ -1,9 +1,11 @@
 {
  "className": "io.deephaven.proto.backplane.grpc.TableServiceGrpc",
  "methods": {
+  "getApplyPreviewColumnsMethod": ":return: io.grpc.MethodDescriptor<io.deephaven.proto.backplane.grpc.ApplyPreviewColumnsRequest,io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse>",
   "getAsOfJoinTablesMethod": ":return: io.grpc.MethodDescriptor<io.deephaven.proto.backplane.grpc.AsOfJoinTablesRequest,io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse>",
   "getBatchMethod": ":return: io.grpc.MethodDescriptor<io.deephaven.proto.backplane.grpc.BatchTableRequest,io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse>",
   "getComboAggregateMethod": ":return: io.grpc.MethodDescriptor<io.deephaven.proto.backplane.grpc.ComboAggregateRequest,io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse>",
+  "getCreateInputTableMethod": ":return: io.grpc.MethodDescriptor<io.deephaven.proto.backplane.grpc.CreateInputTableRequest,io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse>",
   "getCrossJoinTablesMethod": ":return: io.grpc.MethodDescriptor<io.deephaven.proto.backplane.grpc.CrossJoinTablesRequest,io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse>",
   "getDropColumnsMethod": ":return: io.grpc.MethodDescriptor<io.deephaven.proto.backplane.grpc.DropColumnsRequest,io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse>",
   "getEmptyTableMethod": ":return: io.grpc.MethodDescriptor<io.deephaven.proto.backplane.grpc.EmptyTableRequest,io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse>",

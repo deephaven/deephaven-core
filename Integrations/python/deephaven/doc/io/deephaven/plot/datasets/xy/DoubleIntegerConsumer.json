@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.plot.datasets.xy.DoubleIntegerConsumer",
+ "methods": {
+  "accept": ":param a: double\n:param b: int"
+ },
+ "path": "io.deephaven.plot.datasets.xy.DoubleIntegerConsumer",
+ "typeName": "interface"
+}

@@ -1,13 +1,13 @@
 package io.deephaven.treetable;
 
-import io.deephaven.db.v2.sources.AbstractColumnSource;
-import io.deephaven.db.v2.sources.ImmutableColumnSourceGetDefaults;
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.impl.AbstractColumnSource;
+import io.deephaven.engine.table.impl.ImmutableColumnSourceGetDefaults;
 
 import java.util.BitSet;
 
 /**
- * A {@link io.deephaven.db.v2.sources.ColumnSource} wrapping a bitset. It does not support previous values and is
- * immutable.
+ * A {@link ColumnSource} wrapping a bitset. It does not support previous values and is immutable.
  *
  * @implNote This is intended only for use with {@link TreeSnapshotQuery}.
  */

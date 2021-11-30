@@ -1,6 +1,0 @@
-{
- "className": "io.deephaven.db.v2.select.codegen.JavaKernelBuilder$Result",
- "methods": {},
- "path": "io.deephaven.db.v2.select.codegen.JavaKernelBuilder.Result",
- "typeName": "class"
-}

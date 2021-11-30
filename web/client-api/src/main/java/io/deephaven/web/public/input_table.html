@@ -50,7 +50,7 @@
     await ide.runCode(`
 from deephaven.TableTools import emptyTable
 import jpy
-KeyedArrayBackedMutableTable = jpy.get_type('io.deephaven.db.v2.utils.KeyedArrayBackedMutableTable')
+KeyedArrayBackedMutableTable = jpy.get_type('io.deephaven.engine.table.impl.util.KeyedArrayBackedMutableTable')
 remoteTable = KeyedArrayBackedMutableTable.make(emptyTable(0).updateView('id=0', 'data=""'), 'id')
     `)
 

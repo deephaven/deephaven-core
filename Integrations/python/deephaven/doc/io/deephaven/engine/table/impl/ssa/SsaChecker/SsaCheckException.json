@@ -1,0 +1,6 @@
+{
+ "className": "io.deephaven.engine.table.impl.ssa.SsaChecker$SsaCheckException",
+ "methods": {},
+ "path": "io.deephaven.engine.table.impl.ssa.SsaChecker.SsaCheckException",
+ "typeName": "class"
+}

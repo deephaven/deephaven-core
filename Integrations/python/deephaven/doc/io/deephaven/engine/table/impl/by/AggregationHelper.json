@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.engine.table.impl.by.AggregationHelper",
+ "methods": {
+  "by": "*Overload 1*  \n  :param inputTable: io.deephaven.engine.table.impl.QueryTable\n  :param keyColumns: io.deephaven.engine.table.impl.select.SelectColumn...\n  :return: io.deephaven.engine.table.impl.QueryTable\n  \n*Overload 2*  \n  :param aggregationControl: io.deephaven.engine.table.impl.by.AggregationControl\n  :param inputTable: io.deephaven.engine.table.impl.QueryTable\n  :param keyColumns: io.deephaven.engine.table.impl.select.SelectColumn...\n  :return: io.deephaven.engine.table.impl.QueryTable",
+  "partitionBy": "*Overload 1*  \n  :param inputTable: io.deephaven.engine.table.impl.QueryTable\n  :param dropKeyColumns: boolean\n  :param keyColumnNames: java.lang.String...\n  :return: io.deephaven.engine.table.impl.LocalTableMap\n  \n*Overload 2*  \n  :param aggregationControl: io.deephaven.engine.table.impl.by.AggregationControl\n  :param inputTable: io.deephaven.engine.table.impl.QueryTable\n  :param dropKeyColumns: boolean\n  :param keyColumnNames: java.lang.String...\n  :return: io.deephaven.engine.table.impl.LocalTableMap"
+ },
+ "path": "io.deephaven.engine.table.impl.by.AggregationHelper",
+ "text": "Implementation for chunk-oriented aggregation operations, including Table.groupBy(java.util.Collection<? extends io.deephaven.api.Selectable>) and\n Table.partitionBy(boolean, java.lang.String...).",
+ "typeName": "class"
+}

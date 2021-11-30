@@ -1,0 +1,14 @@
+{
+ "className": "io.deephaven.engine.table.impl.by.AggregationFactory$AggregationElement",
+ "methods": {
+  "convert": "**Incompatible overloads text - text from the first overload:**\n\nConverts and the aggregations, only collapsing multi aggregations into single\n elements, leaving singular aggregations as they are.\n\n \n Note: The results will preserve the intended order of the inputs.\n\n*Overload 1*  \n  :param aggregation: (io.deephaven.api.agg.Aggregation) - The aggregation\n  :return: (java.util.List<io.deephaven.engine.table.impl.by.AggregationFactory.AggregationElement>) A list of aggregation elements\n  \n*Overload 2*  \n  :param aggregations: (java.util.Collection<? extendsio.deephaven.api.agg.Aggregation>) - The aggregation\n  :return: (java.util.List<io.deephaven.engine.table.impl.by.AggregationFactory.AggregationElement>) A list of aggregation elements",
+  "forRollup": ":return: io.deephaven.engine.table.impl.by.AggregationFactory.AggregationElement",
+  "getMemoKey": ":return: io.deephaven.engine.table.impl.by.AggregationMemoKey",
+  "getResultPairs": ":return: io.deephaven.engine.table.MatchPair[]",
+  "getSourceColumns": ":return: java.lang.String[]",
+  "getSpec": ":return: io.deephaven.engine.table.impl.by.AggregationSpec",
+  "optimizeAndConvert": "Converts and optimizes the aggregations, collapsing relevant aggregations into single\n elements where applicable.\n\n \n Note: due to the optimization, the aggregation elements may not be in the same order as specified in\n aggregations.\n\n:param aggregations: (java.util.Collection<? extendsio.deephaven.api.agg.Aggregation>) - The aggregation\n:return: (java.util.List<io.deephaven.engine.table.impl.by.AggregationFactory.AggregationElement>) A list of aggregation elements"
+ },
+ "path": "io.deephaven.engine.table.impl.by.AggregationFactory.AggregationElement",
+ "typeName": "interface"
+}

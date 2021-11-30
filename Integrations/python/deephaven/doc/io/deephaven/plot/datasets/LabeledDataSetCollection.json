@@ -1,0 +1,7 @@
+{
+ "className": "io.deephaven.plot.datasets.LabeledDataSetCollection",
+ "methods": {},
+ "path": "io.deephaven.plot.datasets.LabeledDataSetCollection",
+ "text": "Dataset with data point labels.",
+ "typeName": "interface"
+}

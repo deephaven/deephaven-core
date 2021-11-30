@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.qst.table.TableSchema$Visitor",
+ "methods": {
+  "visit": "*Overload 1*  \n  :param spec: io.deephaven.qst.table.TableSpec\n  \n*Overload 2*  \n  :param header: io.deephaven.qst.table.TableHeader"
+ },
+ "path": "io.deephaven.qst.table.TableSchema.Visitor",
+ "typeName": "interface"
+}

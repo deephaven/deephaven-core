@@ -1,0 +1,12 @@
+{
+ "className": "io.deephaven.parquet.table.region.ParquetColumnRegionObject",
+ "methods": {
+  "getDictionaryKeysRegion": ":return: (io.deephaven.engine.table.impl.sources.regioned.ColumnRegionLong<io.deephaven.engine.table.impl.chunkattributes.DictionaryKeys>) A dictionary keys region as specified by ColumnRegionObject.supportsDictionaryFormat(RowSet.SearchIterator)",
+  "getDictionaryValuesRegion": ":return: (io.deephaven.engine.table.impl.sources.regioned.ColumnRegionObject<ParquetColumnRegionObject.DATA_TYPE,ParquetColumnRegionObject.ATTR>) A dictionary values region as specified by ColumnRegionObject.supportsDictionaryFormat(RowSet.SearchIterator)",
+  "getObject": "Get a single object from this region.\n\n:param elementIndex: (long) - Element row key in the table's address space\n:return: (ParquetColumnRegionObject.DATA_TYPE) The object value at the specified element row key",
+  "supportsDictionaryFormat": "Check if this region can expose an alternate form as paired regions of long keys and DATA_TYPE\n values covering all of its row keys in keysToVisit.\n\n Both alternate regions must use the same or smaller row key space as this one. Indices fetched from the\n keys region must represent valid element indices in the values region. Values regions must support\n ColumnRegionObject.gatherDictionaryValuesRowSet(RowSet.SearchIterator, RowSequence.Iterator, RowSetBuilderSequential).\n\n Use ColumnRegionObject.getDictionaryKeysRegion() to access the region of keys and ColumnRegionObject.getDictionaryValuesRegion()\n to access the region of values.\n\n:param keysToVisit: (io.deephaven.engine.rowset.RowSet.SearchIterator) - Iterator positioned at the first relevant row key belonging to this region.\n                    Will be advanced to after this region if true is returned.\n                    No guarantee is made if false is returned.\n:return: (io.deephaven.engine.table.impl.sources.regioned.RegionVisitResult) A RegionVisitResult specifying FAILED if this region cannot supply a dictionary,\n CONTINUE if it can and keysToVisit is not exhausted, and COMPLETE if it can and\n keysToVisit is exhausted"
+ },
+ "path": "io.deephaven.parquet.table.region.ParquetColumnRegionObject",
+ "text": "ColumnRegionObject implementation for regions that support fetching objects from\n column chunk page stores.",
+ "typeName": "class"
+}

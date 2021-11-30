@@ -10,17 +10,17 @@ import com.google.protobuf.ByteStringAccess;
 import com.google.rpc.Code;
 import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.ClassUtil;
-import io.deephaven.db.tables.ColumnDefinition;
-import io.deephaven.db.tables.Table;
-import io.deephaven.db.tables.TableDefinition;
-import io.deephaven.db.tables.select.MatchPair;
-import io.deephaven.db.tables.utils.DBDateTime;
-import io.deephaven.db.tables.utils.NameValidator;
-import io.deephaven.db.util.ColumnFormattingValues;
-import io.deephaven.db.util.config.MutableInputTable;
-import io.deephaven.db.v2.HierarchicalTableInfo;
-import io.deephaven.db.v2.RollupInfo;
-import io.deephaven.db.v2.sources.chunk.ChunkType;
+import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.MatchPair;
+import io.deephaven.time.DateTime;
+import io.deephaven.api.util.NameValidator;
+import io.deephaven.engine.util.ColumnFormattingValues;
+import io.deephaven.engine.util.config.MutableInputTable;
+import io.deephaven.engine.table.impl.HierarchicalTableInfo;
+import io.deephaven.engine.table.impl.RollupInfo;
+import io.deephaven.chunk.ChunkType;
 import io.deephaven.grpc_api.util.MessageHelper;
 import io.deephaven.grpc_api.util.SchemaHelper;
 import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
@@ -80,7 +80,7 @@ public class BarrageUtil {
             BigDecimal.class,
             BigInteger.class,
             String.class,
-            DBDateTime.class,
+            DateTime.class,
             Boolean.class));
 
     public static ByteString schemaBytesFromTable(final Table table) {
@@ -151,7 +151,8 @@ public class BarrageUtil {
 
                 // mark columns to indicate their sources
                 for (final MatchPair matchPair : rollupInfo.getMatchPairs()) {
-                    putMetadata(getExtraMetadata.apply(matchPair.left()), "rollup.sourceColumn", matchPair.right());
+                    putMetadata(getExtraMetadata.apply(matchPair.leftColumn()), "rollup.sourceColumn",
+                            matchPair.rightColumn());
                 }
             }
         }
@@ -254,7 +255,7 @@ public class BarrageUtil {
                 final TimeUnit timestampUnit = timestampType.getUnit();
                 if (tz == null || "UTC".equals(tz)) {
                     if (maybeConvertForTimeUnit(timestampUnit, result, i)) {
-                        return DBDateTime.class;
+                        return DateTime.class;
                     }
                 }
                 throw GrpcUtil.statusRuntimeException(Code.INVALID_ARGUMENT, exMsg +
@@ -284,7 +285,7 @@ public class BarrageUtil {
         public final int nCols;
         public TableDefinition tableDef;
         // a multiplicative factor to apply when reading; useful for eg converting arrow timestamp time units
-        // to the expected nanos value for DBDateTime.
+        // to the expected nanos value for DateTime.
         public int[] conversionFactors;
 
         public ConvertedArrowSchema(final int nCols) {
@@ -469,7 +470,7 @@ public class BarrageUtil {
                         || type == BigInteger.class) {
                     return Types.MinorType.VARBINARY.getType();
                 }
-                if (type == DBDateTime.class) {
+                if (type == DateTime.class) {
                     return NANO_SINCE_EPOCH_TYPE;
                 }
 

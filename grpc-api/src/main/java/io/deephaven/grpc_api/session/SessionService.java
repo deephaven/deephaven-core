@@ -2,10 +2,10 @@ package io.deephaven.grpc_api.session;
 
 import com.github.f4b6a3.uuid.UuidCreator;
 import com.google.protobuf.ByteString;
+import io.deephaven.time.DateTime;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.db.tables.utils.DBDateTime;
-import io.deephaven.db.tables.utils.DBTimeUtils;
 import io.deephaven.grpc_api.util.Scheduler;
 import io.deephaven.proto.backplane.grpc.TerminationNotificationResponse;
 import io.deephaven.util.auth.AuthContext;
@@ -72,7 +72,7 @@ public class SessionService {
             throw new IllegalArgumentException("session.tokenExpireMs is set too high.");
         }
 
-        // Protect ourselves from rotation spam, but be loose enough that any reasonable refresh strategy works.
+        // Protect ourselves from rotation spam, but be loose enough that any reasonable run strategy works.
         this.tokenRotateMs = tokenExpireMs / 5;
 
         if (ProcessEnvironment.tryGet() != null) {
@@ -148,9 +148,9 @@ public class SessionService {
     }
 
     /**
-     * If enough time has passed since the last token refresh, rotate to a new token and reset the expiration deadline.
+     * If enough time has passed since the last token run, rotate to a new token and reset the expiration deadline.
      *
-     * @param session the session to refresh
+     * @param session the session to run
      * @return the most recent token expiration
      */
     public TokenExpiration refreshToken(final SessionState session) {
@@ -161,7 +161,7 @@ public class SessionService {
     private TokenExpiration refreshToken(final SessionState session, boolean initialToken) {
         UUID newUUID;
         TokenExpiration expiration;
-        final DBDateTime now = scheduler.currentTime();
+        final DateTime now = scheduler.currentTime();
 
         synchronized (session) {
             expiration = session.getExpiration();
@@ -174,7 +174,7 @@ public class SessionService {
             do {
                 newUUID = UuidCreator.getRandomBased();
                 final long tokenExpireNanos = TimeUnit.MILLISECONDS.toNanos(tokenExpireMs);
-                expiration = new TokenExpiration(newUUID, DBTimeUtils.plus(now, tokenExpireNanos), session);
+                expiration = new TokenExpiration(newUUID, DateTimeUtils.plus(now, tokenExpireNanos), session);
             } while (tokenToSession.putIfAbsent(newUUID, expiration) != null);
 
             if (initialToken) {
@@ -269,10 +269,10 @@ public class SessionService {
 
     public static final class TokenExpiration {
         public final UUID token;
-        public final DBDateTime deadline;
+        public final DateTime deadline;
         public final SessionState session;
 
-        public TokenExpiration(final UUID cookie, final DBDateTime deadline, final SessionState session) {
+        public TokenExpiration(final UUID cookie, final DateTime deadline, final SessionState session) {
             this.token = cookie;
             this.deadline = deadline;
             this.session = session;
@@ -289,7 +289,7 @@ public class SessionService {
     private final class SessionCleanupJob implements Runnable {
         @Override
         public void run() {
-            final DBDateTime now = scheduler.currentTime();
+            final DateTime now = scheduler.currentTime();
 
             do {
                 final TokenExpiration next = outstandingCookies.peek();

@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.engine.table.impl.TupleSourceFactory$TupleSourceCreatorProvider",
+ "methods": {
+  "get": ":return: io.deephaven.engine.table.impl.TupleSourceFactory.TupleSourceCreator"
+ },
+ "path": "io.deephaven.engine.table.impl.TupleSourceFactory.TupleSourceCreatorProvider",
+ "typeName": "interface"
+}

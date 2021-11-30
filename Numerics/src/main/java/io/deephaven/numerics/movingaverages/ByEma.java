@@ -5,8 +5,8 @@
 package io.deephaven.numerics.movingaverages;
 
 import io.deephaven.base.verify.Require;
-import io.deephaven.db.tables.utils.DBDateTime;
-import io.deephaven.libs.primitives.DoublePrimitives;
+import io.deephaven.time.DateTime;
+import io.deephaven.function.DoublePrimitives;
 
 import java.io.Serializable;
 import java.util.Arrays;
@@ -14,7 +14,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * A DB aware EMA which can compute "by" emas without grouping and then ungrouping.
+ * An EMA which can compute aggregated EMAs without grouping and then ungrouping.
  */
 public abstract class ByEma implements Serializable {
 
@@ -78,9 +78,8 @@ public abstract class ByEma implements Serializable {
         Require.neqNull(nanBehavior, "nanBehavior");
     }
 
-    // DB automatic type conversion takes care of converting all non-double nulls into double nulls so we don't have to
-    // duplicate the null checking
-    // for each type.
+    // Engine automatic type conversion takes care of converting all non-double nulls into double nulls so we don't have
+    // to duplicate the null checking for each type.
 
     public synchronized double update(double value) {
         return update(value, (Object) null);
@@ -90,11 +89,11 @@ public abstract class ByEma implements Serializable {
         return update(Long.MIN_VALUE, value, by);
     }
 
-    public synchronized double update(DBDateTime timestamp, double value) {
+    public synchronized double update(DateTime timestamp, double value) {
         return update(timestamp, value, (Object) null);
     }
 
-    public synchronized double update(DBDateTime timestamp, double value, Object... by) {
+    public synchronized double update(DateTime timestamp, double value, Object... by) {
         return update(timestamp.getNanos(), value, by);
     }
 

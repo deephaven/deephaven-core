@@ -17,7 +17,7 @@ import java.util.List;
 @BuildableStyle
 public abstract class Multi<AGG extends Aggregation> implements Aggregation {
 
-    public static <AGG extends Aggregation> Builder<AGG> builder() {
+    static <AGG extends Aggregation> Builder<AGG> builder() {
         return ImmutableMulti.builder();
     }
 

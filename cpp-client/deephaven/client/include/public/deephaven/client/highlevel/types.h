@@ -52,42 +52,42 @@ public:
 };
 
 /**
- * The Deephaven DBDateTime type. Records nanoseconds relative to the epoch (January 1, 1970) UTC.
+ * The Deephaven DateTime type. Records nanoseconds relative to the epoch (January 1, 1970) UTC.
  * Times before the epoch can be represented with negative nanosecond values.
  */
-class DBDateTime {
+class DateTime {
 public:
   /**
-   * Converts nanosseconds-since-UTC-epoch to DBDateTime. The Deephaven null value sentinel is
-   * turned into DBDateTime(0).
+   * Converts nanosseconds-since-UTC-epoch to DateTime. The Deephaven null value sentinel is
+   * turned into DateTime(0).
    * @param nanos Nanoseconds since the epoch (January 1, 1970 UTC).
-   * @return The corresponding DBDateTime.
+   * @return The corresponding DateTime.
    */
-  static DBDateTime fromNanos(long nanos) {
+  static DateTime fromNanos(long nanos) {
     if (nanos == DeephavenConstants::NULL_LONG) {
-      return DBDateTime(0);
+      return DateTime(0);
     }
-    return DBDateTime(nanos);
+    return DateTime(nanos);
   }
 
   /**
-   * Default constructor. Sets the DBDateTime equal to the epoch.
+   * Default constructor. Sets the DateTime equal to the epoch.
    */
-  DBDateTime() = default;
+  DateTime() = default;
   /**
-   * Sets the DBDateTime to the specified number of nanoseconds relative to the epoch.
+   * Sets the DateTime to the specified number of nanoseconds relative to the epoch.
    * @param nanos Nanoseconds since the epoch (January 1, 1970 UTC).
    */
-  explicit DBDateTime(int64_t nanos) : nanos_(nanos) {}
+  explicit DateTime(int64_t nanos) : nanos_(nanos) {}
   /**
-   * Sets the DBDateTime to the specified date, with a time component of zero.
+   * Sets the DateTime to the specified date, with a time component of zero.
    * @param year Year.
    * @param month Month.
    * @param day Day.
    */
-  DBDateTime(int year, int month, int day);
+  DateTime(int year, int month, int day);
   /**
-   * Sets the DBDateTime to the specified date and time, with a fractional second component of zero.
+   * Sets the DateTime to the specified date and time, with a fractional second component of zero.
    * @param year Year.
    * @param month Month.
    * @param day Day.
@@ -95,9 +95,9 @@ public:
    * @param minute Minute.
    * @param second Second.
    */
-  DBDateTime(int year, int month, int day, int hour, int minute, int second);
+  DateTime(int year, int month, int day, int hour, int minute, int second);
   /**
-   * Sets the DBDateTime to the specified date and time, including fractional seconds expressed
+   * Sets the DateTime to the specified date and time, including fractional seconds expressed
    * in nanos.
    * @param year Year.
    * @param month Month.
@@ -107,10 +107,10 @@ public:
    * @param second Second.
    * @param nanos Nanoseconds.
    */
-  DBDateTime(int year, int month, int day, int hour, int minute, int second, long nanos);
+  DateTime(int year, int month, int day, int hour, int minute, int second, long nanos);
 
   /*
-   * The DBDateTime as expressed in nanoseconds since the epoch. Can be negative.
+   * The DateTime as expressed in nanoseconds since the epoch. Can be negative.
    */
   int64_t nanos() const { return nanos_; }
 
@@ -119,7 +119,7 @@ public:
 private:
   int64_t nanos_ = 0;
 
-  friend std::ostream &operator<<(std::ostream &s, const DBDateTime &o) {
+  friend std::ostream &operator<<(std::ostream &s, const DateTime &o) {
     o.streamIrisRepresentation(s);
     return s;
   }

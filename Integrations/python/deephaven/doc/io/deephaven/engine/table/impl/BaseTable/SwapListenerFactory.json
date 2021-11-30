@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.engine.table.impl.BaseTable$SwapListenerFactory",
+ "methods": {
+  "newListener": ":param sourceTable: io.deephaven.engine.table.impl.BaseTable\n:return: BaseTable.SwapListenerFactory.T"
+ },
+ "path": "io.deephaven.engine.table.impl.BaseTable.SwapListenerFactory",
+ "typeName": "interface"
+}

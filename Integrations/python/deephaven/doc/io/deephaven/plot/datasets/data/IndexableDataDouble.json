@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.plot.datasets.data.IndexableDataDouble",
+ "methods": {
+  "get": "Gets the value at the given index.\n\n:param index: (int) - index\n:return: (java.lang.Double) value of this dataset at index",
+  "getMapNanToNull": ":return: boolean",
+  "size": "Gets the size of this dataset.\n\n:return: (int) the size of this dataset"
+ },
+ "path": "io.deephaven.plot.datasets.data.IndexableDataDouble",
+ "text": "IndexableData with Double values.",
+ "typeName": "class"
+}

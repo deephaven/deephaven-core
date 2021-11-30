@@ -1,0 +1,6 @@
+{
+ "className": "io.deephaven.engine.table.impl.select.Formula$GetContext",
+ "methods": {},
+ "path": "io.deephaven.engine.table.impl.select.Formula.GetContext",
+ "typeName": "interface"
+}

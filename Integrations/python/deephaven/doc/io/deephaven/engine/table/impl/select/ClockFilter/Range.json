@@ -1,0 +1,7 @@
+{
+ "className": "io.deephaven.engine.table.impl.select.ClockFilter$Range",
+ "methods": {},
+ "path": "io.deephaven.engine.table.impl.select.ClockFilter.Range",
+ "text": "Representation of a contiguous key range with monotonically nondecreasing timestamp values.",
+ "typeName": "class"
+}

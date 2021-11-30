@@ -1,0 +1,24 @@
+{
+ "className": "io.deephaven.time.DateTime",
+ "methods": {
+  "compareTo": ":param dateTime: io.deephaven.time.DateTime\n:return: int",
+  "equals": ":param that: java.lang.Object\n:return: boolean",
+  "getDate": "Convert this DateTime to a Java Date.\n\n This DateTime will be truncated to milliseconds.\n\n:return: (java.util.Date) a Java Date representing this DateTime",
+  "getInstant": "Convert this DateTime to a Java Instant.\n\n:return: (java.time.Instant) a Java Instant representing this DateTime",
+  "getJodaDateTime": "Convert this DateTime to a Joda DateTime.\n\n This DateTime will be truncated to milliseconds.\n\n*Overload 1*  \n  :return: (org.joda.time.DateTime) a Joda DateTime representing this DateTime\n  \n*Overload 2*  \n  :param timeZone: (io.deephaven.time.TimeZone) - the timezone for the created Joda DateTime\n  :return: (org.joda.time.DateTime) a Joda DateTime representing this DateTime",
+  "getMicros": "Get this time represented as microseconds since the epoch\n\n:return: (long) the number of microseconds since the epoch",
+  "getMillis": "Get this time represented as milliseconds since the epoch\n\n:return: (long) the number of milliseconds since the epoch",
+  "getNanos": "Get this time represented as nanoseconds since the epoch\n\n:return: (long) the number of nanoseconds since the epoch",
+  "getNanosPartial": "Get nanoseconds-of-milliseconds; this number will always be between 0 and 999,999\n\n:return: (long) the number of nanoseconds after the nearest millisecond.",
+  "hashCode": ":return: int",
+  "now": "Create a new DateTime initialized to the current time.\n\n \n The precision of DateTime is nanoseconds, but the resolution of the now method is currently microseconds.\n \n\n:return: (io.deephaven.time.DateTime) a new DateTime initialized to the current time.",
+  "of": ":param instant: java.time.Instant\n:return: io.deephaven.time.DateTime",
+  "readExternal": ":param in: java.io.ObjectInput",
+  "toDateString": "**Incompatible overloads text - text from the first overload:**\n\nGet the date represented by this DateTime in the default TimeZone.\n\n*Overload 1*  \n  :return: (java.lang.String) The date (yyyy-MM-dd) represented by this DateTime in the default TimeZone.\n  \n*Overload 2*  \n  :param timeZone: (io.deephaven.time.TimeZone) - a TimeZone\n  :return: (java.lang.String) The date (yyyy-MM-dd) represented by this DateTime in the given timeZone.\n  \n*Overload 3*  \n  :param timeZone: (org.joda.time.DateTimeZone) - A joda DateTimeZone\n  :return: (java.lang.String) The date (yyyy-MM-dd) represented by this DateTime in the given timeZone\n  \n*Overload 4*  \n  :param zoneId: (java.lang.String) - A java time zone ID string\n  :return: (java.lang.String) The date (yyyy-MM-dd) represented by this DateTime in time zone represented by the given\n           zoneId\n  \n*Overload 5*  \n  :param timeZone: (java.time.ZoneId) - A java time zone ID.\n  :return: (java.lang.String) The date (yyyy-MM-dd) represented by this DateTime in the given timeZone",
+  "toString": "Convert this DateTime into a String using the provided TimeZone.\n\n \n The date will be formatted as yyyy-MM-DDThh:mm:ss.SSSSSSSSS TZ, for example\n 2020-05-27T13:37:57.780853000 NY or 2020-05-27T17:37:42.763641000 UTC.\n\n*Overload 1*  \n  :return: java.lang.String\n  \n*Overload 2*  \n  :param timeZone: (io.deephaven.time.TimeZone) - the timezone for formatting the string\n  :return: (java.lang.String) a String representation of this DateTime",
+  "writeExternal": ":param out: java.io.ObjectOutput"
+ },
+ "path": "io.deephaven.time.DateTime",
+ "text": "An object representing a timepoint in Deephaven.\n\n \n The DateTime object is a timepoint, that is a precise instance in time without respect to timezones. The timepoint is\n stored as a signed 64-bit long nanoseconds since the epoch (January 1, 1970, 00:00:00 GMT). This provides a range\n from 1677-09-21T00:12:43.146-775807 UTC to 2262-04-11T23:47:16.854775807 UTC. The minimum long value is reserved for\n QueryConstants.NULL_LONG and therefore is not permitted as a valid DateTime.",
+ "typeName": "class"
+}

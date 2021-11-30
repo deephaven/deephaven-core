@@ -3,9 +3,6 @@ plugins {
 }
 
 configurations {
-    compile.extendsFrom dhDb
-    testCompile.extendsFrom dhDbTest
-
     // custom configuration, sourceset, test task to keep flight-core off the main/test classpath
     flightTestCompile.extendsFrom(testCompile)
 }
@@ -23,13 +20,16 @@ sourceSets {
 }
 
 dependencies {
-    compile project(':DB'),
+    compile project(':engine-table'),
+            project(':extensions-csv'),
+            project(':extensions-parquet-table'),
             project(':Util'),
             project(':java-client-barrage-dagger'),
             project(':proto:proto-backplane-grpc-flight'),
             project(':open-api-lang-tools'),
             project(':log-factory'),
-            project(':application-mode')
+            project(':application-mode'),
+            'com.github.f4b6a3:uuid-creator:3.6.0'
 
     Classpaths.inheritFlatbuffer(project, 'compile')
 
@@ -47,10 +47,12 @@ dependencies {
         runtimeOnly project(':extensions-suanshu')
     }
 
-    testCompile TestTools.projectDependency(project, 'DB'),
+    testCompile TestTools.projectDependency(project, 'engine-table'),
                 TestTools.projectDependency(project, 'Util')
 
-    runtimeOnly project(':Numerics'), project(':Integrations'), project(':Kafka')
+    runtimeOnly project(':Numerics'),
+            project(':Integrations'),
+            project(':extensions-kafka')
     Classpaths.inheritAssertJ(project)
 
     testRuntimeOnly project(':log-to-slf4j')
@@ -60,13 +62,13 @@ dependencies {
     Classpaths.inheritArrow(project, 'flight-grpc', 'flightTestCompile')
 }
 
-// testOutOfBand: non-parallel, not a db test, not isolated
-TestTools.addDbTest(project, 'OutOfBand', false, false, false)
+// testOutOfBand: non-parallel, not a engine test, not isolated
+TestTools.addEngineTest(project, 'OutOfBand', false, false, false)
 
 check.dependsOn(tasks.register('flightTest', Test) {
     classpath = sourceSets.flightTest.runtimeClasspath
     testClassesDirs = sourceSets.flightTest.output.classesDirs
-    systemProperty "LiveTableMonitor.allowUnitTestMode", false
+    systemProperty "UpdateGraphProcessor.allowUnitTestMode", false
 })
 
 apply plugin: 'io.deephaven.java-open-nio'

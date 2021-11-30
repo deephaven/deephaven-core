@@ -1,0 +1,12 @@
+{
+ "className": "io.deephaven.engine.table.impl.select.UnsortedClockFilter",
+ "methods": {
+  "copy": "Create a copy of this WhereFilter.\n\n:return: (io.deephaven.engine.table.impl.select.UnsortedClockFilter) an independent copy of this WhereFilter.",
+  "getSortColumns": "Get the columns on which the input table should be sorted before filtering.\n\n:return: (java.lang.String[]) Columns to sort on, or null if there are no such columns",
+  "requiresSorting": ":return: (boolean) True iff getSortColumns will return a non-null, non-empty array of column names to sort on.",
+  "sortingDone": "Advise this filter that sorting has been performed. requiresSorting must return false hereafter."
+ },
+ "path": "io.deephaven.engine.table.impl.select.UnsortedClockFilter",
+ "text": "This will filter a table on a DateTime column for all rows greater than \"now\" according to a supplied clock. It does\n not require any pre-sorting of the input table, instead preserving relative order in the initial output and each\n subsequent run. Relative to SortedClockFilter, this implementation may require less overall storage and do less\n overall work for tables with relatively few monotonically nondecreasing ranges (that is, m (number of ranges)\n <<< n (size in rows)), but it will do more work on run().",
+ "typeName": "class"
+}

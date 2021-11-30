@@ -1,10 +1,11 @@
 package io.deephaven.grpc_api.runner;
 
-import io.deephaven.db.tables.live.LiveTableMonitor;
-import io.deephaven.db.util.AbstractScriptSession;
-import io.deephaven.db.v2.utils.MemoryTableLoggers;
-import io.deephaven.db.v2.utils.ProcessMemoryTracker;
-import io.deephaven.db.v2.utils.UpdatePerformanceTracker;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
+import io.deephaven.engine.util.AbstractScriptSession;
+import io.deephaven.engine.table.impl.util.MemoryTableLoggers;
+import io.deephaven.engine.table.impl.util.ProcessMemoryTracker;
+import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.grpc_api.appmode.ApplicationInjector;
 import io.deephaven.grpc_api.console.ConsoleServiceGrpcImpl;
 import io.deephaven.grpc_api.log.LogInit;
@@ -31,7 +32,7 @@ public class DeephavenApiServer {
     private static final Logger log = LoggerFactory.getLogger(DeephavenApiServer.class);
 
     private final Server server;
-    private final LiveTableMonitor ltm;
+    private final UpdateGraphProcessor ugp;
     private final LogInit logInit;
     private final ConsoleServiceGrpcImpl consoleService;
     private final ApplicationInjector applicationInjector;
@@ -41,14 +42,14 @@ public class DeephavenApiServer {
     @Inject
     public DeephavenApiServer(
             final Server server,
-            final LiveTableMonitor ltm,
+            final UpdateGraphProcessor ugp,
             final LogInit logInit,
             final ConsoleServiceGrpcImpl consoleService,
             final ApplicationInjector applicationInjector,
             final UriResolvers uriResolvers,
             final SessionService sessionService) {
         this.server = server;
-        this.ltm = ltm;
+        this.ugp = ugp;
         this.logInit = logInit;
         this.consoleService = consoleService;
         this.applicationInjector = applicationInjector;
@@ -104,10 +105,12 @@ public class DeephavenApiServer {
         log.info().append("Initializing Script Session...").endl();
         consoleService.initializeGlobalScriptSession();
 
-        log.info().append("Starting LTM...").endl();
-        ltm.start();
+        log.info().append("Starting UGP...").endl();
+        ugp.start();
 
         log.info().append("Starting Performance Trackers...").endl();
+        QueryPerformanceRecorder.installPoolAllocationRecorder();
+        QueryPerformanceRecorder.installUpdateGraphLockInstrumentation();
         UpdatePerformanceTracker.start();
         ProcessMemoryTracker.start();
 

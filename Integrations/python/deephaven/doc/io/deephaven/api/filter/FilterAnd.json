@@ -5,7 +5,7 @@
   "filters": "The filters.\n\n:return: (java.util.List<io.deephaven.api.filter.Filter>) the filters",
   "forEach": ":param action: java.util.function.Consumer<? superio.deephaven.api.filter.Filter>",
   "iterator": ":return: java.util.Iterator<io.deephaven.api.filter.Filter>",
-  "of": ":param filters: io.deephaven.api.filter.Filter...\n:return: io.deephaven.api.filter.FilterAnd",
+  "of": "*Overload 1*  \n  :param filters: io.deephaven.api.filter.Filter...\n  :return: io.deephaven.api.filter.FilterAnd\n  \n*Overload 2*  \n  :param filters: java.lang.Iterable<? extendsio.deephaven.api.filter.Filter>\n  :return: io.deephaven.api.filter.FilterAnd",
   "spliterator": ":return: java.util.Spliterator<io.deephaven.api.filter.Filter>",
   "walk": "Note: Java generics information - <V extends io.deephaven.api.filter.Filter.Visitor>\n\n:param visitor: V\n:return: V"
  },

@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.engine.table.lang.impl.QueryLibraryImportsDefaults",
+ "methods": {
+  "classes": ":return: java.util.Set<java.lang.Class<?>>",
+  "packages": ":return: java.util.Set<java.lang.Package>",
+  "statics": ":return: java.util.Set<java.lang.Class<?>>"
+ },
+ "path": "io.deephaven.engine.table.lang.impl.QueryLibraryImportsDefaults",
+ "typeName": "class"
+}

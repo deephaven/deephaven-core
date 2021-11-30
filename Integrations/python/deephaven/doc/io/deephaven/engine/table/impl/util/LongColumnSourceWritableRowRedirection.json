@@ -1,0 +1,16 @@
+{
+ "className": "io.deephaven.engine.table.impl.util.LongColumnSourceWritableRowRedirection",
+ "methods": {
+  "fillFromChunk": "Insert mappings from each element in a RowSequence to the parallel element in a LongChunk. h\n\n:param context: (io.deephaven.engine.table.ChunkSink.FillFromContext) - THe FillFromContext\n:param innerRowKeys: (io.deephaven.chunk.Chunk<? extendsio.deephaven.engine.rowset.chunkattributes.RowKeys>) - The inner row keys to map to\n:param outerRowKeys: (io.deephaven.engine.rowset.RowSequence) - The outer row keys to map from",
+  "makeFillFromContext": "Make a ChunkSink.FillFromContext for this WritableRowRedirection. The default implementation supplies\n WritableRowRedirection.DEFAULT_FILL_FROM_INSTANCE, suitable for use with the default implementation of\n WritableRowRedirection.fillFromChunk(ChunkSink.FillFromContext , Chunk, RowSequence).\n\n:param chunkCapacity: (int) - The maximum number of mappings that will be supplied in one operation\n:return: (io.deephaven.engine.table.ChunkSink.FillFromContext) The ChunkSink.FillFromContext to use",
+  "put": "Add or change a mapping from outerRowKey to innerRowKey.\n\n:param outerRowKey: (long) - The outer row key to map from\n:param innerRowKey: (long) - The inner row key to map to\n:return: (long) The inner row key previously mapped from outerRowKey, or RowSequence.NULL_ROW_KEY if there was\n         no mapping",
+  "putVoid": "Like WritableRowRedirection.put(long, long), but without requiring the implementation to provide a return value. May be more\n efficient in some cases.\n\n:param outerRowKey: (long) - The outer row key to map from\n:param innerRowKey: (long) - The inner row key to map to",
+  "remove": "Remove a mapping from outerRowKey.\n\n:param outerRowKey: (long) - The outer row key to unmap\n:return: (long) The inner row key previously mapped from outerRowKey, or RowSequence.NULL_ROW_KEY if there was\n         no mapping",
+  "removeAll": "Remove the specified outerRowKeys.\n\n:param outerRowKeys: (io.deephaven.engine.rowset.RowSequence) - The outer row keys to remove",
+  "removeVoid": "Like WritableRowRedirection.remove(long) (long, long)}, but without requiring the implementation to provide a return value. May\n be more efficient in some cases.\n\n:param outerRowKey: (long) - The outer row key to map from",
+  "startTrackingPrevValues": "Initiate previous value tracking."
+ },
+ "path": "io.deephaven.engine.table.impl.util.LongColumnSourceWritableRowRedirection",
+ "text": "WritableRowRedirection implementation that wraps a WritableColumnSource of longs.",
+ "typeName": "class"
+}

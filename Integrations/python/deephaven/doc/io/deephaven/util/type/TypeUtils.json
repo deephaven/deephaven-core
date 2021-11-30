@@ -25,7 +25,7 @@
   "isBoxedType": ":param exprType: java.lang.Class<?>\n:return: boolean",
   "isCharacter": "Whether the class equals char.class or Character.class is assignable from it.\n\n:param c: (java.lang.Class<?>) - class\n:return: (boolean) true if Character.class is assignable from c or c equals char.class",
   "isConvertibleToPrimitive": ":param type: java.lang.Class<?>\n:return: boolean",
-  "isDateTime": "Whether the class is a DBDateTime or Date.\n\n:param type: (java.lang.Class<?>) - The class.\n:return: (boolean) true if the type is a DBDateTime or Date.",
+  "isDateTime": "Whether the class is a DateTime or Date.\n\n:param type: (java.lang.Class<?>) - The class.\n:return: (boolean) true if the type is a DateTime or Date.",
   "isFloatType": "Checks if the type is a primitive or Boxed floate type (double or float).\n\n:param type: (java.lang.Class<?>) - the class\n:return: (boolean) true if it is a float type, false otherwise",
   "isNumeric": "Whether the class is isPrimitiveNumeric(Class) or isBoxedNumeric(Class)\n\n:param c: (java.lang.Class<?>) - class\n:return: (boolean) true if c is numeric, false otherwise",
   "isPrimitiveChar": "Whether the class is equal to char.class.\n\n:param c: (java.lang.Class<?>) - class\n:return: (boolean) true if c equals char.class, false otherwise",

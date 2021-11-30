@@ -1,0 +1,6 @@
+{
+ "className": "io.deephaven.engine.rowset.impl.rsp.RspArray$ArraysBuf",
+ "methods": {},
+ "path": "io.deephaven.engine.rowset.impl.rsp.RspArray.ArraysBuf",
+ "typeName": "class"
+}

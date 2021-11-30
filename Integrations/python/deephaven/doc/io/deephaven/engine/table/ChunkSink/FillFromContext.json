@@ -1,0 +1,6 @@
+{
+ "className": "io.deephaven.engine.table.ChunkSink$FillFromContext",
+ "methods": {},
+ "path": "io.deephaven.engine.table.ChunkSink.FillFromContext",
+ "typeName": "interface"
+}

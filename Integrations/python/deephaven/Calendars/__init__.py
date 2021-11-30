@@ -34,7 +34,7 @@ def _defineSymbols():
     global _java_type_
     if _java_type_ is None:
         # This will raise an exception if the desired object is not the classpath
-        _java_type_ = jpy.get_type("io.deephaven.util.calendar.Calendars")
+        _java_type_ = jpy.get_type("io.deephaven.time.calendar.Calendars")
 
 
 # every module method should be decorated with @_passThrough
@@ -68,10 +68,10 @@ def calendar(*args):
     
     *Overload 1*  
       :param name: (java.lang.String) - name of the calendar
-      :return: (io.deephaven.util.calendar.BusinessCalendar) business calendar
+      :return: (io.deephaven.time.calendar.BusinessCalendar) business calendar
       
     *Overload 2*  
-      :return: (io.deephaven.util.calendar.BusinessCalendar) default business calendar. The deault is specified by the Calendar.default property.
+      :return: (io.deephaven.time.calendar.BusinessCalendar) default business calendar. The deault is specified by the Calendar.default property.
     """
     
     return _java_type_.calendar(*args)

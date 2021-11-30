@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.table.Context",
+ "methods": {
+  "close": "Release any resources associated with this context. The context should not be used afterwards."
+ },
+ "path": "io.deephaven.engine.table.Context",
+ "text": "Base interface for state/mutable data that needs to be kept over the course of an evaluation session for a Chunk\n Source, Functor or Sink.",
+ "typeName": "interface"
+}

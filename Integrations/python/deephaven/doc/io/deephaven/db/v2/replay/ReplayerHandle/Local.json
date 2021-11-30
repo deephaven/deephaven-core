@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.db.v2.replay.ReplayerHandle$Local",
- "methods": {
-  "getReplayer": "Gets the replayer.\n\n:return: (io.deephaven.db.v2.replay.Replayer) replayer"
- },
- "path": "io.deephaven.db.v2.replay.ReplayerHandle.Local",
- "text": "A handle to a replayer, where the replayer and handle exist in the same JVM instance.",
- "typeName": "class"
-}

@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.engine.table.impl.by.CopyingPermutedStreamFirstOrLastChunkedOperator",
+ "methods": {
+  "ensureCapacity": "Ensure that this operator can handle destinations up to tableSize - 1.\n\n:param tableSize: (long) - the new size of the table",
+  "startTrackingPrevValues": "Called after initialization; when the operator's result columns must have previous tracking enabled."
+ },
+ "path": "io.deephaven.engine.table.impl.by.CopyingPermutedStreamFirstOrLastChunkedOperator",
+ "text": "Base-class for stream first/last-by chunked operators that need to copy data from source columns to result columns\n with a permutation on the redirected indices.",
+ "typeName": "class"
+}

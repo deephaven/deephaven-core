@@ -1,0 +1,16 @@
+{
+ "className": "io.deephaven.engine.table.impl.util.WrappedRowSetWritableRowRedirection",
+ "methods": {
+  "fillChunk": "Lookup each element in a RowSequence and write the result to a WritableLongChunk.\n\n:param fillContext: (io.deephaven.engine.table.ChunkSource.FillContext) - The FillContext\n:param innerRowKeys: (io.deephaven.chunk.WritableLongChunk<? extendsio.deephaven.engine.rowset.chunkattributes.RowKeys>) - The result chunk\n:param outerRowKeys: (io.deephaven.engine.rowset.RowSequence) - The row keys to lookup in this RowRedirection",
+  "fillPrevChunk": "Lookup each element in a RowSequence and write the result to a WritableLongChunk, using previous\n values.\n\n:param fillContext: (io.deephaven.engine.table.ChunkSource.FillContext) - The FillContext\n:param innerRowKeys: (io.deephaven.chunk.WritableLongChunk<? extendsio.deephaven.engine.rowset.chunkattributes.RowKeys>) - The result chunk\n:param outerRowKeys: (io.deephaven.engine.rowset.RowSequence) - The row keys to lookup in this RowRedirection",
+  "get": "Simple redirected lookup.\n\n:param outerRowKey: (long) - The \"outer\" row key\n:return: (long) The corresponding \"inner\" row key, or RowSequence.NULL_ROW_KEY if no mapping exists",
+  "getPrev": "Simple redirected lookup, using previous values.\n\n:param outerRowKey: (long) - The \"outer\" row key\n:return: (long) The corresponding \"inner\" row key, or RowSequence.NULL_ROW_KEY if no mapping exists",
+  "makeFillContext": "Make a FillContext for this RowRedirection. The default implementation supplied RowRedirection.DEFAULT_FILL_INSTANCE,\n suitable for use with the default implementation of\n RowRedirection.fillChunk(ChunkSource.FillContext, WritableLongChunk, RowSequence),\n RowRedirection.fillChunkUnordered(ChunkSource.FillContext, WritableLongChunk, LongChunk), and\n RowRedirection.fillPrevChunk(ChunkSource.FillContext, WritableLongChunk, RowSequence).\n\n:param chunkCapacity: (int) - The maximum number of mappings that will be retrieved in one operation\n:param sharedContext: (io.deephaven.engine.table.SharedContext) - A SharedContext for use when the same RowRedirection will be used with the same\n        keysToMap by multiple consumers\n:return: (io.deephaven.engine.table.ChunkSource.FillContext) The FillContext to use",
+  "put": "Add or change a mapping from outerRowKey to innerRowKey.\n\n:param outerRowKey: (long) - The outer row key to map from\n:param innerRowKey: (long) - The inner row key to map to\n:return: (long) The inner row key previously mapped from outerRowKey, or RowSequence.NULL_ROW_KEY if there was\n         no mapping",
+  "remove": "Remove a mapping from outerRowKey.\n\n:param outerRowKey: (long) - The outer row key to unmap\n:return: (long) The inner row key previously mapped from outerRowKey, or RowSequence.NULL_ROW_KEY if there was\n         no mapping",
+  "startTrackingPrevValues": "Initiate previous value tracking.",
+  "toString": ":return: java.lang.String"
+ },
+ "path": "io.deephaven.engine.table.impl.util.WrappedRowSetWritableRowRedirection",
+ "typeName": "class"
+}

@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.engine.table.impl.chunkfilter.ChunkFilter$ByteChunkFilter",
+ "methods": {
+  "filter": "Filter a chunk of values, setting parallel values in results to \"true\" or \"false\".\n\n The results chunk must have capacity at least as large as values.size(); and the result size will be set to\n values.size() on return.\n\n*Overload 1*  \n  :param values: io.deephaven.chunk.ByteChunk<? extendsio.deephaven.chunk.attributes.Values>\n  :param keys: io.deephaven.chunk.LongChunk<io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys>\n  :param results: io.deephaven.chunk.WritableLongChunk<io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys>\n  \n*Overload 2*  \n  :param values: (io.deephaven.chunk.Chunk<? extendsio.deephaven.chunk.attributes.Values>) - the values to filter\n  :param keys: io.deephaven.chunk.LongChunk<io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys>\n  :param results: (io.deephaven.chunk.WritableLongChunk<io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys>) - a boolean chunk with true values for items that match the filter, and false otherwise"
+ },
+ "path": "io.deephaven.engine.table.impl.chunkfilter.ChunkFilter.ByteChunkFilter",
+ "typeName": "interface"
+}

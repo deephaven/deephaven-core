@@ -23,6 +23,10 @@ RUN set -eux; \
 ENV LANG='en_US.UTF-8' LANGUAGE='en_US:en' LC_ALL='en_US.UTF-8'
 ENV JAVA_HOME=/usr/lib/jvm/zulu11-ca-amd64
 
+# smoke test to ensure that the java build is where it belongs and works
+FROM java_base as java_base_check
+RUN $JAVA_HOME/bin/javac -version
+
 FROM java_base as python_install
 RUN set -eux; \
     apt-get -qq update; \

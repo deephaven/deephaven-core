@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.engine.liveness.SingletonLivenessManager",
+ "methods": {
+  "release": "Release ownership of this ReleasableLivenessManager, allowing any retained LivenessReferents to\n cleanup if they no longer have outstanding references.",
+  "tryManage": "Attempt to add the specified referent to this manager.\n\n:param referent: (io.deephaven.engine.liveness.LivenessReferent) - The referent to add\n:return: (boolean) Whether the referent was in fact added"
+ },
+ "path": "io.deephaven.engine.liveness.SingletonLivenessManager",
+ "text": "ReleasableLivenessManager to manage exactly one object, passed at construction time or managed later.",
+ "typeName": "class"
+}

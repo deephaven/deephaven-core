@@ -1,15 +1,10 @@
 {
  "className": "io.deephaven.client.impl.Session",
  "methods": {
-  "batch": "A batch table handle manager.\n\n*Overload 1*  \n  :return: (io.deephaven.client.impl.TableHandleManager) a batch manager\n  \n*Overload 2*  \n  :param mixinStacktraces: (boolean) - if stacktraces should be mixin\n  :return: (io.deephaven.client.impl.TableHandleManager) a batch manager",
   "close": "Closes the session.",
   "closeFuture": "Closes the session.\n\n:return: (java.util.concurrent.CompletableFuture<java.lang.Void>) the future",
-  "console": "Creates a new console session of script type type.\n\n \n Note: the server does not currently support independent console sessions. See\n Issue 1172.\n\n:param type: (java.lang.String) - the script type\n:return: (java.util.concurrent.CompletableFuture<? extends io.deephaven.client.impl.ConsoleSession>) the console session future",
-  "export": "**Incompatible overloads text - text from the first overload:**\n\nCreates a new export with a logging listener.\n\n \n Equivalent to export(ExportsRequest.logging(table)).get(0).\n\n*Overload 1*  \n  :param table: (io.deephaven.qst.table.TableSpec) - the table\n  :return: (io.deephaven.client.impl.Export) the export\n  \n*Overload 2*  \n  :param request: (io.deephaven.client.impl.ExportsRequest) - the request\n  :return: (java.util.List<io.deephaven.client.impl.Export>) the exports",
-  "newTicket": "Advanced usage, creates a new ticket for this session, but must be managed by the caller. Useful for more\n advanced integrations, particularly around doPut. Callers are responsible for releasing\n the ticket if necessary.\n\n:return: (io.deephaven.proto.backplane.grpc.Ticket) the new ticket",
-  "publish": "Publishes ticket into the global scope with name.\n\n*Overload 1*  \n  :param name: (java.lang.String) - the name, must conform to SourceVersion.isName(CharSequence)\n  :param ticket: (io.deephaven.client.impl.HasTicket) - the ticket\n  :return: (java.util.concurrent.CompletableFuture<java.lang.Void>) the publish completable future\n  \n*Overload 2*  \n  :param name: java.lang.String\n  :param ticket: io.deephaven.proto.backplane.grpc.Ticket\n  :return: java.util.concurrent.CompletableFuture<java.lang.Void>",
-  "release": "Releases a ticket.\n\n \n Note: this should only be called in combination with tickets returned from newTicket().\n\n:param ticket: (io.deephaven.proto.backplane.grpc.Ticket) - the ticket\n:return: (java.util.concurrent.CompletableFuture<java.lang.Void>) the future",
-  "serial": "A serial table handle manager.\n\n:return: (io.deephaven.client.impl.TableHandleManager) a serial manager"
+  "newExportId": "Advanced usage, creates a new export ID for this session, but must be managed by the caller. Useful for\n more advanced integrations, particularly around doPut. Callers are responsible for releasing the export ID if necessary.\n\n:return: (io.deephaven.client.impl.ExportId) the new export ID",
+  "release": "Releases an export ID.\n\n \n Note: this should only be called in combination with exports returned from newExportId().\n\n:param exportId: (io.deephaven.client.impl.ExportId) - the export ID\n:return: (java.util.concurrent.CompletableFuture<java.lang.Void>) the future"
  },
  "path": "io.deephaven.client.impl.Session",
  "text": "A session represents a client-side connection to a Deephaven server.",

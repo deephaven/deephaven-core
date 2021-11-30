@@ -12,12 +12,16 @@ configurations {
 
 dependencies {
 
-    compile project(':DB')
+    compile project(':engine-table')
     testRuntimeOnly project(':log-to-slf4j')
     // add configs, and some runtime dependencies to test classpaths
-    testRuntime project(':configs'), project(':test-configs'),
+    testRuntime project(':configs'),
+            project(':test-configs'),
             // need these projects so session default imports / generated type wrappers resolve correctly
-            project(':Numerics'), project(':Plot'), project(':Kafka')
+            project(':Numerics'),
+            project(':Plot'),
+            project(':extensions-kafka'),
+            project(':extensions-parquet-table')
 }
 
 sourceSets {

@@ -39,8 +39,8 @@ def _defineSymbols():
     global _table_tools_, _col_def_, _jprops_, _jmap_, _jset_, _python_tools_, IDENTITY
     if _table_tools_ is None:
         # This will raise an exception if the desired object is not the classpath
-        _table_tools_ = jpy.get_type("io.deephaven.db.tables.utils.TableTools")
-        _col_def_ = jpy.get_type("io.deephaven.db.tables.ColumnDefinition")
+        _table_tools_ = jpy.get_type("io.deephaven.engine.util.TableTools")
+        _col_def_ = jpy.get_type("io.deephaven.engine.table.ColumnDefinition")
         _jprops_ = jpy.get_type("java.util.Properties")
         _jmap_ = jpy.get_type("java.util.HashMap")
         _jset_ = jpy.get_type("java.util.HashSet")
@@ -69,8 +69,8 @@ try:
 except Exception as e:
     pass
 
-__ObjectColumnSource__ = 'io.deephaven.db.v2.sources.immutable.ImmutableObjectArraySource'
-__DatetimeColumnSource__ = 'io.deephaven.db.v2.sources.immutable.ImmutableDateTimeArraySource'
+__ObjectColumnSource__ = 'io.deephaven.engine.table.impl.sources.immutable.ImmutableObjectArraySource'
+__DatetimeColumnSource__ = 'io.deephaven.engine.table.impl.sources.immutable.ImmutableDateTimeArraySource'
 __ArrayConversionUtility__ = 'io.deephaven.integrations.common.PrimitiveArrayConversionUtility'
 
 NULL_CHAR = 65535                                         #: Null value for char.
@@ -133,27 +133,27 @@ _boxedArrayTypes = {
 }
 
 
-_javaTypeToDbarrayType = {
-    'java.lang.String': 'io.deephaven.db.tables.dbarrays.DbArrayDirect',
-    'char': 'io.deephaven.db.tables.dbarrays.DbCharArrayDirect',
-    'java.lang.Boolean': 'io.deephaven.db.tables.dbarrays.DbArrayDirect',
-    'boolean': 'io.deephaven.db.tables.dbarrays.DbArrayDirect',  # it really should be boxed...
-    'byte': 'io.deephaven.db.tables.dbarrays.DbByteArrayDirect',
-    'short': 'io.deephaven.db.tables.dbarrays.DbShortArrayDirect',
-    'int': 'io.deephaven.db.tables.dbarrays.DbIntArrayDirect',
-    'long': 'io.deephaven.db.tables.dbarrays.DbLongArrayDirect',
-    'float': 'io.deephaven.db.tables.dbarrays.DbFloatArrayDirect',
-    'double': 'io.deephaven.db.tables.dbarrays.DbDoubleArrayDirect',
+_javaTypeToVectorType = {
+    'java.lang.String': 'io.deephaven.vector.ObjectVectorDirect',
+    'char': 'io.deephaven.vector.CharVectorDirect',
+    'java.lang.Boolean': 'io.deephaven.vector.ObjectVectorDirect',
+    'boolean': 'io.deephaven.vector.ObjectVectorDirect',  # it really should be boxed...
+    'byte': 'io.deephaven.vector.ByteVectorDirect',
+    'short': 'io.deephaven.vector.ShortVectorDirect',
+    'int': 'io.deephaven.vector.IntVectorDirect',
+    'long': 'io.deephaven.vector.LongVectorDirect',
+    'float': 'io.deephaven.vector.FloatVectorDirect',
+    'double': 'io.deephaven.vector.DoubleVectorDirect',
 }
 
 _javaTypeToImmutableColumnSource = {
-    'byte': 'io.deephaven.db.v2.sources.immutable.ImmutableByteArraySource',
-    'short': 'io.deephaven.db.v2.sources.immutable.ImmutableShortArraySource',
-    'int': 'io.deephaven.db.v2.sources.immutable.ImmutableIntArraySource',
-    'long': 'io.deephaven.db.v2.sources.immutable.ImmutableLongArraySource',
-    'float': 'io.deephaven.db.v2.sources.immutable.ImmutableFloatArraySource',
-    'double': 'io.deephaven.db.v2.sources.immutable.ImmutableDoubleArraySource',
-    'char': 'io.deephaven.db.v2.sources.immutable.ImmutableCharArraySource',
+    'byte': 'io.deephaven.engine.table.impl.sources.immutable.ImmutableByteArraySource',
+    'short': 'io.deephaven.engine.table.impl.sources.immutable.ImmutableShortArraySource',
+    'int': 'io.deephaven.engine.table.impl.sources.immutable.ImmutableIntArraySource',
+    'long': 'io.deephaven.engine.table.impl.sources.immutable.ImmutableLongArraySource',
+    'float': 'io.deephaven.engine.table.impl.sources.immutable.ImmutableFloatArraySource',
+    'double': 'io.deephaven.engine.table.impl.sources.immutable.ImmutableDoubleArraySource',
+    'char': 'io.deephaven.engine.table.impl.sources.immutable.ImmutableCharArraySource',
 }
 
 ###########################################################################################################
@@ -190,7 +190,7 @@ def convertToJavaArray(input, boxed=False):
 
     * basic numpy primitive dtype are converted to their java analog, ``NaN`` values in floating point columns are
       converted to their respective Deephaven NULL constant values.
-    * dtype ``datatime64[*]`` are converted to ``DBDateTime``
+    * dtype ``datatime64[*]`` are converted to ``DateTime``
     * dtype of one of the basic string type *(unicode\*, str\*, bytes\*):
         - if all elements are one character long: converted to ``char`` array
         - otherwise, ``String`` array
@@ -203,7 +203,7 @@ def convertToJavaArray(input, boxed=False):
 
         - ``bool`` - converted to ``Boolean`` array with null values preserved
         - ``str`` - converted to ``String`` array with null values as empty string
-        - ``datetime.date`` or ``datetime.datetime`` - the array is converted to ``DBDateTime``
+        - ``datetime.date`` or ``datetime.datetime`` - the array is converted to ``DateTime``
         - ``numpy.ndarray`` - converted to java array. All elements are assumed null, or ndarray of the same type and
           compatible shape, or an exception will be raised.
         - ``dict`` - **unsupported**
@@ -387,7 +387,7 @@ def _booleanColumnSource(array, columnName, typ):
 
 def _charColumnSource(array, columnName, typ):
     # Assumed to be called strictly by _convertNdarrayToImmutableSource...no error checking at all performed
-    colClassType = 'io.deephaven.db.v2.sources.immutable.ImmutableCharArraySource'
+    colClassType = 'io.deephaven.engine.table.impl.sources.immutable.ImmutableCharArraySource'
     try:
         return colClassType, _makeJavaArray(array, 'char')
     except Exception as e:
@@ -426,10 +426,10 @@ def _arrayColumnSource(array, javaTypeString):
 
     arrayType = None
 
-    if javaTypeString in _javaTypeToDbarrayType:
-        arrayType = _javaTypeToDbarrayType[javaTypeString]
+    if javaTypeString in _javaTypeToVectorType:
+        arrayType = _javaTypeToVectorType[javaTypeString]
     elif javaTypeString in jpy.dtypes:
-        arrayType = 'io.deephaven.db.tables.dbarrays.DbArrayDirect'
+        arrayType = 'io.deephaven.vector.ObjectVectorDirect'
 
     arrayCls = jpy.get_type(arrayType)
     if javaTypeString == 'java.lang.Boolean':
@@ -504,7 +504,7 @@ def _getJavaTypeFromArray(ndarray):
         else:
             return 'java.lang.String'
     elif dtype.startswith('datetime64'):
-        return 'io.deephaven.db.tables.utils.DBDateTime'
+        return 'io.deephaven.time.DateTime'
     elif dtype == 'object':
         # infer type from the first non-stupid element
         goodElement = None
@@ -609,7 +609,7 @@ def _makeJavaArray(ndarray, javaType, containsArrays=False, depth=None):
         if javaType == 'long':
             return longs
         else:
-            return jpy.get_type(__ArrayConversionUtility__).translateArrayLongToDBDateTime(longs)
+            return jpy.get_type(__ArrayConversionUtility__).translateArrayLongToDateTime(longs)
     elif javaType == 'java.lang.Boolean':
         # make corresponding byte version: None -> -1, False -> 0, True -> 1
         byts = numpy.full(ndarray.shape, -1, dtype=numpy.int8)
@@ -637,7 +637,7 @@ def makeJavaArray(data, name, convertUnknownToString=False):
 
     * basic numpy primitive dtype are converted to their java analog, ``NaN`` values in floating point columns are
       converted to their respective Deephaven NULL constant values.
-    * dtype ``datatime64[*]`` are converted to ``DBDateTime``
+    * dtype ``datatime64[*]`` are converted to ``DateTime``
     * dtype of one of the basic string type *(unicode\*, str\*, bytes\*):
         - if all elements are one character long: converted to ``char`` array
         - otherwise, ``String`` array
@@ -650,7 +650,7 @@ def makeJavaArray(data, name, convertUnknownToString=False):
 
         - ``bool`` - converted to ``Boolean`` array with null values preserved
         - ``str`` - converted to ``String`` array with null values as empty string
-        - ``datetime.date`` or ``datetime.datetime`` - the array is converted to ``DBDateTime``
+        - ``datetime.date`` or ``datetime.datetime`` - the array is converted to ``DateTime``
         - ``numpy.ndarray`` - converted to java array. All elements are assumed null, or ndarray of the same type and
           compatible shape, or an exception will be raised.
         - ``dict`` - **unsupported**
@@ -675,8 +675,8 @@ def makeJavaArray(data, name, convertUnknownToString=False):
     if junk is None:
         raise ValueError("Conversion failed")
     elif len(junk) in [2, 3]:
-        if junk[0] == 'io.deephaven.db.v2.sources.immutable.ImmutableDateTimeArraySource':
-            return jpy.get_type(__ArrayConversionUtility__).translateArrayLongToDBDateTime(junk[1])
+        if junk[0] == 'io.deephaven.engine.table.impl.sources.immutable.ImmutableDateTimeArraySource':
+            return jpy.get_type(__ArrayConversionUtility__).translateArrayLongToDateTime(junk[1])
         else:
             return junk[1]
 
@@ -791,7 +791,7 @@ def _convertNdarrayToImmutableSource(data, name, convertUnknownToString=False):
         return _stringColumnSource(data, name, type(data[0]))
     elif javaType == 'java.lang.Boolean':
         return _booleanColumnSource(data, name, type(data[0]))
-    elif javaType == 'io.deephaven.db.tables.utils.DBDateTime':
+    elif javaType == 'io.deephaven.time.DateTime':
         return __DatetimeColumnSource__, _makeJavaArray(data, 'long')
     elif javaType == 'datetime':
         return __DatetimeColumnSource__, jpy.array('long', [_datetimeToLong(el) for el in data])
@@ -889,21 +889,20 @@ class NULL_CONVERSION(object):
             return cls._stringToValue.get(tval, cls.ERROR)
         return cls.ERROR
 
+def _isVectorType(type_name): \
+        return type_name.startswith('io.deephaven.vector.') or \
+               type_name.startswith('io.deephaven.engine.table.impl.vector.')
 
-def _isDbArray(obj):
+def _isVector(obj):
     try:
-        classString = obj.getClass().getName()
-        cond = classString.startswith('io.deephaven.db.tables.dbarrays.Db') or \
-               classString.startswith('io.deephaven.db.v2.dbarrays.Db')
-        return cond
+        return _isVectorType(obj.getClass().getName())
     except Exception as e:
         return False
 
 
 def _isJavaArray(obj):
     try:
-        classString = obj.getClass().getName()
-        return classString.startswith('[')
+        return obj.getClass().isArray()
     except Exception as e:
         return False
 

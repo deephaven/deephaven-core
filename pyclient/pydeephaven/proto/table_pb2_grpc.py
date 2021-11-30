@@ -35,6 +35,11 @@ class TableServiceStub(object):
                 request_serializer=deephaven_dot_proto_dot_table__pb2.FetchTableMapRequest.SerializeToString,
                 response_deserializer=deephaven_dot_proto_dot_table__pb2.FetchTableMapResponse.FromString,
                 )
+        self.ApplyPreviewColumns = channel.unary_unary(
+                '/io.deephaven.proto.backplane.grpc.TableService/ApplyPreviewColumns',
+                request_serializer=deephaven_dot_proto_dot_table__pb2.ApplyPreviewColumnsRequest.SerializeToString,
+                response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
+                )
         self.EmptyTable = channel.unary_unary(
                 '/io.deephaven.proto.backplane.grpc.TableService/EmptyTable',
                 request_serializer=deephaven_dot_proto_dot_table__pb2.EmptyTableRequest.SerializeToString,
@@ -170,6 +175,11 @@ class TableServiceStub(object):
                 request_serializer=deephaven_dot_proto_dot_table__pb2.RunChartDownsampleRequest.SerializeToString,
                 response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
                 )
+        self.CreateInputTable = channel.unary_unary(
+                '/io.deephaven.proto.backplane.grpc.TableService/CreateInputTable',
+                request_serializer=deephaven_dot_proto_dot_table__pb2.CreateInputTableRequest.SerializeToString,
+                response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
+                )
         self.Batch = channel.unary_stream(
                 '/io.deephaven.proto.backplane.grpc.TableService/Batch',
                 request_serializer=deephaven_dot_proto_dot_table__pb2.BatchTableRequest.SerializeToString,
@@ -212,6 +222,14 @@ class TableServiceServicer(object):
     def FetchTableMap(self, request, context):
         """
         Fetches a TableMap from an existing source ticket and exports it to the local session result ticket.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ApplyPreviewColumns(self, request, context):
+        """
+        Create a table that has preview columns applied to an existing source table.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -423,7 +441,7 @@ class TableServiceServicer(object):
 
     def Flatten(self, request, context):
         """
-        Returns a new table with a flattened index.
+        Returns a new table with a flattened row set.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -434,6 +452,15 @@ class TableServiceServicer(object):
         Downsamples a table assume its contents will be rendered in a run chart, with each subsequent row holding a later
         X value (i.e., sorted on that column). Multiple Y columns can be specified, as can a range of values for the X
         column to support zooming in.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def CreateInputTable(self, request, context):
+        """*
+        Creates a new Table based on the provided configuration. This can be used as a regular table from the other methods
+        in this interface, or can be interacted with via the InputTableService to modify its contents.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -483,6 +510,11 @@ def add_TableServiceServicer_to_server(servicer, server):
                     servicer.FetchTableMap,
                     request_deserializer=deephaven_dot_proto_dot_table__pb2.FetchTableMapRequest.FromString,
                     response_serializer=deephaven_dot_proto_dot_table__pb2.FetchTableMapResponse.SerializeToString,
+            ),
+            'ApplyPreviewColumns': grpc.unary_unary_rpc_method_handler(
+                    servicer.ApplyPreviewColumns,
+                    request_deserializer=deephaven_dot_proto_dot_table__pb2.ApplyPreviewColumnsRequest.FromString,
+                    response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
             ),
             'EmptyTable': grpc.unary_unary_rpc_method_handler(
                     servicer.EmptyTable,
@@ -619,6 +651,11 @@ def add_TableServiceServicer_to_server(servicer, server):
                     request_deserializer=deephaven_dot_proto_dot_table__pb2.RunChartDownsampleRequest.FromString,
                     response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
             ),
+            'CreateInputTable': grpc.unary_unary_rpc_method_handler(
+                    servicer.CreateInputTable,
+                    request_deserializer=deephaven_dot_proto_dot_table__pb2.CreateInputTableRequest.FromString,
+                    response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
+            ),
             'Batch': grpc.unary_stream_rpc_method_handler(
                     servicer.Batch,
                     request_deserializer=deephaven_dot_proto_dot_table__pb2.BatchTableRequest.FromString,
@@ -704,6 +741,23 @@ class TableService(object):
         return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.TableService/FetchTableMap',
             deephaven_dot_proto_dot_table__pb2.FetchTableMapRequest.SerializeToString,
             deephaven_dot_proto_dot_table__pb2.FetchTableMapResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def ApplyPreviewColumns(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.TableService/ApplyPreviewColumns',
+            deephaven_dot_proto_dot_table__pb2.ApplyPreviewColumnsRequest.SerializeToString,
+            deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
 
@@ -1162,6 +1216,23 @@ class TableService(object):
             metadata=None):
         return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.TableService/RunChartDownsample',
             deephaven_dot_proto_dot_table__pb2.RunChartDownsampleRequest.SerializeToString,
+            deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def CreateInputTable(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.TableService/CreateInputTable',
+            deephaven_dot_proto_dot_table__pb2.CreateInputTableRequest.SerializeToString,
             deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

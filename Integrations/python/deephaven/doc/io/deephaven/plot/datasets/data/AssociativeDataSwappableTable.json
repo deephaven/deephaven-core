@@ -1,0 +1,12 @@
+{
+ "className": "io.deephaven.plot.datasets.data.AssociativeDataSwappableTable",
+ "methods": {
+  "get": "Gets the value associated with the key\n\n:param key: (AssociativeDataSwappableTable.KEY) - key\n:return: (AssociativeDataSwappableTable.VALUE) value associated with the key",
+  "isModifiable": "Whether the dataset is modifiable.\n\n:return: (boolean) true if the dataset is modifiable, false if not",
+  "put": "Adds the key-value pair to the dataset.\n\n:param key: (AssociativeDataSwappableTable.KEY) - key\n:param value: (AssociativeDataSwappableTable.VALUE) - value",
+  "putAll": "Adds all key-value pairs in the map to the dataset.\n\nNote: Java generics information - <K extends AssociativeDataSwappableTable.KEY,\nV extends AssociativeDataSwappableTable.VALUE>\n\n:param values: (java.util.Map<K,V>) - keypair map"
+ },
+ "path": "io.deephaven.plot.datasets.data.AssociativeDataSwappableTable",
+ "text": "An AssociativeData dataset backed by a SwappableTable. Table columns hold the keys and associated\n values.\n\n Data types are specified in construction.",
+ "typeName": "class"
+}

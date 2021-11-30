@@ -1,0 +1,20 @@
+{
+ "className": "io.deephaven.engine.table.TableUpdate",
+ "methods": {
+  "acquire": "Increment the reference count on this object.\n\n:return: (io.deephaven.engine.table.TableUpdate) this for convenience",
+  "added": "rows added (post-shift keyspace)\n\n:return: io.deephaven.engine.rowset.RowSet",
+  "append": ":param logOutput: io.deephaven.base.log.LogOutput\n:return: io.deephaven.base.log.LogOutput",
+  "empty": ":return: (boolean) true if no changes occurred in this update",
+  "forAllModified": "This helper iterates through the modified RowSet and supplies both the pre-shift and post-shift keys per row.\n\n:param consumer: (java.util.function.BiConsumer<java.lang.Long,java.lang.Long>) - a consumer to feed the modified pre-shift and post-shift key values to.",
+  "getModifiedPreShift": ":return: (io.deephaven.engine.rowset.RowSet) a cached copy of the modified RowSet in pre-shift keyspace",
+  "modified": "rows modified (post-shift keyspace)\n\n:return: io.deephaven.engine.rowset.RowSet",
+  "modifiedColumnSet": "the set of columns that might have changed for rows in the modified() RowSet\n\n:return: io.deephaven.engine.table.ModifiedColumnSet",
+  "release": "Decrement the reference count on this object.",
+  "removed": "rows removed (pre-shift keyspace)\n\n:return: io.deephaven.engine.rowset.RowSet",
+  "shifted": "rows that shifted to new indices\n\n:return: io.deephaven.engine.rowset.RowSetShiftData",
+  "valid": ":return: (boolean) true if all internal state is initialized"
+ },
+ "path": "io.deephaven.engine.table.TableUpdate",
+ "text": "Table update propagation structure, describing the rows and columns that were added, removed, modified, and shifted\n on a given cycle.",
+ "typeName": "interface"
+}

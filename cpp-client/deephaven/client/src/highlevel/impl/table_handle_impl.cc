@@ -149,7 +149,7 @@ std::shared_ptr<TableHandleImpl> TableHandleImpl::defaultAggregateByType(
 }
 
 std::shared_ptr<TableHandleImpl> TableHandleImpl::by(std::vector<std::string> columnSpecs) {
-  return defaultAggregateByType(ComboAggregateRequest::ARRAY, std::move(columnSpecs));
+  return defaultAggregateByType(ComboAggregateRequest::GROUP, std::move(columnSpecs));
 }
 
 std::shared_ptr<TableHandleImpl> TableHandleImpl::by(

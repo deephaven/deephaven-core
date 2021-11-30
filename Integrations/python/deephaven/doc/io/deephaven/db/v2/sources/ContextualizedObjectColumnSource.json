@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.db.v2.sources.ContextualizedObjectColumnSource",
- "methods": {
-  "get": ":param index: long\n:param context: io.deephaven.db.v2.sources.chunk.ChunkSource.FillContext\n:return: ContextualizedObjectColumnSource.DATA_TYPE"
- },
- "path": "io.deephaven.db.v2.sources.ContextualizedObjectColumnSource",
- "text": "Interface for Object ColumnSources that offer an alternative get method that takes a context.",
- "typeName": "interface"
-}

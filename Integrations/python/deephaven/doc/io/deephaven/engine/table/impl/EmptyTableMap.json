@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.table.impl.EmptyTableMap",
+ "methods": {
+  "put": "Add a table to the map with the given key. Return the previous value, if any.\n\n:param key: (java.lang.Object) - the key to add\n:param table: (io.deephaven.engine.table.Table) - the value to add\n:return: (io.deephaven.engine.table.Table) the previous table for the given key"
+ },
+ "path": "io.deephaven.engine.table.impl.EmptyTableMap",
+ "text": "\"Empty\" table map class.",
+ "typeName": "class"
+}

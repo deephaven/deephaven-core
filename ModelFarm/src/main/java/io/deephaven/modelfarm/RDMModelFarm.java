@@ -6,9 +6,9 @@ package io.deephaven.modelfarm;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
-import io.deephaven.db.v2.InstrumentedListenerAdapter;
-import io.deephaven.db.v2.NotificationStepSource;
-import io.deephaven.db.v2.utils.Index;
+import io.deephaven.engine.table.impl.ShiftObliviousInstrumentedListenerAdapter;
+import io.deephaven.engine.table.impl.NotificationStepSource;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.FunctionalInterfaces;
@@ -47,7 +47,7 @@ public abstract class RDMModelFarm<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE extends
 
     // keep the listener so that it doesn't get garbage collected
     @SuppressWarnings("FieldCanBeLocal")
-    private InstrumentedListenerAdapter listener = null;
+    private ShiftObliviousInstrumentedListenerAdapter listener = null;
 
     /**
      * Create a multithreaded resource to execute data driven models.
@@ -65,11 +65,11 @@ public abstract class RDMModelFarm<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE extends
     @Override
     protected void modelFarmStarted() {
         Assert.eqNull(listener, "listener");
-        listener = new InstrumentedListenerAdapter(dataManager.table(), false) {
+        listener = new ShiftObliviousInstrumentedListenerAdapter(dataManager.table(), false) {
             private static final long serialVersionUID = -2137065147841887955L;
 
             @Override
-            public void onUpdate(Index added, Index removed, Index modified) {
+            public void onUpdate(RowSet added, RowSet removed, RowSet modified) {
                 keyIndexCurrentLock.writeLock().lock();
                 keyIndexPrevLock.writeLock().lock();
 
@@ -98,15 +98,15 @@ public abstract class RDMModelFarm<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE extends
         dataManager.table().listenForUpdates(listener, true);
     }
 
-    private void removeKeyIndex(final Index index) {
-        index.forAllLongs((final long i) -> {
+    private void removeKeyIndex(final RowSet rowSet) {
+        rowSet.forAllRowKeys((final long i) -> {
             final KEYTYPE key = dataManager.uniqueIdPrev(i);
             keyIndexDelta.put(key, REMOVED_ENTRY_VALUE);
         });
     }
 
-    private void addKeyIndex(final Index index) {
-        index.forAllLongs((final long i) -> {
+    private void addKeyIndex(final RowSet rowSet) {
+        rowSet.forAllRowKeys((final long i) -> {
             final KEYTYPE key = dataManager.uniqueIdCurrent(i);
             keyIndexDelta.put(key, i);
         });
@@ -119,7 +119,7 @@ public abstract class RDMModelFarm<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE extends
      * @param removed indexes removed from the data table
      * @param modified indexes modified in the data table.
      */
-    protected abstract void onDataUpdate(Index added, Index removed, Index modified);
+    protected abstract void onDataUpdate(RowSet added, RowSet removed, RowSet modified);
 
     /**
      * Populates a data object with data from the most recent row with the provided unique identifier.
@@ -131,7 +131,7 @@ public abstract class RDMModelFarm<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE extends
      */
     private boolean loadData(final DATATYPE data, final KEYTYPE key, final boolean usePrev) {
         // if this is called in the update loop, keyIndex should be updated and accessed in the same thread.
-        // if this is called outside the update loop, the access should be in the LTM lock, and the update should be in
+        // if this is called outside the update loop, the access should be in the UGP lock, and the update should be in
         // the update loop
         // therefore, keyIndex does not need synchronization.
 

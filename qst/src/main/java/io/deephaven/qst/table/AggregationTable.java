@@ -10,7 +10,7 @@ import java.util.Collection;
 import java.util.List;
 
 /**
- * @see io.deephaven.api.TableOperations#by(Collection, Collection)
+ * @see io.deephaven.api.TableOperations#aggBy(Collection, Collection)
  */
 @Immutable
 @NodeStyle

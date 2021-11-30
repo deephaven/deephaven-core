@@ -72,7 +72,7 @@ def dataFrameToTable(dataframe, convertUnknownToString=False):
 
     * Columns basic primitive type are converted to their java analog, ``NaN`` values in floating point columns are
       converted to their respective Deephaven NULL constant values.
-    * Columns of underlying type ``datatime64[*]`` are converted to ``DBDateTime``
+    * Columns of underlying type ``datatime64[*]`` are converted to ``DateTime``
     * Columns of one of the basic string type *(unicode\*, str\*, bytes\*)* are converted to String
     * Columns of type ``numpy.object`` - arrays which are empty or all elements are null are converted to java
       type ``Object``. Otherwise, the first non-null value is used to determine the type for the column.
@@ -81,11 +81,11 @@ def dataFrameToTable(dataframe, convertUnknownToString=False):
 
         - ``bool`` - the array is converted to ``Boolean`` with null values preserved
         - ``str`` - the array is converted to a column of ``String`` type
-        - ``datetime.date`` or ``datetime.datetime`` - the array is converted to ``DBDateTime``
+        - ``datetime.date`` or ``datetime.datetime`` - the array is converted to ``DateTime``
         - ``numpy.ndarray`` - all elements are assumed null, or ndarray of the same type and compatible shape, or an
           exception will be raised.
 
-            + if one-dimensional, then column of appropriate ``DbArray`` type
+            + if one-dimensional, then column of appropriate ``Vector`` type
             + otherwise, column of java array type
         - ``dict`` - **unsupported**
         - ``other iterable type`` - naive conversion to :class:`numpy.ndarray` is attempted, then as above.
@@ -149,7 +149,7 @@ def createTableFromData(data, columns=None, convertUnknownToString=False):
     * Columns which are an instance of tuple or list are first naively converted to :class:`numpy.ndarray`
     * Columns basic primitive type are converted to their java analog, ``NaN`` values in floating point columns are
       converted to their respective Deephaven NULL constant values.
-    * Columns of underlying type ``datatime64[*]`` are converted to ``DBDateTime``
+    * Columns of underlying type ``datatime64[*]`` are converted to ``DateTime``
     * Columns of one of the basic string type *(unicode\*, str\*, bytes\*)* are converted to String
     * Columns of type ``numpy.object`` - arrays which are empty or all elements are null are converted to java
       type ``Object``. Otherwise, the first non-null value is used to determine the type for the column.
@@ -158,11 +158,11 @@ def createTableFromData(data, columns=None, convertUnknownToString=False):
 
         - ``bool`` - the array is converted to ``Boolean`` with null values preserved
         - ``str`` - the array is converted to a column of ``String`` type
-        - ``datetime.date`` or ``datetime.datetime`` - the array is converted to ``DBDateTime``
+        - ``datetime.date`` or ``datetime.datetime`` - the array is converted to ``DateTime``
         - ``numpy.ndarray`` - all elements are assumed null, or ndarray of the same type and compatible shape, or an
           exception will be raised.
 
-            + if one-dimensional, then column of appropriate ``DbArray`` type
+            + if one-dimensional, then column of appropriate ``Vector`` type
             + otherwise, column of java array type
         - ``dict`` - **unsupported**
         - ``other iterable type`` - naive conversion to :class:`numpy.ndarray` is attempted, then as above.

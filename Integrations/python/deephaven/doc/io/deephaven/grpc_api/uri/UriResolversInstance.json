@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.grpc_api.uri.UriResolversInstance",
+ "methods": {
+  "get": ":return: io.deephaven.grpc_api.uri.UriResolvers",
+  "init": ":param instance: io.deephaven.grpc_api.uri.UriResolvers"
+ },
+ "path": "io.deephaven.grpc_api.uri.UriResolversInstance",
+ "typeName": "class"
+}

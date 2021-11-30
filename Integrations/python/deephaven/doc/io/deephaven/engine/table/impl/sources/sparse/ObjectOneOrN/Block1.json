@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.engine.table.impl.sources.sparse.ObjectOneOrN$Block1",
+ "methods": {
+  "ensureIndex": ":param idx: int\n:param recycler: io.deephaven.util.SoftRecycler<io.deephaven.engine.table.impl.sources.sparse.ObjectOneOrN.Block2<ObjectOneOrN.Block1.T>[]>",
+  "get": ":param idx: int\n:return: io.deephaven.engine.table.impl.sources.sparse.ObjectOneOrN.Block2<ObjectOneOrN.Block1.T>",
+  "maybeRecycle": ":param recycler: io.deephaven.util.SoftRecycler<io.deephaven.engine.table.impl.sources.sparse.ObjectOneOrN.Block2<ObjectOneOrN.Block1.T>[]>",
+  "set": ":param idx: int\n:param value: io.deephaven.engine.table.impl.sources.sparse.ObjectOneOrN.Block2<ObjectOneOrN.Block1.T>"
+ },
+ "path": "io.deephaven.engine.table.impl.sources.sparse.ObjectOneOrN.Block1",
+ "typeName": "class"
+}

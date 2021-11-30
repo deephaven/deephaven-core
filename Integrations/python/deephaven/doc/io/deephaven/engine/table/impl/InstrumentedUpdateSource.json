@@ -1,0 +1,6 @@
+{
+ "className": "io.deephaven.engine.table.impl.InstrumentedUpdateSource",
+ "methods": {},
+ "path": "io.deephaven.engine.table.impl.InstrumentedUpdateSource",
+ "typeName": "class"
+}

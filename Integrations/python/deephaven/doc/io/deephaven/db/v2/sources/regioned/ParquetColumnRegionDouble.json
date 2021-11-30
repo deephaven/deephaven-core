@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.db.v2.sources.regioned.ParquetColumnRegionDouble",
- "methods": {
-  "getDouble": "Get a single double from this region.\n\n:param elementIndex: (long) - Element (double) index in the table's address space\n:return: (double) The double value at the specified element (double) index"
- },
- "path": "io.deephaven.db.v2.sources.regioned.ParquetColumnRegionDouble",
- "text": "ColumnRegionDouble implementation for regions that support fetching primitive doubles from\n column chunk page stores.",
- "typeName": "class"
-}

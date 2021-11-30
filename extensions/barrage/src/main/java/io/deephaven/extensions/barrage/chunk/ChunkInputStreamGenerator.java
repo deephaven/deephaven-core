@@ -6,13 +6,13 @@ package io.deephaven.extensions.barrage.chunk;
 
 import com.google.common.base.Charsets;
 import gnu.trove.iterator.TLongIterator;
+import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
 import io.deephaven.extensions.barrage.util.DefensiveDrainable;
-import io.deephaven.db.util.LongSizedDataStructure;
-import io.deephaven.db.v2.sources.chunk.Attributes;
-import io.deephaven.db.v2.sources.chunk.Chunk;
-import io.deephaven.db.v2.sources.chunk.ChunkType;
-import io.deephaven.db.v2.utils.Index;
+import io.deephaven.util.datastructures.LongSizedDataStructure;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.ChunkType;
 import io.deephaven.util.SafeCloseable;
 import org.jetbrains.annotations.Nullable;
 
@@ -23,7 +23,7 @@ import java.util.Iterator;
 public interface ChunkInputStreamGenerator extends SafeCloseable {
 
     static <T> ChunkInputStreamGenerator makeInputStreamGenerator(
-            final ChunkType chunkType, final Class<T> type, final Chunk<Attributes.Values> chunk) {
+            final ChunkType chunkType, final Class<T> type, final Chunk<Values> chunk) {
         switch (chunkType) {
             case Boolean:
                 throw new UnsupportedOperationException("Booleans are reinterpreted as bytes");
@@ -60,7 +60,7 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
         }
     }
 
-    static <T> Chunk<Attributes.Values> extractChunkFromInputStream(
+    static <T> Chunk<Values> extractChunkFromInputStream(
             final BarrageSubscriptionOptions options,
             final ChunkType chunkType, final Class<T> type,
             final Iterator<FieldNodeInfo> fieldNodeIter,
@@ -69,7 +69,7 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
         return extractChunkFromInputStream(options, 1, chunkType, type, fieldNodeIter, bufferInfoIter, is);
     }
 
-    static <T> Chunk<Attributes.Values> extractChunkFromInputStream(
+    static <T> Chunk<Values> extractChunkFromInputStream(
             final BarrageSubscriptionOptions options,
             final int factor,
             final ChunkType chunkType, final Class<T> type,
@@ -124,13 +124,13 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
     }
 
     /**
-     * Get an input stream optionally position-space filtered using the provided index.
+     * Get an input stream optionally position-space filtered using the provided RowSet.
      *
      * @param options the serializable options for this subscription
      * @param subset if provided, is a position-space filter of source data
      * @return a single-use DrainableColumn ready to be drained via grpc
      */
-    DrainableColumn getInputStream(final BarrageSubscriptionOptions options, @Nullable final Index subset) throws IOException;
+    DrainableColumn getInputStream(final BarrageSubscriptionOptions options, @Nullable final RowSet subset) throws IOException;
 
     final class FieldNodeInfo {
         public final int numElements;

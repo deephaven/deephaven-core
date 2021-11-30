@@ -1,8 +1,8 @@
 package io.deephaven.grpc_api.appmode;
 
 import io.deephaven.appmode.*;
-import io.deephaven.db.tables.Table;
-import io.deephaven.db.tables.utils.TableTools;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.util.TableTools;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
