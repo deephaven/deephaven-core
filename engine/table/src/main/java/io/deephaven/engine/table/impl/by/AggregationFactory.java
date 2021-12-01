@@ -29,6 +29,7 @@ import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+
 /**
  * The AggregationFactory combines one or more aggregations into an {@link AggregationSpec} for use internally by the
  * implementation of {@link Table#aggBy}.
