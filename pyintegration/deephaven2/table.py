@@ -18,8 +18,7 @@ _JColumnName = jpy.get_type("io.deephaven.api.ColumnName")
 _JSortColumn = jpy.get_type("io.deephaven.api.SortColumn")
 _JFilter = jpy.get_type("io.deephaven.api.filter.Filter")
 _JFilterOr = jpy.get_type("io.deephaven.api.filter.FilterOr")
-_JTWD = jpy.get_type("io.deephaven.engine.table.impl.TableWithDefaults")
-_JAggHolder = jpy.get_type("io.deephaven.engine.table.impl.TableWithDefaults$AggHolder")
+_JArrayList = jpy.get_type("java.util.ArrayList")
 
 #
 # module level functions
@@ -570,7 +569,10 @@ class Table:
         try:
             if order:
                 sort_columns = [sort_column(col, dir_) for col, dir_ in zip(order_by, order)]
-                return Table(j_table=_JTWD.sort(self.j_table, *sort_columns))
+                j_sc_list = _JArrayList()
+                for sc in sort_columns:
+                    j_sc_list.add(sc)
+                return Table(j_table=self.j_table.sort(j_sc_list))
             else:
                 return Table(j_table=self.j_table.sort(*order_by))
         except Exception as e:
@@ -1046,7 +1048,10 @@ class Table:
             DHError
         """
         try:
-            return Table(j_table=_JTWD.aggBy(self.j_table, _JAggHolder(*[agg.j_agg for agg in aggs]), *by))
+            j_agg_list = _JArrayList()
+            for agg in aggs:
+                j_agg_list.add(agg.j_agg)
+            return Table(j_table=self.j_table.aggBy(j_agg_list, *by))
         except Exception as e:
             raise DHError(e, "table agg_by operation failed.") from e
     # endregion

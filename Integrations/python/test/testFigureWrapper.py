@@ -13,8 +13,9 @@ import jpy
 from deephaven import TableTools, Aggregation, Plot, Calendars
 from deephaven.Plot import figure_wrapper
 
-_JTWD = jpy.get_type("io.deephaven.engine.table.impl.TableWithDefaults")
-_JAggHolder = jpy.get_type("io.deephaven.engine.table.impl.TableWithDefaults$AggHolder")
+# _JTWD = jpy.get_type("io.deephaven.engine.table.impl.TableWithDefaults")
+# _JAggHolder = jpy.get_type("io.deephaven.engine.table.impl.TableWithDefaults$AggHolder")
+_JArrayList = jpy.get_type("java.util.ArrayList")
 
 if sys.version_info[0] < 3:
     import unittest2 as unittest
@@ -150,14 +151,17 @@ class TestFigureWrapper(unittest.TestCase):
             figure = figure.errorBarXY("Error XY", self.table.where("Sym=`MSFT`"), "timestamp", "timestamp", "timestamp", "price", "price", "price")
 
         figure = figure_wrapper.FigureWrapper(1, 1)
+        aggs = [
+            Aggregation.AggAvg("avgPrice=price"),
+            Aggregation.AggMin("minPrice=price"),
+            Aggregation.AggMax("maxPrice=price")]
+        j_agg_list = _JArrayList()
+        for agg in aggs:
+            j_agg_list.add(agg)
+
         with self.subTest("catErrorBar"):
             figure = figure.catErrorBar("Cat Error Bar",
-                                        _JTWD.aggBy(self.table,
-                                                    _JAggHolder(*[
-                                                        Aggregation.AggAvg("avgPrice=price"),
-                                                        Aggregation.AggMin("minPrice=price"),
-                                                        Aggregation.AggMax("maxPrice=price")]),
-                                                    "Sym"),
+                                        self.table.aggBy(j_agg_list,"Sym"),
                                         "Sym", "avgPrice", "minPrice", "maxPrice")
         del figure
 
