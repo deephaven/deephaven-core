@@ -160,16 +160,6 @@ public class HierarchicalTable extends QueryTable {
     }
 
     @Override
-    public Table lastBy(Selectable... groupByColumns) {
-        return throwUnsupported("lastBy()");
-    }
-
-    @Override
-    public Table firstBy(Selectable... groupByColumns) {
-        return throwUnsupported("firstBy()");
-    }
-
-    @Override
     public Table countBy(String countColumnName, Selectable... groupByColumns) {
         return throwUnsupported("countBy()");
     }

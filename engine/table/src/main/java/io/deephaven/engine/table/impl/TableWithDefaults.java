@@ -9,7 +9,9 @@ import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.key.Key;
 import io.deephaven.api.agg.key.KeyAbsSum;
 import io.deephaven.api.agg.key.KeyAvg;
+import io.deephaven.api.agg.key.KeyFirst;
 import io.deephaven.api.agg.key.KeyGroup;
+import io.deephaven.api.agg.key.KeyLast;
 import io.deephaven.api.agg.key.KeyMax;
 import io.deephaven.api.agg.key.KeyMedian;
 import io.deephaven.api.agg.key.KeyMin;
@@ -946,6 +948,12 @@ public interface TableWithDefaults extends Table {
 
     @Override
     @ConcurrentMethod
+    default Table lastBy(Selectable... groupByColumns) {
+        return aggAllBy(KeyLast.of(), groupByColumns);
+    }
+
+    @Override
+    @ConcurrentMethod
     default Table lastBy(String... groupByColumns) {
         return lastBy(Selectable.from(groupByColumns).toArray(ZERO_LENGTH_SELECTABLE_ARRAY));
     }
@@ -960,6 +968,12 @@ public interface TableWithDefaults extends Table {
     @ConcurrentMethod
     default Table lastBy() {
         return lastBy(ZERO_LENGTH_SELECTABLE_ARRAY);
+    }
+
+    @Override
+    @ConcurrentMethod
+    default Table firstBy(Selectable... groupByColumns) {
+        return aggAllBy(KeyFirst.of(), groupByColumns);
     }
 
     @Override
