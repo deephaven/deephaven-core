@@ -40,7 +40,7 @@ class TableTestCase(BaseTestCase):
         t = time_table("00:00:01", start_time="2021-11-06T13:21:00 NY")
         self.assertEqual(1, len(t.columns))
         self.assertTrue(t.is_refreshing)
-        self.assertEqual("2021-11-06T13:21:00.000000000 NY", t._j_table.getColumnSource("Timestamp").get(0).toString())
+        self.assertEqual("2021-11-06T13:21:00.000000000 NY", t.j_table.getColumnSource("Timestamp").get(0).toString())
 
     def test_repr(self):
         print(self.test_table)
