@@ -8,6 +8,7 @@ import io.deephaven.api.JoinMatch;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.SortColumn;
 import io.deephaven.api.agg.Aggregation;
+import io.deephaven.api.agg.key.Key;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.liveness.Liveness;
@@ -344,6 +345,12 @@ public abstract class UncoalescedTable extends BaseTable implements TableWithDef
     @ConcurrentMethod
     public Table groupBy(Collection<? extends Selectable> groupByColumns) {
         return coalesce().groupBy(groupByColumns);
+    }
+
+    @Override
+    @ConcurrentMethod
+    public Table aggAllBy(Key key, Selectable... groupByColumns) {
+        return coalesce().aggAllBy(key, groupByColumns);
     }
 
     @Override

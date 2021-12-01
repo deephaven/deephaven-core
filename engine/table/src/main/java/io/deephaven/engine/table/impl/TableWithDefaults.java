@@ -6,6 +6,27 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.*;
 import io.deephaven.api.agg.Aggregation;
+import io.deephaven.api.agg.key.Key;
+import io.deephaven.api.agg.key.Key.Visitor;
+import io.deephaven.api.agg.key.KeyAbsSum;
+import io.deephaven.api.agg.key.KeyAvg;
+import io.deephaven.api.agg.key.KeyCountDistinct;
+import io.deephaven.api.agg.key.KeyDistinct;
+import io.deephaven.api.agg.key.KeyFirst;
+import io.deephaven.api.agg.key.KeyGroup;
+import io.deephaven.api.agg.key.KeyLast;
+import io.deephaven.api.agg.key.KeyMax;
+import io.deephaven.api.agg.key.KeyMedian;
+import io.deephaven.api.agg.key.KeyMin;
+import io.deephaven.api.agg.key.KeyPct;
+import io.deephaven.api.agg.key.KeySortedFirst;
+import io.deephaven.api.agg.key.KeySortedLast;
+import io.deephaven.api.agg.key.KeyStd;
+import io.deephaven.api.agg.key.KeySum;
+import io.deephaven.api.agg.key.KeyUnique;
+import io.deephaven.api.agg.key.KeyVar;
+import io.deephaven.api.agg.key.KeyWAvg;
+import io.deephaven.api.agg.key.KeyWSum;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.base.Pair;
 import io.deephaven.base.StringUtils;
@@ -670,6 +691,24 @@ public interface TableWithDefaults extends Table {
     @ConcurrentMethod
     default Table groupBy() {
         return groupBy(Collections.emptyList());
+    }
+
+    @Override
+    @ConcurrentMethod
+    default Table aggAllBy(Key key) {
+        return aggAllBy(key, Collections.emptyList());
+    }
+
+    @Override
+    @ConcurrentMethod
+    default Table aggAllBy(Key key, String... groupByColumns) {
+        return aggAllBy(key, List.of(groupByColumns));
+    }
+
+    @Override
+    @ConcurrentMethod
+    default Table aggAllBy(Key key, Collection<String> groupByColumns) {
+        return aggAllBy(key, Selectable.from(groupByColumns).toArray(ZERO_LENGTH_SELECTABLE_ARRAY));
     }
 
     @Override

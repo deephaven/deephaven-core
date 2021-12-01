@@ -22,10 +22,11 @@ import io.deephaven.api.agg.key.KeyUnique;
 import io.deephaven.api.agg.key.KeyVar;
 import io.deephaven.api.agg.key.KeyWAvg;
 import io.deephaven.api.agg.key.KeyWSum;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Objects;
 
-class AggregationSpecAdapter implements Key.Visitor {
+public class AggregationSpecAdapter implements Key.Visitor {
 
     public static AggregationSpec of(Key key) {
         return key.walk(new AggregationSpecAdapter()).out();

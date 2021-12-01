@@ -10,6 +10,26 @@ import io.deephaven.api.Selectable;
 import io.deephaven.api.SortColumn;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.AggregationOutputs;
+import io.deephaven.api.agg.key.Key;
+import io.deephaven.api.agg.key.KeyAbsSum;
+import io.deephaven.api.agg.key.KeyAvg;
+import io.deephaven.api.agg.key.KeyCountDistinct;
+import io.deephaven.api.agg.key.KeyDistinct;
+import io.deephaven.api.agg.key.KeyFirst;
+import io.deephaven.api.agg.key.KeyGroup;
+import io.deephaven.api.agg.key.KeyLast;
+import io.deephaven.api.agg.key.KeyMax;
+import io.deephaven.api.agg.key.KeyMedian;
+import io.deephaven.api.agg.key.KeyMin;
+import io.deephaven.api.agg.key.KeyPct;
+import io.deephaven.api.agg.key.KeySortedFirst;
+import io.deephaven.api.agg.key.KeySortedLast;
+import io.deephaven.api.agg.key.KeyStd;
+import io.deephaven.api.agg.key.KeySum;
+import io.deephaven.api.agg.key.KeyUnique;
+import io.deephaven.api.agg.key.KeyVar;
+import io.deephaven.api.agg.key.KeyWAvg;
+import io.deephaven.api.agg.key.KeyWSum;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.base.StringUtils;
 import io.deephaven.base.verify.Assert;
@@ -593,6 +613,11 @@ public class QueryTable extends BaseTable {
     }
 
     @Override
+    public Table aggAllBy(Key key, Selectable... groupByColumns) {
+        return key.walk(new SingleAggVisitor(groupByColumns)).out();
+    }
+
+    @Override
     public Table aggBy(final Collection<? extends Aggregation> aggregations,
             final Collection<? extends Selectable> groupByColumns) {
         final List<AggregationFactory.AggregationElement> optimized =
@@ -671,9 +696,9 @@ public class QueryTable extends BaseTable {
 
     @Override
     public Table medianBy(Selectable... groupByColumns) {
-        return QueryPerformanceRecorder.withNugget("medianBy(" + Arrays.toString(groupByColumns) + ")",
-                sizeForInstrumentation(),
-                () -> by(new PercentileBySpecImpl(0.50, true), SelectColumn.from(groupByColumns)));
+        final SingleAggVisitor visitor = new SingleAggVisitor(groupByColumns);
+        visitor.visit(KeyMedian.of());
+        return visitor.out();
     }
 
     @Override
@@ -3453,5 +3478,123 @@ public class QueryTable extends BaseTable {
 
     public Table wouldMatch(WouldMatchPair... matchers) {
         return getResult(new WouldMatchOperation(this, matchers));
+    }
+
+    private class SingleAggVisitor implements Key.Visitor {
+        private final Selectable[] groupByColumns;
+        private Table out;
+
+        public SingleAggVisitor(Selectable[] groupByColumns) {
+            this.groupByColumns = Objects.requireNonNull(groupByColumns);
+        }
+
+        public Table out() {
+            return Objects.requireNonNull(out);
+        }
+
+        private Table visitGeneric(Key key) {
+            final QueryTable tableToUse = (QueryTable) dropColumnFormats();
+            return QueryPerformanceRecorder.withNugget("aggAllBy(" + key + "," + Arrays.toString(groupByColumns) + ")",
+                    sizeForInstrumentation(),
+                    () -> tableToUse.by(AggregationSpecAdapter.of(key), SelectColumn.from(groupByColumns)));
+        }
+
+        @Override
+        public void visit(KeyAbsSum absSum) {
+            out = absSumBy(groupByColumns);
+        }
+
+        @Override
+        public void visit(KeyCountDistinct countDistinct) {
+            out = visitGeneric(countDistinct);
+        }
+
+        @Override
+        public void visit(KeyDistinct distinct) {
+            out = visitGeneric(distinct);
+        }
+
+        @Override
+        public void visit(KeyGroup group) {
+            out = groupBy(List.of(groupByColumns));
+        }
+
+        @Override
+        public void visit(KeyAvg avg) {
+            out = avgBy(groupByColumns);
+        }
+
+        @Override
+        public void visit(KeyFirst first) {
+            out = firstBy(groupByColumns);
+        }
+
+        @Override
+        public void visit(KeyLast last) {
+            out = lastBy(groupByColumns);
+        }
+
+        @Override
+        public void visit(KeyMax max) {
+            out = maxBy(groupByColumns);
+        }
+
+        @Override
+        public void visit(KeyMedian median) {
+            out = QueryPerformanceRecorder.withNugget("medianBy(" + Arrays.toString(groupByColumns) + ")",
+                    sizeForInstrumentation(),
+                    () -> by(new PercentileBySpecImpl(0.50, median.averageMedian()),
+                            SelectColumn.from(groupByColumns)));
+        }
+
+        @Override
+        public void visit(KeyMin min) {
+            out = minBy(groupByColumns);
+        }
+
+        @Override
+        public void visit(KeyPct pct) {
+            out = visitGeneric(pct);
+        }
+
+        @Override
+        public void visit(KeySortedFirst sortedFirst) {
+            out = visitGeneric(sortedFirst);
+        }
+
+        @Override
+        public void visit(KeySortedLast sortedLast) {
+            out = visitGeneric(sortedLast);
+        }
+
+        @Override
+        public void visit(KeyStd std) {
+            out = stdBy(groupByColumns);
+        }
+
+        @Override
+        public void visit(KeySum sum) {
+            out = sumBy(groupByColumns);
+        }
+
+        @Override
+        public void visit(KeyUnique unique) {
+            out = visitGeneric(unique);
+        }
+
+        @Override
+        public void visit(KeyWAvg wAvg) {
+            out = wavgBy(wAvg.weight().name(), groupByColumns);
+        }
+
+        @Override
+        public void visit(KeyWSum wSum) {
+            out = wsumBy(wSum.weight().name(), groupByColumns);
+        }
+
+        @Override
+        public void visit(KeyVar var) {
+            out = varBy(groupByColumns);
+        }
     }
 }
