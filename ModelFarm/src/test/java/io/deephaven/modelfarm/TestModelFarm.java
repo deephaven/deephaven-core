@@ -98,14 +98,16 @@ public class TestModelFarm extends TestCase {
         final CountDownLatch latchThreadComplete = new CountDownLatch(1);
         final AtomicInteger successCounter = new AtomicInteger(0);
         final ModelFarmTick<Long, MutableLong, RowDataManager<Long, MutableLong>> modelFarmTick =
-                getModelFarmTick(nModelFarmThreadsDefault, nKeys, latchThreadStart, latchThreadComplete, successCounter);
+                getModelFarmTick(nModelFarmThreadsDefault, nKeys, latchThreadStart, latchThreadComplete,
+                        successCounter);
 
         Require.eq(modelFarmTick.getState(), "modelFarmTick.getState()", ModelFarmBase.State.WAITING);
 
         modelFarmTick.start();
         Require.eq(modelFarmTick.getState(), "modelFarmTick.getState()", ModelFarmBase.State.RUNNING);
 
-        // wait on the threads to start up and get into the queue (latchThreadStart=nModelFarmThreadsDefault => wait on all threads to come up)
+        // wait on the threads to start up and get into the queue (latchThreadStart=nModelFarmThreadsDefault => wait on
+        // all threads to come up)
         latchThreadStart.await();
 
         Require.eq(modelFarmTick.getState(), "modelFarmTick.getState()", ModelFarmBase.State.RUNNING);
@@ -149,7 +151,8 @@ public class TestModelFarm extends TestCase {
 
     @NotNull
     private ModelFarmTick<Long, MutableLong, RowDataManager<Long, MutableLong>> getModelFarmTick(final int nThreads,
-                final int nKeys, final CountDownLatch latchThreadStart, final CountDownLatch latchThreadComplete, AtomicInteger successCounter) {
+            final int nKeys, final CountDownLatch latchThreadStart, final CountDownLatch latchThreadComplete,
+            AtomicInteger successCounter) {
         return new ModelFarmTick<>(
                 nThreads,
                 data -> {
