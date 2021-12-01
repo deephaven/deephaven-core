@@ -6,23 +6,13 @@ package io.deephaven.engine.table.impl.by;
 
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.AggregationOptimizer;
-import io.deephaven.api.agg.KeyedAggregations;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.chunk.ChunkType;
-import io.deephaven.chunk.attributes.Values;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.datastructures.util.SmartKey;
-import io.deephaven.engine.table.ChunkSource;
-import io.deephaven.engine.table.ColumnDefinition;
-import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.MatchPair;
-import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.impl.BaseTable;
-import io.deephaven.engine.table.impl.EmptyTableMap;
-import io.deephaven.engine.table.impl.QueryTable;
-import io.deephaven.engine.table.impl.ReverseLookup;
-import io.deephaven.engine.table.impl.RollupAttributeCopier;
-import io.deephaven.engine.table.impl.RollupInfo;
+import io.deephaven.chunk.attributes.Values;
+import io.deephaven.chunk.ChunkType;
+import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.*;
 import io.deephaven.engine.table.impl.by.ssmminmax.SsmChunkedMinMaxOperator;
 import io.deephaven.engine.table.impl.select.MatchPairFactory;
 import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
@@ -34,20 +24,11 @@ import org.jetbrains.annotations.NotNull;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.OptionalInt;
+import java.util.*;
 import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-
 /**
  * The AggregationFactory combines one or more aggregations into an {@link AggregationSpec} for use internally by the
  * implementation of {@link Table#aggBy}.
@@ -648,8 +629,7 @@ public class AggregationFactory implements AggregationSpec {
         }
 
         /**
-         * Converts and the aggregations, only collapsing {@link KeyedAggregations multi} aggregations into single
-         * {@link AggregationElement elements}, leaving singular aggregations as they are.
+         * Converts and the aggregations leaving singular aggregations as they are.
          *
          * <p>
          * Note: The results will preserve the intended order of the inputs.
