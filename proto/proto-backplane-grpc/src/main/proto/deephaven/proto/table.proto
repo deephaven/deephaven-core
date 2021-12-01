@@ -144,6 +144,11 @@ service TableService {
   rpc ExactJoinTables(ExactJoinTablesRequest) returns (ExportedTableCreationResponse) {}
 
   /*
+   * Returns the result of a left join operation.
+   */
+  rpc LeftJoinTables(LeftJoinTablesRequest) returns (ExportedTableCreationResponse) {}
+
+  /*
    * Returns the result of an as of join operation.
    */
   rpc AsOfJoinTables(AsOfJoinTablesRequest) returns (ExportedTableCreationResponse) {}
@@ -354,6 +359,14 @@ message NaturalJoinTablesRequest {
 }
 
 message ExactJoinTablesRequest {
+  Ticket result_id = 1;
+  TableReference left_id = 2;
+  TableReference right_id = 3;
+  repeated string columns_to_match = 4;
+  repeated string columns_to_add = 5;
+}
+
+message LeftJoinTablesRequest {
   Ticket result_id = 1;
   TableReference left_id = 2;
   TableReference right_id = 3;
@@ -630,11 +643,12 @@ message BatchTableRequest {
       CrossJoinTablesRequest cross_join = 23;
       NaturalJoinTablesRequest natural_join = 24;
       ExactJoinTablesRequest exact_join = 25;
-      AsOfJoinTablesRequest as_of_join = 26;
-      FetchTableRequest fetch_table = 27;
-      FetchPandasTableRequest fetch_pandas_table = 28;
-      ApplyPreviewColumnsRequest apply_preview_columns = 29;
-      CreateInputTableRequest create_input_table = 30;
+      LeftJoinTablesRequest left_join = 26;
+      AsOfJoinTablesRequest as_of_join = 27;
+      FetchTableRequest fetch_table = 28;
+      FetchPandasTableRequest fetch_pandas_table = 29;
+      ApplyPreviewColumnsRequest apply_preview_columns = 30;
+      CreateInputTableRequest create_input_table = 31;
     }
   }
 }
