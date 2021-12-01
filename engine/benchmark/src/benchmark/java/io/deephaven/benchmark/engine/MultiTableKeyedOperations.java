@@ -50,7 +50,6 @@ public class MultiTableKeyedOperations {
     private String[] keyColumns;
     private String columnsToMatch;
 
-
     @Setup(Level.Trial)
     public void setupEnv(BenchmarkParams params) {
         int columnCount = 1 << logColumnCount;
@@ -80,24 +79,15 @@ public class MultiTableKeyedOperations {
                 .lastBy(keyColumns).select();
     }
 
-
     @Setup(Level.Iteration)
     public void setupIteration() {
         state.init();
     }
 
-
     @Benchmark
     public Table naturalJoin() {
-
         Table result = fullTable.naturalJoin(distinctTable, columnsToMatch);
         return result;
-    }
-
-    @Benchmark
-    public Table leftJoin() {
-
-        return distinctTable.leftJoin(fullTable, columnsToMatch);
     }
 
     public static void main(String[] args) {

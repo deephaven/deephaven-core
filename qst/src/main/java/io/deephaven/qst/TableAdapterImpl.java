@@ -10,7 +10,6 @@ import io.deephaven.qst.table.GroupByTable;
 import io.deephaven.qst.table.HeadTable;
 import io.deephaven.qst.table.InputTable;
 import io.deephaven.qst.table.JoinTable;
-import io.deephaven.qst.table.LeftJoinTable;
 import io.deephaven.qst.table.MergeTable;
 import io.deephaven.qst.table.NaturalJoinTable;
 import io.deephaven.qst.table.NewTable;
@@ -210,14 +209,6 @@ class TableAdapterImpl<TOPS extends TableOperations<TOPS, TABLE>, TABLE> impleme
         final TABLE right = table(joinTable.right());
         addOp(joinTable,
                 left.join(right, joinTable.matches(), joinTable.additions(), joinTable.reserveBits()));
-    }
-
-    @Override
-    public void visit(LeftJoinTable leftJoinTable) {
-        final TOPS left = ops(leftJoinTable.left());
-        final TABLE right = table(leftJoinTable.right());
-        addOp(leftJoinTable,
-                left.exactJoin(right, leftJoinTable.matches(), leftJoinTable.additions()));
     }
 
     @Override

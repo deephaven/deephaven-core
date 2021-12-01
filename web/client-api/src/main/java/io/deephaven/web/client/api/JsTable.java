@@ -9,7 +9,6 @@ import elemental2.promise.Promise;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.AsOfJoinTablesRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.CrossJoinTablesRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.ExactJoinTablesRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.LeftJoinTablesRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.NaturalJoinTablesRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.RunChartDownsampleRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.SelectDistinctRequest;
@@ -824,8 +823,6 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
             return crossJoin(rightTable, columnsToMatch, columnsToAdd, null);
         } else if (joinType.equals("EXACT_JOIN")) {
             return exactJoin(rightTable, columnsToMatch, columnsToAdd);
-        } else if (joinType.equals("LEFT_JOIN")) {
-            return leftJoin(rightTable, columnsToMatch, columnsToAdd);
         } else if (joinType.equals("NATURAL_JOIN")) {
             return naturalJoin(rightTable, columnsToMatch, columnsToAdd);
         } else {
@@ -896,26 +893,6 @@ public class JsTable extends HasEventHandling implements HasTableBinding, HasLif
             request.setColumnsToAddList(columnsToAdd);
             workerConnection.tableServiceClient().exactJoinTables(request, metadata, c::apply);
         }, "exactJoin(" + rightTable + ", " + columnsToMatch + ", " + columnsToAdd + ")")
-                .refetch(this, workerConnection.metadata())
-                .then(state -> Promise.resolve(new JsTable(workerConnection, state)));
-    }
-
-    @JsMethod
-    public Promise<JsTable> leftJoin(JsTable rightTable, JsArray<String> columnsToMatch,
-            @JsOptional JsArray<String> columnsToAdd) {
-        if (rightTable.workerConnection != workerConnection) {
-            throw new IllegalStateException(
-                    "Table argument passed to join is not from the same worker as current table");
-        }
-        return workerConnection.newState((c, state, metadata) -> {
-            LeftJoinTablesRequest request = new LeftJoinTablesRequest();
-            request.setLeftId(state().getHandle().makeTableReference());
-            request.setRightId(rightTable.state().getHandle().makeTableReference());
-            request.setResultId(state.getHandle().makeTicket());
-            request.setColumnsToMatchList(columnsToMatch);
-            request.setColumnsToAddList(columnsToAdd);
-            workerConnection.tableServiceClient().leftJoinTables(request, metadata, c::apply);
-        }, "leftJoin(" + rightTable + ", " + columnsToMatch + ", " + columnsToAdd + ")")
                 .refetch(this, workerConnection.metadata())
                 .then(state -> Promise.resolve(new JsTable(workerConnection, state)));
     }

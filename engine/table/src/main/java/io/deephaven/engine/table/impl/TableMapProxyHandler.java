@@ -69,7 +69,6 @@ public class TableMapProxyHandler extends LivenessArtifact implements Invocation
 
             JOIN_METHOD_NAMES.add("join");
             JOIN_METHOD_NAMES.add("naturalJoin");
-            JOIN_METHOD_NAMES.add("leftJoin");
             JOIN_METHOD_NAMES.add("exactJoin");
             AJ_METHOD_NAMES.add("aj");
             AJ_METHOD_NAMES.add("raj");

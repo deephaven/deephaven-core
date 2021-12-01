@@ -561,22 +561,6 @@ public class QueryTable extends BaseTable {
     }
 
     @Override
-    public Table leftJoin(Table table, final MatchPair[] columnsToMatch, final MatchPair[] columnsToAdd) {
-        return QueryPerformanceRecorder.withNugget(
-                "leftJoin(" + table + "," + matchString(columnsToMatch) + "," + matchString(columnsToAdd) + ")",
-                sizeForInstrumentation(), () -> {
-                    String[] rightColumnKeys = new String[columnsToMatch.length];
-                    for (int i = 0; i < columnsToMatch.length; i++) {
-                        MatchPair match = columnsToMatch[i];
-                        rightColumnKeys[i] = match.rightColumn;
-                    }
-
-                    Table groupedRight = table.groupBy(rightColumnKeys);
-                    return naturalJoin(groupedRight, columnsToMatch, columnsToAdd);
-                });
-    }
-
-    @Override
     public Table exactJoin(Table table, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd) {
         return QueryPerformanceRecorder.withNugget(
                 "exactJoin(" + table + "," + Arrays.toString(columnsToMatch) + "," + Arrays.toString(columnsToMatch)

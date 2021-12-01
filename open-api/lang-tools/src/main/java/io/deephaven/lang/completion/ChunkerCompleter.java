@@ -947,7 +947,6 @@ public class ChunkerCompleter implements CompletionHandler {
         switch (name) {
             case "join":
             case "naturalJoin":
-            case "leftJoin":
             case "exactJoin":
             case "aj":
                 // TODO: joins will need special handling; IDS-1517-5 example from Charles:

@@ -962,7 +962,7 @@ public:
    * the columns in `columnsToMatch`, and columns from `rightSide` are brought in and optionally
    * renamed by `columnsToAdd`. Example:
    * @code
-   * t1.naturalJoin({"Col1", "Col2"}, {"Col3", "NewCol=Col4"})
+   * t1.exactJoin({"Col1", "Col2"}, {"Col3", "NewCol=Col4"})
    * @endcode
    * @param rightSide The table to join with this table
    * @param columnsToMatch The columns to join on
@@ -983,34 +983,6 @@ public:
    * @return
    */
   TableHandle exactJoin(const TableHandle &rightSide, std::vector<MatchWithColumn> columnsToMatch,
-      std::vector<SelectColumn> columnsToAdd) const;
-
-  /**
-   * Creates a new table by left joining this table with `rightSide`. The tables are joined by
-   * the columns in `columnsToMatch`, and columns from `rightSide` are brought in and optionally
-   * renamed by `columnsToAdd`. Example:
-   * @code
-   * t1.naturalJoin({"Col1", "Col2"}, {"Col3", "NewCol=Col4"})
-   * @endcode
-   * @param rightSide The table to join with this table
-   * @param columnsToMatch The columns to join on
-   * @param columnsToAdd The columns from the right side to add, and possibly rename.
-   * @return A TableHandle referencing the new table
-   */
-  TableHandle leftJoin(const TableHandle &rightSide, std::vector<std::string> columnsToMatch,
-      std::vector<std::string> columnsToAdd) const;
-  /**
-   * The fluent version of leftJoin(const TableHandle &, std::vector<std::string>, std::vector<std::string>) const.
-   * @code
-   * t1.leftJoin(col1, col2}, {col3, col4.as("NewCol"})
-   * @endcode
-
-   * @param rightSide The table to join with this table
-   * @param columnsToMatch The columns to join on
-   * @param columnsToAdd The columns from the right side to add, and possibly rename.
-   * @return
-   */
-  TableHandle leftJoin(const TableHandle &rightSide, std::vector<MatchWithColumn> columnsToMatch,
       std::vector<SelectColumn> columnsToAdd) const;
 
   /**

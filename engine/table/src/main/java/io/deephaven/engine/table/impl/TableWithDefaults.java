@@ -399,41 +399,6 @@ public interface TableWithDefaults extends Table {
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    default Table leftJoin(Table rightTable, Collection<? extends JoinMatch> columnsToMatch,
-            Collection<? extends JoinAddition> columnsToAdd) {
-        return leftJoin(
-                rightTable,
-                MatchPair.fromMatches(columnsToMatch),
-                MatchPair.fromAddition(columnsToAdd));
-    }
-
-    @Override
-    default Table leftJoin(Table rightTable, Collection<String> columnsToMatch) {
-        return leftJoin(
-                rightTable,
-                MatchPairFactory.getExpressions(columnsToMatch),
-                MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY);
-    }
-
-    @Override
-    default Table leftJoin(Table rightTable, String columnsToMatch, String columnsToAdd) {
-        return leftJoin(
-                rightTable,
-                MatchPairFactory.getExpressions(StringUtils.splitToCollection(columnsToMatch)),
-                MatchPairFactory.getExpressions(StringUtils.splitToCollection(columnsToAdd)));
-    }
-
-    @Override
-    default Table leftJoin(Table rightTable, String columnsToMatch) {
-        return leftJoin(rightTable, StringUtils.splitToCollection(columnsToMatch));
-    }
-
-    @Override
-    default Table leftJoin(Table rightTable) {
-        return leftJoin(rightTable, Collections.emptyList());
-    }
-
-    @Override
     default Table exactJoin(Table rightTable, Collection<? extends JoinMatch> columnsToMatch,
             Collection<? extends JoinAddition> columnsToAdd) {
         return exactJoin(

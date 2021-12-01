@@ -116,11 +116,6 @@ public class HierarchicalTable extends QueryTable {
     }
 
     @Override
-    public Table leftJoin(Table table, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd) {
-        return throwUnsupported("leftJoin()");
-    }
-
-    @Override
     public Table exactJoin(Table table, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd) {
         return throwUnsupported("exactJoin()");
     }

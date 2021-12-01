@@ -62,11 +62,6 @@ public class LinkDescriber extends TableVisitorGeneric {
     }
 
     @Override
-    public void visit(LeftJoinTable leftJoinTable) {
-        join(leftJoinTable);
-    }
-
-    @Override
     public void visit(AsOfJoinTable aj) {
         join(aj);
     }

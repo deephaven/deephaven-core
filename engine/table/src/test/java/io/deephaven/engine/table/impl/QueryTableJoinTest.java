@@ -884,21 +884,15 @@ public class QueryTableJoinTest {
     }
 
     @Test
-    public void testLeftJoin() {
+    public void testNaturalJoinWithGroupBy() {
         Table table1 = newTable(
                 c("String", "c", "e", "g"));
         Table table2 = newTable(c("String", "c", "e"), c("v", 1, 2), c("u", 3.0d, 4.0d));
-        try {
-            table1.leftJoin(table2);
-            fail("Previous statement should have thrown an exception");
-        } catch (Exception e) {
-            assertEquals("Conflicting column names [String]", e.getMessage());
-        }
 
         showWithRowSet(table1);
         showWithRowSet(table2);
 
-        Table pairMatch = table1.leftJoin(table2, "String");
+        Table pairMatch = table1.naturalJoin(table2.groupBy("String"), "String");
 
         showWithRowSet(pairMatch);
 
@@ -924,7 +918,7 @@ public class QueryTableJoinTest {
         assertEquals(1, uValues[1].size());
         assertNull(vValues[2]);
 
-        pairMatch = table1.leftJoin(table2, "String", "v");
+        pairMatch = table1.naturalJoin(table2.groupBy("String"), "String", "v");
         assertEquals(3, pairMatch.size());
         assertEquals(2, pairMatch.getColumns().length);
         assertEquals("String", pairMatch.getColumns()[0].getName());
@@ -939,7 +933,7 @@ public class QueryTableJoinTest {
         assertEquals(1, vValues[1].size());
         assertNull(vValues[2]);
 
-        pairMatch = table1.leftJoin(table2, "String", "u,v");
+        pairMatch = table1.naturalJoin(table2.groupBy("String"), "String", "u,v");
         assertEquals(3, pairMatch.size());
         assertEquals(3, pairMatch.getColumns().length);
         assertEquals("String", pairMatch.getColumns()[0].getName());
@@ -962,7 +956,7 @@ public class QueryTableJoinTest {
         assertEquals(1, uValues[1].size());
         assertNull(vValues[2]);
 
-        pairMatch = table2.leftJoin(table1, "String");
+        pairMatch = table2.naturalJoin(table1.groupBy("String"), "String");
 
         assertEquals(2, pairMatch.size());
         assertEquals(3, pairMatch.getColumns().length);
@@ -975,7 +969,7 @@ public class QueryTableJoinTest {
         assertEquals(1, pairMatch.getColumn("v").getInt(0));
         assertEquals(2, pairMatch.getColumn("v").getInt(1));
 
-        pairMatch = table1.leftJoin(table2, "String=String");
+        pairMatch = table1.naturalJoin(table2.groupBy("String"), "String=String");
         assertEquals(3, pairMatch.size());
         assertEquals(3, pairMatch.getColumns().length);
         assertEquals("String", pairMatch.getColumns()[0].getName());
@@ -990,7 +984,7 @@ public class QueryTableJoinTest {
         assertEquals(1, vValues[1].size());
         assertNull(vValues[2]);
 
-        pairMatch = table2.leftJoin(table1, "String=String");
+        pairMatch = table2.naturalJoin(table1.groupBy("String"), "String=String");
 
         assertEquals(2, pairMatch.size());
         assertEquals(3, pairMatch.getColumns().length);
@@ -1009,7 +1003,7 @@ public class QueryTableJoinTest {
         table2 = TableTools.newTable(
                 c("String2", "c", "e"), c("v", 1, 2));
 
-        final Table noPairMatch = table1.leftJoin(table2);
+        final Table noPairMatch = table1.naturalJoin(table2.groupBy(), "");
         assertEquals(3, noPairMatch.size());
         assertEquals(3, noPairMatch.getColumns().length);
         assertEquals("String1", noPairMatch.getColumns()[0].getName());
@@ -1030,7 +1024,7 @@ public class QueryTableJoinTest {
         assertEquals(asList(1, 2), asList(ArrayTypeUtils.getBoxedArray(vValues[1].toArray())));
         assertEquals(asList(1, 2), asList(ArrayTypeUtils.getBoxedArray(vValues[2].toArray())));
 
-        pairMatch = table1.leftJoin(table2, "String1=String2");
+        pairMatch = table1.naturalJoin(table2.groupBy("String2"), "String1=String2");
         assertEquals(3, pairMatch.size());
         assertEquals(3, pairMatch.getColumns().length);
         assertEquals("String1", pairMatch.getColumns()[0].getName());
@@ -1053,7 +1047,7 @@ public class QueryTableJoinTest {
         assertEquals(1, vValues[1].size());
         assertNull(vValues[2]);
 
-        pairMatch = table2.leftJoin(table1, "String2=String1");
+        pairMatch = table2.naturalJoin(table1.groupBy("String1"), "String2=String1");
 
         assertEquals(2, pairMatch.size());
         assertEquals(3, pairMatch.getColumns().length);

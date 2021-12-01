@@ -556,44 +556,6 @@ public interface Table extends
     // Join Operations
     // -----------------------------------------------------------------------------------------------------------------
 
-    /**
-     * Returns a table that has one column for each original table's columns, and one column corresponding to each of
-     * the input table (right table) columns listed in the columns to add (or all the columns whose names don't overlap
-     * with the name of a column from the source table if the columnsToAdd is length zero). The new columns (those
-     * corresponding to the input table) contain an aggregation of all values from the left side that match the join
-     * criteria. Consequently, the types of all right side columns not involved in a join criteria, is an array of the
-     * original column type. If the two tables have columns with matching names then the method will fail with an
-     * exception unless the columns with corresponding names are found in one of the matching criteria.
-     * <p>
-     * <p>
-     * NOTE: leftJoin operation does not involve an actual data copy, or an in-memory table creation. In order to
-     * produce an actual in memory table you need to apply a select call on the join result.
-     *
-     * @param rightTable input table
-     * @param columnsToMatch match criteria
-     * @param columnsToAdd columns to add
-     * @return a table that has one column for each original table's columns, and one column corresponding to each
-     *         column listed in columnsToAdd. If columnsToAdd.length==0 one column corresponding to each column of the
-     *         input table (right table) columns whose names don't overlap with the name of a column from the source
-     *         table is added. The new columns (those corresponding to the input table) contain an aggregation of all
-     *         values from the left side that match the join criteria.
-     */
-    Table leftJoin(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd);
-
-    @Override
-    Table leftJoin(Table rightTable, Collection<? extends JoinMatch> columnsToMatch,
-            Collection<? extends JoinAddition> columnsToAdd);
-
-    Table leftJoin(Table rightTable, Collection<String> columnsToMatch);
-
-    @Override
-    Table leftJoin(Table rightTable, String columnsToMatch, String columnsToAdd);
-
-    @Override
-    Table leftJoin(Table rightTable, String columnsToMatch);
-
-    Table leftJoin(Table rightTable);
-
     Table exactJoin(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd);
 
     @Override

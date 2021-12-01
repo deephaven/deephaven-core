@@ -178,22 +178,6 @@ public abstract class TableOperationsAdapter<TOPS_1 extends TableOperations<TOPS
     }
 
     @Override
-    public final TOPS_1 leftJoin(TABLE_1 rightTable, String columnsToMatch) {
-        return adapt(delegate.leftJoin(adapt(rightTable), columnsToMatch));
-    }
-
-    @Override
-    public final TOPS_1 leftJoin(TABLE_1 rightTable, String columnsToMatch, String columnsToAdd) {
-        return adapt(delegate.leftJoin(adapt(rightTable), columnsToMatch, columnsToAdd));
-    }
-
-    @Override
-    public final TOPS_1 leftJoin(TABLE_1 rightTable, Collection<? extends JoinMatch> columnsToMatch,
-            Collection<? extends JoinAddition> columnsToAdd) {
-        return adapt(delegate.leftJoin(adapt(rightTable), columnsToMatch, columnsToAdd));
-    }
-
-    @Override
     public final TOPS_1 join(TABLE_1 rightTable, String columnsToMatch) {
         return adapt(delegate.join(adapt(rightTable), columnsToMatch));
     }
