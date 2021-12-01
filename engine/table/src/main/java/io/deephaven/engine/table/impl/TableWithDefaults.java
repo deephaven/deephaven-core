@@ -1082,11 +1082,6 @@ public interface TableWithDefaults extends Table {
                 .map(ColumnName::of).map(SortColumn::desc).collect(Collectors.toList()));
     }
 
-    @ConcurrentMethod
-    static Table sort(Table table, SortColumn... columnsToSortBy) {
-        return table.sort(Arrays.asList(columnsToSortBy));
-    }
-
     // -----------------------------------------------------------------------------------------------------------------
     // Snapshot Operations
     // -----------------------------------------------------------------------------------------------------------------
