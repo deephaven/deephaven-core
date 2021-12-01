@@ -96,10 +96,9 @@ public class CustomColumnDescriptor implements Serializable {
         final List<CustomColumnDescriptor> list = new ArrayList<>();
         for (String col : newCustomColumns) {
             CustomColumnDescriptor descriptor = new CustomColumnDescriptor().setExpression(col);
-            if (descriptorNames.contains(descriptor.getName())) {
+            if (!descriptorNames.add(descriptor.getName())) {
                 throw new IllegalArgumentException("Duplicate custom column: " + descriptor.getName());
             }
-            descriptorNames.add(descriptor.getName());
             list.add(descriptor);
         }
         return list;
