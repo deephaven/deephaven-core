@@ -32,7 +32,7 @@ public class TestModelFarm extends TestCase {
         final CountDownLatch latchThreadStart = new CountDownLatch(0);
         final CountDownLatch latchThreadComplete = new CountDownLatch(0);
         final ModelFarmTick<Long, MutableLong, RowDataManager<Long, MutableLong>> modelFarmTick =
-                getModelFarmTick(nModelFarmThreadsDefault, 0, latchThreadStart, latchThreadComplete,null);
+                getModelFarmTick(nModelFarmThreadsDefault, 0, latchThreadStart, latchThreadComplete, null);
 
         Require.eq(modelFarmTick.getState(), "modelFarmTick.getState()", ModelFarmBase.State.WAITING);
 
