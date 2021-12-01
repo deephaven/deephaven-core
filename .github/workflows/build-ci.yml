@@ -42,7 +42,7 @@ jobs:
 
       - name: Docker meta
         id: docker_meta
-        uses: docker/metadata-action@v3.3.0
+        uses: docker/metadata-action@v3
         with:
           images: ghcr.io/${{ github.repository_owner }}/grpc-api
           flavor: |
@@ -59,14 +59,14 @@ jobs:
 
       - name: Set up Docker Buildx
         id: buildx
-        uses: docker/setup-buildx-action@v1.3.0
+        uses: docker/setup-buildx-action@v1
         with:
           install: true
           driver: docker
 
       - name: Login to ghcr.io
         if: github.event_name != 'pull_request'
-        uses: docker/login-action@v1.9.0
+        uses: docker/login-action@v1
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -83,7 +83,7 @@ jobs:
       # https://github.com/docker/build-push-action/blob/master/docs/advanced/cache.md#github-cache
       # https://github.com/docker/buildx/pull/535
       - name: Docker build
-        uses: docker/build-push-action@v2.5.0
+        uses: docker/build-push-action@v2
         with:
           tags: ${{ steps.docker_meta.outputs.tags }}
           labels: ${{ steps.docker_meta.outputs.labels }}
@@ -128,7 +128,7 @@ jobs:
 
       - name: Docker meta
         id: docker_meta
-        uses: docker/metadata-action@v3.3.0
+        uses: docker/metadata-action@v3
         with:
           images: ghcr.io/${{ github.repository_owner }}/grpc-proxy
           flavor: |
@@ -145,14 +145,14 @@ jobs:
 
       - name: Set up Docker Buildx
         id: buildx
-        uses: docker/setup-buildx-action@v1.3.0
+        uses: docker/setup-buildx-action@v1
         with:
           install: true
           driver: docker
 
       - name: Login to ghcr.io
         if: github.event_name != 'pull_request'
-        uses: docker/login-action@v1.9.0
+        uses: docker/login-action@v1
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -166,7 +166,7 @@ jobs:
           gradle-version: wrapper
 
       - name: Docker build
-        uses: docker/build-push-action@v2.5.0
+        uses: docker/build-push-action@v2
         with:
           tags: ${{ steps.docker_meta.outputs.tags }}
           labels: ${{ steps.docker_meta.outputs.labels }}
@@ -211,7 +211,7 @@ jobs:
 
       - name: Docker meta
         id: docker_meta
-        uses: docker/metadata-action@v3.3.0
+        uses: docker/metadata-action@v3
         with:
           images: ghcr.io/${{ github.repository_owner }}/envoy
           flavor: |
@@ -228,14 +228,14 @@ jobs:
 
       - name: Set up Docker Buildx
         id: buildx
-        uses: docker/setup-buildx-action@v1.3.0
+        uses: docker/setup-buildx-action@v1
         with:
           install: true
           driver: docker
 
       - name: Login to ghcr.io
         if: github.event_name != 'pull_request'
-        uses: docker/login-action@v1.9.0
+        uses: docker/login-action@v1
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -249,7 +249,7 @@ jobs:
           gradle-version: wrapper
 
       - name: Build
-        uses: docker/build-push-action@v2.5.0
+        uses: docker/build-push-action@v2
         with:
           tags: ${{ steps.docker_meta.outputs.tags }}
           labels: ${{ steps.docker_meta.outputs.labels }}
@@ -272,7 +272,7 @@ jobs:
 
       - name: Docker meta
         id: docker_meta
-        uses: docker/metadata-action@v3.3.0
+        uses: docker/metadata-action@v3
         with:
           images: ghcr.io/${{ github.repository_owner }}/web
           flavor: |
@@ -311,14 +311,14 @@ jobs:
 
       - name: Set up Docker Buildx
         id: buildx
-        uses: docker/setup-buildx-action@v1.3.0
+        uses: docker/setup-buildx-action@v1
         with:
           install: true
           driver: docker
 
       - name: Login to ghcr.io
         if: github.event_name != 'pull_request'
-        uses: docker/login-action@v1.9.0
+        uses: docker/login-action@v1
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -332,7 +332,7 @@ jobs:
           gradle-version: wrapper
 
       - name: Docker build
-        uses: docker/build-push-action@v2.5.0
+        uses: docker/build-push-action@v2
         with:
           tags: ${{ steps.docker_meta.outputs.tags }}
           labels: ${{ steps.docker_meta.outputs.labels }}
