@@ -991,6 +991,12 @@ public interface TableWithDefaults extends Table {
 
     @Override
     @ConcurrentMethod
+    default Table minBy(Selectable... groupByColumns) {
+        return aggAllBy(KeyMin.of(), groupByColumns);
+    }
+
+    @Override
+    @ConcurrentMethod
     default Table minBy(String... groupByColumns) {
         return minBy(Selectable.from(groupByColumns).toArray(ZERO_LENGTH_SELECTABLE_ARRAY));
     }
@@ -1005,6 +1011,12 @@ public interface TableWithDefaults extends Table {
     @ConcurrentMethod
     default Table minBy() {
         return minBy(ZERO_LENGTH_SELECTABLE_ARRAY);
+    }
+
+    @Override
+    @ConcurrentMethod
+    default Table maxBy(Selectable... groupByColumns) {
+        return aggAllBy(KeyMax.of(), groupByColumns);
     }
 
     @Override

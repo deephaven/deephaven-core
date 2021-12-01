@@ -1,7 +1,7 @@
 package io.deephaven.api.agg.key;
 
+import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.KeyedAggregation;
-import io.deephaven.api.agg.KeyedAggregations;
 import io.deephaven.api.agg.Pair;
 
 import java.util.Collection;
@@ -13,9 +13,9 @@ public interface Key {
 
     KeyedAggregation aggregation(Pair pair);
 
-    KeyedAggregations aggregation(Pair... pairs);
+    Aggregation aggregation(Pair... pairs);
 
-    KeyedAggregations aggregation(Collection<? extends Pair> pairs);
+    Aggregation aggregation(Collection<? extends Pair> pairs);
 
     <V extends Visitor> V walk(V visitor);
 

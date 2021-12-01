@@ -11,25 +11,6 @@ import io.deephaven.api.SortColumn;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.AggregationOutputs;
 import io.deephaven.api.agg.key.Key;
-import io.deephaven.api.agg.key.KeyAbsSum;
-import io.deephaven.api.agg.key.KeyAvg;
-import io.deephaven.api.agg.key.KeyCountDistinct;
-import io.deephaven.api.agg.key.KeyDistinct;
-import io.deephaven.api.agg.key.KeyFirst;
-import io.deephaven.api.agg.key.KeyGroup;
-import io.deephaven.api.agg.key.KeyLast;
-import io.deephaven.api.agg.key.KeyMax;
-import io.deephaven.api.agg.key.KeyMedian;
-import io.deephaven.api.agg.key.KeyMin;
-import io.deephaven.api.agg.key.KeyPct;
-import io.deephaven.api.agg.key.KeySortedFirst;
-import io.deephaven.api.agg.key.KeySortedLast;
-import io.deephaven.api.agg.key.KeyStd;
-import io.deephaven.api.agg.key.KeySum;
-import io.deephaven.api.agg.key.KeyUnique;
-import io.deephaven.api.agg.key.KeyVar;
-import io.deephaven.api.agg.key.KeyWAvg;
-import io.deephaven.api.agg.key.KeyWSum;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.base.StringUtils;
 import io.deephaven.base.verify.Assert;
@@ -457,7 +438,7 @@ public class QueryTable extends BaseTable {
     public Table rollup(Collection<? extends Aggregation> aggregations, boolean includeConstituents,
             Selectable... groupByColumns) {
         final List<AggregationFactory.AggregationElement> converted =
-                AggregationFactory.AggregationElement.convert(aggregations);
+                AggregationFactory.AggregationElement.convert(aggregations, this);
         return rollup(new AggregationFactory(converted), includeConstituents, SelectColumn.from(groupByColumns));
     }
 
@@ -607,14 +588,24 @@ public class QueryTable extends BaseTable {
 
     @Override
     public Table aggAllBy(Key key, Selectable... groupByColumns) {
-        return key.walk(new SingleAggVisitor(groupByColumns)).out();
+        final Set<String> groupColumns = new HashSet<>(groupByColumns.length);
+        for (Selectable groupByColumn : groupByColumns) {
+            groupColumns.add(groupByColumn.newColumn().name());
+        }
+        final List<ColumnName> remainingColumns = new ArrayList<>(columns.size() - groupByColumns.length);
+        for (String columnName : columns.keySet()) {
+            if (!groupColumns.contains(columnName)) {
+                remainingColumns.add(ColumnName.of(columnName));
+            }
+        }
+        return aggBy(key.aggregation(remainingColumns), List.of(groupByColumns));
     }
 
     @Override
     public Table aggBy(final Collection<? extends Aggregation> aggregations,
             final Collection<? extends Selectable> groupByColumns) {
         final List<AggregationFactory.AggregationElement> optimized =
-                AggregationFactory.AggregationElement.optimizeAndConvert(aggregations);
+                AggregationFactory.AggregationElement.optimizeAndConvert(aggregations, this);
 
         final List<ColumnName> optimizedOrder = optimized.stream()
                 .map(AggregationFactory.AggregationElement::getResultPairs)
@@ -660,30 +651,6 @@ public class QueryTable extends BaseTable {
                                     SelectColumn.from(groupByColumns));
                     copyAttributes(result, CopyAttributeOperation.FirstBy);
                     return result;
-                });
-    }
-
-    @Override
-    public Table minBy(Selectable... groupByColumns) {
-        return QueryPerformanceRecorder.withNugget("minBy(" + Arrays.toString(groupByColumns) + ")",
-                sizeForInstrumentation(), () -> {
-                    if (isRefreshing()) {
-                        return by(new MinMaxBySpecImpl(true), SelectColumn.from(groupByColumns));
-                    } else {
-                        return by(new AddOnlyMinMaxBySpecImpl(true), SelectColumn.from(groupByColumns));
-                    }
-                });
-    }
-
-    @Override
-    public Table maxBy(Selectable... groupByColumns) {
-        return QueryPerformanceRecorder.withNugget("maxBy(" + Arrays.toString(groupByColumns) + ")",
-                sizeForInstrumentation(), () -> {
-                    if (isRefreshing()) {
-                        return by(new MinMaxBySpecImpl(false), SelectColumn.from(groupByColumns));
-                    } else {
-                        return by(new AddOnlyMinMaxBySpecImpl(false), SelectColumn.from(groupByColumns));
-                    }
                 });
     }
 
@@ -3408,120 +3375,5 @@ public class QueryTable extends BaseTable {
 
     public Table wouldMatch(WouldMatchPair... matchers) {
         return getResult(new WouldMatchOperation(this, matchers));
-    }
-
-    private class SingleAggVisitor implements Key.Visitor {
-        private final Selectable[] groupByColumns;
-        private Table out;
-
-        public SingleAggVisitor(Selectable[] groupByColumns) {
-            this.groupByColumns = Objects.requireNonNull(groupByColumns);
-        }
-
-        public Table out() {
-            return Objects.requireNonNull(out);
-        }
-
-        private Table visitGeneric(Key key, boolean dropFormatColumns) {
-            final QueryTable tableToUse = dropFormatColumns ? (QueryTable) dropColumnFormats() : QueryTable.this;
-            return QueryPerformanceRecorder.withNugget("aggAllBy(" + key + "," + Arrays.toString(groupByColumns) + ")",
-                    sizeForInstrumentation(),
-                    () -> tableToUse.by(AggregationSpecAdapter.of(key), SelectColumn.from(groupByColumns)));
-        }
-
-        @Override
-        public void visit(KeyAbsSum absSum) {
-            out = visitGeneric(absSum, true);
-        }
-
-        @Override
-        public void visit(KeyCountDistinct countDistinct) {
-            out = visitGeneric(countDistinct, true);
-        }
-
-        @Override
-        public void visit(KeyDistinct distinct) {
-            out = visitGeneric(distinct, true);
-        }
-
-        @Override
-        public void visit(KeyGroup group) {
-            out = visitGeneric(group, true);
-        }
-
-        @Override
-        public void visit(KeyAvg avg) {
-            out = visitGeneric(avg, true);
-        }
-
-        @Override
-        public void visit(KeyFirst first) {
-            out = firstBy(groupByColumns);
-        }
-
-        @Override
-        public void visit(KeyLast last) {
-            out = lastBy(groupByColumns);
-        }
-
-        @Override
-        public void visit(KeyMax max) {
-            out = maxBy(groupByColumns);
-        }
-
-        @Override
-        public void visit(KeyMedian median) {
-            out = visitGeneric(median, median.averageMedian());
-        }
-
-        @Override
-        public void visit(KeyMin min) {
-            out = minBy(groupByColumns);
-        }
-
-        @Override
-        public void visit(KeyPct pct) {
-            out = visitGeneric(pct, pct.averageMedian());
-        }
-
-        @Override
-        public void visit(KeySortedFirst sortedFirst) {
-            out = visitGeneric(sortedFirst, true);
-        }
-
-        @Override
-        public void visit(KeySortedLast sortedLast) {
-            out = visitGeneric(sortedLast, true);
-        }
-
-        @Override
-        public void visit(KeyStd std) {
-            out = visitGeneric(std, true);
-        }
-
-        @Override
-        public void visit(KeySum sum) {
-            out = visitGeneric(sum, true);
-        }
-
-        @Override
-        public void visit(KeyUnique unique) {
-            out = visitGeneric(unique, false);
-        }
-
-        @Override
-        public void visit(KeyWAvg wAvg) {
-            out = visitGeneric(wAvg, true);
-        }
-
-        @Override
-        public void visit(KeyWSum wSum) {
-            out = visitGeneric(wSum, true);
-        }
-
-        @Override
-        public void visit(KeyVar var) {
-            out = visitGeneric(var, true);
-        }
     }
 }

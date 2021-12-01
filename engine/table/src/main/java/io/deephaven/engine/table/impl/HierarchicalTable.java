@@ -170,21 +170,6 @@ public class HierarchicalTable extends QueryTable {
     }
 
     @Override
-    public Table minBy(Selectable... groupByColumns) {
-        return throwUnsupported("minBy()");
-    }
-
-    @Override
-    public Table maxBy(Selectable... groupByColumns) {
-        return throwUnsupported("maxBy()");
-    }
-
-    @Override
-    public Table medianBy(Selectable... groupByColumns) {
-        return throwUnsupported("medianBy()");
-    }
-
-    @Override
     public Table countBy(String countColumnName, Selectable... groupByColumns) {
         return throwUnsupported("countBy()");
     }

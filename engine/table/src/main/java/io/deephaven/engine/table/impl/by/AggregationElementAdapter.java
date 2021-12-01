@@ -5,6 +5,7 @@ import io.deephaven.api.agg.Count;
 import io.deephaven.api.agg.KeyedAggregation;
 import io.deephaven.api.agg.KeyedAggregations;
 import io.deephaven.engine.table.MatchPair;
+import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.impl.by.AggregationFactory.AggregationElement;
 import io.deephaven.engine.table.impl.by.AggregationFactory.AggregationElementImpl;
 
@@ -15,11 +16,16 @@ import java.util.Objects;
  */
 class AggregationElementAdapter implements Aggregation.Visitor {
 
-    public static AggregationElement of(Aggregation aggregation) {
-        return aggregation.walk(new AggregationElementAdapter()).out();
+    public static AggregationElement of(Aggregation aggregation, BaseTable parent) {
+        return aggregation.walk(new AggregationElementAdapter(parent)).out();
     }
 
+    private final BaseTable parent;
     private AggregationElement out;
+
+    public AggregationElementAdapter(BaseTable parent) {
+        this.parent = Objects.requireNonNull(parent);
+    }
 
     public AggregationElement out() {
         return Objects.requireNonNull(out);
@@ -32,14 +38,14 @@ class AggregationElementAdapter implements Aggregation.Visitor {
 
     @Override
     public void visit(KeyedAggregation keyedAgg) {
-        final AggregationSpec spec = AggregationSpecAdapter.of(keyedAgg.key());
+        final AggregationSpec spec = AggregationSpecAdapter.of(keyedAgg.key(), parent);
         final MatchPair pair = MatchPair.of(keyedAgg.pair());
         out = new AggregationElementImpl(spec, pair);
     }
 
     @Override
     public void visit(KeyedAggregations keyedAggs) {
-        final AggregationSpec spec = AggregationSpecAdapter.of(keyedAggs.key());
+        final AggregationSpec spec = AggregationSpecAdapter.of(keyedAggs.key(), parent);
         final MatchPair[] pairs = MatchPair.fromPairs(keyedAggs.pairs());
         out = new AggregationElementImpl(spec, pairs);
     }

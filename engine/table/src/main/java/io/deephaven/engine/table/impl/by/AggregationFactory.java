@@ -620,10 +620,11 @@ public class AggregationFactory implements AggregationSpec {
          * Converts an {@link Aggregation} to an {@link AggregationElement}.
          *
          * @param aggregation The {@link Aggregation aggregation}
+         * @param parent The parent table
          * @return The {@link AggregationElement aggregation element}
          */
-        static AggregationElement of(Aggregation aggregation) {
-            return AggregationElementAdapter.of(aggregation);
+        static AggregationElement of(Aggregation aggregation, BaseTable parent) {
+            return AggregationElementAdapter.of(aggregation, parent);
         }
 
         /**
@@ -635,13 +636,15 @@ public class AggregationFactory implements AggregationSpec {
          * {@code aggregations}.
          *
          * @param aggregations The {@link Aggregation aggregation}
+         * @param parent The parent table
          * @return A list of {@link AggregationElement aggregation elements}
          * @see AggregationOptimizer#of(Collection)
-         * @see #of(Aggregation)
-         * @see #convert(Collection)
+         * @see #of(Aggregation, BaseTable)
+         * @see #convert(Collection, BaseTable)
          */
-        static List<AggregationElement> optimizeAndConvert(Collection<? extends Aggregation> aggregations) {
-            return convert(AggregationOptimizer.of(aggregations));
+        static List<AggregationElement> optimizeAndConvert(Collection<? extends Aggregation> aggregations,
+                BaseTable parent) {
+            return convert(AggregationOptimizer.of(aggregations), parent);
         }
 
         /**
@@ -652,14 +655,15 @@ public class AggregationFactory implements AggregationSpec {
          * Note: The results will preserve the intended order of the inputs.
          *
          * @param aggregations The {@link Aggregation aggregation}
+         * @param parent The parent table
          * @return A list of {@link AggregationElement aggregation elements}
-         * @see #of(Aggregation)
-         * @see #optimizeAndConvert(Collection)
+         * @see #of(Aggregation, BaseTable)
+         * @see #optimizeAndConvert(Collection, BaseTable)
          */
-        static List<AggregationElement> convert(Collection<? extends Aggregation> aggregations) {
+        static List<AggregationElement> convert(Collection<? extends Aggregation> aggregations, BaseTable parent) {
             final List<AggregationElement> out = new ArrayList<>(aggregations.size());
             for (Aggregation aggregation : aggregations) {
-                out.add(AggregationElementAdapter.of(aggregation));
+                out.add(AggregationElementAdapter.of(aggregation, parent));
             }
             return out;
         }
