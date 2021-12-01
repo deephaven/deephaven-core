@@ -280,6 +280,15 @@ class TableService final {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>>(PrepareAsyncExactJoinTablesRaw(context, request, cq));
     }
     //
+    // Returns the result of a left join operation.
+    virtual ::grpc::Status LeftJoinTables(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::LeftJoinTablesRequest& request, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* response) = 0;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>> AsyncLeftJoinTables(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::LeftJoinTablesRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>>(AsyncLeftJoinTablesRaw(context, request, cq));
+    }
+    std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>> PrepareAsyncLeftJoinTables(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::LeftJoinTablesRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>>(PrepareAsyncLeftJoinTablesRaw(context, request, cq));
+    }
+    //
     // Returns the result of an as of join operation.
     virtual ::grpc::Status AsOfJoinTables(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::AsOfJoinTablesRequest& request, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* response) = 0;
     std::unique_ptr< ::grpc::ClientAsyncResponseReaderInterface< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>> AsyncAsOfJoinTables(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::AsOfJoinTablesRequest& request, ::grpc::CompletionQueue* cq) {
@@ -580,6 +589,14 @@ class TableService final {
       virtual void ExactJoinTables(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::ExactJoinTablesRequest* request, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* response, ::grpc::experimental::ClientUnaryReactor* reactor) = 0;
       #endif
       //
+      // Returns the result of a left join operation.
+      virtual void LeftJoinTables(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::LeftJoinTablesRequest* request, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* response, std::function<void(::grpc::Status)>) = 0;
+      #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
+      virtual void LeftJoinTables(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::LeftJoinTablesRequest* request, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* response, ::grpc::ClientUnaryReactor* reactor) = 0;
+      #else
+      virtual void LeftJoinTables(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::LeftJoinTablesRequest* request, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* response, ::grpc::experimental::ClientUnaryReactor* reactor) = 0;
+      #endif
+      //
       // Returns the result of an as of join operation.
       virtual void AsOfJoinTables(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::AsOfJoinTablesRequest* request, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* response, std::function<void(::grpc::Status)>) = 0;
       #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
@@ -714,6 +731,8 @@ class TableService final {
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>* PrepareAsyncNaturalJoinTablesRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::NaturalJoinTablesRequest& request, ::grpc::CompletionQueue* cq) = 0;
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>* AsyncExactJoinTablesRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::ExactJoinTablesRequest& request, ::grpc::CompletionQueue* cq) = 0;
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>* PrepareAsyncExactJoinTablesRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::ExactJoinTablesRequest& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>* AsyncLeftJoinTablesRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::LeftJoinTablesRequest& request, ::grpc::CompletionQueue* cq) = 0;
+    virtual ::grpc::ClientAsyncResponseReaderInterface< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>* PrepareAsyncLeftJoinTablesRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::LeftJoinTablesRequest& request, ::grpc::CompletionQueue* cq) = 0;
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>* AsyncAsOfJoinTablesRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::AsOfJoinTablesRequest& request, ::grpc::CompletionQueue* cq) = 0;
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>* PrepareAsyncAsOfJoinTablesRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::AsOfJoinTablesRequest& request, ::grpc::CompletionQueue* cq) = 0;
     virtual ::grpc::ClientAsyncResponseReaderInterface< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>* AsyncComboAggregateRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::ComboAggregateRequest& request, ::grpc::CompletionQueue* cq) = 0;
@@ -917,6 +936,13 @@ class TableService final {
     }
     std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>> PrepareAsyncExactJoinTables(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::ExactJoinTablesRequest& request, ::grpc::CompletionQueue* cq) {
       return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>>(PrepareAsyncExactJoinTablesRaw(context, request, cq));
+    }
+    ::grpc::Status LeftJoinTables(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::LeftJoinTablesRequest& request, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* response) override;
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>> AsyncLeftJoinTables(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::LeftJoinTablesRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>>(AsyncLeftJoinTablesRaw(context, request, cq));
+    }
+    std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>> PrepareAsyncLeftJoinTables(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::LeftJoinTablesRequest& request, ::grpc::CompletionQueue* cq) {
+      return std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>>(PrepareAsyncLeftJoinTablesRaw(context, request, cq));
     }
     ::grpc::Status AsOfJoinTables(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::AsOfJoinTablesRequest& request, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* response) override;
     std::unique_ptr< ::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>> AsyncAsOfJoinTables(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::AsOfJoinTablesRequest& request, ::grpc::CompletionQueue* cq) {
@@ -1137,6 +1163,12 @@ class TableService final {
       #else
       void ExactJoinTables(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::ExactJoinTablesRequest* request, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* response, ::grpc::experimental::ClientUnaryReactor* reactor) override;
       #endif
+      void LeftJoinTables(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::LeftJoinTablesRequest* request, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* response, std::function<void(::grpc::Status)>) override;
+      #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
+      void LeftJoinTables(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::LeftJoinTablesRequest* request, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* response, ::grpc::ClientUnaryReactor* reactor) override;
+      #else
+      void LeftJoinTables(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::LeftJoinTablesRequest* request, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* response, ::grpc::experimental::ClientUnaryReactor* reactor) override;
+      #endif
       void AsOfJoinTables(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::AsOfJoinTablesRequest* request, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* response, std::function<void(::grpc::Status)>) override;
       #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
       void AsOfJoinTables(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::AsOfJoinTablesRequest* request, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* response, ::grpc::ClientUnaryReactor* reactor) override;
@@ -1246,6 +1278,8 @@ class TableService final {
     ::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>* PrepareAsyncNaturalJoinTablesRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::NaturalJoinTablesRequest& request, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>* AsyncExactJoinTablesRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::ExactJoinTablesRequest& request, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>* PrepareAsyncExactJoinTablesRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::ExactJoinTablesRequest& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>* AsyncLeftJoinTablesRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::LeftJoinTablesRequest& request, ::grpc::CompletionQueue* cq) override;
+    ::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>* PrepareAsyncLeftJoinTablesRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::LeftJoinTablesRequest& request, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>* AsyncAsOfJoinTablesRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::AsOfJoinTablesRequest& request, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>* PrepareAsyncAsOfJoinTablesRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::AsOfJoinTablesRequest& request, ::grpc::CompletionQueue* cq) override;
     ::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>* AsyncComboAggregateRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::ComboAggregateRequest& request, ::grpc::CompletionQueue* cq) override;
@@ -1290,6 +1324,7 @@ class TableService final {
     const ::grpc::internal::RpcMethod rpcmethod_CrossJoinTables_;
     const ::grpc::internal::RpcMethod rpcmethod_NaturalJoinTables_;
     const ::grpc::internal::RpcMethod rpcmethod_ExactJoinTables_;
+    const ::grpc::internal::RpcMethod rpcmethod_LeftJoinTables_;
     const ::grpc::internal::RpcMethod rpcmethod_AsOfJoinTables_;
     const ::grpc::internal::RpcMethod rpcmethod_ComboAggregate_;
     const ::grpc::internal::RpcMethod rpcmethod_Snapshot_;
@@ -1384,6 +1419,9 @@ class TableService final {
     //
     // Returns the result of an exact join operation.
     virtual ::grpc::Status ExactJoinTables(::grpc::ServerContext* context, const ::io::deephaven::proto::backplane::grpc::ExactJoinTablesRequest* request, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* response);
+    //
+    // Returns the result of a left join operation.
+    virtual ::grpc::Status LeftJoinTables(::grpc::ServerContext* context, const ::io::deephaven::proto::backplane::grpc::LeftJoinTablesRequest* request, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* response);
     //
     // Returns the result of an as of join operation.
     virtual ::grpc::Status AsOfJoinTables(::grpc::ServerContext* context, const ::io::deephaven::proto::backplane::grpc::AsOfJoinTablesRequest* request, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* response);
@@ -1942,12 +1980,32 @@ class TableService final {
     }
   };
   template <class BaseClass>
+  class WithAsyncMethod_LeftJoinTables : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithAsyncMethod_LeftJoinTables() {
+      ::grpc::Service::MarkMethodAsync(26);
+    }
+    ~WithAsyncMethod_LeftJoinTables() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status LeftJoinTables(::grpc::ServerContext* /*context*/, const ::io::deephaven::proto::backplane::grpc::LeftJoinTablesRequest* /*request*/, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    void RequestLeftJoinTables(::grpc::ServerContext* context, ::io::deephaven::proto::backplane::grpc::LeftJoinTablesRequest* request, ::grpc::ServerAsyncResponseWriter< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+      ::grpc::Service::RequestAsyncUnary(26, context, request, response, new_call_cq, notification_cq, tag);
+    }
+  };
+  template <class BaseClass>
   class WithAsyncMethod_AsOfJoinTables : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithAsyncMethod_AsOfJoinTables() {
-      ::grpc::Service::MarkMethodAsync(26);
+      ::grpc::Service::MarkMethodAsync(27);
     }
     ~WithAsyncMethod_AsOfJoinTables() override {
       BaseClassMustBeDerivedFromService(this);
@@ -1958,7 +2016,7 @@ class TableService final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestAsOfJoinTables(::grpc::ServerContext* context, ::io::deephaven::proto::backplane::grpc::AsOfJoinTablesRequest* request, ::grpc::ServerAsyncResponseWriter< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(26, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(27, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -1967,7 +2025,7 @@ class TableService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithAsyncMethod_ComboAggregate() {
-      ::grpc::Service::MarkMethodAsync(27);
+      ::grpc::Service::MarkMethodAsync(28);
     }
     ~WithAsyncMethod_ComboAggregate() override {
       BaseClassMustBeDerivedFromService(this);
@@ -1978,7 +2036,7 @@ class TableService final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestComboAggregate(::grpc::ServerContext* context, ::io::deephaven::proto::backplane::grpc::ComboAggregateRequest* request, ::grpc::ServerAsyncResponseWriter< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(27, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(28, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -1987,7 +2045,7 @@ class TableService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithAsyncMethod_Snapshot() {
-      ::grpc::Service::MarkMethodAsync(28);
+      ::grpc::Service::MarkMethodAsync(29);
     }
     ~WithAsyncMethod_Snapshot() override {
       BaseClassMustBeDerivedFromService(this);
@@ -1998,7 +2056,7 @@ class TableService final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestSnapshot(::grpc::ServerContext* context, ::io::deephaven::proto::backplane::grpc::SnapshotTableRequest* request, ::grpc::ServerAsyncResponseWriter< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(28, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(29, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -2007,7 +2065,7 @@ class TableService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithAsyncMethod_Flatten() {
-      ::grpc::Service::MarkMethodAsync(29);
+      ::grpc::Service::MarkMethodAsync(30);
     }
     ~WithAsyncMethod_Flatten() override {
       BaseClassMustBeDerivedFromService(this);
@@ -2018,7 +2076,7 @@ class TableService final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestFlatten(::grpc::ServerContext* context, ::io::deephaven::proto::backplane::grpc::FlattenRequest* request, ::grpc::ServerAsyncResponseWriter< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(29, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(30, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -2027,7 +2085,7 @@ class TableService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithAsyncMethod_RunChartDownsample() {
-      ::grpc::Service::MarkMethodAsync(30);
+      ::grpc::Service::MarkMethodAsync(31);
     }
     ~WithAsyncMethod_RunChartDownsample() override {
       BaseClassMustBeDerivedFromService(this);
@@ -2038,7 +2096,7 @@ class TableService final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestRunChartDownsample(::grpc::ServerContext* context, ::io::deephaven::proto::backplane::grpc::RunChartDownsampleRequest* request, ::grpc::ServerAsyncResponseWriter< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(30, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(31, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -2047,7 +2105,7 @@ class TableService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithAsyncMethod_CreateInputTable() {
-      ::grpc::Service::MarkMethodAsync(31);
+      ::grpc::Service::MarkMethodAsync(32);
     }
     ~WithAsyncMethod_CreateInputTable() override {
       BaseClassMustBeDerivedFromService(this);
@@ -2058,7 +2116,7 @@ class TableService final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestCreateInputTable(::grpc::ServerContext* context, ::io::deephaven::proto::backplane::grpc::CreateInputTableRequest* request, ::grpc::ServerAsyncResponseWriter< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(31, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(32, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -2067,7 +2125,7 @@ class TableService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithAsyncMethod_Batch() {
-      ::grpc::Service::MarkMethodAsync(32);
+      ::grpc::Service::MarkMethodAsync(33);
     }
     ~WithAsyncMethod_Batch() override {
       BaseClassMustBeDerivedFromService(this);
@@ -2078,7 +2136,7 @@ class TableService final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestBatch(::grpc::ServerContext* context, ::io::deephaven::proto::backplane::grpc::BatchTableRequest* request, ::grpc::ServerAsyncWriter< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>* writer, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncServerStreaming(32, context, request, writer, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncServerStreaming(33, context, request, writer, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -2087,7 +2145,7 @@ class TableService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithAsyncMethod_ExportedTableUpdates() {
-      ::grpc::Service::MarkMethodAsync(33);
+      ::grpc::Service::MarkMethodAsync(34);
     }
     ~WithAsyncMethod_ExportedTableUpdates() override {
       BaseClassMustBeDerivedFromService(this);
@@ -2098,10 +2156,10 @@ class TableService final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestExportedTableUpdates(::grpc::ServerContext* context, ::io::deephaven::proto::backplane::grpc::ExportedTableUpdatesRequest* request, ::grpc::ServerAsyncWriter< ::io::deephaven::proto::backplane::grpc::ExportedTableUpdateMessage>* writer, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncServerStreaming(33, context, request, writer, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncServerStreaming(34, context, request, writer, new_call_cq, notification_cq, tag);
     }
   };
-  typedef WithAsyncMethod_GetExportedTableCreationResponse<WithAsyncMethod_FetchTable<WithAsyncMethod_FetchPandasTable<WithAsyncMethod_FetchTableMap<WithAsyncMethod_ApplyPreviewColumns<WithAsyncMethod_EmptyTable<WithAsyncMethod_TimeTable<WithAsyncMethod_DropColumns<WithAsyncMethod_Update<WithAsyncMethod_LazyUpdate<WithAsyncMethod_View<WithAsyncMethod_UpdateView<WithAsyncMethod_Select<WithAsyncMethod_SelectDistinct<WithAsyncMethod_Filter<WithAsyncMethod_UnstructuredFilter<WithAsyncMethod_Sort<WithAsyncMethod_Head<WithAsyncMethod_Tail<WithAsyncMethod_HeadBy<WithAsyncMethod_TailBy<WithAsyncMethod_Ungroup<WithAsyncMethod_MergeTables<WithAsyncMethod_CrossJoinTables<WithAsyncMethod_NaturalJoinTables<WithAsyncMethod_ExactJoinTables<WithAsyncMethod_AsOfJoinTables<WithAsyncMethod_ComboAggregate<WithAsyncMethod_Snapshot<WithAsyncMethod_Flatten<WithAsyncMethod_RunChartDownsample<WithAsyncMethod_CreateInputTable<WithAsyncMethod_Batch<WithAsyncMethod_ExportedTableUpdates<Service > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > AsyncService;
+  typedef WithAsyncMethod_GetExportedTableCreationResponse<WithAsyncMethod_FetchTable<WithAsyncMethod_FetchPandasTable<WithAsyncMethod_FetchTableMap<WithAsyncMethod_ApplyPreviewColumns<WithAsyncMethod_EmptyTable<WithAsyncMethod_TimeTable<WithAsyncMethod_DropColumns<WithAsyncMethod_Update<WithAsyncMethod_LazyUpdate<WithAsyncMethod_View<WithAsyncMethod_UpdateView<WithAsyncMethod_Select<WithAsyncMethod_SelectDistinct<WithAsyncMethod_Filter<WithAsyncMethod_UnstructuredFilter<WithAsyncMethod_Sort<WithAsyncMethod_Head<WithAsyncMethod_Tail<WithAsyncMethod_HeadBy<WithAsyncMethod_TailBy<WithAsyncMethod_Ungroup<WithAsyncMethod_MergeTables<WithAsyncMethod_CrossJoinTables<WithAsyncMethod_NaturalJoinTables<WithAsyncMethod_ExactJoinTables<WithAsyncMethod_LeftJoinTables<WithAsyncMethod_AsOfJoinTables<WithAsyncMethod_ComboAggregate<WithAsyncMethod_Snapshot<WithAsyncMethod_Flatten<WithAsyncMethod_RunChartDownsample<WithAsyncMethod_CreateInputTable<WithAsyncMethod_Batch<WithAsyncMethod_ExportedTableUpdates<Service > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > AsyncService;
   template <class BaseClass>
   class ExperimentalWithCallbackMethod_GetExportedTableCreationResponse : public BaseClass {
    private:
@@ -3325,6 +3383,53 @@ class TableService final {
       { return nullptr; }
   };
   template <class BaseClass>
+  class ExperimentalWithCallbackMethod_LeftJoinTables : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    ExperimentalWithCallbackMethod_LeftJoinTables() {
+    #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
+      ::grpc::Service::
+    #else
+      ::grpc::Service::experimental().
+    #endif
+        MarkMethodCallback(26,
+          new ::grpc::internal::CallbackUnaryHandler< ::io::deephaven::proto::backplane::grpc::LeftJoinTablesRequest, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>(
+            [this](
+    #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
+                   ::grpc::CallbackServerContext*
+    #else
+                   ::grpc::experimental::CallbackServerContext*
+    #endif
+                     context, const ::io::deephaven::proto::backplane::grpc::LeftJoinTablesRequest* request, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* response) { return this->LeftJoinTables(context, request, response); }));}
+    void SetMessageAllocatorFor_LeftJoinTables(
+        ::grpc::experimental::MessageAllocator< ::io::deephaven::proto::backplane::grpc::LeftJoinTablesRequest, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>* allocator) {
+    #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(26);
+    #else
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::experimental().GetHandler(26);
+    #endif
+      static_cast<::grpc::internal::CallbackUnaryHandler< ::io::deephaven::proto::backplane::grpc::LeftJoinTablesRequest, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>*>(handler)
+              ->SetMessageAllocator(allocator);
+    }
+    ~ExperimentalWithCallbackMethod_LeftJoinTables() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status LeftJoinTables(::grpc::ServerContext* /*context*/, const ::io::deephaven::proto::backplane::grpc::LeftJoinTablesRequest* /*request*/, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
+    virtual ::grpc::ServerUnaryReactor* LeftJoinTables(
+      ::grpc::CallbackServerContext* /*context*/, const ::io::deephaven::proto::backplane::grpc::LeftJoinTablesRequest* /*request*/, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* /*response*/)
+    #else
+    virtual ::grpc::experimental::ServerUnaryReactor* LeftJoinTables(
+      ::grpc::experimental::CallbackServerContext* /*context*/, const ::io::deephaven::proto::backplane::grpc::LeftJoinTablesRequest* /*request*/, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* /*response*/)
+    #endif
+      { return nullptr; }
+  };
+  template <class BaseClass>
   class ExperimentalWithCallbackMethod_AsOfJoinTables : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
@@ -3335,7 +3440,7 @@ class TableService final {
     #else
       ::grpc::Service::experimental().
     #endif
-        MarkMethodCallback(26,
+        MarkMethodCallback(27,
           new ::grpc::internal::CallbackUnaryHandler< ::io::deephaven::proto::backplane::grpc::AsOfJoinTablesRequest, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>(
             [this](
     #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
@@ -3347,9 +3452,9 @@ class TableService final {
     void SetMessageAllocatorFor_AsOfJoinTables(
         ::grpc::experimental::MessageAllocator< ::io::deephaven::proto::backplane::grpc::AsOfJoinTablesRequest, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>* allocator) {
     #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
-      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(26);
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(27);
     #else
-      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::experimental().GetHandler(26);
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::experimental().GetHandler(27);
     #endif
       static_cast<::grpc::internal::CallbackUnaryHandler< ::io::deephaven::proto::backplane::grpc::AsOfJoinTablesRequest, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>*>(handler)
               ->SetMessageAllocator(allocator);
@@ -3382,7 +3487,7 @@ class TableService final {
     #else
       ::grpc::Service::experimental().
     #endif
-        MarkMethodCallback(27,
+        MarkMethodCallback(28,
           new ::grpc::internal::CallbackUnaryHandler< ::io::deephaven::proto::backplane::grpc::ComboAggregateRequest, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>(
             [this](
     #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
@@ -3394,9 +3499,9 @@ class TableService final {
     void SetMessageAllocatorFor_ComboAggregate(
         ::grpc::experimental::MessageAllocator< ::io::deephaven::proto::backplane::grpc::ComboAggregateRequest, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>* allocator) {
     #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
-      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(27);
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(28);
     #else
-      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::experimental().GetHandler(27);
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::experimental().GetHandler(28);
     #endif
       static_cast<::grpc::internal::CallbackUnaryHandler< ::io::deephaven::proto::backplane::grpc::ComboAggregateRequest, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>*>(handler)
               ->SetMessageAllocator(allocator);
@@ -3429,7 +3534,7 @@ class TableService final {
     #else
       ::grpc::Service::experimental().
     #endif
-        MarkMethodCallback(28,
+        MarkMethodCallback(29,
           new ::grpc::internal::CallbackUnaryHandler< ::io::deephaven::proto::backplane::grpc::SnapshotTableRequest, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>(
             [this](
     #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
@@ -3441,9 +3546,9 @@ class TableService final {
     void SetMessageAllocatorFor_Snapshot(
         ::grpc::experimental::MessageAllocator< ::io::deephaven::proto::backplane::grpc::SnapshotTableRequest, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>* allocator) {
     #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
-      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(28);
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(29);
     #else
-      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::experimental().GetHandler(28);
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::experimental().GetHandler(29);
     #endif
       static_cast<::grpc::internal::CallbackUnaryHandler< ::io::deephaven::proto::backplane::grpc::SnapshotTableRequest, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>*>(handler)
               ->SetMessageAllocator(allocator);
@@ -3476,7 +3581,7 @@ class TableService final {
     #else
       ::grpc::Service::experimental().
     #endif
-        MarkMethodCallback(29,
+        MarkMethodCallback(30,
           new ::grpc::internal::CallbackUnaryHandler< ::io::deephaven::proto::backplane::grpc::FlattenRequest, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>(
             [this](
     #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
@@ -3488,9 +3593,9 @@ class TableService final {
     void SetMessageAllocatorFor_Flatten(
         ::grpc::experimental::MessageAllocator< ::io::deephaven::proto::backplane::grpc::FlattenRequest, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>* allocator) {
     #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
-      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(29);
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(30);
     #else
-      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::experimental().GetHandler(29);
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::experimental().GetHandler(30);
     #endif
       static_cast<::grpc::internal::CallbackUnaryHandler< ::io::deephaven::proto::backplane::grpc::FlattenRequest, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>*>(handler)
               ->SetMessageAllocator(allocator);
@@ -3523,7 +3628,7 @@ class TableService final {
     #else
       ::grpc::Service::experimental().
     #endif
-        MarkMethodCallback(30,
+        MarkMethodCallback(31,
           new ::grpc::internal::CallbackUnaryHandler< ::io::deephaven::proto::backplane::grpc::RunChartDownsampleRequest, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>(
             [this](
     #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
@@ -3535,9 +3640,9 @@ class TableService final {
     void SetMessageAllocatorFor_RunChartDownsample(
         ::grpc::experimental::MessageAllocator< ::io::deephaven::proto::backplane::grpc::RunChartDownsampleRequest, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>* allocator) {
     #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
-      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(30);
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(31);
     #else
-      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::experimental().GetHandler(30);
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::experimental().GetHandler(31);
     #endif
       static_cast<::grpc::internal::CallbackUnaryHandler< ::io::deephaven::proto::backplane::grpc::RunChartDownsampleRequest, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>*>(handler)
               ->SetMessageAllocator(allocator);
@@ -3570,7 +3675,7 @@ class TableService final {
     #else
       ::grpc::Service::experimental().
     #endif
-        MarkMethodCallback(31,
+        MarkMethodCallback(32,
           new ::grpc::internal::CallbackUnaryHandler< ::io::deephaven::proto::backplane::grpc::CreateInputTableRequest, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>(
             [this](
     #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
@@ -3582,9 +3687,9 @@ class TableService final {
     void SetMessageAllocatorFor_CreateInputTable(
         ::grpc::experimental::MessageAllocator< ::io::deephaven::proto::backplane::grpc::CreateInputTableRequest, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>* allocator) {
     #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
-      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(31);
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::GetHandler(32);
     #else
-      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::experimental().GetHandler(31);
+      ::grpc::internal::MethodHandler* const handler = ::grpc::Service::experimental().GetHandler(32);
     #endif
       static_cast<::grpc::internal::CallbackUnaryHandler< ::io::deephaven::proto::backplane::grpc::CreateInputTableRequest, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>*>(handler)
               ->SetMessageAllocator(allocator);
@@ -3617,7 +3722,7 @@ class TableService final {
     #else
       ::grpc::Service::experimental().
     #endif
-        MarkMethodCallback(32,
+        MarkMethodCallback(33,
           new ::grpc::internal::CallbackServerStreamingHandler< ::io::deephaven::proto::backplane::grpc::BatchTableRequest, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>(
             [this](
     #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
@@ -3655,7 +3760,7 @@ class TableService final {
     #else
       ::grpc::Service::experimental().
     #endif
-        MarkMethodCallback(33,
+        MarkMethodCallback(34,
           new ::grpc::internal::CallbackServerStreamingHandler< ::io::deephaven::proto::backplane::grpc::ExportedTableUpdatesRequest, ::io::deephaven::proto::backplane::grpc::ExportedTableUpdateMessage>(
             [this](
     #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
@@ -3683,10 +3788,10 @@ class TableService final {
       { return nullptr; }
   };
   #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
-  typedef ExperimentalWithCallbackMethod_GetExportedTableCreationResponse<ExperimentalWithCallbackMethod_FetchTable<ExperimentalWithCallbackMethod_FetchPandasTable<ExperimentalWithCallbackMethod_FetchTableMap<ExperimentalWithCallbackMethod_ApplyPreviewColumns<ExperimentalWithCallbackMethod_EmptyTable<ExperimentalWithCallbackMethod_TimeTable<ExperimentalWithCallbackMethod_DropColumns<ExperimentalWithCallbackMethod_Update<ExperimentalWithCallbackMethod_LazyUpdate<ExperimentalWithCallbackMethod_View<ExperimentalWithCallbackMethod_UpdateView<ExperimentalWithCallbackMethod_Select<ExperimentalWithCallbackMethod_SelectDistinct<ExperimentalWithCallbackMethod_Filter<ExperimentalWithCallbackMethod_UnstructuredFilter<ExperimentalWithCallbackMethod_Sort<ExperimentalWithCallbackMethod_Head<ExperimentalWithCallbackMethod_Tail<ExperimentalWithCallbackMethod_HeadBy<ExperimentalWithCallbackMethod_TailBy<ExperimentalWithCallbackMethod_Ungroup<ExperimentalWithCallbackMethod_MergeTables<ExperimentalWithCallbackMethod_CrossJoinTables<ExperimentalWithCallbackMethod_NaturalJoinTables<ExperimentalWithCallbackMethod_ExactJoinTables<ExperimentalWithCallbackMethod_AsOfJoinTables<ExperimentalWithCallbackMethod_ComboAggregate<ExperimentalWithCallbackMethod_Snapshot<ExperimentalWithCallbackMethod_Flatten<ExperimentalWithCallbackMethod_RunChartDownsample<ExperimentalWithCallbackMethod_CreateInputTable<ExperimentalWithCallbackMethod_Batch<ExperimentalWithCallbackMethod_ExportedTableUpdates<Service > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > CallbackService;
+  typedef ExperimentalWithCallbackMethod_GetExportedTableCreationResponse<ExperimentalWithCallbackMethod_FetchTable<ExperimentalWithCallbackMethod_FetchPandasTable<ExperimentalWithCallbackMethod_FetchTableMap<ExperimentalWithCallbackMethod_ApplyPreviewColumns<ExperimentalWithCallbackMethod_EmptyTable<ExperimentalWithCallbackMethod_TimeTable<ExperimentalWithCallbackMethod_DropColumns<ExperimentalWithCallbackMethod_Update<ExperimentalWithCallbackMethod_LazyUpdate<ExperimentalWithCallbackMethod_View<ExperimentalWithCallbackMethod_UpdateView<ExperimentalWithCallbackMethod_Select<ExperimentalWithCallbackMethod_SelectDistinct<ExperimentalWithCallbackMethod_Filter<ExperimentalWithCallbackMethod_UnstructuredFilter<ExperimentalWithCallbackMethod_Sort<ExperimentalWithCallbackMethod_Head<ExperimentalWithCallbackMethod_Tail<ExperimentalWithCallbackMethod_HeadBy<ExperimentalWithCallbackMethod_TailBy<ExperimentalWithCallbackMethod_Ungroup<ExperimentalWithCallbackMethod_MergeTables<ExperimentalWithCallbackMethod_CrossJoinTables<ExperimentalWithCallbackMethod_NaturalJoinTables<ExperimentalWithCallbackMethod_ExactJoinTables<ExperimentalWithCallbackMethod_LeftJoinTables<ExperimentalWithCallbackMethod_AsOfJoinTables<ExperimentalWithCallbackMethod_ComboAggregate<ExperimentalWithCallbackMethod_Snapshot<ExperimentalWithCallbackMethod_Flatten<ExperimentalWithCallbackMethod_RunChartDownsample<ExperimentalWithCallbackMethod_CreateInputTable<ExperimentalWithCallbackMethod_Batch<ExperimentalWithCallbackMethod_ExportedTableUpdates<Service > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > CallbackService;
   #endif
 
-  typedef ExperimentalWithCallbackMethod_GetExportedTableCreationResponse<ExperimentalWithCallbackMethod_FetchTable<ExperimentalWithCallbackMethod_FetchPandasTable<ExperimentalWithCallbackMethod_FetchTableMap<ExperimentalWithCallbackMethod_ApplyPreviewColumns<ExperimentalWithCallbackMethod_EmptyTable<ExperimentalWithCallbackMethod_TimeTable<ExperimentalWithCallbackMethod_DropColumns<ExperimentalWithCallbackMethod_Update<ExperimentalWithCallbackMethod_LazyUpdate<ExperimentalWithCallbackMethod_View<ExperimentalWithCallbackMethod_UpdateView<ExperimentalWithCallbackMethod_Select<ExperimentalWithCallbackMethod_SelectDistinct<ExperimentalWithCallbackMethod_Filter<ExperimentalWithCallbackMethod_UnstructuredFilter<ExperimentalWithCallbackMethod_Sort<ExperimentalWithCallbackMethod_Head<ExperimentalWithCallbackMethod_Tail<ExperimentalWithCallbackMethod_HeadBy<ExperimentalWithCallbackMethod_TailBy<ExperimentalWithCallbackMethod_Ungroup<ExperimentalWithCallbackMethod_MergeTables<ExperimentalWithCallbackMethod_CrossJoinTables<ExperimentalWithCallbackMethod_NaturalJoinTables<ExperimentalWithCallbackMethod_ExactJoinTables<ExperimentalWithCallbackMethod_AsOfJoinTables<ExperimentalWithCallbackMethod_ComboAggregate<ExperimentalWithCallbackMethod_Snapshot<ExperimentalWithCallbackMethod_Flatten<ExperimentalWithCallbackMethod_RunChartDownsample<ExperimentalWithCallbackMethod_CreateInputTable<ExperimentalWithCallbackMethod_Batch<ExperimentalWithCallbackMethod_ExportedTableUpdates<Service > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > ExperimentalCallbackService;
+  typedef ExperimentalWithCallbackMethod_GetExportedTableCreationResponse<ExperimentalWithCallbackMethod_FetchTable<ExperimentalWithCallbackMethod_FetchPandasTable<ExperimentalWithCallbackMethod_FetchTableMap<ExperimentalWithCallbackMethod_ApplyPreviewColumns<ExperimentalWithCallbackMethod_EmptyTable<ExperimentalWithCallbackMethod_TimeTable<ExperimentalWithCallbackMethod_DropColumns<ExperimentalWithCallbackMethod_Update<ExperimentalWithCallbackMethod_LazyUpdate<ExperimentalWithCallbackMethod_View<ExperimentalWithCallbackMethod_UpdateView<ExperimentalWithCallbackMethod_Select<ExperimentalWithCallbackMethod_SelectDistinct<ExperimentalWithCallbackMethod_Filter<ExperimentalWithCallbackMethod_UnstructuredFilter<ExperimentalWithCallbackMethod_Sort<ExperimentalWithCallbackMethod_Head<ExperimentalWithCallbackMethod_Tail<ExperimentalWithCallbackMethod_HeadBy<ExperimentalWithCallbackMethod_TailBy<ExperimentalWithCallbackMethod_Ungroup<ExperimentalWithCallbackMethod_MergeTables<ExperimentalWithCallbackMethod_CrossJoinTables<ExperimentalWithCallbackMethod_NaturalJoinTables<ExperimentalWithCallbackMethod_ExactJoinTables<ExperimentalWithCallbackMethod_LeftJoinTables<ExperimentalWithCallbackMethod_AsOfJoinTables<ExperimentalWithCallbackMethod_ComboAggregate<ExperimentalWithCallbackMethod_Snapshot<ExperimentalWithCallbackMethod_Flatten<ExperimentalWithCallbackMethod_RunChartDownsample<ExperimentalWithCallbackMethod_CreateInputTable<ExperimentalWithCallbackMethod_Batch<ExperimentalWithCallbackMethod_ExportedTableUpdates<Service > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > ExperimentalCallbackService;
   template <class BaseClass>
   class WithGenericMethod_GetExportedTableCreationResponse : public BaseClass {
    private:
@@ -4130,12 +4235,29 @@ class TableService final {
     }
   };
   template <class BaseClass>
+  class WithGenericMethod_LeftJoinTables : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithGenericMethod_LeftJoinTables() {
+      ::grpc::Service::MarkMethodGeneric(26);
+    }
+    ~WithGenericMethod_LeftJoinTables() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status LeftJoinTables(::grpc::ServerContext* /*context*/, const ::io::deephaven::proto::backplane::grpc::LeftJoinTablesRequest* /*request*/, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+  };
+  template <class BaseClass>
   class WithGenericMethod_AsOfJoinTables : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithGenericMethod_AsOfJoinTables() {
-      ::grpc::Service::MarkMethodGeneric(26);
+      ::grpc::Service::MarkMethodGeneric(27);
     }
     ~WithGenericMethod_AsOfJoinTables() override {
       BaseClassMustBeDerivedFromService(this);
@@ -4152,7 +4274,7 @@ class TableService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithGenericMethod_ComboAggregate() {
-      ::grpc::Service::MarkMethodGeneric(27);
+      ::grpc::Service::MarkMethodGeneric(28);
     }
     ~WithGenericMethod_ComboAggregate() override {
       BaseClassMustBeDerivedFromService(this);
@@ -4169,7 +4291,7 @@ class TableService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithGenericMethod_Snapshot() {
-      ::grpc::Service::MarkMethodGeneric(28);
+      ::grpc::Service::MarkMethodGeneric(29);
     }
     ~WithGenericMethod_Snapshot() override {
       BaseClassMustBeDerivedFromService(this);
@@ -4186,7 +4308,7 @@ class TableService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithGenericMethod_Flatten() {
-      ::grpc::Service::MarkMethodGeneric(29);
+      ::grpc::Service::MarkMethodGeneric(30);
     }
     ~WithGenericMethod_Flatten() override {
       BaseClassMustBeDerivedFromService(this);
@@ -4203,7 +4325,7 @@ class TableService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithGenericMethod_RunChartDownsample() {
-      ::grpc::Service::MarkMethodGeneric(30);
+      ::grpc::Service::MarkMethodGeneric(31);
     }
     ~WithGenericMethod_RunChartDownsample() override {
       BaseClassMustBeDerivedFromService(this);
@@ -4220,7 +4342,7 @@ class TableService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithGenericMethod_CreateInputTable() {
-      ::grpc::Service::MarkMethodGeneric(31);
+      ::grpc::Service::MarkMethodGeneric(32);
     }
     ~WithGenericMethod_CreateInputTable() override {
       BaseClassMustBeDerivedFromService(this);
@@ -4237,7 +4359,7 @@ class TableService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithGenericMethod_Batch() {
-      ::grpc::Service::MarkMethodGeneric(32);
+      ::grpc::Service::MarkMethodGeneric(33);
     }
     ~WithGenericMethod_Batch() override {
       BaseClassMustBeDerivedFromService(this);
@@ -4254,7 +4376,7 @@ class TableService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithGenericMethod_ExportedTableUpdates() {
-      ::grpc::Service::MarkMethodGeneric(33);
+      ::grpc::Service::MarkMethodGeneric(34);
     }
     ~WithGenericMethod_ExportedTableUpdates() override {
       BaseClassMustBeDerivedFromService(this);
@@ -4786,12 +4908,32 @@ class TableService final {
     }
   };
   template <class BaseClass>
+  class WithRawMethod_LeftJoinTables : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithRawMethod_LeftJoinTables() {
+      ::grpc::Service::MarkMethodRaw(26);
+    }
+    ~WithRawMethod_LeftJoinTables() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status LeftJoinTables(::grpc::ServerContext* /*context*/, const ::io::deephaven::proto::backplane::grpc::LeftJoinTablesRequest* /*request*/, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    void RequestLeftJoinTables(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
+      ::grpc::Service::RequestAsyncUnary(26, context, request, response, new_call_cq, notification_cq, tag);
+    }
+  };
+  template <class BaseClass>
   class WithRawMethod_AsOfJoinTables : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawMethod_AsOfJoinTables() {
-      ::grpc::Service::MarkMethodRaw(26);
+      ::grpc::Service::MarkMethodRaw(27);
     }
     ~WithRawMethod_AsOfJoinTables() override {
       BaseClassMustBeDerivedFromService(this);
@@ -4802,7 +4944,7 @@ class TableService final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestAsOfJoinTables(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(26, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(27, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -4811,7 +4953,7 @@ class TableService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawMethod_ComboAggregate() {
-      ::grpc::Service::MarkMethodRaw(27);
+      ::grpc::Service::MarkMethodRaw(28);
     }
     ~WithRawMethod_ComboAggregate() override {
       BaseClassMustBeDerivedFromService(this);
@@ -4822,7 +4964,7 @@ class TableService final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestComboAggregate(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(27, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(28, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -4831,7 +4973,7 @@ class TableService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawMethod_Snapshot() {
-      ::grpc::Service::MarkMethodRaw(28);
+      ::grpc::Service::MarkMethodRaw(29);
     }
     ~WithRawMethod_Snapshot() override {
       BaseClassMustBeDerivedFromService(this);
@@ -4842,7 +4984,7 @@ class TableService final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestSnapshot(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(28, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(29, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -4851,7 +4993,7 @@ class TableService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawMethod_Flatten() {
-      ::grpc::Service::MarkMethodRaw(29);
+      ::grpc::Service::MarkMethodRaw(30);
     }
     ~WithRawMethod_Flatten() override {
       BaseClassMustBeDerivedFromService(this);
@@ -4862,7 +5004,7 @@ class TableService final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestFlatten(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(29, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(30, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -4871,7 +5013,7 @@ class TableService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawMethod_RunChartDownsample() {
-      ::grpc::Service::MarkMethodRaw(30);
+      ::grpc::Service::MarkMethodRaw(31);
     }
     ~WithRawMethod_RunChartDownsample() override {
       BaseClassMustBeDerivedFromService(this);
@@ -4882,7 +5024,7 @@ class TableService final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestRunChartDownsample(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(30, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(31, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -4891,7 +5033,7 @@ class TableService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawMethod_CreateInputTable() {
-      ::grpc::Service::MarkMethodRaw(31);
+      ::grpc::Service::MarkMethodRaw(32);
     }
     ~WithRawMethod_CreateInputTable() override {
       BaseClassMustBeDerivedFromService(this);
@@ -4902,7 +5044,7 @@ class TableService final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestCreateInputTable(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncResponseWriter< ::grpc::ByteBuffer>* response, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncUnary(31, context, request, response, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncUnary(32, context, request, response, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -4911,7 +5053,7 @@ class TableService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawMethod_Batch() {
-      ::grpc::Service::MarkMethodRaw(32);
+      ::grpc::Service::MarkMethodRaw(33);
     }
     ~WithRawMethod_Batch() override {
       BaseClassMustBeDerivedFromService(this);
@@ -4922,7 +5064,7 @@ class TableService final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestBatch(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncWriter< ::grpc::ByteBuffer>* writer, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncServerStreaming(32, context, request, writer, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncServerStreaming(33, context, request, writer, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -4931,7 +5073,7 @@ class TableService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithRawMethod_ExportedTableUpdates() {
-      ::grpc::Service::MarkMethodRaw(33);
+      ::grpc::Service::MarkMethodRaw(34);
     }
     ~WithRawMethod_ExportedTableUpdates() override {
       BaseClassMustBeDerivedFromService(this);
@@ -4942,7 +5084,7 @@ class TableService final {
       return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
     }
     void RequestExportedTableUpdates(::grpc::ServerContext* context, ::grpc::ByteBuffer* request, ::grpc::ServerAsyncWriter< ::grpc::ByteBuffer>* writer, ::grpc::CompletionQueue* new_call_cq, ::grpc::ServerCompletionQueue* notification_cq, void *tag) {
-      ::grpc::Service::RequestAsyncServerStreaming(33, context, request, writer, new_call_cq, notification_cq, tag);
+      ::grpc::Service::RequestAsyncServerStreaming(34, context, request, writer, new_call_cq, notification_cq, tag);
     }
   };
   template <class BaseClass>
@@ -5934,6 +6076,44 @@ class TableService final {
       { return nullptr; }
   };
   template <class BaseClass>
+  class ExperimentalWithRawCallbackMethod_LeftJoinTables : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    ExperimentalWithRawCallbackMethod_LeftJoinTables() {
+    #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
+      ::grpc::Service::
+    #else
+      ::grpc::Service::experimental().
+    #endif
+        MarkMethodRawCallback(26,
+          new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
+            [this](
+    #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
+                   ::grpc::CallbackServerContext*
+    #else
+                   ::grpc::experimental::CallbackServerContext*
+    #endif
+                     context, const ::grpc::ByteBuffer* request, ::grpc::ByteBuffer* response) { return this->LeftJoinTables(context, request, response); }));
+    }
+    ~ExperimentalWithRawCallbackMethod_LeftJoinTables() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable synchronous version of this method
+    ::grpc::Status LeftJoinTables(::grpc::ServerContext* /*context*/, const ::io::deephaven::proto::backplane::grpc::LeftJoinTablesRequest* /*request*/, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
+    virtual ::grpc::ServerUnaryReactor* LeftJoinTables(
+      ::grpc::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)
+    #else
+    virtual ::grpc::experimental::ServerUnaryReactor* LeftJoinTables(
+      ::grpc::experimental::CallbackServerContext* /*context*/, const ::grpc::ByteBuffer* /*request*/, ::grpc::ByteBuffer* /*response*/)
+    #endif
+      { return nullptr; }
+  };
+  template <class BaseClass>
   class ExperimentalWithRawCallbackMethod_AsOfJoinTables : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
@@ -5944,7 +6124,7 @@ class TableService final {
     #else
       ::grpc::Service::experimental().
     #endif
-        MarkMethodRawCallback(26,
+        MarkMethodRawCallback(27,
           new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
             [this](
     #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
@@ -5982,7 +6162,7 @@ class TableService final {
     #else
       ::grpc::Service::experimental().
     #endif
-        MarkMethodRawCallback(27,
+        MarkMethodRawCallback(28,
           new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
             [this](
     #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
@@ -6020,7 +6200,7 @@ class TableService final {
     #else
       ::grpc::Service::experimental().
     #endif
-        MarkMethodRawCallback(28,
+        MarkMethodRawCallback(29,
           new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
             [this](
     #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
@@ -6058,7 +6238,7 @@ class TableService final {
     #else
       ::grpc::Service::experimental().
     #endif
-        MarkMethodRawCallback(29,
+        MarkMethodRawCallback(30,
           new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
             [this](
     #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
@@ -6096,7 +6276,7 @@ class TableService final {
     #else
       ::grpc::Service::experimental().
     #endif
-        MarkMethodRawCallback(30,
+        MarkMethodRawCallback(31,
           new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
             [this](
     #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
@@ -6134,7 +6314,7 @@ class TableService final {
     #else
       ::grpc::Service::experimental().
     #endif
-        MarkMethodRawCallback(31,
+        MarkMethodRawCallback(32,
           new ::grpc::internal::CallbackUnaryHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
             [this](
     #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
@@ -6172,7 +6352,7 @@ class TableService final {
     #else
       ::grpc::Service::experimental().
     #endif
-        MarkMethodRawCallback(32,
+        MarkMethodRawCallback(33,
           new ::grpc::internal::CallbackServerStreamingHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
             [this](
     #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
@@ -6210,7 +6390,7 @@ class TableService final {
     #else
       ::grpc::Service::experimental().
     #endif
-        MarkMethodRawCallback(33,
+        MarkMethodRawCallback(34,
           new ::grpc::internal::CallbackServerStreamingHandler< ::grpc::ByteBuffer, ::grpc::ByteBuffer>(
             [this](
     #ifdef GRPC_CALLBACK_API_NONEXPERIMENTAL
@@ -6940,12 +7120,39 @@ class TableService final {
     virtual ::grpc::Status StreamedExactJoinTables(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::io::deephaven::proto::backplane::grpc::ExactJoinTablesRequest,::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>* server_unary_streamer) = 0;
   };
   template <class BaseClass>
+  class WithStreamedUnaryMethod_LeftJoinTables : public BaseClass {
+   private:
+    void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
+   public:
+    WithStreamedUnaryMethod_LeftJoinTables() {
+      ::grpc::Service::MarkMethodStreamed(26,
+        new ::grpc::internal::StreamedUnaryHandler<
+          ::io::deephaven::proto::backplane::grpc::LeftJoinTablesRequest, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>(
+            [this](::grpc::ServerContext* context,
+                   ::grpc::ServerUnaryStreamer<
+                     ::io::deephaven::proto::backplane::grpc::LeftJoinTablesRequest, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>* streamer) {
+                       return this->StreamedLeftJoinTables(context,
+                         streamer);
+                  }));
+    }
+    ~WithStreamedUnaryMethod_LeftJoinTables() override {
+      BaseClassMustBeDerivedFromService(this);
+    }
+    // disable regular version of this method
+    ::grpc::Status LeftJoinTables(::grpc::ServerContext* /*context*/, const ::io::deephaven::proto::backplane::grpc::LeftJoinTablesRequest* /*request*/, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* /*response*/) override {
+      abort();
+      return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+    }
+    // replace default version of method with streamed unary
+    virtual ::grpc::Status StreamedLeftJoinTables(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::io::deephaven::proto::backplane::grpc::LeftJoinTablesRequest,::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>* server_unary_streamer) = 0;
+  };
+  template <class BaseClass>
   class WithStreamedUnaryMethod_AsOfJoinTables : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithStreamedUnaryMethod_AsOfJoinTables() {
-      ::grpc::Service::MarkMethodStreamed(26,
+      ::grpc::Service::MarkMethodStreamed(27,
         new ::grpc::internal::StreamedUnaryHandler<
           ::io::deephaven::proto::backplane::grpc::AsOfJoinTablesRequest, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>(
             [this](::grpc::ServerContext* context,
@@ -6972,7 +7179,7 @@ class TableService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithStreamedUnaryMethod_ComboAggregate() {
-      ::grpc::Service::MarkMethodStreamed(27,
+      ::grpc::Service::MarkMethodStreamed(28,
         new ::grpc::internal::StreamedUnaryHandler<
           ::io::deephaven::proto::backplane::grpc::ComboAggregateRequest, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>(
             [this](::grpc::ServerContext* context,
@@ -6999,7 +7206,7 @@ class TableService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithStreamedUnaryMethod_Snapshot() {
-      ::grpc::Service::MarkMethodStreamed(28,
+      ::grpc::Service::MarkMethodStreamed(29,
         new ::grpc::internal::StreamedUnaryHandler<
           ::io::deephaven::proto::backplane::grpc::SnapshotTableRequest, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>(
             [this](::grpc::ServerContext* context,
@@ -7026,7 +7233,7 @@ class TableService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithStreamedUnaryMethod_Flatten() {
-      ::grpc::Service::MarkMethodStreamed(29,
+      ::grpc::Service::MarkMethodStreamed(30,
         new ::grpc::internal::StreamedUnaryHandler<
           ::io::deephaven::proto::backplane::grpc::FlattenRequest, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>(
             [this](::grpc::ServerContext* context,
@@ -7053,7 +7260,7 @@ class TableService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithStreamedUnaryMethod_RunChartDownsample() {
-      ::grpc::Service::MarkMethodStreamed(30,
+      ::grpc::Service::MarkMethodStreamed(31,
         new ::grpc::internal::StreamedUnaryHandler<
           ::io::deephaven::proto::backplane::grpc::RunChartDownsampleRequest, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>(
             [this](::grpc::ServerContext* context,
@@ -7080,7 +7287,7 @@ class TableService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithStreamedUnaryMethod_CreateInputTable() {
-      ::grpc::Service::MarkMethodStreamed(31,
+      ::grpc::Service::MarkMethodStreamed(32,
         new ::grpc::internal::StreamedUnaryHandler<
           ::io::deephaven::proto::backplane::grpc::CreateInputTableRequest, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>(
             [this](::grpc::ServerContext* context,
@@ -7101,14 +7308,14 @@ class TableService final {
     // replace default version of method with streamed unary
     virtual ::grpc::Status StreamedCreateInputTable(::grpc::ServerContext* context, ::grpc::ServerUnaryStreamer< ::io::deephaven::proto::backplane::grpc::CreateInputTableRequest,::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>* server_unary_streamer) = 0;
   };
-  typedef WithStreamedUnaryMethod_GetExportedTableCreationResponse<WithStreamedUnaryMethod_FetchTable<WithStreamedUnaryMethod_FetchPandasTable<WithStreamedUnaryMethod_FetchTableMap<WithStreamedUnaryMethod_ApplyPreviewColumns<WithStreamedUnaryMethod_EmptyTable<WithStreamedUnaryMethod_TimeTable<WithStreamedUnaryMethod_DropColumns<WithStreamedUnaryMethod_Update<WithStreamedUnaryMethod_LazyUpdate<WithStreamedUnaryMethod_View<WithStreamedUnaryMethod_UpdateView<WithStreamedUnaryMethod_Select<WithStreamedUnaryMethod_SelectDistinct<WithStreamedUnaryMethod_Filter<WithStreamedUnaryMethod_UnstructuredFilter<WithStreamedUnaryMethod_Sort<WithStreamedUnaryMethod_Head<WithStreamedUnaryMethod_Tail<WithStreamedUnaryMethod_HeadBy<WithStreamedUnaryMethod_TailBy<WithStreamedUnaryMethod_Ungroup<WithStreamedUnaryMethod_MergeTables<WithStreamedUnaryMethod_CrossJoinTables<WithStreamedUnaryMethod_NaturalJoinTables<WithStreamedUnaryMethod_ExactJoinTables<WithStreamedUnaryMethod_AsOfJoinTables<WithStreamedUnaryMethod_ComboAggregate<WithStreamedUnaryMethod_Snapshot<WithStreamedUnaryMethod_Flatten<WithStreamedUnaryMethod_RunChartDownsample<WithStreamedUnaryMethod_CreateInputTable<Service > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > StreamedUnaryService;
+  typedef WithStreamedUnaryMethod_GetExportedTableCreationResponse<WithStreamedUnaryMethod_FetchTable<WithStreamedUnaryMethod_FetchPandasTable<WithStreamedUnaryMethod_FetchTableMap<WithStreamedUnaryMethod_ApplyPreviewColumns<WithStreamedUnaryMethod_EmptyTable<WithStreamedUnaryMethod_TimeTable<WithStreamedUnaryMethod_DropColumns<WithStreamedUnaryMethod_Update<WithStreamedUnaryMethod_LazyUpdate<WithStreamedUnaryMethod_View<WithStreamedUnaryMethod_UpdateView<WithStreamedUnaryMethod_Select<WithStreamedUnaryMethod_SelectDistinct<WithStreamedUnaryMethod_Filter<WithStreamedUnaryMethod_UnstructuredFilter<WithStreamedUnaryMethod_Sort<WithStreamedUnaryMethod_Head<WithStreamedUnaryMethod_Tail<WithStreamedUnaryMethod_HeadBy<WithStreamedUnaryMethod_TailBy<WithStreamedUnaryMethod_Ungroup<WithStreamedUnaryMethod_MergeTables<WithStreamedUnaryMethod_CrossJoinTables<WithStreamedUnaryMethod_NaturalJoinTables<WithStreamedUnaryMethod_ExactJoinTables<WithStreamedUnaryMethod_LeftJoinTables<WithStreamedUnaryMethod_AsOfJoinTables<WithStreamedUnaryMethod_ComboAggregate<WithStreamedUnaryMethod_Snapshot<WithStreamedUnaryMethod_Flatten<WithStreamedUnaryMethod_RunChartDownsample<WithStreamedUnaryMethod_CreateInputTable<Service > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > StreamedUnaryService;
   template <class BaseClass>
   class WithSplitStreamingMethod_Batch : public BaseClass {
    private:
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithSplitStreamingMethod_Batch() {
-      ::grpc::Service::MarkMethodStreamed(32,
+      ::grpc::Service::MarkMethodStreamed(33,
         new ::grpc::internal::SplitServerStreamingHandler<
           ::io::deephaven::proto::backplane::grpc::BatchTableRequest, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>(
             [this](::grpc::ServerContext* context,
@@ -7135,7 +7342,7 @@ class TableService final {
     void BaseClassMustBeDerivedFromService(const Service* /*service*/) {}
    public:
     WithSplitStreamingMethod_ExportedTableUpdates() {
-      ::grpc::Service::MarkMethodStreamed(33,
+      ::grpc::Service::MarkMethodStreamed(34,
         new ::grpc::internal::SplitServerStreamingHandler<
           ::io::deephaven::proto::backplane::grpc::ExportedTableUpdatesRequest, ::io::deephaven::proto::backplane::grpc::ExportedTableUpdateMessage>(
             [this](::grpc::ServerContext* context,
@@ -7157,7 +7364,7 @@ class TableService final {
     virtual ::grpc::Status StreamedExportedTableUpdates(::grpc::ServerContext* context, ::grpc::ServerSplitStreamer< ::io::deephaven::proto::backplane::grpc::ExportedTableUpdatesRequest,::io::deephaven::proto::backplane::grpc::ExportedTableUpdateMessage>* server_split_streamer) = 0;
   };
   typedef WithSplitStreamingMethod_Batch<WithSplitStreamingMethod_ExportedTableUpdates<Service > > SplitStreamedService;
-  typedef WithStreamedUnaryMethod_GetExportedTableCreationResponse<WithStreamedUnaryMethod_FetchTable<WithStreamedUnaryMethod_FetchPandasTable<WithStreamedUnaryMethod_FetchTableMap<WithStreamedUnaryMethod_ApplyPreviewColumns<WithStreamedUnaryMethod_EmptyTable<WithStreamedUnaryMethod_TimeTable<WithStreamedUnaryMethod_DropColumns<WithStreamedUnaryMethod_Update<WithStreamedUnaryMethod_LazyUpdate<WithStreamedUnaryMethod_View<WithStreamedUnaryMethod_UpdateView<WithStreamedUnaryMethod_Select<WithStreamedUnaryMethod_SelectDistinct<WithStreamedUnaryMethod_Filter<WithStreamedUnaryMethod_UnstructuredFilter<WithStreamedUnaryMethod_Sort<WithStreamedUnaryMethod_Head<WithStreamedUnaryMethod_Tail<WithStreamedUnaryMethod_HeadBy<WithStreamedUnaryMethod_TailBy<WithStreamedUnaryMethod_Ungroup<WithStreamedUnaryMethod_MergeTables<WithStreamedUnaryMethod_CrossJoinTables<WithStreamedUnaryMethod_NaturalJoinTables<WithStreamedUnaryMethod_ExactJoinTables<WithStreamedUnaryMethod_AsOfJoinTables<WithStreamedUnaryMethod_ComboAggregate<WithStreamedUnaryMethod_Snapshot<WithStreamedUnaryMethod_Flatten<WithStreamedUnaryMethod_RunChartDownsample<WithStreamedUnaryMethod_CreateInputTable<WithSplitStreamingMethod_Batch<WithSplitStreamingMethod_ExportedTableUpdates<Service > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > StreamedService;
+  typedef WithStreamedUnaryMethod_GetExportedTableCreationResponse<WithStreamedUnaryMethod_FetchTable<WithStreamedUnaryMethod_FetchPandasTable<WithStreamedUnaryMethod_FetchTableMap<WithStreamedUnaryMethod_ApplyPreviewColumns<WithStreamedUnaryMethod_EmptyTable<WithStreamedUnaryMethod_TimeTable<WithStreamedUnaryMethod_DropColumns<WithStreamedUnaryMethod_Update<WithStreamedUnaryMethod_LazyUpdate<WithStreamedUnaryMethod_View<WithStreamedUnaryMethod_UpdateView<WithStreamedUnaryMethod_Select<WithStreamedUnaryMethod_SelectDistinct<WithStreamedUnaryMethod_Filter<WithStreamedUnaryMethod_UnstructuredFilter<WithStreamedUnaryMethod_Sort<WithStreamedUnaryMethod_Head<WithStreamedUnaryMethod_Tail<WithStreamedUnaryMethod_HeadBy<WithStreamedUnaryMethod_TailBy<WithStreamedUnaryMethod_Ungroup<WithStreamedUnaryMethod_MergeTables<WithStreamedUnaryMethod_CrossJoinTables<WithStreamedUnaryMethod_NaturalJoinTables<WithStreamedUnaryMethod_ExactJoinTables<WithStreamedUnaryMethod_LeftJoinTables<WithStreamedUnaryMethod_AsOfJoinTables<WithStreamedUnaryMethod_ComboAggregate<WithStreamedUnaryMethod_Snapshot<WithStreamedUnaryMethod_Flatten<WithStreamedUnaryMethod_RunChartDownsample<WithStreamedUnaryMethod_CreateInputTable<WithSplitStreamingMethod_Batch<WithSplitStreamingMethod_ExportedTableUpdates<Service > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > StreamedService;
 };
 
 }  // namespace grpc

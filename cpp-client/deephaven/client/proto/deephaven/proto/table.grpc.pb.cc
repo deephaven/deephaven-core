@@ -52,6 +52,7 @@ static const char* TableService_method_names[] = {
   "/io.deephaven.proto.backplane.grpc.TableService/CrossJoinTables",
   "/io.deephaven.proto.backplane.grpc.TableService/NaturalJoinTables",
   "/io.deephaven.proto.backplane.grpc.TableService/ExactJoinTables",
+  "/io.deephaven.proto.backplane.grpc.TableService/LeftJoinTables",
   "/io.deephaven.proto.backplane.grpc.TableService/AsOfJoinTables",
   "/io.deephaven.proto.backplane.grpc.TableService/ComboAggregate",
   "/io.deephaven.proto.backplane.grpc.TableService/Snapshot",
@@ -95,14 +96,15 @@ TableService::Stub::Stub(const std::shared_ptr< ::grpc::ChannelInterface>& chann
   , rpcmethod_CrossJoinTables_(TableService_method_names[23], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
   , rpcmethod_NaturalJoinTables_(TableService_method_names[24], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
   , rpcmethod_ExactJoinTables_(TableService_method_names[25], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_AsOfJoinTables_(TableService_method_names[26], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_ComboAggregate_(TableService_method_names[27], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_Snapshot_(TableService_method_names[28], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_Flatten_(TableService_method_names[29], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_RunChartDownsample_(TableService_method_names[30], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_CreateInputTable_(TableService_method_names[31], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
-  , rpcmethod_Batch_(TableService_method_names[32], options.suffix_for_stats(),::grpc::internal::RpcMethod::SERVER_STREAMING, channel)
-  , rpcmethod_ExportedTableUpdates_(TableService_method_names[33], options.suffix_for_stats(),::grpc::internal::RpcMethod::SERVER_STREAMING, channel)
+  , rpcmethod_LeftJoinTables_(TableService_method_names[26], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_AsOfJoinTables_(TableService_method_names[27], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_ComboAggregate_(TableService_method_names[28], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_Snapshot_(TableService_method_names[29], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_Flatten_(TableService_method_names[30], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_RunChartDownsample_(TableService_method_names[31], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_CreateInputTable_(TableService_method_names[32], options.suffix_for_stats(),::grpc::internal::RpcMethod::NORMAL_RPC, channel)
+  , rpcmethod_Batch_(TableService_method_names[33], options.suffix_for_stats(),::grpc::internal::RpcMethod::SERVER_STREAMING, channel)
+  , rpcmethod_ExportedTableUpdates_(TableService_method_names[34], options.suffix_for_stats(),::grpc::internal::RpcMethod::SERVER_STREAMING, channel)
   {}
 
 ::grpc::Status TableService::Stub::GetExportedTableCreationResponse(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::Ticket& request, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* response) {
@@ -703,6 +705,29 @@ void TableService::Stub::experimental_async::ExactJoinTables(::grpc::ClientConte
   return result;
 }
 
+::grpc::Status TableService::Stub::LeftJoinTables(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::LeftJoinTablesRequest& request, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* response) {
+  return ::grpc::internal::BlockingUnaryCall< ::io::deephaven::proto::backplane::grpc::LeftJoinTablesRequest, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_LeftJoinTables_, context, request, response);
+}
+
+void TableService::Stub::experimental_async::LeftJoinTables(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::LeftJoinTablesRequest* request, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* response, std::function<void(::grpc::Status)> f) {
+  ::grpc::internal::CallbackUnaryCall< ::io::deephaven::proto::backplane::grpc::LeftJoinTablesRequest, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_LeftJoinTables_, context, request, response, std::move(f));
+}
+
+void TableService::Stub::experimental_async::LeftJoinTables(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::LeftJoinTablesRequest* request, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* response, ::grpc::experimental::ClientUnaryReactor* reactor) {
+  ::grpc::internal::ClientCallbackUnaryFactory::Create< ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(stub_->channel_.get(), stub_->rpcmethod_LeftJoinTables_, context, request, response, reactor);
+}
+
+::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>* TableService::Stub::PrepareAsyncLeftJoinTablesRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::LeftJoinTablesRequest& request, ::grpc::CompletionQueue* cq) {
+  return ::grpc::internal::ClientAsyncResponseReaderHelper::Create< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse, ::io::deephaven::proto::backplane::grpc::LeftJoinTablesRequest, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), cq, rpcmethod_LeftJoinTables_, context, request);
+}
+
+::grpc::ClientAsyncResponseReader< ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>* TableService::Stub::AsyncLeftJoinTablesRaw(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::LeftJoinTablesRequest& request, ::grpc::CompletionQueue* cq) {
+  auto* result =
+    this->PrepareAsyncLeftJoinTablesRaw(context, request, cq);
+  result->StartCall();
+  return result;
+}
+
 ::grpc::Status TableService::Stub::AsOfJoinTables(::grpc::ClientContext* context, const ::io::deephaven::proto::backplane::grpc::AsOfJoinTablesRequest& request, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* response) {
   return ::grpc::internal::BlockingUnaryCall< ::io::deephaven::proto::backplane::grpc::AsOfJoinTablesRequest, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(channel_.get(), rpcmethod_AsOfJoinTables_, context, request, response);
 }
@@ -1137,6 +1162,16 @@ TableService::Service::Service() {
   AddMethod(new ::grpc::internal::RpcServiceMethod(
       TableService_method_names[26],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
+      new ::grpc::internal::RpcMethodHandler< TableService::Service, ::io::deephaven::proto::backplane::grpc::LeftJoinTablesRequest, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
+          [](TableService::Service* service,
+             ::grpc::ServerContext* ctx,
+             const ::io::deephaven::proto::backplane::grpc::LeftJoinTablesRequest* req,
+             ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* resp) {
+               return service->LeftJoinTables(ctx, req, resp);
+             }, this)));
+  AddMethod(new ::grpc::internal::RpcServiceMethod(
+      TableService_method_names[27],
+      ::grpc::internal::RpcMethod::NORMAL_RPC,
       new ::grpc::internal::RpcMethodHandler< TableService::Service, ::io::deephaven::proto::backplane::grpc::AsOfJoinTablesRequest, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](TableService::Service* service,
              ::grpc::ServerContext* ctx,
@@ -1145,7 +1180,7 @@ TableService::Service::Service() {
                return service->AsOfJoinTables(ctx, req, resp);
              }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
-      TableService_method_names[27],
+      TableService_method_names[28],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
       new ::grpc::internal::RpcMethodHandler< TableService::Service, ::io::deephaven::proto::backplane::grpc::ComboAggregateRequest, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](TableService::Service* service,
@@ -1155,7 +1190,7 @@ TableService::Service::Service() {
                return service->ComboAggregate(ctx, req, resp);
              }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
-      TableService_method_names[28],
+      TableService_method_names[29],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
       new ::grpc::internal::RpcMethodHandler< TableService::Service, ::io::deephaven::proto::backplane::grpc::SnapshotTableRequest, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](TableService::Service* service,
@@ -1165,7 +1200,7 @@ TableService::Service::Service() {
                return service->Snapshot(ctx, req, resp);
              }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
-      TableService_method_names[29],
+      TableService_method_names[30],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
       new ::grpc::internal::RpcMethodHandler< TableService::Service, ::io::deephaven::proto::backplane::grpc::FlattenRequest, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](TableService::Service* service,
@@ -1175,7 +1210,7 @@ TableService::Service::Service() {
                return service->Flatten(ctx, req, resp);
              }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
-      TableService_method_names[30],
+      TableService_method_names[31],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
       new ::grpc::internal::RpcMethodHandler< TableService::Service, ::io::deephaven::proto::backplane::grpc::RunChartDownsampleRequest, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](TableService::Service* service,
@@ -1185,7 +1220,7 @@ TableService::Service::Service() {
                return service->RunChartDownsample(ctx, req, resp);
              }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
-      TableService_method_names[31],
+      TableService_method_names[32],
       ::grpc::internal::RpcMethod::NORMAL_RPC,
       new ::grpc::internal::RpcMethodHandler< TableService::Service, ::io::deephaven::proto::backplane::grpc::CreateInputTableRequest, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse, ::grpc::protobuf::MessageLite, ::grpc::protobuf::MessageLite>(
           [](TableService::Service* service,
@@ -1195,7 +1230,7 @@ TableService::Service::Service() {
                return service->CreateInputTable(ctx, req, resp);
              }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
-      TableService_method_names[32],
+      TableService_method_names[33],
       ::grpc::internal::RpcMethod::SERVER_STREAMING,
       new ::grpc::internal::ServerStreamingHandler< TableService::Service, ::io::deephaven::proto::backplane::grpc::BatchTableRequest, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse>(
           [](TableService::Service* service,
@@ -1205,7 +1240,7 @@ TableService::Service::Service() {
                return service->Batch(ctx, req, writer);
              }, this)));
   AddMethod(new ::grpc::internal::RpcServiceMethod(
-      TableService_method_names[33],
+      TableService_method_names[34],
       ::grpc::internal::RpcMethod::SERVER_STREAMING,
       new ::grpc::internal::ServerStreamingHandler< TableService::Service, ::io::deephaven::proto::backplane::grpc::ExportedTableUpdatesRequest, ::io::deephaven::proto::backplane::grpc::ExportedTableUpdateMessage>(
           [](TableService::Service* service,
@@ -1395,6 +1430,13 @@ TableService::Service::~Service() {
 }
 
 ::grpc::Status TableService::Service::ExactJoinTables(::grpc::ServerContext* context, const ::io::deephaven::proto::backplane::grpc::ExactJoinTablesRequest* request, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* response) {
+  (void) context;
+  (void) request;
+  (void) response;
+  return ::grpc::Status(::grpc::StatusCode::UNIMPLEMENTED, "");
+}
+
+::grpc::Status TableService::Service::LeftJoinTables(::grpc::ServerContext* context, const ::io::deephaven::proto::backplane::grpc::LeftJoinTablesRequest* request, ::io::deephaven::proto::backplane::grpc::ExportedTableCreationResponse* response) {
   (void) context;
   (void) request;
   (void) response;

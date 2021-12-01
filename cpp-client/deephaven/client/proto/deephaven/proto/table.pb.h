@@ -49,7 +49,7 @@ struct TableStruct_deephaven_2fproto_2ftable_2eproto {
     PROTOBUF_SECTION_VARIABLE(protodesc_cold);
   static const ::PROTOBUF_NAMESPACE_ID::internal::AuxiliaryParseTableField aux[]
     PROTOBUF_SECTION_VARIABLE(protodesc_cold);
-  static const ::PROTOBUF_NAMESPACE_ID::internal::ParseTable schema[52]
+  static const ::PROTOBUF_NAMESPACE_ID::internal::ParseTable schema[53]
     PROTOBUF_SECTION_VARIABLE(protodesc_cold);
   static const ::PROTOBUF_NAMESPACE_ID::internal::FieldMetadata field_metadata[];
   static const ::PROTOBUF_NAMESPACE_ID::internal::SerializationTable serialization_table[];
@@ -157,6 +157,9 @@ extern InvokeConditionDefaultTypeInternal _InvokeCondition_default_instance_;
 class IsNullCondition;
 struct IsNullConditionDefaultTypeInternal;
 extern IsNullConditionDefaultTypeInternal _IsNullCondition_default_instance_;
+class LeftJoinTablesRequest;
+struct LeftJoinTablesRequestDefaultTypeInternal;
+extern LeftJoinTablesRequestDefaultTypeInternal _LeftJoinTablesRequest_default_instance_;
 class Literal;
 struct LiteralDefaultTypeInternal;
 extern LiteralDefaultTypeInternal _Literal_default_instance_;
@@ -255,6 +258,7 @@ template<> ::io::deephaven::proto::backplane::grpc::HeadOrTailRequest* Arena::Cr
 template<> ::io::deephaven::proto::backplane::grpc::InCondition* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::InCondition>(Arena*);
 template<> ::io::deephaven::proto::backplane::grpc::InvokeCondition* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::InvokeCondition>(Arena*);
 template<> ::io::deephaven::proto::backplane::grpc::IsNullCondition* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::IsNullCondition>(Arena*);
+template<> ::io::deephaven::proto::backplane::grpc::LeftJoinTablesRequest* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::LeftJoinTablesRequest>(Arena*);
 template<> ::io::deephaven::proto::backplane::grpc::Literal* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::Literal>(Arena*);
 template<> ::io::deephaven::proto::backplane::grpc::MatchesCondition* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::MatchesCondition>(Arena*);
 template<> ::io::deephaven::proto::backplane::grpc::MergeTablesRequest* Arena::CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::MergeTablesRequest>(Arena*);
@@ -4844,6 +4848,250 @@ class ExactJoinTablesRequest final :
 };
 // -------------------------------------------------------------------
 
+class LeftJoinTablesRequest final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:io.deephaven.proto.backplane.grpc.LeftJoinTablesRequest) */ {
+ public:
+  inline LeftJoinTablesRequest() : LeftJoinTablesRequest(nullptr) {}
+  ~LeftJoinTablesRequest() override;
+  explicit constexpr LeftJoinTablesRequest(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  LeftJoinTablesRequest(const LeftJoinTablesRequest& from);
+  LeftJoinTablesRequest(LeftJoinTablesRequest&& from) noexcept
+    : LeftJoinTablesRequest() {
+    *this = ::std::move(from);
+  }
+
+  inline LeftJoinTablesRequest& operator=(const LeftJoinTablesRequest& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline LeftJoinTablesRequest& operator=(LeftJoinTablesRequest&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const LeftJoinTablesRequest& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const LeftJoinTablesRequest* internal_default_instance() {
+    return reinterpret_cast<const LeftJoinTablesRequest*>(
+               &_LeftJoinTablesRequest_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    23;
+
+  friend void swap(LeftJoinTablesRequest& a, LeftJoinTablesRequest& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(LeftJoinTablesRequest* other) {
+    if (other == this) return;
+    if (GetOwningArena() == other->GetOwningArena()) {
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(LeftJoinTablesRequest* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline LeftJoinTablesRequest* New() const final {
+    return new LeftJoinTablesRequest();
+  }
+
+  LeftJoinTablesRequest* New(::PROTOBUF_NAMESPACE_ID::Arena* arena) const final {
+    return CreateMaybeMessage<LeftJoinTablesRequest>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
+  void CopyFrom(const LeftJoinTablesRequest& from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  void MergeFrom(const LeftJoinTablesRequest& from);
+  private:
+  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message* to, const ::PROTOBUF_NAMESPACE_ID::Message& from);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  ::PROTOBUF_NAMESPACE_ID::uint8* _InternalSerialize(
+      ::PROTOBUF_NAMESPACE_ID::uint8* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _cached_size_.Get(); }
+
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(LeftJoinTablesRequest* other);
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "io.deephaven.proto.backplane.grpc.LeftJoinTablesRequest";
+  }
+  protected:
+  explicit LeftJoinTablesRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  private:
+  static void ArenaDtor(void* object);
+  inline void RegisterArenaDtor(::PROTOBUF_NAMESPACE_ID::Arena* arena);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kColumnsToMatchFieldNumber = 4,
+    kColumnsToAddFieldNumber = 5,
+    kResultIdFieldNumber = 1,
+    kLeftIdFieldNumber = 2,
+    kRightIdFieldNumber = 3,
+  };
+  // repeated string columns_to_match = 4;
+  int columns_to_match_size() const;
+  private:
+  int _internal_columns_to_match_size() const;
+  public:
+  void clear_columns_to_match();
+  const std::string& columns_to_match(int index) const;
+  std::string* mutable_columns_to_match(int index);
+  void set_columns_to_match(int index, const std::string& value);
+  void set_columns_to_match(int index, std::string&& value);
+  void set_columns_to_match(int index, const char* value);
+  void set_columns_to_match(int index, const char* value, size_t size);
+  std::string* add_columns_to_match();
+  void add_columns_to_match(const std::string& value);
+  void add_columns_to_match(std::string&& value);
+  void add_columns_to_match(const char* value);
+  void add_columns_to_match(const char* value, size_t size);
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>& columns_to_match() const;
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>* mutable_columns_to_match();
+  private:
+  const std::string& _internal_columns_to_match(int index) const;
+  std::string* _internal_add_columns_to_match();
+  public:
+
+  // repeated string columns_to_add = 5;
+  int columns_to_add_size() const;
+  private:
+  int _internal_columns_to_add_size() const;
+  public:
+  void clear_columns_to_add();
+  const std::string& columns_to_add(int index) const;
+  std::string* mutable_columns_to_add(int index);
+  void set_columns_to_add(int index, const std::string& value);
+  void set_columns_to_add(int index, std::string&& value);
+  void set_columns_to_add(int index, const char* value);
+  void set_columns_to_add(int index, const char* value, size_t size);
+  std::string* add_columns_to_add();
+  void add_columns_to_add(const std::string& value);
+  void add_columns_to_add(std::string&& value);
+  void add_columns_to_add(const char* value);
+  void add_columns_to_add(const char* value, size_t size);
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>& columns_to_add() const;
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>* mutable_columns_to_add();
+  private:
+  const std::string& _internal_columns_to_add(int index) const;
+  std::string* _internal_add_columns_to_add();
+  public:
+
+  // .io.deephaven.proto.backplane.grpc.Ticket result_id = 1;
+  bool has_result_id() const;
+  private:
+  bool _internal_has_result_id() const;
+  public:
+  void clear_result_id();
+  const ::io::deephaven::proto::backplane::grpc::Ticket& result_id() const;
+  PROTOBUF_MUST_USE_RESULT ::io::deephaven::proto::backplane::grpc::Ticket* release_result_id();
+  ::io::deephaven::proto::backplane::grpc::Ticket* mutable_result_id();
+  void set_allocated_result_id(::io::deephaven::proto::backplane::grpc::Ticket* result_id);
+  private:
+  const ::io::deephaven::proto::backplane::grpc::Ticket& _internal_result_id() const;
+  ::io::deephaven::proto::backplane::grpc::Ticket* _internal_mutable_result_id();
+  public:
+  void unsafe_arena_set_allocated_result_id(
+      ::io::deephaven::proto::backplane::grpc::Ticket* result_id);
+  ::io::deephaven::proto::backplane::grpc::Ticket* unsafe_arena_release_result_id();
+
+  // .io.deephaven.proto.backplane.grpc.TableReference left_id = 2;
+  bool has_left_id() const;
+  private:
+  bool _internal_has_left_id() const;
+  public:
+  void clear_left_id();
+  const ::io::deephaven::proto::backplane::grpc::TableReference& left_id() const;
+  PROTOBUF_MUST_USE_RESULT ::io::deephaven::proto::backplane::grpc::TableReference* release_left_id();
+  ::io::deephaven::proto::backplane::grpc::TableReference* mutable_left_id();
+  void set_allocated_left_id(::io::deephaven::proto::backplane::grpc::TableReference* left_id);
+  private:
+  const ::io::deephaven::proto::backplane::grpc::TableReference& _internal_left_id() const;
+  ::io::deephaven::proto::backplane::grpc::TableReference* _internal_mutable_left_id();
+  public:
+  void unsafe_arena_set_allocated_left_id(
+      ::io::deephaven::proto::backplane::grpc::TableReference* left_id);
+  ::io::deephaven::proto::backplane::grpc::TableReference* unsafe_arena_release_left_id();
+
+  // .io.deephaven.proto.backplane.grpc.TableReference right_id = 3;
+  bool has_right_id() const;
+  private:
+  bool _internal_has_right_id() const;
+  public:
+  void clear_right_id();
+  const ::io::deephaven::proto::backplane::grpc::TableReference& right_id() const;
+  PROTOBUF_MUST_USE_RESULT ::io::deephaven::proto::backplane::grpc::TableReference* release_right_id();
+  ::io::deephaven::proto::backplane::grpc::TableReference* mutable_right_id();
+  void set_allocated_right_id(::io::deephaven::proto::backplane::grpc::TableReference* right_id);
+  private:
+  const ::io::deephaven::proto::backplane::grpc::TableReference& _internal_right_id() const;
+  ::io::deephaven::proto::backplane::grpc::TableReference* _internal_mutable_right_id();
+  public:
+  void unsafe_arena_set_allocated_right_id(
+      ::io::deephaven::proto::backplane::grpc::TableReference* right_id);
+  ::io::deephaven::proto::backplane::grpc::TableReference* unsafe_arena_release_right_id();
+
+  // @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.grpc.LeftJoinTablesRequest)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string> columns_to_match_;
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string> columns_to_add_;
+  ::io::deephaven::proto::backplane::grpc::Ticket* result_id_;
+  ::io::deephaven::proto::backplane::grpc::TableReference* left_id_;
+  ::io::deephaven::proto::backplane::grpc::TableReference* right_id_;
+  mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  friend struct ::TableStruct_deephaven_2fproto_2ftable_2eproto;
+};
+// -------------------------------------------------------------------
+
 class AsOfJoinTablesRequest final :
     public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:io.deephaven.proto.backplane.grpc.AsOfJoinTablesRequest) */ {
  public:
@@ -4892,7 +5140,7 @@ class AsOfJoinTablesRequest final :
                &_AsOfJoinTablesRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    23;
+    24;
 
   friend void swap(AsOfJoinTablesRequest& a, AsOfJoinTablesRequest& b) {
     a.Swap(&b);
@@ -5181,7 +5429,7 @@ class ComboAggregateRequest_Aggregate final :
                &_ComboAggregateRequest_Aggregate_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    24;
+    25;
 
   friend void swap(ComboAggregateRequest_Aggregate& a, ComboAggregateRequest_Aggregate& b) {
     a.Swap(&b);
@@ -5388,7 +5636,7 @@ class ComboAggregateRequest final :
                &_ComboAggregateRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    25;
+    26;
 
   friend void swap(ComboAggregateRequest& a, ComboAggregateRequest& b) {
     a.Swap(&b);
@@ -5673,7 +5921,7 @@ class SortDescriptor final :
                &_SortDescriptor_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    26;
+    27;
 
   friend void swap(SortDescriptor& a, SortDescriptor& b) {
     a.Swap(&b);
@@ -5877,7 +6125,7 @@ class SortTableRequest final :
                &_SortTableRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    27;
+    28;
 
   friend void swap(SortTableRequest& a, SortTableRequest& b) {
     a.Swap(&b);
@@ -6069,7 +6317,7 @@ class FilterTableRequest final :
                &_FilterTableRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    28;
+    29;
 
   friend void swap(FilterTableRequest& a, FilterTableRequest& b) {
     a.Swap(&b);
@@ -6261,7 +6509,7 @@ class Reference final :
                &_Reference_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    29;
+    30;
 
   friend void swap(Reference& a, Reference& b) {
     a.Swap(&b);
@@ -6418,7 +6666,7 @@ class Literal final :
                &_Literal_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    30;
+    31;
 
   friend void swap(Literal& a, Literal& b) {
     a.Swap(&b);
@@ -6652,7 +6900,7 @@ class Value final :
                &_Value_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    31;
+    32;
 
   friend void swap(Value& a, Value& b) {
     a.Swap(&b);
@@ -6851,7 +7099,7 @@ class Condition final :
                &_Condition_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    32;
+    33;
 
   friend void swap(Condition& a, Condition& b) {
     a.Swap(&b);
@@ -7204,7 +7452,7 @@ class AndCondition final :
                &_AndCondition_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    33;
+    34;
 
   friend void swap(AndCondition& a, AndCondition& b) {
     a.Swap(&b);
@@ -7356,7 +7604,7 @@ class OrCondition final :
                &_OrCondition_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    34;
+    35;
 
   friend void swap(OrCondition& a, OrCondition& b) {
     a.Swap(&b);
@@ -7508,7 +7756,7 @@ class NotCondition final :
                &_NotCondition_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    35;
+    36;
 
   friend void swap(NotCondition& a, NotCondition& b) {
     a.Swap(&b);
@@ -7660,7 +7908,7 @@ class CompareCondition final :
                &_CompareCondition_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    36;
+    37;
 
   friend void swap(CompareCondition& a, CompareCondition& b) {
     a.Swap(&b);
@@ -7892,7 +8140,7 @@ class InCondition final :
                &_InCondition_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    37;
+    38;
 
   friend void swap(InCondition& a, InCondition& b) {
     a.Swap(&b);
@@ -8086,7 +8334,7 @@ class InvokeCondition final :
                &_InvokeCondition_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    38;
+    39;
 
   friend void swap(InvokeCondition& a, InvokeCondition& b) {
     a.Swap(&b);
@@ -8274,7 +8522,7 @@ class IsNullCondition final :
                &_IsNullCondition_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    39;
+    40;
 
   friend void swap(IsNullCondition& a, IsNullCondition& b) {
     a.Swap(&b);
@@ -8426,7 +8674,7 @@ class MatchesCondition final :
                &_MatchesCondition_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    40;
+    41;
 
   friend void swap(MatchesCondition& a, MatchesCondition& b) {
     a.Swap(&b);
@@ -8616,7 +8864,7 @@ class ContainsCondition final :
                &_ContainsCondition_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    41;
+    42;
 
   friend void swap(ContainsCondition& a, ContainsCondition& b) {
     a.Swap(&b);
@@ -8806,7 +9054,7 @@ class SearchCondition final :
                &_SearchCondition_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    42;
+    43;
 
   friend void swap(SearchCondition& a, SearchCondition& b) {
     a.Swap(&b);
@@ -8974,7 +9222,7 @@ class FlattenRequest final :
                &_FlattenRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    43;
+    44;
 
   friend void swap(FlattenRequest& a, FlattenRequest& b) {
     a.Swap(&b);
@@ -9146,7 +9394,7 @@ class RunChartDownsampleRequest_ZoomRange final :
                &_RunChartDownsampleRequest_ZoomRange_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    44;
+    45;
 
   friend void swap(RunChartDownsampleRequest_ZoomRange& a, RunChartDownsampleRequest_ZoomRange& b) {
     a.Swap(&b);
@@ -9309,7 +9557,7 @@ class RunChartDownsampleRequest final :
                &_RunChartDownsampleRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    45;
+    46;
 
   friend void swap(RunChartDownsampleRequest& a, RunChartDownsampleRequest& b) {
     a.Swap(&b);
@@ -9555,7 +9803,7 @@ class CreateInputTableRequest_InputTableKind_InMemoryAppendOnly final :
                &_CreateInputTableRequest_InputTableKind_InMemoryAppendOnly_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    46;
+    47;
 
   friend void swap(CreateInputTableRequest_InputTableKind_InMemoryAppendOnly& a, CreateInputTableRequest_InputTableKind_InMemoryAppendOnly& b) {
     a.Swap(&b);
@@ -9671,7 +9919,7 @@ class CreateInputTableRequest_InputTableKind_InMemoryKeyBacked final :
                &_CreateInputTableRequest_InputTableKind_InMemoryKeyBacked_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    47;
+    48;
 
   friend void swap(CreateInputTableRequest_InputTableKind_InMemoryKeyBacked& a, CreateInputTableRequest_InputTableKind_InMemoryKeyBacked& b) {
     a.Swap(&b);
@@ -9835,7 +10083,7 @@ class CreateInputTableRequest_InputTableKind final :
                &_CreateInputTableRequest_InputTableKind_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    48;
+    49;
 
   friend void swap(CreateInputTableRequest_InputTableKind& a, CreateInputTableRequest_InputTableKind& b) {
     a.Swap(&b);
@@ -10029,7 +10277,7 @@ class CreateInputTableRequest final :
                &_CreateInputTableRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    49;
+    50;
 
   friend void swap(CreateInputTableRequest& a, CreateInputTableRequest& b) {
     a.Swap(&b);
@@ -10277,11 +10525,12 @@ class BatchTableRequest_Operation final :
     kCrossJoin = 23,
     kNaturalJoin = 24,
     kExactJoin = 25,
-    kAsOfJoin = 26,
-    kFetchTable = 27,
-    kFetchPandasTable = 28,
-    kApplyPreviewColumns = 29,
-    kCreateInputTable = 30,
+    kLeftJoin = 26,
+    kAsOfJoin = 27,
+    kFetchTable = 28,
+    kFetchPandasTable = 29,
+    kApplyPreviewColumns = 30,
+    kCreateInputTable = 31,
     OP_NOT_SET = 0,
   };
 
@@ -10290,7 +10539,7 @@ class BatchTableRequest_Operation final :
                &_BatchTableRequest_Operation_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    50;
+    51;
 
   friend void swap(BatchTableRequest_Operation& a, BatchTableRequest_Operation& b) {
     a.Swap(&b);
@@ -10386,11 +10635,12 @@ class BatchTableRequest_Operation final :
     kCrossJoinFieldNumber = 23,
     kNaturalJoinFieldNumber = 24,
     kExactJoinFieldNumber = 25,
-    kAsOfJoinFieldNumber = 26,
-    kFetchTableFieldNumber = 27,
-    kFetchPandasTableFieldNumber = 28,
-    kApplyPreviewColumnsFieldNumber = 29,
-    kCreateInputTableFieldNumber = 30,
+    kLeftJoinFieldNumber = 26,
+    kAsOfJoinFieldNumber = 27,
+    kFetchTableFieldNumber = 28,
+    kFetchPandasTableFieldNumber = 29,
+    kApplyPreviewColumnsFieldNumber = 30,
+    kCreateInputTableFieldNumber = 31,
   };
   // .io.deephaven.proto.backplane.grpc.EmptyTableRequest empty_table = 1;
   bool has_empty_table() const;
@@ -10842,7 +11092,25 @@ class BatchTableRequest_Operation final :
       ::io::deephaven::proto::backplane::grpc::ExactJoinTablesRequest* exact_join);
   ::io::deephaven::proto::backplane::grpc::ExactJoinTablesRequest* unsafe_arena_release_exact_join();
 
-  // .io.deephaven.proto.backplane.grpc.AsOfJoinTablesRequest as_of_join = 26;
+  // .io.deephaven.proto.backplane.grpc.LeftJoinTablesRequest left_join = 26;
+  bool has_left_join() const;
+  private:
+  bool _internal_has_left_join() const;
+  public:
+  void clear_left_join();
+  const ::io::deephaven::proto::backplane::grpc::LeftJoinTablesRequest& left_join() const;
+  PROTOBUF_MUST_USE_RESULT ::io::deephaven::proto::backplane::grpc::LeftJoinTablesRequest* release_left_join();
+  ::io::deephaven::proto::backplane::grpc::LeftJoinTablesRequest* mutable_left_join();
+  void set_allocated_left_join(::io::deephaven::proto::backplane::grpc::LeftJoinTablesRequest* left_join);
+  private:
+  const ::io::deephaven::proto::backplane::grpc::LeftJoinTablesRequest& _internal_left_join() const;
+  ::io::deephaven::proto::backplane::grpc::LeftJoinTablesRequest* _internal_mutable_left_join();
+  public:
+  void unsafe_arena_set_allocated_left_join(
+      ::io::deephaven::proto::backplane::grpc::LeftJoinTablesRequest* left_join);
+  ::io::deephaven::proto::backplane::grpc::LeftJoinTablesRequest* unsafe_arena_release_left_join();
+
+  // .io.deephaven.proto.backplane.grpc.AsOfJoinTablesRequest as_of_join = 27;
   bool has_as_of_join() const;
   private:
   bool _internal_has_as_of_join() const;
@@ -10860,7 +11128,7 @@ class BatchTableRequest_Operation final :
       ::io::deephaven::proto::backplane::grpc::AsOfJoinTablesRequest* as_of_join);
   ::io::deephaven::proto::backplane::grpc::AsOfJoinTablesRequest* unsafe_arena_release_as_of_join();
 
-  // .io.deephaven.proto.backplane.grpc.FetchTableRequest fetch_table = 27;
+  // .io.deephaven.proto.backplane.grpc.FetchTableRequest fetch_table = 28;
   bool has_fetch_table() const;
   private:
   bool _internal_has_fetch_table() const;
@@ -10878,7 +11146,7 @@ class BatchTableRequest_Operation final :
       ::io::deephaven::proto::backplane::grpc::FetchTableRequest* fetch_table);
   ::io::deephaven::proto::backplane::grpc::FetchTableRequest* unsafe_arena_release_fetch_table();
 
-  // .io.deephaven.proto.backplane.grpc.FetchPandasTableRequest fetch_pandas_table = 28;
+  // .io.deephaven.proto.backplane.grpc.FetchPandasTableRequest fetch_pandas_table = 29;
   bool has_fetch_pandas_table() const;
   private:
   bool _internal_has_fetch_pandas_table() const;
@@ -10896,7 +11164,7 @@ class BatchTableRequest_Operation final :
       ::io::deephaven::proto::backplane::grpc::FetchPandasTableRequest* fetch_pandas_table);
   ::io::deephaven::proto::backplane::grpc::FetchPandasTableRequest* unsafe_arena_release_fetch_pandas_table();
 
-  // .io.deephaven.proto.backplane.grpc.ApplyPreviewColumnsRequest apply_preview_columns = 29;
+  // .io.deephaven.proto.backplane.grpc.ApplyPreviewColumnsRequest apply_preview_columns = 30;
   bool has_apply_preview_columns() const;
   private:
   bool _internal_has_apply_preview_columns() const;
@@ -10914,7 +11182,7 @@ class BatchTableRequest_Operation final :
       ::io::deephaven::proto::backplane::grpc::ApplyPreviewColumnsRequest* apply_preview_columns);
   ::io::deephaven::proto::backplane::grpc::ApplyPreviewColumnsRequest* unsafe_arena_release_apply_preview_columns();
 
-  // .io.deephaven.proto.backplane.grpc.CreateInputTableRequest create_input_table = 30;
+  // .io.deephaven.proto.backplane.grpc.CreateInputTableRequest create_input_table = 31;
   bool has_create_input_table() const;
   private:
   bool _internal_has_create_input_table() const;
@@ -10962,6 +11230,7 @@ class BatchTableRequest_Operation final :
   void set_has_cross_join();
   void set_has_natural_join();
   void set_has_exact_join();
+  void set_has_left_join();
   void set_has_as_of_join();
   void set_has_fetch_table();
   void set_has_fetch_pandas_table();
@@ -11002,6 +11271,7 @@ class BatchTableRequest_Operation final :
     ::io::deephaven::proto::backplane::grpc::CrossJoinTablesRequest* cross_join_;
     ::io::deephaven::proto::backplane::grpc::NaturalJoinTablesRequest* natural_join_;
     ::io::deephaven::proto::backplane::grpc::ExactJoinTablesRequest* exact_join_;
+    ::io::deephaven::proto::backplane::grpc::LeftJoinTablesRequest* left_join_;
     ::io::deephaven::proto::backplane::grpc::AsOfJoinTablesRequest* as_of_join_;
     ::io::deephaven::proto::backplane::grpc::FetchTableRequest* fetch_table_;
     ::io::deephaven::proto::backplane::grpc::FetchPandasTableRequest* fetch_pandas_table_;
@@ -11063,7 +11333,7 @@ class BatchTableRequest final :
                &_BatchTableRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    51;
+    52;
 
   friend void swap(BatchTableRequest& a, BatchTableRequest& b) {
     a.Swap(&b);
@@ -16249,6 +16519,426 @@ ExactJoinTablesRequest::columns_to_add() const {
 inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>*
 ExactJoinTablesRequest::mutable_columns_to_add() {
   // @@protoc_insertion_point(field_mutable_list:io.deephaven.proto.backplane.grpc.ExactJoinTablesRequest.columns_to_add)
+  return &columns_to_add_;
+}
+
+// -------------------------------------------------------------------
+
+// LeftJoinTablesRequest
+
+// .io.deephaven.proto.backplane.grpc.Ticket result_id = 1;
+inline bool LeftJoinTablesRequest::_internal_has_result_id() const {
+  return this != internal_default_instance() && result_id_ != nullptr;
+}
+inline bool LeftJoinTablesRequest::has_result_id() const {
+  return _internal_has_result_id();
+}
+inline const ::io::deephaven::proto::backplane::grpc::Ticket& LeftJoinTablesRequest::_internal_result_id() const {
+  const ::io::deephaven::proto::backplane::grpc::Ticket* p = result_id_;
+  return p != nullptr ? *p : reinterpret_cast<const ::io::deephaven::proto::backplane::grpc::Ticket&>(
+      ::io::deephaven::proto::backplane::grpc::_Ticket_default_instance_);
+}
+inline const ::io::deephaven::proto::backplane::grpc::Ticket& LeftJoinTablesRequest::result_id() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.LeftJoinTablesRequest.result_id)
+  return _internal_result_id();
+}
+inline void LeftJoinTablesRequest::unsafe_arena_set_allocated_result_id(
+    ::io::deephaven::proto::backplane::grpc::Ticket* result_id) {
+  if (GetArenaForAllocation() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(result_id_);
+  }
+  result_id_ = result_id;
+  if (result_id) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.LeftJoinTablesRequest.result_id)
+}
+inline ::io::deephaven::proto::backplane::grpc::Ticket* LeftJoinTablesRequest::release_result_id() {
+  
+  ::io::deephaven::proto::backplane::grpc::Ticket* temp = result_id_;
+  result_id_ = nullptr;
+#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
+  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
+  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  if (GetArenaForAllocation() == nullptr) { delete old; }
+#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
+  if (GetArenaForAllocation() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::grpc::Ticket* LeftJoinTablesRequest::unsafe_arena_release_result_id() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.LeftJoinTablesRequest.result_id)
+  
+  ::io::deephaven::proto::backplane::grpc::Ticket* temp = result_id_;
+  result_id_ = nullptr;
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::grpc::Ticket* LeftJoinTablesRequest::_internal_mutable_result_id() {
+  
+  if (result_id_ == nullptr) {
+    auto* p = CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::Ticket>(GetArenaForAllocation());
+    result_id_ = p;
+  }
+  return result_id_;
+}
+inline ::io::deephaven::proto::backplane::grpc::Ticket* LeftJoinTablesRequest::mutable_result_id() {
+  ::io::deephaven::proto::backplane::grpc::Ticket* _msg = _internal_mutable_result_id();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.LeftJoinTablesRequest.result_id)
+  return _msg;
+}
+inline void LeftJoinTablesRequest::set_allocated_result_id(::io::deephaven::proto::backplane::grpc::Ticket* result_id) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  if (message_arena == nullptr) {
+    delete reinterpret_cast< ::PROTOBUF_NAMESPACE_ID::MessageLite*>(result_id_);
+  }
+  if (result_id) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper<
+            ::PROTOBUF_NAMESPACE_ID::MessageLite>::GetOwningArena(
+                reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(result_id));
+    if (message_arena != submessage_arena) {
+      result_id = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, result_id, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  result_id_ = result_id;
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.LeftJoinTablesRequest.result_id)
+}
+
+// .io.deephaven.proto.backplane.grpc.TableReference left_id = 2;
+inline bool LeftJoinTablesRequest::_internal_has_left_id() const {
+  return this != internal_default_instance() && left_id_ != nullptr;
+}
+inline bool LeftJoinTablesRequest::has_left_id() const {
+  return _internal_has_left_id();
+}
+inline void LeftJoinTablesRequest::clear_left_id() {
+  if (GetArenaForAllocation() == nullptr && left_id_ != nullptr) {
+    delete left_id_;
+  }
+  left_id_ = nullptr;
+}
+inline const ::io::deephaven::proto::backplane::grpc::TableReference& LeftJoinTablesRequest::_internal_left_id() const {
+  const ::io::deephaven::proto::backplane::grpc::TableReference* p = left_id_;
+  return p != nullptr ? *p : reinterpret_cast<const ::io::deephaven::proto::backplane::grpc::TableReference&>(
+      ::io::deephaven::proto::backplane::grpc::_TableReference_default_instance_);
+}
+inline const ::io::deephaven::proto::backplane::grpc::TableReference& LeftJoinTablesRequest::left_id() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.LeftJoinTablesRequest.left_id)
+  return _internal_left_id();
+}
+inline void LeftJoinTablesRequest::unsafe_arena_set_allocated_left_id(
+    ::io::deephaven::proto::backplane::grpc::TableReference* left_id) {
+  if (GetArenaForAllocation() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(left_id_);
+  }
+  left_id_ = left_id;
+  if (left_id) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.LeftJoinTablesRequest.left_id)
+}
+inline ::io::deephaven::proto::backplane::grpc::TableReference* LeftJoinTablesRequest::release_left_id() {
+  
+  ::io::deephaven::proto::backplane::grpc::TableReference* temp = left_id_;
+  left_id_ = nullptr;
+#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
+  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
+  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  if (GetArenaForAllocation() == nullptr) { delete old; }
+#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
+  if (GetArenaForAllocation() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::grpc::TableReference* LeftJoinTablesRequest::unsafe_arena_release_left_id() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.LeftJoinTablesRequest.left_id)
+  
+  ::io::deephaven::proto::backplane::grpc::TableReference* temp = left_id_;
+  left_id_ = nullptr;
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::grpc::TableReference* LeftJoinTablesRequest::_internal_mutable_left_id() {
+  
+  if (left_id_ == nullptr) {
+    auto* p = CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::TableReference>(GetArenaForAllocation());
+    left_id_ = p;
+  }
+  return left_id_;
+}
+inline ::io::deephaven::proto::backplane::grpc::TableReference* LeftJoinTablesRequest::mutable_left_id() {
+  ::io::deephaven::proto::backplane::grpc::TableReference* _msg = _internal_mutable_left_id();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.LeftJoinTablesRequest.left_id)
+  return _msg;
+}
+inline void LeftJoinTablesRequest::set_allocated_left_id(::io::deephaven::proto::backplane::grpc::TableReference* left_id) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  if (message_arena == nullptr) {
+    delete left_id_;
+  }
+  if (left_id) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper<::io::deephaven::proto::backplane::grpc::TableReference>::GetOwningArena(left_id);
+    if (message_arena != submessage_arena) {
+      left_id = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, left_id, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  left_id_ = left_id;
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.LeftJoinTablesRequest.left_id)
+}
+
+// .io.deephaven.proto.backplane.grpc.TableReference right_id = 3;
+inline bool LeftJoinTablesRequest::_internal_has_right_id() const {
+  return this != internal_default_instance() && right_id_ != nullptr;
+}
+inline bool LeftJoinTablesRequest::has_right_id() const {
+  return _internal_has_right_id();
+}
+inline void LeftJoinTablesRequest::clear_right_id() {
+  if (GetArenaForAllocation() == nullptr && right_id_ != nullptr) {
+    delete right_id_;
+  }
+  right_id_ = nullptr;
+}
+inline const ::io::deephaven::proto::backplane::grpc::TableReference& LeftJoinTablesRequest::_internal_right_id() const {
+  const ::io::deephaven::proto::backplane::grpc::TableReference* p = right_id_;
+  return p != nullptr ? *p : reinterpret_cast<const ::io::deephaven::proto::backplane::grpc::TableReference&>(
+      ::io::deephaven::proto::backplane::grpc::_TableReference_default_instance_);
+}
+inline const ::io::deephaven::proto::backplane::grpc::TableReference& LeftJoinTablesRequest::right_id() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.LeftJoinTablesRequest.right_id)
+  return _internal_right_id();
+}
+inline void LeftJoinTablesRequest::unsafe_arena_set_allocated_right_id(
+    ::io::deephaven::proto::backplane::grpc::TableReference* right_id) {
+  if (GetArenaForAllocation() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(right_id_);
+  }
+  right_id_ = right_id;
+  if (right_id) {
+    
+  } else {
+    
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.LeftJoinTablesRequest.right_id)
+}
+inline ::io::deephaven::proto::backplane::grpc::TableReference* LeftJoinTablesRequest::release_right_id() {
+  
+  ::io::deephaven::proto::backplane::grpc::TableReference* temp = right_id_;
+  right_id_ = nullptr;
+#ifdef PROTOBUF_FORCE_COPY_IN_RELEASE
+  auto* old =  reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(temp);
+  temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  if (GetArenaForAllocation() == nullptr) { delete old; }
+#else  // PROTOBUF_FORCE_COPY_IN_RELEASE
+  if (GetArenaForAllocation() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+#endif  // !PROTOBUF_FORCE_COPY_IN_RELEASE
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::grpc::TableReference* LeftJoinTablesRequest::unsafe_arena_release_right_id() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.LeftJoinTablesRequest.right_id)
+  
+  ::io::deephaven::proto::backplane::grpc::TableReference* temp = right_id_;
+  right_id_ = nullptr;
+  return temp;
+}
+inline ::io::deephaven::proto::backplane::grpc::TableReference* LeftJoinTablesRequest::_internal_mutable_right_id() {
+  
+  if (right_id_ == nullptr) {
+    auto* p = CreateMaybeMessage<::io::deephaven::proto::backplane::grpc::TableReference>(GetArenaForAllocation());
+    right_id_ = p;
+  }
+  return right_id_;
+}
+inline ::io::deephaven::proto::backplane::grpc::TableReference* LeftJoinTablesRequest::mutable_right_id() {
+  ::io::deephaven::proto::backplane::grpc::TableReference* _msg = _internal_mutable_right_id();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.LeftJoinTablesRequest.right_id)
+  return _msg;
+}
+inline void LeftJoinTablesRequest::set_allocated_right_id(::io::deephaven::proto::backplane::grpc::TableReference* right_id) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  if (message_arena == nullptr) {
+    delete right_id_;
+  }
+  if (right_id) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+        ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper<::io::deephaven::proto::backplane::grpc::TableReference>::GetOwningArena(right_id);
+    if (message_arena != submessage_arena) {
+      right_id = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, right_id, submessage_arena);
+    }
+    
+  } else {
+    
+  }
+  right_id_ = right_id;
+  // @@protoc_insertion_point(field_set_allocated:io.deephaven.proto.backplane.grpc.LeftJoinTablesRequest.right_id)
+}
+
+// repeated string columns_to_match = 4;
+inline int LeftJoinTablesRequest::_internal_columns_to_match_size() const {
+  return columns_to_match_.size();
+}
+inline int LeftJoinTablesRequest::columns_to_match_size() const {
+  return _internal_columns_to_match_size();
+}
+inline void LeftJoinTablesRequest::clear_columns_to_match() {
+  columns_to_match_.Clear();
+}
+inline std::string* LeftJoinTablesRequest::add_columns_to_match() {
+  std::string* _s = _internal_add_columns_to_match();
+  // @@protoc_insertion_point(field_add_mutable:io.deephaven.proto.backplane.grpc.LeftJoinTablesRequest.columns_to_match)
+  return _s;
+}
+inline const std::string& LeftJoinTablesRequest::_internal_columns_to_match(int index) const {
+  return columns_to_match_.Get(index);
+}
+inline const std::string& LeftJoinTablesRequest::columns_to_match(int index) const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.LeftJoinTablesRequest.columns_to_match)
+  return _internal_columns_to_match(index);
+}
+inline std::string* LeftJoinTablesRequest::mutable_columns_to_match(int index) {
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.LeftJoinTablesRequest.columns_to_match)
+  return columns_to_match_.Mutable(index);
+}
+inline void LeftJoinTablesRequest::set_columns_to_match(int index, const std::string& value) {
+  columns_to_match_.Mutable(index)->assign(value);
+  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.grpc.LeftJoinTablesRequest.columns_to_match)
+}
+inline void LeftJoinTablesRequest::set_columns_to_match(int index, std::string&& value) {
+  columns_to_match_.Mutable(index)->assign(std::move(value));
+  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.grpc.LeftJoinTablesRequest.columns_to_match)
+}
+inline void LeftJoinTablesRequest::set_columns_to_match(int index, const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  columns_to_match_.Mutable(index)->assign(value);
+  // @@protoc_insertion_point(field_set_char:io.deephaven.proto.backplane.grpc.LeftJoinTablesRequest.columns_to_match)
+}
+inline void LeftJoinTablesRequest::set_columns_to_match(int index, const char* value, size_t size) {
+  columns_to_match_.Mutable(index)->assign(
+    reinterpret_cast<const char*>(value), size);
+  // @@protoc_insertion_point(field_set_pointer:io.deephaven.proto.backplane.grpc.LeftJoinTablesRequest.columns_to_match)
+}
+inline std::string* LeftJoinTablesRequest::_internal_add_columns_to_match() {
+  return columns_to_match_.Add();
+}
+inline void LeftJoinTablesRequest::add_columns_to_match(const std::string& value) {
+  columns_to_match_.Add()->assign(value);
+  // @@protoc_insertion_point(field_add:io.deephaven.proto.backplane.grpc.LeftJoinTablesRequest.columns_to_match)
+}
+inline void LeftJoinTablesRequest::add_columns_to_match(std::string&& value) {
+  columns_to_match_.Add(std::move(value));
+  // @@protoc_insertion_point(field_add:io.deephaven.proto.backplane.grpc.LeftJoinTablesRequest.columns_to_match)
+}
+inline void LeftJoinTablesRequest::add_columns_to_match(const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  columns_to_match_.Add()->assign(value);
+  // @@protoc_insertion_point(field_add_char:io.deephaven.proto.backplane.grpc.LeftJoinTablesRequest.columns_to_match)
+}
+inline void LeftJoinTablesRequest::add_columns_to_match(const char* value, size_t size) {
+  columns_to_match_.Add()->assign(reinterpret_cast<const char*>(value), size);
+  // @@protoc_insertion_point(field_add_pointer:io.deephaven.proto.backplane.grpc.LeftJoinTablesRequest.columns_to_match)
+}
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>&
+LeftJoinTablesRequest::columns_to_match() const {
+  // @@protoc_insertion_point(field_list:io.deephaven.proto.backplane.grpc.LeftJoinTablesRequest.columns_to_match)
+  return columns_to_match_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>*
+LeftJoinTablesRequest::mutable_columns_to_match() {
+  // @@protoc_insertion_point(field_mutable_list:io.deephaven.proto.backplane.grpc.LeftJoinTablesRequest.columns_to_match)
+  return &columns_to_match_;
+}
+
+// repeated string columns_to_add = 5;
+inline int LeftJoinTablesRequest::_internal_columns_to_add_size() const {
+  return columns_to_add_.size();
+}
+inline int LeftJoinTablesRequest::columns_to_add_size() const {
+  return _internal_columns_to_add_size();
+}
+inline void LeftJoinTablesRequest::clear_columns_to_add() {
+  columns_to_add_.Clear();
+}
+inline std::string* LeftJoinTablesRequest::add_columns_to_add() {
+  std::string* _s = _internal_add_columns_to_add();
+  // @@protoc_insertion_point(field_add_mutable:io.deephaven.proto.backplane.grpc.LeftJoinTablesRequest.columns_to_add)
+  return _s;
+}
+inline const std::string& LeftJoinTablesRequest::_internal_columns_to_add(int index) const {
+  return columns_to_add_.Get(index);
+}
+inline const std::string& LeftJoinTablesRequest::columns_to_add(int index) const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.LeftJoinTablesRequest.columns_to_add)
+  return _internal_columns_to_add(index);
+}
+inline std::string* LeftJoinTablesRequest::mutable_columns_to_add(int index) {
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.LeftJoinTablesRequest.columns_to_add)
+  return columns_to_add_.Mutable(index);
+}
+inline void LeftJoinTablesRequest::set_columns_to_add(int index, const std::string& value) {
+  columns_to_add_.Mutable(index)->assign(value);
+  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.grpc.LeftJoinTablesRequest.columns_to_add)
+}
+inline void LeftJoinTablesRequest::set_columns_to_add(int index, std::string&& value) {
+  columns_to_add_.Mutable(index)->assign(std::move(value));
+  // @@protoc_insertion_point(field_set:io.deephaven.proto.backplane.grpc.LeftJoinTablesRequest.columns_to_add)
+}
+inline void LeftJoinTablesRequest::set_columns_to_add(int index, const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  columns_to_add_.Mutable(index)->assign(value);
+  // @@protoc_insertion_point(field_set_char:io.deephaven.proto.backplane.grpc.LeftJoinTablesRequest.columns_to_add)
+}
+inline void LeftJoinTablesRequest::set_columns_to_add(int index, const char* value, size_t size) {
+  columns_to_add_.Mutable(index)->assign(
+    reinterpret_cast<const char*>(value), size);
+  // @@protoc_insertion_point(field_set_pointer:io.deephaven.proto.backplane.grpc.LeftJoinTablesRequest.columns_to_add)
+}
+inline std::string* LeftJoinTablesRequest::_internal_add_columns_to_add() {
+  return columns_to_add_.Add();
+}
+inline void LeftJoinTablesRequest::add_columns_to_add(const std::string& value) {
+  columns_to_add_.Add()->assign(value);
+  // @@protoc_insertion_point(field_add:io.deephaven.proto.backplane.grpc.LeftJoinTablesRequest.columns_to_add)
+}
+inline void LeftJoinTablesRequest::add_columns_to_add(std::string&& value) {
+  columns_to_add_.Add(std::move(value));
+  // @@protoc_insertion_point(field_add:io.deephaven.proto.backplane.grpc.LeftJoinTablesRequest.columns_to_add)
+}
+inline void LeftJoinTablesRequest::add_columns_to_add(const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  columns_to_add_.Add()->assign(value);
+  // @@protoc_insertion_point(field_add_char:io.deephaven.proto.backplane.grpc.LeftJoinTablesRequest.columns_to_add)
+}
+inline void LeftJoinTablesRequest::add_columns_to_add(const char* value, size_t size) {
+  columns_to_add_.Add()->assign(reinterpret_cast<const char*>(value), size);
+  // @@protoc_insertion_point(field_add_pointer:io.deephaven.proto.backplane.grpc.LeftJoinTablesRequest.columns_to_add)
+}
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>&
+LeftJoinTablesRequest::columns_to_add() const {
+  // @@protoc_insertion_point(field_list:io.deephaven.proto.backplane.grpc.LeftJoinTablesRequest.columns_to_add)
+  return columns_to_add_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>*
+LeftJoinTablesRequest::mutable_columns_to_add() {
+  // @@protoc_insertion_point(field_mutable_list:io.deephaven.proto.backplane.grpc.LeftJoinTablesRequest.columns_to_add)
   return &columns_to_add_;
 }
 
@@ -23331,7 +24021,81 @@ inline ::io::deephaven::proto::backplane::grpc::ExactJoinTablesRequest* BatchTab
   return _msg;
 }
 
-// .io.deephaven.proto.backplane.grpc.AsOfJoinTablesRequest as_of_join = 26;
+// .io.deephaven.proto.backplane.grpc.LeftJoinTablesRequest left_join = 26;
+inline bool BatchTableRequest_Operation::_internal_has_left_join() const {
+  return op_case() == kLeftJoin;
+}
+inline bool BatchTableRequest_Operation::has_left_join() const {
+  return _internal_has_left_join();
+}
+inline void BatchTableRequest_Operation::set_has_left_join() {
+  _oneof_case_[0] = kLeftJoin;
+}
+inline void BatchTableRequest_Operation::clear_left_join() {
+  if (_internal_has_left_join()) {
+    if (GetArenaForAllocation() == nullptr) {
+      delete op_.left_join_;
+    }
+    clear_has_op();
+  }
+}
+inline ::io::deephaven::proto::backplane::grpc::LeftJoinTablesRequest* BatchTableRequest_Operation::release_left_join() {
+  // @@protoc_insertion_point(field_release:io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.left_join)
+  if (_internal_has_left_join()) {
+    clear_has_op();
+      ::io::deephaven::proto::backplane::grpc::LeftJoinTablesRequest* temp = op_.left_join_;
+    if (GetArenaForAllocation() != nullptr) {
+      temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+    }
+    op_.left_join_ = nullptr;
+    return temp;
+  } else {
+    return nullptr;
+  }
+}
+inline const ::io::deephaven::proto::backplane::grpc::LeftJoinTablesRequest& BatchTableRequest_Operation::_internal_left_join() const {
+  return _internal_has_left_join()
+      ? *op_.left_join_
+      : reinterpret_cast< ::io::deephaven::proto::backplane::grpc::LeftJoinTablesRequest&>(::io::deephaven::proto::backplane::grpc::_LeftJoinTablesRequest_default_instance_);
+}
+inline const ::io::deephaven::proto::backplane::grpc::LeftJoinTablesRequest& BatchTableRequest_Operation::left_join() const {
+  // @@protoc_insertion_point(field_get:io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.left_join)
+  return _internal_left_join();
+}
+inline ::io::deephaven::proto::backplane::grpc::LeftJoinTablesRequest* BatchTableRequest_Operation::unsafe_arena_release_left_join() {
+  // @@protoc_insertion_point(field_unsafe_arena_release:io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.left_join)
+  if (_internal_has_left_join()) {
+    clear_has_op();
+    ::io::deephaven::proto::backplane::grpc::LeftJoinTablesRequest* temp = op_.left_join_;
+    op_.left_join_ = nullptr;
+    return temp;
+  } else {
+    return nullptr;
+  }
+}
+inline void BatchTableRequest_Operation::unsafe_arena_set_allocated_left_join(::io::deephaven::proto::backplane::grpc::LeftJoinTablesRequest* left_join) {
+  clear_op();
+  if (left_join) {
+    set_has_left_join();
+    op_.left_join_ = left_join;
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.left_join)
+}
+inline ::io::deephaven::proto::backplane::grpc::LeftJoinTablesRequest* BatchTableRequest_Operation::_internal_mutable_left_join() {
+  if (!_internal_has_left_join()) {
+    clear_op();
+    set_has_left_join();
+    op_.left_join_ = CreateMaybeMessage< ::io::deephaven::proto::backplane::grpc::LeftJoinTablesRequest >(GetArenaForAllocation());
+  }
+  return op_.left_join_;
+}
+inline ::io::deephaven::proto::backplane::grpc::LeftJoinTablesRequest* BatchTableRequest_Operation::mutable_left_join() {
+  ::io::deephaven::proto::backplane::grpc::LeftJoinTablesRequest* _msg = _internal_mutable_left_join();
+  // @@protoc_insertion_point(field_mutable:io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.left_join)
+  return _msg;
+}
+
+// .io.deephaven.proto.backplane.grpc.AsOfJoinTablesRequest as_of_join = 27;
 inline bool BatchTableRequest_Operation::_internal_has_as_of_join() const {
   return op_case() == kAsOfJoin;
 }
@@ -23405,7 +24169,7 @@ inline ::io::deephaven::proto::backplane::grpc::AsOfJoinTablesRequest* BatchTabl
   return _msg;
 }
 
-// .io.deephaven.proto.backplane.grpc.FetchTableRequest fetch_table = 27;
+// .io.deephaven.proto.backplane.grpc.FetchTableRequest fetch_table = 28;
 inline bool BatchTableRequest_Operation::_internal_has_fetch_table() const {
   return op_case() == kFetchTable;
 }
@@ -23479,7 +24243,7 @@ inline ::io::deephaven::proto::backplane::grpc::FetchTableRequest* BatchTableReq
   return _msg;
 }
 
-// .io.deephaven.proto.backplane.grpc.FetchPandasTableRequest fetch_pandas_table = 28;
+// .io.deephaven.proto.backplane.grpc.FetchPandasTableRequest fetch_pandas_table = 29;
 inline bool BatchTableRequest_Operation::_internal_has_fetch_pandas_table() const {
   return op_case() == kFetchPandasTable;
 }
@@ -23553,7 +24317,7 @@ inline ::io::deephaven::proto::backplane::grpc::FetchPandasTableRequest* BatchTa
   return _msg;
 }
 
-// .io.deephaven.proto.backplane.grpc.ApplyPreviewColumnsRequest apply_preview_columns = 29;
+// .io.deephaven.proto.backplane.grpc.ApplyPreviewColumnsRequest apply_preview_columns = 30;
 inline bool BatchTableRequest_Operation::_internal_has_apply_preview_columns() const {
   return op_case() == kApplyPreviewColumns;
 }
@@ -23627,7 +24391,7 @@ inline ::io::deephaven::proto::backplane::grpc::ApplyPreviewColumnsRequest* Batc
   return _msg;
 }
 
-// .io.deephaven.proto.backplane.grpc.CreateInputTableRequest create_input_table = 30;
+// .io.deephaven.proto.backplane.grpc.CreateInputTableRequest create_input_table = 31;
 inline bool BatchTableRequest_Operation::_internal_has_create_input_table() const {
   return op_case() == kCreateInputTable;
 }
@@ -23757,6 +24521,8 @@ BatchTableRequest::ops() const {
 #ifdef __GNUC__
   #pragma GCC diagnostic pop
 #endif  // __GNUC__
+// -------------------------------------------------------------------
+
 // -------------------------------------------------------------------
 
 // -------------------------------------------------------------------
