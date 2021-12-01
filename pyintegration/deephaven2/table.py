@@ -636,33 +636,6 @@ class Table:
         except Exception as e:
             raise DHError(e, "table exact_join operation failed.") from e
 
-    def left_join(self, table: Table, on: List[str], joins: List[str] = []) -> Table:
-        """ The left_join method creates a new table containing all of the rows and columns of the left table,
-        plus additional columns containing data from the right table. For columns appended to the left table (joins),
-        row values are arrays of row values from the right table, where the key values in the left and right tables
-        are equal. If there is no matching key in the right table, appended row values are NULL.
-
-        Args:
-            table (Table): the right-table of the join
-            on (List[str]): the columns to match, can be a common name or an equal expression,
-                i.e. "col_a = col_b" for different column names
-            joins (List[str], optional): a list of the columns to be added from the right table to the result
-                table, can be renaming expressions, i.e. "new_col = col"; default is empty
-
-        Returns:
-            a new table
-
-        Raises:
-            DHError
-        """
-        try:
-            if joins:
-                return Table(j_table=self.j_table.leftJoin(table.j_table, ",".join(on), ",".join(joins)))
-            else:
-                return Table(j_table=self.j_table.leftJoin(table.j_table, ",".join(on)))
-        except Exception as e:
-            raise DHError(e, "table left_join operation failed.") from e
-
     def join(self, table: Table, on: List[str], joins: List[str] = []) -> Table:
         """ The join method creates a new table containing rows that have matching values in both tables. Rows that
         do not have matching criteria will not be included in the result. If there are multiple matches between a row

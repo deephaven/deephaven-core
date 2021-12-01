@@ -12,7 +12,6 @@ import io.deephaven.qst.table.InMemoryKeyBackedInputTable;
 import io.deephaven.qst.table.InputTable;
 import io.deephaven.qst.table.Join;
 import io.deephaven.qst.table.JoinTable;
-import io.deephaven.qst.table.LeftJoinTable;
 import io.deephaven.qst.table.NaturalJoinTable;
 import io.deephaven.qst.table.ReverseAsOfJoinTable;
 import io.deephaven.qst.table.SelectTable;
@@ -90,11 +89,6 @@ public class LabelBuilder extends TableVisitorGeneric {
     @Override
     public void visit(JoinTable joinTable) {
         join("join", joinTable);
-    }
-
-    @Override
-    public void visit(LeftJoinTable leftJoinTable) {
-        join("leftJoin", leftJoinTable);
     }
 
     @Override

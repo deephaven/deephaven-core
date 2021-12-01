@@ -118,14 +118,6 @@ class TableTestCase(BaseTestCase):
             result_table = left_table.exact_join(right_table, on=["a"], joins=["d", "e"])
             self.assertEqual(test_table.size, result_table.size)
 
-    def test_left_join(self):
-        pa_table = csv.read_csv(self.csv_file)
-        test_table = self.session.import_table(pa_table)
-        left_table = test_table.drop_columns(["d", "e"])
-        right_table = test_table.drop_columns(["b", "c"])
-        result_table = left_table.left_join(right_table, on=["a"], joins=["d", "e"])
-        self.assertEqual(test_table.size, result_table.size)
-
     def test_cross_join(self):
         pa_table = csv.read_csv(self.csv_file)
         left_table = self.session.import_table(pa_table)

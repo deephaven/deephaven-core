@@ -197,12 +197,6 @@ class TableTestCase(BaseTestCase):
             result_table = left_table.exact_join(right_table, on=["a"], joins=["d", "e"])
         self.assertTrue(cm.exception.root_cause)
 
-    def test_left_join(self):
-        left_table = self.test_table.drop_columns(["d", "e"])
-        right_table = self.test_table.drop_columns(["b", "c"])
-        result_table = left_table.left_join(right_table, on=["a"], joins=["d", "e"])
-        self.assertEqual(self.test_table.size, result_table.size)
-
     def test_cross_join(self):
         left_table = self.test_table.drop_columns(cols=["e"])
         right_table = self.test_table.where(["a % 2 > 0 && b % 3 == 1"]).drop_columns(cols=["b", "c", "d"])

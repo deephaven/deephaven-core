@@ -33,7 +33,6 @@ import io.deephaven.proto.backplane.grpc.FilterTableRequest;
 import io.deephaven.proto.backplane.grpc.FlattenRequest;
 import io.deephaven.proto.backplane.grpc.HeadOrTailByRequest;
 import io.deephaven.proto.backplane.grpc.HeadOrTailRequest;
-import io.deephaven.proto.backplane.grpc.LeftJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.MergeTablesRequest;
 import io.deephaven.proto.backplane.grpc.NaturalJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.RunChartDownsampleRequest;
@@ -230,12 +229,6 @@ public class TableServiceGrpcImpl extends TableServiceGrpc.TableServiceImplBase 
     public void exactJoinTables(final ExactJoinTablesRequest request,
             final StreamObserver<ExportedTableCreationResponse> responseObserver) {
         oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.EXACT_JOIN, request, responseObserver);
-    }
-
-    @Override
-    public void leftJoinTables(LeftJoinTablesRequest request,
-            StreamObserver<ExportedTableCreationResponse> responseObserver) {
-        oneShotOperationWrapper(BatchTableRequest.Operation.OpCase.LEFT_JOIN, request, responseObserver);
     }
 
     @Override

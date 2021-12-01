@@ -849,50 +849,6 @@ public class TableService {
     }
 
     @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-    public interface LeftJoinTablesType {
-        @JsOverlay
-        static TableService.LeftJoinTablesType create() {
-            return Js.uncheckedCast(JsPropertyMap.of());
-        }
-
-        @JsProperty
-        String getMethodName();
-
-        @JsProperty
-        Object getRequestType();
-
-        @JsProperty
-        Object getResponseType();
-
-        @JsProperty
-        Object getService();
-
-        @JsProperty
-        boolean isRequestStream();
-
-        @JsProperty
-        boolean isResponseStream();
-
-        @JsProperty
-        void setMethodName(String methodName);
-
-        @JsProperty
-        void setRequestStream(boolean requestStream);
-
-        @JsProperty
-        void setRequestType(Object requestType);
-
-        @JsProperty
-        void setResponseStream(boolean responseStream);
-
-        @JsProperty
-        void setResponseType(Object responseType);
-
-        @JsProperty
-        void setService(Object service);
-    }
-
-    @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
     public interface MergeTablesType {
         @JsOverlay
         static TableService.MergeTablesType create() {
@@ -1571,7 +1527,6 @@ public class TableService {
     public static TableService.HeadType Head;
     public static TableService.HeadByType HeadBy;
     public static TableService.LazyUpdateType LazyUpdate;
-    public static TableService.LeftJoinTablesType LeftJoinTables;
     public static TableService.MergeTablesType MergeTables;
     public static TableService.NaturalJoinTablesType NaturalJoinTables;
     public static TableService.RunChartDownsampleType RunChartDownsample;

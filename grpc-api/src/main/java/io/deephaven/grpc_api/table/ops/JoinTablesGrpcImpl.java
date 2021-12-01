@@ -14,13 +14,13 @@ import io.deephaven.proto.backplane.grpc.AsOfJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.CrossJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.ExactJoinTablesRequest;
-import io.deephaven.proto.backplane.grpc.LeftJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.NaturalJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import io.grpc.StatusRuntimeException;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
 
@@ -172,27 +172,6 @@ public abstract class JoinTablesGrpcImpl<T> extends GrpcTableOperation<T> {
                 final MatchPair[] columnsToMatch, final MatchPair[] columnsToAdd,
                 final ExactJoinTablesRequest request) {
             return lhs.exactJoin(rhs, columnsToMatch, columnsToAdd);
-        }
-    }
-
-    @Singleton
-    public static class LeftJoinTablesGrpcImpl extends JoinTablesGrpcImpl<LeftJoinTablesRequest> {
-
-        private static final MultiDependencyFunction<LeftJoinTablesRequest> EXTRACT_DEPS =
-                (request) -> Lists.newArrayList(request.getLeftId(), request.getRightId());
-
-        @Inject
-        public LeftJoinTablesGrpcImpl(final UpdateGraphProcessor updateGraphProcessor) {
-            super(updateGraphProcessor, BatchTableRequest.Operation::getLeftJoin, LeftJoinTablesRequest::getResultId,
-                    EXTRACT_DEPS,
-                    LeftJoinTablesRequest::getColumnsToMatchList, LeftJoinTablesRequest::getColumnsToAddList,
-                    LeftJoinTablesGrpcImpl::doJoin);
-        }
-
-        public static Table doJoin(final Table lhs, final Table rhs,
-                final MatchPair[] columnsToMatch, final MatchPair[] columnsToAdd,
-                final LeftJoinTablesRequest request) {
-            return lhs.leftJoin(rhs, columnsToMatch, columnsToAdd);
         }
     }
 

@@ -16,7 +16,6 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.Filt
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.FlattenRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.HeadOrTailByRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.HeadOrTailRequest;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.LeftJoinTablesRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.MergeTablesRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.NaturalJoinTablesRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.RunChartDownsampleRequest;
@@ -1125,54 +1124,6 @@ public class Operation {
         }
 
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-        public interface LeftJoinFieldType {
-            @JsOverlay
-            static Operation.ToObjectReturnType.LeftJoinFieldType create() {
-                return Js.uncheckedCast(JsPropertyMap.of());
-            }
-
-            @JsProperty
-            JsArray<String> getColumnsToAddList();
-
-            @JsProperty
-            JsArray<String> getColumnsToMatchList();
-
-            @JsProperty
-            Object getLeftId();
-
-            @JsProperty
-            Object getResultId();
-
-            @JsProperty
-            Object getRightId();
-
-            @JsProperty
-            void setColumnsToAddList(JsArray<String> columnsToAddList);
-
-            @JsOverlay
-            default void setColumnsToAddList(String[] columnsToAddList) {
-                setColumnsToAddList(Js.<JsArray<String>>uncheckedCast(columnsToAddList));
-            }
-
-            @JsProperty
-            void setColumnsToMatchList(JsArray<String> columnsToMatchList);
-
-            @JsOverlay
-            default void setColumnsToMatchList(String[] columnsToMatchList) {
-                setColumnsToMatchList(Js.<JsArray<String>>uncheckedCast(columnsToMatchList));
-            }
-
-            @JsProperty
-            void setLeftId(Object leftId);
-
-            @JsProperty
-            void setResultId(Object resultId);
-
-            @JsProperty
-            void setRightId(Object rightId);
-        }
-
-        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface MergeFieldType {
             @JsOverlay
             static Operation.ToObjectReturnType.MergeFieldType create() {
@@ -1632,9 +1583,6 @@ public class Operation {
         Object getLazyUpdate();
 
         @JsProperty
-        Operation.ToObjectReturnType.LeftJoinFieldType getLeftJoin();
-
-        @JsProperty
         Operation.ToObjectReturnType.MergeFieldType getMerge();
 
         @JsProperty
@@ -1726,9 +1674,6 @@ public class Operation {
 
         @JsProperty
         void setLazyUpdate(Object lazyUpdate);
-
-        @JsProperty
-        void setLeftJoin(Operation.ToObjectReturnType.LeftJoinFieldType leftJoin);
 
         @JsProperty
         void setMerge(Operation.ToObjectReturnType.MergeFieldType merge);
@@ -2865,54 +2810,6 @@ public class Operation {
         }
 
         @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
-        public interface LeftJoinFieldType {
-            @JsOverlay
-            static Operation.ToObjectReturnType0.LeftJoinFieldType create() {
-                return Js.uncheckedCast(JsPropertyMap.of());
-            }
-
-            @JsProperty
-            JsArray<String> getColumnsToAddList();
-
-            @JsProperty
-            JsArray<String> getColumnsToMatchList();
-
-            @JsProperty
-            Object getLeftId();
-
-            @JsProperty
-            Object getResultId();
-
-            @JsProperty
-            Object getRightId();
-
-            @JsProperty
-            void setColumnsToAddList(JsArray<String> columnsToAddList);
-
-            @JsOverlay
-            default void setColumnsToAddList(String[] columnsToAddList) {
-                setColumnsToAddList(Js.<JsArray<String>>uncheckedCast(columnsToAddList));
-            }
-
-            @JsProperty
-            void setColumnsToMatchList(JsArray<String> columnsToMatchList);
-
-            @JsOverlay
-            default void setColumnsToMatchList(String[] columnsToMatchList) {
-                setColumnsToMatchList(Js.<JsArray<String>>uncheckedCast(columnsToMatchList));
-            }
-
-            @JsProperty
-            void setLeftId(Object leftId);
-
-            @JsProperty
-            void setResultId(Object resultId);
-
-            @JsProperty
-            void setRightId(Object rightId);
-        }
-
-        @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
         public interface MergeFieldType {
             @JsOverlay
             static Operation.ToObjectReturnType0.MergeFieldType create() {
@@ -3372,9 +3269,6 @@ public class Operation {
         Object getLazyUpdate();
 
         @JsProperty
-        Operation.ToObjectReturnType0.LeftJoinFieldType getLeftJoin();
-
-        @JsProperty
         Operation.ToObjectReturnType0.MergeFieldType getMerge();
 
         @JsProperty
@@ -3468,9 +3362,6 @@ public class Operation {
         void setLazyUpdate(Object lazyUpdate);
 
         @JsProperty
-        void setLeftJoin(Operation.ToObjectReturnType0.LeftJoinFieldType leftJoin);
-
-        @JsProperty
         void setMerge(Operation.ToObjectReturnType0.MergeFieldType merge);
 
         @JsProperty
@@ -3557,8 +3448,6 @@ public class Operation {
 
     public native void clearLazyUpdate();
 
-    public native void clearLeftJoin();
-
     public native void clearMerge();
 
     public native void clearNaturalJoin();
@@ -3618,8 +3507,6 @@ public class Operation {
     public native HeadOrTailByRequest getHeadBy();
 
     public native SelectOrUpdateRequest getLazyUpdate();
-
-    public native LeftJoinTablesRequest getLeftJoin();
 
     public native MergeTablesRequest getMerge();
 
@@ -3682,8 +3569,6 @@ public class Operation {
     public native boolean hasHeadBy();
 
     public native boolean hasLazyUpdate();
-
-    public native boolean hasLeftJoin();
 
     public native boolean hasMerge();
 
@@ -3776,10 +3661,6 @@ public class Operation {
     public native void setLazyUpdate();
 
     public native void setLazyUpdate(SelectOrUpdateRequest value);
-
-    public native void setLeftJoin();
-
-    public native void setLeftJoin(LeftJoinTablesRequest value);
 
     public native void setMerge();
 

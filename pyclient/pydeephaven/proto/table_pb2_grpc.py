@@ -145,11 +145,6 @@ class TableServiceStub(object):
                 request_serializer=deephaven_dot_proto_dot_table__pb2.ExactJoinTablesRequest.SerializeToString,
                 response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
                 )
-        self.LeftJoinTables = channel.unary_unary(
-                '/io.deephaven.proto.backplane.grpc.TableService/LeftJoinTables',
-                request_serializer=deephaven_dot_proto_dot_table__pb2.LeftJoinTablesRequest.SerializeToString,
-                response_deserializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
-                )
         self.AsOfJoinTables = channel.unary_unary(
                 '/io.deephaven.proto.backplane.grpc.TableService/AsOfJoinTables',
                 request_serializer=deephaven_dot_proto_dot_table__pb2.AsOfJoinTablesRequest.SerializeToString,
@@ -404,14 +399,6 @@ class TableServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def LeftJoinTables(self, request, context):
-        """
-        Returns the result of a left join operation.
-        """
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
-
     def AsOfJoinTables(self, request, context):
         """
         Returns the result of an as of join operation.
@@ -619,11 +606,6 @@ def add_TableServiceServicer_to_server(servicer, server):
             'ExactJoinTables': grpc.unary_unary_rpc_method_handler(
                     servicer.ExactJoinTables,
                     request_deserializer=deephaven_dot_proto_dot_table__pb2.ExactJoinTablesRequest.FromString,
-                    response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
-            ),
-            'LeftJoinTables': grpc.unary_unary_rpc_method_handler(
-                    servicer.LeftJoinTables,
-                    request_deserializer=deephaven_dot_proto_dot_table__pb2.LeftJoinTablesRequest.FromString,
                     response_serializer=deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.SerializeToString,
             ),
             'AsOfJoinTables': grpc.unary_unary_rpc_method_handler(
@@ -1114,23 +1096,6 @@ class TableService(object):
             metadata=None):
         return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.TableService/ExactJoinTables',
             deephaven_dot_proto_dot_table__pb2.ExactJoinTablesRequest.SerializeToString,
-            deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
-            options, channel_credentials,
-            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
-
-    @staticmethod
-    def LeftJoinTables(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(request, target, '/io.deephaven.proto.backplane.grpc.TableService/LeftJoinTables',
-            deephaven_dot_proto_dot_table__pb2.LeftJoinTablesRequest.SerializeToString,
             deephaven_dot_proto_dot_table__pb2.ExportedTableCreationResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)

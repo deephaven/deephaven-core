@@ -128,11 +128,6 @@ public interface TableModule {
 
     @Binds
     @IntoMap
-    @BatchOpCode(BatchTableRequest.Operation.OpCase.LEFT_JOIN)
-    GrpcTableOperation<?> bindOperationLeftJoin(JoinTablesGrpcImpl.LeftJoinTablesGrpcImpl op);
-
-    @Binds
-    @IntoMap
     @BatchOpCode(BatchTableRequest.Operation.OpCase.NATURAL_JOIN)
     GrpcTableOperation<?> bindOperationNaturalJoin(JoinTablesGrpcImpl.NaturalJoinTablesGrpcImpl op);
 
