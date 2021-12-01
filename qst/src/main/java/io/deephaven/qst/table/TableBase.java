@@ -405,17 +405,41 @@ public abstract class TableBase implements TableSpec {
 
     @Override
     public final SingleAggregationTable groupBy() {
-        return fullAggBy(KeyGroup.of());
+        return aggAllBy(KeyGroup.of());
     }
 
     @Override
     public final SingleAggregationTable groupBy(String... groupByColumns) {
-        return fullAggBy(KeyGroup.of(), groupByColumns);
+        return aggAllBy(KeyGroup.of(), groupByColumns);
     }
 
     @Override
     public final SingleAggregationTable groupBy(Collection<? extends Selectable> groupByColumns) {
-        return fullAggBy(KeyGroup.of(), groupByColumns);
+        return aggAllBy(KeyGroup.of(), groupByColumns.toArray(new Selectable[0]));
+    }
+
+    @Override
+    public final SingleAggregationTable aggAllBy(Key key) {
+        return SingleAggregationTable.builder().parent(this).key(key).build();
+    }
+
+    @Override
+    public final SingleAggregationTable aggAllBy(Key key, String... groupByColumns) {
+        return aggAllBy(key, Arrays.asList(groupByColumns));
+    }
+
+    @Override
+    public final SingleAggregationTable aggAllBy(Key key, Selectable... groupByColumns) {
+        return SingleAggregationTable.builder().parent(this).key(key).addColumns(groupByColumns).build();
+    }
+
+    @Override
+    public final SingleAggregationTable aggAllBy(Key key, Collection<String> groupByColumns) {
+        SingleAggregationTable.Builder builder = SingleAggregationTable.builder().parent(this).key(key);
+        for (String groupByColumn : groupByColumns) {
+            builder.addColumns(Selectable.parse(groupByColumn));
+        }
+        return builder.build();
     }
 
     @Override
@@ -477,21 +501,4 @@ public abstract class TableBase implements TableSpec {
                 : Arrays.stream(string.split(",")).map(String::trim).filter(s -> !s.isEmpty())
                         .collect(Collectors.toList());
     }
-
-    private SingleAggregationTable fullAggBy(Key key) {
-        return SingleAggregationTable.builder().parent(this).key(key).build();
-    }
-
-    private SingleAggregationTable fullAggBy(Key key, String... groupByColumns) {
-        SingleAggregationTable.Builder builder = SingleAggregationTable.builder().parent(this).key(key);
-        for (String groupByColumn : groupByColumns) {
-            builder.addColumns(Selectable.parse(groupByColumn));
-        }
-        return builder.build();
-    }
-
-    private SingleAggregationTable fullAggBy(Key key, Collection<? extends Selectable> groupByColumns) {
-        return SingleAggregationTable.builder().parent(this).key(key).addAllColumns(groupByColumns).build();
-    }
-
 }

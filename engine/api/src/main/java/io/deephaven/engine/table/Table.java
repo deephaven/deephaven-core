@@ -6,6 +6,7 @@ package io.deephaven.engine.table;
 
 import io.deephaven.api.*;
 import io.deephaven.api.agg.Aggregation;
+import io.deephaven.api.agg.key.Key;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.engine.liveness.LivenessNode;
 import io.deephaven.engine.rowset.TrackingRowSet;
@@ -997,6 +998,22 @@ public interface Table extends
 
     @Override
     @ConcurrentMethod
+    Table aggAllBy(Key key);
+
+    @Override
+    @ConcurrentMethod
+    Table aggAllBy(Key key, String... groupByColumns);
+
+    @Override
+    @ConcurrentMethod
+    Table aggAllBy(Key key, Selectable... groupByColumns);
+
+    @Override
+    @ConcurrentMethod
+    Table aggAllBy(Key key, Collection<String> groupByColumns);
+
+    @Override
+    @ConcurrentMethod
     Table aggBy(Aggregation aggregation);
 
     @Override
@@ -1283,6 +1300,7 @@ public interface Table extends
      * <p>
      * When the input table is empty, zero output rows are produced.
      */
+    @ConcurrentMethod
     Table stdBy();
 
     /**
@@ -1317,6 +1335,7 @@ public interface Table extends
      * <p>
      * When the input table is empty, zero output rows are produced.
      */
+    @ConcurrentMethod
     Table varBy();
 
     /**

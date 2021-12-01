@@ -1,6 +1,7 @@
 package io.deephaven.api;
 
 import io.deephaven.api.agg.Aggregation;
+import io.deephaven.api.agg.key.Key;
 import io.deephaven.api.filter.Filter;
 
 import java.util.Collection;
@@ -545,6 +546,16 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
     TOPS groupBy(String... groupByColumns);
 
     TOPS groupBy(Collection<? extends Selectable> groupByColumns);
+
+    // -------------------------------------------------------------------------------------------
+
+    TOPS aggAllBy(Key key);
+
+    TOPS aggAllBy(Key key, String... groupByColumns);
+
+    TOPS aggAllBy(Key key, Selectable... groupByColumns);
+
+    TOPS aggAllBy(Key key, Collection<String> groupByColumns);
 
     // -------------------------------------------------------------------------------------------
 
