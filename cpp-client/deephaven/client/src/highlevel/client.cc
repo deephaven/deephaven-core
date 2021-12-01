@@ -495,20 +495,6 @@ TableHandle TableHandle::exactJoin(const TableHandle &rightSide,
   return exactJoin(rightSide, std::move(ctmStrings), std::move(ctaStrings));
 }
 
-TableHandle TableHandle::leftJoin(const TableHandle &rightSide,
-    std::vector<std::string> columnsToMatch, std::vector<std::string> columnsToAdd) const {
-  auto qtImpl = impl_->leftJoin(*rightSide.impl_, std::move(columnsToMatch),
-      std::move(columnsToAdd));
-  return TableHandle(std::move(qtImpl));
-}
-
-TableHandle TableHandle::leftJoin(const TableHandle &rightSide,
-    std::vector<MatchWithColumn> columnsToMatch, std::vector<SelectColumn> columnsToAdd) const {
-  auto ctmStrings = toIrisRepresentation(columnsToMatch);
-  auto ctaStrings = toIrisRepresentation(columnsToAdd);
-  return leftJoin(rightSide, std::move(ctmStrings), std::move(ctaStrings));
-}
-
 void TableHandle::bindToVariable(std::string variable) const {
   auto res = SFCallback<>::createForFuture();
   bindToVariableAsync(std::move(variable), std::move(res.first));
