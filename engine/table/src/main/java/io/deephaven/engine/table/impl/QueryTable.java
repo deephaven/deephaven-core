@@ -3501,7 +3501,7 @@ public class QueryTable extends BaseTable {
 
         @Override
         public void visit(KeySum sum) {
-            out =  visitGeneric(sum, true);
+            out = visitGeneric(sum, true);
         }
 
         @Override
