@@ -101,7 +101,7 @@ class Table:
     @property
     def is_refreshing(self) -> bool:
         """ Whether this table is refreshing. """
-        return self._j_table.isRefreshing()
+        return self.j_table.isRefreshing()
 
     @property
     def columns(self):
@@ -142,7 +142,7 @@ class Table:
     # def snapshot(self):
     #     """ Take a snapshot of the table. """
     #     try:
-    #         return empty_table(0).snapshot(self._j_table)
+    #         return empty_table(0).snapshot(self.j_table)
     #     except Exception as e:
     #         raise DHError("") from e
     #
@@ -219,7 +219,7 @@ class Table:
             DHError
         """
         try:
-            return Table(j_table=self.j_table.moveUpColumns(*cols))
+            return Table(j_table=self.j_table.moveColumnsUp(*cols))
         except Exception as e:
             raise DHError(e, "table move_columns_up operation failed.") from e
 
