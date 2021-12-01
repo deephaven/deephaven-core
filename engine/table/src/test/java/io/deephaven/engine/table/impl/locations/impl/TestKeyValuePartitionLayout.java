@@ -159,9 +159,9 @@ public class TestKeyValuePartitionLayout {
         TestCase.assertEquals(3, results.get(1).getPartitionKeys().size());
         TestCase.assertEquals(3, results.get(2).getPartitionKeys().size());
 
-        TestCase.assertEquals(Short.valueOf((short) 1), results.get(0).getPartitionValue("A"));
-        TestCase.assertEquals(Short.valueOf((short) 1), results.get(1).getPartitionValue("A"));
-        TestCase.assertEquals(Short.valueOf((short) 2), results.get(2).getPartitionValue("A"));
+        TestCase.assertEquals(Integer.valueOf(1), results.get(0).getPartitionValue("A"));
+        TestCase.assertEquals(Integer.valueOf(1), results.get(1).getPartitionValue("A"));
+        TestCase.assertEquals(Integer.valueOf(2), results.get(2).getPartitionValue("A"));
 
         TestCase.assertEquals(7.0, results.get(0).getPartitionValue("B1"));
         TestCase.assertEquals(100.0, results.get(1).getPartitionValue("B1"));
