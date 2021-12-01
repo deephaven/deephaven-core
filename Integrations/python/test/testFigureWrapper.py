@@ -13,8 +13,6 @@ import jpy
 from deephaven import TableTools, Aggregation, Plot, Calendars
 from deephaven.Plot import figure_wrapper
 
-# _JTWD = jpy.get_type("io.deephaven.engine.table.impl.TableWithDefaults")
-# _JAggHolder = jpy.get_type("io.deephaven.engine.table.impl.TableWithDefaults$AggHolder")
 _JArrayList = jpy.get_type("java.util.ArrayList")
 
 if sys.version_info[0] < 3:
