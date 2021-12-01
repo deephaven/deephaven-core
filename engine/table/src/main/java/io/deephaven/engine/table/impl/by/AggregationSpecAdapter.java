@@ -32,8 +32,8 @@ public class AggregationSpecAdapter implements Key.Visitor {
         return key.walk(new AggregationSpecAdapter()).out();
     }
 
-    public static AggregationSpec of(KeyAbsSum key) {
-        return key.walk(new AggregationSpecAdapter()).out();
+    public static AggregationSpec of(@SuppressWarnings("unused") KeyAbsSum key) {
+        return new AbsSumSpec();
     }
 
     public static AggregationSpec of(KeyCountDistinct countDistinct) {
