@@ -681,6 +681,13 @@ public interface TableWithDefaults extends Table {
     // Aggregation Operations
     // -----------------------------------------------------------------------------------------------------------------
 
+
+    @Override
+    @ConcurrentMethod
+    default Table groupBy(Collection<? extends Selectable> groupByColumns) {
+        return aggAllBy(KeyGroup.of(), groupByColumns.toArray(Selectable[]::new));
+    }
+
     @Override
     @ConcurrentMethod
     default Table groupBy(String... groupByColumns) {
@@ -780,6 +787,12 @@ public interface TableWithDefaults extends Table {
 
     @Override
     @ConcurrentMethod
+    default Table sumBy(Selectable... groupByColumns) {
+        return aggAllBy(KeySum.of(), groupByColumns);
+    }
+
+    @Override
+    @ConcurrentMethod
     default Table sumBy(String... groupByColumns) {
         return sumBy(Selectable.from(groupByColumns).toArray(ZERO_LENGTH_SELECTABLE_ARRAY));
     }
@@ -794,6 +807,12 @@ public interface TableWithDefaults extends Table {
     @ConcurrentMethod
     default Table sumBy() {
         return sumBy(ZERO_LENGTH_SELECTABLE_ARRAY);
+    }
+
+    @Override
+    @ConcurrentMethod
+    default Table absSumBy(Selectable... groupByColumns) {
+        return aggAllBy(KeyAbsSum.of(), groupByColumns);
     }
 
     @Override
@@ -816,6 +835,12 @@ public interface TableWithDefaults extends Table {
 
     @Override
     @ConcurrentMethod
+    default Table avgBy(Selectable... groupByColumns) {
+        return aggAllBy(KeyAvg.of(), groupByColumns);
+    }
+
+    @Override
+    @ConcurrentMethod
     default Table avgBy(String... groupByColumns) {
         return avgBy(Selectable.from(groupByColumns).toArray(ZERO_LENGTH_SELECTABLE_ARRAY));
     }
@@ -830,6 +855,12 @@ public interface TableWithDefaults extends Table {
     @ConcurrentMethod
     default Table avgBy() {
         return avgBy(ZERO_LENGTH_SELECTABLE_ARRAY);
+    }
+
+    @Override
+    @ConcurrentMethod
+    default Table wavgBy(String weightColumn, Selectable... groupByColumns) {
+        return aggAllBy(KeyWAvg.of(ColumnName.of(weightColumn)), groupByColumns);
     }
 
     @Override
@@ -852,6 +883,12 @@ public interface TableWithDefaults extends Table {
 
     @Override
     @ConcurrentMethod
+    default Table wsumBy(String weightColumn, Selectable... groupByColumns) {
+        return aggAllBy(KeyWSum.of(ColumnName.of(weightColumn)), groupByColumns);
+    }
+
+    @Override
+    @ConcurrentMethod
     default Table wsumBy(String weightColumn) {
         return wsumBy(weightColumn, ZERO_LENGTH_SELECTABLE_ARRAY);
     }
@@ -870,6 +907,12 @@ public interface TableWithDefaults extends Table {
 
     @Override
     @ConcurrentMethod
+    default Table stdBy(Selectable... groupByColumns) {
+        return aggAllBy(KeyStd.of(), groupByColumns);
+    }
+
+    @Override
+    @ConcurrentMethod
     default Table stdBy(String... groupByColumns) {
         return stdBy(Selectable.from(groupByColumns).toArray(ZERO_LENGTH_SELECTABLE_ARRAY));
     }
@@ -881,8 +924,15 @@ public interface TableWithDefaults extends Table {
     }
 
     @Override
+    @ConcurrentMethod
     default Table stdBy() {
         return stdBy(ZERO_LENGTH_SELECTABLE_ARRAY);
+    }
+
+    @Override
+    @ConcurrentMethod
+    default Table varBy(Selectable... groupByColumns) {
+        return aggAllBy(KeyVar.of(), groupByColumns);
     }
 
     @Override
@@ -898,6 +948,7 @@ public interface TableWithDefaults extends Table {
     }
 
     @Override
+    @ConcurrentMethod
     default Table varBy() {
         return varBy(ZERO_LENGTH_SELECTABLE_ARRAY);
     }
@@ -972,6 +1023,12 @@ public interface TableWithDefaults extends Table {
     @ConcurrentMethod
     default Table maxBy() {
         return maxBy(ZERO_LENGTH_SELECTABLE_ARRAY);
+    }
+
+    @Override
+    @ConcurrentMethod
+    default Table medianBy(Selectable... groupByColumns) {
+        return aggAllBy(KeyMedian.of(), groupByColumns);
     }
 
     @Override

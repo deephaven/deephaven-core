@@ -205,13 +205,8 @@ public class HierarchicalTable extends QueryTable {
     }
 
     @Override
-    public Table groupBy(Collection<? extends Selectable> groupByColumns) {
-        return throwUnsupported("groupBy()");
-    }
-
-    @Override
     public Table aggAllBy(Key key, Selectable... groupByColumns) {
-        return throwUnsupported("aggAllBy()");
+        return throwUnsupported("aggAllBy(" + key + ")");
     }
 
     @Override
@@ -234,36 +229,6 @@ public class HierarchicalTable extends QueryTable {
     public Table applyToAllBy(String formulaColumn, String columnParamName,
             Collection<? extends Selectable> groupByColumns) {
         return throwUnsupported("applyToAllBy()");
-    }
-
-    @Override
-    public Table sumBy(Selectable... groupByColumns) {
-        return throwUnsupported("sumBy()");
-    }
-
-    @Override
-    public Table absSumBy(Selectable... groupByColumns) {
-        return throwUnsupported("absSumBy()");
-    }
-
-    @Override
-    public Table avgBy(Selectable... groupByColumns) {
-        return throwUnsupported("avgBy()");
-    }
-
-    @Override
-    public Table wavgBy(String weightColumn, Selectable... groupByColumns) {
-        return throwUnsupported("wavgBy()");
-    }
-
-    @Override
-    public Table stdBy(Selectable... groupByColumns) {
-        return throwUnsupported("stdBy()");
-    }
-
-    @Override
-    public Table varBy(Selectable... groupByColumns) {
-        return throwUnsupported("varBy()");
     }
 
     @Override

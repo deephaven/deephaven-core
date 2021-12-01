@@ -32,6 +32,84 @@ public class AggregationSpecAdapter implements Key.Visitor {
         return key.walk(new AggregationSpecAdapter()).out();
     }
 
+    public static AggregationSpec of(KeyAbsSum key) {
+        return key.walk(new AggregationSpecAdapter()).out();
+    }
+
+    public static AggregationSpec of(KeyCountDistinct countDistinct) {
+        return new CountDistinctSpec(countDistinct.countNulls());
+    }
+
+    public static AggregationSpec of(KeyDistinct distinct) {
+        return new DistinctSpec(distinct.includeNulls());
+    }
+
+    public static AggregationSpec of(@SuppressWarnings("unused") KeyGroup group) {
+        return new AggregationGroupSpec();
+    }
+
+    public static AggregationSpec of(@SuppressWarnings("unused") KeyAvg avg) {
+        return new AvgSpec();
+    }
+
+    public static AggregationSpec of(@SuppressWarnings("unused") KeyFirst first) {
+        return new FirstBySpecImpl();
+    }
+
+    public static AggregationSpec of(@SuppressWarnings("unused") KeyLast last) {
+        return new LastBySpecImpl();
+    }
+
+    public static AggregationSpec of(@SuppressWarnings("unused") KeyMax max) {
+        return new MinMaxBySpecImpl(false);
+    }
+
+    public static AggregationSpec of(KeyMedian median) {
+        return new PercentileBySpecImpl(0.50d, median.averageMedian());
+    }
+
+    public static AggregationSpec of(@SuppressWarnings("unused") KeyMin min) {
+        return new MinMaxBySpecImpl(true);
+    }
+
+    public static AggregationSpec of(@SuppressWarnings("unused") KeyPct pct) {
+        return new PercentileBySpecImpl(pct.percentile(), pct.averageMedian());
+    }
+
+    public static AggregationSpec of(KeySortedFirst sortedFirst) {
+        return new SortedFirstBy(
+                sortedFirst.columns().stream().map(SortColumn::column).map(ColumnName::name).toArray(String[]::new));
+    }
+
+    public static AggregationSpec of(KeySortedLast sortedLast) {
+        return new SortedLastBy(
+                sortedLast.columns().stream().map(SortColumn::column).map(ColumnName::name).toArray(String[]::new));
+    }
+
+    public static AggregationSpec of(@SuppressWarnings("unused") KeyStd std) {
+        return new StdSpec();
+    }
+
+    public static AggregationSpec of(@SuppressWarnings("unused") KeySum sum) {
+        return new SumSpec();
+    }
+
+    public static AggregationSpec of(KeyUnique unique) {
+        return new UniqueSpec(unique.includeNulls());
+    }
+
+    public static AggregationSpec of(KeyWAvg wAvg) {
+        return new WeightedAverageSpecImpl(wAvg.weight().name());
+    }
+
+    public static AggregationSpec of(KeyWSum wSum) {
+        return new WeightedSumSpecImpl(wSum.weight().name());
+    }
+
+    public static AggregationSpec of(@SuppressWarnings("unused") KeyVar var) {
+        return new VarSpec();
+    }
+
     private AggregationSpec out;
 
     public AggregationSpec out() {
@@ -40,98 +118,96 @@ public class AggregationSpecAdapter implements Key.Visitor {
 
     @Override
     public void visit(KeyAbsSum absSum) {
-        out = new AbsSumSpec();
+        out = of(absSum);
     }
 
     @Override
     public void visit(KeyCountDistinct countDistinct) {
-        out = new CountDistinctSpec(countDistinct.countNulls());
+        out = of(countDistinct);
     }
 
     @Override
     public void visit(KeyDistinct distinct) {
-        out = new DistinctSpec(distinct.includeNulls());
+        out = of(distinct);
     }
 
     @Override
     public void visit(KeyGroup group) {
-        out = new AggregationGroupSpec();
+        out = of(group);
     }
 
     @Override
     public void visit(KeyAvg avg) {
-        out = new AvgSpec();
+        out = of(avg);
     }
 
     @Override
     public void visit(KeyFirst first) {
-        out = new FirstBySpecImpl();
+        out = of(first);
     }
 
     @Override
     public void visit(KeyLast last) {
-        out = new LastBySpecImpl();
+        out = of(last);
     }
 
     @Override
     public void visit(KeyMax max) {
-        out = new MinMaxBySpecImpl(false);
+        out = of(max);
     }
 
     @Override
     public void visit(KeyMedian median) {
-        out = new PercentileBySpecImpl(0.50d, median.averageMedian());
+        out = of(median);
     }
 
     @Override
     public void visit(KeyMin min) {
-        out = new MinMaxBySpecImpl(true);
+        out = of(min);
     }
 
     @Override
     public void visit(KeyPct pct) {
-        out = new PercentileBySpecImpl(pct.percentile(), pct.averageMedian());
+        out = of(pct);
     }
 
     @Override
     public void visit(KeySortedFirst sortedFirst) {
-        out = new SortedFirstBy(
-                sortedFirst.columns().stream().map(SortColumn::column).map(ColumnName::name).toArray(String[]::new));
+        out = of(sortedFirst);
     }
 
     @Override
     public void visit(KeySortedLast sortedLast) {
-        out = new SortedLastBy(
-                sortedLast.columns().stream().map(SortColumn::column).map(ColumnName::name).toArray(String[]::new));
+        out = of(sortedLast);
     }
 
     @Override
     public void visit(KeyStd std) {
-        out = new StdSpec();
+        out = of(std);
     }
 
     @Override
     public void visit(KeySum sum) {
-        out = new SumSpec();
+        out = of(sum);
     }
 
     @Override
     public void visit(KeyUnique unique) {
-        out = new UniqueSpec(unique.includeNulls());
+        out = of(unique);
     }
 
     @Override
     public void visit(KeyWAvg wAvg) {
-        out = new WeightedAverageSpecImpl(wAvg.weight().name());
+        out = of(wAvg);
     }
 
     @Override
     public void visit(KeyWSum wSum) {
-        out = new WeightedSumSpecImpl(wSum.weight().name());
+        out = of(wSum);
     }
 
     @Override
     public void visit(KeyVar var) {
-        out = new VarSpec();
+        out = of(var);
     }
 }

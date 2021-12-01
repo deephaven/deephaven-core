@@ -606,13 +606,6 @@ public class QueryTable extends BaseTable {
     }
 
     @Override
-    public Table groupBy(Collection<? extends Selectable> groupByColumns) {
-        return QueryPerformanceRecorder.withNugget("groupBy(" + groupByColumns + ")",
-                sizeForInstrumentation(),
-                () -> by(new AggregationGroupSpec(), SelectColumn.from(groupByColumns)));
-    }
-
-    @Override
     public Table aggAllBy(Key key, Selectable... groupByColumns) {
         return key.walk(new SingleAggVisitor(groupByColumns)).out();
     }
@@ -692,13 +685,6 @@ public class QueryTable extends BaseTable {
                         return by(new AddOnlyMinMaxBySpecImpl(false), SelectColumn.from(groupByColumns));
                     }
                 });
-    }
-
-    @Override
-    public Table medianBy(Selectable... groupByColumns) {
-        final SingleAggVisitor visitor = new SingleAggVisitor(groupByColumns);
-        visitor.visit(KeyMedian.of());
-        return visitor.out();
     }
 
     @Override
@@ -998,62 +984,6 @@ public class QueryTable extends BaseTable {
                 sizeForInstrumentation(),
                 () -> tableToUse.by(new AggregationFormulaSpec(formulaColumn, columnParamName),
                         SelectColumn.from(groupByColumns)));
-    }
-
-    @Override
-    public Table sumBy(Selectable... groupByColumns) {
-        final QueryTable tableToUse = (QueryTable) dropColumnFormats();
-        return QueryPerformanceRecorder.withNugget("sumBy(" + Arrays.toString(groupByColumns) + ")",
-                sizeForInstrumentation(),
-                () -> tableToUse.by(new SumSpec(), SelectColumn.from(groupByColumns)));
-    }
-
-    @Override
-    public Table absSumBy(Selectable... groupByColumns) {
-        final QueryTable tableToUse = (QueryTable) dropColumnFormats();
-        return QueryPerformanceRecorder.withNugget("absSumBy(" + Arrays.toString(groupByColumns) + ")",
-                sizeForInstrumentation(),
-                () -> tableToUse.by(new AbsSumSpec(), SelectColumn.from(groupByColumns)));
-    }
-
-    @Override
-    public Table avgBy(Selectable... groupByColumns) {
-        final QueryTable tableToUse = (QueryTable) dropColumnFormats();
-        return QueryPerformanceRecorder.withNugget("avgBy(" + Arrays.toString(groupByColumns) + ")",
-                sizeForInstrumentation(),
-                () -> tableToUse.by(new AvgSpec(), SelectColumn.from(groupByColumns)));
-    }
-
-    @Override
-    public Table wavgBy(String weightColumn, Selectable... groupByColumns) {
-        final QueryTable tableToUse = (QueryTable) dropColumnFormats();
-        return QueryPerformanceRecorder.withNugget(
-                "wavgBy(" + weightColumn + ", " + Arrays.toString(groupByColumns) + ")", sizeForInstrumentation(),
-                () -> tableToUse.by(new WeightedAverageSpecImpl(weightColumn), SelectColumn.from(groupByColumns)));
-    }
-
-    @Override
-    public Table wsumBy(String weightColumn, Selectable... groupByColumns) {
-        final QueryTable tableToUse = (QueryTable) dropColumnFormats();
-        return QueryPerformanceRecorder.withNugget(
-                "wsumBy(" + weightColumn + ", " + Arrays.toString(groupByColumns) + ")", sizeForInstrumentation(),
-                () -> tableToUse.by(new WeightedSumSpecImpl(weightColumn), SelectColumn.from(groupByColumns)));
-    }
-
-    @Override
-    public Table stdBy(Selectable... groupByColumns) {
-        final QueryTable tableToUse = (QueryTable) dropColumnFormats();
-        return QueryPerformanceRecorder.withNugget("stdBy(" + Arrays.toString(groupByColumns) + ")",
-                sizeForInstrumentation(),
-                () -> tableToUse.by(new StdSpec(), SelectColumn.from(groupByColumns)));
-    }
-
-    @Override
-    public Table varBy(Selectable... groupByColumns) {
-        final QueryTable tableToUse = (QueryTable) dropColumnFormats();
-        return QueryPerformanceRecorder.withNugget("varBy(" + Arrays.toString(groupByColumns) + ")",
-                sizeForInstrumentation(),
-                () -> tableToUse.by(new VarSpec(), SelectColumn.from(groupByColumns)));
     }
 
     public static class FilteredTable extends QueryTable implements WhereFilter.RecomputeListener {
@@ -3492,8 +3422,8 @@ public class QueryTable extends BaseTable {
             return Objects.requireNonNull(out);
         }
 
-        private Table visitGeneric(Key key) {
-            final QueryTable tableToUse = (QueryTable) dropColumnFormats();
+        private Table visitGeneric(Key key, boolean dropFormatColumns) {
+            final QueryTable tableToUse = dropFormatColumns ? (QueryTable) dropColumnFormats() : QueryTable.this;
             return QueryPerformanceRecorder.withNugget("aggAllBy(" + key + "," + Arrays.toString(groupByColumns) + ")",
                     sizeForInstrumentation(),
                     () -> tableToUse.by(AggregationSpecAdapter.of(key), SelectColumn.from(groupByColumns)));
@@ -3501,27 +3431,27 @@ public class QueryTable extends BaseTable {
 
         @Override
         public void visit(KeyAbsSum absSum) {
-            out = absSumBy(groupByColumns);
+            out = visitGeneric(absSum, true);
         }
 
         @Override
         public void visit(KeyCountDistinct countDistinct) {
-            out = visitGeneric(countDistinct);
+            out = visitGeneric(countDistinct, true);
         }
 
         @Override
         public void visit(KeyDistinct distinct) {
-            out = visitGeneric(distinct);
+            out = visitGeneric(distinct, true);
         }
 
         @Override
         public void visit(KeyGroup group) {
-            out = groupBy(List.of(groupByColumns));
+            out = visitGeneric(group, true);
         }
 
         @Override
         public void visit(KeyAvg avg) {
-            out = avgBy(groupByColumns);
+            out = visitGeneric(avg, true);
         }
 
         @Override
@@ -3541,10 +3471,7 @@ public class QueryTable extends BaseTable {
 
         @Override
         public void visit(KeyMedian median) {
-            out = QueryPerformanceRecorder.withNugget("medianBy(" + Arrays.toString(groupByColumns) + ")",
-                    sizeForInstrumentation(),
-                    () -> by(new PercentileBySpecImpl(0.50, median.averageMedian()),
-                            SelectColumn.from(groupByColumns)));
+            out = visitGeneric(median, median.averageMedian());
         }
 
         @Override
@@ -3554,47 +3481,47 @@ public class QueryTable extends BaseTable {
 
         @Override
         public void visit(KeyPct pct) {
-            out = visitGeneric(pct);
+            out = visitGeneric(pct, pct.averageMedian());
         }
 
         @Override
         public void visit(KeySortedFirst sortedFirst) {
-            out = visitGeneric(sortedFirst);
+            out = visitGeneric(sortedFirst, true);
         }
 
         @Override
         public void visit(KeySortedLast sortedLast) {
-            out = visitGeneric(sortedLast);
+            out = visitGeneric(sortedLast, true);
         }
 
         @Override
         public void visit(KeyStd std) {
-            out = stdBy(groupByColumns);
+            out = visitGeneric(std, true);
         }
 
         @Override
         public void visit(KeySum sum) {
-            out = sumBy(groupByColumns);
+            out =  visitGeneric(sum, true);
         }
 
         @Override
         public void visit(KeyUnique unique) {
-            out = visitGeneric(unique);
+            out = visitGeneric(unique, false);
         }
 
         @Override
         public void visit(KeyWAvg wAvg) {
-            out = wavgBy(wAvg.weight().name(), groupByColumns);
+            out = visitGeneric(wAvg, true);
         }
 
         @Override
         public void visit(KeyWSum wSum) {
-            out = wsumBy(wSum.weight().name(), groupByColumns);
+            out = visitGeneric(wSum, true);
         }
 
         @Override
         public void visit(KeyVar var) {
-            out = varBy(groupByColumns);
+            out = visitGeneric(var, true);
         }
     }
 }

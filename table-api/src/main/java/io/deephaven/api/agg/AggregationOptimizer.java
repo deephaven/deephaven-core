@@ -40,7 +40,7 @@ public final class AggregationOptimizer implements Aggregation.Visitor {
                     out.add(Count.of((ColumnName) pair));
                 }
             } else if (e.getValue().size() == 1) {
-                throw new UnsupportedOperationException("TODO");
+                out.add(KeyedAggregation.of((Key) e.getKey(), e.getValue().get(0)));
             } else {
                 out.add(KeyedAggregations.builder().key((Key) e.getKey()).addAllPairs(e.getValue()).build());
             }
