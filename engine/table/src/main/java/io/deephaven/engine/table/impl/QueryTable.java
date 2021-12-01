@@ -13,6 +13,7 @@ import io.deephaven.api.agg.AggregationOutputs;
 import io.deephaven.api.agg.key.Key;
 import io.deephaven.api.agg.key.KeyAbsSum;
 import io.deephaven.api.agg.key.KeyAvg;
+import io.deephaven.api.agg.key.KeyColumnReferences;
 import io.deephaven.api.agg.key.KeyCountDistinct;
 import io.deephaven.api.agg.key.KeyDistinct;
 import io.deephaven.api.agg.key.KeyFirst;
@@ -607,19 +608,35 @@ public class QueryTable extends BaseTable {
 
     @Override
     public Table aggAllBy(Key key, Selectable... groupByColumns) {
-        final Set<String> groupColumns = new HashSet<>(groupByColumns.length);
-        for (Selectable groupByColumn : groupByColumns) {
-            groupColumns.add(groupByColumn.newColumn().name());
-        }
-        final List<ColumnName> remainingColumns = new ArrayList<>(columns.size() - groupByColumns.length);
-        for (String columnName : columns.keySet()) {
-            if (!groupColumns.contains(columnName)) {
-                remainingColumns.add(ColumnName.of(columnName));
-            }
-        }
-        final Table result = aggBy(key.aggregation(remainingColumns), List.of(groupByColumns));
+        final List<ColumnName> aggColumns = aggregateColumns(key, groupByColumns);
+        final Table result = aggColumns.isEmpty() ? aggBy(List.of(), List.of(groupByColumns))
+                : aggBy(key.aggregation(aggColumns), List.of(groupByColumns));
         key.walk(new CopyAttributes(this, result));
         return result;
+    }
+
+    private List<ColumnName> aggregateColumns(Key key, Selectable[] groupByColumns) {
+        final Set<String> doNotAgg = doNotAggregateColumns(key, groupByColumns);
+        final List<ColumnName> remainingColumns = new ArrayList<>(columns.size() - doNotAgg.size());
+        for (String columnName : columns.keySet()) {
+            if (doNotAgg.contains(columnName)) {
+                continue;
+            }
+            remainingColumns.add(ColumnName.of(columnName));
+        }
+        return remainingColumns;
+    }
+
+    private Set<String> doNotAggregateColumns(Key key, Selectable[] groupByColumns) {
+        final Set<ColumnName> keyRefs = KeyColumnReferences.of(key);
+        final Set<String> doNotAgg = new HashSet<>(groupByColumns.length + keyRefs.size());
+        for (Selectable groupByColumn : groupByColumns) {
+            doNotAgg.add(groupByColumn.newColumn().name());
+        }
+        for (ColumnName columnName : keyRefs) {
+            doNotAgg.add(columnName.name());
+        }
+        return doNotAgg;
     }
 
     @Override
