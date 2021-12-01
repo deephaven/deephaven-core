@@ -23,6 +23,7 @@ public class OpCase {
             HEAD,
             HEAD_BY,
             LAZY_UPDATE,
+            LEFT_JOIN,
             MERGE,
             NATURAL_JOIN,
             OP_NOT_SET,

@@ -1105,6 +1105,54 @@ public class BatchTableRequest {
             }
 
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+            public interface LeftJoinFieldType {
+                @JsOverlay
+                static BatchTableRequest.ToObjectReturnType.OpsListFieldType.LeftJoinFieldType create() {
+                    return Js.uncheckedCast(JsPropertyMap.of());
+                }
+
+                @JsProperty
+                JsArray<String> getColumnsToAddList();
+
+                @JsProperty
+                JsArray<String> getColumnsToMatchList();
+
+                @JsProperty
+                Object getLeftId();
+
+                @JsProperty
+                Object getResultId();
+
+                @JsProperty
+                Object getRightId();
+
+                @JsProperty
+                void setColumnsToAddList(JsArray<String> columnsToAddList);
+
+                @JsOverlay
+                default void setColumnsToAddList(String[] columnsToAddList) {
+                    setColumnsToAddList(Js.<JsArray<String>>uncheckedCast(columnsToAddList));
+                }
+
+                @JsProperty
+                void setColumnsToMatchList(JsArray<String> columnsToMatchList);
+
+                @JsOverlay
+                default void setColumnsToMatchList(String[] columnsToMatchList) {
+                    setColumnsToMatchList(Js.<JsArray<String>>uncheckedCast(columnsToMatchList));
+                }
+
+                @JsProperty
+                void setLeftId(Object leftId);
+
+                @JsProperty
+                void setResultId(Object resultId);
+
+                @JsProperty
+                void setRightId(Object rightId);
+            }
+
+            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
             public interface MergeFieldType {
                 @JsOverlay
                 static BatchTableRequest.ToObjectReturnType.OpsListFieldType.MergeFieldType create() {
@@ -1564,6 +1612,9 @@ public class BatchTableRequest {
             Object getLazyUpdate();
 
             @JsProperty
+            BatchTableRequest.ToObjectReturnType.OpsListFieldType.LeftJoinFieldType getLeftJoin();
+
+            @JsProperty
             BatchTableRequest.ToObjectReturnType.OpsListFieldType.MergeFieldType getMerge();
 
             @JsProperty
@@ -1663,6 +1714,10 @@ public class BatchTableRequest {
 
             @JsProperty
             void setLazyUpdate(Object lazyUpdate);
+
+            @JsProperty
+            void setLeftJoin(
+                    BatchTableRequest.ToObjectReturnType.OpsListFieldType.LeftJoinFieldType leftJoin);
 
             @JsProperty
             void setMerge(BatchTableRequest.ToObjectReturnType.OpsListFieldType.MergeFieldType merge);
@@ -2826,6 +2881,54 @@ public class BatchTableRequest {
             }
 
             @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
+            public interface LeftJoinFieldType {
+                @JsOverlay
+                static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.LeftJoinFieldType create() {
+                    return Js.uncheckedCast(JsPropertyMap.of());
+                }
+
+                @JsProperty
+                JsArray<String> getColumnsToAddList();
+
+                @JsProperty
+                JsArray<String> getColumnsToMatchList();
+
+                @JsProperty
+                Object getLeftId();
+
+                @JsProperty
+                Object getResultId();
+
+                @JsProperty
+                Object getRightId();
+
+                @JsProperty
+                void setColumnsToAddList(JsArray<String> columnsToAddList);
+
+                @JsOverlay
+                default void setColumnsToAddList(String[] columnsToAddList) {
+                    setColumnsToAddList(Js.<JsArray<String>>uncheckedCast(columnsToAddList));
+                }
+
+                @JsProperty
+                void setColumnsToMatchList(JsArray<String> columnsToMatchList);
+
+                @JsOverlay
+                default void setColumnsToMatchList(String[] columnsToMatchList) {
+                    setColumnsToMatchList(Js.<JsArray<String>>uncheckedCast(columnsToMatchList));
+                }
+
+                @JsProperty
+                void setLeftId(Object leftId);
+
+                @JsProperty
+                void setResultId(Object resultId);
+
+                @JsProperty
+                void setRightId(Object rightId);
+            }
+
+            @JsType(isNative = true, name = "?", namespace = JsPackage.GLOBAL)
             public interface MergeFieldType {
                 @JsOverlay
                 static BatchTableRequest.ToObjectReturnType0.OpsListFieldType.MergeFieldType create() {
@@ -3285,6 +3388,9 @@ public class BatchTableRequest {
             Object getLazyUpdate();
 
             @JsProperty
+            BatchTableRequest.ToObjectReturnType0.OpsListFieldType.LeftJoinFieldType getLeftJoin();
+
+            @JsProperty
             BatchTableRequest.ToObjectReturnType0.OpsListFieldType.MergeFieldType getMerge();
 
             @JsProperty
@@ -3384,6 +3490,10 @@ public class BatchTableRequest {
 
             @JsProperty
             void setLazyUpdate(Object lazyUpdate);
+
+            @JsProperty
+            void setLeftJoin(
+                    BatchTableRequest.ToObjectReturnType0.OpsListFieldType.LeftJoinFieldType leftJoin);
 
             @JsProperty
             void setMerge(BatchTableRequest.ToObjectReturnType0.OpsListFieldType.MergeFieldType merge);
