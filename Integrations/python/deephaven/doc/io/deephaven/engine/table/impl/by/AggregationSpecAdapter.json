@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.engine.table.impl.by.AggregationSpecAdapter",
+ "methods": {
+  "of": ":param key: io.deephaven.api.agg.key.Key\n:param parent: io.deephaven.engine.table.impl.BaseTable\n:return: io.deephaven.engine.table.impl.by.AggregationSpec",
+  "out": ":return: io.deephaven.engine.table.impl.by.AggregationSpec",
+  "visit": "*Overload 1*  \n  :param absSum: io.deephaven.api.agg.key.KeyAbsSum\n  \n*Overload 2*  \n  :param countDistinct: io.deephaven.api.agg.key.KeyCountDistinct\n  \n*Overload 3*  \n  :param distinct: io.deephaven.api.agg.key.KeyDistinct\n  \n*Overload 4*  \n  :param group: io.deephaven.api.agg.key.KeyGroup\n  \n*Overload 5*  \n  :param avg: io.deephaven.api.agg.key.KeyAvg\n  \n*Overload 6*  \n  :param first: io.deephaven.api.agg.key.KeyFirst\n  \n*Overload 7*  \n  :param last: io.deephaven.api.agg.key.KeyLast\n  \n*Overload 8*  \n  :param max: io.deephaven.api.agg.key.KeyMax\n  \n*Overload 9*  \n  :param median: io.deephaven.api.agg.key.KeyMedian\n  \n*Overload 10*  \n  :param min: io.deephaven.api.agg.key.KeyMin\n  \n*Overload 11*  \n  :param pct: io.deephaven.api.agg.key.KeyPct\n  \n*Overload 12*  \n  :param sortedFirst: io.deephaven.api.agg.key.KeySortedFirst\n  \n*Overload 13*  \n  :param sortedLast: io.deephaven.api.agg.key.KeySortedLast\n  \n*Overload 14*  \n  :param std: io.deephaven.api.agg.key.KeyStd\n  \n*Overload 15*  \n  :param sum: io.deephaven.api.agg.key.KeySum\n  \n*Overload 16*  \n  :param unique: io.deephaven.api.agg.key.KeyUnique\n  \n*Overload 17*  \n  :param wAvg: io.deephaven.api.agg.key.KeyWAvg\n  \n*Overload 18*  \n  :param wSum: io.deephaven.api.agg.key.KeyWSum\n  \n*Overload 19*  \n  :param var: io.deephaven.api.agg.key.KeyVar"
+ },
+ "path": "io.deephaven.engine.table.impl.by.AggregationSpecAdapter",
+ "typeName": "class"
+}
