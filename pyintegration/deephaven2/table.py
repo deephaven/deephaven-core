@@ -8,7 +8,7 @@ from typing import List
 
 import jpy
 
-from deephaven2 import DHError
+from deephaven2 import DHError, dtypes
 from deephaven2.column import Column
 from deephaven2.agg import Aggregation
 from deephaven2.constants import SortDirection
@@ -18,7 +18,7 @@ _JColumnName = jpy.get_type("io.deephaven.api.ColumnName")
 _JSortColumn = jpy.get_type("io.deephaven.api.SortColumn")
 _JFilter = jpy.get_type("io.deephaven.api.filter.Filter")
 _JFilterOr = jpy.get_type("io.deephaven.api.filter.FilterOr")
-_JArrayList = jpy.get_type("java.util.ArrayList")
+
 
 #
 # module level functions
@@ -564,14 +564,13 @@ class Table:
         """
 
         def sort_column(col, dir_):
-            return _JSortColumn.desc(_JColumnName.of(col)) if dir_ == SortDirection.DESCENDING else _JSortColumn.asc(_JColumnName.of(col))
+            return _JSortColumn.desc(_JColumnName.of(col)) if dir_ == SortDirection.DESCENDING else _JSortColumn.asc(
+                _JColumnName.of(col))
 
         try:
             if order:
                 sort_columns = [sort_column(col, dir_) for col, dir_ in zip(order_by, order)]
-                j_sc_list = _JArrayList()
-                for sc in sort_columns:
-                    j_sc_list.add(sc)
+                j_sc_list = dtypes.j_array_list(sort_columns)
                 return Table(j_table=self.j_table.sort(j_sc_list))
             else:
                 return Table(j_table=self.j_table.sort(*order_by))
@@ -1048,9 +1047,7 @@ class Table:
             DHError
         """
         try:
-            j_agg_list = _JArrayList()
-            for agg in aggs:
-                j_agg_list.add(agg.j_agg)
+            j_agg_list = dtypes.j_array_list([agg.j_agg for agg in aggs])
             return Table(j_table=self.j_table.aggBy(j_agg_list, *by))
         except Exception as e:
             raise DHError(e, "table agg_by operation failed.") from e
