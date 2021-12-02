@@ -1,7 +1,8 @@
 package io.deephaven.integrations.learn;
 
-import io.deephaven.db.v2.InMemoryTable;
-import io.deephaven.db.v2.sources.ColumnSource;
+import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.impl.InMemoryTable;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -70,16 +71,6 @@ public class GathererTest {
         table = new InMemoryTable(columnNames, columnData);
     }
 
-    public static IndexSet makeIndexSet(final InMemoryTable t) {
-        final IndexSet is = new IndexSet(t.intSize());
-
-        for (long idx : t.getIndex()) {
-            is.add(idx);
-        }
-
-        return is;
-    }
-
     public static ColumnSource<?>[] getColSet(final String[] colNames) {
         ColumnSource<?>[] rst = new ColumnSource[2];
 
@@ -103,57 +94,57 @@ public class GathererTest {
 
     @Test
     public void booleanTestMethod() {
-        IndexSet idxSet = makeIndexSet(table);
+        RowSequence rowSet = table.getRowSet();
         ColumnSource<?>[] colSet = getColSet(boolColNames);
-        boolean[] result = Gatherer.tensorBuffer2DBoolean(idxSet, colSet);
+        boolean[] result = Gatherer.tensorBuffer2DBoolean(rowSet, colSet);
         assertRowMajor((i, j) -> boolData[i][j], i -> result[i]);
     }
 
     @Test
     public void byteTestMethod() {
-        IndexSet idxSet = makeIndexSet(table);
+        RowSequence rowSet = table.getRowSet();
         ColumnSource<?>[] colSet = getColSet(byteColNames);
-        byte[] result = Gatherer.tensorBuffer2DByte(idxSet, colSet);
+        byte[] result = Gatherer.tensorBuffer2DByte(rowSet, colSet);
         assertRowMajor((i, j) -> byteData[i][j], i -> result[i]);
     }
 
     @Test
     public void shortTestMethod() {
-        IndexSet idxSet = makeIndexSet(table);
+        RowSequence rowSet = table.getRowSet();
         ColumnSource<?>[] colSet = getColSet(shortColNames);
-        short[] result = Gatherer.tensorBuffer2DShort(idxSet, colSet);
+        short[] result = Gatherer.tensorBuffer2DShort(rowSet, colSet);
         assertRowMajor((i, j) -> shortData[i][j], i -> result[i]);
     }
 
     @Test
     public void intTestMethod() {
-        IndexSet idxSet = makeIndexSet(table);
+        RowSequence rowSet = table.getRowSet();
         ColumnSource<?>[] colSet = getColSet(intColNames);
-        int[] result = Gatherer.tensorBuffer2DInt(idxSet, colSet);
+        int[] result = Gatherer.tensorBuffer2DInt(rowSet, colSet);
         assertRowMajor((i, j) -> intData[i][j], i -> result[i]);
     }
 
     @Test
     public void longTestMethod() {
-        IndexSet idxSet = makeIndexSet(table);
+        RowSequence rowSet = table.getRowSet();
         ColumnSource<?>[] colSet = getColSet(longColNames);
-        long[] result = Gatherer.tensorBuffer2DLong(idxSet, colSet);
+        long[] result = Gatherer.tensorBuffer2DLong(rowSet, colSet);
         assertRowMajor((i, j) -> longData[i][j], i -> result[i]);
     }
 
     @Test
     public void floatTestMethod() {
-        IndexSet idxSet = makeIndexSet(table);
+        RowSequence rowSet = table.getRowSet();
         ColumnSource<?>[] colSet = getColSet(floatColNames);
-        float[] result = Gatherer.tensorBuffer2DFloat(idxSet, colSet);
+        float[] result = Gatherer.tensorBuffer2DFloat(rowSet, colSet);
         assertRowMajor((i, j) -> floatData[i][j], i -> result[i]);
     }
 
     @Test
     public void doubleTestMethod() {
-        IndexSet idxSet = makeIndexSet(table);
+        RowSequence rowSet = table.getRowSet();
         ColumnSource<?>[] colSet = getColSet(doubleColNames);
-        double[] result = Gatherer.tensorBuffer2DDouble(idxSet, colSet);
+        double[] result = Gatherer.tensorBuffer2DDouble(rowSet, colSet);
         assertRowMajor((i, j) -> doubleData[i][j], i -> result[i]);
     }
 

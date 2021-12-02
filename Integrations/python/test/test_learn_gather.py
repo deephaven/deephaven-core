@@ -143,14 +143,14 @@ class TestGather(unittest.TestCase):
             source = self.double_table
             model = self.double_model
 
-        idx = make_index_set(source)
+        rows = source.getRowSet()
         cols = [source.getColumnSource(col) for col in ["X", "Y", "Z"]]
 
         gatherer = lambda idx, cols : gather.table_to_numpy_2d(idx, cols, np_dtype)
 
         array_from_table = tableToDataFrame(source).values
 
-        gathered = gathered(idx, cols)
+        gathered = gather(rows, cols)
 
         with self.subTest(msg = "Array shape"):
             self.assertTrue(gathered.shape == array_from_table.shape)

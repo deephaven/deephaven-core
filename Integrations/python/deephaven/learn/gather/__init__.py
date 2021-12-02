@@ -43,41 +43,41 @@ except Exception as e:
     pass
 
 @_passThrough
-def table_to_numpy_2d(idx, cols, np_dtype = None):
+def table_to_numpy_2d(row_set, col_set, dtype = None):
     """
     Convert Deephaven table data to a 2d NumPy array of the appropriate size
 
-    :param idx: An IndexSet describing the number of rows in the table
-    :param cols: ColumnSources describing which columns to copy
+    :param row_set: A RowSequence describing the number of rows in the table
+    :param col_set: ColumnSources describing which columns to copy
     :param dtype: The desired NumPy data type of the output NumPy array
     :return: A NumPy ndarray
     """
 
-    if np_dtype == bool:
-        np_dtype = np.bool_
-    elif np_dtype == float:
-        np_dtype = np.double
-    elif np_dtype == int:
-        np_dtype = np.intc
+    if dtype == bool:
+        dtype = np.bool_
+    elif dtype == float:
+        dtype = np.double
+    elif dtype == int:
+        dtype = np.intc
 
-    if np_dtype == np.bool_:
-        buffer = _gatherer.tensorBuffer2DBoolean(idx, cols)
-    elif np_dtype == np.byte:
-        buffer = _gatherer.tensorBuffer2DByte(idx, cols)
-    elif np_dtype == np.short:
-        buffer = _gatherer.tensorBuffer2DShort(idx, cols)
-    elif np_dtype == np.intc:
-        buffer = _gatherer.tensorBuffer2DInt(idx, cols)
-    elif np_dtype == np.int_:
-        buffer = _gatherer.tensorBuffer2DLong(idx, cols)
-    elif np_dtype == np.single:
-        buffer = _gatherer.tensorBuffer2DFloat(idx, cols)
-    elif np_dtype == np.double:
-        buffer = _gatherer.tensorBuffer2DDouble(idx, cols)
+    if dtype == np.bool_:
+        buffer = _gatherer.tensorBuffer2DBoolean(row_set, col_set)
+    elif dtype == np.byte:
+        buffer = _gatherer.tensorBuffer2DByte(row_set, col_set)
+    elif dtype == np.short:
+        buffer = _gatherer.tensorBuffer2DShort(row_set, col_set)
+    elif dtype == np.intc:
+        buffer = _gatherer.tensorBuffer2DInt(row_set, col_set)
+    elif dtype == np.int_:
+        buffer = _gatherer.tensorBuffer2DLong(row_set, col_set)
+    elif dtype == np.single:
+        buffer = _gatherer.tensorBuffer2DFloat(row_set, col_set)
+    elif dtype == np.double:
+        buffer = _gatherer.tensorBuffer2DDouble(row_set, col_set)
     else:
-        raise ValueError("Data type {input_type} is not supported.".format(input_type = np_dtype))
+        raise ValueError("Data type {input_type} is not supported.".format(input_type = dtype))
 
-    tensor = np.frombuffer(buffer, dtype = np_dtype)
-    tensor.shape = (idx.getSize(), len(cols))
+    tensor = np.frombuffer(buffer, dtype = dtype)
+    tensor.shape = (len(col_set), row_set.intSize())
 
-    return tensor
+    return tensor.T
