@@ -9,16 +9,16 @@ You can quickly see streaming data in a UI and do table operations, interactivel
 For example, you can listen to a Kafka stream of cryptocurrency trades sourced from their native exchanges (like the ones below, built using the [XChange library](https://github.com/knowm/XChange)).
 
 ```python
-from deephaven import KafkaTools as kt
+from deephaven import ConsumeKafka as ck
 
 def get_trades_stream():
-    return kt.consumeToTable(
+    return ck.consumeToTable(
         { 'bootstrap.servers' : 'demo-kafka.c.deephaven-oss.internal:9092',
           'schema.registry.url' : 'http://demo-kafka.c.deephaven-oss.internal:8081' },
         'io.deephaven.crypto.kafka.TradesTopic',
-        key = kt.IGNORE,
-        value = kt.avro('io.deephaven.crypto.kafka.TradesTopic-io.deephaven.crypto.Trade'),
-        offsets=kt.ALL_PARTITIONS_SEEK_TO_END,
+        key = ck.IGNORE,
+        value = ck.avro('io.deephaven.crypto.kafka.TradesTopic-io.deephaven.crypto.Trade'),
+        offsets=ck.ALL_PARTITIONS_SEEK_TO_END,
         table_type='append')
 
 trades_stream = get_trades_stream()
@@ -29,9 +29,6 @@ trades_stream = get_trades_stream()
 To keep the most recent ticks within view, you could sort the table descending by timestamp. Alternatively, you can reverse the table.
 
 ```python
-# Not doing this:
-# t = t.sortDescending("Timestamp")
-
 trades_stream = trades_stream.reverse()
 ```
 \

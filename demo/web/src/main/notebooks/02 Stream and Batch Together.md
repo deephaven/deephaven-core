@@ -12,16 +12,16 @@ Below you’ll do calculations and aggregations on stream and batch data using i
 First, hook up a Kafka stream. (This is the same script from the first notebook.) Our [how-to guide](https://deephaven.io/core/docs/how-to-guides/kafka-stream/) provides detail on the integration.
 
 ```python
-from deephaven import KafkaTools as kt
+from deephaven import ConsumeKafka as ck
 
 def get_trades_stream():
-    return kt.consumeToTable(
+    return ck.consumeToTable(
         { 'bootstrap.servers' : 'demo-kafka.c.deephaven-oss.internal:9092',
           'schema.registry.url' : 'http://demo-kafka.c.deephaven-oss.internal:8081' },
         'io.deephaven.crypto.kafka.TradesTopic',
-        key = kt.IGNORE,
-        value = kt.avro('io.deephaven.crypto.kafka.TradesTopic-io.deephaven.crypto.Trade'),
-        offsets=kt.ALL_PARTITIONS_SEEK_TO_END,
+        key = ck.IGNORE,
+        value = ck.avro('io.deephaven.crypto.kafka.TradesTopic-io.deephaven.crypto.Trade'),
+        offsets=ck.ALL_PARTITIONS_SEEK_TO_END,
         table_type='append')
 
 trades_stream = get_trades_stream()
