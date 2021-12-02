@@ -95,9 +95,6 @@ class TypeInfos {
         }
         // Impute an appropriate codec for the data type
         final Class<?> dataType = columnDefinition.getDataType();
-        if (BigDecimal.class.equals(dataType)) {
-            return null;
-        }
         if (Externalizable.class.isAssignableFrom(dataType)) {
             return new ImmutablePair<>(ExternalizableCodec.class.getName(), dataType.getName());
         }

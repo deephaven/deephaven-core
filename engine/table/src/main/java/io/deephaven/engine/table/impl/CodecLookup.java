@@ -13,6 +13,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.Externalizable;
+import java.math.BigDecimal;
 
 /**
  * Utility class to concentrate {@link ObjectCodec} lookups.
@@ -61,6 +62,12 @@ public class CodecLookup {
                         || componentType == String.class);
             }
             // VectorBases of primitive types do not require codecs
+            return false;
+        }
+        if (BigDecimal.class.equals(dataType)) {
+            // A BigDecimal column maps to a logical type of decimal with the appropriate
+            // precision and scale (unless the user explicitly requested something else
+            // via instructions).
             return false;
         }
         // Anything else must have a codec
