@@ -246,6 +246,9 @@ public class ParquetTableWriter {
         final Table t = pretransformTable(table, definition);
         final TrackingRowSet tableRowSet = t.getRowSet();
         final Map<String, ? extends ColumnSource<?>> columnSourceMap = t.getColumnSourceMap();
+        // When we need to perform some computation depending on column data to make a decision impacting both
+        // schema and written data, we store results in computedCache to avoid having to calculate twice.
+        // An example is the necessary precision and scale for a BigDecimal column writen as decimal logical type.
         final Map<String, Map<CacheTags, Object>> computedCache = new HashMap<>();
         final ParquetFileWriter parquetFileWriter = getParquetFileWriter(computedCache, definition, tableRowSet,
                 columnSourceMap, path, writeInstructions, tableMeta,
