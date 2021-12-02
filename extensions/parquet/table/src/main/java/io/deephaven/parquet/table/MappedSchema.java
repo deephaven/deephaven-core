@@ -28,12 +28,14 @@ class MappedSchema {
             final ColumnDefinition... extraColumns) {
         final MessageTypeBuilder builder = Types.buildMessage();
         for (final ColumnDefinition<?> columnDefinition : definition.getColumns()) {
-            TypeInfos.TypeInfo typeInfo = getTypeInfo(computedCache, columnDefinition, index, columnSourceMap, instructions);
+            TypeInfos.TypeInfo typeInfo =
+                    getTypeInfo(computedCache, columnDefinition, index, columnSourceMap, instructions);
             Type schemaType = typeInfo.createSchemaType(columnDefinition, instructions);
             builder.addField(schemaType);
         }
         for (final ColumnDefinition<?> extraColumn : extraColumns) {
-            builder.addField(getTypeInfo(computedCache, extraColumn, index, columnSourceMap, instructions).createSchemaType(extraColumn, instructions));
+            builder.addField(getTypeInfo(computedCache, extraColumn, index, columnSourceMap, instructions)
+                    .createSchemaType(extraColumn, instructions));
         }
         MessageType schema = builder.named("root");
         return new MappedSchema(definition, schema);

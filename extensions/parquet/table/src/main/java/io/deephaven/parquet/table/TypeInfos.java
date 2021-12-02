@@ -107,17 +107,20 @@ class TypeInfos {
     static class PrecisionAndScale {
         public final int precision;
         public final int scale;
+
         public PrecisionAndScale(final int precision, final int scale) {
             this.precision = precision;
             this.scale = scale;
         }
     }
 
-    private static PrecisionAndScale getPrecisionAndScale(final TrackingRowSet rowSet, final ColumnSource<BigDecimal> source) {
+    private static PrecisionAndScale getPrecisionAndScale(final TrackingRowSet rowSet,
+            final ColumnSource<BigDecimal> source) {
         final int sz = 4096;
         final ChunkSource.GetContext context = source.makeGetContext(sz);
-        // we first compute max(precision - scale) and max(scale), which corresponds to max(digits left of the decimal point),
-        // max(digits right of the decimal point).   Then we convert to (precision, scale) before returning.
+        // we first compute max(precision - scale) and max(scale), which corresponds to max(digits left of the decimal
+        // point),
+        // max(digits right of the decimal point). Then we convert to (precision, scale) before returning.
         int maxPrecisionMinusScale = 0;
         int maxScale = 0;
         try (final RowSequence.Iterator it = rowSet.getRowSequenceIterator()) {

@@ -247,7 +247,8 @@ public class ParquetTableWriter {
         final TrackingRowSet tableRowSet = t.getRowSet();
         final Map<String, ? extends ColumnSource<?>> columnSourceMap = t.getColumnSourceMap();
         final Map<String, Map<CacheTags, Object>> computedCache = new HashMap<>();
-        final ParquetFileWriter parquetFileWriter = getParquetFileWriter(computedCache, definition, tableRowSet, columnSourceMap, path, writeInstructions, tableMeta,
+        final ParquetFileWriter parquetFileWriter = getParquetFileWriter(computedCache, definition, tableRowSet,
+                columnSourceMap, path, writeInstructions, tableMeta,
                 tableInfoBuilder, compressionCodecName);
         final long nrows = t.size();
         if (nrows > 0) {
@@ -311,7 +312,8 @@ public class ParquetTableWriter {
             final Map<String, String> tableMeta,
             final TableInfo.Builder tableInfoBuilder,
             final CompressionCodecName codecName) throws IOException {
-        final MappedSchema mappedSchema = MappedSchema.create(computedCache, definition, tableRowSet, columnSourceMap, writeInstructions);
+        final MappedSchema mappedSchema =
+                MappedSchema.create(computedCache, definition, tableRowSet, columnSourceMap, writeInstructions);
         final Map<String, String> extraMetaData = new HashMap<>(tableMeta);
         for (final ColumnDefinition<?> column : definition.getColumns()) {
             final String colName = column.getName();
@@ -527,7 +529,8 @@ public class ParquetTableWriter {
         }
         if (!usedDictionary) {
             try (final TransferObject<?> transferObject =
-                    getDestinationBuffer(computedCache, tableRowSet, columnSource, columnDefinition, targetSize, columnType, writeInstructions)) {
+                    getDestinationBuffer(computedCache, tableRowSet, columnSource, columnDefinition, targetSize,
+                            columnType, writeInstructions)) {
                 final boolean supportNulls = supportNulls(columnType);
                 final Object bufferToWrite = transferObject.getBuffer();
                 final Object nullValue = getNullValue(columnType);
