@@ -65,7 +65,7 @@ class TestGather(unittest.TestCase):
             "Z = sqrt(Y)"
         )
         # NumPy arrays
-        cls.bool_array = 
+        cls.bool_array = \
             np.array([[True, False, True], [True, False, False]] * 50,
             dtype = np.bool_)
         cls.byte_array = np.vstack((
