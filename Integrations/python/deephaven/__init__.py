@@ -118,6 +118,7 @@ def initialize():
     pt._defineSymbols()
     ttools._defineSymbols()
     tloggers._defineSymbols()
+    csv._defineSymbols()
 
     import deephaven.TableManipulation
     deephaven.TableManipulation._defineSymbols()
