@@ -64,7 +64,7 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
                     return new VarBinaryChunkInputStreamGenerator<>(BigDecimal.class, chunk.asObjectChunk(), (out, item) -> {
                         final BigDecimal normal = item.stripTrailingZeros();
                         final int v = normal.scale();
-                        // Write as little endian.
+                        // Write as little endian, arrow endianness.
                         out.write(0xFF & v);
                         out.write(0xFF & (v >> 8));
                         out.write(0xFF & (v >> 16));
@@ -148,7 +148,7 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
                             fieldNodeIter,
                             bufferInfoIter,
                             (final byte[] buf, final int offset, final int length) -> {
-                                // read the int scale value as little endian.
+                                // read the int scale value as little endian, arrow's endianness.
                                 final int bigEndianScale = ByteBuffer.wrap(buf, offset, 4).getInt();
                                 final int scale = Integer.reverseBytes(bigEndianScale);
                                 return new BigDecimal(new BigInteger(buf, offset + 4, length - 4), scale);
