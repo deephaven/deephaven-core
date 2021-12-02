@@ -245,8 +245,8 @@ public class ParentsVisitor implements Visitor {
     }
 
     @Override
-    public void visit(SingleAggregationTable singleAggregationTable) {
-        out = single(singleAggregationTable);
+    public void visit(AggregateAllByTable aggAllByTable) {
+        out = single(aggAllByTable);
     }
 
     @Override

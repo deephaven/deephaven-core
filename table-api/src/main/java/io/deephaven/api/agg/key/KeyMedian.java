@@ -1,10 +1,8 @@
 package io.deephaven.api.agg.key;
 
 import io.deephaven.annotations.BuildableStyle;
-import io.deephaven.annotations.SimpleStyle;
 import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
-import org.immutables.value.Value.Parameter;
 
 @Immutable
 @BuildableStyle

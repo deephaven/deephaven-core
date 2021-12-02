@@ -7,19 +7,6 @@ package io.deephaven.engine.table.impl;
 import io.deephaven.api.*;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.key.Key;
-import io.deephaven.api.agg.key.KeyAbsSum;
-import io.deephaven.api.agg.key.KeyAvg;
-import io.deephaven.api.agg.key.KeyFirst;
-import io.deephaven.api.agg.key.KeyGroup;
-import io.deephaven.api.agg.key.KeyLast;
-import io.deephaven.api.agg.key.KeyMax;
-import io.deephaven.api.agg.key.KeyMedian;
-import io.deephaven.api.agg.key.KeyMin;
-import io.deephaven.api.agg.key.KeyStd;
-import io.deephaven.api.agg.key.KeySum;
-import io.deephaven.api.agg.key.KeyVar;
-import io.deephaven.api.agg.key.KeyWAvg;
-import io.deephaven.api.agg.key.KeyWSum;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.base.Pair;
 import io.deephaven.base.StringUtils;
@@ -678,7 +665,7 @@ public interface TableWithDefaults extends Table {
     @Override
     @ConcurrentMethod
     default Table groupBy(Collection<? extends Selectable> groupByColumns) {
-        return aggAllBy(KeyGroup.of(), groupByColumns.toArray(Selectable[]::new));
+        return aggAllBy(Key.group(), groupByColumns.toArray(Selectable[]::new));
     }
 
     @Override
@@ -781,7 +768,7 @@ public interface TableWithDefaults extends Table {
     @Override
     @ConcurrentMethod
     default Table sumBy(Selectable... groupByColumns) {
-        return aggAllBy(KeySum.of(), groupByColumns);
+        return aggAllBy(Key.sum(), groupByColumns);
     }
 
     @Override
@@ -805,7 +792,7 @@ public interface TableWithDefaults extends Table {
     @Override
     @ConcurrentMethod
     default Table absSumBy(Selectable... groupByColumns) {
-        return aggAllBy(KeyAbsSum.of(), groupByColumns);
+        return aggAllBy(Key.absSum(), groupByColumns);
     }
 
     @Override
@@ -829,7 +816,7 @@ public interface TableWithDefaults extends Table {
     @Override
     @ConcurrentMethod
     default Table avgBy(Selectable... groupByColumns) {
-        return aggAllBy(KeyAvg.of(), groupByColumns);
+        return aggAllBy(Key.avg(), groupByColumns);
     }
 
     @Override
@@ -853,7 +840,7 @@ public interface TableWithDefaults extends Table {
     @Override
     @ConcurrentMethod
     default Table wavgBy(String weightColumn, Selectable... groupByColumns) {
-        return aggAllBy(KeyWAvg.of(ColumnName.of(weightColumn)), groupByColumns);
+        return aggAllBy(Key.wavg(weightColumn), groupByColumns);
     }
 
     @Override
@@ -877,7 +864,7 @@ public interface TableWithDefaults extends Table {
     @Override
     @ConcurrentMethod
     default Table wsumBy(String weightColumn, Selectable... groupByColumns) {
-        return aggAllBy(KeyWSum.of(ColumnName.of(weightColumn)), groupByColumns);
+        return aggAllBy(Key.wsum(weightColumn), groupByColumns);
     }
 
     @Override
@@ -901,7 +888,7 @@ public interface TableWithDefaults extends Table {
     @Override
     @ConcurrentMethod
     default Table stdBy(Selectable... groupByColumns) {
-        return aggAllBy(KeyStd.of(), groupByColumns);
+        return aggAllBy(Key.std(), groupByColumns);
     }
 
     @Override
@@ -925,7 +912,7 @@ public interface TableWithDefaults extends Table {
     @Override
     @ConcurrentMethod
     default Table varBy(Selectable... groupByColumns) {
-        return aggAllBy(KeyVar.of(), groupByColumns);
+        return aggAllBy(Key.var(), groupByColumns);
     }
 
     @Override
@@ -949,7 +936,7 @@ public interface TableWithDefaults extends Table {
     @Override
     @ConcurrentMethod
     default Table lastBy(Selectable... groupByColumns) {
-        return aggAllBy(KeyLast.of(), groupByColumns);
+        return aggAllBy(Key.last(), groupByColumns);
     }
 
     @Override
@@ -973,7 +960,7 @@ public interface TableWithDefaults extends Table {
     @Override
     @ConcurrentMethod
     default Table firstBy(Selectable... groupByColumns) {
-        return aggAllBy(KeyFirst.of(), groupByColumns);
+        return aggAllBy(Key.first(), groupByColumns);
     }
 
     @Override
@@ -997,7 +984,7 @@ public interface TableWithDefaults extends Table {
     @Override
     @ConcurrentMethod
     default Table minBy(Selectable... groupByColumns) {
-        return aggAllBy(KeyMin.of(), groupByColumns);
+        return aggAllBy(Key.min(), groupByColumns);
     }
 
     @Override
@@ -1021,7 +1008,7 @@ public interface TableWithDefaults extends Table {
     @Override
     @ConcurrentMethod
     default Table maxBy(Selectable... groupByColumns) {
-        return aggAllBy(KeyMax.of(), groupByColumns);
+        return aggAllBy(Key.max(), groupByColumns);
     }
 
     @Override
@@ -1045,7 +1032,7 @@ public interface TableWithDefaults extends Table {
     @Override
     @ConcurrentMethod
     default Table medianBy(Selectable... groupByColumns) {
-        return aggAllBy(KeyMedian.of(), groupByColumns);
+        return aggAllBy(Key.median(), groupByColumns);
     }
 
     @Override

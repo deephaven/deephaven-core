@@ -115,8 +115,8 @@ public abstract class TableVisitorGeneric implements TableSpec.Visitor {
     }
 
     @Override
-    public void visit(SingleAggregationTable singleAggregationTable) {
-        accept(singleAggregationTable);
+    public void visit(AggregateAllByTable aggAllByTable) {
+        accept(aggAllByTable);
     }
 
     @Override

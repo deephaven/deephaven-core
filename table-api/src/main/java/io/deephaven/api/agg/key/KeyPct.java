@@ -24,13 +24,6 @@ public abstract class KeyPct extends KeyBase {
         return false;
     }
 
-    public KeyPct withAverage() {
-        return ImmutableKeyPct.builder()
-                .percentile(percentile())
-                .averageMedian(true)
-                .build();
-    }
-
     @Override
     public final <V extends Visitor> V walk(V visitor) {
         visitor.visit(this);

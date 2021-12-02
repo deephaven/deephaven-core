@@ -8,16 +8,16 @@ public abstract class ByTableBase extends TableBase implements SingleParentTable
 
     public abstract TableSpec parent();
 
-    public abstract List<Selectable> columns();
+    public abstract List<Selectable> groupByColumns();
 
     interface Builder<BY extends ByTableBase, SELF extends Builder<BY, SELF>> {
         SELF parent(TableSpec parent);
 
-        SELF addColumns(Selectable element);
+        SELF addGroupByColumns(Selectable element);
 
-        SELF addColumns(Selectable... elements);
+        SELF addGroupByColumns(Selectable... elements);
 
-        SELF addAllColumns(Iterable<? extends Selectable> elements);
+        SELF addAllGroupByColumns(Iterable<? extends Selectable> elements);
 
         BY build();
     }

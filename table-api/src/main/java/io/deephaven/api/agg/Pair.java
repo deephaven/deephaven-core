@@ -5,7 +5,10 @@ import io.deephaven.api.ColumnName;
 import java.io.Serializable;
 
 /**
- * A pair represents an {@link #input() input} and an {@link #output() output} column for a {@link KeyedAggregation}.
+ * A column pair represents an {@link #input() input} and an {@link #output() output} column.
+ *
+ * @see KeyedAggregation
+ * @see KeyedAggregations
  */
 public interface Pair extends Serializable {
 

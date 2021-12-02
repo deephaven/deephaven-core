@@ -10,7 +10,6 @@ import io.deephaven.api.Selectable;
 import io.deephaven.api.SortColumn;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.key.Key;
-import io.deephaven.api.agg.key.KeyGroup;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.qst.TableCreationLogic;
 
@@ -24,7 +23,6 @@ public abstract class TableBase implements TableSpec {
     // Note: method implementations should use the static constructors, or builder patterns, for the
     // necessary TableSpec instead of delegating to other methods. The default values are the
     // responsibility of the TableSpec.
-
 
     @Override
     public final TableCreationLogic logic() {
@@ -404,40 +402,40 @@ public abstract class TableBase implements TableSpec {
     }
 
     @Override
-    public final SingleAggregationTable groupBy() {
-        return aggAllBy(KeyGroup.of());
+    public final AggregateAllByTable groupBy() {
+        return aggAllBy(Key.group());
     }
 
     @Override
-    public final SingleAggregationTable groupBy(String... groupByColumns) {
-        return aggAllBy(KeyGroup.of(), groupByColumns);
+    public final AggregateAllByTable groupBy(String... groupByColumns) {
+        return aggAllBy(Key.group(), groupByColumns);
     }
 
     @Override
-    public final SingleAggregationTable groupBy(Collection<? extends Selectable> groupByColumns) {
-        return aggAllBy(KeyGroup.of(), groupByColumns.toArray(new Selectable[0]));
+    public final AggregateAllByTable groupBy(Collection<? extends Selectable> groupByColumns) {
+        return aggAllBy(Key.group(), groupByColumns.toArray(new Selectable[0]));
     }
 
     @Override
-    public final SingleAggregationTable aggAllBy(Key key) {
-        return SingleAggregationTable.builder().parent(this).key(key).build();
+    public final AggregateAllByTable aggAllBy(Key key) {
+        return AggregateAllByTable.builder().parent(this).key(key).build();
     }
 
     @Override
-    public final SingleAggregationTable aggAllBy(Key key, String... groupByColumns) {
+    public final AggregateAllByTable aggAllBy(Key key, String... groupByColumns) {
         return aggAllBy(key, Arrays.asList(groupByColumns));
     }
 
     @Override
-    public final SingleAggregationTable aggAllBy(Key key, Selectable... groupByColumns) {
-        return SingleAggregationTable.builder().parent(this).key(key).addColumns(groupByColumns).build();
+    public final AggregateAllByTable aggAllBy(Key key, Selectable... groupByColumns) {
+        return AggregateAllByTable.builder().parent(this).key(key).addGroupByColumns(groupByColumns).build();
     }
 
     @Override
-    public final SingleAggregationTable aggAllBy(Key key, Collection<String> groupByColumns) {
-        SingleAggregationTable.Builder builder = SingleAggregationTable.builder().parent(this).key(key);
+    public final AggregateAllByTable aggAllBy(Key key, Collection<String> groupByColumns) {
+        AggregateAllByTable.Builder builder = AggregateAllByTable.builder().parent(this).key(key);
         for (String groupByColumn : groupByColumns) {
-            builder.addColumns(Selectable.parse(groupByColumn));
+            builder.addGroupByColumns(Selectable.parse(groupByColumn));
         }
         return builder.build();
     }
@@ -451,14 +449,14 @@ public abstract class TableBase implements TableSpec {
     public final AggregationTable aggBy(Aggregation aggregation, String... groupByColumns) {
         final AggregationTable.Builder builder = AggregationTable.builder().parent(this);
         for (String groupByColumn : groupByColumns) {
-            builder.addColumns(Selectable.parse(groupByColumn));
+            builder.addGroupByColumns(Selectable.parse(groupByColumn));
         }
         return builder.addAggregations(aggregation).build();
     }
 
     @Override
     public final AggregationTable aggBy(Aggregation aggregation, Collection<? extends Selectable> groupByColumns) {
-        return AggregationTable.builder().parent(this).addAllColumns(groupByColumns)
+        return AggregationTable.builder().parent(this).addAllGroupByColumns(groupByColumns)
                 .addAggregations(aggregation).build();
     }
 
@@ -471,7 +469,7 @@ public abstract class TableBase implements TableSpec {
     public final AggregationTable aggBy(Collection<? extends Aggregation> aggregations, String... groupByColumns) {
         final AggregationTable.Builder builder = AggregationTable.builder().parent(this);
         for (String groupByColumn : groupByColumns) {
-            builder.addColumns(Selectable.parse(groupByColumn));
+            builder.addGroupByColumns(Selectable.parse(groupByColumn));
         }
         return builder.addAllAggregations(aggregations).build();
     }
@@ -479,7 +477,7 @@ public abstract class TableBase implements TableSpec {
     @Override
     public final AggregationTable aggBy(Collection<? extends Aggregation> aggregations,
             Collection<? extends Selectable> groupByColumns) {
-        return AggregationTable.builder().parent(this).addAllColumns(groupByColumns)
+        return AggregationTable.builder().parent(this).addAllGroupByColumns(groupByColumns)
                 .addAllAggregations(aggregations).build();
     }
 

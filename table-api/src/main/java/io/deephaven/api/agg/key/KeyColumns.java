@@ -8,10 +8,10 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public final class KeyColumnReferences implements Key.Visitor {
+public class KeyColumns implements Key.Visitor {
 
     public static Set<ColumnName> of(Key key) {
-        return key.walk(new KeyColumnReferences()).out();
+        return key.walk(new KeyColumns()).out();
     }
 
     private Set<ColumnName> out;

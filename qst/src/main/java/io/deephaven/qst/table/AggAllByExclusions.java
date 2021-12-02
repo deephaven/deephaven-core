@@ -1,8 +1,9 @@
-package io.deephaven.engine.table.impl.by;
+package io.deephaven.qst.table;
 
 import io.deephaven.api.ColumnName;
-import io.deephaven.api.SortColumn;
+import io.deephaven.api.Selectable;
 import io.deephaven.api.agg.key.Key;
+import io.deephaven.api.agg.key.Key.Visitor;
 import io.deephaven.api.agg.key.KeyAbsSum;
 import io.deephaven.api.agg.key.KeyAvg;
 import io.deephaven.api.agg.key.KeyCountDistinct;
@@ -23,118 +24,123 @@ import io.deephaven.api.agg.key.KeyVar;
 import io.deephaven.api.agg.key.KeyWAvg;
 import io.deephaven.api.agg.key.KeyWSum;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
-import static io.deephaven.engine.table.impl.QueryTable.TRACKED_FIRST_BY;
-import static io.deephaven.engine.table.impl.QueryTable.TRACKED_LAST_BY;
+/**
+ * Computes the columns to exclude from aggregation output
+ */
+final class AggAllByExclusions implements Visitor {
 
-public class AggregationSpecAdapter implements Key.Visitor {
-
-    public static AggregationSpec of(Key key) {
-        return key.walk(new AggregationSpecAdapter()).out();
+    public static Set<ColumnName> of(Key key, Collection<? extends Selectable> groupByColumns) {
+        final Set<ColumnName> exclusions =
+                groupByColumns.stream().map(Selectable::newColumn).collect(Collectors.toSet());
+        final Set<ColumnName> otherExclusions = key.walk(new AggAllByExclusions()).out();
+        exclusions.addAll(otherExclusions);
+        return exclusions;
     }
 
-    private AggregationSpec out;
+    private Set<ColumnName> out;
 
-
-    public AggregationSpec out() {
+    public Set<ColumnName> out() {
         return Objects.requireNonNull(out);
     }
 
     @Override
     public void visit(KeyAbsSum absSum) {
-        out = new AbsSumSpec();
+        out = Collections.emptySet();
     }
 
     @Override
     public void visit(KeyCountDistinct countDistinct) {
-        out = new CountDistinctSpec(countDistinct.countNulls());
+        out = Collections.emptySet();
     }
 
     @Override
     public void visit(KeyDistinct distinct) {
-        out = new DistinctSpec(distinct.includeNulls());
+        out = Collections.emptySet();
     }
 
     @Override
     public void visit(KeyGroup group) {
-        out = new AggregationGroupSpec();
+        out = Collections.emptySet();
     }
 
     @Override
     public void visit(KeyAvg avg) {
-        out = new AvgSpec();
+        out = Collections.emptySet();
     }
 
     @Override
     public void visit(KeyFirst first) {
-        out = TRACKED_FIRST_BY ? new TrackingFirstBySpecImpl() : new FirstBySpecImpl();
+        out = Collections.emptySet();
     }
 
     @Override
     public void visit(KeyLast last) {
-        out = TRACKED_LAST_BY ? new TrackingLastBySpecImpl() : new LastBySpecImpl();
+        out = Collections.emptySet();
     }
 
     @Override
     public void visit(KeyMax max) {
-        out = new MinMaxBySpecImpl(false);
+        out = Collections.emptySet();
     }
 
     @Override
     public void visit(KeyMedian median) {
-        out = new PercentileBySpecImpl(0.50d, median.averageMedian());
+        out = Collections.emptySet();
     }
 
     @Override
     public void visit(KeyMin min) {
-        out = new MinMaxBySpecImpl(true);
+        out = Collections.emptySet();
     }
 
     @Override
     public void visit(KeyPct pct) {
-        out = new PercentileBySpecImpl(pct.percentile(), pct.averageMedian());
+        out = Collections.emptySet();
     }
 
     @Override
     public void visit(KeySortedFirst sortedFirst) {
-        out = new SortedFirstBy(
-                sortedFirst.columns().stream().map(SortColumn::column).map(ColumnName::name).toArray(String[]::new));
+        out = Collections.emptySet();
     }
 
     @Override
     public void visit(KeySortedLast sortedLast) {
-        out = new SortedLastBy(
-                sortedLast.columns().stream().map(SortColumn::column).map(ColumnName::name).toArray(String[]::new));
+        out = Collections.emptySet();
     }
 
     @Override
     public void visit(KeyStd std) {
-        out = new StdSpec();
+        out = Collections.emptySet();
     }
 
     @Override
     public void visit(KeySum sum) {
-        out = new SumSpec();
+        out = Collections.emptySet();
     }
 
     @Override
     public void visit(KeyUnique unique) {
-        out = new UniqueSpec(unique.includeNulls());
+        out = Collections.emptySet();
     }
 
     @Override
     public void visit(KeyWAvg wAvg) {
-        out = new WeightedAverageSpecImpl(wAvg.weight().name());
+        out = Collections.singleton(wAvg.weight());
     }
 
     @Override
     public void visit(KeyWSum wSum) {
-        out = new WeightedSumSpecImpl(wSum.weight().name());
+        out = Collections.singleton(wSum.weight());
     }
 
     @Override
     public void visit(KeyVar var) {
-        out = new VarSpec();
+        out = Collections.emptySet();
     }
 }

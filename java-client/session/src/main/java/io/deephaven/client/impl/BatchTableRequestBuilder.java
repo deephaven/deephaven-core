@@ -84,6 +84,7 @@ import io.deephaven.proto.backplane.grpc.TableReference;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.proto.backplane.grpc.TimeTableRequest;
 import io.deephaven.proto.backplane.grpc.UnstructuredFilterTableRequest;
+import io.deephaven.qst.table.AggregateAllByTable;
 import io.deephaven.qst.table.AggregationTable;
 import io.deephaven.qst.table.AsOfJoinTable;
 import io.deephaven.qst.table.ByTableBase;
@@ -101,7 +102,6 @@ import io.deephaven.qst.table.NewTable;
 import io.deephaven.qst.table.ReverseAsOfJoinTable;
 import io.deephaven.qst.table.ReverseTable;
 import io.deephaven.qst.table.SelectTable;
-import io.deephaven.qst.table.SingleAggregationTable;
 import io.deephaven.qst.table.SingleParentTable;
 import io.deephaven.qst.table.SnapshotTable;
 import io.deephaven.qst.table.SortTable;
@@ -418,13 +418,13 @@ class BatchTableRequestBuilder {
         }
 
         @Override
-        public void visit(SingleAggregationTable singleAggregationTable) {
-            out = op(Builder::setComboAggregate, singleAgg(singleAggregationTable));
+        public void visit(AggregateAllByTable aggAllByTable) {
+            out = op(Builder::setComboAggregate, aggAllBy(aggAllByTable));
         }
 
         @Override
         public void visit(AggregationTable aggregationTable) {
-            out = op(Builder::setComboAggregate, agg(aggregationTable));
+            out = op(Builder::setComboAggregate, aggBy(aggregationTable));
         }
 
         @Override
@@ -476,14 +476,14 @@ class BatchTableRequestBuilder {
             return builder.build();
         }
 
-        private ComboAggregateRequest singleAgg(SingleAggregationTable agg) {
+        private ComboAggregateRequest aggAllBy(AggregateAllByTable agg) {
             // A single aggregate without any input/output is how the protocol knows this is an "aggregate all by"
             // as opposed to an AggregationTable with one agg.
             final Aggregate aggregate = agg.key().walk(new AggregateAdapter(Collections.emptyList())).out();
             return groupByColumns(agg).addAggregates(aggregate).build();
         }
 
-        private ComboAggregateRequest agg(AggregationTable agg) {
+        private ComboAggregateRequest aggBy(AggregationTable agg) {
             ComboAggregateRequest.Builder builder = groupByColumns(agg);
             for (Aggregation aggregation : agg.aggregations()) {
                 builder.addAggregates(AggregationAdapter.of(aggregation));
@@ -495,7 +495,7 @@ class BatchTableRequestBuilder {
             ComboAggregateRequest.Builder builder = ComboAggregateRequest.newBuilder()
                     .setResultId(ticket)
                     .setSourceId(ref(base.parent()));
-            for (Selectable column : base.columns()) {
+            for (Selectable column : base.groupByColumns()) {
                 builder.addGroupByColumns(Strings.of(column));
             }
             return builder;

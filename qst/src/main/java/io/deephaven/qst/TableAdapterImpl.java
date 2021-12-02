@@ -1,32 +1,14 @@
 package io.deephaven.qst;
 
+import io.deephaven.api.Selectable;
 import io.deephaven.api.TableOperations;
 import io.deephaven.api.agg.key.Key;
-import io.deephaven.api.agg.key.KeyAbsSum;
-import io.deephaven.api.agg.key.KeyAvg;
-import io.deephaven.api.agg.key.KeyCountDistinct;
-import io.deephaven.api.agg.key.KeyDistinct;
-import io.deephaven.api.agg.key.KeyFirst;
-import io.deephaven.api.agg.key.KeyGroup;
-import io.deephaven.api.agg.key.KeyLast;
-import io.deephaven.api.agg.key.KeyMax;
-import io.deephaven.api.agg.key.KeyMedian;
-import io.deephaven.api.agg.key.KeyMin;
-import io.deephaven.api.agg.key.KeyPct;
-import io.deephaven.api.agg.key.KeySortedFirst;
-import io.deephaven.api.agg.key.KeySortedLast;
-import io.deephaven.api.agg.key.KeyStd;
-import io.deephaven.api.agg.key.KeySum;
-import io.deephaven.api.agg.key.KeyUnique;
-import io.deephaven.api.agg.key.KeyVar;
-import io.deephaven.api.agg.key.KeyWAvg;
-import io.deephaven.api.agg.key.KeyWSum;
 import io.deephaven.qst.TableAdapterResults.Output;
+import io.deephaven.qst.table.AggregateAllByTable;
 import io.deephaven.qst.table.AggregationTable;
 import io.deephaven.qst.table.AsOfJoinTable;
 import io.deephaven.qst.table.EmptyTable;
 import io.deephaven.qst.table.ExactJoinTable;
-import io.deephaven.qst.table.SingleAggregationTable;
 import io.deephaven.qst.table.HeadTable;
 import io.deephaven.qst.table.InputTable;
 import io.deephaven.qst.table.JoinTable;
@@ -255,110 +237,16 @@ class TableAdapterImpl<TOPS extends TableOperations<TOPS, TABLE>, TABLE> impleme
     }
 
     @Override
-    public void visit(SingleAggregationTable singleAggregationTable) {
-        singleAggregationTable.key().walk(new Key.Visitor() {
-            @Override
-            public void visit(KeyAbsSum absSum) {
-                throw new UnsupportedOperationException("TODO(deephaven-core#1617): TableAPI: Aggregation coverage");
-            }
-
-            @Override
-            public void visit(KeyCountDistinct countDistinct) {
-                throw new UnsupportedOperationException("TODO(deephaven-core#1617): TableAPI: Aggregation coverage");
-            }
-
-            @Override
-            public void visit(KeyDistinct distinct) {
-                throw new UnsupportedOperationException("TODO(deephaven-core#1617): TableAPI: Aggregation coverage");
-            }
-
-            @Override
-            public void visit(KeyGroup group) {
-                addOp(singleAggregationTable,
-                        parentOps(singleAggregationTable).groupBy(singleAggregationTable.columns()));
-            }
-
-            @Override
-            public void visit(KeyAvg avg) {
-                throw new UnsupportedOperationException("TODO(deephaven-core#1617): TableAPI: Aggregation coverage");
-            }
-
-            @Override
-            public void visit(KeyFirst first) {
-                throw new UnsupportedOperationException("TODO(deephaven-core#1617): TableAPI: Aggregation coverage");
-            }
-
-            @Override
-            public void visit(KeyLast last) {
-                throw new UnsupportedOperationException("TODO(deephaven-core#1617): TableAPI: Aggregation coverage");
-            }
-
-            @Override
-            public void visit(KeyMax max) {
-                throw new UnsupportedOperationException("TODO(deephaven-core#1617): TableAPI: Aggregation coverage");
-            }
-
-            @Override
-            public void visit(KeyMedian median) {
-                throw new UnsupportedOperationException("TODO(deephaven-core#1617): TableAPI: Aggregation coverage");
-            }
-
-            @Override
-            public void visit(KeyMin min) {
-                throw new UnsupportedOperationException("TODO(deephaven-core#1617): TableAPI: Aggregation coverage");
-            }
-
-            @Override
-            public void visit(KeyPct pct) {
-                throw new UnsupportedOperationException("TODO(deephaven-core#1617): TableAPI: Aggregation coverage");
-            }
-
-            @Override
-            public void visit(KeySortedFirst sortedFirst) {
-                throw new UnsupportedOperationException("TODO(deephaven-core#1617): TableAPI: Aggregation coverage");
-            }
-
-            @Override
-            public void visit(KeySortedLast sortedLast) {
-                throw new UnsupportedOperationException("TODO(deephaven-core#1617): TableAPI: Aggregation coverage");
-            }
-
-            @Override
-            public void visit(KeyStd std) {
-                throw new UnsupportedOperationException("TODO(deephaven-core#1617): TableAPI: Aggregation coverage");
-            }
-
-            @Override
-            public void visit(KeySum sum) {
-                throw new UnsupportedOperationException("TODO(deephaven-core#1617): TableAPI: Aggregation coverage");
-            }
-
-            @Override
-            public void visit(KeyUnique unique) {
-                throw new UnsupportedOperationException("TODO(deephaven-core#1617): TableAPI: Aggregation coverage");
-            }
-
-            @Override
-            public void visit(KeyWAvg wAvg) {
-                throw new UnsupportedOperationException("TODO(deephaven-core#1617): TableAPI: Aggregation coverage");
-            }
-
-            @Override
-            public void visit(KeyWSum wSum) {
-                throw new UnsupportedOperationException("TODO(deephaven-core#1617): TableAPI: Aggregation coverage");
-            }
-
-            @Override
-            public void visit(KeyVar var) {
-                throw new UnsupportedOperationException("TODO(deephaven-core#1617): TableAPI: Aggregation coverage");
-            }
-        });
+    public void visit(AggregateAllByTable aggAllByTable) {
+        final Key key = aggAllByTable.key();
+        final Selectable[] groupByColumns = aggAllByTable.groupByColumns().toArray(new Selectable[0]);
+        addOp(aggAllByTable, parentOps(aggAllByTable).aggAllBy(key, groupByColumns));
     }
 
     @Override
     public void visit(AggregationTable aggregationTable) {
         addOp(aggregationTable,
-                parentOps(aggregationTable).aggBy(aggregationTable.aggregations(), aggregationTable.columns()));
+                parentOps(aggregationTable).aggBy(aggregationTable.aggregations(), aggregationTable.groupByColumns()));
     }
 
     @Override
