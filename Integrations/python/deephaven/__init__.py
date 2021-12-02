@@ -58,7 +58,9 @@ __all__ = [
     'Aggregation', 'ColumnRenderersBuilder', 'DistinctFormatter', 'DownsampledWhereFilter', 'DynamicTableWriter',
     'LayoutHintBuilder', 'Replayer', 'SmartKey', 'SortColumn', 'TotalsTableBuilder', 'WindowCheck',  # from TableManipulation
 
-    "cals", "af", "dtu", "figw", "mavg", "plt", "pt", "ttools", "tloggers"  # subpackages with abbreviated names
+    "cals", "af", "dtu", "figw", "mavg", "plt", "pt", "ttools", "tloggers",  # subpackages with abbreviated names
+
+    "read_csv", "write_csv" # from csv
 ]
 
 
@@ -92,6 +94,9 @@ from . import Calendars as cals, \
 
 from .Plot import figure_wrapper as figw
 
+from .csv import read as read_csv
+from .csv import write as write_csv
+
 
 # NB: this must be defined BEFORE importing .jvm_init or .start_jvm (circular import)
 def initialize():
@@ -113,6 +118,7 @@ def initialize():
     pt._defineSymbols()
     ttools._defineSymbols()
     tloggers._defineSymbols()
+    csv._defineSymbols()
 
     import deephaven.TableManipulation
     deephaven.TableManipulation._defineSymbols()
