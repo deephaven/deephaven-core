@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.db.v2.by.IterativeOperatorStateFactory",
- "methods": {
-  "getChunkedOperator": ":param type: java.lang.Class\n:param name: java.lang.String\n:param exposeInternalColumns: boolean\n:return: io.deephaven.db.v2.by.IterativeChunkedAggregationOperator"
- },
- "path": "io.deephaven.db.v2.by.IterativeOperatorStateFactory",
- "text": "Creates iterative operators for the supplied type.",
- "typeName": "class"
-}

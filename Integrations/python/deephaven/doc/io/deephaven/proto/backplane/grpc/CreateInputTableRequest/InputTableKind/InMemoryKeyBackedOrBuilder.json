@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.proto.backplane.grpc.CreateInputTableRequest$InputTableKind$InMemoryKeyBackedOrBuilder",
+ "methods": {
+  "getKeyColumns": "repeated string key_columns = 1;\n\n:param index: (int) - The index of the element to return.\n:return: (java.lang.String) The keyColumns at the given index.",
+  "getKeyColumnsBytes": "repeated string key_columns = 1;\n\n:param index: (int) - The index of the value to return.\n:return: (com.google.protobuf.ByteString) The bytes of the keyColumns at the given index.",
+  "getKeyColumnsCount": "repeated string key_columns = 1;\n\n:return: (int) The count of keyColumns.",
+  "getKeyColumnsList": "repeated string key_columns = 1;\n\n:return: (java.util.List<java.lang.String>) A list containing the keyColumns."
+ },
+ "path": "io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryKeyBackedOrBuilder",
+ "typeName": "interface"
+}

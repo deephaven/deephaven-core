@@ -23,15 +23,21 @@ import io.deephaven.javascript.proto.dhinternal.flatbuffers.Builder;
 import io.deephaven.javascript.proto.dhinternal.flatbuffers.Long;
 import io.deephaven.javascript.proto.dhinternal.grpcweb.Grpc;
 import io.deephaven.javascript.proto.dhinternal.grpcweb.grpc.Code;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.*;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageMessageType;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageMessageWrapper;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageSubscriptionOptions;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageSubscriptionRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.BarrageUpdateMetadata;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.barrage.flatbuf.barrage_generated.io.deephaven.barrage.flatbuf.ColumnConversionMode;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.application_pb.FieldInfo;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.application_pb.FieldsChangeUpdate;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.application_pb.ListFieldsRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.application_pb_service.ApplicationServiceClient;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.FetchFigureRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.LogSubscriptionData;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.LogSubscriptionRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb_service.ConsoleServiceClient;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.application_pb.FieldInfo;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.application_pb.FieldsChangeUpdate;
-import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.application_pb.ListFieldsRequest;
+import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.inputtable_pb_service.InputTableServiceClient;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.HandshakeRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.HandshakeResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.session_pb.ReleaseRequest;
@@ -50,13 +56,16 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb.Time
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.table_pb_service.TableServiceClient;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Ticket;
 import io.deephaven.web.client.api.barrage.BarrageUtils;
+import io.deephaven.web.client.api.barrage.def.InitialTableDefinition;
 import io.deephaven.web.client.api.barrage.stream.BiDiStream;
+import io.deephaven.web.client.api.barrage.stream.ResponseStreamWrapper;
 import io.deephaven.web.client.api.batch.RequestBatcher;
 import io.deephaven.web.client.api.batch.TableConfig;
 import io.deephaven.web.client.api.console.JsVariableChanges;
 import io.deephaven.web.client.api.console.JsVariableDefinition;
-import io.deephaven.web.client.api.csv.CsvTypeParser;
+import io.deephaven.web.client.api.i18n.JsTimeZone;
 import io.deephaven.web.client.api.lifecycle.HasLifecycle;
+import io.deephaven.web.client.api.parse.JsDataHandler;
 import io.deephaven.web.client.api.state.StateCache;
 import io.deephaven.web.client.api.tree.JsTreeTable;
 import io.deephaven.web.client.api.widget.plot.JsFigure;
@@ -66,13 +75,7 @@ import io.deephaven.web.client.fu.LazyPromise;
 import io.deephaven.web.client.state.ClientTableState;
 import io.deephaven.web.client.state.HasTableBinding;
 import io.deephaven.web.client.state.TableReviver;
-import io.deephaven.web.shared.data.ConnectToken;
-import io.deephaven.web.shared.data.DeltaUpdates;
-import io.deephaven.web.shared.data.InitialTableDefinition;
-import io.deephaven.web.shared.data.LogItem;
-import io.deephaven.web.shared.data.TableMapHandle;
-import io.deephaven.web.shared.data.TableSnapshot;
-import io.deephaven.web.shared.data.TableSubscriptionRequest;
+import io.deephaven.web.shared.data.*;
 import io.deephaven.web.shared.fu.JsConsumer;
 import io.deephaven.web.shared.fu.JsRunnable;
 import io.deephaven.web.shared.ide.VariableType;
@@ -84,9 +87,15 @@ import jsinterop.base.JsPropertyMap;
 import javax.annotation.Nullable;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.BitSet;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.*;
+import java.util.Optional;
+import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -161,6 +170,7 @@ public class WorkerConnection {
     private ApplicationServiceClient applicationServiceClient;
     private FlightServiceClient flightServiceClient;
     private BrowserFlightServiceClient browserFlightServiceClient;
+    private InputTableServiceClient inputTableServiceClient;
 
     private final StateCache cache = new StateCache();
     private final JsWeakMap<HasTableBinding, RequestBatcher> batchers = new JsWeakMap<>();
@@ -201,6 +211,8 @@ public class WorkerConnection {
                 new ApplicationServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", debugGrpc));
         browserFlightServiceClient =
                 new BrowserFlightServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", debugGrpc));
+        inputTableServiceClient =
+                new InputTableServiceClient(info.getServerUrl(), JsPropertyMap.of("debug", debugGrpc));
 
         // builder.setConnectionErrorHandler(msg -> info.failureHandled(String.valueOf(msg)));
 
@@ -837,6 +849,10 @@ public class WorkerConnection {
         return flightServiceClient;
     }
 
+    public InputTableServiceClient inputTableServiceClient() {
+        return inputTableServiceClient;
+    }
+
     public BrowserHeaders metadata() {
         return metadata;
     }
@@ -845,13 +861,13 @@ public class WorkerConnection {
         return new BiDiStream.Factory<>(this::metadata, config::newTicketInt, useWebsockets);
     }
 
-    public Promise<JsTable> newTable(String[] columnNames, String[] types, String[][] data, String userTimeZone,
+    public Promise<JsTable> newTable(String[] columnNames, String[] types, Object[][] data, String userTimeZone,
             HasEventHandling failHandler) {
         // Store the ref to the data using an array we can clear out, so the data is garbage collected later
         // This means the table can only be created once, but that's probably what we want in this case anyway
-        final String[][][] dataRef = new String[][][] {data};
+        final Object[][][] dataRef = new Object[][][] {data};
         return newState(failHandler, (c, cts, metadata) -> {
-            final String[][] d = dataRef[0];
+            final Object[][] d = dataRef[0];
             if (d == null) {
                 c.apply("Data already released, cannot re-create table", null);
                 return;
@@ -862,14 +878,14 @@ public class WorkerConnection {
             Builder schema = new Builder(1024);
 
             // while we're examining columns, build the copiers for data
-            List<CsvTypeParser.CsvColumn> columns = new ArrayList<>();
+            List<JsDataHandler> columns = new ArrayList<>();
 
             double[] fields = new double[columnNames.length];
             for (int i = 0; i < columnNames.length; i++) {
                 String columnName = columnNames[i];
                 String columnType = types[i];
 
-                CsvTypeParser.CsvColumn writer = CsvTypeParser.getColumn(columnType);
+                JsDataHandler writer = JsDataHandler.getHandler(columnType);
                 columns.add(writer);
 
                 double nameOffset = schema.createString(columnName);
@@ -935,9 +951,13 @@ public class WorkerConnection {
 
             // iterate each column, building buffers and fieldnodes, as well as building the actual payload
             List<Uint8Array> buffers = new ArrayList<>();
-            List<CsvTypeParser.Node> nodes = new ArrayList<>();
+            List<JsDataHandler.Node> nodes = new ArrayList<>();
+            JsDataHandler.ParseContext context = new JsDataHandler.ParseContext();
+            if (userTimeZone != null) {
+                context.timeZone = JsTimeZone.getTimeZone(userTimeZone);
+            }
             for (int i = 0; i < data.length; i++) {
-                columns.get(i).writeColumn(data[i], nodes::add, buffers::add);
+                columns.get(i).write(data[i], context, nodes::add, buffers::add);
             }
 
             // write down the buffers for the RecordBatch
@@ -958,7 +978,7 @@ public class WorkerConnection {
 
             RecordBatch.startNodesVector(bodyData, nodes.size());
             for (int i = nodes.size() - 1; i >= 0; i--) {
-                CsvTypeParser.Node node = nodes.get(i);
+                JsDataHandler.Node node = nodes.get(i);
                 FieldNode.createFieldNode(bodyData, Long.create(node.length(), 0), Long.create(node.nullCount(), 0));
             }
             double nodesOffset = bodyData.endVector();

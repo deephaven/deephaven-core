@@ -29,7 +29,7 @@ def ct_distributor(cnt):
 
 def ticking_crypto_milliseconds(interval: int):
     from deephaven.TableTools import timeTable
-    from deephaven.DBTimeUtils import currentTime, minus
+    from deephaven.DateTimeUtils import currentTime, minus
     t = timeTable(minus(currentTime(), 1800000000000), '00:00:00.' + str(interval * 1000).zfill(6)).update(
         'Id=(int)random.randint(12000000,1100000000)', 'B=random.randint(0,1)', 'C=random.randint(0,50)',
         'D= ((int) (random.randint(0,100))/100.0 - 0.5) * 20000.0', 'Instrument=ct_symbols[((int)ct_distributor(ct_x))-1]',
@@ -37,5 +37,5 @@ def ticking_crypto_milliseconds(interval: int):
         'Price=(double)ct_pricer(Instrument, D)', 'Exchange = ct_exchanges[(int)C%ct_y]',
         'Date = formatDate(Timestamp, TZ_NY)') \
         .dropColumns('B', 'C', 'D') \
-        .moveUpColumns('Date', 'Timestamp', 'Id', 'Instrument', 'Exchange', 'Price', 'Size')
+        .moveColumnsUp('Date', 'Timestamp', 'Id', 'Instrument', 'Exchange', 'Price', 'Size')
     return t

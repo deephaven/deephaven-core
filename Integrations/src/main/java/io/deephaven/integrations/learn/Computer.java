@@ -1,8 +1,8 @@
 package io.deephaven.integrations.learn;
 
 import io.deephaven.base.verify.Require;
-import io.deephaven.db.tables.Table;
-import io.deephaven.db.v2.sources.ColumnSource;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.integrations.python.PythonFunctionCaller;
 import org.jpy.PyObject;
 

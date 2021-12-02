@@ -1,0 +1,13 @@
+{
+ "className": "io.deephaven.engine.rowset.impl.RangePriorityQueueBuilder",
+ "methods": {
+  "addKey": ":param key: long",
+  "addRange": ":param firstKey: long\n:param lastKey: long",
+  "getTreeIndexImpl": ":return: io.deephaven.engine.rowset.impl.OrderedLongSet",
+  "getTreeIndexImplAndReset": ":return: io.deephaven.engine.rowset.impl.OrderedLongSet",
+  "size": "Returns our internal queue size. This is not necessarily the size of the resulting RowSet.\n\n:return: int"
+ },
+ "path": "io.deephaven.engine.rowset.impl.RangePriorityQueueBuilder",
+ "text": "A BuilderRandom type that uses a priority queue of ranges.\n\n Each range entered into the RowSet is stored in a priority queue, backed by two long arrays. One array contains the\n start elements, the second array contains the end elements. The priority function is the start element.\n\n We may have many overlapping ranges in the priority queue; as an optimization, if two adjacent ranges are entered\n into the queue consecutively, the range is not stored in the queue more than once.",
+ "typeName": "class"
+}

@@ -3,8 +3,9 @@ package io.deephaven.grpc_api.runner;
 import dagger.Module;
 import dagger.Provides;
 import dagger.multibindings.ElementsIntoSet;
-import io.deephaven.db.tables.live.LiveTableMonitor;
-import io.deephaven.db.v2.sources.chunk.util.pools.MultiChunkPool;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.chunk.util.pools.MultiChunkPool;
+import io.deephaven.grpc_api.appmode.AppMode;
 import io.deephaven.grpc_api.appmode.AppModeModule;
 import io.deephaven.grpc_api.arrow.ArrowModule;
 import io.deephaven.grpc_api.auth.AuthContextModule;
@@ -85,6 +86,12 @@ public class DeephavenApiServerModule {
 
     @Provides
     @Singleton
+    public static AppMode provideAppMode() {
+        return AppMode.currentMode();
+    }
+
+    @Provides
+    @Singleton
     public static Scheduler provideScheduler(final @Named("scheduler.poolSize") int poolSize) {
         final ThreadFactory concurrentThreadFactory = new ThreadFactory("Scheduler-Concurrent");
         final ScheduledExecutorService concurrentExecutor =
@@ -133,8 +140,8 @@ public class DeephavenApiServerModule {
 
     @Provides
     @Singleton
-    public static LiveTableMonitor provideLiveTableMonitor() {
-        return LiveTableMonitor.DEFAULT;
+    public static UpdateGraphProcessor provideUpdateGraphProcessor() {
+        return UpdateGraphProcessor.DEFAULT;
     }
 
     private static class ThreadFactory extends NamingThreadFactory {

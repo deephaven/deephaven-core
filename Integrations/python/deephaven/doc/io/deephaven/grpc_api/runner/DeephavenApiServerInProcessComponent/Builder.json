@@ -2,7 +2,6 @@
  "className": "io.deephaven.grpc_api.runner.DeephavenApiServerInProcessComponent$Builder",
  "methods": {
   "build": ":return: io.deephaven.grpc_api.runner.DeephavenApiServerInProcessComponent",
-  "withAppMode": ":param appMode: io.deephaven.grpc_api.appmode.AppMode\n:return: io.deephaven.grpc_api.runner.DeephavenApiServerInProcessComponent.Builder",
   "withErr": ":param err: java.io.PrintStream\n:return: io.deephaven.grpc_api.runner.DeephavenApiServerInProcessComponent.Builder",
   "withOut": ":param out: java.io.PrintStream\n:return: io.deephaven.grpc_api.runner.DeephavenApiServerInProcessComponent.Builder",
   "withSchedulerPoolSize": ":param numThreads: int\n:return: io.deephaven.grpc_api.runner.DeephavenApiServerInProcessComponent.Builder",

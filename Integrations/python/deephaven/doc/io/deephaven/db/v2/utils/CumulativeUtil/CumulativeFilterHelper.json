@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.db.v2.utils.CumulativeUtil$CumulativeFilterHelper",
- "methods": {
-  "shouldKeep": ":param key: java.lang.Object\n:param val: double\n:return: boolean"
- },
- "path": "io.deephaven.db.v2.utils.CumulativeUtil.CumulativeFilterHelper",
- "text": "Provides a helper class with a map to cache previous row values when performing filtering of data whose values\n change from row to row.",
- "typeName": "class"
-}

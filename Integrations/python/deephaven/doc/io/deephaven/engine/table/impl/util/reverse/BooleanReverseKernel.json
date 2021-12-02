@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.engine.table.impl.util.reverse.BooleanReverseKernel",
+ "methods": {
+  "reverse": "Note: Java generics information - <T extends io.deephaven.chunk.attributes.Any>\n\n:param chunkToReverse: io.deephaven.chunk.WritableBooleanChunk<T>"
+ },
+ "path": "io.deephaven.engine.table.impl.util.reverse.BooleanReverseKernel",
+ "typeName": "class"
+}

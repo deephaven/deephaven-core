@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.db.v2.sources.StringSetImpl$ReversibleLookup",
- "methods": {
-  "get": "Forward lookup from the integral index.\n\n:param index: long\n:return: (StringSetImpl.ReversibleLookup.DATA_TYPE) the DATA_TYPE associated with the index.",
-  "rget": "Reverse lookup of the DATA_TYPE.\n\n:param highestIndex: int\n:param value: StringSetImpl.ReversibleLookup.DATA_TYPE\n:return: (int) the integral index associated with the DATA_TYPE."
- },
- "path": "io.deephaven.db.v2.sources.StringSetImpl.ReversibleLookup",
- "typeName": "interface"
-}

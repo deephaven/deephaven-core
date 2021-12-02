@@ -1,11 +1,12 @@
 package io.deephaven.treetable;
 
-import io.deephaven.db.tables.Table;
-import io.deephaven.db.tables.libs.QueryLibrary;
-import io.deephaven.db.tables.utils.TableTools;
-import io.deephaven.db.v2.BaseTable;
-import io.deephaven.db.v2.HierarchicalTable;
-import io.deephaven.db.v2.QueryTableTestBase;
+import io.deephaven.csv.CsvTools;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.lang.QueryLibrary;
+import io.deephaven.engine.util.TableTools;
+import io.deephaven.engine.table.impl.BaseTable;
+import io.deephaven.engine.table.impl.HierarchicalTable;
+import io.deephaven.engine.table.impl.QueryTableTestBase;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -15,15 +16,13 @@ import java.util.HashSet;
 import java.util.Map;
 
 import static io.deephaven.treetable.TreeTableConstants.ROOT_TABLE_KEY;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 
 public class SnapshotStateTest extends QueryTableTestBase {
     private static Table getRawNyMunis() throws IOException {
         QueryLibrary.importStatic(TreeSnapshotQueryTest.StaticHolder.class);
 
         final BaseTable base =
-                (BaseTable) TableTools.readCsv(TreeSnapshotQueryTest.class.getResourceAsStream("nymunis.csv"));
+                (BaseTable) CsvTools.readCsv(TreeSnapshotQueryTest.class.getResourceAsStream("nymunis.csv"));
         base.setRefreshing(true);
         return base.update("Path=(List<String>)removeEmpty(County_Name, City_Name, Town_Name, Village_Name)")
                 .update("Direct = Path.size() == 1 ? null : new ArrayList(Path.subList(0, Path.size() - 1))")

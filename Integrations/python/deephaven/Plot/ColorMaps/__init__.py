@@ -34,7 +34,7 @@ def _defineSymbols():
     global _java_type_
     if _java_type_ is None:
         # This will raise an exception if the desired object is not the classpath
-        _java_type_ = jpy.get_type("io.deephaven.db.plot.colors.ColorMaps")
+        _java_type_ = jpy.get_type("io.deephaven.plot.colors.ColorMaps")
 
 
 # every module method should be decorated with @_passThrough
@@ -109,14 +109,14 @@ def predicateMap(*args):
     *Overload 1*  
       Note: Java generics information - <COLOR extends io.deephaven.gui.color.Paint>
       
-      :param map: (java.util.Map<io.deephaven.db.plot.colors.ColorMaps.SerializablePredicate<java.lang.Double>,COLOR>) - map from ColorMaps.SerializablePredicate to color
+      :param map: (java.util.Map<io.deephaven.plot.colors.ColorMaps.SerializablePredicate<java.lang.Double>,COLOR>) - map from ColorMaps.SerializablePredicate to color
       :return: (java.util.function.Function<java.lang.Double,io.deephaven.gui.color.Paint>) function which returns the color mapped to the first ColorMaps.SerializablePredicate for which the input is
                true. Out of range, null, and NaN values return null.
       
     *Overload 2*  
       Note: Java generics information - <COLOR extends io.deephaven.gui.color.Paint>
       
-      :param map: (java.util.Map<io.deephaven.db.plot.colors.ColorMaps.SerializablePredicate<java.lang.Double>,COLOR>) - map from ColorMaps.SerializablePredicate to color
+      :param map: (java.util.Map<io.deephaven.plot.colors.ColorMaps.SerializablePredicate<java.lang.Double>,COLOR>) - map from ColorMaps.SerializablePredicate to color
       :param outOfRangeColor: (io.deephaven.gui.color.Color) - color returned when the input satisfies no ColorMaps.SerializablePredicate in the
               map
       :return: (java.util.function.Function<java.lang.Double,io.deephaven.gui.color.Paint>) function which returns the color mapped to the first ColorMaps.SerializablePredicate for which the input is
@@ -125,7 +125,7 @@ def predicateMap(*args):
     *Overload 3*  
       Note: Java generics information - <COLOR extends io.deephaven.gui.color.Paint>
       
-      :param map: (java.util.Map<io.deephaven.db.plot.colors.ColorMaps.SerializablePredicate<java.lang.Double>,COLOR>) - map from ColorMaps.SerializablePredicate to color
+      :param map: (java.util.Map<io.deephaven.plot.colors.ColorMaps.SerializablePredicate<java.lang.Double>,COLOR>) - map from ColorMaps.SerializablePredicate to color
       :param outOfRangeColor: (io.deephaven.gui.color.Paint) - color returned when the input satisfies no ColorMaps.SerializablePredicate in the
               map
       :param nullColor: (io.deephaven.gui.color.Paint) - color returned when the input is null or Double.NaN
@@ -147,20 +147,20 @@ def rangeMap(*args):
     *Overload 1*  
       Note: Java generics information - <COLOR extends io.deephaven.gui.color.Paint>
       
-      :param map: (java.util.Map<io.deephaven.numerics.util.Range,COLOR>) - map of Ranges to Paints.
+      :param map: (java.util.Map<io.deephaven.plot.util.Range,COLOR>) - map of Ranges to Paints.
       :return: (java.util.function.Function<java.lang.Double,io.deephaven.gui.color.Paint>) function for mapping double values to colors. Null and out of range values return null.
       
     *Overload 2*  
       Note: Java generics information - <COLOR extends io.deephaven.gui.color.Paint>
       
-      :param map: (java.util.Map<io.deephaven.numerics.util.Range,COLOR>) - map of Ranges to Paints.
+      :param map: (java.util.Map<io.deephaven.plot.util.Range,COLOR>) - map of Ranges to Paints.
       :param outOfRangeColor: (io.deephaven.gui.color.Color) - color for values not within any of the defined ranges
       :return: (java.util.function.Function<java.lang.Double,io.deephaven.gui.color.Paint>) function for mapping double values to colors. Null values return null.
       
     *Overload 3*  
       Note: Java generics information - <COLOR extends io.deephaven.gui.color.Paint>
       
-      :param map: (java.util.Map<io.deephaven.numerics.util.Range,COLOR>) - map of Ranges to Paints.
+      :param map: (java.util.Map<io.deephaven.plot.util.Range,COLOR>) - map of Ranges to Paints.
       :param outOfRangeColor: (io.deephaven.gui.color.Paint) - color for values not within any of the defined ranges
       :param nullColor: (io.deephaven.gui.color.Paint) - color for null values
       :return: (java.util.function.Function<java.lang.Double,io.deephaven.gui.color.Paint>) function for mapping double values to colors

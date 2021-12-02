@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.db.v2.sources.regioned.RegionedTableComponentFactory",
- "methods": {
-  "createRegionedColumnSource": "Note: Java generics information - <DATA_TYPE>\n\n:param columnDefinition: io.deephaven.db.tables.ColumnDefinition<DATA_TYPE>\n:param codecMappings: io.deephaven.db.v2.ColumnToCodecMappings\n:return: io.deephaven.db.v2.sources.regioned.RegionedColumnSource<DATA_TYPE>"
- },
- "path": "io.deephaven.db.v2.sources.regioned.RegionedTableComponentFactory",
- "text": "Factory interface for regioned source table components.",
- "typeName": "interface"
-}

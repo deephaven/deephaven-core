@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.db.v2.utils.metrics.IntCounterMetric",
- "methods": {
-  "sample": ":param n: int"
- },
- "path": "io.deephaven.db.v2.utils.metrics.IntCounterMetric",
- "typeName": "class"
-}

@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.engine.table.impl.util.reverse.CharReverseKernel",
+ "methods": {
+  "reverse": "Note: Java generics information - <T extends io.deephaven.chunk.attributes.Any>\n\n:param chunkToReverse: io.deephaven.chunk.WritableCharChunk<T>"
+ },
+ "path": "io.deephaven.engine.table.impl.util.reverse.CharReverseKernel",
+ "typeName": "class"
+}

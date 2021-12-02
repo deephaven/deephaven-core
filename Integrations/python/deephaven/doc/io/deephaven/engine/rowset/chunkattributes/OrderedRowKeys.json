@@ -1,0 +1,7 @@
+{
+ "className": "io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys",
+ "methods": {},
+ "path": "io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys",
+ "text": "Attribute that specifies that a Chunk contains individual ordered row keys, which must be in strictly\n ascending order.",
+ "typeName": "interface"
+}

@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.engine.table.impl.sources.LongSparseArraySource",
+ "methods": {
+  "copy": ":param sourceColumn: io.deephaven.engine.table.ColumnSource<? extendsjava.lang.Long>\n:param sourceKey: long\n:param destKey: long",
+  "set": ":param key: long\n:param value: java.lang.Long"
+ },
+ "path": "io.deephaven.engine.table.impl.sources.LongSparseArraySource",
+ "text": "Simple array source for Long.",
+ "typeName": "class"
+}

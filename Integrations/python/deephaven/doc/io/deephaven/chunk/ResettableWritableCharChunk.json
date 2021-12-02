@@ -1,0 +1,16 @@
+{
+ "className": "io.deephaven.chunk.ResettableWritableCharChunk",
+ "methods": {
+  "clear": "Reset this chunk to empty storage.\n\nNote: Java generics information - <ATTR extends ResettableWritableCharChunk.ATTR_BASE>\n\n:return: io.deephaven.chunk.WritableCharChunk<ATTR>",
+  "makeResettableChunk": "Note: Java generics information - <ATTR_BASE extends io.deephaven.chunk.attributes.Any>\n\n:return: io.deephaven.chunk.ResettableWritableCharChunk<ATTR_BASE>",
+  "makeResettableChunkForPool": "Note: Java generics information - <ATTR_BASE extends io.deephaven.chunk.attributes.Any>\n\n:return: io.deephaven.chunk.ResettableWritableCharChunk<ATTR_BASE>",
+  "resetFromArray": "**Incompatible overloads text - text from the first overload:**\n\nReset the data and bounds of this chunk to a range or sub-range of the specified array.\n\n*Overload 1*  \n  Note: Java generics information - <ATTR extends ResettableWritableCharChunk.ATTR_BASE>\n  \n  :param array: (java.lang.Object) - The array\n  :param offset: (int) - The offset into array\n  :param capacity: (int) - The capacity this should have after reset\n  :return: (io.deephaven.chunk.WritableCharChunk<ATTR>) this\n  \n*Overload 2*  \n  Note: Java generics information - <ATTR extends ResettableWritableCharChunk.ATTR_BASE>\n  \n  :param array: (java.lang.Object) - The array\n  :return: (io.deephaven.chunk.WritableCharChunk<ATTR>) this",
+  "resetFromChunk": "Reset the data and bounds of this chunk to a range or sub-range of the specified WritableChunk.\n\nNote: Java generics information - <ATTR extends ResettableWritableCharChunk.ATTR_BASE>\n\n:param other: (io.deephaven.chunk.WritableChunk<ATTR>) - The other WritableChunk\n:param offset: (int) - The offset into other\n:param capacity: (int) - The capacity this should have after reset\n:return: (io.deephaven.chunk.WritableCharChunk<ATTR>) this",
+  "resetFromTypedArray": "Note: Java generics information - <ATTR extends ResettableWritableCharChunk.ATTR_BASE>\n\n:param data: char[]\n:param offset: int\n:param capacity: int\n:return: io.deephaven.chunk.WritableCharChunk<ATTR>",
+  "resetFromTypedChunk": "Note: Java generics information - <ATTR extends ResettableWritableCharChunk.ATTR_BASE>\n\n:param other: io.deephaven.chunk.WritableCharChunk<ATTR>\n:param offset: int\n:param capacity: int\n:return: io.deephaven.chunk.WritableCharChunk<ATTR>",
+  "slice": "Make a new Chunk that represents either exactly the same view on the underlying data as this Chunk, or a subrange\n of that view. The view is defined as [0..size) (in the coordinate space of this Chunk).\n\n:param offset: (int) - Offset of the new Chunk, relative to this Chunk. 0   offset   this.size\n:param capacity: (int) - Capacity and initial size of the new Chunk. 0   capacity   this.size - offset.\n:return: (io.deephaven.chunk.ResettableWritableCharChunk) The new Chunk. A new Chunk will always be returned, even if the Chunks represent the same view."
+ },
+ "path": "io.deephaven.chunk.ResettableWritableCharChunk",
+ "text": "ResettableWritableChunk implementation for char data.",
+ "typeName": "class"
+}

@@ -1,0 +1,13 @@
+{
+ "className": "io.deephaven.engine.table.impl.by.AggregationControl",
+ "methods": {
+  "considerGrouping": ":param inputTable: io.deephaven.engine.table.Table\n:param sources: io.deephaven.engine.table.ColumnSource<?>[]\n:return: boolean",
+  "getMaximumLoadFactor": ":return: double",
+  "getTargetLoadFactor": ":return: double",
+  "initialHashTableSize": ":param inputTable: io.deephaven.engine.table.Table\n:return: int",
+  "shouldProbeShift": ":param shiftSize: long\n:param numStates: int\n:return: boolean"
+ },
+ "path": "io.deephaven.engine.table.impl.by.AggregationControl",
+ "text": "Stateless \"control\" class for giving external code (e.g. unit tests) knobs to turn w.r.t. to how aggregations should\n be processed.",
+ "typeName": "class"
+}

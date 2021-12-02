@@ -214,7 +214,7 @@ public class FilterPrinter implements FilterDescriptor.Visitor {
             case Datetime:
                 // noinspection ResultOfMethodCallIgnored
                 Long.parseLong(descriptor.getValue());
-                sb.append("new DBDateTime(").append(descriptor.getValue()).append(")");
+                sb.append("new DateTime(").append(descriptor.getValue()).append(")");
                 break;
             case Long:
                 // noinspection ResultOfMethodCallIgnored

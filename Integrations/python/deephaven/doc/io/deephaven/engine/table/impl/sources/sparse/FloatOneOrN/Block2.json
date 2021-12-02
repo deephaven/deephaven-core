@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.engine.table.impl.sources.sparse.FloatOneOrN$Block2",
+ "methods": {
+  "ensureIndex": ":param idx: int\n:param recycler: io.deephaven.util.SoftRecycler<float[][]>",
+  "get": ":param idx: int\n:return: float[]",
+  "maybeRecycle": ":param recycler: io.deephaven.util.SoftRecycler<float[][]>",
+  "set": ":param idx: int\n:param value: float[]"
+ },
+ "path": "io.deephaven.engine.table.impl.sources.sparse.FloatOneOrN.Block2",
+ "typeName": "class"
+}

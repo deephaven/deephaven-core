@@ -1,0 +1,23 @@
+{
+ "className": "io.deephaven.time.calendar.Calendars",
+ "methods": {
+  "addCalendarFromFile": "**Incompatible overloads text - text from the first overload:**\n\nAdds a calendar to the collection from the file\n\n*Overload 1*  \n  :param filePath: (java.lang.String) - must be xml format\n  \n*Overload 2*  \n  :param file: (java.io.File) - must be xml format",
+  "calendar": "Returns a business calendar.\n\n*Overload 1*  \n  :param name: (java.lang.String) - name of the calendar\n  :return: (io.deephaven.time.calendar.BusinessCalendar) business calendar\n  \n*Overload 2*  \n  :return: (io.deephaven.time.calendar.BusinessCalendar) default business calendar. The deault is specified by the Calendar.default property.",
+  "calendarNames": "Returns the names of all available calendars\n\n:return: (java.lang.String[]) names of all available calendars",
+  "containsKey": ":param key: java.lang.Object\n:return: boolean",
+  "containsValue": ":param value: java.lang.Object\n:return: boolean",
+  "entrySet": ":return: java.util.Set<java.util.Map.Entry<java.lang.String,io.deephaven.time.calendar.BusinessCalendar>>",
+  "get": ":param key: java.lang.Object\n:return: io.deephaven.time.calendar.BusinessCalendar",
+  "getDefaultName": "Returns the default calendar name\n\n:return: (java.lang.String) default business calendar name",
+  "isEmpty": ":return: boolean",
+  "keySet": ":return: java.util.Set<java.lang.String>",
+  "put": ":param key: java.lang.String\n:param value: io.deephaven.time.calendar.BusinessCalendar\n:return: io.deephaven.time.calendar.BusinessCalendar",
+  "putAll": ":param m: java.util.Map<? extendsjava.lang.String,? extendsio.deephaven.time.calendar.BusinessCalendar>",
+  "remove": ":param key: java.lang.Object\n:return: io.deephaven.time.calendar.BusinessCalendar",
+  "size": ":return: int",
+  "values": ":return: java.util.Collection<io.deephaven.time.calendar.BusinessCalendar>"
+ },
+ "path": "io.deephaven.time.calendar.Calendars",
+ "text": "A collection of business calendars.",
+ "typeName": "class"
+}

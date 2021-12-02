@@ -1,0 +1,16 @@
+{
+ "className": "io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults$ForByte",
+ "methods": {
+  "getPrev": ":param index: long\n:return: java.lang.Byte",
+  "getPrevBoolean": ":param index: long\n:return: java.lang.Boolean",
+  "getPrevChar": ":param index: long\n:return: char",
+  "getPrevDouble": ":param index: long\n:return: double",
+  "getPrevFloat": ":param index: long\n:return: float",
+  "getPrevInt": ":param index: long\n:return: int",
+  "getPrevLong": ":param index: long\n:return: long",
+  "getPrevShort": ":param index: long\n:return: short"
+ },
+ "path": "io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults.ForByte",
+ "text": "Default interface for mutable byte ColumnSource implementations.",
+ "typeName": "interface"
+}

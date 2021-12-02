@@ -1,12 +1,12 @@
 package io.deephaven.clientsupport.plotdownsampling;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.db.v2.sources.ColumnSource;
-import io.deephaven.db.v2.sources.chunk.Attributes;
-import io.deephaven.db.v2.sources.chunk.Chunk;
-import io.deephaven.db.v2.sources.chunk.ChunkSource;
-import io.deephaven.db.v2.sources.chunk.LongChunk;
-import io.deephaven.db.v2.utils.OrderedKeys;
+import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.engine.table.ChunkSource;
+import io.deephaven.chunk.LongChunk;
+import io.deephaven.engine.rowset.RowSequence;
 
 import java.util.Arrays;
 import java.util.List;
@@ -23,12 +23,12 @@ public class DownsampleChunkContext implements AutoCloseable {
 
     private final ChunkSource.GetContext[] yContexts;// may contain nulls
     private final int chunkSize;
-    private final Chunk<? extends Attributes.Values>[] valuesArray;
+    private final Chunk<? extends Values>[] valuesArray;
 
     /**
      * Creates an object to track the contexts to be used to read data from an upstream table for a given operation
      * 
-     * @param xColumnSource the X column source, always a long column source, currently reinterpreted from DBDateTime
+     * @param xColumnSource the X column source, always a long column source, currently reinterpreted from DateTime
      * @param yColumnSources any Y value column source which may be used. Indexes into this list are used when
      *        specifying columns which are used later
      * @param chunkSize the size of chunks to specify when actually creating any GetContext
@@ -66,9 +66,9 @@ public class DownsampleChunkContext implements AutoCloseable {
      * @param usePrev whether or not previous values should be fetched
      * @return a LongChunk containing the values specified
      */
-    public LongChunk<Attributes.Values> getXValues(final OrderedKeys keys, final boolean usePrev) {
+    public LongChunk<Values> getXValues(final RowSequence keys, final boolean usePrev) {
         // noinspection unchecked
-        return (LongChunk<Attributes.Values>) (usePrev ? xColumnSource.getPrevChunk(xContext, keys)
+        return (LongChunk<Values>) (usePrev ? xColumnSource.getPrevChunk(xContext, keys)
                 : xColumnSource.getChunk(xContext, keys));
     }
 
@@ -85,7 +85,7 @@ public class DownsampleChunkContext implements AutoCloseable {
      * @return an array containing the data in the specified rows. The array will be the same size as the original
      *         yColumnSources, with only the indexes in yCols populated.
      */
-    public Chunk<? extends Attributes.Values>[] getYValues(final int[] yCols, final OrderedKeys keys,
+    public Chunk<? extends Values>[] getYValues(final int[] yCols, final RowSequence keys,
             final boolean usePrev) {
         Arrays.fill(valuesArray, null);
         for (final int yCol : yCols) {
@@ -102,7 +102,7 @@ public class DownsampleChunkContext implements AutoCloseable {
      * @param usePrev whether or not previous values should be fetched
      * @return a chunk containing the values specified
      */
-    public Chunk<? extends Attributes.Values> getYValues(final int yColIndex, final OrderedKeys keys,
+    public Chunk<? extends Values> getYValues(final int yColIndex, final RowSequence keys,
             final boolean usePrev) {
         final ColumnSource<?> columnSource = yColumnSources.get(yColIndex);
         final ChunkSource.GetContext getContext = yContexts[yColIndex];

@@ -18,7 +18,7 @@ smtp.mx.domain=io.deephaven
 Calendar.default=USNYSE
 # The etc path is where things are installed on a server, the configs path is
 # for development. This needs to be overridden for a console from a launcher.
-Calendar.internalPath=<devroot>/etc/calendar;<devroot>/configs/calendar;/etc/sysconfig/deephaven.d/calendars
+Calendar.importPath=/default_calendar_imports.txt
 
 # Plot Themes
 Plot.theme.default=LIGHT
@@ -101,12 +101,8 @@ StringUtils.cacheSize=65536
 scriptSessionProviders=Groovy,Python
 scriptSessionExtension.groovy=Groovy
 scriptSessionExtension.py=Python
-scriptSessionProvider.Groovy=io.deephaven.db.util.GroovyDeephavenSession
-scriptSessionProvider.Python=io.deephaven.db.util.PythonDeephavenSession
-
-# Scala has not been extensively tested, and is experimental.  If you have obfuscated Jars in your classpath, the
-# session may not start.
-scriptSessionProvider.Scala=io.deephaven.db.util.ScalaDeephavenSession
+scriptSessionProvider.Groovy=io.deephaven.engine.util.GroovyDeephavenSession
+scriptSessionProvider.Python=io.deephaven.engine.util.PythonDeephavenSession
 
 #
 # Web API Server configuration
@@ -133,15 +129,11 @@ Webapi.persistentquery.heap.default=4
 OneClick.allowedPattern.USym=^[A-Za-z0-9/.]+$
 OneClick.enforceUpperCaseColumns=USym
 
-LiveTableMonitor.checkTableOperations=true
+UpdateGraphProcessor.checkTableOperations=true
 
 logroot=/var/log/deephaven
 
 defaultLogDir=<logroot>/misc
-
-# DbTypes default impls
-DbTypes.DbFile.impl=io.deephaven.dbtypes.DbFileImpl$Factory
-DbTypes.DbImage.impl=io.deephaven.dbtypes.DbImageImpl$Factory
 
 # Restricts what Parquet codecs are visible in the GUI
 Parquet.supportedCodecs=UNCOMPRESSED,SNAPPY
@@ -152,24 +144,24 @@ jpy.jpyLib=/usr/lib64/python2.7/site-packages/jpy.so
 jpy.jdlLib=/usr/lib64/python2.7/site-packages/jdl.so
 
 [jpy.env=python27] {
-    jpy.programName=/db/VEnvs/python27/bin/python2.7
+    jpy.programName=/dh/VEnvs/python27/bin/python2.7
     jpy.pythonLib=/usr/lib64/libpython2.7.so.1.0
-    jpy.jpyLib=/db/VEnvs/python27/lib/python2.7/site-packages/jpy.so
-    jpy.jdlLib=/db/VEnvs/python27/lib/python2.7/site-packages/jdl.so
+    jpy.jpyLib=/dh/VEnvs/python27/lib/python2.7/site-packages/jpy.so
+    jpy.jdlLib=/dh/VEnvs/python27/lib/python2.7/site-packages/jdl.so
 }
 
 [jpy.env=python36] {
-    jpy.programName=/db/VEnvs/python36/bin/python3.6
+    jpy.programName=/dh/VEnvs/python36/bin/python3.6
     jpy.pythonLib=/usr/lib64/libpython3.6m.so.1.0
-    jpy.jpyLib=/db/VEnvs/python36/lib/python3.6/site-packages/jpy.cpython-36m-x86_64-linux-gnu.so
-    jpy.jdlLib=/db/VEnvs/python36/lib/python3.6/site-packages/jdl.cpython-36m-x86_64-linux-gnu.so
+    jpy.jpyLib=/dh/VEnvs/python36/lib/python3.6/site-packages/jpy.cpython-36m-x86_64-linux-gnu.so
+    jpy.jdlLib=/dh/VEnvs/python36/lib/python3.6/site-packages/jdl.cpython-36m-x86_64-linux-gnu.so
 }
 
 [jpy.env=jupyter] {
-    jpy.programName=/db/VEnvs/jupyter/bin/python3.6
+    jpy.programName=/dh/VEnvs/jupyter/bin/python3.6
     jpy.pythonLib=/usr/lib64/libpython3.6m.so.1.0
-    jpy.jpyLib=/db/VEnvs/jupyter/lib/python3.6/site-packages/jpy.cpython-36m-x86_64-linux-gnu.so
-    jpy.jdlLib=/db/VEnvs/jupyter/lib/python3.6/site-packages/jdl.cpython-36m-x86_64-linux-gnu.so
+    jpy.jpyLib=/dh/VEnvs/jupyter/lib/python3.6/site-packages/jpy.cpython-36m-x86_64-linux-gnu.so
+    jpy.jdlLib=/dh/VEnvs/jupyter/lib/python3.6/site-packages/jdl.cpython-36m-x86_64-linux-gnu.so
 }
 
 ShutdownManager.shutdownTimeoutMillis=60000

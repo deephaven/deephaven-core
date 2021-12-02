@@ -1,7 +1,0 @@
-{
- "className": "io.deephaven.db.v2.ReplicateHashTable$StateColumnSource",
- "methods": {},
- "path": "io.deephaven.db.v2.ReplicateHashTable.StateColumnSource",
- "text": "We tag the state ColumnSource with this annotation, so we know what its name is in the source and destination.",
- "typeName": "class"
-}

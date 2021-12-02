@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.db.v2.select.ConditionFilter$ContextGetter",
- "methods": {
-  "getContext": ":param chunkSize: int\n:return: io.deephaven.db.v2.sources.chunk.Context"
- },
- "path": "io.deephaven.db.v2.select.ConditionFilter.ContextGetter",
- "typeName": "interface"
-}

@@ -1,0 +1,20 @@
+plugins {
+    id 'java-library'
+}
+
+description 'Engine Update Graph: Core utilities for maintaining a DAG for update processing'
+
+dependencies {
+    api project(':qst')
+
+    implementation project(':engine-chunk')
+
+    compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
+
+    testImplementation 'junit:junit:4.13.2'
+
+    testRuntimeOnly project(':log-to-slf4j'),
+            project(path: ':configs'),
+            project(path: ':test-configs')
+    Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
+}

@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.grpc_api.runner.DeephavenApiServer$ServerComponent",
- "methods": {
-  "getServer": ":return: io.deephaven.grpc_api.runner.DeephavenApiServer",
-  "getSessionService": ":return: io.deephaven.grpc_api.session.SessionService"
- },
- "path": "io.deephaven.grpc_api.runner.DeephavenApiServer.ServerComponent",
- "typeName": "interface"
-}

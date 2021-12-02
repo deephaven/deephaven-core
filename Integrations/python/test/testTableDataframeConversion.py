@@ -44,7 +44,7 @@ class TestTableDataframeConversion(unittest.TestCase):
                                                   "longCol=(long)0",
                                                   "floatCol=(float)0",
                                                   "doubleCol=(double)0",
-                                                  "datetimeCol=new DBDateTime(0)",
+                                                  "datetimeCol=new DateTime(0)",
                                                   "stringCol=`test`")
         # there are no nulls here, so all three conversion options should work, and result in identical dataframes
         with self.subTest(msg="convert null when no null values"):
@@ -101,7 +101,7 @@ class TestTableDataframeConversion(unittest.TestCase):
                                                     "longCol=(long)((i==0) ? 0 : NULL_LONG)",
                                                     "floatCol=(float)((i==0) ? 2 : NULL_FLOAT)",
                                                     "doubleCol=(double)((i==0) ? 2 : NULL_DOUBLE)",
-                                                    "datetimeCol=((i==0) ? new DBDateTime(0) : null)")
+                                                    "datetimeCol=((i==0) ? new DateTime(0) : null)")
         with self.subTest(msg="Does not convert if convertNulls=ERROR and nulls present"):
             self.assertRaises(ValueError, tableToDataFrame,
                               tab_nulls, convertNulls='ERROR', categoricals=None)
@@ -202,7 +202,7 @@ class TestTableDataframeConversion(unittest.TestCase):
                          ('longCol', 'long'),
                          ('floatCol', 'float'),
                          ('doubleCol', 'double'),
-                         ('datetimeCol', 'class io.deephaven.db.tables.utils.DBDateTime'),
+                         ('datetimeCol', 'class io.deephaven.time.DateTime'),
                          ('stringCol', 'class java.lang.String')
                          ]:
             with self.subTest(msg="data type for column {}".format(col)):
@@ -224,7 +224,7 @@ class TestTableDataframeConversion(unittest.TestCase):
         with self.subTest(msg="entry for column doubleCol"):
             self.assertEqual(getElement(tab, 'doubleCol'), 0)  # I'm guessing that Double() -> 0
         with self.subTest(msg="entry for column datetimeCol"):
-            cls = jpy.get_type('io.deephaven.db.tables.utils.DBDateTime')
+            cls = jpy.get_type('io.deephaven.time.DateTime')
             self.assertEqual(getElement(tab, 'datetimeCol'), cls(0))
         with self.subTest(msg="entry for column stringCol"):
             self.assertEqual(getElement(tab, 'stringCol'), u'test')
@@ -254,19 +254,19 @@ class TestTableDataframeConversion(unittest.TestCase):
                                                       "MyFloat=new Float(i+i/10)",
                                                       "MyDouble=new Double(i+i/10)"
                                                       )
-        arrayTable = firstTable.update("A=i%3").by("A")
+        arrayTable = firstTable.update("A=i%3").groupBy("A")
         dataFrame = tableToDataFrame(arrayTable, convertNulls='PASS', categoricals=None)
 
         for colName, arrayType in [
-            ('MyString', 'io.deephaven.db.tables.dbarrays.DbArray'),
-            ('MyChar', 'io.deephaven.db.tables.dbarrays.DbCharArray'),
-            ('MyBoolean', 'io.deephaven.db.tables.dbarrays.DbArray'),  # NB: DbBooleanArray is deprecated
-            ('MyByte', 'io.deephaven.db.tables.dbarrays.DbByteArray'),
-            ('MyShort', 'io.deephaven.db.tables.dbarrays.DbShortArray'),
-            ('MyInt', 'io.deephaven.db.tables.dbarrays.DbIntArray'),
-            ('MyLong', 'io.deephaven.db.tables.dbarrays.DbLongArray'),
-            ('MyFloat', 'io.deephaven.db.tables.dbarrays.DbFloatArray'),
-            ('MyDouble', 'io.deephaven.db.tables.dbarrays.DbDoubleArray'),
+            ('MyString', 'io.deephaven.vector.ObjectVector'),
+            ('MyChar', 'io.deephaven.vector.CharVector'),
+            ('MyBoolean', 'io.deephaven.vector.ObjectVector'),  # NB: BooleanVector is deprecated
+            ('MyByte', 'io.deephaven.vector.ByteVector'),
+            ('MyShort', 'io.deephaven.vector.ShortVector'),
+            ('MyInt', 'io.deephaven.vector.IntVector'),
+            ('MyLong', 'io.deephaven.vector.LongVector'),
+            ('MyFloat', 'io.deephaven.vector.FloatVector'),
+            ('MyDouble', 'io.deephaven.vector.DoubleVector'),
         ]:
             with self.subTest(msg="type for original column {}".format(colName)):
                 self.assertEqual(arrayTable.getColumn(colName).getType().getName(), arrayType)
@@ -299,15 +299,15 @@ class TestTableDataframeConversion(unittest.TestCase):
         # convert back
         backTable = dataFrameToTable(dataFrame, convertUnknownToString=True)
         for colName, arrayType in [
-            ('MyString', 'io.deephaven.db.tables.dbarrays.DbArrayDirect'),
-            ('MyChar', 'io.deephaven.db.tables.dbarrays.DbCharArrayDirect'),
-            ('MyBoolean', 'io.deephaven.db.tables.dbarrays.DbArrayDirect'),
-            ('MyByte', 'io.deephaven.db.tables.dbarrays.DbByteArrayDirect'),
-            ('MyShort', 'io.deephaven.db.tables.dbarrays.DbShortArrayDirect'),
-            ('MyInt', 'io.deephaven.db.tables.dbarrays.DbIntArrayDirect'),
-            ('MyLong', 'io.deephaven.db.tables.dbarrays.DbLongArrayDirect'),
-            ('MyFloat', 'io.deephaven.db.tables.dbarrays.DbFloatArrayDirect'),
-            ('MyDouble', 'io.deephaven.db.tables.dbarrays.DbDoubleArrayDirect'),
+            ('MyString', 'io.deephaven.vector.ObjectVectorDirect'),
+            ('MyChar', 'io.deephaven.vector.CharVectorDirect'),
+            ('MyBoolean', 'io.deephaven.vector.ObjectVectorDirect'),
+            ('MyByte', 'io.deephaven.vector.ByteVectorDirect'),
+            ('MyShort', 'io.deephaven.vector.ShortVectorDirect'),
+            ('MyInt', 'io.deephaven.vector.IntVectorDirect'),
+            ('MyLong', 'io.deephaven.vector.LongVectorDirect'),
+            ('MyFloat', 'io.deephaven.vector.FloatVectorDirect'),
+            ('MyDouble', 'io.deephaven.vector.DoubleVectorDirect'),
         ]:
             with self.subTest(msg="type for reverted column for {}".format(colName)):
                 self.assertEqual(backTable.getColumn(colName).getType().getName(), arrayType)
@@ -357,13 +357,13 @@ class TestTableDataframeConversion(unittest.TestCase):
         for dtypename, array_type in [('int8', '[[B'), ('int16', '[[S'), ('int32', '[[I'), ('int64', '[[J'),
                                       ('float32', '[[F'), ('float64', '[[D'), ('U1', '[[C'),
                                       ('U3', '[[Ljava.lang.String;'),
-                                      ('datetime64[ns]', '[[Lio.deephaven.db.tables.utils.DBDateTime;')]:
+                                      ('datetime64[ns]', '[[Lio.deephaven.time.DateTime;')]:
             with self.subTest(msg="dtype={}".format(dtypename)):
                 nparray = numpy.empty((2, ), dtype=numpy.object)
                 nparray[:] = [numpy.zeros((3, 4), dtype=dtypename) for i in range(2)]
                 df = pandas.DataFrame({'test': nparray})
                 tab = dataFrameToTable(df)
-                self.assertTrue(tab.getColumn('test').getType().getName(), 'io.deephaven.db.tables.dbarrays.DbArrayDirect')
+                self.assertTrue(tab.getColumn('test').getType().getName(), 'io.deephaven.vector.ObjectVectorDirect')
                 self.assertEqual(tab.getColumn('test').get(0).getClass().getName(), array_type)
 
         with self.subTest(msg="nested array exception check"):

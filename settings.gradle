@@ -8,11 +8,11 @@ rootProject.name='Deephaven Community Core'
 
 String[] bins = ['configs', 'test-configs' ]
 
-String[] mods = [ 'Util', 'Numerics', 'TableLogger', 'DB', 'Plot',
+String[] mods = [ 'Util', 'Numerics', 'TableLogger', 'Plot',
         'CompilerTools', 'Generators',
         'Integrations', 'ModelFarm', 'ClientSupport',
-        'BenchmarkSupport', 'DB-test', 'DbTypes', 'DbTypesImpl', 'Parquet',
-        'Kafka', 'grpc-api', 'table-api', 'qst']
+        'BenchmarkSupport', 'python-engine-test', 'Parquet',
+        'grpc-api', 'table-api', 'qst']
 
         // new web projects; these modules are intended to form a complete, modular web application,
         // with heavy dependency isolation that should enable very fast rebuilds.
@@ -107,15 +107,6 @@ project(':grpc-api-server-native').projectDir = file('grpc-api/server/native')
 include(':grpc-api-client-console')
 project(':grpc-api-client-console').projectDir = file('grpc-api-client/console')
 
-include(':extensions-barrage')
-project(':extensions-barrage').projectDir = file('extensions/barrage')
-
-include(':extensions-classgraph')
-project(':extensions-classgraph').projectDir = file('extensions/classgraph')
-
-include(':extensions-suanshu')
-project(':extensions-suanshu').projectDir = file('extensions/suanshu')
-
 include(':Base')
 
 include(':SevenZip')
@@ -135,6 +126,75 @@ include(':Stats')
 include(':Container')
 
 include(':ParquetHadoop')
+
+include(':replication-util')
+project(':replication-util').projectDir = file('replication/util')
+
+include(':replication-static')
+project(':replication-static').projectDir = file('replication/static')
+
+include(':replication-reflective')
+project(':replication-reflective').projectDir = file('replication/reflective')
+
+include(':engine-chunk')
+project(':engine-chunk').projectDir = file('engine/chunk')
+
+include(':engine-vector')
+project(':engine-vector').projectDir = file('engine/vector')
+
+include(':engine-stringset')
+project(':engine-stringset').projectDir = file('engine/stringset')
+
+include(':engine-function')
+project(':engine-function').projectDir = file('engine/function')
+
+include(':engine-time')
+project(':engine-time').projectDir = file('engine/time')
+
+include(':engine-tuple')
+project(':engine-tuple').projectDir = file('engine/tuple')
+
+include(':engine-updategraph')
+project(':engine-updategraph').projectDir = file('engine/updategraph')
+
+include(':engine-api')
+project(':engine-api').projectDir = file('engine/api')
+
+include(':engine-rowset')
+project(':engine-rowset').projectDir = file('engine/rowset')
+
+include(':engine-base')
+project(':engine-base').projectDir = file('engine/base')
+
+include(':engine-tuplesource')
+project(':engine-tuplesource').projectDir = file('engine/tuplesource')
+
+include(':engine-table')
+project(':engine-table').projectDir = file('engine/table')
+
+include(':engine-benchmark')
+project(':engine-benchmark').projectDir = file('engine/benchmark')
+
+include(':extensions-csv')
+project(':extensions-csv').projectDir = file('extensions/csv')
+
+include(':extensions-kafka')
+project(':extensions-kafka').projectDir = file('extensions/kafka')
+
+include(':extensions-parquet-base')
+project(':extensions-parquet-base').projectDir = file('extensions/parquet/base')
+
+include(':extensions-parquet-table')
+project(':extensions-parquet-table').projectDir = file('extensions/parquet/table')
+
+include(':extensions-barrage')
+project(':extensions-barrage').projectDir = file('extensions/barrage')
+
+include(':extensions-classgraph')
+project(':extensions-classgraph').projectDir = file('extensions/classgraph')
+
+include(':extensions-suanshu')
+project(':extensions-suanshu').projectDir = file('extensions/suanshu')
 
 include(':envoy')
 
@@ -185,6 +245,14 @@ project(':deephaven2-wheel').projectDir = file('py/deephaven2-wheel')
 
 include(':docker-java-and-python')
 project(':docker-java-and-python').projectDir = file('docker/java-and-python')
+
+include(':docker-runtime-base')
+project(':docker-runtime-base').projectDir = file('docker/runtime-base')
+
+file("${rootDir}/docker/registry").list().each {name ->
+    include(":docker-${name}")
+    project(":docker-${name}").projectDir = file("${rootDir}/docker/registry/${name}")
+}
 
 // Apply "vanity naming" (look for .gradle files matching ProjectName/ProjectName.gradle)
 File root = settings.rootDir

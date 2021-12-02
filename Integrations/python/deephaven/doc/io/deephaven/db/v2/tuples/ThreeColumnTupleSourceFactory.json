@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.db.v2.tuples.ThreeColumnTupleSourceFactory",
- "methods": {
-  "create": "Create a TupleSource of the appropriate type.\n\n:param columnSource1: (io.deephaven.db.v2.sources.ColumnSource<ThreeColumnTupleSourceFactory.COLUMN_SOURCE_1_TYPE>) - The first column source\n:param columnSource2: (io.deephaven.db.v2.sources.ColumnSource<ThreeColumnTupleSourceFactory.COLUMN_SOURCE_2_TYPE>) - The second column source\n:param columnSource3: (io.deephaven.db.v2.sources.ColumnSource<ThreeColumnTupleSourceFactory.COLUMN_SOURCE_3_TYPE>) - The third column source\n:return: (io.deephaven.db.v2.tuples.TupleSource<ThreeColumnTupleSourceFactory.TUPLE_TYPE>) The new tuple factory"
- },
- "path": "io.deephaven.db.v2.tuples.ThreeColumnTupleSourceFactory",
- "text": "TupleSourceFactory for three ColumnSources.",
- "typeName": "interface"
-}

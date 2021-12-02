@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.client.impl.ConsoleService",
+ "methods": {
+  "console": "Creates a new console session of script type type.\n\n \n Note: the server does not currently support independent console sessions. See\n Issue 1172.\n\n:param type: (java.lang.String) - the script type\n:return: (java.util.concurrent.CompletableFuture<? extends io.deephaven.client.impl.ConsoleSession>) the console session future",
+  "publish": "Publishes ticket into the global scope with name.\n\n:param name: (java.lang.String) - the name, must conform to SourceVersion.isName(CharSequence)\n:param ticketId: (io.deephaven.client.impl.HasTicketId) - the export ID\n:return: (java.util.concurrent.CompletableFuture<java.lang.Void>) the publish completable future"
+ },
+ "path": "io.deephaven.client.impl.ConsoleService",
+ "typeName": "interface"
+}

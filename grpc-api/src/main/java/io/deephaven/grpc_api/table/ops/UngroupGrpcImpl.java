@@ -2,8 +2,8 @@ package io.deephaven.grpc_api.table.ops;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.db.tables.Table;
-import io.deephaven.db.tables.live.LiveTableMonitor;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.grpc_api.session.SessionState;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.UngroupRequest;
@@ -15,12 +15,12 @@ import java.util.List;
 @Singleton
 public class UngroupGrpcImpl extends GrpcTableOperation<UngroupRequest> {
 
-    private final LiveTableMonitor liveTableMonitor;
+    private final UpdateGraphProcessor updateGraphProcessor;
 
     @Inject
-    public UngroupGrpcImpl(final LiveTableMonitor liveTableMonitor) {
+    public UngroupGrpcImpl(final UpdateGraphProcessor updateGraphProcessor) {
         super(BatchTableRequest.Operation::getUngroup, UngroupRequest::getResultId, UngroupRequest::getSourceId);
-        this.liveTableMonitor = liveTableMonitor;
+        this.updateGraphProcessor = updateGraphProcessor;
     }
 
     @Override
@@ -30,7 +30,7 @@ public class UngroupGrpcImpl extends GrpcTableOperation<UngroupRequest> {
         final Table parent = sourceTables.get(0).get();
         final String[] columnsToUngroup =
                 request.getColumnsToUngroupList().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
-        return liveTableMonitor.sharedLock()
+        return updateGraphProcessor.sharedLock()
                 .computeLocked(() -> parent.ungroup(request.getNullFill(), columnsToUngroup));
     }
 }

@@ -4,8 +4,11 @@
 
 package io.deephaven.base;
 
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class StringUtils {
@@ -174,5 +177,11 @@ public class StringUtils {
         buf.append(s);
 
         return buf.toString();
+    }
+
+    public static Collection<String> splitToCollection(String string) {
+        return string.trim().isEmpty() ? Collections.emptyList()
+                : Arrays.stream(string.split(",")).map(String::trim).filter(s -> !s.isEmpty())
+                        .collect(Collectors.toList());
     }
 }

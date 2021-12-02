@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.grpc_api.table.inputtables.InputTableModule",
+ "methods": {
+  "bindInputTableServiceGrpcImpl": ":param inputTableService: io.deephaven.grpc_api.table.inputtables.InputTableServiceGrpcImpl\n:return: io.grpc.BindableService"
+ },
+ "path": "io.deephaven.grpc_api.table.inputtables.InputTableModule",
+ "typeName": "interface"
+}

@@ -44,6 +44,20 @@ public class Main {
                 ProcessEnvironment.basicInteractiveProcessInitialization(config, Main.class.getName(), log);
         Thread.setDefaultUncaughtExceptionHandler(processEnvironment.getFatalErrorReporter());
 
-        DeephavenApiServerComponent.startMain(PrintStreamGlobals.getOut(), PrintStreamGlobals.getErr());
+        // defaults to 5 minutes
+        int httpSessionExpireMs = config.getIntegerWithDefault("http.session.durationMs", 300000);
+        int httpPort = config.getIntegerWithDefault("http.port", 8080);
+        int schedulerPoolSize = config.getIntegerWithDefault("scheduler.poolSize", 4);
+
+        DaggerDeephavenApiServerComponent
+                .builder()
+                .withPort(httpPort)
+                .withSchedulerPoolSize(schedulerPoolSize)
+                .withSessionTokenExpireTmMs(httpSessionExpireMs)
+                .withOut(PrintStreamGlobals.getOut())
+                .withErr(PrintStreamGlobals.getErr())
+                .build()
+                .getServer()
+                .run();
     }
 }

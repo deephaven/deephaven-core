@@ -1,0 +1,13 @@
+{
+ "className": "io.deephaven.engine.table.impl.by.AggregationFactory$AggregationElementImpl",
+ "methods": {
+  "forRollup": ":return: io.deephaven.engine.table.impl.by.AggregationFactory.AggregationElement",
+  "getMemoKey": ":return: io.deephaven.engine.table.impl.by.AggregationMemoKey",
+  "getResultPairs": ":return: io.deephaven.engine.table.MatchPair[]",
+  "getSourceColumns": ":return: java.lang.String[]",
+  "getSpec": ":return: io.deephaven.engine.table.impl.by.AggregationSpec",
+  "toString": ":return: java.lang.String"
+ },
+ "path": "io.deephaven.engine.table.impl.by.AggregationFactory.AggregationElementImpl",
+ "typeName": "class"
+}

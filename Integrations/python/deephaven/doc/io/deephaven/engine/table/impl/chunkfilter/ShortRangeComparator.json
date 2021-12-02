@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.engine.table.impl.chunkfilter.ShortRangeComparator",
+ "methods": {
+  "makeShortFilter": ":param lower: short\n:param upper: short\n:param lowerInclusive: boolean\n:param upperInclusive: boolean\n:return: io.deephaven.engine.table.impl.chunkfilter.ChunkFilter.ShortChunkFilter"
+ },
+ "path": "io.deephaven.engine.table.impl.chunkfilter.ShortRangeComparator",
+ "typeName": "class"
+}

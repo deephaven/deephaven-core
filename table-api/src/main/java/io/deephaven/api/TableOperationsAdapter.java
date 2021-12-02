@@ -178,22 +178,6 @@ public abstract class TableOperationsAdapter<TOPS_1 extends TableOperations<TOPS
     }
 
     @Override
-    public final TOPS_1 leftJoin(TABLE_1 rightTable, String columnsToMatch) {
-        return adapt(delegate.leftJoin(adapt(rightTable), columnsToMatch));
-    }
-
-    @Override
-    public final TOPS_1 leftJoin(TABLE_1 rightTable, String columnsToMatch, String columnsToAdd) {
-        return adapt(delegate.leftJoin(adapt(rightTable), columnsToMatch, columnsToAdd));
-    }
-
-    @Override
-    public final TOPS_1 leftJoin(TABLE_1 rightTable, Collection<? extends JoinMatch> columnsToMatch,
-            Collection<? extends JoinAddition> columnsToAdd) {
-        return adapt(delegate.leftJoin(adapt(rightTable), columnsToMatch, columnsToAdd));
-    }
-
-    @Override
     public final TOPS_1 join(TABLE_1 rightTable, String columnsToMatch) {
         return adapt(delegate.join(adapt(rightTable), columnsToMatch));
     }
@@ -261,23 +245,48 @@ public abstract class TableOperationsAdapter<TOPS_1 extends TableOperations<TOPS
     }
 
     @Override
-    public final TOPS_1 by() {
-        return adapt(delegate.by());
+    public final TOPS_1 groupBy() {
+        return adapt(delegate.groupBy());
     }
 
     @Override
-    public final TOPS_1 by(String... groupByColumns) {
-        return adapt(delegate.by(groupByColumns));
+    public final TOPS_1 groupBy(String... groupByColumns) {
+        return adapt(delegate.groupBy(groupByColumns));
     }
 
     @Override
-    public final TOPS_1 by(Collection<? extends Selectable> groupByColumns) {
-        return adapt(delegate.by(groupByColumns));
+    public final TOPS_1 groupBy(Collection<? extends Selectable> groupByColumns) {
+        return adapt(delegate.groupBy(groupByColumns));
     }
 
     @Override
-    public final TOPS_1 by(Collection<? extends Selectable> groupByColumns,
-            Collection<? extends Aggregation> aggregations) {
-        return adapt(delegate.by(groupByColumns, aggregations));
+    public final TOPS_1 aggBy(Aggregation aggregation) {
+        return adapt(delegate.aggBy(aggregation));
+    }
+
+    @Override
+    public final TOPS_1 aggBy(Aggregation aggregation, String... groupByColumns) {
+        return adapt(delegate.aggBy(aggregation, groupByColumns));
+    }
+
+    @Override
+    public final TOPS_1 aggBy(Aggregation aggregation, Collection<? extends Selectable> groupByColumns) {
+        return adapt(delegate.aggBy(aggregation, groupByColumns));
+    }
+
+    @Override
+    public final TOPS_1 aggBy(Collection<? extends Aggregation> aggregations) {
+        return adapt(delegate.aggBy(aggregations));
+    }
+
+    @Override
+    public final TOPS_1 aggBy(Collection<? extends Aggregation> aggregations, String... groupByColumns) {
+        return adapt(delegate.aggBy(aggregations, groupByColumns));
+    }
+
+    @Override
+    public final TOPS_1 aggBy(Collection<? extends Aggregation> aggregations,
+            Collection<? extends Selectable> groupByColumns) {
+        return adapt(delegate.aggBy(aggregations, groupByColumns));
     }
 }

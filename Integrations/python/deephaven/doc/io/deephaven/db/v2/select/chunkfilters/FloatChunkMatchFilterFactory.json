@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.db.v2.select.chunkfilters.FloatChunkMatchFilterFactory",
- "methods": {
-  "makeFilter": ":param invertMatch: boolean\n:param values: float...\n:return: io.deephaven.db.v2.select.ChunkFilter.FloatChunkFilter"
- },
- "path": "io.deephaven.db.v2.select.chunkfilters.FloatChunkMatchFilterFactory",
- "text": "Creates chunk filters for float values.\n\n The strategy is that for one, two, or three values we have specialized\n classes that will do the appropriate simple equality check.\n\n For more values, we use a trove set and check contains for each value in the chunk.",
- "typeName": "class"
-}

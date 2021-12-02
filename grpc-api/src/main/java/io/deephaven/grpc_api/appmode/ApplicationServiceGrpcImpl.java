@@ -4,13 +4,13 @@ import com.google.rpc.Code;
 import io.deephaven.appmode.ApplicationState;
 import io.deephaven.appmode.CustomField;
 import io.deephaven.appmode.Field;
-import io.deephaven.db.plot.FigureWidget;
-import io.deephaven.db.tables.Table;
-import io.deephaven.db.tables.utils.DBTimeUtils;
-import io.deephaven.db.util.ScriptSession;
-import io.deephaven.db.util.liveness.LivenessArtifact;
-import io.deephaven.db.util.liveness.LivenessReferent;
-import io.deephaven.db.v2.DynamicNode;
+import io.deephaven.time.DateTimeUtils;
+import io.deephaven.plot.FigureWidget;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.util.ScriptSession;
+import io.deephaven.engine.liveness.LivenessArtifact;
+import io.deephaven.engine.liveness.LivenessReferent;
+import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.grpc_api.session.SessionService;
 import io.deephaven.grpc_api.session.SessionState;
@@ -293,7 +293,7 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
             final Table table = (Table) obj;
             return FieldInfo.FieldType.newBuilder().setTable(TableInfo.newBuilder()
                     .setSchemaHeader(BarrageUtil.schemaBytesFromTable(table))
-                    .setIsStatic(!table.isLive())
+                    .setIsStatic(!table.isRefreshing())
                     .setSize(table.size())
                     .build()).build();
         }
@@ -369,7 +369,7 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
                 scheduler.runImmediately(this);
             } else {
                 lastScheduledMillis = nextMin;
-                scheduler.runAtTime(DBTimeUtils.millisToTime(nextMin), this);
+                scheduler.runAtTime(DateTimeUtils.millisToTime(nextMin), this);
             }
             return true;
         }

@@ -1,4 +1,4 @@
-import io.deephaven.db.tables.utils.TableTools
+import io.deephaven.engine.util.TableTools
 
 // Use QueryScope! Careful; this leaks into the REPL state!
 size_qs = 42

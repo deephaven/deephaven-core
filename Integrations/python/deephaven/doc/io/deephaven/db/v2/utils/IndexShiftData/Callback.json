@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.db.v2.utils.IndexShiftData$Callback",
- "methods": {
-  "shift": "Process the shift.\n\n:param beginRange: (long) - start of range (inclusive)\n:param endRange: (long) - end of range (inclusive)\n:param shiftDelta: (long) - amount range has moved by"
- },
- "path": "io.deephaven.db.v2.utils.IndexShiftData.Callback",
- "typeName": "interface"
-}

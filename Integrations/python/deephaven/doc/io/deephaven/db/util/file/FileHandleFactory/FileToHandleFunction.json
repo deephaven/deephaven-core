@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.db.util.file.FileHandleFactory$FileToHandleFunction",
- "methods": {
-  "invoke": ":param file: java.io.File\n:return: io.deephaven.db.util.file.FileHandle"
- },
- "path": "io.deephaven.db.util.file.FileHandleFactory.FileToHandleFunction",
- "typeName": "interface"
-}

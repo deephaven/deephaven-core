@@ -1,8 +1,8 @@
 package io.deephaven.grpc_api.runner;
 
-import io.deephaven.db.tables.live.LiveTableMonitor;
-import io.deephaven.db.util.liveness.LivenessScope;
-import io.deephaven.db.util.liveness.LivenessScopeStack;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.liveness.LivenessScope;
+import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.grpc_api.DeephavenChannel;
 import io.deephaven.grpc_api.appmode.AppMode;
 import io.deephaven.io.logger.LogBuffer;
@@ -32,8 +32,8 @@ public abstract class DeephavenApiServerTestBase {
 
     @Before
     public void setUp() throws Exception {
-        LiveTableMonitor.DEFAULT.enableUnitTestMode();
-        LiveTableMonitor.DEFAULT.resetForUnitTests(false);
+        UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
+        UpdateGraphProcessor.DEFAULT.resetForUnitTests(false);
 
         logBuffer = new LogBuffer(128);
         LogBufferGlobal.setInstance(logBuffer);
@@ -44,7 +44,6 @@ public abstract class DeephavenApiServerTestBase {
                 .withSessionTokenExpireTmMs(sessionTokenExpireTmMs())
                 .withOut(System.out)
                 .withErr(System.err)
-                .withAppMode(AppMode.API_ONLY)
                 .build();
 
         server = serverComponent.getServer();
@@ -63,7 +62,7 @@ public abstract class DeephavenApiServerTestBase {
             }
         } finally {
             LogBufferGlobal.clear(logBuffer);
-            LiveTableMonitor.DEFAULT.resetForUnitTests(true);
+            UpdateGraphProcessor.DEFAULT.resetForUnitTests(true);
         }
     }
 

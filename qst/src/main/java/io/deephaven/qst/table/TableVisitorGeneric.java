@@ -80,11 +80,6 @@ public abstract class TableVisitorGeneric implements TableSpec.Visitor {
     }
 
     @Override
-    public void visit(LeftJoinTable leftJoinTable) {
-        accept(leftJoinTable);
-    }
-
-    @Override
     public void visit(AsOfJoinTable aj) {
         accept(aj);
     }
@@ -115,8 +110,8 @@ public abstract class TableVisitorGeneric implements TableSpec.Visitor {
     }
 
     @Override
-    public void visit(ByTable byTable) {
-        accept(byTable);
+    public void visit(GroupByTable groupByTable) {
+        accept(groupByTable);
     }
 
     @Override
@@ -127,5 +122,10 @@ public abstract class TableVisitorGeneric implements TableSpec.Visitor {
     @Override
     public void visit(TicketTable ticketTable) {
         accept(ticketTable);
+    }
+
+    @Override
+    public void visit(InputTable inputTable) {
+        accept(inputTable);
     }
 }

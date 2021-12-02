@@ -2,13 +2,13 @@
  "className": "io.deephaven.modelfarm.util.ModelFarmUtils",
  "methods": {
   "array2Double": "Interpret a table cell value as a 2D double array.\n\n:param o: (java.lang.Object) - table cell value.\n:return: (double[][]) 2D double array.",
-  "arrayDBDateTime": "Interpret a table cell value as a date time array.\n\n:param o: (java.lang.Object) - table cell value.\n:return: (io.deephaven.db.tables.utils.DBDateTime[]) date time array.",
+  "arrayDateTime": "Interpret a table cell value as a date time array.\n\n:param o: (java.lang.Object) - table cell value.\n:return: (io.deephaven.time.DateTime[]) date time array.",
   "arrayDouble": "Interpret a table cell value as a double array.\n\n:param o: (java.lang.Object) - table cell value.\n:return: (double[]) double array.",
   "arrayFloat": "Interpret a table cell value as a float array.\n\n:param o: (java.lang.Object) - table cell value.\n:return: (float[]) float array.",
   "arrayInt": "Interpret a table cell value as an int array.\n\n:param o: (java.lang.Object) - table cell value.\n:return: (int[]) int array.",
   "arrayLong": "Interpret a table cell value as a long array.\n\n:param o: (java.lang.Object) - table cell value.\n:return: (long[]) long array.",
   "arrayString": "Interpret a table cell value as a string array.\n\n:param o: (java.lang.Object) - table cell value.\n:return: (java.lang.String[]) string array.",
-  "requireTable": "Require a table to have specified columns of specified types.\n\n:param tableName: (java.lang.String) - table name\n:param t: (io.deephaven.db.tables.Table) - table\n:param colNames: (java.lang.String[]) - required column names\n:param colTypes: (java.lang.Class[]) - required column types"
+  "requireTable": "Require a table to have specified columns of specified types.\n\n:param tableName: (java.lang.String) - table name\n:param t: (io.deephaven.engine.table.Table) - table\n:param colNames: (java.lang.String[]) - required column names\n:param colTypes: (java.lang.Class[]) - required column types"
  },
  "path": "io.deephaven.modelfarm.util.ModelFarmUtils",
  "text": "Utilities for building model farms.",

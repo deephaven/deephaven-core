@@ -1,0 +1,16 @@
+{
+ "className": "io.deephaven.engine.table.impl.util.SingleValueRowRedirection",
+ "methods": {
+  "fillChunk": "Lookup each element in a RowSequence and write the result to a WritableLongChunk.\n\n:param fillContext: (io.deephaven.engine.table.ChunkSource.FillContext) - The FillContext\n:param innerRowKeys: (io.deephaven.chunk.WritableLongChunk<? extendsio.deephaven.engine.rowset.chunkattributes.RowKeys>) - The result chunk\n:param outerRowKeys: (io.deephaven.engine.rowset.RowSequence) - The row keys to lookup in this RowRedirection",
+  "fillPrevChunk": "Lookup each element in a RowSequence and write the result to a WritableLongChunk, using previous\n values.\n\n:param fillContext: (io.deephaven.engine.table.ChunkSource.FillContext) - The FillContext\n:param innerRowKeys: (io.deephaven.chunk.WritableLongChunk<? extendsio.deephaven.engine.rowset.chunkattributes.RowKeys>) - The result chunk\n:param outerRowKeys: (io.deephaven.engine.rowset.RowSequence) - The row keys to lookup in this RowRedirection",
+  "get": "Simple redirected lookup.\n\n:param outerRowKey: (long) - The \"outer\" row key\n:return: (long) The corresponding \"inner\" row key, or RowSequence.NULL_ROW_KEY if no mapping exists",
+  "getPrev": "Simple redirected lookup, using previous values.\n\n:param outerRowKey: (long) - The \"outer\" row key\n:return: (long) The corresponding \"inner\" row key, or RowSequence.NULL_ROW_KEY if no mapping exists",
+  "getValue": ":return: long",
+  "isWritableSingleValue": ":return: (boolean) Whether this SingleValueRowRedirection is actually writable",
+  "toString": ":return: java.lang.String",
+  "writableSingleValueCast": "Cast this SingleValueRowRedirection reference to a WritableSingleValueRowRedirection.\n\n:return: (io.deephaven.engine.table.impl.util.WritableSingleValueRowRedirection) this cast to a WritableSingleValueRowRedirection"
+ },
+ "path": "io.deephaven.engine.table.impl.util.SingleValueRowRedirection",
+ "text": "RowRedirection that redirects all outer row keys to the same inner row key.",
+ "typeName": "class"
+}

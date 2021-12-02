@@ -11,6 +11,8 @@ import io.deephaven.proto.backplane.grpc.Ticket;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.Arrays;
+import java.util.List;
 
 public class ExportTicketHelper {
     public static final byte TICKET_PREFIX = 'e';
@@ -26,6 +28,16 @@ public class ExportTicketHelper {
     public static Ticket wrapExportIdInTicket(int exportId) {
         final byte[] dest = exportIdToBytes(exportId);
         return Ticket.newBuilder().setTicket(ByteStringAccess.wrap(dest)).build();
+    }
+
+    /**
+     * Convenience method to convert from export id to a ticket {@link TableReference}.
+     *
+     * @param exportId the export id
+     * @return a table reference
+     */
+    public static TableReference tableReference(int exportId) {
+        return TableReference.newBuilder().setTicket(wrapExportIdInTicket(exportId)).build();
     }
 
     /**
@@ -132,10 +144,36 @@ public class ExportTicketHelper {
      * @return a log-friendly string
      */
     public static String toReadableString(final ByteBuffer ticket, final String logId) {
-        return FLIGHT_DESCRIPTOR_ROUTE + "/" + ticketToExportId(ticket, logId);
+        return toReadableString(ticketToExportId(ticket, logId));
     }
 
-    static byte[] exportIdToBytes(int exportId) {
+    /**
+     * Convenience method to create a human readable string for the export ID.
+     *
+     * @param exportId the export ID
+     * @return a log-friendly string
+     */
+    public static String toReadableString(final int exportId) {
+        return FLIGHT_DESCRIPTOR_ROUTE + "/" + exportId;
+    }
+
+    /**
+     * Convenience method to create the flight descriptor path for the export ID.
+     *
+     * @param exportId the export ID
+     * @return the path
+     */
+    public static List<String> exportIdToPath(int exportId) {
+        return Arrays.asList(FLIGHT_DESCRIPTOR_ROUTE, Integer.toString(exportId));
+    }
+
+    /**
+     * Convenience method to create the flight ticket bytes for the export ID.
+     *
+     * @param exportId the export ID
+     * @return the ticket bytes
+     */
+    public static byte[] exportIdToBytes(int exportId) {
         final byte[] dest = new byte[5];
         dest[0] = TICKET_PREFIX;
         dest[1] = (byte) exportId;
@@ -143,14 +181,6 @@ public class ExportTicketHelper {
         dest[3] = (byte) (exportId >>> 16);
         dest[4] = (byte) (exportId >>> 24);
         return dest;
-    }
-
-    static String byteBufToHex(final ByteBuffer ticket) {
-        StringBuilder sb = new StringBuilder();
-        for (int i = ticket.position(); i < ticket.limit(); ++i) {
-            sb.append(String.format("%02x", ticket.get(i)));
-        }
-        return sb.toString();
     }
 
     static int ticketToExportIdInternal(final ByteBuffer ticket, final String logId) {
@@ -165,7 +195,7 @@ public class ExportTicketHelper {
         }
         if (ticket.remaining() != 5 || ticket.get(pos) != TICKET_PREFIX) {
             throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
-                    "Could not resolve ticket '" + logId + "': found 0x" + byteBufToHex(ticket) + " (hex)");
+                    "Could not resolve ticket '" + logId + "': found 0x" + ByteHelper.byteBufToHex(ticket) + " (hex)");
         }
         return ticket.getInt(pos + 1);
     }

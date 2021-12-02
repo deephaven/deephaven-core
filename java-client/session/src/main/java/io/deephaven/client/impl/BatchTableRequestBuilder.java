@@ -13,7 +13,7 @@ import io.deephaven.api.SortColumn.Order;
 import io.deephaven.api.Strings;
 import io.deephaven.api.agg.AbsSum;
 import io.deephaven.api.agg.Aggregation;
-import io.deephaven.api.agg.Array;
+import io.deephaven.api.agg.Group;
 import io.deephaven.api.agg.Avg;
 import io.deephaven.api.agg.Count;
 import io.deephaven.api.agg.CountDistinct;
@@ -43,6 +43,7 @@ import io.deephaven.api.filter.FilterIsNull;
 import io.deephaven.api.filter.FilterNot;
 import io.deephaven.api.filter.FilterOr;
 import io.deephaven.api.value.Value;
+import io.deephaven.grpc_api.util.ExportTicketHelper;
 import io.deephaven.proto.backplane.grpc.AndCondition;
 import io.deephaven.proto.backplane.grpc.AsOfJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
@@ -54,6 +55,10 @@ import io.deephaven.proto.backplane.grpc.ComboAggregateRequest.Aggregate;
 import io.deephaven.proto.backplane.grpc.CompareCondition;
 import io.deephaven.proto.backplane.grpc.CompareCondition.CompareOperation;
 import io.deephaven.proto.backplane.grpc.Condition;
+import io.deephaven.proto.backplane.grpc.CreateInputTableRequest;
+import io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind;
+import io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryAppendOnly;
+import io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryKeyBacked;
 import io.deephaven.proto.backplane.grpc.CrossJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.EmptyTableRequest;
 import io.deephaven.proto.backplane.grpc.ExactJoinTablesRequest;
@@ -61,7 +66,6 @@ import io.deephaven.proto.backplane.grpc.FetchTableRequest;
 import io.deephaven.proto.backplane.grpc.FilterTableRequest;
 import io.deephaven.proto.backplane.grpc.HeadOrTailRequest;
 import io.deephaven.proto.backplane.grpc.IsNullCondition;
-import io.deephaven.proto.backplane.grpc.LeftJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.Literal;
 import io.deephaven.proto.backplane.grpc.MergeTablesRequest;
 import io.deephaven.proto.backplane.grpc.NaturalJoinTablesRequest;
@@ -77,36 +81,8 @@ import io.deephaven.proto.backplane.grpc.TableReference;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.proto.backplane.grpc.TimeTableRequest;
 import io.deephaven.proto.backplane.grpc.UnstructuredFilterTableRequest;
-import io.deephaven.qst.table.AggregationTable;
-import io.deephaven.qst.table.AsOfJoinTable;
-import io.deephaven.qst.table.ByTable;
-import io.deephaven.qst.table.EmptyTable;
-import io.deephaven.qst.table.ExactJoinTable;
-import io.deephaven.qst.table.HeadTable;
-import io.deephaven.qst.table.JoinTable;
-import io.deephaven.qst.table.LeftJoinTable;
-import io.deephaven.qst.table.MergeTable;
-import io.deephaven.qst.table.NaturalJoinTable;
-import io.deephaven.qst.table.NewTable;
-import io.deephaven.qst.table.ParentsVisitor;
-import io.deephaven.qst.table.ReverseAsOfJoinTable;
-import io.deephaven.qst.table.ReverseTable;
-import io.deephaven.qst.table.SelectTable;
-import io.deephaven.qst.table.SingleParentTable;
-import io.deephaven.qst.table.SnapshotTable;
-import io.deephaven.qst.table.SortTable;
-import io.deephaven.qst.table.TableSpec;
-import io.deephaven.qst.table.TailTable;
-import io.deephaven.qst.table.TicketTable;
+import io.deephaven.qst.table.*;
 import io.deephaven.qst.table.TimeProvider.Visitor;
-import io.deephaven.qst.table.TimeProviderSystem;
-import io.deephaven.qst.table.TimeTable;
-import io.deephaven.qst.table.UpdateTable;
-import io.deephaven.qst.table.UpdateViewTable;
-import io.deephaven.qst.table.ViewTable;
-import io.deephaven.qst.table.WhereInTable;
-import io.deephaven.qst.table.WhereNotInTable;
-import io.deephaven.qst.table.WhereTable;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -116,14 +92,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
 
 class BatchTableRequestBuilder {
 
     interface ExportLookup {
-        Optional<Ticket> ticket(TableSpec spec);
+        OptionalInt ticket(TableSpec spec);
     }
 
     static BatchTableRequest buildNoChecks(ExportLookup lookup, Collection<TableSpec> postOrder) {
@@ -131,7 +107,10 @@ class BatchTableRequestBuilder {
         final BatchTableRequest.Builder builder = BatchTableRequest.newBuilder();
         int ix = 0;
         for (TableSpec table : postOrder) {
-            final Ticket ticket = lookup.ticket(table).orElse(Ticket.getDefaultInstance());
+            final OptionalInt exportId = lookup.ticket(table);
+            final Ticket ticket =
+                    exportId.isPresent() ? ExportTicketHelper.wrapExportIdInTicket(exportId.getAsInt())
+                            : Ticket.getDefaultInstance();
             final Operation operation =
                     table.walk(new OperationAdapter(ticket, indices, lookup)).getOut();
             builder.addOps(operation);
@@ -161,9 +140,9 @@ class BatchTableRequestBuilder {
         }
 
         private TableReference ref(TableSpec table) {
-            Optional<Ticket> existing = lookup.ticket(table);
+            OptionalInt existing = lookup.ticket(table);
             if (existing.isPresent()) {
-                return TableReference.newBuilder().setTicket(existing.get()).build();
+                return ExportTicketHelper.tableReference(existing.getAsInt());
             }
             final Integer ix = indices.get(table);
             if (ix != null) {
@@ -339,19 +318,6 @@ class BatchTableRequestBuilder {
         }
 
         @Override
-        public void visit(LeftJoinTable j) {
-            LeftJoinTablesRequest.Builder builder = LeftJoinTablesRequest.newBuilder()
-                    .setResultId(ticket).setLeftId(ref(j.left())).setRightId(ref(j.right()));
-            for (JoinMatch match : j.matches()) {
-                builder.addColumnsToMatch(Strings.of(match));
-            }
-            for (JoinAddition addition : j.additions()) {
-                builder.addColumnsToAdd(Strings.of(addition));
-            }
-            out = op(Builder::setLeftJoin, builder.build());
-        }
-
-        @Override
         public void visit(AsOfJoinTable aj) {
             AsOfJoinTablesRequest.Builder builder = AsOfJoinTablesRequest.newBuilder()
                     .setLeftId(ref(aj.left())).setRightId(ref(aj.right()))
@@ -404,22 +370,13 @@ class BatchTableRequestBuilder {
         }
 
         @Override
-        public void visit(ByTable byTable) {
-            ComboAggregateRequest.Builder builder = ComboAggregateRequest.newBuilder()
-                    .setResultId(ticket).setSourceId(ref(byTable.parent()));
-            for (Selectable column : byTable.columns()) {
-                builder.addGroupByColumns(Strings.of(column));
-            }
-            out = op(Builder::setComboAggregate, builder);
+        public void visit(GroupByTable groupByTable) {
+            out = op(Builder::setComboAggregate, singleAgg(groupByTable, AggType.GROUP));
         }
 
         @Override
         public void visit(AggregationTable aggregationTable) {
-            ComboAggregateRequest.Builder builder = ComboAggregateRequest.newBuilder()
-                    .setResultId(ticket).setSourceId(ref(aggregationTable.parent()));
-            for (Selectable column : aggregationTable.columns()) {
-                builder.addGroupByColumns(Strings.of(column));
-            }
+            ComboAggregateRequest.Builder builder = groupByColumns(aggregationTable);
             for (Aggregation aggregation : aggregationTable.aggregations()) {
                 builder.addAllAggregates(AggregationAdapter.of(aggregation));
             }
@@ -435,6 +392,36 @@ class BatchTableRequestBuilder {
             out = op(Builder::setFetchTable, builder);
         }
 
+        @Override
+        public void visit(InputTable inputTable) {
+            CreateInputTableRequest.Builder builder = CreateInputTableRequest.newBuilder()
+                    .setResultId(ticket);
+            inputTable.schema().walk(new TableSchema.Visitor() {
+                @Override
+                public void visit(TableSpec spec) {
+                    builder.setSourceTableId(ref(spec));
+                }
+
+                @Override
+                public void visit(TableHeader header) {
+                    builder.setSchema(ByteStringAccess.wrap(SchemaBytes.of(header)));
+                }
+            });
+            inputTable.walk(new InputTable.Visitor() {
+                @Override
+                public void visit(InMemoryAppendOnlyInputTable inMemoryAppendOnly) {
+                    builder.setKind(InputTableKind.newBuilder().setInMemoryAppendOnly(InMemoryAppendOnly.newBuilder()));
+                }
+
+                @Override
+                public void visit(InMemoryKeyBackedInputTable inMemoryKeyBacked) {
+                    builder.setKind(InputTableKind.newBuilder().setInMemoryKeyBacked(
+                            InMemoryKeyBacked.newBuilder().addAllKeyColumns(inMemoryKeyBacked.keys())));
+                }
+            });
+            out = op(Builder::setCreateInputTable, builder);
+        }
+
         private SelectOrUpdateRequest selectOrUpdate(SingleParentTable x,
                 Collection<Selectable> columns) {
             SelectOrUpdateRequest.Builder builder =
@@ -443,6 +430,20 @@ class BatchTableRequestBuilder {
                 builder.addColumnSpecs(Strings.of(column));
             }
             return builder.build();
+        }
+
+        private ComboAggregateRequest singleAgg(ByTableBase base, AggType type) {
+            return groupByColumns(base).addAggregates(Aggregate.newBuilder().setType(type).build()).build();
+        }
+
+        private ComboAggregateRequest.Builder groupByColumns(ByTableBase base) {
+            ComboAggregateRequest.Builder builder = ComboAggregateRequest.newBuilder()
+                    .setResultId(ticket)
+                    .setSourceId(ref(base.parent()));
+            for (Selectable column : base.columns()) {
+                builder.addGroupByColumns(Strings.of(column));
+            }
+            return builder;
         }
     }
 
@@ -557,8 +558,8 @@ class BatchTableRequestBuilder {
         }
 
         @Override
-        public void visit(Array array) {
-            out = of(AggType.ARRAY, array.pair()).build();
+        public void visit(Group group) {
+            out = of(AggType.GROUP, group.pair()).build();
         }
 
         @Override

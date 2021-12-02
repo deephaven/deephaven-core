@@ -5,11 +5,12 @@ import io.deephaven.api.SortColumn;
 
 import java.io.Serializable;
 import java.util.Collection;
+import java.util.stream.Collectors;
 
 /**
  * Represents an aggregation that can be applied to a table.
  *
- * @see io.deephaven.api.TableOperations#by(Collection, Collection)
+ * @see io.deephaven.api.TableOperations#aggBy(Collection, Collection)
  */
 public interface Aggregation extends Serializable {
 
@@ -17,23 +18,23 @@ public interface Aggregation extends Serializable {
         return AggregationFinisher.absSum().of(pair);
     }
 
-    static Multi<AbsSum> AggAbsSum(String... pairs) {
+    static Aggregation AggAbsSum(String... pairs) {
         return AggregationFinisher.absSum().of(pairs);
     }
 
-    static Array AggArray(String pair) {
-        return AggregationFinisher.array().of(pair);
+    static Group AggGroup(String pair) {
+        return AggregationFinisher.group().of(pair);
     }
 
-    static Multi<Array> AggArray(String... pairs) {
-        return AggregationFinisher.array().of(pairs);
+    static Aggregation AggGroup(String... pairs) {
+        return AggregationFinisher.group().of(pairs);
     }
 
     static Avg AggAvg(String pair) {
         return AggregationFinisher.avg().of(pair);
     }
 
-    static Multi<Avg> AggAvg(String... pairs) {
+    static Aggregation AggAvg(String... pairs) {
         return AggregationFinisher.avg().of(pairs);
     }
 
@@ -45,23 +46,39 @@ public interface Aggregation extends Serializable {
         return AggregationFinisher.countDistinct().of(pair);
     }
 
-    static Multi<CountDistinct> AggCountDistinct(String... pairs) {
+    static Aggregation AggCountDistinct(String... pairs) {
         return AggregationFinisher.countDistinct().of(pairs);
+    }
+
+    static CountDistinct AggCountDistinct(boolean countNulls, String pair) {
+        return AggregationFinisher.countDistinct(countNulls).of(pair);
+    }
+
+    static Aggregation AggCountDistinct(boolean countNulls, String... pairs) {
+        return AggregationFinisher.countDistinct(countNulls).of(pairs);
     }
 
     static Distinct AggDistinct(String pair) {
         return AggregationFinisher.distinct().of(pair);
     }
 
-    static Multi<Distinct> AggDistinct(String... pairs) {
+    static Aggregation AggDistinct(String... pairs) {
         return AggregationFinisher.distinct().of(pairs);
+    }
+
+    static Distinct AggDistinct(boolean includeNulls, String pair) {
+        return AggregationFinisher.distinct(includeNulls).of(pair);
+    }
+
+    static Aggregation AggDistinct(boolean includeNulls, String... pairs) {
+        return AggregationFinisher.distinct(includeNulls).of(pairs);
     }
 
     static First AggFirst(String pair) {
         return AggregationFinisher.first().of(pair);
     }
 
-    static Multi<First> AggFirst(String... pairs) {
+    static Aggregation AggFirst(String... pairs) {
         return AggregationFinisher.first().of(pairs);
     }
 
@@ -69,7 +86,7 @@ public interface Aggregation extends Serializable {
         return AggregationFinisher.last().of(pair);
     }
 
-    static Multi<Last> AggLast(String... pairs) {
+    static Aggregation AggLast(String... pairs) {
         return AggregationFinisher.last().of(pairs);
     }
 
@@ -77,7 +94,7 @@ public interface Aggregation extends Serializable {
         return AggregationFinisher.max().of(pair);
     }
 
-    static Multi<Max> AggMax(String... pairs) {
+    static Aggregation AggMax(String... pairs) {
         return AggregationFinisher.max().of(pairs);
     }
 
@@ -85,7 +102,7 @@ public interface Aggregation extends Serializable {
         return AggregationFinisher.med().of(pair);
     }
 
-    static Multi<Med> AggMed(String... pairs) {
+    static Aggregation AggMed(String... pairs) {
         return AggregationFinisher.med().of(pairs);
     }
 
@@ -93,7 +110,15 @@ public interface Aggregation extends Serializable {
         return AggregationFinisher.min().of(pair);
     }
 
-    static Multi<Min> AggMin(String... pairs) {
+    static Med AggMed(boolean average, String pair) {
+        return AggregationFinisher.med(average).of(pair);
+    }
+
+    static Aggregation AggMed(boolean average, String... pairs) {
+        return AggregationFinisher.med(average).of(pairs);
+    }
+
+    static Aggregation AggMin(String... pairs) {
         return AggregationFinisher.min().of(pairs);
     }
 
@@ -101,8 +126,16 @@ public interface Aggregation extends Serializable {
         return AggregationFinisher.pct(percentile).of(pair);
     }
 
-    static Multi<Pct> AggPct(double percentile, String... pairs) {
+    static Aggregation AggPct(double percentile, String... pairs) {
         return AggregationFinisher.pct(percentile).of(pairs);
+    }
+
+    static Pct AggPct(double percentile, boolean average, String pair) {
+        return AggregationFinisher.pct(percentile, average).of(pair);
+    }
+
+    static Aggregation AggPct(double percentile, boolean average, String... pairs) {
+        return AggregationFinisher.pct(percentile, average).of(pairs);
     }
 
     static SortedFirst AggSortedFirst(String sortedColumn, String pair) {
@@ -110,17 +143,42 @@ public interface Aggregation extends Serializable {
                 .of(pair);
     }
 
-    static Multi<SortedFirst> AggSortedFirst(String sortedColumn, String... pairs) {
+    static Aggregation AggSortedFirst(String sortedColumn, String... pairs) {
         return AggregationFinisher.sortedFirst(SortColumn.asc(ColumnName.of(sortedColumn)))
                 .of(pairs);
     }
 
-    static SortedLast AggSortedLast(String sortedColumn, String pair) {
-        return AggregationFinisher.sortedLast(SortColumn.asc(ColumnName.of(sortedColumn))).of(pair);
+    static SortedFirst AggSortedFirst(Collection<? extends String> sortedColumns, String pair) {
+        return AggregationFinisher.sortedFirst(
+                sortedColumns.stream().map(ColumnName::of).map(SortColumn::asc).collect(Collectors.toList()))
+                .of(pair);
     }
 
-    static Multi<SortedLast> AggSortedLast(String sortedColumn, String... pairs) {
+    static Aggregation AggSortedFirst(Collection<? extends String> sortedColumns, String... pairs) {
+        return AggregationFinisher.sortedFirst(
+                sortedColumns.stream().map(ColumnName::of).map(SortColumn::asc).collect(Collectors.toList()))
+                .of(pairs);
+    }
+
+    static SortedLast AggSortedLast(String sortedColumn, String pair) {
         return AggregationFinisher.sortedLast(SortColumn.asc(ColumnName.of(sortedColumn)))
+                .of(pair);
+    }
+
+    static Aggregation AggSortedLast(String sortedColumn, String... pairs) {
+        return AggregationFinisher.sortedLast(SortColumn.asc(ColumnName.of(sortedColumn)))
+                .of(pairs);
+    }
+
+    static SortedLast AggSortedLast(Collection<? extends String> sortedColumns, String pair) {
+        return AggregationFinisher.sortedLast(
+                sortedColumns.stream().map(ColumnName::of).map(SortColumn::asc).collect(Collectors.toList()))
+                .of(pair);
+    }
+
+    static Aggregation AggSortedLast(Collection<? extends String> sortedColumns, String... pairs) {
+        return AggregationFinisher.sortedLast(
+                sortedColumns.stream().map(ColumnName::of).map(SortColumn::asc).collect(Collectors.toList()))
                 .of(pairs);
     }
 
@@ -128,7 +186,7 @@ public interface Aggregation extends Serializable {
         return AggregationFinisher.std().of(pair);
     }
 
-    static Multi<Std> AggStd(String... pairs) {
+    static Aggregation AggStd(String... pairs) {
         return AggregationFinisher.std().of(pairs);
     }
 
@@ -136,7 +194,7 @@ public interface Aggregation extends Serializable {
         return AggregationFinisher.sum().of(pair);
     }
 
-    static Multi<Sum> AggSum(String... pairs) {
+    static Aggregation AggSum(String... pairs) {
         return AggregationFinisher.sum().of(pairs);
     }
 
@@ -144,15 +202,23 @@ public interface Aggregation extends Serializable {
         return AggregationFinisher.unique().of(pair);
     }
 
-    static Multi<Unique> AggUnique(String... pairs) {
+    static Aggregation AggUnique(String... pairs) {
         return AggregationFinisher.unique().of(pairs);
+    }
+
+    static Unique AggUnique(boolean includeNulls, String pair) {
+        return AggregationFinisher.unique(includeNulls).of(pair);
+    }
+
+    static Aggregation AggUnique(boolean includeNulls, String... pairs) {
+        return AggregationFinisher.unique(includeNulls).of(pairs);
     }
 
     static Var AggVar(String pair) {
         return AggregationFinisher.var().of(pair);
     }
 
-    static Multi<Var> AggVar(String... pairs) {
+    static Aggregation AggVar(String... pairs) {
         return AggregationFinisher.var().of(pairs);
     }
 
@@ -160,7 +226,7 @@ public interface Aggregation extends Serializable {
         return AggregationFinisher.wAvg(ColumnName.of(weightColumn)).of(pair);
     }
 
-    static Multi<WAvg> AggWAvg(String weightColumn, String... pairs) {
+    static Aggregation AggWAvg(String weightColumn, String... pairs) {
         return AggregationFinisher.wAvg(ColumnName.of(weightColumn)).of(pairs);
     }
 
@@ -168,7 +234,7 @@ public interface Aggregation extends Serializable {
         return AggregationFinisher.wSum(ColumnName.of(weightColumn)).of(pair);
     }
 
-    static Multi<WSum> AggWSum(String weightColumn, String... pairs) {
+    static Aggregation AggWSum(String weightColumn, String... pairs) {
         return AggregationFinisher.wSum(ColumnName.of(weightColumn)).of(pairs);
     }
 
@@ -177,7 +243,7 @@ public interface Aggregation extends Serializable {
     interface Visitor {
         void visit(AbsSum absSum);
 
-        void visit(Array array);
+        void visit(Group group);
 
         void visit(Avg avg);
 

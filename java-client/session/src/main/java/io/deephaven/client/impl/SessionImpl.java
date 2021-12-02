@@ -3,9 +3,14 @@ package io.deephaven.client.impl;
 import com.google.protobuf.ByteString;
 import io.deephaven.client.impl.script.Changes;
 import io.deephaven.client.impl.script.VariableDefinition;
+import io.deephaven.proto.backplane.grpc.AddTableRequest;
+import io.deephaven.proto.backplane.grpc.AddTableResponse;
 import io.deephaven.proto.backplane.grpc.CloseSessionResponse;
+import io.deephaven.proto.backplane.grpc.DeleteTableRequest;
+import io.deephaven.proto.backplane.grpc.DeleteTableResponse;
 import io.deephaven.proto.backplane.grpc.HandshakeRequest;
 import io.deephaven.proto.backplane.grpc.HandshakeResponse;
+import io.deephaven.proto.backplane.grpc.InputTableServiceGrpc.InputTableServiceStub;
 import io.deephaven.proto.backplane.grpc.ReleaseRequest;
 import io.deephaven.proto.backplane.grpc.ReleaseResponse;
 import io.deephaven.proto.backplane.grpc.SessionServiceGrpc.SessionServiceStub;
@@ -172,6 +177,7 @@ public final class SessionImpl extends SessionBase {
     private final ScheduledExecutorService executor;
     private final SessionServiceStub sessionService;
     private final ConsoleServiceStub consoleService;
+    private final InputTableServiceStub inputTableService;
     private final Handler handler;
     private final ExportTicketCreator exportTicketCreator;
     private final ExportStates states;
@@ -193,6 +199,7 @@ public final class SessionImpl extends SessionBase {
         this.executor = config.executor();
         this.sessionService = config.channel().session().withCallCredentials(credentials);
         this.consoleService = config.channel().console().withCallCredentials(credentials);
+        this.inputTableService = config.channel().inputTable().withCallCredentials(credentials);
         this.exportTicketCreator = new ExportTicketCreator();
         this.states = new ExportStates(this, sessionService, config.channel().table().withCallCredentials(credentials),
                 exportTicketCreator);
@@ -215,21 +222,22 @@ public final class SessionImpl extends SessionBase {
 
     @Override
     public CompletableFuture<? extends ConsoleSession> console(String type) {
-        final StartConsoleRequest request =
-                StartConsoleRequest.newBuilder().setSessionType(type).setResultId(exportTicketCreator.create()).build();
+        final ExportId consoleId = new ExportId(exportTicketCreator.createExportId());
+        final StartConsoleRequest request = StartConsoleRequest.newBuilder().setSessionType(type)
+                .setResultId(consoleId.ticketId().ticket()).build();
         final ConsoleHandler handler = new ConsoleHandler(request);
         consoleService.startConsole(request, handler);
         return handler.future();
     }
 
     @Override
-    public CompletableFuture<Void> publish(String name, HasTicket ticket) {
+    public CompletableFuture<Void> publish(String name, HasTicketId ticketId) {
         if (!SourceVersion.isName(name)) {
             throw new IllegalArgumentException("Invalid name");
         }
         PublishObserver observer = new PublishObserver();
         consoleService.bindTableToVariable(BindTableToVariableRequest.newBuilder()
-                .setVariableName(name).setTableId(ticket.ticket()).build(), observer);
+                .setVariableName(name).setTableId(ticketId.ticketId().ticket()).build(), observer);
         return observer.future;
     }
 
@@ -280,14 +288,37 @@ public final class SessionImpl extends SessionBase {
     }
 
     @Override
-    public Ticket newTicket() {
-        return exportTicketCreator.create();
+    public ExportId newExportId() {
+        return new ExportId(exportTicketCreator.createExportId());
     }
 
     @Override
-    public CompletableFuture<Void> release(Ticket ticket) {
+    public CompletableFuture<Void> release(ExportId exportId) {
         final ReleaseTicketObserver observer = new ReleaseTicketObserver();
-        sessionService.release(ReleaseRequest.newBuilder().setId(ticket).build(), observer);
+        sessionService.release(
+                ReleaseRequest.newBuilder().setId(exportId.ticketId().ticket()).build(), observer);
+        return observer.future;
+    }
+
+    @Override
+    public CompletableFuture<Void> addToInputTable(HasTicketId destination, HasTicketId source) {
+        final AddTableRequest request = AddTableRequest.newBuilder()
+                .setInputTable(destination.ticketId().ticket())
+                .setTableToAdd(source.ticketId().ticket())
+                .build();
+        final AddToInputTableObserver observer = new AddToInputTableObserver();
+        inputTableService.addTableToInputTable(request, observer);
+        return observer.future;
+    }
+
+    @Override
+    public CompletableFuture<Void> deleteFromInputTable(HasTicketId destination, HasTicketId source) {
+        final DeleteTableRequest request = DeleteTableRequest.newBuilder()
+                .setInputTable(destination.ticketId().ticket())
+                .setTableToRemove(source.ticketId().ticket())
+                .build();
+        final DeleteFromInputTableObserver observer = new DeleteFromInputTableObserver();
+        inputTableService.deleteTableFromInputTable(request, observer);
         return observer.future;
     }
 
@@ -351,7 +382,6 @@ public final class SessionImpl extends SessionBase {
             }
         }
     }
-
 
     private class SessionCallCredentials extends CallCredentials {
 
@@ -595,6 +625,72 @@ public final class SessionImpl extends SessionBase {
 
         @Override
         public void onNext(ReleaseResponse value) {
+            future.complete(null);
+        }
+
+        @Override
+        public void onError(Throwable t) {
+            future.completeExceptionally(t);
+        }
+
+        @Override
+        public void onCompleted() {
+            if (!future.isDone()) {
+                future.completeExceptionally(
+                        new IllegalStateException("Observer completed without response"));
+            }
+        }
+    }
+
+    private static class AddToInputTableObserver
+            implements ClientResponseObserver<AddTableRequest, AddTableResponse> {
+        private final CompletableFuture<Void> future = new CompletableFuture<>();
+
+        @Override
+        public void beforeStart(
+                ClientCallStreamObserver<AddTableRequest> requestStream) {
+            future.whenComplete((session, throwable) -> {
+                if (future.isCancelled()) {
+                    requestStream.cancel("User cancelled", null);
+                }
+            });
+        }
+
+        @Override
+        public void onNext(AddTableResponse value) {
+            future.complete(null);
+        }
+
+        @Override
+        public void onError(Throwable t) {
+            future.completeExceptionally(t);
+        }
+
+        @Override
+        public void onCompleted() {
+            if (!future.isDone()) {
+                future.completeExceptionally(
+                        new IllegalStateException("Observer completed without response"));
+            }
+        }
+    }
+
+    private static class DeleteFromInputTableObserver
+            implements ClientResponseObserver<DeleteTableRequest, DeleteTableResponse> {
+        private final CompletableFuture<Void> future = new CompletableFuture<>();
+
+        @Override
+        public void beforeStart(
+                ClientCallStreamObserver<DeleteTableRequest> requestStream) {
+            future.whenComplete((session, throwable) -> {
+                if (future.isCancelled()) {
+                    requestStream.cancel("User cancelled", null);
+                }
+            });
+        }
+
+        @Override
+        public void onNext(DeleteTableResponse value) {
             future.complete(null);
         }
 

@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.engine.util.ExpressionParser",
+ "methods": {
+  "parse": "Attempt to process the expression using the configured\nfactories\n\n:param expression: (java.lang.String) - the expression to parse\n:param args: java.lang.Object...\n:return: (ExpressionParser.TYPE) The result of the parsing",
+  "registerFactory": "Add an expression factory to the list of possible parsers for an expression.\n\n:param expressionFactory: (io.deephaven.engine.util.ExpressionFactory<ExpressionParser.TYPE>) - the factory"
+ },
+ "path": "io.deephaven.engine.util.ExpressionParser",
+ "text": "A parser that will try a set of ExpressionFactorys and attempt to parse the expression until one of them\n succeeds.",
+ "typeName": "class"
+}

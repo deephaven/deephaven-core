@@ -1,0 +1,21 @@
+{
+ "className": "io.deephaven.time.calendar.DefaultBusinessCalendar",
+ "methods": {
+  "diffBusinessNanos": "Returns the amount of business time in nanoseconds between start and end.\n\n:param start: (io.deephaven.time.DateTime) - start time; if null, return NULL_LONG\n:param end: (io.deephaven.time.DateTime) - end time; if null, return NULL_LONG\n:return: (long) the amount of business time in nanoseconds between the start and end",
+  "diffBusinessYear": "Returns the number of business years between start and end.\n\n:param startTime: (io.deephaven.time.DateTime) - start; if null, return null\n:param endTime: (io.deephaven.time.DateTime) - end; if null, return null\n:return: (double) the amount of business time in business years between the start and end",
+  "equals": ":param o: java.lang.Object\n:return: boolean",
+  "getBusinessDay": "Gets the indicated business day.\n\n*Overload 1*  \n  :param time: (io.deephaven.time.DateTime) - time\n  :return: (io.deephaven.time.calendar.BusinessSchedule) the corresponding BusinessSchedule of time; null if time is null\n  \n*Overload 2*  \n  :param date: (java.lang.String) - date\n  :return: (io.deephaven.time.calendar.BusinessSchedule) the corresponding BusinessSchedule of date\n  \n*Overload 3*  \n  :param date: (java.time.LocalDate) - date\n  :return: (io.deephaven.time.calendar.BusinessSchedule) the corresponding BusinessSchedule of date",
+  "getBusinessSchedule": "Gets the indicated business day's schedule. getBusinessSchedule(null) returns null.\n\n*Overload 1*  \n  :param time: (io.deephaven.time.DateTime) - time\n  :return: (io.deephaven.time.calendar.BusinessSchedule) the corresponding BusinessSchedule of time; null if time is null\n  \n*Overload 2*  \n  :param date: (java.lang.String) - date\n  :return: (io.deephaven.time.calendar.BusinessSchedule) the corresponding BusinessSchedule of date\n  \n*Overload 3*  \n  :param date: (java.time.LocalDate) - date\n  :return: (io.deephaven.time.calendar.BusinessSchedule) the corresponding BusinessSchedule of date",
+  "getDefaultBusinessPeriods": "Gets the business periods for the default days.\n\n:return: (java.util.List<java.lang.String>) a list of strings with a comma separating open and close times",
+  "getHolidays": "Gets business schedules for dates that are different from the defaults. This returns all dates that are defined\n as a holiday for the calendar.\n\n:return: (java.util.Map<java.time.LocalDate,io.deephaven.time.calendar.BusinessSchedule>) a map of dates and to their business periods",
+  "hashCode": ":return: int",
+  "isBusinessDay": "Is the day of the week a business day? A business day is a day that has a business schedule with one or more\n business periods defined.\n\n:param day: (java.time.DayOfWeek) - a day of the week\n:return: (boolean) true if the day is a business day; false otherwise.",
+  "name": "Gets the name of the calendar.\n\n:return: (java.lang.String) the name of the calendar",
+  "standardBusinessDayLengthNanos": "Returns the length of a standard business day in nanoseconds.\n\n:return: (long) length of a standard business day in nanoseconds.",
+  "timeZone": "Gets the timezone of the calendar.\n\n:return: (io.deephaven.time.TimeZone) the time zone of the calendar",
+  "toString": ":return: java.lang.String"
+ },
+ "path": "io.deephaven.time.calendar.DefaultBusinessCalendar",
+ "text": "Default implementation for a BusinessCalendar. This implementation is thread safe.\n\n Overrides many default Calendar and BusinessCalendar methods for improved performance. See the documentation\n of Calendar for details.",
+ "typeName": "class"
+}

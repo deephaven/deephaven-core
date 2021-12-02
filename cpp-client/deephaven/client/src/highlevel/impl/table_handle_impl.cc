@@ -149,7 +149,7 @@ std::shared_ptr<TableHandleImpl> TableHandleImpl::defaultAggregateByType(
 }
 
 std::shared_ptr<TableHandleImpl> TableHandleImpl::by(std::vector<std::string> columnSpecs) {
-  return defaultAggregateByType(ComboAggregateRequest::ARRAY, std::move(columnSpecs));
+  return defaultAggregateByType(ComboAggregateRequest::GROUP, std::move(columnSpecs));
 }
 
 std::shared_ptr<TableHandleImpl> TableHandleImpl::by(
@@ -299,14 +299,6 @@ std::shared_ptr<TableHandleImpl> TableHandleImpl::exactJoin(const TableHandleImp
     std::vector<std::string> columnsToMatch, std::vector<std::string> columnsToAdd) const {
   auto cb = TableHandleImpl::createEtcCallback(managerImpl_.get());
   auto resultTicket = managerImpl_->server()->exactJoinAsync(ticket_, rightSide.ticket_,
-      std::move(columnsToMatch), std::move(columnsToAdd), cb);
-  return TableHandleImpl::create(managerImpl_, std::move(resultTicket), std::move(cb));
-}
-
-std::shared_ptr<TableHandleImpl> TableHandleImpl::leftJoin(const TableHandleImpl &rightSide,
-    std::vector<std::string> columnsToMatch, std::vector<std::string> columnsToAdd) const {
-  auto cb = TableHandleImpl::createEtcCallback(managerImpl_.get());
-  auto resultTicket = managerImpl_->server()->leftJoinAsync(ticket_, rightSide.ticket_,
       std::move(columnsToMatch), std::move(columnsToAdd), cb);
   return TableHandleImpl::create(managerImpl_, std::move(resultTicket), std::move(cb));
 }

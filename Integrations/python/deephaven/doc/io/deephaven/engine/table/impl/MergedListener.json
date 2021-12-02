@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.engine.table.impl.MergedListener",
+ "methods": {
+  "append": ":param logOutput: io.deephaven.base.log.LogOutput\n:return: io.deephaven.base.log.LogOutput",
+  "satisfied": "Is this ancestor satisfied? Note that this method must be safe to call on any thread.\n\n:param step: (long) - The step for which we are testing satisfaction\n:return: (boolean) Whether the dependency is satisfied on step (and will not fire subsequent notifications)"
+ },
+ "path": "io.deephaven.engine.table.impl.MergedListener",
+ "text": "A merged listener has a collection of ListenerRecorders. Each one must complete before the merged listener\n fires its sole notification for the cycle.\n\n You must use a MergedListener if your result table has multiple sources, otherwise it is possible for a table to\n produce notifications more than once in a cycle; which is an error.",
+ "typeName": "class"
+}

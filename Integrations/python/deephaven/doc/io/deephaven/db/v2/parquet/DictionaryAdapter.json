@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.db.v2.parquet.DictionaryAdapter",
- "methods": {
-  "apply": ":param result: DictionaryAdapter.RESULT_ARRAY\n:param destIndex: int\n:param keyIndex: int",
-  "createResult": ":param numValues: int\n:return: DictionaryAdapter.RESULT_ARRAY"
- },
- "path": "io.deephaven.db.v2.parquet.DictionaryAdapter",
- "typeName": "class"
-}

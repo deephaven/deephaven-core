@@ -1,0 +1,16 @@
+{
+ "className": "io.deephaven.engine.rowset.impl.rsp.RspArray$SpanCursor",
+ "methods": {
+  "advance": "Advances the pointer forward to the next span in the sequence whose interval could have it include the key\n argument.\n\n More specifically, the current span position is effectively advanced forward as long as the provided key is\n bigger than the right endpoint for the current span.\n\n This operation is O(log(cardinality)).\n\n Note this may not move the pointer if the current span already satisfies the constraint, or it may invalidate\n the pointer if the key is to the right of the last valid span. Note also advance should only be called on a\n non-empty cursor, after having called hasNext() and next() at least once.\n\n:param key: (long) - key to search forward from the current span position.\n:return: (boolean) false if the cursor is exhausted and there was no span satisfying the restriction found, true\n         otherwise.",
+  "arr": ":return: io.deephaven.engine.rowset.impl.rsp.RspArray",
+  "arrIdx": ":return: int",
+  "hasNext": "This method should be called: * After the pointer is created and before calling any other methods; if it\n returns false, calling any other methods results in undefined behavior. * Right after a call to any advance\n method, similar to above.\n\n:return: (boolean) true if the pointer currently points to a valid span.",
+  "next": "Advances the pointer to the next span in the linear sequence. If the span before the call was the last one, a\n subsequent call to hasNext will return false.",
+  "release": "Releases the RspArray reference.",
+  "span": ":return: (java.lang.Object) the current span if valid, undefined otherwise.",
+  "spanInfo": ":return: (long) the current span's span info if the current span is valid, undefined otherwise.",
+  "spanKey": ":return: (long) the current span's first key if the current span is valid, undefined otherwise."
+ },
+ "path": "io.deephaven.engine.rowset.impl.rsp.RspArray.SpanCursor",
+ "typeName": "interface"
+}

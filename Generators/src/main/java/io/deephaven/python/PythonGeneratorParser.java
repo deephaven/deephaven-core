@@ -5,7 +5,7 @@
 package io.deephaven.python;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.deephaven.db.util.string.StringUtils;
+import io.deephaven.engine.util.string.StringUtils;
 import io.deephaven.libs.GroovyStaticImportGenerator;
 
 import java.io.File;

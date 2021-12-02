@@ -1,4 +1,4 @@
-FROM debian:buster-slim as java_base
+FROM deephaven/debian:local-build as java_base
 ARG ZULU_REPO_VER=1.0.0-3
 RUN set -eux; \
     if [ -f /etc/dpkg/dpkg.cfg.d/docker ]; then \
@@ -23,7 +23,11 @@ RUN set -eux; \
 ENV LANG='en_US.UTF-8' LANGUAGE='en_US:en' LC_ALL='en_US.UTF-8'
 ENV JAVA_HOME=/usr/lib/jvm/zulu11-ca-amd64
 
-FROM java_base
+# smoke test to ensure that the java build is where it belongs and works
+FROM java_base as java_base_check
+RUN $JAVA_HOME/bin/javac -version
+
+FROM java_base as python_install
 RUN set -eux; \
     apt-get -qq update; \
     apt-get -qq -y --no-install-recommends install \
@@ -33,7 +37,27 @@ RUN set -eux; \
       python3-setuptools \
       python3-wheel \
       ; \
-    rm -rf /var/lib/apt/lists/*; \
-    python3 -m pip install -q --no-cache-dir --upgrade pip; \
-    python3 -m pip install -q --no-cache-dir --upgrade setuptools; \
-    python3 -m pip install -q --no-cache-dir --upgrade wheel
+    rm -rf /var/lib/apt/lists/*
+
+# To update the requirements.txt:
+# 1. Comment out BLOCK 1, and uncomment BLOCK 2
+# 2. Run `./gradlew docker-java-and-python:build`
+# 3. Run `docker run --rm -it deephaven/java-and-python:local-build pip freeze --all > docker/java-and-python/src/main/docker/requirements.txt`
+# 4. Uncomment BLOCK 1, and comment out BLOCK 2
+
+# START BLOCK 1
+COPY requirements.txt requirements.txt
+RUN set -eux; \
+    python3 -m pip install --no-cache-dir -r requirements.txt; \
+    rm requirements.txt
+# END BLOCK 1
+
+# START BLOCK 2
+#RUN set -eux; \
+#    python3 -m pip install --no-cache-dir --upgrade pip; \
+#    python3 -m pip install --no-cache-dir --upgrade setuptools; \
+#    python3 -m pip install --no-cache-dir --upgrade wheel
+# END BLOCK 2
+
+FROM java_base
+COPY --from=python_install / /

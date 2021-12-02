@@ -1,0 +1,6 @@
+{
+ "className": "io.deephaven.engine.table.impl.select.codegen.FormulaAnalyzer$Result",
+ "methods": {},
+ "path": "io.deephaven.engine.table.impl.select.codegen.FormulaAnalyzer.Result",
+ "typeName": "class"
+}

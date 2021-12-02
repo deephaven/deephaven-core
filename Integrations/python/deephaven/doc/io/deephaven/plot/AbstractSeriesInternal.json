@@ -1,0 +1,18 @@
+{
+ "className": "io.deephaven.plot.AbstractSeriesInternal",
+ "methods": {
+  "addSwappableTable": "Adds a swappable table that drives this series.\n\n:param st: (io.deephaven.plot.util.tables.SwappableTable) - swappable table",
+  "addTableHandle": "Add a table that drives this series.\n\n:param h: (io.deephaven.plot.util.tables.TableHandle) - table handle.",
+  "addTableMapHandle": "Add a table map that drives this series.\n\n:param map: (io.deephaven.plot.util.tables.TableMapHandle) - table map.",
+  "axes": "Gets the axes on which this data will be plotted.\n\n:return: (io.deephaven.plot.AxesImpl) axes on which this data will be plotted",
+  "getSwappableTables": "Gets the swappable tables that drive this series.\n\n:return: (java.util.Set<io.deephaven.plot.util.tables.SwappableTable>) swappable tables that drive this series.",
+  "getTableHandles": "Gets all of the tables driving this series.\n\n:return: (java.util.Set<io.deephaven.plot.util.tables.TableHandle>) all of the tables driving this series.",
+  "getTableMapHandles": "Gets all of the table maps driving this series.\n\n:return: (java.util.Set<io.deephaven.plot.util.tables.TableMapHandle>) all of the table maps driving this series.",
+  "id": "Gets the id for the data series.\n\n:return: int",
+  "name": "Gets the name of this data series.\n\n:return: (java.lang.Comparable) name of this data series",
+  "removeTableHandle": "Removes a table that drives this series.\n\n:param h: (io.deephaven.plot.util.tables.TableHandle) - table handle."
+ },
+ "path": "io.deephaven.plot.AbstractSeriesInternal",
+ "text": "Abstract implementation of the base series that all data series inherit from.",
+ "typeName": "class"
+}

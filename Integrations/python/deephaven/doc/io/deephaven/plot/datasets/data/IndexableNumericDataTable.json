@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.plot.datasets.data.IndexableNumericDataTable",
+ "methods": {
+  "get": "Gets the value at the specified index as a double.\n\n:param i: (int) - index\n:return: (double) value at index as a double",
+  "getColumnHandler": ":return: io.deephaven.plot.util.tables.ColumnHandlerFactory.ColumnHandler",
+  "size": "Gets the size of this dataset.\n\n:return: (int) size of this dataset"
+ },
+ "path": "io.deephaven.plot.datasets.data.IndexableNumericDataTable",
+ "text": "IndexableData dataset whose data is a column in a table and whose indices are the row numbers of the column.\n\n The column must be numeric.",
+ "typeName": "class"
+}

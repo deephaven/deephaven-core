@@ -102,8 +102,8 @@ class ComboAggregation:
         self._aggregates.append(CommonAgg(agg_type=AggType.ABS_SUM, match_pairs=cols))
         return self
 
-    def array(self, cols: List[str]):
-        """ Add an Array aggregation to the ComboAggregation object.
+    def group(self, cols: List[str]):
+        """ Add a group aggregation to the ComboAggregation object.
 
         Args:
             cols (List[str]): the columns to aggregate on, can be renaming expressions, i.e. "new_col = col"
@@ -111,7 +111,7 @@ class ComboAggregation:
         Returns:
             self
         """
-        self._aggregates.append(CommonAgg(agg_type=AggType.ARRAY, match_pairs=cols))
+        self._aggregates.append(CommonAgg(agg_type=AggType.GROUP, match_pairs=cols))
         return self
 
     def avg(self, cols: List[str]):

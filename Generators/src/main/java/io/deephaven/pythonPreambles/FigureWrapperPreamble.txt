@@ -40,8 +40,8 @@ def _defineSymbols():
     global _plotting_convenience_, _figure_widget_
     if _plotting_convenience_ is None:
         # an exception will be raised if not in the jvm classpath
-        _plotting_convenience_ = jpy.get_type("io.deephaven.db.plot.PlottingConvenience")
-        _figure_widget_ = jpy.get_type('io.deephaven.db.plot.FigureWidget')
+        _plotting_convenience_ = jpy.get_type("io.deephaven.plot.PlottingConvenience")
+        _figure_widget_ = jpy.get_type('io.deephaven.plot.FigureWidget')
 
 
 if sys.version_info[0] > 2:
@@ -58,7 +58,7 @@ def _is_widget_(obj):
         return False
     cond = False
     try:
-        cond = getJavaClassObject('io.deephaven.db.plot.FigureWidget').isAssignableFrom(obj)
+        cond = getJavaClassObject('io.deephaven.plot.FigureWidget').isAssignableFrom(obj)
     except Exception:
         pass
     return cond

@@ -1,0 +1,15 @@
+{
+ "className": "io.deephaven.uri.ApplicationUri",
+ "methods": {
+  "applicationId": "The application id.\n\n:return: (java.lang.String) the application id",
+  "fieldName": "The field name.\n\n:return: (java.lang.String) the field name",
+  "isValidScheme": ":param scheme: java.lang.String\n:return: boolean",
+  "isWellFormed": ":param uri: java.net.URI\n:return: boolean",
+  "of": "Parses the URI into an application URI. The format looks like\n dh:///app/${appId}/field/${fieldName}.\n\n*Overload 1*  \n  :param applicationId: java.lang.String\n  :param fieldName: java.lang.String\n  :return: io.deephaven.uri.ApplicationUri\n  \n*Overload 2*  \n  :param uri: (java.net.URI) - the URI\n  :return: (io.deephaven.uri.ApplicationUri) the application URI",
+  "toString": "The URI string.\n\n:return: (java.lang.String) the URI string",
+  "walk": "Note: Java generics information - <V extends io.deephaven.uri.StructuredUri.Visitor>\n\n:param visitor: V\n:return: V"
+ },
+ "path": "io.deephaven.uri.ApplicationUri",
+ "text": "A Deephaven application field URI.\n\n \n For example, dh:///app/my_application/field/my_table.",
+ "typeName": "class"
+}

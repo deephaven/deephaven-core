@@ -5,7 +5,7 @@
 package io.deephaven.grpc_api.session;
 
 import com.google.rpc.Code;
-import io.deephaven.db.tables.Table;
+import io.deephaven.engine.table.Table;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.hash.KeyedIntObjectHashMap;
@@ -228,7 +228,7 @@ public class TicketRouter {
                 .addEndpoint(Flight.FlightEndpoint.newBuilder()
                         .setTicket(ticket)
                         .build())
-                .setTotalRecords(table.isLive() ? -1 : table.size())
+                .setTotalRecords(table.isRefreshing() ? -1 : table.size())
                 .setTotalBytes(-1)
                 .build();
     }

@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.engine.tablelogger.ProcessMetricsLogLogger",
+ "methods": {
+  "getColumnNames": ":return: java.lang.String[]",
+  "getDefaultTableName": ":return: java.lang.String",
+  "getTableDefinition": ":return: io.deephaven.engine.table.TableDefinition",
+  "log": "*Overload 1*  \n  :param timestamp: long\n  :param processId: java.lang.String\n  :param name: java.lang.String\n  :param interval: java.lang.String\n  :param type: java.lang.String\n  :param n: long\n  :param sum: long\n  :param last: long\n  :param min: long\n  :param max: long\n  :param avg: long\n  :param sum2: long\n  :param stdev: long\n  \n*Overload 2*  \n  :param flags: io.deephaven.tablelogger.Row.Flags\n  :param timestamp: long\n  :param processId: java.lang.String\n  :param name: java.lang.String\n  :param interval: java.lang.String\n  :param type: java.lang.String\n  :param n: long\n  :param sum: long\n  :param last: long\n  :param min: long\n  :param max: long\n  :param avg: long\n  :param sum2: long\n  :param stdev: long"
+ },
+ "path": "io.deephaven.engine.tablelogger.ProcessMetricsLogLogger",
+ "typeName": "class"
+}

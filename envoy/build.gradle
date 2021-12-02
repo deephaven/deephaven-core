@@ -5,9 +5,14 @@ plugins {
     id 'com.bmuschko.docker-remote-api'
 }
 
+evaluationDependsOn Docker.registryProject('envoyproxy')
+
 def dockerLicenses = License.createFrom(project).syncDockerLicense()
 
 def prepareDocker = project.tasks.register('prepareDocker', Sync) {
+    // TODO(deephaven-core#1596): Remove extra dependencies for build-ci.yml
+    inputs.files Docker.registryFiles(project, 'envoyproxy')
+
     from 'Dockerfile'
     from ('contents') {
         into 'contents'
@@ -20,6 +25,7 @@ def prepareDocker = project.tasks.register('prepareDocker', Sync) {
 
 def buildDocker = Docker.registerDockerImage(project, 'buildDocker') {
     inputs.files prepareDocker.get().outputs.files
+    inputs.files Docker.registryFiles(project, 'envoyproxy')
     images.add('deephaven/envoy:local-build')
 }
 

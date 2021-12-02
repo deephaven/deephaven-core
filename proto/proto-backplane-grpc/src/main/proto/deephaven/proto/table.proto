@@ -167,7 +167,7 @@ service TableService {
   rpc Snapshot(SnapshotTableRequest) returns (ExportedTableCreationResponse) {}
 
   /*
-   * Returns a new table with a flattened index.
+   * Returns a new table with a flattened row set.
    */
   rpc Flatten(FlattenRequest) returns (ExportedTableCreationResponse) {}
 
@@ -409,7 +409,7 @@ message ComboAggregateRequest {
   enum AggType {
     SUM = 0;
     ABS_SUM = 1;
-    ARRAY = 2;
+    GROUP = 2;
     AVG = 3;
     COUNT = 4;
     FIRST = 5;

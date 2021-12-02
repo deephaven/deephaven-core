@@ -1,0 +1,12 @@
+{
+ "className": "io.deephaven.util.datastructures.LongRangeIterator",
+ "methods": {
+  "end": ":return: long",
+  "forAllLongRanges": ":param lrc: io.deephaven.util.datastructures.LongRangeConsumer",
+  "forEachLongRange": ":param lrc: io.deephaven.util.datastructures.LongRangeAbortableConsumer\n:return: boolean",
+  "hasNext": ":return: boolean",
+  "start": ":return: long"
+ },
+ "path": "io.deephaven.util.datastructures.LongRangeIterator",
+ "typeName": "interface"
+}

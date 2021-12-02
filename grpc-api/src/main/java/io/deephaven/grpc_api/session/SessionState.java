@@ -12,16 +12,16 @@ import dagger.assisted.AssistedInject;
 import io.deephaven.base.reference.WeakSimpleReference;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
-import io.deephaven.db.tablelogger.QueryOperationPerformanceLogLogger;
-import io.deephaven.db.tablelogger.QueryPerformanceLogLogger;
-import io.deephaven.db.tables.remotequery.QueryProcessingResults;
-import io.deephaven.db.tables.utils.QueryPerformanceNugget;
-import io.deephaven.db.tables.utils.QueryPerformanceRecorder;
-import io.deephaven.db.util.liveness.LivenessArtifact;
-import io.deephaven.db.util.liveness.LivenessReferent;
-import io.deephaven.db.util.liveness.LivenessScopeStack;
-import io.deephaven.db.v2.DynamicNode;
-import io.deephaven.db.v2.utils.MemoryTableLoggers;
+import io.deephaven.engine.tablelogger.QueryOperationPerformanceLogLogger;
+import io.deephaven.engine.tablelogger.QueryPerformanceLogLogger;
+import io.deephaven.engine.table.impl.perf.QueryProcessingResults;
+import io.deephaven.engine.table.impl.perf.QueryPerformanceNugget;
+import io.deephaven.engine.table.impl.perf.QueryPerformanceRecorder;
+import io.deephaven.engine.liveness.LivenessArtifact;
+import io.deephaven.engine.liveness.LivenessReferent;
+import io.deephaven.engine.liveness.LivenessScopeStack;
+import io.deephaven.engine.updategraph.DynamicNode;
+import io.deephaven.engine.table.impl.util.MemoryTableLoggers;
 import io.deephaven.grpc_api.util.ExportTicketHelper;
 import io.deephaven.grpc_api.util.FlightExportTicketHelper;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
@@ -63,7 +63,7 @@ import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyExecuteLocked;
 /**
  * SessionState manages all exports for a single session.
  *
- * It manages exported {@link io.deephaven.db.util.liveness.LivenessReferent}. It cascades failures to child
+ * It manages exported {@link io.deephaven.engine.liveness.LivenessReferent}. It cascades failures to child
  * dependencies.
  *
  * TODO: - cyclical dependency detection - out-of-order dependency timeout
@@ -78,9 +78,9 @@ import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyExecuteLocked;
  * SessionState::exportListeners' purpose is to keep a list of active subscribers -
  * SessionState::exportListenerVersion's purpose is to know whether or not a subscriber has already seen a status
  *
- * A listener will receive an export notification for export id NON_EXPORT_ID (a zero) to indicate that the refresh has
- * completed. A listener may see an update for an export before receiving the "refresh has completed" message. A
- * listener should be prepared to receive duplicate/redundant updates.
+ * A listener will receive an export notification for export id NON_EXPORT_ID (a zero) to indicate that the run has
+ * completed. A listener may see an update for an export before receiving the "run has completed" message. A listener
+ * should be prepared to receive duplicate/redundant updates.
  */
 public class SessionState {
     // Some work items will be dependent on other exports, but do not export anything themselves.
@@ -1039,7 +1039,7 @@ public class SessionState {
         }
 
         /**
-         * Perform the refresh and send initial export state to the listener.
+         * Perform the run and send initial export state to the listener.
          */
         private void initialize(final int versionId) {
             final String id = Integer.toHexString(System.identityHashCode(this));
@@ -1075,13 +1075,13 @@ public class SessionState {
                 }
             }
 
-            // notify that the refresh has completed
+            // notify that the run has completed
             notify(ExportNotification.newBuilder()
                     .setTicket(ExportTicketHelper.wrapExportIdInTicket(NON_EXPORT_ID))
                     .setExportState(ExportNotification.State.EXPORTED)
-                    .setContext("refresh is complete")
+                    .setContext("run is complete")
                     .build());
-            log.info().append(logPrefix).append("refresh complete for listener ").append(id).endl();
+            log.info().append(logPrefix).append("run complete for listener ").append(id).endl();
         }
 
         protected void onRemove() {
@@ -1151,7 +1151,7 @@ public class SessionState {
 
         /**
          * Some exports must happen serially w.r.t. other exports. For example, an export that acquires the exclusive
-         * LTM lock. We enqueue these dependencies independently of the otherwise regularly concurrent exports.
+         * UGP lock. We enqueue these dependencies independently of the otherwise regularly concurrent exports.
          *
          * @return this builder
          */

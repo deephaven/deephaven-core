@@ -1,0 +1,6 @@
+{
+ "className": "io.deephaven.tuple.serialization.SerializationUtils$Reader",
+ "methods": {},
+ "path": "io.deephaven.tuple.serialization.SerializationUtils.Reader",
+ "typeName": "interface"
+}

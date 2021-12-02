@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.table.impl.by.IncrementalChunkedByAggregationStateManager",
+ "methods": {
+  "doRehash": ":param bc: io.deephaven.engine.table.impl.by.IncrementalChunkedByAggregationStateManager.BuildContext\n:param moveCallback: io.deephaven.engine.table.impl.by.IncrementalChunkedByAggregationStateManager.StateMoveCallback",
+  "rehashRequired": ":return: boolean"
+ },
+ "path": "io.deephaven.engine.table.impl.by.IncrementalChunkedByAggregationStateManager",
+ "typeName": "class"
+}

@@ -12,8 +12,8 @@ import jpy
 import numpy
 import pandas
 
-from .conversion_utils import _nullValues, NULL_CHAR, NULL_CONVERSION, _arrayTypes, \
-    _isStr, _isDbArray, _isJavaArray, _getJavaArrayDetails
+from .conversion_utils import _nullValues, NULL_BYTE, NULL_CHAR, NULL_CONVERSION, _arrayTypes, \
+    _isStr, _isVectorType, _isVector, _isJavaArray, _getJavaArrayDetails
 from .TableTools import emptyTable
 
 
@@ -53,13 +53,13 @@ def _fillRectangular(javaArray, shape, basicType, convertNulls):
                 fillValuesIn(dimension+1, ndSub, arrSub)
         else:
             # at the final dimension, and arrElement is a one dimensional array
-            if basicType.startswith('io.deephaven.db.tables.dbarrays.Db'):
+            if _isVectorType(basicType):
                 # convert each leaf
                 for i, leafElement in enumerate(arrElement):
                     ndElement[i] = convertJavaArray(leafElement.toArray(), convertNulls=convertNulls)
-            elif basicType == 'io.deephaven.db.tables.utils.DBDateTime':
+            elif basicType == 'io.deephaven.time.DateTime':
                 # get long array
-                longs = jpy.get_type(__arrayConversionUtility__).translateArrayDBDateTimeToLong(arrElement)
+                longs = jpy.get_type(__arrayConversionUtility__).translateArrayDateTimeToLong(arrElement)
                 ndElement[:] = longs
             elif basicType == 'java.lang.Boolean':
                 # create byte array
@@ -90,11 +90,11 @@ def _fillRectangular(javaArray, shape, basicType, convertNulls):
             except Exception as e:
                 return 0
 
-    if basicType.startswith('io.deephaven.db.tables.dbarrays.Db'):
+    if _isVectorType(basicType):
         out = numpy.empty(shape, dtype=numpy.object)
         fillValuesIn(0, out, javaArray)  # recursively fill
         return out
-    elif basicType == 'io.deephaven.db.tables.utils.DBDateTime':
+    elif basicType == 'io.deephaven.time.DateTime':
         out = numpy.empty(shape, dtype='datetime64[ns]')
         fillValuesIn(0, out, javaArray)  # recursively fill
         return out
@@ -140,12 +140,12 @@ def _handleNulls(nparray, javaArrayType, convertNulls):
         if convertNulls == NULL_CONVERSION.PASS:
             return nparray > 0  # any instance of None got converted to False
         if convertNulls == NULL_CONVERSION.ERROR:
-            if -1 in nparray:
+            if NULL_BYTE in nparray:
                 raise ValueError("The input java.lang.Boolean array contains a null element, and convertNulls=ERROR")
             else:
                 return nparray > 0
         if convertNulls == NULL_CONVERSION.CONVERT:
-            if -1 in nparray:
+            if NULL_BYTE in nparray:
                 newarray = numpy.full(nparray.shape, None, dtype=numpy.object)
                 numpy.copyto(newarray, (nparray > 0), casting='unsafe', where=(nparray >= 0))
                 return newarray
@@ -197,7 +197,7 @@ def convertJavaArray(javaArray, convertNulls='ERROR', forPandas=False):
     """
     Converts a java array to it's closest :class:`numpy.ndarray` alternative.
 
-    :param javaArray: input java array or dbarray object
+    :param javaArray: input java array or vector object
     :param convertNulls: member of :class:`NULL_CONVERSION` enum, specifying how to treat null values. Can be
       specified by string value (i.e. ``'ERROR'``), enum member (i.e. ``NULL_CONVERSION.PASS``), or integer value
       (i.e. ``2``)
@@ -231,10 +231,10 @@ def convertJavaArray(javaArray, convertNulls='ERROR', forPandas=False):
     * ``Boolean -> numpy.bool``, or ``numpy.object`` if necessary for null conversion
     * ``float -> numpy.float32`` and ``NULL_FLOAT -> numpy.nan``
     * ``double -> numpy.float64`` and ``NULL_DOUBLE -> numpy.nan``
-    * ``DBDateTime -> numpy.dtype(datetime64[ns])`` and ``null -> numpy.nat``
+    * ``DateTime -> numpy.dtype(datetime64[ns])`` and ``null -> numpy.nat``
     * ``String -> numpy.unicode_`` (of appropriate length) and ``null -> ''``
     * ``char -> numpy.dtype('U1')`` (one character string) and ``NULL_CHAR -> ''``
-    * ``array/DbArray``
+    * ``array/Vector``
        - if ``forPandas=False`` and all entries are of compatible shape, then will return a rectangular
          :class:`numpy.ndarray` of dtype in keeping with the above
        - if ``forPandas=False`` or all entries are not of compatible shape, then returns one-diemnsional
@@ -259,8 +259,8 @@ def convertJavaArray(javaArray, convertNulls='ERROR', forPandas=False):
     if javaArray is None:
         return None
 
-    if _isDbArray(javaArray):
-        # convert a db array to a java array, if necessary
+    if _isVector(javaArray):
+        # convert a engine array to a java array, if necessary
         return convertJavaArray(javaArray.toArray(), convertNulls=convertNulls)
 
     # is it an array?
@@ -321,7 +321,7 @@ def createCategoricalSeries(table, columnName, convertNulls=NULL_CONVERSION.ERRO
         or other undesirable behavior.
     """
 
-    if table.isLive():
+    if table.isRefreshing():
         table = freezeTable(table)
 
     # construct query determining categorical mapping - what are the pluses and the minuses of this?
@@ -396,10 +396,10 @@ def columnToNumpyArray(table, columnName, convertNulls=NULL_CONVERSION.ERROR, fo
     * ``Boolean -> numpy.bool``, or ``numpy.object`` if necessary for null conversion
     * ``float -> numpy.float32`` and ``NULL_FLOAT -> numpy.nan``
     * ``double -> numpy.float64`` and ``NULL_DOUBLE -> numpy.nan``
-    * ``DBDateTime -> numpy.dtype(datetime64[ns])`` and ``null -> numpy.nat``
+    * ``DateTime -> numpy.dtype(datetime64[ns])`` and ``null -> numpy.nat``
     * ``String -> numpy.unicode_`` (of appropriate length) and ``null -> ''``
     * ``char -> numpy.dtype('U1')`` (one character string) and ``NULL_CHAR -> ''``
-    * ``array/DbArray``
+    * ``array/Vector``
        - if ``forPandas=False`` and all entries are of compatible shape, then will return a rectangular
          :class:`numpy.ndarray` of dtype in keeping with the above
        - if ``forPandas=False`` or all entries are not of compatible shape, then returns one-diemnsional
@@ -420,7 +420,7 @@ def columnToNumpyArray(table, columnName, convertNulls=NULL_CONVERSION.ERROR, fo
 
     """
 
-    if table.isLive():
+    if table.isRefreshing():
         table = freezeTable(table)
 
     convertNulls = NULL_CONVERSION.validateValue(convertNulls)
@@ -451,7 +451,7 @@ def columnToSeries(table, columnName, convertNulls=NULL_CONVERSION.ERROR):
         or other undesirable behavior.
     """
 
-    if table.isLive():
+    if table.isRefreshing():
         table = freezeTable(table)
 
     convertNulls = NULL_CONVERSION.validateValue(convertNulls)
@@ -463,7 +463,7 @@ def columnToSeries(table, columnName, convertNulls=NULL_CONVERSION.ERROR):
     if nparray is None:
         return None
 
-    if columnType == 'io.deephaven.db.tables.utils.DBDateTime':
+    if columnType == 'io.deephaven.time.DateTime':
         # NOTE: I think that we should localize to UTC, and then let the user convert that if they want to...
         #       Note that localizing does not actually effect the underlying numpy array,
         #       but only a pandas construct on top
@@ -515,10 +515,10 @@ def tableToDataFrame(table, convertNulls=NULL_CONVERSION.ERROR, categoricals=Non
     * ``Boolean -> numpy.bool``, or ``numpy.object`` if necessary for null conversion
     * ``float -> numpy.float32`` and ``NULL_FLOAT -> numpy.nan``
     * ``double -> numpy.float64`` and ``NULL_DOUBLE -> numpy.nan``
-    * ``DBDateTime -> numpy.dtype(datetime64[ns])`` and ``null -> numpy.nat``
+    * ``DateTime -> numpy.dtype(datetime64[ns])`` and ``null -> numpy.nat``
     * ``String -> numpy.unicode_`` (of appropriate length) and ``null -> ''``
     * ``char -> numpy.dtype('U1')`` (one character string) and ``NULL_CHAR -> ''``
-    * ``array/DbArray``
+    * ``array/Vector``
        - if ``forPandas=False`` and all entries are of compatible shape, then will return a rectangular
          :class:`numpy.ndarray` of dtype in keeping with the above
        - if ``forPandas=False`` or all entries are not of compatible shape, then returns one-diemnsional
@@ -539,7 +539,7 @@ def tableToDataFrame(table, convertNulls=NULL_CONVERSION.ERROR, categoricals=Non
 
     """
 
-    if table.isLive():
+    if table.isRefreshing():
         table = freezeTable(table)
 
     convertNulls = NULL_CONVERSION.validateValue(convertNulls)

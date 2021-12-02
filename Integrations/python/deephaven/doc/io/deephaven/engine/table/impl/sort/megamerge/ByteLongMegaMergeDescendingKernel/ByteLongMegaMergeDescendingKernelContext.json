@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.engine.table.impl.sort.megamerge.ByteLongMegaMergeDescendingKernel$ByteLongMegaMergeDescendingKernelContext",
+ "methods": {
+  "merge": ":param indexDestinationSource: io.deephaven.engine.table.impl.sources.LongArraySource\n:param valuesDestinationSource: io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource<?>\n:param destinationOffset: long\n:param destinationSize: long\n:param indexKeys: io.deephaven.chunk.LongChunk<ByteLongMegaMergeDescendingKernel.ByteLongMegaMergeDescendingKernelContext.KEY_INDICES>\n:param valuesToMerge: io.deephaven.chunk.Chunk<ByteLongMegaMergeDescendingKernel.ByteLongMegaMergeDescendingKernelContext.ATTR>"
+ },
+ "path": "io.deephaven.engine.table.impl.sort.megamerge.ByteLongMegaMergeDescendingKernel.ByteLongMegaMergeDescendingKernelContext",
+ "typeName": "class"
+}

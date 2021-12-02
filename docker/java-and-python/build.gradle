@@ -2,8 +2,11 @@ plugins {
     id 'com.bmuschko.docker-remote-api'
 }
 
+evaluationDependsOn Docker.registryProject('debian')
+
 def buildDocker = Docker.registerDockerImage(project, 'buildDocker') {
     inputDir.set layout.projectDirectory.dir('src/main/docker')
+    inputs.files Docker.registryFiles(project, 'debian')
     images.add('deephaven/java-and-python:local-build')
 }
 

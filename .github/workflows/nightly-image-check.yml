@@ -1,0 +1,44 @@
+name: Nightly Image Compare CI
+
+on:
+  schedule:
+    # 10AM EST == 14 UTC
+    - cron:  '0 14 * * *'
+
+jobs:
+  compare:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Setup JDK 11
+        id: setup-java-11
+        uses: actions/setup-java@v2
+        with:
+          distribution: 'temurin'
+          java-version: '11'
+
+      - name: Set JAVA_HOME
+        run: echo "JAVA_HOME=${{ steps.setup-java-11.outputs.path }}" >> $GITHUB_ENV
+
+      - name: Setup gradle properties
+        run: |
+          cat .github/env/${{ runner.os }}/gradle.properties >> gradle.properties
+          echo "org.gradle.java.installations.paths=${{ steps.setup-java-11.outputs.path }}" >> gradle.properties
+
+      - name: Run gradle
+        uses: burrunan/gradle-cache-action@v1
+        with:
+          job-id: image-compare
+          arguments: --continue pullImage compareImage
+          gradle-version: wrapper
+
+      - name: Notify Slack
+        uses: slackapi/slack-github-action@v1.15.0
+        id: notify-slack
+        if: ${{ failure() }}
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL_DHC_NOTIFY }}
+        with:
+          payload: '{"repository": "${{ github.repository }}", "message": "${{ github.workflow }}/${{ github.job }} failure, some image is out of date", "link": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"}'

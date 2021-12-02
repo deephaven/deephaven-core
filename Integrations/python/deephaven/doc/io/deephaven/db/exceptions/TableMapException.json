@@ -1,7 +1,0 @@
-{
- "className": "io.deephaven.db.exceptions.TableMapException",
- "methods": {},
- "path": "io.deephaven.db.exceptions.TableMapException",
- "text": "An exception denoting a problem with a TableMap operation",
- "typeName": "class"
-}

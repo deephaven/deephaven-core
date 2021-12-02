@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.engine.table.impl.sources.UngroupedShortArrayColumnSource",
+ "methods": {
+  "getComponentType": ":return: java.lang.Class<?>",
+  "getPrevShort": ":param index: long\n:return: short",
+  "getShort": ":param index: long\n:return: short",
+  "isImmutable": "Determine if this column source is immutable, meaning that the values at a given row key never change.\n\n:return: (boolean) true if the values at a given row key of the column source never change, false otherwise"
+ },
+ "path": "io.deephaven.engine.table.impl.sources.UngroupedShortArrayColumnSource",
+ "typeName": "class"
+}

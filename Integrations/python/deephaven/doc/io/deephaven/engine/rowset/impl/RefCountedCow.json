@@ -1,0 +1,14 @@
+{
+ "className": "io.deephaven.engine.rowset.impl.RefCountedCow",
+ "methods": {
+  "acquire": "Increase our reference count.",
+  "cowRef": "Obtain a new reference to this object; the reference count will increase. This operation is cheap and does not do\n a deep copy of the object's payload; if a mutator is called through this reference, the reference will make a\n copy of its payload first, before applying the mutation, to keep other read only accessor of the previously\n shared payload unnaffected.\n\n Note this assumes a pattern of use for derived classes where mutators return a reference, which may or may not\n point to the same object on which the mutation was called.\n\n Also note this is not thread safe.\n\n:return: (RefCountedCow.T) A reference that will copy-on-write on its payload if it is mutated.",
+  "deepCopy": "Get a deep copy of the current object, not shared with anybody.\n\n Note this is not thread safe.\n\n:return: (RefCountedCow.T) A full, deep copy of this object with a reference count of 1 (not shared).",
+  "getWriteRef": "Obtain a reference to this object that can be modified without affecting other references. Note this is not\n thread safe.\n\n:return: (RefCountedCow.T) If this object is shared, a deep copy of this object, otherwise the object itself.",
+  "refCount": ":return: int",
+  "release": "Decrease our reference count.\n\n:return: (int) the resulting reference count value."
+ },
+ "path": "io.deephaven.engine.rowset.impl.RefCountedCow",
+ "text": "This class enables a pattern of use where objects can be shared from multiple references/identities while they are\n used read-only.\n\n Note this is not thread safe.\n\n A class derives from this class and users of it call getWriteRef() to obtain a reference that can be modified. That\n may return the same object (with an increased ref count), or may return a deep copy of it if other readers of the\n object exist. Effectively this creates a copy-on-write sharing strategy.\n \n\n Example:\n \n\n \n \n\n Uses the \"Curiously Recurring Generic Pattern\"\n \n\n Note this implementation does minimal concurrency protection, since it assumes it will run under the protection\n mechanisms of live update table and its clock, ie, reads can concurrently access objects being mutated, but will\n realize near the end their operation was invalidated by a clock change and will toss their results.",
+ "typeName": "class"
+}

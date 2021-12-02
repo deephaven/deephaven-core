@@ -3,10 +3,10 @@ package io.deephaven.grpc_api.table.ops;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.CollectionUtil;
 import com.google.rpc.Code;
-import io.deephaven.db.tables.Table;
-import io.deephaven.db.tables.live.LiveTableMonitor;
-import io.deephaven.db.tables.select.SelectColumnFactory;
-import io.deephaven.db.v2.select.SelectColumn;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.table.impl.select.SelectColumnFactory;
+import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.grpc_api.session.SessionState;
 import io.deephaven.grpc_api.table.validation.ColumnExpressionValidator;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
@@ -26,15 +26,15 @@ public abstract class HeadOrTailByGrpcImpl extends GrpcTableOperation<HeadOrTail
     }
 
     private final RealTableOperation realTableOperation;
-    private final LiveTableMonitor liveTableMonitor;
+    private final UpdateGraphProcessor updateGraphProcessor;
 
     protected HeadOrTailByGrpcImpl(
             final Function<BatchTableRequest.Operation, HeadOrTailByRequest> getRequest,
             final RealTableOperation realTableOperation,
-            final LiveTableMonitor liveTableMonitor) {
+            final UpdateGraphProcessor updateGraphProcessor) {
         super(getRequest, HeadOrTailByRequest::getResultId, HeadOrTailByRequest::getSourceId);
         this.realTableOperation = realTableOperation;
-        this.liveTableMonitor = liveTableMonitor;
+        this.updateGraphProcessor = updateGraphProcessor;
     }
 
     @Override
@@ -59,24 +59,24 @@ public abstract class HeadOrTailByGrpcImpl extends GrpcTableOperation<HeadOrTail
         ColumnExpressionValidator.validateColumnExpressions(expressions, columnSpecs, parent);
 
 
-        // note that headBy/tailBy use ungroup which currently requires the LTM lock
-        return liveTableMonitor.sharedLock()
+        // note that headBy/tailBy use ungroup which currently requires the UGP lock
+        return updateGraphProcessor.sharedLock()
                 .computeLocked(() -> realTableOperation.apply(parent, request.getNumRows(), columnSpecs));
     }
 
     @Singleton
     public static class HeadByGrpcImpl extends HeadOrTailByGrpcImpl {
         @Inject
-        public HeadByGrpcImpl(final LiveTableMonitor liveTableMonitor) {
-            super(BatchTableRequest.Operation::getHeadBy, Table::headBy, liveTableMonitor);
+        public HeadByGrpcImpl(final UpdateGraphProcessor updateGraphProcessor) {
+            super(BatchTableRequest.Operation::getHeadBy, Table::headBy, updateGraphProcessor);
         }
     }
 
     @Singleton
     public static class TailByGrpcImpl extends HeadOrTailByGrpcImpl {
         @Inject
-        public TailByGrpcImpl(final LiveTableMonitor liveTableMonitor) {
-            super(BatchTableRequest.Operation::getTailBy, Table::tailBy, liveTableMonitor);
+        public TailByGrpcImpl(final UpdateGraphProcessor updateGraphProcessor) {
+            super(BatchTableRequest.Operation::getTailBy, Table::tailBy, updateGraphProcessor);
         }
     }
 }

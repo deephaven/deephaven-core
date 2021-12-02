@@ -2,12 +2,12 @@ package io.deephaven.treetable;
 
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.base.Pair;
-import io.deephaven.db.tables.ColumnDefinition;
-import io.deephaven.db.tables.Table;
-import io.deephaven.db.v2.QueryTable;
-import io.deephaven.db.v2.sources.ArrayBackedColumnSource;
-import io.deephaven.db.v2.sources.ColumnSource;
-import io.deephaven.db.v2.utils.Index;
+import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.util.annotations.TestUseOnly;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -146,7 +146,9 @@ public class TreeSnapshotResult {
                 ArrayBackedColumnSource.getImmutableMemoryColumnSource(tableKeyColumn));
         sources.put(TreeTableConstants.CHILD_PRESENCE_COLUMN, new BitSetColumnSource(childPresenceColumn));
 
-        return new QueryTable(Index.FACTORY.getFlatIndex((snapshotEnd - snapshotStart) + 1), sources);
+        return new QueryTable(
+                RowSetFactory.flat((snapshotEnd - snapshotStart) + 1).toTracking(),
+                sources);
     }
 
     public Table getUpdatedSource() {

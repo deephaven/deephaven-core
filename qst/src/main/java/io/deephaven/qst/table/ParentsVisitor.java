@@ -210,11 +210,6 @@ public class ParentsVisitor implements Visitor {
     }
 
     @Override
-    public void visit(LeftJoinTable leftJoinTable) {
-        out = Stream.of(leftJoinTable.left(), leftJoinTable.right());
-    }
-
-    @Override
     public void visit(AsOfJoinTable aj) {
         out = Stream.of(aj.left(), aj.right());
     }
@@ -245,8 +240,8 @@ public class ParentsVisitor implements Visitor {
     }
 
     @Override
-    public void visit(ByTable byTable) {
-        out = single(byTable);
+    public void visit(GroupByTable groupByTable) {
+        out = single(groupByTable);
     }
 
     @Override
@@ -257,6 +252,21 @@ public class ParentsVisitor implements Visitor {
     @Override
     public void visit(TicketTable ticketTable) {
         out = none();
+    }
+
+    @Override
+    public void visit(InputTable inputTable) {
+        inputTable.schema().walk(new TableSchema.Visitor() {
+            @Override
+            public void visit(TableSpec spec) {
+                out = Stream.of(spec);
+            }
+
+            @Override
+            public void visit(TableHeader header) {
+                out = none();
+            }
+        });
     }
 
     private static class Search {

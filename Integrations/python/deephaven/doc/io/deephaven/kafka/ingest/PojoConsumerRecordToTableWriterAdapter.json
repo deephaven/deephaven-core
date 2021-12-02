@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.kafka.ingest.PojoConsumerRecordToTableWriterAdapter",
- "methods": {
-  "consumeRecord": "Consume a Kafka record, producing zero or more rows in the output.\n\n:param record: (org.apache.kafka.clients.consumer.ConsumerRecord<?,?>) - the record received from KafkaConsumer.poll(Duration)."
- },
- "path": "io.deephaven.kafka.ingest.PojoConsumerRecordToTableWriterAdapter",
- "text": "Converts a consumer record containing Java objects to a Deephaven row.\n\n The constructor will use reflection combined with the builder parameters to automatically map fields or methods in\n the key and value classes to columns in the output table and compile an appropriate adapter class.  Each record is\n then passed to the adapter class, requiring no per-record reflection.\n\n This adapter is intended for use with custom deserializers or with using Avro with compiled\n org.apache.avro.specific.SpecificRecord objects that contain a field for each schema element.\nAfter processing explicit mappings for fields; the value class is searched for exact matches followed by the key\n class using the following precedence:\n \n* a public method with a the same name as the column and no arguments\n* a public method beginning with \"get\" followed by the name of the column, and no arguments\n* a public field with the same name as the column, and no arguments\n\n If caseInsensitiveSearch is specified on the builder, the same precedence is followed for the remaining columns;\n but using case insensitive matching of method names.",
- "typeName": "class"
-}

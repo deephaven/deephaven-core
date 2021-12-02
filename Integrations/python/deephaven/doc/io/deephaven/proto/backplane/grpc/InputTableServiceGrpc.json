@@ -1,0 +1,14 @@
+{
+ "className": "io.deephaven.proto.backplane.grpc.InputTableServiceGrpc",
+ "methods": {
+  "getAddTableToInputTableMethod": ":return: io.grpc.MethodDescriptor<io.deephaven.proto.backplane.grpc.AddTableRequest,io.deephaven.proto.backplane.grpc.AddTableResponse>",
+  "getDeleteTableFromInputTableMethod": ":return: io.grpc.MethodDescriptor<io.deephaven.proto.backplane.grpc.DeleteTableRequest,io.deephaven.proto.backplane.grpc.DeleteTableResponse>",
+  "getServiceDescriptor": ":return: io.grpc.ServiceDescriptor",
+  "newBlockingStub": "Creates a new blocking-style stub that supports unary and streaming output calls on the service\n\n:param channel: io.grpc.Channel\n:return: io.deephaven.proto.backplane.grpc.InputTableServiceGrpc.InputTableServiceBlockingStub",
+  "newFutureStub": "Creates a new ListenableFuture-style stub that supports unary calls on the service\n\n:param channel: io.grpc.Channel\n:return: io.deephaven.proto.backplane.grpc.InputTableServiceGrpc.InputTableServiceFutureStub",
+  "newStub": "Creates a new async stub that supports all call types for the service\n\n:param channel: io.grpc.Channel\n:return: io.deephaven.proto.backplane.grpc.InputTableServiceGrpc.InputTableServiceStub"
+ },
+ "path": "io.deephaven.proto.backplane.grpc.InputTableServiceGrpc",
+ "text": "This service offers methods to manipulate the contents of input tables.",
+ "typeName": "class"
+}

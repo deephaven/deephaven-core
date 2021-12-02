@@ -7,7 +7,7 @@ package io.deephaven.numerics.movingaverages;
 import java.util.concurrent.TimeUnit;
 
 /**
- * A DB aware EMA which can compute "by" emas without grouping and then ungrouping.
+ * An engine aware EMA which can compute "groupBy" emas without grouping and then ungrouping.
  */
 public class ByEmaSimple extends ByEma {
     private static final long serialVersionUID = -2162403525928154570L;

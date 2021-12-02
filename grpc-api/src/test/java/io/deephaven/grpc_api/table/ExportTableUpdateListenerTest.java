@@ -1,16 +1,16 @@
 package io.deephaven.grpc_api.table;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.db.tables.live.LiveTableMonitor;
-import io.deephaven.db.tables.utils.DBTimeUtils;
-import io.deephaven.db.tables.utils.SystemicObjectTracker;
-import io.deephaven.db.util.liveness.LivenessScopeStack;
-import io.deephaven.db.v2.ModifiedColumnSet;
-import io.deephaven.db.v2.QueryTable;
-import io.deephaven.db.v2.ShiftAwareListener;
-import io.deephaven.db.v2.TstUtils;
-import io.deephaven.db.v2.utils.Index;
-import io.deephaven.db.v2.utils.IndexShiftData;
+import io.deephaven.engine.table.impl.TableUpdateImpl;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.time.DateTimeUtils;
+import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
+import io.deephaven.engine.liveness.LivenessScopeStack;
+import io.deephaven.engine.table.ModifiedColumnSet;
+import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.TstUtils;
+import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.RowSetShiftData;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.UncheckedDeephavenException;
@@ -29,22 +29,22 @@ import java.util.ArrayDeque;
 import java.util.Queue;
 import java.util.UUID;
 
-import static io.deephaven.db.v2.TstUtils.addToTable;
-import static io.deephaven.db.v2.TstUtils.i;
+import static io.deephaven.engine.table.impl.TstUtils.addToTable;
+import static io.deephaven.engine.table.impl.TstUtils.i;
 
 public class ExportTableUpdateListenerTest {
 
     private static final AuthContext AUTH_CONTEXT = new AuthContext.SuperUser();
 
-    private static final LiveTableMonitor liveTableMonitor = LiveTableMonitor.DEFAULT;
+    private static final UpdateGraphProcessor updateGraphProcessor = UpdateGraphProcessor.DEFAULT;
     private TestControlledScheduler scheduler;
     private TestSessionState session;
     private QueuingResponseObserver observer;
 
     @Before
     public void setup() {
-        LiveTableMonitor.DEFAULT.enableUnitTestMode();
-        LiveTableMonitor.DEFAULT.resetForUnitTests(false);
+        UpdateGraphProcessor.DEFAULT.enableUnitTestMode();
+        UpdateGraphProcessor.DEFAULT.resetForUnitTests(false);
         SystemicObjectTracker.markThreadSystemic();
 
         scheduler = new TestControlledScheduler();
@@ -54,7 +54,7 @@ public class ExportTableUpdateListenerTest {
 
     @After
     public void tearDown() {
-        LiveTableMonitor.DEFAULT.resetForUnitTests(true);
+        UpdateGraphProcessor.DEFAULT.resetForUnitTests(true);
 
         scheduler = null;
         session = null;
@@ -67,10 +67,10 @@ public class ExportTableUpdateListenerTest {
         try (final SafeCloseable scope = LivenessScopeStack.open()) {
             session.addExportListener(listener);
         }
-        expectNoMessage(); // the refresh is empty
+        expectNoMessage(); // the run is empty
 
         // create and export the table
-        final QueryTable src = TstUtils.testTable(Index.FACTORY.getFlatIndex(100));
+        final QueryTable src = TstUtils.testTable(RowSetFactory.flat(100).toTracking());
         final SessionState.ExportObject<QueryTable> t1 = session.newServerSideExport(src);
 
         // validate we receive an initial table size update
@@ -84,7 +84,7 @@ public class ExportTableUpdateListenerTest {
     @Test
     public void testRefreshStaticTable() {
         // create and export the table
-        final QueryTable src = TstUtils.testTable(Index.FACTORY.getFlatIndex(1024));
+        final QueryTable src = TstUtils.testTable(RowSetFactory.flat(1024).toTracking());
         final SessionState.ExportObject<QueryTable> t1 = session.newServerSideExport(src);
 
         // now add the listener
@@ -93,7 +93,7 @@ public class ExportTableUpdateListenerTest {
             session.addExportListener(listener);
         }
 
-        // validate we receive an initial table size update in the refresh
+        // validate we receive an initial table size update in the run
         expectSizes(t1.getExportId(), 1024);
 
         // no update on release
@@ -107,10 +107,10 @@ public class ExportTableUpdateListenerTest {
         try (final SafeCloseable scope = LivenessScopeStack.open()) {
             session.addExportListener(listener);
         }
-        expectNoMessage(); // the refresh is empty
+        expectNoMessage(); // the run is empty
 
         // create and export the table
-        final QueryTable src = TstUtils.testRefreshingTable(Index.FACTORY.getFlatIndex(42));
+        final QueryTable src = TstUtils.testRefreshingTable(RowSetFactory.flat(42).toTracking());
         final SessionState.ExportObject<QueryTable> t1;
         try (final SafeCloseable scope = LivenessScopeStack.open()) {
             t1 = session.newServerSideExport(src);
@@ -132,7 +132,7 @@ public class ExportTableUpdateListenerTest {
     @Test
     public void testRefreshTickingTable() {
         // create and export the table
-        final QueryTable src = TstUtils.testRefreshingTable(Index.FACTORY.getFlatIndex(42));
+        final QueryTable src = TstUtils.testRefreshingTable(RowSetFactory.flat(42).toTracking());
         final SessionState.ExportObject<QueryTable> t1;
         try (final SafeCloseable scope = LivenessScopeStack.open()) {
             t1 = session.newServerSideExport(src);
@@ -160,7 +160,7 @@ public class ExportTableUpdateListenerTest {
     @Test
     public void testSessionClose() {
         // create and export the table
-        final QueryTable src = TstUtils.testRefreshingTable(Index.FACTORY.getFlatIndex(42));
+        final QueryTable src = TstUtils.testRefreshingTable(RowSetFactory.flat(42).toTracking());
         // create t1 in global query scope
         final SessionState.ExportObject<QueryTable> t1 = session.newServerSideExport(src);
 
@@ -191,7 +191,7 @@ public class ExportTableUpdateListenerTest {
     @Test
     public void testPropagatesError() {
         // create and export the table
-        final QueryTable src = TstUtils.testRefreshingTable(Index.FACTORY.getFlatIndex(42));
+        final QueryTable src = TstUtils.testRefreshingTable(RowSetFactory.flat(42).toTracking());
         final SessionState.ExportObject<QueryTable> t1;
         try (final SafeCloseable scope = LivenessScopeStack.open()) {
             t1 = session.newServerSideExport(src);
@@ -206,7 +206,7 @@ public class ExportTableUpdateListenerTest {
         // validate we receive an initial table size update
         expectSizes(t1.getExportId(), 42);
 
-        liveTableMonitor.runWithinUnitTestCycle(() -> {
+        updateGraphProcessor.runWithinUnitTestCycle(() -> {
             src.notifyListenersOnError(new RuntimeException("awful error occurred!"), null);
         });
 
@@ -224,7 +224,7 @@ public class ExportTableUpdateListenerTest {
     @Test
     public void testListenerClosed() {
         // create and export the table
-        final QueryTable src = TstUtils.testRefreshingTable(Index.FACTORY.getFlatIndex(42));
+        final QueryTable src = TstUtils.testRefreshingTable(RowSetFactory.flat(42).toTracking());
         final SessionState.ExportObject<QueryTable> t1;
         try (final SafeCloseable scope = LivenessScopeStack.open()) {
             t1 = session.newServerSideExport(src);
@@ -261,7 +261,7 @@ public class ExportTableUpdateListenerTest {
     @Test
     public void testTableSizeUsesPrev() {
         // create and export the table
-        final QueryTable src = TstUtils.testRefreshingTable(Index.FACTORY.getFlatIndex(42));
+        final QueryTable src = TstUtils.testRefreshingTable(RowSetFactory.flat(42).toTracking());
         final MutableObject<SessionState.ExportObject<QueryTable>> t1 = new MutableObject<>();
 
         // now add the listener
@@ -274,13 +274,14 @@ public class ExportTableUpdateListenerTest {
         expectNoMessage();
 
         // export mid-tick
-        liveTableMonitor.runWithinUnitTestCycle(() -> {
-            final ShiftAwareListener.Update update = new ShiftAwareListener.Update();
-            update.added = Index.FACTORY.getIndexByRange(src.getIndex().lastKey() + 1, src.getIndex().lastKey() + 42);
-            update.removed = update.modified = i();
+        updateGraphProcessor.runWithinUnitTestCycle(() -> {
+            final TableUpdateImpl update = new TableUpdateImpl();
+            update.added = RowSetFactory.fromRange(src.getRowSet().lastRowKey() + 1, src.getRowSet().lastRowKey() + 42);
+            update.removed = i();
+            update.modified = i();
             update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
-            update.shifted = IndexShiftData.EMPTY;
-            addToTable(src, update.added);
+            update.shifted = RowSetShiftData.EMPTY;
+            addToTable(src, update.added());
 
             // Must be off-thread to use concurrent instantiation
             final Thread thread = new Thread(() -> {
@@ -298,19 +299,20 @@ public class ExportTableUpdateListenerTest {
             src.notifyListeners(update);
         });
 
-        // we should get both a refresh and the update in the same flush
+        // we should get both a run and the update in the same flush
         expectSizes(t1.getValue().getExportId(), 42, 84);
     }
 
     private void addRowsToSource(final QueryTable src, final long nRows) {
-        liveTableMonitor.runWithinUnitTestCycle(() -> {
-            final ShiftAwareListener.Update update = new ShiftAwareListener.Update();
+        updateGraphProcessor.runWithinUnitTestCycle(() -> {
+            final TableUpdateImpl update = new TableUpdateImpl();
             update.added =
-                    Index.FACTORY.getIndexByRange(src.getIndex().lastKey() + 1, src.getIndex().lastKey() + nRows);
-            update.removed = update.modified = i();
+                    RowSetFactory.fromRange(src.getRowSet().lastRowKey() + 1, src.getRowSet().lastRowKey() + nRows);
+            update.removed = i();
+            update.modified = i();
             update.modifiedColumnSet = ModifiedColumnSet.EMPTY;
-            update.shifted = IndexShiftData.EMPTY;
-            addToTable(src, update.added);
+            update.shifted = RowSetShiftData.EMPTY;
+            addToTable(src, update.added());
             src.notifyListeners(update);
         });
     }
@@ -326,7 +328,7 @@ public class ExportTableUpdateListenerTest {
     }
 
     private void expectNoMessage() {
-        liveTableMonitor.runWithinUnitTestCycle(() -> {
+        updateGraphProcessor.runWithinUnitTestCycle(() -> {
         }); // flush our terminal notification
         final ExportedTableUpdateMessage batch = observer.msgQueue.poll();
         Assert.eqNull(batch, "batch");
@@ -336,7 +338,7 @@ public class ExportTableUpdateListenerTest {
         public TestSessionState() {
             super(scheduler, AUTH_CONTEXT);
             initializeExpiration(new SessionService.TokenExpiration(UUID.randomUUID(),
-                    DBTimeUtils.nanosToTime(Long.MAX_VALUE), this));
+                    DateTimeUtils.nanosToTime(Long.MAX_VALUE), this));
         }
     }
 

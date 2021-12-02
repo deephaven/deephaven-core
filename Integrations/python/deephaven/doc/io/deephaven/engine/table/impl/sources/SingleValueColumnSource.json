@@ -1,0 +1,14 @@
+{
+ "className": "io.deephaven.engine.table.impl.sources.SingleValueColumnSource",
+ "methods": {
+  "ensureCapacity": "Ensure that this WritableColumnSource can accept row keys in range [0, capacity).\n\n:param capacity: (long) - The new minimum capacity\n:param nullFilled: (boolean) - Whether data should be \"null-filled\". If true, get operations at row keys that have not been\n        set will return the appropriate null value; otherwise such gets produce undefined results.",
+  "getSingleValueColumnSource": "Note: Java generics information - <T>\n\n:param type: java.lang.Class<T>\n:return: io.deephaven.engine.table.impl.sources.SingleValueColumnSource<T>",
+  "isImmutable": "Determine if this column source is immutable, meaning that the values at a given row key never change.\n\n:return: (boolean) true if the values at a given row key of the column source never change, false otherwise",
+  "makeFillFromContext": "Provide a default, empty ChunkSink.FillFromContext for use with our default\n WritableColumnSource.fillFromChunk(io.deephaven.engine.table.ChunkSink.FillFromContext, io.deephaven.chunk.Chunk<? extends io.deephaven.chunk.attributes.Values>, io.deephaven.engine.rowset.RowSequence).\n\n:param chunkCapacity: int\n:return: io.deephaven.engine.table.ChunkSink.FillFromContext",
+  "set": "*Overload 1*  \n  :param value: char\n  \n*Overload 2*  \n  :param value: byte\n  \n*Overload 3*  \n  :param value: double\n  \n*Overload 4*  \n  :param value: float\n  \n*Overload 5*  \n  :param value: short\n  \n*Overload 6*  \n  :param value: long\n  \n*Overload 7*  \n  :param value: int\n  \n*Overload 8*  \n  :param value: SingleValueColumnSource.T",
+  "shift": ":param start: long\n:param end: long\n:param offset: long",
+  "startTrackingPrevValues": "ColumnSource implementations that track previous values have the option to not actually start tracking previous\n values until this method is called. This is an option, not an obligation: some simple ColumnSource\n implementations (like TSingleValueSource for various T) always track previous values; other implementations (like\n PrevColumnSource) never do; some (like TArrayColumnSource) only start tracking once this method is called.\n\n An immutable column source can not have distinct prev values; therefore it is implemented as a no-op."
+ },
+ "path": "io.deephaven.engine.table.impl.sources.SingleValueColumnSource",
+ "typeName": "class"
+}

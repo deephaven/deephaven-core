@@ -1,6 +1,6 @@
 package io.deephaven.integrations.learn;
 
-import io.deephaven.db.v2.sources.ColumnSource;
+import io.deephaven.engine.table.ColumnSource;
 import java.util.function.Function;
 
 /**

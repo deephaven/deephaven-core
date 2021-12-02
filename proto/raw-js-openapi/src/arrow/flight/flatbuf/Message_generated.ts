@@ -68,7 +68,7 @@ export function unionToMessageHeader(
 
 export function unionListToMessageHeader(
   type: MessageHeader, 
-  accessor: (index: number, obj:NS17716817176095924048.org.apache.arrow.flatbuf.Schema|org.apache.arrow.flatbuf.DictionaryBatch|org.apache.arrow.flatbuf.RecordBatch) => NS17716817176095924048.org.apache.arrow.flatbuf.Schema|org.apache.arrow.flatbuf.DictionaryBatch|org.apache.arrow.flatbuf.RecordBatch|null, 
+  accessor: (index: number, obj:NS17716817176095924048.org.apache.arrow.flatbuf.Schema|org.apache.arrow.flatbuf.DictionaryBatch|org.apache.arrow.flatbuf.RecordBatch) => NS17716817176095924048.org.apache.arrow.flatbuf.Schema|org.apache.arrow.flatbuf.DictionaryBatch|org.apache.arrow.flatbuf.RecordBatch|null,
   index: number
 ): NS17716817176095924048.org.apache.arrow.flatbuf.Schema|org.apache.arrow.flatbuf.DictionaryBatch|org.apache.arrow.flatbuf.RecordBatch|null {
   switch(org.apache.arrow.flatbuf.MessageHeader[type]) {

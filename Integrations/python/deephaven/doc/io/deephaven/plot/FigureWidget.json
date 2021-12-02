@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.plot.FigureWidget",
+ "methods": {
+  "getValidGroups": "Provide a list of groups which may view this widget. null indicates that there are no viewing restrictions on\n this widget.\n\n:return: (java.lang.String[]) the list of groups which may view this widget, null for no restrictions",
+  "setValidGroups": "*Overload 1*  \n  :param validGroups: java.lang.String...\n  \n*Overload 2*  \n  :param validGroups: java.util.Collection<java.lang.String>"
+ },
+ "path": "io.deephaven.plot.FigureWidget",
+ "text": "Displayable version of a Figure.",
+ "typeName": "class"
+}

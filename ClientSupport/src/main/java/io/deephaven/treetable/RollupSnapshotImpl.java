@@ -1,17 +1,18 @@
 package io.deephaven.treetable;
 
 import io.deephaven.base.verify.Require;
-import io.deephaven.db.tables.Table;
-import io.deephaven.db.tables.live.NotificationQueue;
-import io.deephaven.db.tables.select.MatchPair;
-import io.deephaven.db.util.string.StringUtils;
-import io.deephaven.db.v2.HierarchicalTable;
-import io.deephaven.db.v2.ReverseLookup;
-import io.deephaven.db.v2.RollupInfo;
-import io.deephaven.db.v2.TableMap;
-import io.deephaven.db.v2.select.SelectColumn;
-import io.deephaven.db.v2.select.SelectFilter;
-import io.deephaven.db.v2.sources.ColumnSource;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.updategraph.NotificationQueue;
+import io.deephaven.engine.table.MatchPair;
+import io.deephaven.engine.util.string.StringUtils;
+import io.deephaven.engine.table.impl.HierarchicalTable;
+import io.deephaven.engine.table.impl.ReverseLookup;
+import io.deephaven.engine.table.impl.RollupInfo;
+import io.deephaven.engine.table.TableMap;
+import io.deephaven.engine.table.impl.select.SelectColumn;
+import io.deephaven.engine.table.impl.select.WhereFilter;
+import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.table.sort.SortDirective;
 import org.jetbrains.annotations.NotNull;
 
@@ -47,7 +48,7 @@ class RollupSnapshotImpl<CLIENT_TYPE extends TreeTableClientTableManager.Client<
             long firstRow,
             long lastRow,
             BitSet columns,
-            @NotNull SelectFilter[] filters,
+            @NotNull WhereFilter[] filters,
             @NotNull List<SortDirective> sorts,
             CLIENT_TYPE client,
             Set<TreeSnapshotQuery.Operation> includedOps) {
@@ -154,14 +155,14 @@ class RollupSnapshotImpl<CLIENT_TYPE extends TreeTableClientTableManager.Client<
     }
 
     private HierarchicalTable applyFilters(@NotNull HierarchicalTable table) {
-        final SelectFilter[] filters = getFilters();
+        final WhereFilter[] filters = getFilters();
         if (filters.length == 0) {
             return table;
         }
 
         final Table source = Require.neqNull(table.getSourceTable(), "Hierarchical source table");
         final RollupInfo info = getInfo();
-        return (HierarchicalTable) source.where(filters).rollup(info.factory,
+        return (HierarchicalTable) ((QueryTable) source.where(filters)).rollup(info.factory,
                 info.getLeafType() == RollupInfo.LeafType.Constituent, info.getSelectColumns());
     }
 
@@ -196,7 +197,7 @@ class RollupSnapshotImpl<CLIENT_TYPE extends TreeTableClientTableManager.Client<
         }
 
         final Map<String, String> nameMap = getInfo().getMatchPairs().stream()
-                .collect(Collectors.toMap(MatchPair::left, MatchPair::right));
+                .collect(Collectors.toMap(MatchPair::leftColumn, MatchPair::rightColumn));
 
         // Note that we can't use getSourceTable() here because it won't have been initialized until after
         // getSnapshot() is invoked.

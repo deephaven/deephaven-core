@@ -2,6 +2,8 @@ plugins {
     id 'com.bmuschko.docker-remote-api'
 }
 
+evaluationDependsOn Docker.registryProject('node')
+
 def prepareDocker = project.tasks.register('prepareDocker', Sync) {
     from(project.projectDir) {
         exclude 'build'
@@ -12,6 +14,7 @@ def prepareDocker = project.tasks.register('prepareDocker', Sync) {
 
 def buildDocker = Docker.registerDockerImage(project, 'buildDocker') {
     inputs.files prepareDocker.get().outputs.files
+    inputs.files Docker.registryFiles(project, 'node')
     images.add('deephaven/protoc:local-build')
 }
 

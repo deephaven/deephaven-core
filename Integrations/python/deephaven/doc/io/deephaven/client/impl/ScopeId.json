@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.client.impl.ScopeId",
+ "methods": {
+  "pathId": "Get the path ID.\n\n:return: (io.deephaven.client.impl.PathId) the path ID",
+  "ticketId": "Get the ticket ID.\n\n:return: (io.deephaven.client.impl.TicketId) the ticket ID"
+ },
+ "path": "io.deephaven.client.impl.ScopeId",
+ "text": "An opaque holder for a query scope variable ID.",
+ "typeName": "class"
+}

@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.table.impl.sources.regioned.DeferredColumnRegionShort",
+ "methods": {
+  "getShort": "Get a single short from this region.\n\n*Overload 1*  \n  :param elementIndex: (long) - Element row key in the table's address space\n  :return: (short) The short value at the specified element row key\n  \n*Overload 2*  \n  :param context: (io.deephaven.engine.table.ChunkSource.FillContext) - A RegionContextHolder to enable resource caching where suitable, with current\n                       region index pointing to this region\n  :param elementIndex: (long) - Element row key in the table's address space\n  :return: (short) The short value at the specified element row key"
+ },
+ "path": "io.deephaven.engine.table.impl.sources.regioned.DeferredColumnRegionShort",
+ "text": "ColumnRegionShort implementation for deferred regions, i.e. regions that will be properly constructed on\n first access.",
+ "typeName": "class"
+}

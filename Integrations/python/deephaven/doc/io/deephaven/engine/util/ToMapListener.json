@@ -1,0 +1,21 @@
+{
+ "className": "io.deephaven.engine.util.ToMapListener",
+ "methods": {
+  "containsKey": ":param key: java.lang.Object\n:return: boolean",
+  "containsValue": ":param value: java.lang.Object\n:return: boolean",
+  "entrySet": ":return: java.util.Set<java.util.Map.Entry<ToMapListener.K,ToMapListener.V>>",
+  "get": "Get but instead of applying the default value producer, use a custom value producer.\n\n The intention is that you can wrap the map up with several different value producers, e.g. one for bid and\n another for ask.\n\n*Overload 1*  \n  :param key: java.lang.Object\n  :return: ToMapListener.V\n  \n*Overload 2*  \n  Note: Java generics information - <T>\n  \n  :param key: ToMapListener.K\n  :param valueProducer: groovy.lang.Closure<T>\n  :param prevValueProducer: groovy.lang.Closure<T>\n  :return: T\n  \n*Overload 3*  \n  Note: Java generics information - <T>\n  \n  :param key: ToMapListener.K\n  :param cs: io.deephaven.engine.table.ColumnSource<T>\n  :return: T\n  \n*Overload 4*  \n  Note: Java generics information - <T>\n  \n  :param key: (ToMapListener.K) - the key to retrieve\n  :param valueProducer: (java.util.function.LongFunction<T>) - retrieve the current value out of the table\n  :param prevValueProducer: (java.util.function.LongFunction<T>) - retrieve the previous value out of the table\n  :return: (T) the value associated with key",
+  "isEmpty": ":return: boolean",
+  "keySet": ":return: java.util.Set<ToMapListener.K>",
+  "make": "*Overload 1*  \n  :param source: io.deephaven.engine.table.Table\n  :param keySourceName: java.lang.String\n  :return: io.deephaven.engine.util.ToMapListener\n  \n*Overload 2*  \n  :param source: io.deephaven.engine.table.Table\n  :param keySourceName: java.lang.String\n  :param valueSourceName: java.lang.String\n  :return: io.deephaven.engine.util.ToMapListener\n  \n*Overload 3*  \n  Note: Java generics information - <K1,\n  V1>\n  \n  :param source: io.deephaven.engine.table.Table\n  :param keySource: io.deephaven.engine.table.ColumnSource<K1>\n  :param valueSource: io.deephaven.engine.table.ColumnSource<V1>\n  :return: io.deephaven.engine.util.ToMapListener<K1,V1>\n  \n*Overload 4*  \n  Note: Java generics information - <K1,\n  V1>\n  \n  :param source: io.deephaven.engine.table.Table\n  :param keyProducer: java.util.function.LongFunction<K1>\n  :param prevKeyProducer: java.util.function.LongFunction<K1>\n  :param valueProducer: java.util.function.LongFunction<V1>\n  :param prevValueProducer: java.util.function.LongFunction<V1>\n  :return: io.deephaven.engine.util.ToMapListener<K1,V1>",
+  "onUpdate": "Process notification of table changes.\n\n:param upstream: (io.deephaven.engine.table.TableUpdate) - The set of upstream table updates.",
+  "put": ":param key: ToMapListener.K\n:param value: ToMapListener.V\n:return: ToMapListener.V",
+  "putAll": ":param m: java.util.Map<? extendsToMapListener.K,? extendsToMapListener.V>",
+  "remove": ":param key: java.lang.Object\n:return: ToMapListener.V",
+  "size": ":return: int",
+  "values": ":return: java.util.Collection<ToMapListener.V>"
+ },
+ "path": "io.deephaven.engine.util.ToMapListener",
+ "text": "Listens to a table, mapping keys to values.\n\n When you call get, we return the value as of the start of this clock cycle.",
+ "typeName": "class"
+}

@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.db.v2.tuples.TupleSourceFactory",
- "methods": {
-  "makeTupleSource": "Create a TupleSource for the supplied array of ColumnSources.\n\n:param columnSources: (io.deephaven.db.v2.sources.ColumnSource...) - The column sources\n:return: (io.deephaven.db.v2.tuples.TupleSource) The tuple factory"
- },
- "path": "io.deephaven.db.v2.tuples.TupleSourceFactory",
- "text": "Factory for TupleSource instances.",
- "typeName": "class"
-}

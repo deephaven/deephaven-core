@@ -39,7 +39,7 @@ TableDataRefreshService.tableLocationsRefreshMillis=10000
 TableDataRefreshService.tableSizeRefreshMillis=1000
 
 Calendar.default=USNYSE
-Calendar.internalPath=<devroot>/configs/calendar
+Calendar.importPath=/default_calendar_imports.txt
 
 Plot.theme.default=LIGHT
 Plot.theme.internalPath=<devroot>/configs/chartthemes
@@ -54,12 +54,12 @@ default.processEnvironmentFactory=io.deephaven.util.process.DefaultProcessEnviro
 jpy.pythonLib=/usr/lib/python2.7/config-x86_64-linux-gnu/libpython2.7.so,/System/Library/Frameworks/Python.framework/Versions/2.7/lib/libpython2.7.dylib,/usr/lib64/libpython2.7.so
 jpy.jpyLib=/usr/local/lib/python2.7/dist-packages/jpy.so,/Library/Python/2.7/site-packages/jpy.so,/usr/lib64/python2.7/site-packages/jpy.so,~/.local/lib/python2.7/site-packages/jpy.so
 jpy.jdlLib=/usr/local/lib/python2.7/dist-packages/jdl.so,/Library/Python/2.7/site-packages/jdl.so,/usr/lib64/python2.7/site-packages/jdl.so,~/.local/lib/python2.7/site-packages/jpy.so
-WorkerPythonEnvironment.defaultScriptPath=<devroot>/DB/python
+WorkerPythonEnvironment.defaultScriptPath=<devroot>/engine/table/python
 
 Comm.fatalErrorHandlerFactoryClass=io.deephaven.console.utils.ProcessEnvironmentRedirectFactory
 
-LiveTableMonitor.checkTableOperations=true
-LiveTableMonitor.allowUnitTestMode=true
+UpdateGraphProcessor.checkTableOperations=true
+UpdateGraphProcessor.allowUnitTestMode=true
 
 QueryPerformanceRecorder.packageFilter.internal=defaultPackageFilters.qpr
 
@@ -82,10 +82,6 @@ allocation.stats.enabled=false
 
 ###### RspSequentialBuilder
 RspSequentialBuilder.check=true
-
-# DbTypes default impls
-DbTypes.DbFile.impl=io.deephaven.dbtypes.DbFileImpl$Factory
-DbTypes.DbImage.impl=io.deephaven.dbtypes.DbImageImpl$Factory
 
 # MetricsManager
 MetricsManager.toStdout=true

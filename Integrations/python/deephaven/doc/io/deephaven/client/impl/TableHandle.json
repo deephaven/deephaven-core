@@ -5,12 +5,14 @@
   "close": "Closes the underlying export.",
   "error": "The table handle has an error when the response from the server indicates an error.\n\n:return: (java.util.Optional<io.deephaven.client.impl.TableHandle.TableHandleException>) the error, if any",
   "export": ":return: io.deephaven.client.impl.Export",
+  "exportId": "Get the export ID.\n\n:return: (io.deephaven.client.impl.ExportId) the export ID",
   "isDone": "The table proxy is done when the response from the server is done, which yields either a successful response or\n an error.\n\n \n Note: the table proxy can create further derived table proxies before being done.\n\n:return: (boolean) true if this is done",
   "isSuccessful": "The table proxy is successful when the response from the server indicates success.\n\n:return: (boolean) true if the response from the server indicates success and false if the response\n         indicates it was not successful or there has been no response yet",
   "newRef": ":return: io.deephaven.client.impl.TableHandle",
   "of": "**Incompatible overloads text - text from the first overload:**\n\nCreate a table handle, exporting table. The table handle will be successful\n on return.\n\n*Overload 1*  \n  :param session: (io.deephaven.client.impl.Session) - the session\n  :param table: (io.deephaven.qst.table.TableSpec) - the table\n  :return: (io.deephaven.client.impl.TableHandle) the successful table handle\n  \n*Overload 2*  \n  :param session: (io.deephaven.client.impl.Session) - the session\n  :param table: (io.deephaven.qst.table.TableSpec) - the table\n  :param lifecycle: (io.deephaven.client.impl.TableHandle.Lifecycle) - the lifecycle\n  :return: (io.deephaven.client.impl.TableHandle) the successful table handle\n  \n*Overload 3*  \n  :param session: (io.deephaven.client.impl.Session) - the session\n  :param tables: (java.lang.Iterable<io.deephaven.qst.table.TableSpec>) - the tables\n  :param lifecycle: (io.deephaven.client.impl.TableHandle.Lifecycle) - the lifecycle\n  :return: (java.util.List<io.deephaven.client.impl.TableHandle>) the successful table handles",
+  "pathId": "Get the path ID.\n\n:return: (io.deephaven.client.impl.PathId) the path ID",
   "response": ":return: io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse",
-  "ticket": "The ticket.\n\n:return: (io.deephaven.proto.backplane.grpc.Ticket) the ticket"
+  "ticketId": "Get the ticket ID.\n\n:return: (io.deephaven.client.impl.TicketId) the ticket ID"
  },
  "path": "io.deephaven.client.impl.TableHandle",
  "text": "A table handle implements TableOperations such that each the initial table handle and\n derived table handles are managed as exports.\n\n \n A table handle may only be combined with other table handles from the same session.\n\n \n A table handle throws TableHandle.UncheckedInterruptedException and TableHandle.UncheckedTableHandleException on further\n TableOperations.",

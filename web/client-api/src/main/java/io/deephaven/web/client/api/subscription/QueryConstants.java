@@ -12,7 +12,7 @@ public interface QueryConstants {
     long NULL_LONG = Long.MIN_VALUE;
     float NULL_FLOAT = -Float.MAX_VALUE;
     double NULL_DOUBLE = -Double.MAX_VALUE;
-    byte NULL_BOOLEAN_AS_BYTE = (byte) -1;
+    byte NULL_BOOLEAN_AS_BYTE = NULL_BYTE;
     byte TRUE_BOOLEAN_AS_BYTE = (byte) 1;
     byte FALSE_BOOLEAN_AS_BYTE = (byte) 0;
 }

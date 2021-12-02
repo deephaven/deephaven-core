@@ -1,7 +1,7 @@
 {
  "className": "io.deephaven.grpc_api.table.ops.UpdateOrSelectGrpcImpl$RealTableOperation",
  "methods": {
-  "apply": ":param source: io.deephaven.db.tables.Table\n:param selectColumns: io.deephaven.db.v2.select.SelectColumn[]\n:return: io.deephaven.db.tables.Table"
+  "apply": ":param source: io.deephaven.engine.table.Table\n:param selectColumns: io.deephaven.engine.table.impl.select.SelectColumn[]\n:return: io.deephaven.engine.table.Table"
  },
  "path": "io.deephaven.grpc_api.table.ops.UpdateOrSelectGrpcImpl.RealTableOperation",
  "typeName": "interface"

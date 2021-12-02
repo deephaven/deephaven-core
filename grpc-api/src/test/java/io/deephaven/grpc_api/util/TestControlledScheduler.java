@@ -2,8 +2,8 @@ package io.deephaven.grpc_api.util;
 
 import com.google.common.collect.Ordering;
 import com.google.common.collect.TreeMultimap;
-import io.deephaven.db.tables.utils.DBDateTime;
-import io.deephaven.db.tables.utils.DBTimeUtils;
+import io.deephaven.time.DateTime;
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import org.jetbrains.annotations.NotNull;
@@ -17,7 +17,7 @@ public class TestControlledScheduler implements Scheduler {
 
     private long currentTimeInNs = 0;
 
-    private final TreeMultimap<DBDateTime, Runnable> workQueue =
+    private final TreeMultimap<DateTime, Runnable> workQueue =
             TreeMultimap.create(Ordering.natural(), Ordering.arbitrary());
 
     /**
@@ -29,7 +29,7 @@ public class TestControlledScheduler implements Scheduler {
         }
 
         try {
-            final Map.Entry<DBDateTime, Collection<Runnable>> entry = workQueue.asMap().firstEntry();
+            final Map.Entry<DateTime, Collection<Runnable>> entry = workQueue.asMap().firstEntry();
             final Runnable runner = entry.getValue().iterator().next();
 
             currentTimeInNs = Math.max(currentTimeInNs, entry.getKey().getNanos());
@@ -48,7 +48,7 @@ public class TestControlledScheduler implements Scheduler {
      *
      * @param untilTime time to run until
      */
-    public void runUntil(final DBDateTime untilTime) {
+    public void runUntil(final DateTime untilTime) {
         while (!workQueue.isEmpty()) {
             final long now = Math.max(currentTimeInNs, untilTime.getNanos());
             if (workQueue.asMap().firstEntry().getKey().getNanos() >= now) {
@@ -67,7 +67,7 @@ public class TestControlledScheduler implements Scheduler {
      *
      * @param throughTime time to run through
      */
-    public void runThrough(final DBDateTime throughTime) {
+    public void runThrough(final DateTime throughTime) {
         while (!workQueue.isEmpty()) {
             final long now = Math.max(currentTimeInNs, throughTime.getNanos());
             if (workQueue.asMap().firstEntry().getKey().getNanos() > now) {
@@ -90,28 +90,28 @@ public class TestControlledScheduler implements Scheduler {
     }
 
     /**
-     * Helper to give you a DBDateTime after a certain time has passed on the simulated clock.
+     * Helper to give you a DateTime after a certain time has passed on the simulated clock.
      *
      * @param delayInMs the number of milliseconds to add to current time
-     * @return a DBDateTime representing {@code now + delayInMs}
+     * @return a DateTime representing {@code now + delayInMs}
      */
-    public DBDateTime timeAfterMs(final long delayInMs) {
-        return DBTimeUtils.nanosToTime(currentTimeInNs + DBTimeUtils.millisToNanos(delayInMs));
+    public DateTime timeAfterMs(final long delayInMs) {
+        return DateTimeUtils.nanosToTime(currentTimeInNs + DateTimeUtils.millisToNanos(delayInMs));
     }
 
     @Override
-    public DBDateTime currentTime() {
-        return DBTimeUtils.nanosToTime(currentTimeInNs);
+    public DateTime currentTime() {
+        return DateTimeUtils.nanosToTime(currentTimeInNs);
     }
 
     @Override
-    public void runAtTime(final @NotNull DBDateTime absoluteTime, final @NotNull Runnable command) {
+    public void runAtTime(final @NotNull DateTime absoluteTime, final @NotNull Runnable command) {
         workQueue.put(absoluteTime, command);
     }
 
     @Override
     public void runAfterDelay(final long delayMs, final @NotNull Runnable command) {
-        workQueue.put(DBTimeUtils.nanosToTime(currentTimeInNs + delayMs * 1_000_000L), command);
+        workQueue.put(DateTimeUtils.nanosToTime(currentTimeInNs + delayMs * 1_000_000L), command);
     }
 
     @Override

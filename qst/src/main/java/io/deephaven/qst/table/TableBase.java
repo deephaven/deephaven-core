@@ -237,36 +237,6 @@ public abstract class TableBase implements TableSpec {
     }
 
     @Override
-    public final LeftJoinTable leftJoin(TableSpec rightTable, String columnsToMatch) {
-        LeftJoinTable.Builder builder = LeftJoinTable.builder().left(this).right(rightTable);
-        for (String match : split(columnsToMatch)) {
-            builder.addMatches(JoinMatch.parse(match));
-        }
-        return builder.build();
-    }
-
-    @Override
-    public final LeftJoinTable leftJoin(TableSpec rightTable, String columnsToMatch,
-            String columnsToAdd) {
-        LeftJoinTable.Builder builder = LeftJoinTable.builder().left(this).right(rightTable);
-        for (String match : split(columnsToMatch)) {
-            builder.addMatches(JoinMatch.parse(match));
-        }
-        for (String addition : split(columnsToAdd)) {
-            builder.addAdditions(JoinAddition.parse(addition));
-        }
-        return builder.build();
-    }
-
-    @Override
-    public final LeftJoinTable leftJoin(TableSpec rightTable,
-            Collection<? extends JoinMatch> columnsToMatch,
-            Collection<? extends JoinAddition> columnsToAdd) {
-        return LeftJoinTable.builder().left(this).right(rightTable).addAllMatches(columnsToMatch)
-                .addAllAdditions(columnsToAdd).build();
-    }
-
-    @Override
     public final AsOfJoinTable aj(TableSpec rightTable, String columnsToMatch) {
         AsOfJoinTable.Builder builder = AsOfJoinTable.builder().left(this).right(rightTable);
         for (String match : split(columnsToMatch)) {
@@ -402,13 +372,13 @@ public abstract class TableBase implements TableSpec {
     }
 
     @Override
-    public final ByTable by() {
-        return ByTable.builder().parent(this).build();
+    public final GroupByTable groupBy() {
+        return GroupByTable.builder().parent(this).build();
     }
 
     @Override
-    public final ByTable by(String... groupByColumns) {
-        ByTable.Builder builder = ByTable.builder().parent(this);
+    public final GroupByTable groupBy(String... groupByColumns) {
+        GroupByTable.Builder builder = GroupByTable.builder().parent(this);
         for (String groupByColumn : groupByColumns) {
             builder.addColumns(Selectable.parse(groupByColumn));
         }
@@ -416,15 +386,55 @@ public abstract class TableBase implements TableSpec {
     }
 
     @Override
-    public final ByTable by(Collection<? extends Selectable> groupByColumns) {
-        return ByTable.builder().parent(this).addAllColumns(groupByColumns).build();
+    public final GroupByTable groupBy(Collection<? extends Selectable> groupByColumns) {
+        return GroupByTable.builder().parent(this).addAllColumns(groupByColumns).build();
     }
 
     @Override
-    public final AggregationTable by(Collection<? extends Selectable> groupByColumns,
-            Collection<? extends Aggregation> aggregations) {
+    public final AggregationTable aggBy(Aggregation aggregation) {
+        return AggregationTable.builder().parent(this).addAggregations(aggregation).build();
+    }
+
+    @Override
+    public final AggregationTable aggBy(Aggregation aggregation, String... groupByColumns) {
+        final AggregationTable.Builder builder = AggregationTable.builder().parent(this);
+        for (String groupByColumn : groupByColumns) {
+            builder.addColumns(Selectable.parse(groupByColumn));
+        }
+        return builder.addAggregations(aggregation).build();
+    }
+
+    @Override
+    public final AggregationTable aggBy(Aggregation aggregation, Collection<? extends Selectable> groupByColumns) {
+        return AggregationTable.builder().parent(this).addAllColumns(groupByColumns)
+                .addAggregations(aggregation).build();
+    }
+
+    @Override
+    public final AggregationTable aggBy(Collection<? extends Aggregation> aggregations) {
+        return AggregationTable.builder().parent(this).addAllAggregations(aggregations).build();
+    }
+
+    @Override
+    public final AggregationTable aggBy(Collection<? extends Aggregation> aggregations, String... groupByColumns) {
+        final AggregationTable.Builder builder = AggregationTable.builder().parent(this);
+        for (String groupByColumn : groupByColumns) {
+            builder.addColumns(Selectable.parse(groupByColumn));
+        }
+        return builder.addAllAggregations(aggregations).build();
+    }
+
+    @Override
+    public final AggregationTable aggBy(Collection<? extends Aggregation> aggregations,
+            Collection<? extends Selectable> groupByColumns) {
         return AggregationTable.builder().parent(this).addAllColumns(groupByColumns)
                 .addAllAggregations(aggregations).build();
+    }
+
+    @Override
+    public final <V extends TableSchema.Visitor> V walk(V visitor) {
+        visitor.visit(this);
+        return visitor;
     }
 
     @Override

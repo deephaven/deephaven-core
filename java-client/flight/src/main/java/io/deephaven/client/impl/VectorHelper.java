@@ -5,8 +5,7 @@ import org.apache.arrow.vector.Float4Vector;
 import org.apache.arrow.vector.Float8Vector;
 import org.apache.arrow.vector.IntVector;
 import org.apache.arrow.vector.SmallIntVector;
-import org.apache.arrow.vector.TimeNanoVector;
-import org.apache.arrow.vector.TimeStampNanoVector;
+import org.apache.arrow.vector.TimeStampNanoTZVector;
 import org.apache.arrow.vector.TinyIntVector;
 import org.apache.arrow.vector.UInt2Vector;
 import org.apache.arrow.vector.VarCharVector;
@@ -90,7 +89,7 @@ public class VectorHelper {
         vector.setValueCount(array.size());
     }
 
-    public static void fill(TimeStampNanoVector vector, Collection<Instant> array) {
+    public static void fill(TimeStampNanoTZVector vector, Collection<Instant> array) {
         vector.allocateNew(array.size());
         int i = 0;
         for (Instant value : array) {

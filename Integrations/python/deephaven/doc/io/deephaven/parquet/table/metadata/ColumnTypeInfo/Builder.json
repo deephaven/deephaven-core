@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.parquet.table.metadata.ColumnTypeInfo$Builder",
+ "methods": {
+  "build": ":return: io.deephaven.parquet.table.metadata.ColumnTypeInfo",
+  "codec": ":param codec: io.deephaven.parquet.table.metadata.CodecInfo\n:return: io.deephaven.parquet.table.metadata.ColumnTypeInfo.Builder",
+  "columnName": ":param columnName: java.lang.String\n:return: io.deephaven.parquet.table.metadata.ColumnTypeInfo.Builder",
+  "specialType": ":param specialType: io.deephaven.parquet.table.metadata.ColumnTypeInfo.SpecialType\n:return: io.deephaven.parquet.table.metadata.ColumnTypeInfo.Builder"
+ },
+ "path": "io.deephaven.parquet.table.metadata.ColumnTypeInfo.Builder",
+ "typeName": "interface"
+}

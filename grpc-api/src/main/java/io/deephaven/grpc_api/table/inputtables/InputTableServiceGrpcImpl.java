@@ -1,9 +1,9 @@
 package io.deephaven.grpc_api.table.inputtables;
 
 import com.google.rpc.Code;
-import io.deephaven.db.tables.Table;
-import io.deephaven.db.tables.TableDefinition;
-import io.deephaven.db.util.config.MutableInputTable;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.util.config.MutableInputTable;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
 import io.deephaven.grpc_api.session.SessionService;
 import io.deephaven.grpc_api.session.SessionState;
@@ -64,6 +64,10 @@ public class InputTableServiceGrpcImpl extends InputTableServiceGrpc.InputTableS
                         // actually add the tables contents
                         try {
                             mutableInputTable.add(table);
+                            GrpcUtil.safelyExecuteLocked(responseObserver, () -> {
+                                responseObserver.onNext(AddTableResponse.getDefaultInstance());
+                                responseObserver.onCompleted();
+                            });
                         } catch (IOException ioException) {
                             throw GrpcUtil.statusRuntimeException(Code.DATA_LOSS, "Error adding table to input table");
                         }
@@ -111,6 +115,10 @@ public class InputTableServiceGrpcImpl extends InputTableServiceGrpc.InputTableS
                         // actually delete the table's contents
                         try {
                             mutableInputTable.delete(tableToDelete);
+                            GrpcUtil.safelyExecuteLocked(responseObserver, () -> {
+                                responseObserver.onNext(DeleteTableResponse.getDefaultInstance());
+                                responseObserver.onCompleted();
+                            });
                         } catch (IOException ioException) {
                             throw GrpcUtil.statusRuntimeException(Code.DATA_LOSS,
                                     "Error deleting table from inputtable");

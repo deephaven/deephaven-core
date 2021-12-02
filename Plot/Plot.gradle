@@ -1,17 +1,22 @@
 configurations {
     compile.extendsFrom dhPlot
 
-    testCompile.extendsFrom dhDbTest, fishIoTest
+    testCompile.extendsFrom fishIoTest
 }
 
 dependencies {
 
-    compile project(':DB')
+    compile project(':engine-table'),
+            project(':engine-function'),
+            project(':engine-tuple')
+
+    Classpaths.inheritGroovy(project, 'groovy', 'implementation')
+    Classpaths.inheritGroovy(project, 'groovy-json', 'implementation')
 
     compileOnly 'javax.inject:javax.inject:1'
 
     testCompile TestTools.projectDependency(project, 'Util'),
-                TestTools.projectDependency(project, 'DB')
+                TestTools.projectDependency(project, 'engine-table')
 
     testRuntime project(path: ':configs'), project(path: ':test-configs'), project(':Numerics')
 
@@ -22,12 +27,12 @@ dependencies {
 spotless {
     java {
         targetExclude(
-                'src/main/java/io/deephaven/db/plot/Axes.java',
-                'src/main/java/io/deephaven/db/plot/AxesImpl.java',
-                'src/main/java/io/deephaven/db/plot/Figure.java',
-                'src/main/java/io/deephaven/db/plot/FigureImpl.java',
-                'src/main/java/io/deephaven/db/plot/PlottingConvenience.java',
-                'src/main/java/io/deephaven/db/plot/datasets/multiseries/**'
+                'src/main/java/io/deephaven/plot/Axes.java',
+                'src/main/java/io/deephaven/plot/AxesImpl.java',
+                'src/main/java/io/deephaven/plot/Figure.java',
+                'src/main/java/io/deephaven/plot/FigureImpl.java',
+                'src/main/java/io/deephaven/plot/PlottingConvenience.java',
+                'src/main/java/io/deephaven/plot/datasets/multiseries/**'
         )
     }
 }

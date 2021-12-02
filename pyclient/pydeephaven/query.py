@@ -192,21 +192,6 @@ class Query(TableInterface):
         """
         return super().exact_join(table, on, joins)
 
-    def left_join(self, table: Any, on: List[str], joins: List[str] = []):
-        """ Add a left-join operation to the query.
-
-        Args:
-            table (Table): the right-table of the join
-            on (List[str]): the columns to match, can be a common name or an equal expression,
-                i.e. "col_a = col_b" for different column names
-            joins (List[str], optional): a list of the columns to be added from the right table to the result
-                table, can be renaming expressions, i.e. "new_col = col"; default is empty
-
-        Returns:
-            self
-        """
-        return super().left_join(table, on, joins)
-
     def join(self, table: Any, on: List[str] = [], joins: List[str] = [], reserve_bits: int = 10):
         """ Add a cross-join operation to the query.
 
@@ -426,7 +411,7 @@ class Query(TableInterface):
         """
         return super().count(col)
 
-    def combo_by(self, by: List[str], agg: ComboAggregation):
+    def agg_by(self, agg: ComboAggregation, by: List[str]):
         """ Add a Combined Aggregation operation to the query.
 
         Args:
@@ -436,4 +421,4 @@ class Query(TableInterface):
         Returns:
             self
         """
-        return super().combo_by(by, agg)
+        return super().agg_by(agg, by)

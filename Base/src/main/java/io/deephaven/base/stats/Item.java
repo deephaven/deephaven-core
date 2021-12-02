@@ -18,7 +18,7 @@ public class Item<V extends Value> {
     /** The value associated with this item */
     protected final V value;
 
-    /** Creating this for intrady so we don't have to allocate or change the existing DB schema **/
+    /** Creating this for intraday so we don't have to allocate or change the existing schema **/
     protected final String compactName;
 
     /**
