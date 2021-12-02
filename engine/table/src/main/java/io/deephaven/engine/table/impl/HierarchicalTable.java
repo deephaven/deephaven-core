@@ -185,7 +185,7 @@ public class HierarchicalTable extends QueryTable {
     }
 
     @Override
-    public Table aggBy(Collection<? extends Aggregation> aggregations,
+    protected Table aggByImpl(Collection<? extends Aggregation> aggregations,
             Collection<? extends Selectable> groupByColumns) {
         return throwUnsupported("aggBy()");
     }
@@ -224,11 +224,6 @@ public class HierarchicalTable extends QueryTable {
     @Override
     public Table select(Collection<? extends Selectable> selectColumns) {
         return throwUnsupported("select()");
-    }
-
-    @Override
-    public Table selectDistinct(Collection<? extends Selectable> columns) {
-        return throwUnsupported("selectDistinct()");
     }
 
     @Override

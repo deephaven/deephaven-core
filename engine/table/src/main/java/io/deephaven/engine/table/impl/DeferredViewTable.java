@@ -220,7 +220,7 @@ public class DeferredViewTable extends RedefinableTable {
     }
 
     @Override
-    public Table selectDistinct(Collection<? extends Selectable> selectables) {
+    protected Table selectDistinctImpl(Collection<? extends Selectable> selectables) {
         final SelectColumn[] columns = SelectColumn.from(selectables);
         /* If the cachedResult table has already been created, we can just use that. */
         if (getCoalesced() != null) {

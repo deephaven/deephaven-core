@@ -605,12 +605,8 @@ public class QueryTable extends BaseTable {
     }
 
     @Override
-    public Table aggBy(final Collection<? extends Aggregation> aggregations,
+    protected Table aggByImpl(final Collection<? extends Aggregation> aggregations,
             final Collection<? extends Selectable> groupByColumns) {
-        if (aggregations.isEmpty()) {
-            return selectDistinct(groupByColumns);
-        }
-
         final List<AggregationFactory.AggregationElement> optimized =
                 AggregationFactory.AggregationElement.optimizeAndConvert(aggregations);
 
@@ -2990,7 +2986,7 @@ public class QueryTable extends BaseTable {
     }
 
     @Override
-    public Table selectDistinct(Collection<? extends Selectable> groupByColumns) {
+    protected Table selectDistinctImpl(Collection<? extends Selectable> groupByColumns) {
         return QueryPerformanceRecorder.withNugget("selectDistinct(" + groupByColumns + ")",
                 sizeForInstrumentation(),
                 () -> by(new SelectDistinctSpecImpl(), SelectColumn.from(groupByColumns)));

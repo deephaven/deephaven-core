@@ -6,6 +6,8 @@ package io.deephaven.engine.table.impl;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
+import io.deephaven.api.Selectable;
+import io.deephaven.api.agg.Aggregation;
 import io.deephaven.base.Base64;
 import io.deephaven.base.StringUtils;
 import io.deephaven.base.log.LogOutput;
@@ -999,6 +1001,22 @@ public abstract class BaseTable extends LivenessArtifact
             return parent;
         }
     }
+
+    @Override
+    public final Table aggBy(Collection<? extends Aggregation> aggregations,
+            Collection<? extends Selectable> groupByColumns) {
+        if (aggregations.isEmpty()) {
+            return selectDistinctImpl(groupByColumns);
+        }
+        return aggByImpl(aggregations, groupByColumns);
+    }
+
+    protected Table selectDistinctImpl(Collection<? extends Selectable> columns) {
+        return aggByImpl(List.of(), columns);
+    }
+
+    protected abstract Table aggByImpl(Collection<? extends Aggregation> aggregations,
+            Collection<? extends Selectable> groupByColumns);
 
     @Override
     public Table withKeys(String... columns) {
