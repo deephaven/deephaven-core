@@ -124,3 +124,13 @@ BigDecimal = DType.BigDecimal
 StringSet = DType.StringSet
 DateTime = DType.DateTime
 Period = DType.Period
+
+
+def j_array_list(values: Iterable):
+    j_list = jpy.get_type("java.util.ArrayList")(len(values))
+    try:
+        for v in values:
+            j_list.add(v)
+        return j_list
+    except Exception as e:
+        raise DHError(e, "failed to create a Java collection from the Python collection.") from e

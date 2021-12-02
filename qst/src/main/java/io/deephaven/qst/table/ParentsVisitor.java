@@ -210,11 +210,6 @@ public class ParentsVisitor implements Visitor {
     }
 
     @Override
-    public void visit(LeftJoinTable leftJoinTable) {
-        out = Stream.of(leftJoinTable.left(), leftJoinTable.right());
-    }
-
-    @Override
     public void visit(AsOfJoinTable aj) {
         out = Stream.of(aj.left(), aj.right());
     }

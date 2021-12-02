@@ -4,7 +4,7 @@
 import unittest
 
 from deephaven2 import dtypes, DHError
-from deephaven2 import read_csv
+from deephaven2 import read_csv, write_csv
 from tests.testbase import BaseTestCase
 
 
@@ -48,6 +48,24 @@ class CsvTestCase(BaseTestCase):
             t = read_csv('tests/data/test_csv.csv', header=table_header, quote=",")
 
         self.assertIsNotNone(cm.exception.compact_traceback)
+
+    def test_write(self):
+        t = read_csv("tests/data/small_sample.csv")
+        write_csv(t, "./test_write.csv")
+        t_cols = [col.name for col in t.columns]
+        t = read_csv("./test_write.csv")
+        self.assertEqual(t_cols, [col.name for col in t.columns])
+
+        col_names = ["Strings", "Longs", "Floats"]
+        col_types = [dtypes.string, dtypes.long, dtypes.float_]
+        table_header = {k: v for k, v in zip(col_names, col_types)}
+        t = read_csv('tests/data/test_csv.csv', header=table_header)
+        write_csv(t, "./test_write.csv", cols=col_names)
+        t = read_csv('./test_write.csv')
+        self.assertEqual(col_names, [c.name for c in t.columns])
+
+        import os
+        os.remove("./test_write.csv")
 
 
 if __name__ == '__main__':

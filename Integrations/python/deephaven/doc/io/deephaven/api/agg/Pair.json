@@ -7,6 +7,6 @@
   "parse": ":param x: java.lang.String\n:return: io.deephaven.api.agg.Pair"
  },
  "path": "io.deephaven.api.agg.Pair",
- "text": "A pair represents an input and an output column for a KeyedAggregation.",
+ "text": "A column pair represents an input and an output column.",
  "typeName": "interface"
 }

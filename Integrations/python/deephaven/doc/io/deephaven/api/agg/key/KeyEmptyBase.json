@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.api.agg.key.KeyEmptyBase",
- "methods": {
-  "hashCode": ":return: int"
- },
- "path": "io.deephaven.api.agg.key.KeyEmptyBase",
- "typeName": "class"
-}

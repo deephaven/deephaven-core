@@ -192,21 +192,6 @@ class Query(TableInterface):
         """
         return super().exact_join(table, on, joins)
 
-    def left_join(self, table: Any, on: List[str], joins: List[str] = []):
-        """ Add a left-join operation to the query.
-
-        Args:
-            table (Table): the right-table of the join
-            on (List[str]): the columns to match, can be a common name or an equal expression,
-                i.e. "col_a = col_b" for different column names
-            joins (List[str], optional): a list of the columns to be added from the right table to the result
-                table, can be renaming expressions, i.e. "new_col = col"; default is empty
-
-        Returns:
-            self
-        """
-        return super().left_join(table, on, joins)
-
     def join(self, table: Any, on: List[str] = [], joins: List[str] = [], reserve_bits: int = 10):
         """ Add a cross-join operation to the query.
 

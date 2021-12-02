@@ -237,36 +237,6 @@ public abstract class TableBase implements TableSpec {
     }
 
     @Override
-    public final LeftJoinTable leftJoin(TableSpec rightTable, String columnsToMatch) {
-        LeftJoinTable.Builder builder = LeftJoinTable.builder().left(this).right(rightTable);
-        for (String match : split(columnsToMatch)) {
-            builder.addMatches(JoinMatch.parse(match));
-        }
-        return builder.build();
-    }
-
-    @Override
-    public final LeftJoinTable leftJoin(TableSpec rightTable, String columnsToMatch,
-            String columnsToAdd) {
-        LeftJoinTable.Builder builder = LeftJoinTable.builder().left(this).right(rightTable);
-        for (String match : split(columnsToMatch)) {
-            builder.addMatches(JoinMatch.parse(match));
-        }
-        for (String addition : split(columnsToAdd)) {
-            builder.addAdditions(JoinAddition.parse(addition));
-        }
-        return builder.build();
-    }
-
-    @Override
-    public final LeftJoinTable leftJoin(TableSpec rightTable,
-            Collection<? extends JoinMatch> columnsToMatch,
-            Collection<? extends JoinAddition> columnsToAdd) {
-        return LeftJoinTable.builder().left(this).right(rightTable).addAllMatches(columnsToMatch)
-                .addAllAdditions(columnsToAdd).build();
-    }
-
-    @Override
     public final AsOfJoinTable aj(TableSpec rightTable, String columnsToMatch) {
         AsOfJoinTable.Builder builder = AsOfJoinTable.builder().left(this).right(rightTable);
         for (String match : split(columnsToMatch)) {

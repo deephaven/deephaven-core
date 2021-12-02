@@ -68,7 +68,6 @@ import io.deephaven.proto.backplane.grpc.FetchTableRequest;
 import io.deephaven.proto.backplane.grpc.FilterTableRequest;
 import io.deephaven.proto.backplane.grpc.HeadOrTailRequest;
 import io.deephaven.proto.backplane.grpc.IsNullCondition;
-import io.deephaven.proto.backplane.grpc.LeftJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.Literal;
 import io.deephaven.proto.backplane.grpc.MergeTablesRequest;
 import io.deephaven.proto.backplane.grpc.NaturalJoinTablesRequest;
@@ -95,7 +94,6 @@ import io.deephaven.qst.table.InMemoryAppendOnlyInputTable;
 import io.deephaven.qst.table.InMemoryKeyBackedInputTable;
 import io.deephaven.qst.table.InputTable;
 import io.deephaven.qst.table.JoinTable;
-import io.deephaven.qst.table.LeftJoinTable;
 import io.deephaven.qst.table.MergeTable;
 import io.deephaven.qst.table.NaturalJoinTable;
 import io.deephaven.qst.table.NewTable;
@@ -350,19 +348,6 @@ class BatchTableRequestBuilder {
                 builder.addColumnsToAdd(Strings.of(addition));
             }
             out = op(Builder::setCrossJoin, builder.build());
-        }
-
-        @Override
-        public void visit(LeftJoinTable j) {
-            LeftJoinTablesRequest.Builder builder = LeftJoinTablesRequest.newBuilder()
-                    .setResultId(ticket).setLeftId(ref(j.left())).setRightId(ref(j.right()));
-            for (JoinMatch match : j.matches()) {
-                builder.addColumnsToMatch(Strings.of(match));
-            }
-            for (JoinAddition addition : j.additions()) {
-                builder.addColumnsToAdd(Strings.of(addition));
-            }
-            out = op(Builder::setLeftJoin, builder.build());
         }
 
         @Override

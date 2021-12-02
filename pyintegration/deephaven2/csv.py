@@ -5,7 +5,7 @@
 Deephaven table out as a CSV file.
 """
 from enum import Enum
-from typing import Dict, Any
+from typing import Dict, Any, List
 
 import jpy
 
@@ -18,6 +18,7 @@ _JCsvSpecs = jpy.get_type("io.deephaven.csv.CsvSpecs")
 _JInferenceSpecs = jpy.get_type("io.deephaven.csv.InferenceSpecs")
 _JTableHeader = jpy.get_type("io.deephaven.qst.table.TableHeader")
 _JCharset = jpy.get_type("java.nio.charset.Charset")
+_JCsvTools = jpy.get_type("io.deephaven.csv.CsvTools")
 
 
 class Inference(Enum):
@@ -112,4 +113,21 @@ def read(path: str,
 
         return Table(j_table=j_table)
     except Exception as e:
-        raise DHError(e, "read_csv failed") from e
+        raise DHError(e, "read csv failed") from e
+
+
+def write(table: Table, path: str, cols: List[str] = []) -> None:
+    """ Write a table to a standard CSV file.
+
+    Args:
+        table (Table): the source table
+        path (str): the path of the CSV file
+        cols (List[str]): the names of the columns to be written out
+
+    Raises:
+        DHError
+    """
+    try:
+        _JCsvTools.writeCsv(table.j_table, False, path, *cols)
+    except Exception as e:
+        raise DHError("write csv failed.") from e
