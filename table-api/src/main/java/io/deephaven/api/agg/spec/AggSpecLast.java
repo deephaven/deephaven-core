@@ -1,14 +1,14 @@
-package io.deephaven.api.agg.key;
+package io.deephaven.api.agg.spec;
 
 import io.deephaven.annotations.SimpleStyle;
 import org.immutables.value.Value.Immutable;
 
 @Immutable
 @SimpleStyle
-public abstract class KeyFirst extends KeyEmptyBase {
+public abstract class AggSpecLast extends AggSpecEmptyBase {
 
-    public static KeyFirst of() {
-        return ImmutableKeyFirst.of();
+    public static AggSpecLast of() {
+        return ImmutableAggSpecLast.of();
     }
 
     @Override

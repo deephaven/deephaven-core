@@ -1,7 +1,7 @@
 package io.deephaven.api.agg;
 
-import io.deephaven.api.agg.KeyedAggregations.Builder;
-import io.deephaven.api.agg.key.Key;
+import io.deephaven.api.agg.NormalAggregations.Builder;
+import io.deephaven.api.agg.spec.AggSpec;
 
 import java.io.Serializable;
 import java.util.Collection;
@@ -11,20 +11,20 @@ import java.util.Collection;
  *
  * @see io.deephaven.api.TableOperations#aggBy(Collection, Collection)
  * @see Count
- * @see KeyedAggregation
- * @see KeyedAggregations
+ * @see NormalAggregation
+ * @see NormalAggregations
  */
 public interface Aggregation extends Serializable {
 
-    static KeyedAggregation of(Key key, String pair) {
-        return KeyedAggregation.of(key, Pair.parse(pair));
+    static NormalAggregation of(AggSpec spec, String pair) {
+        return NormalAggregation.of(spec, Pair.parse(pair));
     }
 
-    static Aggregation of(Key key, String... pairs) {
+    static Aggregation of(AggSpec spec, String... pairs) {
         if (pairs.length == 1) {
-            return of(key, pairs[0]);
+            return of(spec, pairs[0]);
         }
-        final Builder builder = KeyedAggregations.builder().key(key);
+        final Builder builder = NormalAggregations.builder().spec(spec);
         for (String pair : pairs) {
             builder.addPairs(Pair.parse(pair));
         }
@@ -32,11 +32,11 @@ public interface Aggregation extends Serializable {
     }
 
     static Aggregation AggAbsSum(String... pairs) {
-        return of(Key.absSum(), pairs);
+        return of(AggSpec.absSum(), pairs);
     }
 
     static Aggregation AggAvg(String... pairs) {
-        return of(Key.avg(), pairs);
+        return of(AggSpec.avg(), pairs);
     }
 
     static Aggregation AggCount(String resultColumn) {
@@ -44,99 +44,99 @@ public interface Aggregation extends Serializable {
     }
 
     static Aggregation AggCountDistinct(String... pairs) {
-        return of(Key.countDistinct(), pairs);
+        return of(AggSpec.countDistinct(), pairs);
     }
 
     static Aggregation AggCountDistinct(boolean countNulls, String... pairs) {
-        return of(Key.countDistinct(countNulls), pairs);
+        return of(AggSpec.countDistinct(countNulls), pairs);
     }
 
     static Aggregation AggDistinct(String... pairs) {
-        return of(Key.distinct(), pairs);
+        return of(AggSpec.distinct(), pairs);
     }
 
     static Aggregation AggDistinct(boolean includeNulls, String... pairs) {
-        return of(Key.distinct(includeNulls), pairs);
+        return of(AggSpec.distinct(includeNulls), pairs);
     }
 
     static Aggregation AggFirst(String... pairs) {
-        return of(Key.first(), pairs);
+        return of(AggSpec.first(), pairs);
     }
 
     static Aggregation AggGroup(String... pairs) {
-        return of(Key.group(), pairs);
+        return of(AggSpec.group(), pairs);
     }
 
     static Aggregation AggLast(String... pairs) {
-        return of(Key.last(), pairs);
+        return of(AggSpec.last(), pairs);
     }
 
     static Aggregation AggMax(String... pairs) {
-        return of(Key.max(), pairs);
+        return of(AggSpec.max(), pairs);
     }
 
     static Aggregation AggMed(String... pairs) {
-        return of(Key.median(), pairs);
+        return of(AggSpec.median(), pairs);
     }
 
     static Aggregation AggMed(boolean average, String... pairs) {
-        return of(Key.median(average), pairs);
+        return of(AggSpec.median(average), pairs);
     }
 
     static Aggregation AggMin(String... pairs) {
-        return of(Key.min(), pairs);
+        return of(AggSpec.min(), pairs);
     }
 
     static Aggregation AggPct(double percentile, String... pairs) {
-        return of(Key.percentile(percentile), pairs);
+        return of(AggSpec.percentile(percentile), pairs);
     }
 
     static Aggregation AggPct(double percentile, boolean average, String... pairs) {
-        return of(Key.percentile(percentile, average), pairs);
+        return of(AggSpec.percentile(percentile, average), pairs);
     }
 
     static Aggregation AggSortedFirst(String sortedColumn, String... pairs) {
-        return of(Key.sortedFirst(sortedColumn), pairs);
+        return of(AggSpec.sortedFirst(sortedColumn), pairs);
     }
 
     static Aggregation AggSortedFirst(Collection<? extends String> sortedColumns, String... pairs) {
-        return of(Key.sortedFirst(sortedColumns), pairs);
+        return of(AggSpec.sortedFirst(sortedColumns), pairs);
     }
 
     static Aggregation AggSortedLast(String sortedColumn, String... pairs) {
-        return of(Key.sortedLast(sortedColumn), pairs);
+        return of(AggSpec.sortedLast(sortedColumn), pairs);
     }
 
     static Aggregation AggSortedLast(Collection<? extends String> sortedColumns, String... pairs) {
-        return of(Key.sortedLast(sortedColumns), pairs);
+        return of(AggSpec.sortedLast(sortedColumns), pairs);
     }
 
     static Aggregation AggStd(String... pairs) {
-        return of(Key.std(), pairs);
+        return of(AggSpec.std(), pairs);
     }
 
     static Aggregation AggSum(String... pairs) {
-        return of(Key.sum(), pairs);
+        return of(AggSpec.sum(), pairs);
     }
 
     static Aggregation AggUnique(String... pairs) {
-        return of(Key.unique(), pairs);
+        return of(AggSpec.unique(), pairs);
     }
 
     static Aggregation AggUnique(boolean includeNulls, String... pairs) {
-        return of(Key.unique(includeNulls), pairs);
+        return of(AggSpec.unique(includeNulls), pairs);
     }
 
     static Aggregation AggVar(String... pairs) {
-        return of(Key.var(), pairs);
+        return of(AggSpec.var(), pairs);
     }
 
     static Aggregation AggWAvg(String weightColumn, String... pairs) {
-        return of(Key.wavg(weightColumn), pairs);
+        return of(AggSpec.wavg(weightColumn), pairs);
     }
 
     static Aggregation AggWSum(String weightColumn, String... pairs) {
-        return of(Key.wsum(weightColumn), pairs);
+        return of(AggSpec.wsum(weightColumn), pairs);
     }
 
     <V extends Visitor> V walk(V visitor);
@@ -144,8 +144,8 @@ public interface Aggregation extends Serializable {
     interface Visitor {
         void visit(Count count);
 
-        void visit(KeyedAggregation keyedAgg);
+        void visit(NormalAggregation normalAgg);
 
-        void visit(KeyedAggregations keyedAggs);
+        void visit(NormalAggregations normalAggs);
     }
 }

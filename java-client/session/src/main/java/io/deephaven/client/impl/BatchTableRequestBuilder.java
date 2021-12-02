@@ -13,29 +13,29 @@ import io.deephaven.api.SortColumn.Order;
 import io.deephaven.api.Strings;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.Count;
-import io.deephaven.api.agg.KeyedAggregation;
-import io.deephaven.api.agg.KeyedAggregations;
+import io.deephaven.api.agg.NormalAggregation;
+import io.deephaven.api.agg.NormalAggregations;
 import io.deephaven.api.agg.Pair;
-import io.deephaven.api.agg.key.Key;
-import io.deephaven.api.agg.key.KeyAbsSum;
-import io.deephaven.api.agg.key.KeyAvg;
-import io.deephaven.api.agg.key.KeyCountDistinct;
-import io.deephaven.api.agg.key.KeyDistinct;
-import io.deephaven.api.agg.key.KeyFirst;
-import io.deephaven.api.agg.key.KeyGroup;
-import io.deephaven.api.agg.key.KeyLast;
-import io.deephaven.api.agg.key.KeyMax;
-import io.deephaven.api.agg.key.KeyMedian;
-import io.deephaven.api.agg.key.KeyMin;
-import io.deephaven.api.agg.key.KeyPct;
-import io.deephaven.api.agg.key.KeySortedFirst;
-import io.deephaven.api.agg.key.KeySortedLast;
-import io.deephaven.api.agg.key.KeyStd;
-import io.deephaven.api.agg.key.KeySum;
-import io.deephaven.api.agg.key.KeyUnique;
-import io.deephaven.api.agg.key.KeyVar;
-import io.deephaven.api.agg.key.KeyWAvg;
-import io.deephaven.api.agg.key.KeyWSum;
+import io.deephaven.api.agg.spec.AggSpec;
+import io.deephaven.api.agg.spec.AggSpecAbsSum;
+import io.deephaven.api.agg.spec.AggSpecAvg;
+import io.deephaven.api.agg.spec.AggSpecCountDistinct;
+import io.deephaven.api.agg.spec.AggSpecDistinct;
+import io.deephaven.api.agg.spec.AggSpecFirst;
+import io.deephaven.api.agg.spec.AggSpecGroup;
+import io.deephaven.api.agg.spec.AggSpecLast;
+import io.deephaven.api.agg.spec.AggSpecMax;
+import io.deephaven.api.agg.spec.AggSpecMedian;
+import io.deephaven.api.agg.spec.AggSpecMin;
+import io.deephaven.api.agg.spec.AggSpecPercentile;
+import io.deephaven.api.agg.spec.AggSpecSortedFirst;
+import io.deephaven.api.agg.spec.AggSpecSortedLast;
+import io.deephaven.api.agg.spec.AggSpecStd;
+import io.deephaven.api.agg.spec.AggSpecSum;
+import io.deephaven.api.agg.spec.AggSpecUnique;
+import io.deephaven.api.agg.spec.AggSpecVar;
+import io.deephaven.api.agg.spec.AggSpecWAvg;
+import io.deephaven.api.agg.spec.AggSpecWSum;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.filter.FilterAnd;
 import io.deephaven.api.filter.FilterCondition;
@@ -479,7 +479,7 @@ class BatchTableRequestBuilder {
         private ComboAggregateRequest aggAllBy(AggregateAllByTable agg) {
             // A single aggregate without any input/output is how the protocol knows this is an "aggregate all by"
             // as opposed to an AggregationTable with one agg.
-            final Aggregate aggregate = agg.key().walk(new AggregateAdapter(Collections.emptyList())).out();
+            final Aggregate aggregate = agg.spec().walk(new AggregateAdapter(Collections.emptyList())).out();
             return groupByColumns(agg).addAggregates(aggregate).build();
         }
 
@@ -520,14 +520,14 @@ class BatchTableRequestBuilder {
         }
 
         @Override
-        public void visit(KeyedAggregation keyedAgg) {
-            out = keyedAgg.key()
-                    .walk(new AggregateAdapter(Collections.singletonList(keyedAgg.pair()))).out();
+        public void visit(NormalAggregation normalAgg) {
+            out = normalAgg.spec()
+                    .walk(new AggregateAdapter(Collections.singletonList(normalAgg.pair()))).out();
         }
 
         @Override
-        public void visit(KeyedAggregations keyedAggs) {
-            out = keyedAggs.key().walk(new AggregateAdapter(keyedAggs.pairs())).out();
+        public void visit(NormalAggregations normalAggs) {
+            out = normalAggs.spec().walk(new AggregateAdapter(normalAggs.pairs())).out();
         }
     }
 
@@ -655,7 +655,7 @@ class BatchTableRequestBuilder {
         return builder;
     }
 
-    private static class AggregateAdapter implements Key.Visitor {
+    private static class AggregateAdapter implements AggSpec.Visitor {
 
         private final List<Pair> pairs;
 
@@ -670,49 +670,49 @@ class BatchTableRequestBuilder {
         }
 
         @Override
-        public void visit(KeyAbsSum absSum) {
+        public void visit(AggSpecAbsSum absSum) {
             out = of(AggType.ABS_SUM, pairs).build();
         }
 
         @Override
-        public void visit(KeyCountDistinct countDistinct) {
+        public void visit(AggSpecCountDistinct countDistinct) {
             throw new UnsupportedOperationException(
                     "TODO(deephaven-core#991): TableService aggregation coverage, https://github.com/deephaven/deephaven-core/issues/991");
         }
 
         @Override
-        public void visit(KeyDistinct distinct) {
+        public void visit(AggSpecDistinct distinct) {
             throw new UnsupportedOperationException(
                     "TODO(deephaven-core#991): TableService aggregation coverage, https://github.com/deephaven/deephaven-core/issues/991");
         }
 
         @Override
-        public void visit(KeyGroup group) {
+        public void visit(AggSpecGroup group) {
             out = of(AggType.GROUP, pairs).build();
         }
 
         @Override
-        public void visit(KeyAvg avg) {
+        public void visit(AggSpecAvg avg) {
             out = of(AggType.AVG, pairs).build();
         }
 
         @Override
-        public void visit(KeyFirst first) {
+        public void visit(AggSpecFirst first) {
             out = of(AggType.FIRST, pairs).build();
         }
 
         @Override
-        public void visit(KeyLast last) {
+        public void visit(AggSpecLast last) {
             out = of(AggType.LAST, pairs).build();
         }
 
         @Override
-        public void visit(KeyMax max) {
+        public void visit(AggSpecMax max) {
             out = of(AggType.MAX, pairs).build();
         }
 
         @Override
-        public void visit(KeyMedian median) {
+        public void visit(AggSpecMedian median) {
             if (!median.averageMedian()) {
                 throw new UnsupportedOperationException(
                         "TODO(deephaven-core#991): TableService aggregation coverage, https://github.com/deephaven/deephaven-core/issues/991");
@@ -721,12 +721,12 @@ class BatchTableRequestBuilder {
         }
 
         @Override
-        public void visit(KeyMin min) {
+        public void visit(AggSpecMin min) {
             out = of(AggType.MIN, pairs).build();
         }
 
         @Override
-        public void visit(KeyPct pct) {
+        public void visit(AggSpecPercentile pct) {
             if (pct.averageMedian()) {
                 throw new UnsupportedOperationException(
                         "TODO(deephaven-core#991): TableService aggregation coverage, https://github.com/deephaven/deephaven-core/issues/991");
@@ -735,47 +735,47 @@ class BatchTableRequestBuilder {
         }
 
         @Override
-        public void visit(KeySortedFirst sortedFirst) {
+        public void visit(AggSpecSortedFirst sortedFirst) {
             throw new UnsupportedOperationException(
                     "TODO(deephaven-core#991): TableService aggregation coverage, https://github.com/deephaven/deephaven-core/issues/991");
         }
 
         @Override
-        public void visit(KeySortedLast sortedLast) {
+        public void visit(AggSpecSortedLast sortedLast) {
             throw new UnsupportedOperationException(
                     "TODO(deephaven-core#991): TableService aggregation coverage, https://github.com/deephaven/deephaven-core/issues/991");
         }
 
         @Override
-        public void visit(KeyStd std) {
+        public void visit(AggSpecStd std) {
             out = of(AggType.STD, pairs).build();
         }
 
         @Override
-        public void visit(KeySum sum) {
+        public void visit(AggSpecSum sum) {
             out = of(AggType.SUM, pairs).build();
         }
 
         @Override
-        public void visit(KeyUnique unique) {
+        public void visit(AggSpecUnique unique) {
             throw new UnsupportedOperationException(
                     "TODO(deephaven-core#991): TableService aggregation coverage, https://github.com/deephaven/deephaven-core/issues/991");
         }
 
         @Override
-        public void visit(KeyWAvg wAvg) {
+        public void visit(AggSpecWAvg wAvg) {
             out = of(AggType.WEIGHTED_AVG, pairs).setColumnName(wAvg.weight().name()).build();
 
         }
 
         @Override
-        public void visit(KeyWSum wSum) {
+        public void visit(AggSpecWSum wSum) {
             throw new UnsupportedOperationException(
                     "TODO(deephaven-core#991): TableService aggregation coverage, https://github.com/deephaven/deephaven-core/issues/991");
         }
 
         @Override
-        public void visit(KeyVar var) {
+        public void visit(AggSpecVar var) {
             out = of(AggType.VAR, pairs).build();
         }
     }

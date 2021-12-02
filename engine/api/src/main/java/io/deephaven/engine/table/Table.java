@@ -6,7 +6,7 @@ package io.deephaven.engine.table;
 
 import io.deephaven.api.*;
 import io.deephaven.api.agg.Aggregation;
-import io.deephaven.api.agg.key.Key;
+import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.engine.liveness.LivenessNode;
 import io.deephaven.engine.rowset.TrackingRowSet;
@@ -998,19 +998,19 @@ public interface Table extends
 
     @Override
     @ConcurrentMethod
-    Table aggAllBy(Key key);
+    Table aggAllBy(AggSpec spec);
 
     @Override
     @ConcurrentMethod
-    Table aggAllBy(Key key, String... groupByColumns);
+    Table aggAllBy(AggSpec spec, String... groupByColumns);
 
     @Override
     @ConcurrentMethod
-    Table aggAllBy(Key key, Selectable... groupByColumns);
+    Table aggAllBy(AggSpec spec, Selectable... groupByColumns);
 
     @Override
     @ConcurrentMethod
-    Table aggAllBy(Key key, Collection<String> groupByColumns);
+    Table aggAllBy(AggSpec spec, Collection<String> groupByColumns);
 
     @Override
     @ConcurrentMethod

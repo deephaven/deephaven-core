@@ -1,4 +1,4 @@
-package io.deephaven.api.agg.key;
+package io.deephaven.api.agg.spec;
 
 import io.deephaven.annotations.SimpleStyle;
 import io.deephaven.api.ColumnName;
@@ -7,10 +7,10 @@ import org.immutables.value.Value.Parameter;
 
 @Immutable
 @SimpleStyle
-public abstract class KeyWAvg extends KeyBase {
+public abstract class AggSpecWSum extends AggSpecBase {
 
-    public static KeyWAvg of(ColumnName weight) {
-        return ImmutableKeyWAvg.of(weight);
+    public static AggSpecWSum of(ColumnName weight) {
+        return ImmutableAggSpecWSum.of(weight);
     }
 
     @Parameter

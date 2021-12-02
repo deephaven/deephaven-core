@@ -1,23 +1,23 @@
 package io.deephaven.api.agg;
 
 import io.deephaven.annotations.SimpleStyle;
-import io.deephaven.api.agg.key.Key;
+import io.deephaven.api.agg.spec.AggSpec;
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Parameter;
 
 /**
- * A keyed aggregation is an {@link Aggregation} that is composed of a {@link #key() key} and a {@link #pair() pair}.
+ * A normal aggregation is an {@link Aggregation} that is composed of a {@link #spec() spec} and a {@link #pair() pair}.
  */
 @Immutable
 @SimpleStyle
-public abstract class KeyedAggregation implements Aggregation {
+public abstract class NormalAggregation implements Aggregation {
 
-    public static KeyedAggregation of(Key key, Pair pair) {
-        return ImmutableKeyedAggregation.of(key, pair);
+    public static NormalAggregation of(AggSpec spec, Pair pair) {
+        return ImmutableNormalAggregation.of(spec, pair);
     }
 
     @Parameter
-    public abstract Key key();
+    public abstract AggSpec spec();
 
     @Parameter
     public abstract Pair pair();

@@ -1,6 +1,6 @@
-package io.deephaven.api.agg.key;
+package io.deephaven.api.agg.spec;
 
-public abstract class KeyEmptyBase extends KeyBase {
+public abstract class AggSpecEmptyBase extends AggSpecBase {
 
     @Override
     public final int hashCode() {

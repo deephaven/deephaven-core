@@ -1,17 +1,17 @@
-package io.deephaven.api.agg.key;
+package io.deephaven.api.agg.spec;
 
 import io.deephaven.api.agg.Aggregation;
-import io.deephaven.api.agg.KeyedAggregation;
-import io.deephaven.api.agg.KeyedAggregations;
+import io.deephaven.api.agg.NormalAggregation;
+import io.deephaven.api.agg.NormalAggregations;
 import io.deephaven.api.agg.Pair;
 
 import java.util.Collection;
 
-public abstract class KeyBase implements Key {
+public abstract class AggSpecBase implements AggSpec {
 
     @Override
-    public final KeyedAggregation aggregation(Pair pair) {
-        return KeyedAggregation.of(this, pair);
+    public final NormalAggregation aggregation(Pair pair) {
+        return NormalAggregation.of(this, pair);
     }
 
     @Override
@@ -19,7 +19,7 @@ public abstract class KeyBase implements Key {
         if (pairs.length == 1) {
             return aggregation(pairs[0]);
         }
-        return KeyedAggregations.builder().key(this).addPairs(pairs).build();
+        return NormalAggregations.builder().spec(this).addPairs(pairs).build();
     }
 
     @Override
@@ -27,6 +27,6 @@ public abstract class KeyBase implements Key {
         if (pairs.size() == 1) {
             return aggregation(pairs.iterator().next());
         }
-        return KeyedAggregations.builder().key(this).addAllPairs(pairs).build();
+        return NormalAggregations.builder().spec(this).addAllPairs(pairs).build();
     }
 }

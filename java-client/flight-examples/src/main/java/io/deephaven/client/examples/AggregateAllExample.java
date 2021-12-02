@@ -1,17 +1,15 @@
 package io.deephaven.client.examples;
 
-import io.deephaven.api.agg.key.Key;
+import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.client.impl.FlightSession;
 import io.deephaven.client.impl.TableHandle;
 import io.deephaven.qst.LabeledValue;
 import io.deephaven.qst.LabeledValues;
 import io.deephaven.qst.column.header.ColumnHeader;
 import io.deephaven.qst.column.header.ColumnHeaders8;
-import io.deephaven.qst.column.header.ColumnHeaders8.Rows;
 import io.deephaven.qst.table.InMemoryKeyBackedInputTable;
 import io.deephaven.qst.table.LabeledTables;
 import io.deephaven.qst.table.LabeledTables.Builder;
-import io.deephaven.qst.table.NewTable;
 import io.deephaven.qst.table.TableHeader;
 import io.deephaven.qst.table.TableSpec;
 import picocli.CommandLine;
@@ -28,31 +26,31 @@ import java.util.concurrent.TimeUnit;
         description = "Aggregate all examples", version = "0.1.0")
 class AggregateAllExample extends FlightExampleBase {
 
-    private static List<Key> keys() {
+    private static List<AggSpec> keys() {
         return Arrays.asList(
-                Key.absSum(),
-                Key.avg(),
+                AggSpec.absSum(),
+                AggSpec.avg(),
                 // Key.countDistinct(false),
                 // Key.countDistinct(true),
                 // Key.distinct(false),
                 // Key.distinct(true),
-                Key.first(),
-                Key.group(),
-                Key.last(),
-                Key.max(),
+                AggSpec.first(),
+                AggSpec.group(),
+                AggSpec.last(),
+                AggSpec.max(),
                 // Key.median(false),
-                Key.median(true),
-                Key.min(),
+                AggSpec.median(true),
+                AggSpec.min(),
                 // Key.percentile(0.25, false),
                 // Key.percentile(0.25, true),
                 // Key.sortedFirst(...),
                 // Key.sortedLast(...),
-                Key.std(),
-                Key.sum(),
+                AggSpec.std(),
+                AggSpec.sum(),
                 // Key.unique(false),
                 // Key.unique(true),
-                Key.var(),
-                Key.wavg("Z")
+                AggSpec.var(),
+                AggSpec.wavg("Z")
         // Key.wsum("Z")
         );
     }
@@ -91,7 +89,7 @@ class AggregateAllExample extends FlightExampleBase {
                 Collections.singletonList(inputKey.name()));
         builder.putMap("base", spec);
         // todo: countBy
-        for (Key key : keys()) {
+        for (AggSpec key : keys()) {
             final String name = key.toString()
                     .replace('=', '_')
                     .replace('{', '_')

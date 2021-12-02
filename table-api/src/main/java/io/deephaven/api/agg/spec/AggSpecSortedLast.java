@@ -1,4 +1,4 @@
-package io.deephaven.api.agg.key;
+package io.deephaven.api.agg.spec;
 
 import io.deephaven.annotations.BuildableStyle;
 import io.deephaven.api.SortColumn;
@@ -8,17 +8,17 @@ import org.immutables.value.Value.Immutable;
 import java.util.List;
 
 /**
- * Note: the sorted-first aggregation only supports {@link SortColumn.Order#ASCENDING} columns at the moment.
+ * Note: the sorted-last aggregation only supports {@link SortColumn.Order#ASCENDING} columns at the moment.
  *
  * @see <a href="https://github.com/deephaven/deephaven-core/issues/821">SortedFirst / SortedLast aggregations with sort
  *      direction</a>
  */
 @Immutable
 @BuildableStyle
-public abstract class KeySortedFirst extends KeyBase {
+public abstract class AggSpecSortedLast extends AggSpecBase {
 
     public static Builder builder() {
-        return ImmutableKeySortedFirst.builder();
+        return ImmutableAggSpecSortedLast.builder();
     }
 
     public abstract List<SortColumn> columns();
@@ -39,9 +39,9 @@ public abstract class KeySortedFirst extends KeyBase {
     @Check
     final void checkSortOrder() {
         // TODO(deephaven-core#821): SortedFirst / SortedLast aggregations with sort direction
-        if (!columns().stream().map(SortColumn::order).allMatch(KeySortedFirst::isAscending)) {
+        if (!columns().stream().map(SortColumn::order).allMatch(AggSpecSortedLast::isAscending)) {
             throw new IllegalArgumentException(
-                    "Can only construct KeySortedFirst with ascending, see https://github.com/deephaven/deephaven-core/issues/821");
+                    "Can only construct KeySortedLast with ascending, see https://github.com/deephaven/deephaven-core/issues/821");
         }
     }
 
@@ -56,6 +56,6 @@ public abstract class KeySortedFirst extends KeyBase {
 
         Builder addAllColumns(Iterable<? extends SortColumn> elements);
 
-        KeySortedFirst build();
+        AggSpecSortedLast build();
     }
 }

@@ -1,4 +1,4 @@
-package io.deephaven.api.agg.key;
+package io.deephaven.api.agg.spec;
 
 import io.deephaven.annotations.BuildableStyle;
 import org.immutables.value.Value.Default;
@@ -6,14 +6,14 @@ import org.immutables.value.Value.Immutable;
 
 @Immutable
 @BuildableStyle
-public abstract class KeyCountDistinct extends KeyBase {
+public abstract class AggSpecCountDistinct extends AggSpecBase {
 
-    public static KeyCountDistinct of() {
-        return ImmutableKeyCountDistinct.builder().build();
+    public static AggSpecCountDistinct of() {
+        return ImmutableAggSpecCountDistinct.builder().build();
     }
 
-    public static KeyCountDistinct of(boolean countNulls) {
-        return ImmutableKeyCountDistinct.builder().countNulls(countNulls).build();
+    public static AggSpecCountDistinct of(boolean countNulls) {
+        return ImmutableAggSpecCountDistinct.builder().countNulls(countNulls).build();
     }
 
     @Default

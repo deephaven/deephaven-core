@@ -9,7 +9,7 @@ import io.deephaven.api.ReverseAsOfJoinRule;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.SortColumn;
 import io.deephaven.api.agg.Aggregation;
-import io.deephaven.api.agg.key.Key;
+import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.qst.TableCreationLogic;
 
@@ -403,37 +403,37 @@ public abstract class TableBase implements TableSpec {
 
     @Override
     public final AggregateAllByTable groupBy() {
-        return aggAllBy(Key.group());
+        return aggAllBy(AggSpec.group());
     }
 
     @Override
     public final AggregateAllByTable groupBy(String... groupByColumns) {
-        return aggAllBy(Key.group(), groupByColumns);
+        return aggAllBy(AggSpec.group(), groupByColumns);
     }
 
     @Override
     public final AggregateAllByTable groupBy(Collection<? extends Selectable> groupByColumns) {
-        return aggAllBy(Key.group(), groupByColumns.toArray(new Selectable[0]));
+        return aggAllBy(AggSpec.group(), groupByColumns.toArray(new Selectable[0]));
     }
 
     @Override
-    public final AggregateAllByTable aggAllBy(Key key) {
-        return AggregateAllByTable.builder().parent(this).key(key).build();
+    public final AggregateAllByTable aggAllBy(AggSpec spec) {
+        return AggregateAllByTable.builder().parent(this).spec(spec).build();
     }
 
     @Override
-    public final AggregateAllByTable aggAllBy(Key key, String... groupByColumns) {
-        return aggAllBy(key, Arrays.asList(groupByColumns));
+    public final AggregateAllByTable aggAllBy(AggSpec spec, String... groupByColumns) {
+        return aggAllBy(spec, Arrays.asList(groupByColumns));
     }
 
     @Override
-    public final AggregateAllByTable aggAllBy(Key key, Selectable... groupByColumns) {
-        return AggregateAllByTable.builder().parent(this).key(key).addGroupByColumns(groupByColumns).build();
+    public final AggregateAllByTable aggAllBy(AggSpec spec, Selectable... groupByColumns) {
+        return AggregateAllByTable.builder().parent(this).spec(spec).addGroupByColumns(groupByColumns).build();
     }
 
     @Override
-    public final AggregateAllByTable aggAllBy(Key key, Collection<String> groupByColumns) {
-        AggregateAllByTable.Builder builder = AggregateAllByTable.builder().parent(this).key(key);
+    public final AggregateAllByTable aggAllBy(AggSpec spec, Collection<String> groupByColumns) {
+        AggregateAllByTable.Builder builder = AggregateAllByTable.builder().parent(this).spec(spec);
         for (String groupByColumn : groupByColumns) {
             builder.addGroupByColumns(Selectable.parse(groupByColumn));
         }

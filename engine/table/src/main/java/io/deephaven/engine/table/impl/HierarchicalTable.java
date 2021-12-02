@@ -4,7 +4,7 @@ import io.deephaven.api.JoinMatch;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.SortColumn;
 import io.deephaven.api.agg.Aggregation;
-import io.deephaven.api.agg.key.Key;
+import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.MatchPair;
@@ -180,8 +180,8 @@ public class HierarchicalTable extends QueryTable {
     }
 
     @Override
-    public Table aggAllBy(Key key, Selectable... groupByColumns) {
-        return throwUnsupported("aggAllBy(" + key + ")");
+    public Table aggAllBy(AggSpec spec, Selectable... groupByColumns) {
+        return throwUnsupported("aggAllBy(" + spec + ")");
     }
 
     @Override

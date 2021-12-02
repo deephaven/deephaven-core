@@ -2,7 +2,7 @@ package io.deephaven.qst;
 
 import io.deephaven.api.Selectable;
 import io.deephaven.api.TableOperations;
-import io.deephaven.api.agg.key.Key;
+import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.qst.TableAdapterResults.Output;
 import io.deephaven.qst.table.AggregateAllByTable;
 import io.deephaven.qst.table.AggregationTable;
@@ -238,7 +238,7 @@ class TableAdapterImpl<TOPS extends TableOperations<TOPS, TABLE>, TABLE> impleme
 
     @Override
     public void visit(AggregateAllByTable aggAllByTable) {
-        final Key key = aggAllByTable.key();
+        final AggSpec key = aggAllByTable.spec();
         final Selectable[] groupByColumns = aggAllByTable.groupByColumns().toArray(new Selectable[0]);
         addOp(aggAllByTable, parentOps(aggAllByTable).aggAllBy(key, groupByColumns));
     }

@@ -1,14 +1,14 @@
-package io.deephaven.api.agg.key;
+package io.deephaven.api.agg.spec;
 
 import io.deephaven.annotations.SimpleStyle;
 import org.immutables.value.Value.Immutable;
 
 @Immutable
 @SimpleStyle
-public abstract class KeyAbsSum extends KeyEmptyBase {
+public abstract class AggSpecAvg extends AggSpecEmptyBase {
 
-    public static KeyAbsSum of() {
-        return ImmutableKeyAbsSum.of();
+    public static AggSpecAvg of() {
+        return ImmutableAggSpecAvg.of();
     }
 
     @Override

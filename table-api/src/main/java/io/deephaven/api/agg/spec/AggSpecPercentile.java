@@ -1,4 +1,4 @@
-package io.deephaven.api.agg.key;
+package io.deephaven.api.agg.spec;
 
 import io.deephaven.annotations.BuildableStyle;
 import org.immutables.value.Value.Check;
@@ -7,14 +7,14 @@ import org.immutables.value.Value.Immutable;
 
 @Immutable
 @BuildableStyle
-public abstract class KeyPct extends KeyBase {
+public abstract class AggSpecPercentile extends AggSpecBase {
 
-    public static KeyPct of(double percentile) {
-        return ImmutableKeyPct.builder().percentile(percentile).build();
+    public static AggSpecPercentile of(double percentile) {
+        return ImmutableAggSpecPercentile.builder().percentile(percentile).build();
     }
 
-    public static KeyPct of(double percentile, boolean averageMedian) {
-        return ImmutableKeyPct.builder().percentile(percentile).averageMedian(averageMedian).build();
+    public static AggSpecPercentile of(double percentile, boolean averageMedian) {
+        return ImmutableAggSpecPercentile.builder().percentile(percentile).averageMedian(averageMedian).build();
     }
 
     public abstract double percentile();

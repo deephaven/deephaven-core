@@ -137,7 +137,7 @@ public class LabelBuilder extends TableVisitorGeneric {
     @Override
     public void visit(AggregateAllByTable aggAllByTable) {
         sb.append("aggAllBy(");
-        sb.append(aggAllByTable.key()).append(',');
+        sb.append(aggAllByTable.spec()).append(',');
         append(Strings::of, aggAllByTable.groupByColumns(), sb);
         sb.append(')');
     }

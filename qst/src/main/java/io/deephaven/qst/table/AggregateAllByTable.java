@@ -4,7 +4,7 @@ import io.deephaven.annotations.NodeStyle;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.agg.Aggregation;
-import io.deephaven.api.agg.key.Key;
+import io.deephaven.api.agg.spec.AggSpec;
 import org.immutables.value.Value.Immutable;
 
 import java.util.ArrayList;
@@ -31,7 +31,8 @@ public abstract class AggregateAllByTable extends ByTableBase {
      * @return the aggregation, if non-empty
      */
     public static Optional<Aggregation> singleAggregation(
-            Key key, Collection<? extends Selectable> groupByColumns, Collection<? extends ColumnName> tableColumns) {
+            AggSpec key, Collection<? extends Selectable> groupByColumns,
+            Collection<? extends ColumnName> tableColumns) {
         Set<ColumnName> exclusions = AggAllByExclusions.of(key, groupByColumns);
         List<ColumnName> columnsToAgg = new ArrayList<>(tableColumns.size());
         for (ColumnName column : tableColumns) {
@@ -43,7 +44,7 @@ public abstract class AggregateAllByTable extends ByTableBase {
         return columnsToAgg.isEmpty() ? Optional.empty() : Optional.of(key.aggregation(columnsToAgg));
     }
 
-    public abstract Key key();
+    public abstract AggSpec spec();
 
     /**
      * Transform {@code this} agg-all-by table into an {@link AggregationTable} by constructing the necessary
@@ -51,13 +52,13 @@ public abstract class AggregateAllByTable extends ByTableBase {
      *
      * @param tableColumns the table columns
      * @return the aggregation table
-     * @see #singleAggregation(Key, Collection, Collection)
+     * @see #singleAggregation(AggSpec, Collection, Collection)
      */
     public final AggregationTable asAggregation(Collection<? extends ColumnName> tableColumns) {
         AggregationTable.Builder builder = AggregationTable.builder()
                 .parent(parent())
                 .addAllGroupByColumns(groupByColumns());
-        singleAggregation(key(), groupByColumns(), tableColumns).ifPresent(builder::addAggregations);
+        singleAggregation(spec(), groupByColumns(), tableColumns).ifPresent(builder::addAggregations);
         return builder.build();
     }
 
@@ -68,6 +69,6 @@ public abstract class AggregateAllByTable extends ByTableBase {
     }
 
     public interface Builder extends ByTableBase.Builder<AggregateAllByTable, Builder> {
-        Builder key(Key key);
+        Builder spec(AggSpec spec);
     }
 }

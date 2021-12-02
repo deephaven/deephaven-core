@@ -1,7 +1,7 @@
 package io.deephaven.api.agg;
 
 import io.deephaven.api.ColumnName;
-import io.deephaven.api.agg.key.Key;
+import io.deephaven.api.agg.spec.AggSpec;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -10,14 +10,14 @@ import java.util.List;
 import java.util.Map.Entry;
 
 /**
- * Optimizes a collection of {@link Aggregation aggregations} by grouping like-keyed aggregations together.
+ * Optimizes a collection of {@link Aggregation aggregations} by grouping like-speccedd aggregations together.
  */
 public final class AggregationOptimizer implements Aggregation.Visitor {
     private static final Object COUNT_OBJ = new Object();
 
     /**
-     * Optimizes a collection of {@link Aggregation aggregations} by grouping like-keyed aggregations together. The
-     * input order will be preserved based on the key-encountered order.
+     * Optimizes a collection of {@link Aggregation aggregations} by grouping like-specced aggregations together. The
+     * input order will be preserved based on the spec-encountered order.
      *
      * @param aggregations the aggregations
      * @return the optimized aggregations
@@ -40,9 +40,9 @@ public final class AggregationOptimizer implements Aggregation.Visitor {
                     out.add(Count.of((ColumnName) pair));
                 }
             } else if (e.getValue().size() == 1) {
-                out.add(KeyedAggregation.of((Key) e.getKey(), e.getValue().get(0)));
+                out.add(NormalAggregation.of((AggSpec) e.getKey(), e.getValue().get(0)));
             } else {
-                out.add(KeyedAggregations.builder().key((Key) e.getKey()).addAllPairs(e.getValue()).build());
+                out.add(NormalAggregations.builder().spec((AggSpec) e.getKey()).addAllPairs(e.getValue()).build());
             }
         }
         return out;
@@ -54,13 +54,13 @@ public final class AggregationOptimizer implements Aggregation.Visitor {
     }
 
     @Override
-    public void visit(KeyedAggregation keyedAgg) {
-        visitOrder.computeIfAbsent(keyedAgg.key(), k -> new ArrayList<>()).add(keyedAgg.pair());
+    public void visit(NormalAggregation normalAgg) {
+        visitOrder.computeIfAbsent(normalAgg.spec(), k -> new ArrayList<>()).add(normalAgg.pair());
     }
 
     @Override
-    public void visit(KeyedAggregations keyedAggs) {
-        visitOrder.computeIfAbsent(keyedAggs.key(), k -> new ArrayList<>())
-                .addAll(keyedAggs.pairs());
+    public void visit(NormalAggregations normalAggs) {
+        visitOrder.computeIfAbsent(normalAggs.spec(), k -> new ArrayList<>())
+                .addAll(normalAggs.pairs());
     }
 }

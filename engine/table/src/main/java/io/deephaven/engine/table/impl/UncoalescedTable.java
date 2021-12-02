@@ -8,7 +8,7 @@ import io.deephaven.api.JoinMatch;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.SortColumn;
 import io.deephaven.api.agg.Aggregation;
-import io.deephaven.api.agg.key.Key;
+import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.liveness.Liveness;
@@ -349,8 +349,8 @@ public abstract class UncoalescedTable extends BaseTable implements TableWithDef
 
     @Override
     @ConcurrentMethod
-    public Table aggAllBy(Key key, Selectable... groupByColumns) {
-        return coalesce().aggAllBy(key, groupByColumns);
+    public Table aggAllBy(AggSpec spec, Selectable... groupByColumns) {
+        return coalesce().aggAllBy(spec, groupByColumns);
     }
 
     @Override

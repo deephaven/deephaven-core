@@ -1,25 +1,25 @@
 package io.deephaven.api.agg;
 
 import io.deephaven.annotations.BuildableStyle;
-import io.deephaven.api.agg.key.Key;
+import io.deephaven.api.agg.spec.AggSpec;
 import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Immutable;
 
 import java.util.List;
 
 /**
- * Keyed aggregations is an {@link Aggregation} that is composed of a {@link #key() key} and multiple {@link #pairs()
+ * Normal aggregations is an {@link Aggregation} that is composed of a {@link #spec() spec} and multiple {@link #pairs()
  * pairs}.
  */
 @Immutable
 @BuildableStyle
-public abstract class KeyedAggregations implements Aggregation {
+public abstract class NormalAggregations implements Aggregation {
 
     public static Builder builder() {
-        return ImmutableKeyedAggregations.builder();
+        return ImmutableNormalAggregations.builder();
     }
 
-    public abstract Key key();
+    public abstract AggSpec spec();
 
     public abstract List<Pair> pairs();
 
@@ -33,12 +33,12 @@ public abstract class KeyedAggregations implements Aggregation {
     final void checkSize() {
         if (pairs().size() < 2) {
             throw new IllegalArgumentException(
-                    String.format("%s should have at least two pairs", KeyedAggregations.class));
+                    String.format("%s should have at least two pairs", NormalAggregations.class));
         }
     }
 
     public interface Builder {
-        Builder key(Key key);
+        Builder spec(AggSpec key);
 
         Builder addPairs(Pair element);
 
@@ -46,6 +46,6 @@ public abstract class KeyedAggregations implements Aggregation {
 
         Builder addAllPairs(Iterable<? extends Pair> elements);
 
-        KeyedAggregations build();
+        NormalAggregations build();
     }
 }

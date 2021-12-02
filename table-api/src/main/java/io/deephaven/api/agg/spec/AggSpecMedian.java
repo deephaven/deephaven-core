@@ -1,4 +1,4 @@
-package io.deephaven.api.agg.key;
+package io.deephaven.api.agg.spec;
 
 import io.deephaven.annotations.BuildableStyle;
 import org.immutables.value.Value.Default;
@@ -6,14 +6,14 @@ import org.immutables.value.Value.Immutable;
 
 @Immutable
 @BuildableStyle
-public abstract class KeyMedian extends KeyBase {
+public abstract class AggSpecMedian extends AggSpecBase {
 
-    public static KeyMedian of() {
-        return ImmutableKeyMedian.builder().build();
+    public static AggSpecMedian of() {
+        return ImmutableAggSpecMedian.builder().build();
     }
 
-    public static KeyMedian of(boolean averageMedian) {
-        return ImmutableKeyMedian.builder().averageMedian(averageMedian).build();
+    public static AggSpecMedian of(boolean averageMedian) {
+        return ImmutableAggSpecMedian.builder().averageMedian(averageMedian).build();
     }
 
     @Default

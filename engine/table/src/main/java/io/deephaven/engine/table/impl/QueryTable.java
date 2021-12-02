@@ -10,8 +10,8 @@ import io.deephaven.api.Selectable;
 import io.deephaven.api.SortColumn;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.AggregationOutputs;
-import io.deephaven.api.agg.key.Key;
-import io.deephaven.api.agg.key.KeyColumns;
+import io.deephaven.api.agg.spec.AggSpec;
+import io.deephaven.api.agg.spec.AggSpecColumnReferences;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.base.StringUtils;
 import io.deephaven.base.verify.Assert;
@@ -29,7 +29,6 @@ import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.util.ColumnFormattingValues;
 import io.deephaven.engine.util.systemicmarking.SystemicObject;
 import io.deephaven.qst.table.AggregateAllByTable;
-import io.deephaven.qst.table.AggregationTable;
 import io.deephaven.vector.Vector;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.updategraph.NotificationQueue;
@@ -590,8 +589,8 @@ public class QueryTable extends BaseTable {
     }
 
     @Override
-    public Table aggAllBy(Key key, Selectable... groupByColumns) {
-        for (ColumnName name : KeyColumns.of(key)) {
+    public Table aggAllBy(AggSpec spec, Selectable... groupByColumns) {
+        for (ColumnName name : AggSpecColumnReferences.of(spec)) {
             if (!columns.containsKey(name.name())) {
                 throw new IllegalArgumentException("Key references column that does not exist: " + name.name());
             }
@@ -599,9 +598,9 @@ public class QueryTable extends BaseTable {
         final List<Selectable> groupByList = Arrays.asList(groupByColumns);
         final List<ColumnName> tableColumns =
                 columns.keySet().stream().map(ColumnName::of).collect(Collectors.toList());
-        final Optional<Aggregation> agg = AggregateAllByTable.singleAggregation(key, groupByList, tableColumns);
+        final Optional<Aggregation> agg = AggregateAllByTable.singleAggregation(spec, groupByList, tableColumns);
         final Table result = aggBy(agg.stream().collect(Collectors.toList()), groupByList);
-        key.walk(new AggAllByCopyAttributes(this, result));
+        spec.walk(new AggAllByCopyAttributes(this, result));
         return result;
     }
 

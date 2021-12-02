@@ -1,4 +1,4 @@
-package io.deephaven.api.agg.key;
+package io.deephaven.api.agg.spec;
 
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.SortColumn;
@@ -8,10 +8,10 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public class KeyColumns implements Key.Visitor {
+public class AggSpecColumnReferences implements AggSpec.Visitor {
 
-    public static Set<ColumnName> of(Key key) {
-        return key.walk(new KeyColumns()).out();
+    public static Set<ColumnName> of(AggSpec key) {
+        return key.walk(new AggSpecColumnReferences()).out();
     }
 
     private Set<ColumnName> out;
@@ -21,97 +21,97 @@ public class KeyColumns implements Key.Visitor {
     }
 
     @Override
-    public void visit(KeyAbsSum absSum) {
+    public void visit(AggSpecAbsSum absSum) {
         out = Collections.emptySet();
     }
 
     @Override
-    public void visit(KeyCountDistinct countDistinct) {
+    public void visit(AggSpecCountDistinct countDistinct) {
         out = Collections.emptySet();
     }
 
     @Override
-    public void visit(KeyDistinct distinct) {
+    public void visit(AggSpecDistinct distinct) {
         out = Collections.emptySet();
     }
 
     @Override
-    public void visit(KeyGroup group) {
+    public void visit(AggSpecGroup group) {
         out = Collections.emptySet();
     }
 
     @Override
-    public void visit(KeyAvg avg) {
+    public void visit(AggSpecAvg avg) {
         out = Collections.emptySet();
     }
 
     @Override
-    public void visit(KeyFirst first) {
+    public void visit(AggSpecFirst first) {
         out = Collections.emptySet();
     }
 
     @Override
-    public void visit(KeyLast last) {
+    public void visit(AggSpecLast last) {
         out = Collections.emptySet();
     }
 
     @Override
-    public void visit(KeyMax max) {
+    public void visit(AggSpecMax max) {
         out = Collections.emptySet();
     }
 
     @Override
-    public void visit(KeyMedian median) {
+    public void visit(AggSpecMedian median) {
         out = Collections.emptySet();
     }
 
     @Override
-    public void visit(KeyMin min) {
+    public void visit(AggSpecMin min) {
         out = Collections.emptySet();
     }
 
     @Override
-    public void visit(KeyPct pct) {
+    public void visit(AggSpecPercentile pct) {
         out = Collections.emptySet();
     }
 
     @Override
-    public void visit(KeySortedFirst sortedFirst) {
+    public void visit(AggSpecSortedFirst sortedFirst) {
         out = sortedFirst.columns().stream().map(SortColumn::column).collect(Collectors.toSet());
     }
 
     @Override
-    public void visit(KeySortedLast sortedLast) {
+    public void visit(AggSpecSortedLast sortedLast) {
         out = sortedLast.columns().stream().map(SortColumn::column).collect(Collectors.toSet());
     }
 
     @Override
-    public void visit(KeyStd std) {
+    public void visit(AggSpecStd std) {
         out = Collections.emptySet();
     }
 
     @Override
-    public void visit(KeySum sum) {
+    public void visit(AggSpecSum sum) {
         out = Collections.emptySet();
     }
 
     @Override
-    public void visit(KeyUnique unique) {
+    public void visit(AggSpecUnique unique) {
         out = Collections.emptySet();
     }
 
     @Override
-    public void visit(KeyWAvg wAvg) {
+    public void visit(AggSpecWAvg wAvg) {
         out = Collections.singleton(wAvg.weight());
     }
 
     @Override
-    public void visit(KeyWSum wSum) {
+    public void visit(AggSpecWSum wSum) {
         out = Collections.singleton(wSum.weight());
     }
 
     @Override
-    public void visit(KeyVar var) {
+    public void visit(AggSpecVar var) {
         out = Collections.emptySet();
     }
 }
