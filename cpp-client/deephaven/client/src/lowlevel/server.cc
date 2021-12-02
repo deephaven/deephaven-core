@@ -27,7 +27,6 @@ using io::deephaven::proto::backplane::grpc::FetchTableRequest;
 using io::deephaven::proto::backplane::grpc::HandshakeRequest;
 using io::deephaven::proto::backplane::grpc::HeadOrTailRequest;
 using io::deephaven::proto::backplane::grpc::HeadOrTailByRequest;
-using io::deephaven::proto::backplane::grpc::LeftJoinTablesRequest;
 using io::deephaven::proto::backplane::grpc::MergeTablesRequest;
 using io::deephaven::proto::backplane::grpc::NaturalJoinTablesRequest;
 using io::deephaven::proto::backplane::grpc::SelectOrUpdateRequest;
@@ -358,20 +357,6 @@ Ticket Server::exactJoinAsync(Ticket leftTableTicket, Ticket rightTableTicket,
   moveVectorData(std::move(columnsToMatch), req.mutable_columns_to_match());
   moveVectorData(std::move(columnsToAdd), req.mutable_columns_to_add());
   sendRpc(req, std::move(etcCallback), tableStub(), &TableService::Stub::AsyncExactJoinTables, true);
-  return result;
-}
-
-Ticket Server::leftJoinAsync(Ticket leftTableTicket, Ticket rightTableTicket,
-    std::vector<std::string> columnsToMatch, std::vector<std::string> columnsToAdd,
-    std::shared_ptr<EtcCallback> etcCallback) {
-  auto result = newTicket();
-  LeftJoinTablesRequest req;
-  *req.mutable_result_id() = result;
-  *req.mutable_left_id()->mutable_ticket() = std::move(leftTableTicket);
-  *req.mutable_right_id()->mutable_ticket() = std::move(rightTableTicket);
-  moveVectorData(std::move(columnsToMatch), req.mutable_columns_to_match());
-  moveVectorData(std::move(columnsToAdd), req.mutable_columns_to_add());
-  sendRpc(req, std::move(etcCallback), tableStub(), &TableService::Stub::AsyncLeftJoinTables, true);
   return result;
 }
 

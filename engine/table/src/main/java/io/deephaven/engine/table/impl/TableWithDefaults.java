@@ -399,41 +399,6 @@ public interface TableWithDefaults extends Table {
     // -----------------------------------------------------------------------------------------------------------------
 
     @Override
-    default Table leftJoin(Table rightTable, Collection<? extends JoinMatch> columnsToMatch,
-            Collection<? extends JoinAddition> columnsToAdd) {
-        return leftJoin(
-                rightTable,
-                MatchPair.fromMatches(columnsToMatch),
-                MatchPair.fromAddition(columnsToAdd));
-    }
-
-    @Override
-    default Table leftJoin(Table rightTable, Collection<String> columnsToMatch) {
-        return leftJoin(
-                rightTable,
-                MatchPairFactory.getExpressions(columnsToMatch),
-                MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY);
-    }
-
-    @Override
-    default Table leftJoin(Table rightTable, String columnsToMatch, String columnsToAdd) {
-        return leftJoin(
-                rightTable,
-                MatchPairFactory.getExpressions(StringUtils.splitToCollection(columnsToMatch)),
-                MatchPairFactory.getExpressions(StringUtils.splitToCollection(columnsToAdd)));
-    }
-
-    @Override
-    default Table leftJoin(Table rightTable, String columnsToMatch) {
-        return leftJoin(rightTable, StringUtils.splitToCollection(columnsToMatch));
-    }
-
-    @Override
-    default Table leftJoin(Table rightTable) {
-        return leftJoin(rightTable, Collections.emptyList());
-    }
-
-    @Override
     default Table exactJoin(Table rightTable, Collection<? extends JoinMatch> columnsToMatch,
             Collection<? extends JoinAddition> columnsToAdd) {
         return exactJoin(
@@ -694,21 +659,6 @@ public interface TableWithDefaults extends Table {
     @ConcurrentMethod
     default Table aggBy(Collection<? extends Aggregation> aggregations, String... groupByColumns) {
         return aggBy(aggregations, Stream.of(groupByColumns).map(Selectable::parse).collect(Collectors.toList()));
-    }
-
-    final class AggHolder {
-
-        private final Aggregation[] aggregations;
-
-        public AggHolder(Aggregation... aggregations) {
-            this.aggregations = aggregations;
-        }
-    }
-
-    @ConcurrentMethod
-    static Table aggBy(Table table, AggHolder aggHolder, String... groupByColumns) {
-        return table.aggBy(List.of(aggHolder.aggregations),
-                Arrays.stream(groupByColumns).map(Selectable::parse).collect(Collectors.toList()));
     }
 
     @Override
@@ -1080,11 +1030,6 @@ public interface TableWithDefaults extends Table {
     default Table sortDescending(String... columnsToSortBy) {
         return sort(Arrays.stream(columnsToSortBy)
                 .map(ColumnName::of).map(SortColumn::desc).collect(Collectors.toList()));
-    }
-
-    @ConcurrentMethod
-    static Table sort(Table table, SortColumn... columnsToSortBy) {
-        return table.sort(Arrays.asList(columnsToSortBy));
     }
 
     // -----------------------------------------------------------------------------------------------------------------

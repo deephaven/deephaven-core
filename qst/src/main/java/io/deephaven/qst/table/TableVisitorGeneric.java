@@ -80,11 +80,6 @@ public abstract class TableVisitorGeneric implements TableSpec.Visitor {
     }
 
     @Override
-    public void visit(LeftJoinTable leftJoinTable) {
-        accept(leftJoinTable);
-    }
-
-    @Override
     public void visit(AsOfJoinTable aj) {
         accept(aj);
     }

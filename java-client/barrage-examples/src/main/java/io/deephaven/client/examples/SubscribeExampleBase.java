@@ -1,20 +1,18 @@
-package io.deephaven.client.examples;
-
-import io.deephaven.client.impl.BarrageSubscription;
-import io.deephaven.engine.table.TableUpdate;
-import io.deephaven.engine.table.impl.InstrumentedTableUpdateListener;
-import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
-import io.deephaven.client.impl.BarrageSession;
-import io.deephaven.client.impl.TableHandle;
-import io.deephaven.client.impl.TableHandleManager;
-import io.deephaven.extensions.barrage.table.BarrageTable;
-import io.deephaven.qst.TableCreationLogic;
-import io.deephaven.util.process.ProcessEnvironment;
 /*
  * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
  */
 
-import io.deephaven.util.process.ShutdownManager;
+package io.deephaven.client.examples;
+
+import io.deephaven.client.impl.BarrageSession;
+import io.deephaven.client.impl.BarrageSubscription;
+import io.deephaven.client.impl.TableHandle;
+import io.deephaven.client.impl.TableHandleManager;
+import io.deephaven.engine.table.TableUpdate;
+import io.deephaven.engine.table.impl.InstrumentedTableUpdateListener;
+import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
+import io.deephaven.extensions.barrage.table.BarrageTable;
+import io.deephaven.qst.TableCreationLogic;
 import picocli.CommandLine;
 
 import java.util.concurrent.CountDownLatch;
@@ -61,8 +59,6 @@ abstract class SubscribeExampleBase extends BarrageClientExampleBase {
                     System.out.println(upstream);
                 }
             });
-            ProcessEnvironment.getGlobalShutdownManager().registerTask(
-                    ShutdownManager.OrderingCategory.FIRST, countDownLatch::countDown);
 
             countDownLatch.await();
         }

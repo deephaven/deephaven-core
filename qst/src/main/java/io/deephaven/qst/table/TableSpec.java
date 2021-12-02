@@ -127,8 +127,6 @@ public interface TableSpec extends TableOperations<TableSpec, TableSpec>, TableS
 
         void visit(JoinTable joinTable);
 
-        void visit(LeftJoinTable leftJoinTable);
-
         void visit(AsOfJoinTable aj);
 
         void visit(ReverseAsOfJoinTable raj);

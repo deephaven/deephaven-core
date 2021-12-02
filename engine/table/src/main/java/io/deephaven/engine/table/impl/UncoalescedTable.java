@@ -308,11 +308,6 @@ public abstract class UncoalescedTable extends BaseTable implements TableWithDef
     }
 
     @Override
-    public Table leftJoin(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd) {
-        return coalesce().leftJoin(rightTable, columnsToMatch, columnsToAdd);
-    }
-
-    @Override
     public Table exactJoin(Table rightTable, MatchPair[] columnsToMatch, MatchPair[] columnsToAdd) {
         return coalesce().exactJoin(rightTable, columnsToMatch, columnsToAdd);
     }

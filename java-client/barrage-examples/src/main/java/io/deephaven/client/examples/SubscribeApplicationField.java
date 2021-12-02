@@ -10,7 +10,7 @@ import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Parameters;
 
-@Command(name = "subscribe-app-field", mixinStandardHelpOptions = true,
+@Command(name = "subscribe-application-field", mixinStandardHelpOptions = true,
         description = "Request a table from an Application and subscribe over barrage", version = "0.1.0")
 class SubscribeApplicationField extends SubscribeExampleBase {
 

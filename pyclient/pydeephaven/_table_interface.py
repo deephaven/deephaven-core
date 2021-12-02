@@ -11,7 +11,7 @@ from pydeephaven.dherror import DHError
 from pydeephaven.combo_agg import ComboAggregation
 from pydeephaven._table_ops import UpdateOp, LazyUpdateOp, ViewOp, UpdateViewOp, SelectOp, DropColumnsOp, \
     SelectDistinctOp, SortOp, UnstructuredFilterOp, HeadOp, TailOp, HeadByOp, TailByOp, UngroupOp, NaturalJoinOp, \
-    ExactJoinOp, LeftJoinOp, CrossJoinOp, AsOfJoinOp, DedicatedAggOp, ComboAggOp
+    ExactJoinOp, CrossJoinOp, AsOfJoinOp, DedicatedAggOp, ComboAggOp
 from pydeephaven.constants import MatchRule, SortDirection
 from pydeephaven._constants import AggType
 
@@ -231,26 +231,6 @@ class TableInterface(ABC):
             DHError
         """
         table_op = ExactJoinOp(table=table, keys=on, columns_to_add=joins)
-        return self.table_op_handler(table_op)
-
-    def left_join(self, table: Any, on: List[str], joins: List[str] = []):
-        """ Perform a left-join between this table as the left table and another table as the right table) and
-        returns the result table.
-
-        Args:
-            table (Table): the right-table of the join
-            on (List[str]): the columns to match, can be a common name or an equal expression,
-                i.e. "col_a = col_b" for different column names
-            joins (List[str], optional): a list of the columns to be added from the right table to the result
-                table, can be renaming expressions, i.e. "new_col = col"; default is empty
-
-        Returns:
-            a Table object
-
-        Raises:
-            DHError
-        """
-        table_op = LeftJoinOp(table=table, keys=on, columns_to_add=joins)
         return self.table_op_handler(table_op)
 
     def join(self, table: Any, on: List[str] = [], joins: List[str] = [], reserve_bits: int = 10):

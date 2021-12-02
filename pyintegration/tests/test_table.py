@@ -40,7 +40,7 @@ class TableTestCase(BaseTestCase):
         t = time_table("00:00:01", start_time="2021-11-06T13:21:00 NY")
         self.assertEqual(1, len(t.columns))
         self.assertTrue(t.is_refreshing)
-        self.assertEqual("2021-11-06T13:21:00.000000000 NY", t._j_table.getColumnSource("Timestamp").get(0).toString())
+        self.assertEqual("2021-11-06T13:21:00.000000000 NY", t.j_table.getColumnSource("Timestamp").get(0).toString())
 
     def test_repr(self):
         print(self.test_table)
@@ -196,12 +196,6 @@ class TableTestCase(BaseTestCase):
         with self.assertRaises(DHError) as cm:
             result_table = left_table.exact_join(right_table, on=["a"], joins=["d", "e"])
         self.assertTrue(cm.exception.root_cause)
-
-    def test_left_join(self):
-        left_table = self.test_table.drop_columns(["d", "e"])
-        right_table = self.test_table.drop_columns(["b", "c"])
-        result_table = left_table.left_join(right_table, on=["a"], joins=["d", "e"])
-        self.assertEqual(self.test_table.size, result_table.size)
 
     def test_cross_join(self):
         left_table = self.test_table.drop_columns(cols=["e"])
