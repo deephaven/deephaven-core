@@ -1,6 +1,6 @@
 package io.deephaven.querylibrary;
 
-import static com.illumon.util.QueryConstants.*;
+import static io.deephaven.util.QueryConstants.*;
 import static io.deephaven.querylibrary.Basic.isNull;
 
 /**

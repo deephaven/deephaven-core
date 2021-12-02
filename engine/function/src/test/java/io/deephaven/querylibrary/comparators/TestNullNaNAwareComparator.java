@@ -1,11 +1,11 @@
 package io.deephaven.querylibrary.comparators;
 
-import com.fishlib.base.testing.BaseArrayTestCase;
+import io.deephaven.base.testing.BaseArrayTestCase;
 
 import java.util.Comparator;
 
-import static com.illumon.util.QueryConstants.NULL_DOUBLE;
-import static com.illumon.util.QueryConstants.NULL_FLOAT;
+import static io.deephaven.util.QueryConstants.NULL_DOUBLE;
+import static io.deephaven.util.QueryConstants.NULL_FLOAT;
 
 /**
  * Test NullNaNAwareComparator.

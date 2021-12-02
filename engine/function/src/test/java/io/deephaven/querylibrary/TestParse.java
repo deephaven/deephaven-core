@@ -1,10 +1,10 @@
 package io.deephaven.querylibrary;
 
-import com.fishlib.base.verify.Require;
+import io.deephaven.base.verify.Require;
 import junit.framework.TestCase;
 
 import static io.deephaven.querylibrary.Parse.*;
-import static com.illumon.util.QueryConstants.*;
+import static io.deephaven.util.QueryConstants.*;
 
 public class TestParse extends TestCase {
 

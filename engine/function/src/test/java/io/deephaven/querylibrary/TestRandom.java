@@ -4,7 +4,7 @@
 
 package io.deephaven.querylibrary;
 
-import com.fishlib.base.testing.BaseArrayTestCase;
+import io.deephaven.base.testing.BaseArrayTestCase;
 import org.apache.commons.lang3.ArrayUtils;
 
 import static io.deephaven.querylibrary.Random.*;
