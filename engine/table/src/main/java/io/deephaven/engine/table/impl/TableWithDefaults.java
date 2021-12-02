@@ -661,21 +661,6 @@ public interface TableWithDefaults extends Table {
         return aggBy(aggregations, Stream.of(groupByColumns).map(Selectable::parse).collect(Collectors.toList()));
     }
 
-    final class AggHolder {
-
-        private final Aggregation[] aggregations;
-
-        public AggHolder(Aggregation... aggregations) {
-            this.aggregations = aggregations;
-        }
-    }
-
-    @ConcurrentMethod
-    static Table aggBy(Table table, AggHolder aggHolder, String... groupByColumns) {
-        return table.aggBy(List.of(aggHolder.aggregations),
-                Arrays.stream(groupByColumns).map(Selectable::parse).collect(Collectors.toList()));
-    }
-
     @Override
     @ConcurrentMethod
     default Table aggBy(Collection<? extends Aggregation> aggregations) {
@@ -1045,11 +1030,6 @@ public interface TableWithDefaults extends Table {
     default Table sortDescending(String... columnsToSortBy) {
         return sort(Arrays.stream(columnsToSortBy)
                 .map(ColumnName::of).map(SortColumn::desc).collect(Collectors.toList()));
-    }
-
-    @ConcurrentMethod
-    static Table sort(Table table, SortColumn... columnsToSortBy) {
-        return table.sort(Arrays.asList(columnsToSortBy));
     }
 
     // -----------------------------------------------------------------------------------------------------------------
