@@ -452,6 +452,55 @@ public abstract class TableBase implements TableSpec {
     }
 
     @Override
+    public final SelectDistinctTable selectDistinct() {
+        return SelectDistinctTable.builder().parent(this).build();
+    }
+
+    @Override
+    public final SelectDistinctTable selectDistinct(String... groupByColumns) {
+        final SelectDistinctTable.Builder builder = SelectDistinctTable.builder().parent(this);
+        for (String groupByColumn : groupByColumns) {
+            builder.addGroupByColumns(Selectable.parse(groupByColumn));
+        }
+        return builder.build();
+    }
+
+    @Override
+    public final SelectDistinctTable selectDistinct(Selectable... groupByColumns) {
+        return selectDistinct(Arrays.asList(groupByColumns));
+    }
+
+    @Override
+    public final SelectDistinctTable selectDistinct(Collection<? extends Selectable> groupByColumns) {
+        return SelectDistinctTable.builder().parent(this).addAllGroupByColumns(groupByColumns).build();
+    }
+
+    @Override
+    public final CountByTable countBy(String countColumnName) {
+        return CountByTable.builder().parent(this).countName(ColumnName.of(countColumnName)).build();
+    }
+
+    @Override
+    public final CountByTable countBy(String countColumnName, String... groupByColumns) {
+        return countBy(countColumnName, Arrays.asList(groupByColumns));
+    }
+
+    @Override
+    public final CountByTable countBy(String countColumnName, Selectable... groupByColumns) {
+        return CountByTable.builder().parent(this).countName(ColumnName.of(countColumnName))
+                .addGroupByColumns(groupByColumns).build();
+    }
+
+    @Override
+    public final CountByTable countBy(String countColumnName, Collection<String> groupByColumns) {
+        CountByTable.Builder builder = CountByTable.builder().parent(this).countName(ColumnName.of(countColumnName));
+        for (String groupByColumn : groupByColumns) {
+            builder.addGroupByColumns(Selectable.parse(groupByColumn));
+        }
+        return builder.build();
+    }
+
+    @Override
     public final <V extends TableSchema.Visitor> V walk(V visitor) {
         visitor.visit(this);
         return visitor;

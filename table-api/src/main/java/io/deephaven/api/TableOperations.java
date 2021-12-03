@@ -511,4 +511,26 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
     TOPS aggBy(Collection<? extends Aggregation> aggregations, String... groupByColumns);
 
     TOPS aggBy(Collection<? extends Aggregation> aggregations, Collection<? extends Selectable> groupByColumns);
+
+    // -------------------------------------------------------------------------------------------
+
+    TOPS selectDistinct();
+
+    TOPS selectDistinct(String... groupByColumns);
+
+    TOPS selectDistinct(Selectable... groupByColumns);
+
+    TOPS selectDistinct(Collection<? extends Selectable> groupByColumns);
+
+    // -------------------------------------------------------------------------------------------
+
+    TOPS countBy(String countColumnName);
+
+    TOPS countBy(String countColumnName, String... groupByColumns);
+
+    TOPS countBy(String countColumnName, Selectable... groupByColumns);
+
+    TOPS countBy(String countColumnName, Collection<String> groupByColumns);
+
+    // -------------------------------------------------------------------------------------------
 }

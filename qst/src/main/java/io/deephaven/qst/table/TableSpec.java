@@ -146,5 +146,9 @@ public interface TableSpec extends TableOperations<TableSpec, TableSpec>, TableS
         void visit(TicketTable ticketTable);
 
         void visit(InputTable inputTable);
+
+        void visit(SelectDistinctTable selectDistinctTable);
+
+        void visit(CountByTable countByTable);
     }
 }

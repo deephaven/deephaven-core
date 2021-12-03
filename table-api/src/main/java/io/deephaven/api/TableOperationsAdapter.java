@@ -310,4 +310,44 @@ public abstract class TableOperationsAdapter<TOPS_1 extends TableOperations<TOPS
             Collection<? extends Selectable> groupByColumns) {
         return adapt(delegate.aggBy(aggregations, groupByColumns));
     }
+
+    @Override
+    public final TOPS_1 selectDistinct() {
+        return adapt(delegate.selectDistinct());
+    }
+
+    @Override
+    public final TOPS_1 selectDistinct(String... groupByColumns) {
+        return adapt(delegate.selectDistinct(groupByColumns));
+    }
+
+    @Override
+    public final TOPS_1 selectDistinct(Selectable... groupByColumns) {
+        return adapt(delegate.selectDistinct(groupByColumns));
+    }
+
+    @Override
+    public final TOPS_1 selectDistinct(Collection<? extends Selectable> groupByColumns) {
+        return adapt(delegate.selectDistinct(groupByColumns));
+    }
+
+    @Override
+    public final TOPS_1 countBy(String countColumnName) {
+        return adapt(delegate.countBy(countColumnName));
+    }
+
+    @Override
+    public final TOPS_1 countBy(String countColumnName, String... groupByColumns) {
+        return adapt(delegate.countBy(countColumnName, groupByColumns));
+    }
+
+    @Override
+    public final TOPS_1 countBy(String countColumnName, Selectable... groupByColumns) {
+        return adapt(delegate.countBy(countColumnName, groupByColumns));
+    }
+
+    @Override
+    public final TOPS_1 countBy(String countColumnName, Collection<String> groupByColumns) {
+        return adapt(delegate.countBy(countColumnName, groupByColumns));
+    }
 }

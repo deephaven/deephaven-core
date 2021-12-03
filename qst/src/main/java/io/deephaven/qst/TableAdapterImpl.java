@@ -7,6 +7,7 @@ import io.deephaven.qst.TableAdapterResults.Output;
 import io.deephaven.qst.table.AggregateAllByTable;
 import io.deephaven.qst.table.AggregationTable;
 import io.deephaven.qst.table.AsOfJoinTable;
+import io.deephaven.qst.table.CountByTable;
 import io.deephaven.qst.table.EmptyTable;
 import io.deephaven.qst.table.ExactJoinTable;
 import io.deephaven.qst.table.HeadTable;
@@ -18,6 +19,7 @@ import io.deephaven.qst.table.NewTable;
 import io.deephaven.qst.table.ParentsVisitor;
 import io.deephaven.qst.table.ReverseAsOfJoinTable;
 import io.deephaven.qst.table.ReverseTable;
+import io.deephaven.qst.table.SelectDistinctTable;
 import io.deephaven.qst.table.SelectTable;
 import io.deephaven.qst.table.SingleParentTable;
 import io.deephaven.qst.table.SnapshotTable;
@@ -230,14 +232,22 @@ class TableAdapterImpl<TOPS extends TableOperations<TOPS, TABLE>, TABLE> impleme
     @Override
     public void visit(AggregateAllByTable aggAllByTable) {
         final AggSpec spec = aggAllByTable.spec();
-        final Selectable[] groupByColumns = aggAllByTable.groupByColumns().toArray(new Selectable[0]);
-        addOp(aggAllByTable, parentOps(aggAllByTable).aggAllBy(spec, groupByColumns));
+        if (aggAllByTable.groupByColumns().isEmpty()) {
+            addOp(aggAllByTable, parentOps(aggAllByTable).aggAllBy(spec));
+        } else {
+            final Selectable[] groupByColumns = aggAllByTable.groupByColumns().toArray(new Selectable[0]);
+            addOp(aggAllByTable, parentOps(aggAllByTable).aggAllBy(spec, groupByColumns));
+        }
     }
 
     @Override
     public void visit(AggregationTable aggregationTable) {
-        addOp(aggregationTable,
-                parentOps(aggregationTable).aggBy(aggregationTable.aggregations(), aggregationTable.groupByColumns()));
+        if (aggregationTable.groupByColumns().isEmpty()) {
+            addOp(aggregationTable, parentOps(aggregationTable).aggBy(aggregationTable.aggregations()));
+        } else {
+            addOp(aggregationTable, parentOps(aggregationTable).aggBy(aggregationTable.aggregations(),
+                    aggregationTable.groupByColumns()));
+        }
     }
 
     @Override
@@ -248,6 +258,26 @@ class TableAdapterImpl<TOPS extends TableOperations<TOPS, TABLE>, TABLE> impleme
     @Override
     public void visit(InputTable inputTable) {
         addTable(inputTable, tableCreation.of(inputTable));
+    }
+
+    @Override
+    public void visit(SelectDistinctTable selectDistinctTable) {
+        if (selectDistinctTable.groupByColumns().isEmpty()) {
+            addOp(selectDistinctTable, parentOps(selectDistinctTable).selectDistinct());
+        } else {
+            addOp(selectDistinctTable,
+                    parentOps(selectDistinctTable).selectDistinct(selectDistinctTable.groupByColumns()));
+        }
+    }
+
+    @Override
+    public void visit(CountByTable countByTable) {
+        if (countByTable.groupByColumns().isEmpty()) {
+            addOp(countByTable, parentOps(countByTable).countBy(countByTable.countName().name()));
+        } else {
+            addOp(countByTable, parentOps(countByTable).countBy(countByTable.countName().name(),
+                    countByTable.groupByColumns().toArray(new Selectable[0])));
+        }
     }
 
     private final class OutputTable implements Output<TOPS, TABLE> {

@@ -74,6 +74,7 @@ import io.deephaven.proto.backplane.grpc.NaturalJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.NotCondition;
 import io.deephaven.proto.backplane.grpc.OrCondition;
 import io.deephaven.proto.backplane.grpc.Reference;
+import io.deephaven.proto.backplane.grpc.SelectDistinctRequest;
 import io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest;
 import io.deephaven.proto.backplane.grpc.SnapshotTableRequest;
 import io.deephaven.proto.backplane.grpc.SortDescriptor;
@@ -87,6 +88,7 @@ import io.deephaven.qst.table.AggregateAllByTable;
 import io.deephaven.qst.table.AggregationTable;
 import io.deephaven.qst.table.AsOfJoinTable;
 import io.deephaven.qst.table.ByTableBase;
+import io.deephaven.qst.table.CountByTable;
 import io.deephaven.qst.table.EmptyTable;
 import io.deephaven.qst.table.ExactJoinTable;
 import io.deephaven.qst.table.HeadTable;
@@ -99,6 +101,7 @@ import io.deephaven.qst.table.NaturalJoinTable;
 import io.deephaven.qst.table.NewTable;
 import io.deephaven.qst.table.ReverseAsOfJoinTable;
 import io.deephaven.qst.table.ReverseTable;
+import io.deephaven.qst.table.SelectDistinctTable;
 import io.deephaven.qst.table.SelectTable;
 import io.deephaven.qst.table.SingleParentTable;
 import io.deephaven.qst.table.SnapshotTable;
@@ -451,6 +454,16 @@ class BatchTableRequestBuilder {
             out = op(Builder::setCreateInputTable, builder);
         }
 
+        @Override
+        public void visit(SelectDistinctTable selectDistinctTable) {
+            out = op(Builder::setSelectDistinct, selectDistinct(selectDistinctTable));
+        }
+
+        @Override
+        public void visit(CountByTable countByTable) {
+            out = op(Builder::setComboAggregate, countBy(countByTable));
+        }
+
         private SelectOrUpdateRequest selectOrUpdate(SingleParentTable x,
                 Collection<Selectable> columns) {
             SelectOrUpdateRequest.Builder builder =
@@ -484,6 +497,24 @@ class BatchTableRequestBuilder {
                 builder.addGroupByColumns(Strings.of(column));
             }
             return builder;
+        }
+
+        private SelectDistinctRequest selectDistinct(SelectDistinctTable selectDistinctTable) {
+            SelectDistinctRequest.Builder builder = SelectDistinctRequest.newBuilder()
+                    .setResultId(ticket)
+                    .setSourceId(ref(selectDistinctTable.parent()));
+            for (Selectable column : selectDistinctTable.groupByColumns()) {
+                builder.addColumnNames(Strings.of(column));
+            }
+            return builder.build();
+        }
+
+        private ComboAggregateRequest countBy(CountByTable countByTable) {
+            final Aggregate aggregate = Aggregate.newBuilder()
+                    .setType(AggType.COUNT)
+                    .setColumnName(countByTable.countName().name())
+                    .build();
+            return groupByColumns(countByTable).addAggregates(aggregate).build();
         }
     }
 
