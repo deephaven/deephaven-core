@@ -410,3 +410,11 @@ def doLocked(f, lock_type="shared"):
         UpdateGraphProcessor.DEFAULT.sharedLock().doLocked(ThrowingRunnable(f))
     else:
         raise ValueError("Unsupported lock type: lock_type={}".format(lock_type))
+
+
+def combo_agg(agg_list):
+    _JArrayList = jpy.get_type("java.util.ArrayList")
+    j_agg_list = _JArrayList(len(agg_list))
+    for agg in agg_list:
+        j_agg_list.add(agg)
+    return j_agg_list
