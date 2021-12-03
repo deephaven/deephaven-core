@@ -575,13 +575,14 @@ public class QueryTable extends BaseTable {
     @Override
     public Table aggAllBy(AggSpec spec, Selectable... groupByColumns) {
         for (ColumnName name : AggSpecColumnReferences.of(spec)) {
-            if (!columns.containsKey(name.name())) {
-                throw new IllegalArgumentException("Key references column that does not exist: " + name.name());
+            if (!hasColumns(name.name())) {
+                throw new IllegalArgumentException(
+                        "Spec references column that does not exist: " + name.name() + " / " + spec);
             }
         }
         final List<Selectable> groupByList = Arrays.asList(groupByColumns);
         final List<ColumnName> tableColumns =
-                columns.keySet().stream().map(ColumnName::of).collect(Collectors.toList());
+                definition.getColumnNames().stream().map(ColumnName::of).collect(Collectors.toList());
         final Optional<Aggregation> agg = AggregateAllByTable.singleAggregation(spec, groupByList, tableColumns);
         final Table result = aggBy(agg.stream().collect(Collectors.toList()), groupByList);
         spec.walk(new AggAllByCopyAttributes(this, result));

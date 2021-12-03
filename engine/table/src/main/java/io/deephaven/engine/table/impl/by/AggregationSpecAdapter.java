@@ -30,8 +30,8 @@ import static io.deephaven.engine.table.impl.QueryTable.TRACKED_LAST_BY;
 
 public class AggregationSpecAdapter implements AggSpec.Visitor {
 
-    public static AggregationSpec of(AggSpec key) {
-        return key.walk(new AggregationSpecAdapter()).out();
+    public static AggregationSpec of(AggSpec spec) {
+        return spec.walk(new AggregationSpecAdapter()).out();
     }
 
     private AggregationSpec out;

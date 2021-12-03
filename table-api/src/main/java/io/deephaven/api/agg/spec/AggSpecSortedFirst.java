@@ -41,7 +41,7 @@ public abstract class AggSpecSortedFirst extends AggSpecBase {
         // TODO(deephaven-core#821): SortedFirst / SortedLast aggregations with sort direction
         if (!columns().stream().map(SortColumn::order).allMatch(AggSpecSortedFirst::isAscending)) {
             throw new IllegalArgumentException(
-                    "Can only construct KeySortedFirst with ascending, see https://github.com/deephaven/deephaven-core/issues/821");
+                    "Can only construct AggSpecSortedFirst with ascending, see https://github.com/deephaven/deephaven-core/issues/821");
         }
     }
 

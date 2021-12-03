@@ -26,7 +26,7 @@ import java.util.concurrent.TimeUnit;
         description = "Aggregate all examples", version = "0.1.0")
 class AggregateAllExample extends FlightExampleBase {
 
-    private static List<AggSpec> keys() {
+    private static List<AggSpec> aggSpecs() {
         return Arrays.asList(
                 AggSpec.absSum(),
                 AggSpec.avg(),
@@ -89,14 +89,14 @@ class AggregateAllExample extends FlightExampleBase {
                 Collections.singletonList(inputKey.name()));
         builder.putMap("base", spec);
         // todo: countBy
-        for (AggSpec key : keys()) {
-            final String name = key.toString()
+        for (AggSpec aggSpec : aggSpecs()) {
+            final String name = aggSpec.toString()
                     .replace('=', '_')
                     .replace('{', '_')
                     .replace('}', '_')
                     .replace(' ', '_')
                     .replace('.', '_');
-            final TableSpec tableSpec = spec.aggAllBy(key, groupKey.name());
+            final TableSpec tableSpec = spec.aggAllBy(aggSpec, groupKey.name());
             builder.putMap(name, tableSpec);
         }
         final LabeledTables tables = builder.build();

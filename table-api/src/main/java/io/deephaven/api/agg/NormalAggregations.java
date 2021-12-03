@@ -38,7 +38,7 @@ public abstract class NormalAggregations implements Aggregation {
     }
 
     public interface Builder {
-        Builder spec(AggSpec key);
+        Builder spec(AggSpec spec);
 
         Builder addPairs(Pair element);
 

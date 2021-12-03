@@ -35,10 +35,10 @@ import java.util.stream.Collectors;
  */
 final class AggAllByExclusions implements Visitor {
 
-    public static Set<ColumnName> of(AggSpec key, Collection<? extends Selectable> groupByColumns) {
+    public static Set<ColumnName> of(AggSpec spec, Collection<? extends Selectable> groupByColumns) {
         final Set<ColumnName> exclusions =
                 groupByColumns.stream().map(Selectable::newColumn).collect(Collectors.toSet());
-        final Set<ColumnName> otherExclusions = key.walk(new AggAllByExclusions()).out();
+        final Set<ColumnName> otherExclusions = spec.walk(new AggAllByExclusions()).out();
         exclusions.addAll(otherExclusions);
         return exclusions;
     }

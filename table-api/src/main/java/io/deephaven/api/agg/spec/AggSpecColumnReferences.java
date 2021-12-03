@@ -10,8 +10,8 @@ import java.util.stream.Collectors;
 
 public class AggSpecColumnReferences implements AggSpec.Visitor {
 
-    public static Set<ColumnName> of(AggSpec key) {
-        return key.walk(new AggSpecColumnReferences()).out();
+    public static Set<ColumnName> of(AggSpec spec) {
+        return spec.walk(new AggSpecColumnReferences()).out();
     }
 
     private Set<ColumnName> out;

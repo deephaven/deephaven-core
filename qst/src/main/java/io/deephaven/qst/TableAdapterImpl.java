@@ -229,9 +229,9 @@ class TableAdapterImpl<TOPS extends TableOperations<TOPS, TABLE>, TABLE> impleme
 
     @Override
     public void visit(AggregateAllByTable aggAllByTable) {
-        final AggSpec key = aggAllByTable.spec();
+        final AggSpec spec = aggAllByTable.spec();
         final Selectable[] groupByColumns = aggAllByTable.groupByColumns().toArray(new Selectable[0]);
-        addOp(aggAllByTable, parentOps(aggAllByTable).aggAllBy(key, groupByColumns));
+        addOp(aggAllByTable, parentOps(aggAllByTable).aggAllBy(spec, groupByColumns));
     }
 
     @Override

@@ -22,18 +22,18 @@ public abstract class AggregateAllByTable extends ByTableBase {
     }
 
     /**
-     * Computes the single-aggregation from the agg-all implied by the {@code key} and {@code groupByColumns} by
-     * removing the {@code groupByColumns} and any extra columns implied by the {@code key}.
+     * Computes the single-aggregation from the agg-all implied by the {@code spec} and {@code groupByColumns} by
+     * removing the {@code groupByColumns} and any extra columns implied by the {@code spec}.
      *
-     * @param key the key
+     * @param spec the spec
      * @param groupByColumns the group by columns
      * @param tableColumns the table columns
      * @return the aggregation, if non-empty
      */
     public static Optional<Aggregation> singleAggregation(
-            AggSpec key, Collection<? extends Selectable> groupByColumns,
+            AggSpec spec, Collection<? extends Selectable> groupByColumns,
             Collection<? extends ColumnName> tableColumns) {
-        Set<ColumnName> exclusions = AggAllByExclusions.of(key, groupByColumns);
+        Set<ColumnName> exclusions = AggAllByExclusions.of(spec, groupByColumns);
         List<ColumnName> columnsToAgg = new ArrayList<>(tableColumns.size());
         for (ColumnName column : tableColumns) {
             if (exclusions.contains(column)) {
@@ -41,14 +41,14 @@ public abstract class AggregateAllByTable extends ByTableBase {
             }
             columnsToAgg.add(column);
         }
-        return columnsToAgg.isEmpty() ? Optional.empty() : Optional.of(key.aggregation(columnsToAgg));
+        return columnsToAgg.isEmpty() ? Optional.empty() : Optional.of(spec.aggregation(columnsToAgg));
     }
 
     public abstract AggSpec spec();
 
     /**
      * Transform {@code this} agg-all-by table into an {@link AggregationTable} by constructing the necessary
-     * {@link Aggregation} from the {@code key} and {@code tableColumns}.
+     * {@link Aggregation} from the {@link #spec()} and {@code tableColumns}.
      *
      * @param tableColumns the table columns
      * @return the aggregation table
