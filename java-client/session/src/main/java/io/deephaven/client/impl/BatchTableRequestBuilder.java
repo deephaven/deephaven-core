@@ -22,6 +22,7 @@ import io.deephaven.api.agg.spec.AggSpecAvg;
 import io.deephaven.api.agg.spec.AggSpecCountDistinct;
 import io.deephaven.api.agg.spec.AggSpecDistinct;
 import io.deephaven.api.agg.spec.AggSpecFirst;
+import io.deephaven.api.agg.spec.AggSpecFormula;
 import io.deephaven.api.agg.spec.AggSpecGroup;
 import io.deephaven.api.agg.spec.AggSpecLast;
 import io.deephaven.api.agg.spec.AggSpecMax;
@@ -715,6 +716,12 @@ class BatchTableRequestBuilder {
         @Override
         public void visit(AggSpecFirst first) {
             out = of(AggType.FIRST, pairs).build();
+        }
+
+        @Override
+        public void visit(AggSpecFormula formula) {
+            throw new UnsupportedOperationException(
+                    "TODO(deephaven-core#991): TableService aggregation coverage, https://github.com/deephaven/deephaven-core/issues/991");
         }
 
         @Override

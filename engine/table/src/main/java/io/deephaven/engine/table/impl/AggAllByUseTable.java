@@ -1,7 +1,5 @@
-package io.deephaven.engine.table.impl.by;
+package io.deephaven.engine.table.impl;
 
-import io.deephaven.api.ColumnName;
-import io.deephaven.api.SortColumn;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.agg.spec.AggSpecAbsSum;
 import io.deephaven.api.agg.spec.AggSpecAvg;
@@ -23,124 +21,132 @@ import io.deephaven.api.agg.spec.AggSpecUnique;
 import io.deephaven.api.agg.spec.AggSpecVar;
 import io.deephaven.api.agg.spec.AggSpecWAvg;
 import io.deephaven.api.agg.spec.AggSpecWSum;
+import io.deephaven.engine.table.Table;
 
 import java.util.Objects;
 
-import static io.deephaven.engine.table.impl.QueryTable.TRACKED_FIRST_BY;
-import static io.deephaven.engine.table.impl.QueryTable.TRACKED_LAST_BY;
+class AggAllByUseTable implements AggSpec.Visitor {
 
-public class AggregationSpecAdapter implements AggSpec.Visitor {
-
-    public static AggregationSpec of(AggSpec spec) {
-        return spec.walk(new AggregationSpecAdapter()).out();
+    public static Table of(Table parent, AggSpec spec) {
+        return spec.walk(new AggAllByUseTable(parent)).out();
     }
 
-    private AggregationSpec out;
+    private final Table parent;
+    private Table out;
 
+    public AggAllByUseTable(Table parent) {
+        this.parent = Objects.requireNonNull(parent);
+    }
 
-    public AggregationSpec out() {
+    public Table out() {
         return Objects.requireNonNull(out);
+    }
+
+    private void keep() {
+        out = parent;
+    }
+
+    private void drop() {
+        out = parent.dropColumnFormats();
     }
 
     @Override
     public void visit(AggSpecAbsSum absSum) {
-        out = new AbsSumSpec();
+        drop();
     }
 
     @Override
     public void visit(AggSpecCountDistinct countDistinct) {
-        out = new CountDistinctSpec(countDistinct.countNulls());
+        drop();
     }
 
     @Override
     public void visit(AggSpecDistinct distinct) {
-        out = new DistinctSpec(distinct.includeNulls());
+        keep();
     }
 
     @Override
     public void visit(AggSpecGroup group) {
-        out = new AggregationGroupSpec();
+        drop();
     }
 
     @Override
     public void visit(AggSpecAvg avg) {
-        out = new AvgSpec();
+        drop();
     }
 
     @Override
     public void visit(AggSpecFirst first) {
-        out = TRACKED_FIRST_BY ? new TrackingFirstBySpecImpl() : new FirstBySpecImpl();
+        keep();
     }
 
     @Override
     public void visit(AggSpecFormula formula) {
-        out = new AggregationFormulaSpec(formula.formula(), formula.formulaParam());
+        drop();
     }
 
     @Override
     public void visit(AggSpecLast last) {
-        out = TRACKED_LAST_BY ? new TrackingLastBySpecImpl() : new LastBySpecImpl();
+        keep();
     }
 
     @Override
     public void visit(AggSpecMax max) {
-        out = new MinMaxBySpecImpl(false);
+        keep();
     }
 
     @Override
     public void visit(AggSpecMedian median) {
-        out = new PercentileBySpecImpl(0.50d, median.averageMedian());
+        drop();
     }
 
     @Override
     public void visit(AggSpecMin min) {
-        out = new MinMaxBySpecImpl(true);
+        keep();
     }
 
     @Override
     public void visit(AggSpecPercentile pct) {
-        out = new PercentileBySpecImpl(pct.percentile(), pct.averageMedian());
+        drop();
     }
 
     @Override
     public void visit(AggSpecSortedFirst sortedFirst) {
-        out = new SortedFirstBy(
-                sortedFirst.columns().stream().map(SortColumn::column).map(ColumnName::name).toArray(String[]::new));
+        keep();
     }
 
     @Override
     public void visit(AggSpecSortedLast sortedLast) {
-        out = new SortedLastBy(
-                sortedLast.columns().stream().map(SortColumn::column).map(ColumnName::name).toArray(String[]::new));
+        keep();
     }
 
     @Override
     public void visit(AggSpecStd std) {
-        out = new StdSpec();
+        drop();
     }
 
     @Override
     public void visit(AggSpecSum sum) {
-        out = new SumSpec();
+        drop();
     }
 
     @Override
     public void visit(AggSpecUnique unique) {
-        out = new UniqueSpec(unique.includeNulls());
+        keep();
     }
 
     @Override
     public void visit(AggSpecWAvg wAvg) {
-        out = new WeightedAverageSpecImpl(wAvg.weight().name());
+        drop();
     }
 
     @Override
     public void visit(AggSpecWSum wSum) {
-        out = new WeightedSumSpecImpl(wSum.weight().name());
+        drop();
     }
 
     @Override
     public void visit(AggSpecVar var) {
-        out = new VarSpec();
+        drop();
     }
 }

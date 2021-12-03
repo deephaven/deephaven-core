@@ -704,6 +704,12 @@ public interface TableWithDefaults extends Table {
     }
 
     @Override
+    default Table applyToAllBy(String formulaColumn, String columnParamName,
+            Collection<? extends Selectable> groupByColumns) {
+        return aggAllBy(AggSpec.formula(formulaColumn, columnParamName), groupByColumns.toArray(Selectable[]::new));
+    }
+
+    @Override
     @ConcurrentMethod
     default Table applyToAllBy(String formulaColumn, Collection<? extends Selectable> groupByColumns) {
         return applyToAllBy(formulaColumn, "each", groupByColumns);

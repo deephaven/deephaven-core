@@ -196,12 +196,6 @@ public class HierarchicalTable extends QueryTable {
     }
 
     @Override
-    public Table applyToAllBy(String formulaColumn, String columnParamName,
-            Collection<? extends Selectable> groupByColumns) {
-        return throwUnsupported("applyToAllBy()");
-    }
-
-    @Override
     public Table where(Collection<? extends Filter> filters) {
         return throwUnsupported("where()");
     }

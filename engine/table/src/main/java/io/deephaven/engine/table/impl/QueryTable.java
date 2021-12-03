@@ -594,7 +594,8 @@ public class QueryTable extends BaseTable {
             throw new IllegalArgumentException(
                     "aggAllBy has no columns to aggregate: spec=" + spec + ", groupByColumns=" + toString(groupByList));
         }
-        final Table result = aggBy(agg.get(), groupByList);
+        final Table tableToUse = AggAllByUseTable.of(this, spec);
+        final Table result = tableToUse.aggBy(agg.get(), groupByList);
         spec.walk(new AggAllByCopyAttributes(this, result));
         return result;
     }
@@ -918,17 +919,6 @@ public class QueryTable extends BaseTable {
     public Table dateTimeColumnAsNanos(String dateTimeColumnName, String nanosColumnName) {
         return viewOrUpdateView(Flavor.UpdateView,
                 new ReinterpretedColumn<>(dateTimeColumnName, DateTime.class, nanosColumnName, long.class));
-    }
-
-    @Override
-    public Table applyToAllBy(String formulaColumn, String columnParamName,
-            Collection<? extends Selectable> groupByColumns) {
-        final QueryTable tableToUse = (QueryTable) dropColumnFormats();
-        return QueryPerformanceRecorder.withNugget(
-                "applyToAllBy(" + formulaColumn + ',' + columnParamName + ',' + groupByColumns + ")",
-                sizeForInstrumentation(),
-                () -> tableToUse.by(new AggregationFormulaSpec(formulaColumn, columnParamName),
-                        SelectColumn.from(groupByColumns)));
     }
 
     public static class FilteredTable extends QueryTable implements WhereFilter.RecomputeListener {

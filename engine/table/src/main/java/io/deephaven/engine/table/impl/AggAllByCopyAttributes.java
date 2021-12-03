@@ -6,6 +6,7 @@ import io.deephaven.api.agg.spec.AggSpecAvg;
 import io.deephaven.api.agg.spec.AggSpecCountDistinct;
 import io.deephaven.api.agg.spec.AggSpecDistinct;
 import io.deephaven.api.agg.spec.AggSpecFirst;
+import io.deephaven.api.agg.spec.AggSpecFormula;
 import io.deephaven.api.agg.spec.AggSpecGroup;
 import io.deephaven.api.agg.spec.AggSpecLast;
 import io.deephaven.api.agg.spec.AggSpecMax;
@@ -54,6 +55,9 @@ class AggAllByCopyAttributes implements AggSpec.Visitor {
     public void visit(AggSpecFirst first) {
         parent.copyAttributes(result, CopyAttributeOperation.FirstBy);
     }
+
+    @Override
+    public void visit(AggSpecFormula formula) {}
 
     @Override
     public void visit(AggSpecLast last) {
