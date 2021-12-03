@@ -1,6 +1,7 @@
 package io.deephaven.client;
 
 import io.deephaven.api.TableOperations;
+import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.qst.TableCreationLogic;
 import io.deephaven.qst.TableCreationLogic1Input;
 import io.deephaven.qst.TableCreator;
@@ -123,7 +124,21 @@ public class AnnotatedTables {
         map.put("TAIL_0", TAIL_0_ADAPTER);
         map.put("TAIL_1", TAIL_1_ADAPTER);
         map.put("TAIL_2", TAIL_2_ADAPTER);
-        map.put("BY", GROUP_BY_ADAPTER);
+        map.put("GROUP_BY", GROUP_BY_ADAPTER);
+
+        // Some of these aggs don't make sense with our testing framework, given the DateTime column.
+        // map.put("AGGALL_BY_ABS_SUM", a -> aggAllBy(a, AggSpec.absSum()));
+        // map.put("AGGALL_BY_AVG", a -> aggAllBy(a, AggSpec.avg()));
+        map.put("AGGALL_BY_FIRST", a -> aggAllBy(a, AggSpec.first()));
+        map.put("AGGALL_BY_GROUP", a -> aggAllBy(a, AggSpec.group()));
+        map.put("AGGALL_BY_LAST", a -> aggAllBy(a, AggSpec.last()));
+        map.put("AGGALL_BY_MAX", a -> aggAllBy(a, AggSpec.max()));
+        map.put("AGGALL_BY_MEDIAN", a -> aggAllBy(a, AggSpec.median()));
+        map.put("AGGALL_BY_MIN", a -> aggAllBy(a, AggSpec.min()));
+        // map.put("AGGALL_BY_STD", a -> aggAllBy(a, AggSpec.std()));
+        // map.put("AGGALL_BY_SUM", a -> aggAllBy(a, AggSpec.sum()));
+        // map.put("AGGALL_BY_VAR", a -> aggAllBy(a, AggSpec.var()));
+
         map.put("MERGE_2", MERGE_2);
         map.put("MERGE_3", MERGE_3);
         return map;
@@ -262,9 +277,23 @@ public class AnnotatedTables {
         return new AnnotatedTable(in.logic().andThen(TableOperations::reverse), in.isStatic(), in.size());
     }
 
+    public static AnnotatedTable aggAllBy(AnnotatedTable in, AggSpec spec) {
+        return new AnnotatedTable(in.logic().andThen(aggAllBy(spec)), in.isStatic(), Math.min(in.size(), 1));
+    }
+
     public static AnnotatedTable groupBy(AnnotatedTable in) {
         return new AnnotatedTable(in.logic().andThen(TableOperations::groupBy), in.isStatic(), Math.min(in.size(), 1));
     }
+
+    private static TableCreationLogic1Input aggAllBy(AggSpec spec) {
+        return new TableCreationLogic1Input() {
+            @Override
+            public <T extends TableOperations<T, T>> T create(T t1) {
+                return t1.aggAllBy(spec);
+            }
+        };
+    }
+
 
     public static AnnotatedTable head(AnnotatedTable in, int size) {
         final TableCreationLogic1Input op = new TableCreationLogic1Input() {
