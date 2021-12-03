@@ -1005,14 +1005,10 @@ public abstract class BaseTable extends LivenessArtifact
     @Override
     public final Table aggBy(Collection<? extends Aggregation> aggregations,
             Collection<? extends Selectable> groupByColumns) {
-        if (aggregations.isEmpty()) {
-            return selectDistinctImpl(groupByColumns);
+        if (aggregations.isEmpty() && !groupByColumns.isEmpty()) {
+            return selectDistinct(groupByColumns);
         }
         return aggByImpl(aggregations, groupByColumns);
-    }
-
-    protected Table selectDistinctImpl(Collection<? extends Selectable> columns) {
-        return aggByImpl(List.of(), columns);
     }
 
     protected abstract Table aggByImpl(Collection<? extends Aggregation> aggregations,

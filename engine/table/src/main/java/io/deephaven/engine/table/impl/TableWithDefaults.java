@@ -260,11 +260,6 @@ public interface TableWithDefaults extends Table {
     }
 
     @Override
-    default Table selectDistinct(Collection<? extends Selectable> columns) {
-        return aggBy(Collections.emptyList(), columns);
-    }
-
-    @Override
     @ConcurrentMethod
     default Table selectDistinct(Selectable... columns) {
         return selectDistinct(List.of(columns));

@@ -319,7 +319,7 @@ public class PartitionAwareSourceTable extends SourceTable {
     }
 
     @Override
-    protected final Table selectDistinctImpl(Collection<? extends Selectable> groupByColumns) {
+    public final Table selectDistinct(Collection<? extends Selectable> groupByColumns) {
         final SelectColumn[] selectColumns = SelectColumn.from(groupByColumns);
         for (SelectColumn selectColumn : selectColumns) {
             selectColumn.initDef(definition.getColumnNameMap());

@@ -2971,7 +2971,7 @@ public class QueryTable extends BaseTable {
     }
 
     @Override
-    protected Table selectDistinctImpl(Collection<? extends Selectable> groupByColumns) {
+    public Table selectDistinct(Collection<? extends Selectable> groupByColumns) {
         return QueryPerformanceRecorder.withNugget("selectDistinct(" + groupByColumns + ")",
                 sizeForInstrumentation(),
                 () -> by(new SelectDistinctSpecImpl(), SelectColumn.from(groupByColumns)));
