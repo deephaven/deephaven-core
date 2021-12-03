@@ -180,7 +180,7 @@ public class HierarchicalTable extends QueryTable {
     }
 
     @Override
-    protected Table aggByImpl(Collection<? extends Aggregation> aggregations,
+    public Table aggBy(Collection<? extends Aggregation> aggregations,
             Collection<? extends Selectable> groupByColumns) {
         return throwUnsupported("aggBy()");
     }

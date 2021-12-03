@@ -8,6 +8,7 @@ import io.deephaven.api.ColumnName;
 import io.deephaven.api.JoinMatch;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.SortColumn;
+import io.deephaven.api.Strings;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.AggregationOutputs;
 import io.deephaven.api.agg.spec.AggSpec;
@@ -572,26 +573,41 @@ public class QueryTable extends BaseTable {
                 () -> naturalJoinInternal(table, columnsToMatch, columnsToAdd, true));
     }
 
+    private static String toString(Collection<? extends Selectable> groupByList) {
+        return groupByList.stream().map(Strings::of).collect(Collectors.joining(",", "[", "]"));
+    }
+
     @Override
     public Table aggAllBy(AggSpec spec, Selectable... groupByColumns) {
         for (ColumnName name : AggSpecColumnReferences.of(spec)) {
             if (!hasColumns(name.name())) {
                 throw new IllegalArgumentException(
-                        "Spec references column that does not exist: " + name.name() + " / " + spec);
+                        "aggAllBy spec references column that does not exist: spec=" + spec + ", groupByColumns="
+                                + toString(Arrays.asList(groupByColumns)));
             }
         }
         final List<Selectable> groupByList = Arrays.asList(groupByColumns);
         final List<ColumnName> tableColumns =
                 definition.getColumnNames().stream().map(ColumnName::of).collect(Collectors.toList());
         final Optional<Aggregation> agg = AggregateAllByTable.singleAggregation(spec, groupByList, tableColumns);
-        final Table result = aggBy(agg.stream().collect(Collectors.toList()), groupByList);
+        if (agg.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "aggAllBy has no columns to aggregate: spec=" + spec + ", groupByColumns=" + toString(groupByList));
+        }
+        final Table result = aggBy(agg.get(), groupByList);
         spec.walk(new AggAllByCopyAttributes(this, result));
         return result;
     }
 
     @Override
-    protected Table aggByImpl(final Collection<? extends Aggregation> aggregations,
+    public Table aggBy(final Collection<? extends Aggregation> aggregations,
             final Collection<? extends Selectable> groupByColumns) {
+        if (aggregations.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "aggBy must have at least one aggregation, none specified. groupByColumns="
+                            + toString(groupByColumns));
+        }
+
         final List<AggregationFactory.AggregationElement> optimized =
                 AggregationFactory.AggregationElement.optimizeAndConvert(aggregations);
 
