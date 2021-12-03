@@ -93,14 +93,6 @@ public class GathererTest {
         }
     }
 
-//    @Test
-//    public void booleanTestMethod() {
-//        RowSequence rowSet = table.getRowSet();
-//        ColumnSource<?>[] colSet = getColSet(boolColNames);
-//        boolean[] result = Gatherer.tensorBuffer2DBoolean(rowSet, colSet);
-//        assertRowMajor((i, j) -> boolData[i][j], i -> result[i]);
-//    }
-
     @Test
     public void byteTestMethod() {
         RowSequence rowSet = table.getRowSet();
