@@ -1,0 +1,13 @@
+
+dependencies {
+    implementation 'org.freemarker:freemarker:2.3.30'
+    testImplementation 'junit:junit:3.8.2'
+}
+
+jar {
+    archiveBaseName = 'deephaven-generator'
+
+    manifest {
+        attributes 'Main-Class': 'io.deephaven.generator.CodeGenerator'
+    }
+}
