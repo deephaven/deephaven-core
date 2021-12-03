@@ -81,31 +81,32 @@ public class GathererTest {
         return rst;
     }
 
-    private static <T> void assertRowMajor(BiFunction<Integer, Integer, T> expected, Function<Integer, T> actual) {
-        // Data should be stored in row-major order
+    private static <T> void assertColumnMajor(BiFunction<Integer, Integer, T> expected, Function<Integer, T> actual) {
+        // Data should be stored in column-major order
         int idx = 0;
-        for (int j = 0; j < 4; j++) {
-            for (int i = 0; i < 2; i++) {
+        for (int i = 0; i < 2; i++) {
+            for (int j = 0; j < 4; j++) {
                 Assert.assertEquals("i=" + i + " j=" + j, expected.apply(i, j), actual.apply(idx));
+                System.out.println(idx + " " + expected.apply(i, j) + " " + actual.apply(idx));
                 idx++;
             }
         }
     }
 
-    @Test
-    public void booleanTestMethod() {
-        RowSequence rowSet = table.getRowSet();
-        ColumnSource<?>[] colSet = getColSet(boolColNames);
-        boolean[] result = Gatherer.tensorBuffer2DBoolean(rowSet, colSet);
-        assertRowMajor((i, j) -> boolData[i][j], i -> result[i]);
-    }
+//    @Test
+//    public void booleanTestMethod() {
+//        RowSequence rowSet = table.getRowSet();
+//        ColumnSource<?>[] colSet = getColSet(boolColNames);
+//        boolean[] result = Gatherer.tensorBuffer2DBoolean(rowSet, colSet);
+//        assertRowMajor((i, j) -> boolData[i][j], i -> result[i]);
+//    }
 
     @Test
     public void byteTestMethod() {
         RowSequence rowSet = table.getRowSet();
         ColumnSource<?>[] colSet = getColSet(byteColNames);
         byte[] result = Gatherer.tensorBuffer2DByte(rowSet, colSet);
-        assertRowMajor((i, j) -> byteData[i][j], i -> result[i]);
+        assertColumnMajor((i, j) -> byteData[i][j], i -> result[i]);
     }
 
     @Test
@@ -113,7 +114,7 @@ public class GathererTest {
         RowSequence rowSet = table.getRowSet();
         ColumnSource<?>[] colSet = getColSet(shortColNames);
         short[] result = Gatherer.tensorBuffer2DShort(rowSet, colSet);
-        assertRowMajor((i, j) -> shortData[i][j], i -> result[i]);
+        assertColumnMajor((i, j) -> shortData[i][j], i -> result[i]);
     }
 
     @Test
@@ -121,7 +122,7 @@ public class GathererTest {
         RowSequence rowSet = table.getRowSet();
         ColumnSource<?>[] colSet = getColSet(intColNames);
         int[] result = Gatherer.tensorBuffer2DInt(rowSet, colSet);
-        assertRowMajor((i, j) -> intData[i][j], i -> result[i]);
+        assertColumnMajor((i, j) -> intData[i][j], i -> result[i]);
     }
 
     @Test
@@ -129,7 +130,7 @@ public class GathererTest {
         RowSequence rowSet = table.getRowSet();
         ColumnSource<?>[] colSet = getColSet(longColNames);
         long[] result = Gatherer.tensorBuffer2DLong(rowSet, colSet);
-        assertRowMajor((i, j) -> longData[i][j], i -> result[i]);
+        assertColumnMajor((i, j) -> longData[i][j], i -> result[i]);
     }
 
     @Test
@@ -137,7 +138,7 @@ public class GathererTest {
         RowSequence rowSet = table.getRowSet();
         ColumnSource<?>[] colSet = getColSet(floatColNames);
         float[] result = Gatherer.tensorBuffer2DFloat(rowSet, colSet);
-        assertRowMajor((i, j) -> floatData[i][j], i -> result[i]);
+        assertColumnMajor((i, j) -> floatData[i][j], i -> result[i]);
     }
 
     @Test
@@ -145,7 +146,7 @@ public class GathererTest {
         RowSequence rowSet = table.getRowSet();
         ColumnSource<?>[] colSet = getColSet(doubleColNames);
         double[] result = Gatherer.tensorBuffer2DDouble(rowSet, colSet);
-        assertRowMajor((i, j) -> doubleData[i][j], i -> result[i]);
+        assertColumnMajor((i, j) -> doubleData[i][j], i -> result[i]);
     }
 
 }
