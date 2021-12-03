@@ -167,8 +167,8 @@ class TestGather(unittest.TestCase):
         rows = source.getRowSet()
         cols = [source.getColumnSource(col) for col in ["X", "Y", "Z"]]
 
-        gatherer_rowmajor = lambda rows, cols : gather.table_to_numpy_2d(rows, cols, order = 0, np_dtype)
-        gatherer_colmajor = lambda rows, cols : gather.table_to_numpy_2d(rows, cols, order = 1, np_dtype)
+        gatherer_rowmajor = lambda rowset, colset : gather.table_to_numpy_2d(rowset, colset, 0, np_dtype)
+        gatherer_colmajor = lambda rowset, colset : gather.table_to_numpy_2d(rowset, colset, 1, np_dtype)
 
         array_from_table = tableToDataFrame(source).values
 

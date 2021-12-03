@@ -115,7 +115,7 @@ def table_to_numpy_2d(row_set, col_set, order = 0, dtype = None):
 
     tensor = np.frombuffer(buffer, dtype = dtype)
     if order == 0:
-        tensor.shape(row_set.intSize(), len(col_set))
+        tensor.shape = (row_set.intSize(), len(col_set))
         return tensor
     else:
         tensor.shape = (len(col_set), row_set.intSize())
