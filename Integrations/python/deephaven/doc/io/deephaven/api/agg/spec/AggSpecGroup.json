@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.api.agg.spec.AggSpecGroup",
+ "methods": {
+  "of": ":return: io.deephaven.api.agg.spec.AggSpecGroup",
+  "walk": "Note: Java generics information - <V extends io.deephaven.api.agg.spec.AggSpec.Visitor>\n\n:param visitor: V\n:return: V"
+ },
+ "path": "io.deephaven.api.agg.spec.AggSpecGroup",
+ "typeName": "class"
+}

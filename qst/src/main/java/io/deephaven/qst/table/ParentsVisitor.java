@@ -240,8 +240,8 @@ public class ParentsVisitor implements Visitor {
     }
 
     @Override
-    public void visit(GroupByTable groupByTable) {
-        out = single(groupByTable);
+    public void visit(AggregateAllByTable aggAllByTable) {
+        out = single(aggAllByTable);
     }
 
     @Override

@@ -1,286 +1,151 @@
 package io.deephaven.api.agg;
 
-import io.deephaven.api.ColumnName;
-import io.deephaven.api.SortColumn;
+import io.deephaven.api.agg.NormalAggregations.Builder;
+import io.deephaven.api.agg.spec.AggSpec;
 
 import java.io.Serializable;
 import java.util.Collection;
-import java.util.stream.Collectors;
 
 /**
  * Represents an aggregation that can be applied to a table.
  *
  * @see io.deephaven.api.TableOperations#aggBy(Collection, Collection)
+ * @see Count
+ * @see NormalAggregation
+ * @see NormalAggregations
  */
 public interface Aggregation extends Serializable {
 
-    static AbsSum AggAbsSum(String pair) {
-        return AggregationFinisher.absSum().of(pair);
+    static NormalAggregation of(AggSpec spec, String pair) {
+        return NormalAggregation.of(spec, Pair.parse(pair));
+    }
+
+    static Aggregation of(AggSpec spec, String... pairs) {
+        if (pairs.length == 1) {
+            return of(spec, pairs[0]);
+        }
+        final Builder builder = NormalAggregations.builder().spec(spec);
+        for (String pair : pairs) {
+            builder.addPairs(Pair.parse(pair));
+        }
+        return builder.build();
     }
 
     static Aggregation AggAbsSum(String... pairs) {
-        return AggregationFinisher.absSum().of(pairs);
-    }
-
-    static Group AggGroup(String pair) {
-        return AggregationFinisher.group().of(pair);
-    }
-
-    static Aggregation AggGroup(String... pairs) {
-        return AggregationFinisher.group().of(pairs);
-    }
-
-    static Avg AggAvg(String pair) {
-        return AggregationFinisher.avg().of(pair);
+        return of(AggSpec.absSum(), pairs);
     }
 
     static Aggregation AggAvg(String... pairs) {
-        return AggregationFinisher.avg().of(pairs);
+        return of(AggSpec.avg(), pairs);
     }
 
-    static Count AggCount(String resultColumn) {
+    static Aggregation AggCount(String resultColumn) {
         return Count.of(resultColumn);
     }
 
-    static CountDistinct AggCountDistinct(String pair) {
-        return AggregationFinisher.countDistinct().of(pair);
-    }
-
     static Aggregation AggCountDistinct(String... pairs) {
-        return AggregationFinisher.countDistinct().of(pairs);
-    }
-
-    static CountDistinct AggCountDistinct(boolean countNulls, String pair) {
-        return AggregationFinisher.countDistinct(countNulls).of(pair);
+        return of(AggSpec.countDistinct(), pairs);
     }
 
     static Aggregation AggCountDistinct(boolean countNulls, String... pairs) {
-        return AggregationFinisher.countDistinct(countNulls).of(pairs);
-    }
-
-    static Distinct AggDistinct(String pair) {
-        return AggregationFinisher.distinct().of(pair);
+        return of(AggSpec.countDistinct(countNulls), pairs);
     }
 
     static Aggregation AggDistinct(String... pairs) {
-        return AggregationFinisher.distinct().of(pairs);
-    }
-
-    static Distinct AggDistinct(boolean includeNulls, String pair) {
-        return AggregationFinisher.distinct(includeNulls).of(pair);
+        return of(AggSpec.distinct(), pairs);
     }
 
     static Aggregation AggDistinct(boolean includeNulls, String... pairs) {
-        return AggregationFinisher.distinct(includeNulls).of(pairs);
-    }
-
-    static First AggFirst(String pair) {
-        return AggregationFinisher.first().of(pair);
+        return of(AggSpec.distinct(includeNulls), pairs);
     }
 
     static Aggregation AggFirst(String... pairs) {
-        return AggregationFinisher.first().of(pairs);
+        return of(AggSpec.first(), pairs);
     }
 
-    static Last AggLast(String pair) {
-        return AggregationFinisher.last().of(pair);
+    static Aggregation AggGroup(String... pairs) {
+        return of(AggSpec.group(), pairs);
     }
 
     static Aggregation AggLast(String... pairs) {
-        return AggregationFinisher.last().of(pairs);
-    }
-
-    static Max AggMax(String pair) {
-        return AggregationFinisher.max().of(pair);
+        return of(AggSpec.last(), pairs);
     }
 
     static Aggregation AggMax(String... pairs) {
-        return AggregationFinisher.max().of(pairs);
-    }
-
-    static Med AggMed(String pair) {
-        return AggregationFinisher.med().of(pair);
+        return of(AggSpec.max(), pairs);
     }
 
     static Aggregation AggMed(String... pairs) {
-        return AggregationFinisher.med().of(pairs);
-    }
-
-    static Min AggMin(String pair) {
-        return AggregationFinisher.min().of(pair);
-    }
-
-    static Med AggMed(boolean average, String pair) {
-        return AggregationFinisher.med(average).of(pair);
+        return of(AggSpec.median(), pairs);
     }
 
     static Aggregation AggMed(boolean average, String... pairs) {
-        return AggregationFinisher.med(average).of(pairs);
+        return of(AggSpec.median(average), pairs);
     }
 
     static Aggregation AggMin(String... pairs) {
-        return AggregationFinisher.min().of(pairs);
-    }
-
-    static Pct AggPct(double percentile, String pair) {
-        return AggregationFinisher.pct(percentile).of(pair);
+        return of(AggSpec.min(), pairs);
     }
 
     static Aggregation AggPct(double percentile, String... pairs) {
-        return AggregationFinisher.pct(percentile).of(pairs);
-    }
-
-    static Pct AggPct(double percentile, boolean average, String pair) {
-        return AggregationFinisher.pct(percentile, average).of(pair);
+        return of(AggSpec.percentile(percentile), pairs);
     }
 
     static Aggregation AggPct(double percentile, boolean average, String... pairs) {
-        return AggregationFinisher.pct(percentile, average).of(pairs);
-    }
-
-    static SortedFirst AggSortedFirst(String sortedColumn, String pair) {
-        return AggregationFinisher.sortedFirst(SortColumn.asc(ColumnName.of(sortedColumn)))
-                .of(pair);
+        return of(AggSpec.percentile(percentile, average), pairs);
     }
 
     static Aggregation AggSortedFirst(String sortedColumn, String... pairs) {
-        return AggregationFinisher.sortedFirst(SortColumn.asc(ColumnName.of(sortedColumn)))
-                .of(pairs);
-    }
-
-    static SortedFirst AggSortedFirst(Collection<? extends String> sortedColumns, String pair) {
-        return AggregationFinisher.sortedFirst(
-                sortedColumns.stream().map(ColumnName::of).map(SortColumn::asc).collect(Collectors.toList()))
-                .of(pair);
+        return of(AggSpec.sortedFirst(sortedColumn), pairs);
     }
 
     static Aggregation AggSortedFirst(Collection<? extends String> sortedColumns, String... pairs) {
-        return AggregationFinisher.sortedFirst(
-                sortedColumns.stream().map(ColumnName::of).map(SortColumn::asc).collect(Collectors.toList()))
-                .of(pairs);
-    }
-
-    static SortedLast AggSortedLast(String sortedColumn, String pair) {
-        return AggregationFinisher.sortedLast(SortColumn.asc(ColumnName.of(sortedColumn)))
-                .of(pair);
+        return of(AggSpec.sortedFirst(sortedColumns), pairs);
     }
 
     static Aggregation AggSortedLast(String sortedColumn, String... pairs) {
-        return AggregationFinisher.sortedLast(SortColumn.asc(ColumnName.of(sortedColumn)))
-                .of(pairs);
-    }
-
-    static SortedLast AggSortedLast(Collection<? extends String> sortedColumns, String pair) {
-        return AggregationFinisher.sortedLast(
-                sortedColumns.stream().map(ColumnName::of).map(SortColumn::asc).collect(Collectors.toList()))
-                .of(pair);
+        return of(AggSpec.sortedLast(sortedColumn), pairs);
     }
 
     static Aggregation AggSortedLast(Collection<? extends String> sortedColumns, String... pairs) {
-        return AggregationFinisher.sortedLast(
-                sortedColumns.stream().map(ColumnName::of).map(SortColumn::asc).collect(Collectors.toList()))
-                .of(pairs);
-    }
-
-    static Std AggStd(String pair) {
-        return AggregationFinisher.std().of(pair);
+        return of(AggSpec.sortedLast(sortedColumns), pairs);
     }
 
     static Aggregation AggStd(String... pairs) {
-        return AggregationFinisher.std().of(pairs);
-    }
-
-    static Sum AggSum(String pair) {
-        return AggregationFinisher.sum().of(pair);
+        return of(AggSpec.std(), pairs);
     }
 
     static Aggregation AggSum(String... pairs) {
-        return AggregationFinisher.sum().of(pairs);
-    }
-
-    static Unique AggUnique(String pair) {
-        return AggregationFinisher.unique().of(pair);
+        return of(AggSpec.sum(), pairs);
     }
 
     static Aggregation AggUnique(String... pairs) {
-        return AggregationFinisher.unique().of(pairs);
-    }
-
-    static Unique AggUnique(boolean includeNulls, String pair) {
-        return AggregationFinisher.unique(includeNulls).of(pair);
+        return of(AggSpec.unique(), pairs);
     }
 
     static Aggregation AggUnique(boolean includeNulls, String... pairs) {
-        return AggregationFinisher.unique(includeNulls).of(pairs);
-    }
-
-    static Var AggVar(String pair) {
-        return AggregationFinisher.var().of(pair);
+        return of(AggSpec.unique(includeNulls), pairs);
     }
 
     static Aggregation AggVar(String... pairs) {
-        return AggregationFinisher.var().of(pairs);
-    }
-
-    static WAvg AggWAvg(String weightColumn, String pair) {
-        return AggregationFinisher.wAvg(ColumnName.of(weightColumn)).of(pair);
+        return of(AggSpec.var(), pairs);
     }
 
     static Aggregation AggWAvg(String weightColumn, String... pairs) {
-        return AggregationFinisher.wAvg(ColumnName.of(weightColumn)).of(pairs);
-    }
-
-    static WSum AggWSum(String weightColumn, String pair) {
-        return AggregationFinisher.wSum(ColumnName.of(weightColumn)).of(pair);
+        return of(AggSpec.wavg(weightColumn), pairs);
     }
 
     static Aggregation AggWSum(String weightColumn, String... pairs) {
-        return AggregationFinisher.wSum(ColumnName.of(weightColumn)).of(pairs);
+        return of(AggSpec.wsum(weightColumn), pairs);
     }
 
     <V extends Visitor> V walk(V visitor);
 
     interface Visitor {
-        void visit(AbsSum absSum);
-
-        void visit(Group group);
-
-        void visit(Avg avg);
-
         void visit(Count count);
 
-        void visit(CountDistinct countDistinct);
+        void visit(NormalAggregation normalAgg);
 
-        void visit(Distinct distinct);
-
-        void visit(First first);
-
-        void visit(Last last);
-
-        void visit(Max max);
-
-        void visit(Med med);
-
-        void visit(Min min);
-
-        void visit(Multi<?> multi);
-
-        void visit(Pct pct);
-
-        void visit(SortedFirst sortedFirst);
-
-        void visit(SortedLast sortedLast);
-
-        void visit(Std std);
-
-        void visit(Sum sum);
-
-        void visit(Unique unique);
-
-        void visit(Var var);
-
-        void visit(WAvg wAvg);
-
-        void visit(WSum wSum);
+        void visit(NormalAggregations normalAggs);
     }
 }

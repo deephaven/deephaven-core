@@ -6,6 +6,8 @@ package io.deephaven.engine.table.impl;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
+import io.deephaven.api.Selectable;
+import io.deephaven.api.agg.Aggregation;
 import io.deephaven.base.Base64;
 import io.deephaven.base.StringUtils;
 import io.deephaven.base.log.LogOutput;

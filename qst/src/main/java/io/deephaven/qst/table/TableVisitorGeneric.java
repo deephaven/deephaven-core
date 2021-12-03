@@ -110,8 +110,8 @@ public abstract class TableVisitorGeneric implements TableSpec.Visitor {
     }
 
     @Override
-    public void visit(GroupByTable groupByTable) {
-        accept(groupByTable);
+    public void visit(AggregateAllByTable aggAllByTable) {
+        accept(aggAllByTable);
     }
 
     @Override

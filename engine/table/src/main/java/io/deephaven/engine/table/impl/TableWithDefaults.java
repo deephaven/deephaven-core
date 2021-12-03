@@ -6,6 +6,7 @@ package io.deephaven.engine.table.impl;
 
 import io.deephaven.api.*;
 import io.deephaven.api.agg.Aggregation;
+import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.base.Pair;
 import io.deephaven.base.StringUtils;
@@ -625,6 +626,13 @@ public interface TableWithDefaults extends Table {
     // Aggregation Operations
     // -----------------------------------------------------------------------------------------------------------------
 
+
+    @Override
+    @ConcurrentMethod
+    default Table groupBy(Collection<? extends Selectable> groupByColumns) {
+        return aggAllBy(AggSpec.group(), groupByColumns.toArray(Selectable[]::new));
+    }
+
     @Override
     @ConcurrentMethod
     default Table groupBy(String... groupByColumns) {
@@ -635,6 +643,24 @@ public interface TableWithDefaults extends Table {
     @ConcurrentMethod
     default Table groupBy() {
         return groupBy(Collections.emptyList());
+    }
+
+    @Override
+    @ConcurrentMethod
+    default Table aggAllBy(AggSpec spec) {
+        return aggAllBy(spec, Collections.emptyList());
+    }
+
+    @Override
+    @ConcurrentMethod
+    default Table aggAllBy(AggSpec spec, String... groupByColumns) {
+        return aggAllBy(spec, List.of(groupByColumns));
+    }
+
+    @Override
+    @ConcurrentMethod
+    default Table aggAllBy(AggSpec spec, Collection<String> groupByColumns) {
+        return aggAllBy(spec, Selectable.from(groupByColumns).toArray(ZERO_LENGTH_SELECTABLE_ARRAY));
     }
 
     @Override
@@ -691,6 +717,12 @@ public interface TableWithDefaults extends Table {
 
     @Override
     @ConcurrentMethod
+    default Table sumBy(Selectable... groupByColumns) {
+        return aggAllBy(AggSpec.sum(), groupByColumns);
+    }
+
+    @Override
+    @ConcurrentMethod
     default Table sumBy(String... groupByColumns) {
         return sumBy(Selectable.from(groupByColumns).toArray(ZERO_LENGTH_SELECTABLE_ARRAY));
     }
@@ -705,6 +737,12 @@ public interface TableWithDefaults extends Table {
     @ConcurrentMethod
     default Table sumBy() {
         return sumBy(ZERO_LENGTH_SELECTABLE_ARRAY);
+    }
+
+    @Override
+    @ConcurrentMethod
+    default Table absSumBy(Selectable... groupByColumns) {
+        return aggAllBy(AggSpec.absSum(), groupByColumns);
     }
 
     @Override
@@ -727,6 +765,12 @@ public interface TableWithDefaults extends Table {
 
     @Override
     @ConcurrentMethod
+    default Table avgBy(Selectable... groupByColumns) {
+        return aggAllBy(AggSpec.avg(), groupByColumns);
+    }
+
+    @Override
+    @ConcurrentMethod
     default Table avgBy(String... groupByColumns) {
         return avgBy(Selectable.from(groupByColumns).toArray(ZERO_LENGTH_SELECTABLE_ARRAY));
     }
@@ -741,6 +785,12 @@ public interface TableWithDefaults extends Table {
     @ConcurrentMethod
     default Table avgBy() {
         return avgBy(ZERO_LENGTH_SELECTABLE_ARRAY);
+    }
+
+    @Override
+    @ConcurrentMethod
+    default Table wavgBy(String weightColumn, Selectable... groupByColumns) {
+        return aggAllBy(AggSpec.wavg(weightColumn), groupByColumns);
     }
 
     @Override
@@ -763,6 +813,12 @@ public interface TableWithDefaults extends Table {
 
     @Override
     @ConcurrentMethod
+    default Table wsumBy(String weightColumn, Selectable... groupByColumns) {
+        return aggAllBy(AggSpec.wsum(weightColumn), groupByColumns);
+    }
+
+    @Override
+    @ConcurrentMethod
     default Table wsumBy(String weightColumn) {
         return wsumBy(weightColumn, ZERO_LENGTH_SELECTABLE_ARRAY);
     }
@@ -781,6 +837,12 @@ public interface TableWithDefaults extends Table {
 
     @Override
     @ConcurrentMethod
+    default Table stdBy(Selectable... groupByColumns) {
+        return aggAllBy(AggSpec.std(), groupByColumns);
+    }
+
+    @Override
+    @ConcurrentMethod
     default Table stdBy(String... groupByColumns) {
         return stdBy(Selectable.from(groupByColumns).toArray(ZERO_LENGTH_SELECTABLE_ARRAY));
     }
@@ -792,8 +854,15 @@ public interface TableWithDefaults extends Table {
     }
 
     @Override
+    @ConcurrentMethod
     default Table stdBy() {
         return stdBy(ZERO_LENGTH_SELECTABLE_ARRAY);
+    }
+
+    @Override
+    @ConcurrentMethod
+    default Table varBy(Selectable... groupByColumns) {
+        return aggAllBy(AggSpec.var(), groupByColumns);
     }
 
     @Override
@@ -809,8 +878,15 @@ public interface TableWithDefaults extends Table {
     }
 
     @Override
+    @ConcurrentMethod
     default Table varBy() {
         return varBy(ZERO_LENGTH_SELECTABLE_ARRAY);
+    }
+
+    @Override
+    @ConcurrentMethod
+    default Table lastBy(Selectable... groupByColumns) {
+        return aggAllBy(AggSpec.last(), groupByColumns);
     }
 
     @Override
@@ -833,6 +909,12 @@ public interface TableWithDefaults extends Table {
 
     @Override
     @ConcurrentMethod
+    default Table firstBy(Selectable... groupByColumns) {
+        return aggAllBy(AggSpec.first(), groupByColumns);
+    }
+
+    @Override
+    @ConcurrentMethod
     default Table firstBy(String... groupByColumns) {
         return firstBy(Selectable.from(groupByColumns).toArray(ZERO_LENGTH_SELECTABLE_ARRAY));
     }
@@ -847,6 +929,12 @@ public interface TableWithDefaults extends Table {
     @ConcurrentMethod
     default Table firstBy() {
         return firstBy(ZERO_LENGTH_SELECTABLE_ARRAY);
+    }
+
+    @Override
+    @ConcurrentMethod
+    default Table minBy(Selectable... groupByColumns) {
+        return aggAllBy(AggSpec.min(), groupByColumns);
     }
 
     @Override
@@ -869,6 +957,12 @@ public interface TableWithDefaults extends Table {
 
     @Override
     @ConcurrentMethod
+    default Table maxBy(Selectable... groupByColumns) {
+        return aggAllBy(AggSpec.max(), groupByColumns);
+    }
+
+    @Override
+    @ConcurrentMethod
     default Table maxBy(String... groupByColumns) {
         return maxBy(Selectable.from(groupByColumns).toArray(ZERO_LENGTH_SELECTABLE_ARRAY));
     }
@@ -883,6 +977,12 @@ public interface TableWithDefaults extends Table {
     @ConcurrentMethod
     default Table maxBy() {
         return maxBy(ZERO_LENGTH_SELECTABLE_ARRAY);
+    }
+
+    @Override
+    @ConcurrentMethod
+    default Table medianBy(Selectable... groupByColumns) {
+        return aggAllBy(AggSpec.median(), groupByColumns);
     }
 
     @Override

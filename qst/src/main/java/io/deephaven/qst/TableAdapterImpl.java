@@ -1,12 +1,14 @@
 package io.deephaven.qst;
 
+import io.deephaven.api.Selectable;
 import io.deephaven.api.TableOperations;
+import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.qst.TableAdapterResults.Output;
+import io.deephaven.qst.table.AggregateAllByTable;
 import io.deephaven.qst.table.AggregationTable;
 import io.deephaven.qst.table.AsOfJoinTable;
 import io.deephaven.qst.table.EmptyTable;
 import io.deephaven.qst.table.ExactJoinTable;
-import io.deephaven.qst.table.GroupByTable;
 import io.deephaven.qst.table.HeadTable;
 import io.deephaven.qst.table.InputTable;
 import io.deephaven.qst.table.JoinTable;
@@ -226,14 +228,16 @@ class TableAdapterImpl<TOPS extends TableOperations<TOPS, TABLE>, TABLE> impleme
     }
 
     @Override
-    public void visit(GroupByTable groupByTable) {
-        addOp(groupByTable, parentOps(groupByTable).groupBy(groupByTable.columns()));
+    public void visit(AggregateAllByTable aggAllByTable) {
+        final AggSpec spec = aggAllByTable.spec();
+        final Selectable[] groupByColumns = aggAllByTable.groupByColumns().toArray(new Selectable[0]);
+        addOp(aggAllByTable, parentOps(aggAllByTable).aggAllBy(spec, groupByColumns));
     }
 
     @Override
     public void visit(AggregationTable aggregationTable) {
         addOp(aggregationTable,
-                parentOps(aggregationTable).aggBy(aggregationTable.aggregations(), aggregationTable.columns()));
+                parentOps(aggregationTable).aggBy(aggregationTable.aggregations(), aggregationTable.groupByColumns()));
     }
 
     @Override

@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.api.agg.spec.AggSpecBase",
+ "methods": {
+  "aggregation": "*Overload 1*  \n  :param pair: io.deephaven.api.agg.Pair\n  :return: io.deephaven.api.agg.NormalAggregation\n  \n*Overload 2*  \n  :param pairs: io.deephaven.api.agg.Pair...\n  :return: io.deephaven.api.agg.Aggregation\n  \n*Overload 3*  \n  :param pairs: java.util.Collection<? extendsio.deephaven.api.agg.Pair>\n  :return: io.deephaven.api.agg.Aggregation"
+ },
+ "path": "io.deephaven.api.agg.spec.AggSpecBase",
+ "typeName": "class"
+}

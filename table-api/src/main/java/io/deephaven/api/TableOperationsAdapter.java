@@ -1,6 +1,7 @@
 package io.deephaven.api;
 
 import io.deephaven.api.agg.Aggregation;
+import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.filter.Filter;
 
 import java.util.Collection;
@@ -257,6 +258,26 @@ public abstract class TableOperationsAdapter<TOPS_1 extends TableOperations<TOPS
     @Override
     public final TOPS_1 groupBy(Collection<? extends Selectable> groupByColumns) {
         return adapt(delegate.groupBy(groupByColumns));
+    }
+
+    @Override
+    public final TOPS_1 aggAllBy(AggSpec spec) {
+        return adapt(delegate.aggAllBy(spec));
+    }
+
+    @Override
+    public final TOPS_1 aggAllBy(AggSpec spec, String... groupByColumns) {
+        return adapt(delegate.aggAllBy(spec, groupByColumns));
+    }
+
+    @Override
+    public final TOPS_1 aggAllBy(AggSpec spec, Selectable... groupByColumns) {
+        return adapt(delegate.aggAllBy(spec, groupByColumns));
+    }
+
+    @Override
+    public final TOPS_1 aggAllBy(AggSpec spec, Collection<String> groupByColumns) {
+        return adapt(delegate.aggAllBy(spec, groupByColumns));
     }
 
     @Override
