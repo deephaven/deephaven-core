@@ -43,12 +43,13 @@ except Exception as e:
     pass
 
 @_passThrough
-def table_to_numpy_2d(row_set, col_set, dtype = None):
+def table_to_numpy_2d(row_set, col_set, order = 0, dtype = None):
     """
     Convert Deephaven table data to a 2d NumPy array of the appropriate size
 
     :param row_set: A RowSequence describing the number of rows in the table
     :param col_set: ColumnSources describing which columns to copy
+    :param order: The major order of copying -> either row major or column major
     :param dtype: The desired NumPy data type of the output NumPy array
     :return: A NumPy ndarray
     """
@@ -61,23 +62,61 @@ def table_to_numpy_2d(row_set, col_set, dtype = None):
         dtype = np.intc
 
     if dtype == np.bool_:
-        buffer = _gatherer.tensorBuffer2DBoolean(row_set, col_set)
+        if order == 0:
+            buffer = _gatherer.tensorBuffer2DBooleanColumns(row_set, col_set)
+        elif order == 1:
+            buffer = _gatherer.tensorBuffer2DBooleanRows(row_set, col_set)
+        else:
+            raise ValueError("Order must be either 0 (row major) or 1 (column major).  The default is 0.")
     elif dtype == np.byte:
-        buffer = _gatherer.tensorBuffer2DByte(row_set, col_set)
+        if order == 0:
+            buffer = _gatherer.tensorBuffer2DByteRows(row_set, col_set)
+        elif order == 1:
+            buffer = _gatherer.tensorBuffer2DByteColumns(row_set, col_set)
+        else:
+            raise ValueError("Order must be either 0 (row major) or 1 (column major).  The default is 0.")
     elif dtype == np.short:
-        buffer = _gatherer.tensorBuffer2DShort(row_set, col_set)
+        if order == 0:
+            buffer = _gatherer.tensorBuffer2DShortRows(row_set, col_set)
+        elif order == 1:
+            buffer = _gatherer.tensorBuffer2DShortColumns(row_set, col_set)
+        else:
+            raise ValueError("Order must be either 0 (row major) or 1 (column major).  The default is 0.")
     elif dtype == np.intc:
-        buffer = _gatherer.tensorBuffer2DInt(row_set, col_set)
+        if order == 0:
+            buffer = _gatherer.tensorBuffer2DIntRows(row_set, col_set)
+        elif order == 1:
+            buffer = _gatherer.tensorBuffer2DIntColumns(row_set, col_set)
+        else:
+            raise ValueError("Order must be either 0 (row major) or 1 (column major).  The default is 0.")
     elif dtype == np.int_:
-        buffer = _gatherer.tensorBuffer2DLong(row_set, col_set)
+        if order == 0:
+            buffer = _gatherer.tensorBuffer2DLongRows(row_set, col_set)
+        elif order == 1:
+            buffer = _gatherer.tensorBuffer2DLongColumns(row_set, col_set)
+        else:
+            raise ValueError("Order must be either 0 (row major) or 1 (column major).  The default is 0.")
     elif dtype == np.single:
-        buffer = _gatherer.tensorBuffer2DFloat(row_set, col_set)
+        if order == 0:
+            buffer = _gatherer.tensorBuffer2DFloatRows(row_set, col_set)
+        elif order == 1:
+            buffer = _gatherer.tensorBuffer2DFloatColumns(row_set, col_set)
+        else:
+            raise ValueError("Order must be either 0 (row major) or 1 (column major).  The default is 0.")
     elif dtype == np.double:
-        buffer = _gatherer.tensorBuffer2DDouble(row_set, col_set)
+        if order == 0:
+            buffer = _gatherer.tensorBuffer2DDoubleRows(row_set, col_set)
+        elif order == 1:
+            buffer = _gatherer.tensorBuffer2DDoubleColumns(row_set, col_set)
+        else:
+            raise ValueError("Order must be either 0 (row major) or 1 (column major).  The default is 0.")
     else:
         raise ValueError("Data type {input_type} is not supported.".format(input_type = dtype))
 
     tensor = np.frombuffer(buffer, dtype = dtype)
-    tensor.shape = (len(col_set), row_set.intSize())
-
-    return tensor.T
+    if order == 0:
+        tensor.shape(row_set.intSize(), len(col_set))
+        return tensor
+    else:
+        tensor.shape = (len(col_set), row_set.intSize())
+        return tensor.T

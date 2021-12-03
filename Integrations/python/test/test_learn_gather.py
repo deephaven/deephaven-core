@@ -167,23 +167,36 @@ class TestGather(unittest.TestCase):
         rows = source.getRowSet()
         cols = [source.getColumnSource(col) for col in ["X", "Y", "Z"]]
 
-        gatherer = lambda rows, cols : gather.table_to_numpy_2d(rows, cols, np_dtype)
+        gatherer_rowmajor = lambda rows, cols : gather.table_to_numpy_2d(rows, cols, order = 0, np_dtype)
+        gatherer_colmajor = lambda rows, cols : gather.table_to_numpy_2d(rows, cols, order = 1, np_dtype)
 
         array_from_table = tableToDataFrame(source).values
 
-        gathered = gatherer(rows, cols)
+        gathered_rowmajor = gatherer_rowmajor(rows, cols)
+        gathered_colmajor = gatherer_colmajor(rows, cols)
 
         with self.subTest(msg = "Array shape"):
-            self.assertTrue(gathered.shape == array_from_table.shape)
-            print("Gathered shape: {}".format(gathered.shape))
+            self.assertTrue(gathered_rowmajor.shape == array_from_table.shape)
+            print("Row major gathered shape: {}".format(gathered_rowmajor.shape))
+            self.assertTrue(gathered_colmajor.shape == array_from_table.shape)
+            print("Column major gathered shape: {}".format(gathered_colmajor.shape))
         with self.subTest(msg = "Values in array"):
-            for idx1 in range(gathered.shape[0]):
-                for idx2 in range(gathered.shape[1]):
-                    self.assertTrue(gathered[idx1][idx2] == array_from_table[idx1][idx2])
-            print("All array values are equal")
+            for idx1 in range(gathered_rowmajor.shape[0]):
+                for idx2 in range(gathered_rowmajor.shape[1]):
+                    self.assertTrue(gathered_rowmajor[idx1][idx2] == array_from_table[idx1][idx2])
+            print("All row-major array values are equal")
+            for idx1 in range(gathered_colmajor.shape[0]):
+                for idx2 in range(gathered_colmajor.shape[1]):
+                    self.assertTrue(gathered_colmajor[idx1][idx2] == array_from_table[idx1][idx2])
+            print("All column-major array values are equal")
         with self.subTest(msg = "Array data type"):
-            self.assertTrue(gathered.dtype == np_dtype)
+            self.assertTrue(gathered_rowmajor.dtype == np_dtype)
+            self.assertTrue(gathered_rowmajor.dtype == array_from_table.dtype)
+            self.assertTrue(gathered_colmajor.dtype == np_dtype)
+            self.assertTrue(gathered_colmajor.dtype == array_from_table.dtype)
+            self.assertTrue(gathered_rowmajor.dtype == gathered_colmajor.dtype)
             print("Array dtype: {}".format(np_dtype))
         with self.subTest(msg = "Contiguity"):
-            self.assertTrue(gathered.flags["C_CONTIGUOUS"] or gathered.flags["F_CONTIGUOUS"])
-            print("Array contiguity checked.")
+            self.assertTrue(gathered_rowmajor.flags["C_CONTIGUOUS"] or gathered_rowmajor.flags["F_CONTIGUOUS"])
+            self.assertTrue(gathered_colmajor.flags["C_CONTIGUOUS"] or gathered_colmajor.flags["F_CONTIGUOUS"])
+            print("Array contiguity checked")
