@@ -32,17 +32,21 @@ class TableTestCase(BaseTestCase):
     def test_move_columns(self):
         column_names = [f.name for f in self.test_table.columns]
         cols_to_move = column_names[::2]
-        result_table = self.test_table.move_columns(1, cols_to_move)
-        result_cols = [f.name for f in result_table.columns]
-        self.assertEqual(cols_to_move, result_cols[1:len(cols_to_move) + 1])
 
-        result_table = self.test_table.move_columns_up(cols_to_move)
-        result_cols = [f.name for f in result_table.columns]
-        self.assertEqual(cols_to_move, result_cols[:len(cols_to_move)])
+        with self.subTest("move-columns"):
+            result_table = self.test_table.move_columns(1, cols_to_move)
+            result_cols = [f.name for f in result_table.columns]
+            self.assertEqual(cols_to_move, result_cols[1:len(cols_to_move) + 1])
 
-        result_table = self.test_table.move_columns_down(cols_to_move)
-        result_cols = [f.name for f in result_table.columns]
-        self.assertEqual(cols_to_move, result_cols[-len(cols_to_move):])
+        with self.subTest("move-columns-up"):
+            result_table = self.test_table.move_columns_up(cols_to_move)
+            result_cols = [f.name for f in result_table.columns]
+            self.assertEqual(cols_to_move, result_cols[:len(cols_to_move)])
+
+        with self.subTest("move-columns-down"):
+            result_table = self.test_table.move_columns_down(cols_to_move)
+            result_cols = [f.name for f in result_table.columns]
+            self.assertEqual(cols_to_move, result_cols[-len(cols_to_move):])
 
     def test_rename_columns(self):
         cols_to_rename = [f"{f.name + '_2'} = {f.name}" for f in self.test_table.columns[::2]]
@@ -68,10 +72,11 @@ class TableTestCase(BaseTestCase):
             Table.select
         ]
         for op in ops:
-            result_table = op(self.test_table, formulas=["a", "c", "Sum = a + b + c + d"])
-            self.assertIsNotNone(result_table)
-            self.assertTrue(len(result_table.columns) >= 3)
-            self.assertLessEqual(result_table.size, self.test_table.size)
+            with self.subTest(op=op):
+                result_table = op(self.test_table, formulas=["a", "c", "Sum = a + b + c + d"])
+                self.assertIsNotNone(result_table)
+                self.assertTrue(len(result_table.columns) >= 3)
+                self.assertLessEqual(result_table.size, self.test_table.size)
 
     def test_select_distinct(self):
         unique_table = self.test_table.select_distinct(cols=["a"])
@@ -96,11 +101,14 @@ class TableTestCase(BaseTestCase):
 
     def test_where_in(self):
         unique_table = self.test_table.head(num_rows=50).select_distinct(cols=["a", "c"])
-        result_table = self.test_table.where_in(unique_table, cols=["c"])
-        self.assertLessEqual(unique_table.size, result_table.size)
 
-        result_table2 = self.test_table.where_not_in(unique_table, cols=["c"])
-        self.assertEqual(result_table.size, self.test_table.size - result_table2.size)
+        with self.subTest("where-in filter"):
+            result_table = self.test_table.where_in(unique_table, cols=["c"])
+            self.assertLessEqual(unique_table.size, result_table.size)
+
+        with self.subTest("where-not-in filter"):
+            result_table2 = self.test_table.where_not_in(unique_table, cols=["c"])
+            self.assertEqual(result_table.size, self.test_table.size - result_table2.size)
 
     def test_where_one_of(self):
         result_table = self.test_table.where_one_of(filters=["a > 10", "c < 100"])
@@ -117,8 +125,9 @@ class TableTestCase(BaseTestCase):
         ops = [Table.head_pct,
                Table.tail_pct]
         for op in ops:
-            result_table = op(self.test_table, pct=0.1)
-            self.assertEqual(result_table.size, self.test_table.size * 0.1)
+            with self.subTest(op=op):
+                result_table = op(self.test_table, pct=0.1)
+                self.assertEqual(result_table.size, self.test_table.size * 0.1)
 
     #
     # Table operation category: Sort
@@ -167,20 +176,25 @@ class TableTestCase(BaseTestCase):
     def test_cross_join(self):
         left_table = self.test_table.drop_columns(cols=["e"])
         right_table = self.test_table.where(["a % 2 > 0 && b % 3 == 1"]).drop_columns(cols=["b", "c", "d"])
-        result_table = left_table.join(right_table, on=["a"], joins=["e"])
-        self.assertTrue(result_table.size < left_table.size)
-        result_table = left_table.join(right_table, on=[], joins=["e"])
-        self.assertTrue(result_table.size > left_table.size)
+        with self.subTest("with some join keys"):
+            result_table = left_table.join(right_table, on=["a"], joins=["e"])
+            self.assertTrue(result_table.size < left_table.size)
+        with self.subTest("with no join keys"):
+            result_table = left_table.join(right_table, on=[], joins=["e"])
+            self.assertTrue(result_table.size > left_table.size)
 
     def test_as_of_join(self):
         left_table = self.test_table.drop_columns(["d", "e"])
         right_table = self.test_table.where(["a % 2 > 0"]).drop_columns(cols=["b", "c", "d"])
-        result_table = left_table.aj(right_table, on=["a"])
-        self.assertGreater(result_table.size, 0)
-        self.assertLessEqual(result_table.size, left_table.size)
-        result_table = left_table.raj(right_table, on=["a"])
-        self.assertGreater(result_table.size, 0)
-        self.assertLessEqual(result_table.size, left_table.size)
+        with self.subTest("as-of join"):
+            result_table = left_table.aj(right_table, on=["a"])
+            self.assertGreater(result_table.size, 0)
+            self.assertLessEqual(result_table.size, left_table.size)
+
+        with self.subTest("reverse-as-of join"):
+            result_table = left_table.raj(right_table, on=["a"])
+            self.assertGreater(result_table.size, 0)
+            self.assertLessEqual(result_table.size, left_table.size)
 
     #
     # Table operation category: Aggregation
@@ -189,14 +203,17 @@ class TableTestCase(BaseTestCase):
         ops = [Table.head_by,
                Table.tail_by]
         for op in ops:
-            result_table = op(self.test_table, num_rows=1, by=["a"])
-            self.assertLessEqual(result_table.size, self.test_table.size)
+            with self.subTest(op=op):
+                result_table = op(self.test_table, num_rows=1, by=["a"])
+                self.assertLessEqual(result_table.size, self.test_table.size)
 
     def test_group_by(self):
-        grouped_table = self.test_table.group_by(by=["a", "c"])
-        self.assertLessEqual(grouped_table.size, self.test_table.size)
-        grouped_table = self.test_table.group_by()
-        self.assertLessEqual(grouped_table.size, 1)
+        with self.subTest("with some columns"):
+            grouped_table = self.test_table.group_by(by=["a", "c"])
+            self.assertLessEqual(grouped_table.size, self.test_table.size)
+        with self.subTest("with no columns"):
+            grouped_table = self.test_table.group_by()
+            self.assertLessEqual(grouped_table.size, 1)
 
     def test_ungroup(self):
         grouped_table = self.test_table.group_by(by=["a", "c"])
@@ -209,12 +226,14 @@ class TableTestCase(BaseTestCase):
 
         num_distinct_a = self.test_table.select_distinct(cols=["a", "b"]).size
         for op in ops:
-            result_table = op(self.test_table, by=["a", "b"])
-            self.assertEqual(result_table.size, num_distinct_a)
+            with self.subTest(op=op):
+                result_table = op(self.test_table, by=["a", "b"])
+                self.assertEqual(result_table.size, num_distinct_a)
 
         for op in ops:
-            result_table = op(self.test_table, by=[])
-            self.assertEqual(result_table.size, 1)
+            with self.subTest(op=op):
+                result_table = op(self.test_table, by=[])
+                self.assertEqual(result_table.size, 1)
 
     def test_count_by(self):
         num_distinct_a = self.test_table.select_distinct(cols=["a"]).size
@@ -233,13 +252,15 @@ class TableTestCase(BaseTestCase):
         self.assertEqual(result_table.size, num_distinct_a)
 
     def test_snapshot(self):
-        t = empty_table(0).update(formulas=["Timestamp=io.deephaven.time.DateTime.now()"])
-        snapshot = t.snapshot(base_table=self.test_table)
-        self.assertEqual(1 + len(self.test_table.columns), len(snapshot.columns))
-        self.assertEqual(0, snapshot.size)
+        with self.subTest("do_init is False"):
+            t = empty_table(0).update(formulas=["Timestamp=io.deephaven.time.DateTime.now()"])
+            snapshot = t.snapshot(base_table=self.test_table)
+            self.assertEqual(1 + len(self.test_table.columns), len(snapshot.columns))
+            self.assertEqual(0, snapshot.size)
 
-        snapshot = t.snapshot(base_table=self.test_table, do_init=True)
-        self.assertEqual(self.test_table.size, snapshot.size)
+        with self.subTest("do_init is True"):
+            snapshot = t.snapshot(base_table=self.test_table, do_init=True)
+            self.assertEqual(self.test_table.size, snapshot.size)
 
 
 if __name__ == '__main__':
