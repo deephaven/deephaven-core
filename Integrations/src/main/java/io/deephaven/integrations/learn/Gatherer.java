@@ -24,14 +24,15 @@ public class Gatherer {
      * @return contiguous RAM allocated for the tensor. When a numpy tensor is passed in for this argument, jpy will
      *         handle passing the memory reference as a 1d java array here.
      */
-    public static boolean[] tensorBuffer2DBooleanColumns(final RowSequence rowSeq, final ColumnSource<?>[] columnSources) {
+    public static boolean[] tensorBuffer2DBooleanColumns(final RowSequence rowSeq,
+            final ColumnSource<?>[] columnSources) {
         final int nRows = rowSeq.intSize();
         final int nCols = columnSources.length;
         final boolean[] tensor = new boolean[nRows * nCols];
 
         try (final ResettableWritableBooleanChunk<? extends Values> valueChunk =
-                     ResettableWritableBooleanChunk.makeResettableChunk();
-             final SharedContext sharedContext = SharedContext.makeSharedContext()) {
+                ResettableWritableBooleanChunk.makeResettableChunk();
+                final SharedContext sharedContext = SharedContext.makeSharedContext()) {
 
             for (int ci = 0; ci < nCols; ++ci) {
                 valueChunk.resetFromArray(tensor, ci * nRows, nRows);
@@ -68,13 +69,14 @@ public class Gatherer {
                 inputContexts[ci] = columnSources[ci].makeGetContext(COPY_CHUNK_SIZE, inputSharedContext);
             }
 
-            //noinspection unchecked
+            // noinspection unchecked
             final BooleanChunk<? extends Values>[] inputColumnValues = new BooleanChunk[nCols];
             int ti = 0;
             while (rowKeys.hasMore()) {
                 final RowSequence sliceRowKeys = rowKeys.getNextRowSequenceWithLength(COPY_CHUNK_SIZE);
                 for (int ci = 0; ci < nCols; ++ci) {
-                    inputColumnValues[ci] = columnSources[ci].getChunk(inputContexts[ci], sliceRowKeys).asBooleanChunk();
+                    inputColumnValues[ci] =
+                            columnSources[ci].getChunk(inputContexts[ci], sliceRowKeys).asBooleanChunk();
                 }
 
                 final int sliceChunkSize = sliceRowKeys.intSize();
@@ -142,7 +144,7 @@ public class Gatherer {
                 inputContexts[ci] = columnSources[ci].makeGetContext(COPY_CHUNK_SIZE, inputSharedContext);
             }
 
-            //noinspection unchecked
+            // noinspection unchecked
             final ByteChunk<? extends Values>[] inputColumnValues = new ByteChunk[nCols];
             int ti = 0;
             while (rowKeys.hasMore()) {
@@ -217,7 +219,7 @@ public class Gatherer {
                 inputContexts[ci] = columnSources[ci].makeGetContext(COPY_CHUNK_SIZE, inputSharedContext);
             }
 
-            //noinspection unchecked
+            // noinspection unchecked
             final ShortChunk<? extends Values>[] inputColumnValues = new ShortChunk[nCols];
             int ti = 0;
             while (rowKeys.hasMore()) {
@@ -291,7 +293,7 @@ public class Gatherer {
                 inputContexts[ci] = columnSources[ci].makeGetContext(COPY_CHUNK_SIZE, inputSharedContext);
             }
 
-            //noinspection unchecked
+            // noinspection unchecked
             final IntChunk<? extends Values>[] inputColumnValues = new IntChunk[nCols];
             int ti = 0;
             while (rowKeys.hasMore()) {
@@ -366,7 +368,7 @@ public class Gatherer {
                 inputContexts[ci] = columnSources[ci].makeGetContext(COPY_CHUNK_SIZE, inputSharedContext);
             }
 
-            //noinspection unchecked
+            // noinspection unchecked
             final LongChunk<? extends Values>[] inputColumnValues = new LongChunk[nCols];
             int ti = 0;
             while (rowKeys.hasMore()) {
@@ -441,7 +443,7 @@ public class Gatherer {
                 inputContexts[ci] = columnSources[ci].makeGetContext(COPY_CHUNK_SIZE, inputSharedContext);
             }
 
-            //noinspection unchecked
+            // noinspection unchecked
             final FloatChunk<? extends Values>[] inputColumnValues = new FloatChunk[nCols];
             int ti = 0;
             while (rowKeys.hasMore()) {
@@ -471,7 +473,8 @@ public class Gatherer {
      * @return contiguous RAM allocated for the tensor. When a numpy tensor is passed in for this argument, jpy will
      *         handle passing the memory reference as a 1d java array here.
      */
-    public static double[] tensorBuffer2DDoubleColumns(final RowSequence rowSeq, final ColumnSource<?>[] columnSources) {
+    public static double[] tensorBuffer2DDoubleColumns(final RowSequence rowSeq,
+            final ColumnSource<?>[] columnSources) {
         final int nRows = rowSeq.intSize();
         final int nCols = columnSources.length;
         final double[] tensor = new double[nRows * nCols];
@@ -515,7 +518,7 @@ public class Gatherer {
                 inputContexts[ci] = columnSources[ci].makeGetContext(COPY_CHUNK_SIZE, inputSharedContext);
             }
 
-            //noinspection unchecked
+            // noinspection unchecked
             final DoubleChunk<? extends Values>[] inputColumnValues = new DoubleChunk[nCols];
             int ti = 0;
             while (rowKeys.hasMore()) {
