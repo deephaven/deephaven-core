@@ -233,12 +233,12 @@ class TableTestCase(BaseTestCase):
         self.assertEqual(result_table.size, num_distinct_a)
 
     def test_snapshot(self):
-        snapshot = time_table("00:00:01").snapshot(base_table=self.test_table)
+        t = empty_table(0).update(formulas=["Timestamp=io.deephaven.time.DateTime.now()"])
+        snapshot = t.snapshot(base_table=self.test_table)
         self.assertEqual(1 + len(self.test_table.columns), len(snapshot.columns))
-        self.assertTrue(snapshot.is_refreshing)
         self.assertEqual(0, snapshot.size)
 
-        snapshot = time_table("00:00:01").snapshot(base_table=self.test_table, do_init=True)
+        snapshot = t.snapshot(base_table=self.test_table, do_init=True)
         self.assertEqual(self.test_table.size, snapshot.size)
 
 
