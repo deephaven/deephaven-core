@@ -1,6 +1,11 @@
 package io.deephaven.integrations.learn;
 
+import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.WritableRowSet;
+import io.deephaven.engine.rowset.impl.WritableRowSetImpl;
 import io.deephaven.engine.table.ColumnSource;
+
 import java.util.function.Function;
 
 /**
@@ -9,25 +14,28 @@ import java.util.function.Function;
 public class Future {
 
     private final Function<Object[], Object> func;
-    private final ColumnSource<?>[][] colSets;
     private final Input[] inputs;
-    private IndexSet indexSet;
+    private final ColumnSource<?>[][] colSets;
+    private final int batchSize;
+    private int count = 0;
+    private WritableRowSet rowSet;
     private boolean called;
     private Object result;
 
     /**
      * Creates a new Future.
      *
-     * @param func function that performs computation on gathered data.
-     * @param inputs inputs to the Future computation.
+     * @param func      function that performs computation on gathered data.
+     * @param inputs    inputs to the Future computation.
      * @param batchSize maximum number of rows for deferred computation.
      */
     Future(Function<Object[], Object> func, Input[] inputs, ColumnSource<?>[][] colSets, int batchSize) {
 
         this.func = func;
         this.inputs = inputs;
-        this.indexSet = new IndexSet(batchSize);
         this.colSets = colSets;
+        this.batchSize = batchSize;
+        this.rowSet = new WritableRowSetImpl();
         this.called = false;
         this.result = null;
     }
@@ -40,15 +48,19 @@ public class Future {
     public Object get() {
 
         if (!called) {
-            Object[] gathered = new Object[inputs.length];
+            try {
+                Object[] gathered = new Object[inputs.length];
 
-            for (int i = 0; i < inputs.length; i++) {
-                gathered[i] = gather(inputs[i], colSets[i]);
+                for (int i = 0; i < inputs.length; i++) {
+                    gathered[i] = gather(inputs[i], colSets[i]);
+                }
+
+                result = func.apply(gathered);
+            } finally {
+                rowSet.close();
+                rowSet = null;
+                called = true;
             }
-
-            result = func.apply(gathered);
-            indexSet = null;
-            called = true;
         }
 
         return result;
@@ -57,20 +69,50 @@ public class Future {
     /**
      * Computes the result of applying the gather function to the given input.
      *
-     * @param input input that contains the gather function and the column names to gather.
+     * @param input  input that contains the gather function and the column names to gather.
      * @param colSet set of column sources from which to extract data.
      * @return gathered data
      */
     Object gather(Input input, ColumnSource<?>[] colSet) {
-        return input.getGatherFunc().apply(new Object[] {this.indexSet, colSet});
+        return input.getGatherFunc().apply(new Object[]{this.rowSet, colSet});
     }
 
     /**
-     * Gets the current index set.
+     * Gets the current row set.
      *
-     * @return the current index set.
+     * @return the current row set.
      */
-    IndexSet getIndexSet() {
-        return indexSet;
+    RowSet getRowSet() {
+        return rowSet;
+    }
+
+    /**
+     * Add a new index key to those being processed by this future.
+     *
+     * @param key index key
+     */
+    void insertIndex(long key) {
+        Assert.assertion(!isFull(), "Attempting to insert into a full Future");
+        count++;
+        rowSet.insert(key);
+    }
+
+    /**
+     * Number of keys being processed by this future.
+     *
+     * @return number of keys being processed by this future.
+     */
+    int size() {
+        return count;
+    }
+
+    /**
+     * Returns true if this future is full of keys to process; false otherwise.
+     * The future is full of keys if the size is equal to the batch size.
+     *
+     * @return true if this future is full of keys to process; false otherwise.
+     */
+    boolean isFull() {
+        return count >= batchSize;
     }
 }
