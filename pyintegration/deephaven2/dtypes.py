@@ -211,7 +211,7 @@ class CharDType(DType):
                     arr = np.copy(seq)
                     arr.dtype = np.uint8
                     return super().array_of(arr.astype(np.uint16))
-                elif seq.dtype == np.object:
+                elif seq.dtype == object:
                     return super().array_of(np.array([to_char(el) for el in seq], dtype=np.uint16))
                 else:
                     # do our best
@@ -256,6 +256,7 @@ class DTypes(Enum):
     DateTime = DType(j_name="io.deephaven.time.DateTime")
     Period = DType(j_name="io.deephaven.time.Period")
     PyObject = DType(j_name="org.jpy.PyObject")
+    JObject = DType(j_name="java.lang.Object")
 
 
 bool_ = DTypes.bool_.value
@@ -279,6 +280,7 @@ StringSet = DTypes.StringSet.value
 DateTime = DTypes.DateTime.value
 Period = DTypes.Period.value
 PyObject = DTypes.PyObject.value
+JObject = DTypes.JObject.value
 
 
 # endregion

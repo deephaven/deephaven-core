@@ -73,52 +73,26 @@ class TableFactoryTestCase(BaseTestCase):
         jobj2 = JArrayList()
         jobj2.add(2)
         jobj2.add(-2)
-        columns = [
-            bool_col(name="Boolean", values=[True, False]),
-            byte_col(name="Byte", values=[1, -1]),
-            char_col(name="Char", values='-1'),
-            short_col(name="Short", values=[1, -1]),
-            int_col(name="Int", values=[1, -1]),
-            long_col(name="Long", values=[1, -1]),
-            long_col(name="NPLong", values=np.array([1, -1], dtype=np.int8)),
-            float_col(name="Float", values=[1.01, -1.01]),
-            double_col(name="Double", values=[1.01, -1.01]),
-            string_col(name="String", values=["foo", "bar"]),
-            datetime_col(name="Datetime", values=[dtypes.DateTime(1), dtypes.DateTime(-1)]),
-            pyobj_col(name="PyObj", values=[CustomClass(1, "1"), CustomClass(-1, "-1")]),
-            jobj_col(name="JObj", class_name="java.util.ArrayList", values=[jobj1, jobj2])
-
+        cols = [
+            bool_col(name="Boolean", data=[True, False]),
+            byte_col(name="Byte", data=(1, -1)),
+            char_col(name="Char", data='-1'),
+            short_col(name="Short", data=[1, -1]),
+            int_col(name="Int", data=[1, -1]),
+            long_col(name="Long", data=[1, -1]),
+            long_col(name="NPLong", data=np.array([1, -1], dtype=np.int8)),
+            float_col(name="Float", data=[1.01, -1.01]),
+            double_col(name="Double", data=[1.01, -1.01]),
+            string_col(name="String", data=["foo", "bar"]),
+            datetime_col(name="Datetime", data=[dtypes.DateTime(1), dtypes.DateTime(-1)]),
+            pyobj_col(name="PyObj", data=[CustomClass(1, "1"), CustomClass(-1, "-1")]),
+            pyobj_col(name="PyObj1", data=[[1, 2, 3], CustomClass(-1, "-1")]),
+            pyobj_col(name="PyObj2", data=[False, 'False']),
+            jobj_col(name="JObj", data=[jobj1, jobj2]),
         ]
-        t = new_table(cols=columns)
+
+        t = new_table(cols=cols)
         self.assertEqual(t.size, 2)
-
-    def test_new_table_error(self):
-        with self.assertRaises(DHError) as cm:
-            jobj1 = JArrayList()
-            jobj1.add(1)
-            jobj1.add(-1)
-            jobj2 = JArrayList()
-            jobj2.add(2)
-            jobj2.add(-2)
-            columns = [
-                bool_col(name="Boolean", values=[True, False]),
-                byte_col(name="Byte", values=[1, -1]),
-                char_col(name="Char", values='-1'),
-                short_col(name="Short", values=[1, -1]),
-                int_col(name="Int", values=[1, -1]),
-                long_col(name="Long", values=[1, -1]),
-                long_col(name="NPLong", values=np.array([1, -1], dtype=np.int32)),
-                float_col(name="Float", values=[1.01, -1.01]),
-                float_col(name="Float_NaN", values=[float('nan'), -1.01]),
-                float_col(name="NP_float_NaN", values=np.array([float('nan'), -1], dtype=np.float_)),
-                double_col(name="Double", values=[1.01, -1.01]),
-                string_col(name="String", values=["foo", "bar"]),
-                datetime_col(name="Datetime", values=[dtypes.DateTime(1), dtypes.DateTime(-1)]),
-                pyobj_col(name="PyObj", values=[CustomClass(1, "1"), CustomClass(-1, "-1")]),
-                jobj_col(name="JObj", class_name="java.util.ArrayList", values=[jobj1, CustomClass(-1, "-1")])
-
-            ]
-            t = new_table(cols=columns)
 
 
 @dataclass

@@ -1,7 +1,7 @@
 #
 #   Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
 #
-
+import time
 import unittest
 
 import jpy
@@ -107,6 +107,11 @@ class DTypesTestCase(BaseTestCase):
         py_array = [x for x in j_array]
         for i in range(3):
             self.assertAlmostEqual(expected[i], py_array[i])
+
+    def test_datetime(self):
+        values = [dtypes.DateTime(round(time.time())), dtypes.DateTime.j_type.now()]
+        j_array = dtypes.DateTime.array_of(values)
+        self.assertTrue(2, len(j_array))
 
 
 if __name__ == '__main__':
