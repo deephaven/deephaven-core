@@ -13,7 +13,6 @@ from deephaven2 import DHError
 from deephaven2.dtypes import DType
 from deephaven2.table import Table
 
-_JCsvHelpers = jpy.get_type("io.deephaven.csv.CsvTools")
 _JCsvSpecs = jpy.get_type("io.deephaven.csv.CsvSpecs")
 _JInferenceSpecs = jpy.get_type("io.deephaven.csv.InferenceSpecs")
 _JTableHeader = jpy.get_type("io.deephaven.qst.table.TableHeader")
@@ -109,7 +108,7 @@ def read(path: str,
                      .charset(_JCharset.forName(charset))
                      .build())
 
-        j_table = _JCsvHelpers.readCsv(path, csv_specs)
+        j_table = _JCsvTools.readCsv(path, csv_specs)
 
         return Table(j_table=j_table)
     except Exception as e:
