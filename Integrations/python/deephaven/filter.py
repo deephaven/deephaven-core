@@ -3,8 +3,6 @@
 #
 """ The deephaven.filter module provides methods for filtering Deephaven tables."""
 
-from typing import List
-
 import jpy
 import wrapt
 
@@ -27,7 +25,7 @@ def _defineSymbols():
     if _JFilter is None:
         # This will raise an exception if the desired object is not the classpath
         _JFilter = jpy.get_type("io.deephaven.api.filter.Filter")
-        _JCsvSpecs = jpy.get_type("io.deephaven.api.filter.FilterOr")
+        _JFilterOr = jpy.get_type("io.deephaven.api.filter.FilterOr")
 
 
 # every module method should be decorated with @_passThrough
@@ -48,11 +46,11 @@ def _passThrough(wrapped, instance, args, kwargs):
 
 
 @_passThrough
-def or_(filters:List[str]) -> object:
+def or_(*filters) -> object:
     """ Filters on cases where any of the input filters evaluate to true.
 
     Args:
-        filters (List[str]): a list of filters
+        filters (*str): a list of filters
 
     Returns:
         a filter that evaluates to true when any of the input filters evaluates to true

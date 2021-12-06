@@ -3,11 +3,8 @@
 #
 import unittest
 
-from deephaven.TableTools import newTable, intCol
+from deephaven.TableTools import newTable, intCol, diff
 from deephaven.filter import or_
-
-from deephaven import Types
-from deephaven import read_csv
 from unittest import TestCase
 
 
@@ -19,12 +16,14 @@ class FilterTestCase(TestCase):
         )
 
         t_target = newTable(
-            intCol("A", 3, 4),
-            intCol("B", 13, 14)
+            intCol("A", 1, 4, 5),
+            intCol("B", 11, 14, 15)
         )
 
-        t_actual = t.where(or_("A>2", "B<=14"))
-        self.assertEqual(t_target, t_actual)
+        t_actual = t.where(or_("A<2", "B>=14"))
+
+        diff_string = diff(t_actual, t_target, 0)
+        self.assertEqual(0, len(diff_string))
 
 
 if __name__ == '__main__':

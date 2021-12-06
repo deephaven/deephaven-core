@@ -90,7 +90,8 @@ from . import Calendars as cals, \
     ParquetTools as pt, \
     TableTools as ttools, \
     TableLoggers as tloggers, \
-    Types as dh
+    Types as dh, \
+    filter as _filter
 
 from .Plot import figure_wrapper as figw
 
@@ -119,6 +120,7 @@ def initialize():
     ttools._defineSymbols()
     tloggers._defineSymbols()
     csv._defineSymbols()
+    _filter._defineSymbols()
 
     import deephaven.TableManipulation
     deephaven.TableManipulation._defineSymbols()
