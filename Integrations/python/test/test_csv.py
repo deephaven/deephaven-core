@@ -4,7 +4,7 @@
 import unittest
 
 from deephaven import Types
-from deephaven import read_csv
+from deephaven import read_csv, write_csv
 from unittest import TestCase
 
 def get_col_names(t):
