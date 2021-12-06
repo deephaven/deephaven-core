@@ -22,8 +22,8 @@ class FilterTestCase(TestCase):
 
         t_actual = t.where(or_("A<2", "B>=14"))
 
-        diff_string = diff(t_actual, t_target, 0)
-        self.assertEqual(0, len(diff_string))
+        diff_string = diff(t_actual, t_target, 1)
+        self.assertEqual("", diff_string)
 
 
 if __name__ == '__main__':

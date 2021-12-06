@@ -50,7 +50,7 @@ def or_(*filters) -> object:
     """ Filters on cases where any of the input filters evaluate to true.
 
     Args:
-        filters (*str): a list of filters
+        *filters (str): the filter expressions
 
     Returns:
         a filter that evaluates to true when any of the input filters evaluates to true
