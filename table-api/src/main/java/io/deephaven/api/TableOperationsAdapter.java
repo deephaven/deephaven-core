@@ -550,4 +550,24 @@ public abstract class TableOperationsAdapter<TOPS_1 extends TableOperations<TOPS
     public final TOPS_1 absSumBy(Collection<String> groupByColumns) {
         return adapt(delegate.absSumBy(groupByColumns));
     }
+
+    @Override
+    public final TOPS_1 wsumBy(String weightColumn) {
+        return adapt(delegate.wsumBy(weightColumn));
+    }
+
+    @Override
+    public final TOPS_1 wsumBy(String weightColumn, String... groupByColumns) {
+        return adapt(delegate.wsumBy(weightColumn, groupByColumns));
+    }
+
+    @Override
+    public final TOPS_1 wsumBy(String weightColumn, Selectable... groupByColumns) {
+        return adapt(delegate.wsumBy(weightColumn, groupByColumns));
+    }
+
+    @Override
+    public final TOPS_1 wsumBy(String weightColumn, Collection<String> groupByColumns) {
+        return adapt(delegate.wsumBy(weightColumn, groupByColumns));
+    }
 }

@@ -701,6 +701,26 @@ public abstract class TableBase implements TableSpec {
     }
 
     @Override
+    public final AggregateAllByTable wsumBy(String weightColumn) {
+        return aggAllBy(AggSpec.wsum(weightColumn));
+    }
+
+    @Override
+    public final AggregateAllByTable wsumBy(String weightColumn, String... groupByColumns) {
+        return aggAllBy(AggSpec.wsum(weightColumn), groupByColumns);
+    }
+
+    @Override
+    public final AggregateAllByTable wsumBy(String weightColumn, Selectable... groupByColumns) {
+        return aggAllBy(AggSpec.wsum(weightColumn), groupByColumns);
+    }
+
+    @Override
+    public final AggregateAllByTable wsumBy(String weightColumn, Collection<String> groupByColumns) {
+        return aggAllBy(AggSpec.wsum(weightColumn), groupByColumns);
+    }
+
+    @Override
     public final <V extends TableSchema.Visitor> V walk(V visitor) {
         visitor.visit(this);
         return visitor;

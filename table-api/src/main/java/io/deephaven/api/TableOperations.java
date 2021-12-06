@@ -633,4 +633,14 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
     TOPS absSumBy(Collection<String> groupByColumns);
 
     // -------------------------------------------------------------------------------------------
+
+    TOPS wsumBy(String weightColumn);
+
+    TOPS wsumBy(String weightColumn, String... groupByColumns);
+
+    TOPS wsumBy(String weightColumn, Selectable... groupByColumns);
+
+    TOPS wsumBy(String weightColumn, Collection<String> groupByColumns);
+
+    // -------------------------------------------------------------------------------------------
 }

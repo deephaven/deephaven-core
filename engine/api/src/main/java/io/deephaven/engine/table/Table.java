@@ -1205,6 +1205,7 @@ public interface Table extends
      * @param weightColumn the column to use for the weight
      * @param groupByColumns The grouping columns as in {@link Table#groupBy}
      */
+    @Override
     @ConcurrentMethod
     Table wsumBy(String weightColumn, Selectable... groupByColumns);
 
@@ -1217,6 +1218,7 @@ public interface Table extends
      *
      * @param weightColumn the column to use for the weight
      */
+    @Override
     @ConcurrentMethod
     Table wsumBy(String weightColumn);
 
@@ -1231,6 +1233,7 @@ public interface Table extends
      * @param weightColumn the column to use for the weight
      * @param groupByColumns The grouping columns as in {@link Table#groupBy}
      */
+    @Override
     @ConcurrentMethod
     Table wsumBy(String weightColumn, String... groupByColumns);
 
@@ -1245,6 +1248,7 @@ public interface Table extends
      * @param weightColumn the column to use for the weight
      * @param groupByColumns The grouping columns as in {@link Table#groupBy}
      */
+    @Override
     @ConcurrentMethod
     Table wsumBy(String weightColumn, Collection<String> groupByColumns);
 
