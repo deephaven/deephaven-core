@@ -603,4 +603,14 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
     TOPS medianBy(Collection<String> groupByColumns);
 
     // -------------------------------------------------------------------------------------------
+
+    TOPS stdBy();
+
+    TOPS stdBy(String... groupByColumns);
+
+    TOPS stdBy(Selectable... groupByColumns);
+
+    TOPS stdBy(Collection<String> groupByColumns);
+
+    // -------------------------------------------------------------------------------------------
 }

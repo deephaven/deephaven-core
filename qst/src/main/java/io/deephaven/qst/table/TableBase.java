@@ -641,6 +641,26 @@ public abstract class TableBase implements TableSpec {
     }
 
     @Override
+    public final AggregateAllByTable stdBy() {
+        return aggAllBy(AggSpec.std());
+    }
+
+    @Override
+    public final AggregateAllByTable stdBy(String... groupByColumns) {
+        return aggAllBy(AggSpec.std(), groupByColumns);
+    }
+
+    @Override
+    public final AggregateAllByTable stdBy(Selectable... groupByColumns) {
+        return aggAllBy(AggSpec.std(), groupByColumns);
+    }
+
+    @Override
+    public final AggregateAllByTable stdBy(Collection<String> groupByColumns) {
+        return aggAllBy(AggSpec.std(), groupByColumns);
+    }
+
+    @Override
     public final <V extends TableSchema.Visitor> V walk(V visitor) {
         visitor.visit(this);
         return visitor;

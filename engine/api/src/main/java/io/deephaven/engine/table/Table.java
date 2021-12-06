@@ -1244,6 +1244,7 @@ public interface Table extends
     @ConcurrentMethod
     Table wsumBy(String weightColumn, Collection<String> groupByColumns);
 
+    @Override
     @ConcurrentMethod
     Table stdBy(Selectable... groupByColumns);
 
@@ -1253,6 +1254,7 @@ public interface Table extends
      *
      * @param groupByColumns The grouping columns as in {@link Table#groupBy}
      */
+    @Override
     @ConcurrentMethod
     Table stdBy(String... groupByColumns);
 
@@ -1262,6 +1264,7 @@ public interface Table extends
      *
      * @param groupByColumns The grouping columns as in {@link Table#groupBy}
      */
+    @Override
     @ConcurrentMethod
     Table stdBy(Collection<String> groupByColumns);
 
@@ -1270,6 +1273,7 @@ public interface Table extends
      * <p>
      * When the input table is empty, zero output rows are produced.
      */
+    @Override
     @ConcurrentMethod
     Table stdBy();
 
