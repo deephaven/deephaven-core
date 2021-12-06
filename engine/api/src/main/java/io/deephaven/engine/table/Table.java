@@ -1045,6 +1045,7 @@ public interface Table extends
      *
      * @param groupByColumns The grouping columns as in {@link Table#groupBy}
      */
+    @Override
     @ConcurrentMethod
     Table sumBy(Selectable... groupByColumns);
 
@@ -1053,6 +1054,7 @@ public interface Table extends
      *
      * @param groupByColumns The grouping columns as in {@link Table#groupBy}
      */
+    @Override
     @ConcurrentMethod
     Table sumBy(String... groupByColumns);
 
@@ -1061,6 +1063,7 @@ public interface Table extends
      *
      * @param groupByColumns The grouping columns as in {@link Table#groupBy}
      */
+    @Override
     @ConcurrentMethod
     Table sumBy(Collection<String> groupByColumns);
 
@@ -1069,6 +1072,7 @@ public interface Table extends
      * <p>
      * When the input table is empty, zero output rows are produced.
      */
+    @Override
     @ConcurrentMethod
     Table sumBy();
 
@@ -1078,6 +1082,7 @@ public interface Table extends
      *
      * @param groupByColumns The grouping columns as in {@link Table#groupBy}
      */
+    @Override
     @ConcurrentMethod
     Table absSumBy(Selectable... groupByColumns);
 
@@ -1087,6 +1092,7 @@ public interface Table extends
      *
      * @param groupByColumns The grouping columns as in {@link Table#groupBy}
      */
+    @Override
     @ConcurrentMethod
     Table absSumBy(String... groupByColumns);
 
@@ -1096,6 +1102,7 @@ public interface Table extends
      *
      * @param groupByColumns The grouping columns as in {@link Table#groupBy}
      */
+    @Override
     @ConcurrentMethod
     Table absSumBy(Collection<String> groupByColumns);
 
@@ -1104,6 +1111,7 @@ public interface Table extends
      * <p>
      * When the input table is empty, zero output rows are produced.
      */
+    @Override
     @ConcurrentMethod
     Table absSumBy();
 
@@ -1113,6 +1121,7 @@ public interface Table extends
      *
      * @param groupByColumns The grouping columns as in {@link Table#groupBy}
      */
+    @Override
     @ConcurrentMethod
     Table avgBy(Selectable... groupByColumns);
 
@@ -1122,6 +1131,7 @@ public interface Table extends
      *
      * @param groupByColumns The grouping columns as in {@link Table#groupBy}
      */
+    @Override
     @ConcurrentMethod
     Table avgBy(String... groupByColumns);
 
@@ -1131,6 +1141,7 @@ public interface Table extends
      *
      * @param groupByColumns The grouping columns as in {@link Table#groupBy}
      */
+    @Override
     @ConcurrentMethod
     Table avgBy(Collection<String> groupByColumns);
 
@@ -1139,6 +1150,7 @@ public interface Table extends
      * <p>
      * When the input table is empty, zero output rows are produced.
      */
+    @Override
     @ConcurrentMethod
     Table avgBy();
 
@@ -1149,6 +1161,7 @@ public interface Table extends
      * @param weightColumn the column to use for the weight
      * @param groupByColumns The grouping columns as in {@link Table#groupBy}
      */
+    @Override
     @ConcurrentMethod
     Table wavgBy(String weightColumn, Selectable... groupByColumns);
 
@@ -1159,6 +1172,7 @@ public interface Table extends
      * @param weightColumn the column to use for the weight
      * @param groupByColumns The grouping columns as in {@link Table#groupBy}
      */
+    @Override
     @ConcurrentMethod
     Table wavgBy(String weightColumn, String... groupByColumns);
 
@@ -1169,6 +1183,7 @@ public interface Table extends
      * @param weightColumn the column to use for the weight
      * @param groupByColumns The grouping columns as in {@link Table#groupBy}
      */
+    @Override
     @ConcurrentMethod
     Table wavgBy(String weightColumn, Collection<String> groupByColumns);
 
@@ -1179,6 +1194,7 @@ public interface Table extends
      *
      * @param weightColumn the column to use for the weight
      */
+    @Override
     @ConcurrentMethod
     Table wavgBy(String weightColumn);
 
@@ -1193,6 +1209,7 @@ public interface Table extends
      * @param weightColumn the column to use for the weight
      * @param groupByColumns The grouping columns as in {@link Table#groupBy}
      */
+    @Override
     @ConcurrentMethod
     Table wsumBy(String weightColumn, Selectable... groupByColumns);
 
@@ -1205,6 +1222,7 @@ public interface Table extends
      *
      * @param weightColumn the column to use for the weight
      */
+    @Override
     @ConcurrentMethod
     Table wsumBy(String weightColumn);
 
@@ -1219,6 +1237,7 @@ public interface Table extends
      * @param weightColumn the column to use for the weight
      * @param groupByColumns The grouping columns as in {@link Table#groupBy}
      */
+    @Override
     @ConcurrentMethod
     Table wsumBy(String weightColumn, String... groupByColumns);
 
@@ -1233,9 +1252,11 @@ public interface Table extends
      * @param weightColumn the column to use for the weight
      * @param groupByColumns The grouping columns as in {@link Table#groupBy}
      */
+    @Override
     @ConcurrentMethod
     Table wsumBy(String weightColumn, Collection<String> groupByColumns);
 
+    @Override
     @ConcurrentMethod
     Table stdBy(Selectable... groupByColumns);
 
@@ -1245,6 +1266,7 @@ public interface Table extends
      *
      * @param groupByColumns The grouping columns as in {@link Table#groupBy}
      */
+    @Override
     @ConcurrentMethod
     Table stdBy(String... groupByColumns);
 
@@ -1254,6 +1276,7 @@ public interface Table extends
      *
      * @param groupByColumns The grouping columns as in {@link Table#groupBy}
      */
+    @Override
     @ConcurrentMethod
     Table stdBy(Collection<String> groupByColumns);
 
@@ -1262,6 +1285,7 @@ public interface Table extends
      * <p>
      * When the input table is empty, zero output rows are produced.
      */
+    @Override
     @ConcurrentMethod
     Table stdBy();
 
@@ -1271,6 +1295,7 @@ public interface Table extends
      *
      * @param groupByColumns The grouping columns as in {@link Table#groupBy}
      */
+    @Override
     @ConcurrentMethod
     Table varBy(Selectable... groupByColumns);
 
@@ -1280,6 +1305,7 @@ public interface Table extends
      *
      * @param groupByColumns The grouping columns as in {@link Table#groupBy}
      */
+    @Override
     @ConcurrentMethod
     Table varBy(String... groupByColumns);
 
@@ -1289,6 +1315,7 @@ public interface Table extends
      *
      * @param groupByColumns The grouping columns as in {@link Table#groupBy}
      */
+    @Override
     @ConcurrentMethod
     Table varBy(Collection<String> groupByColumns);
 
@@ -1297,6 +1324,7 @@ public interface Table extends
      * <p>
      * When the input table is empty, zero output rows are produced.
      */
+    @Override
     @ConcurrentMethod
     Table varBy();
 
@@ -1305,6 +1333,7 @@ public interface Table extends
      *
      * @param groupByColumns The grouping columns as in {@link Table#groupBy}
      */
+    @Override
     @ConcurrentMethod
     Table lastBy(Selectable... groupByColumns);
 
@@ -1313,6 +1342,7 @@ public interface Table extends
      *
      * @param groupByColumns The grouping columns as in {@link Table#groupBy}
      */
+    @Override
     @ConcurrentMethod
     Table lastBy(String... groupByColumns);
 
@@ -1321,12 +1351,14 @@ public interface Table extends
      *
      * @param groupByColumns The grouping columns as in {@link Table#groupBy}
      */
+    @Override
     @ConcurrentMethod
     Table lastBy(Collection<String> groupByColumns);
 
     /**
      * Returns the last row of the given table.
      */
+    @Override
     @ConcurrentMethod
     Table lastBy();
 
@@ -1336,6 +1368,7 @@ public interface Table extends
      *
      * @param groupByColumns The grouping columns as in {@link Table#groupBy}
      */
+    @Override
     @ConcurrentMethod
     Table firstBy(Selectable... groupByColumns);
 
@@ -1345,6 +1378,7 @@ public interface Table extends
      *
      * @param groupByColumns The grouping columns as in {@link Table#groupBy}
      */
+    @Override
     @ConcurrentMethod
     Table firstBy(String... groupByColumns);
 
@@ -1354,12 +1388,14 @@ public interface Table extends
      *
      * @param groupByColumns The grouping columns as in {@link Table#groupBy}
      */
+    @Override
     @ConcurrentMethod
     Table firstBy(Collection<String> groupByColumns);
 
     /**
      * Returns the first row of the given table.
      */
+    @Override
     @ConcurrentMethod
     Table firstBy();
 
@@ -1368,6 +1404,7 @@ public interface Table extends
      *
      * @param groupByColumns The grouping columns as in {@link Table#groupBy}
      */
+    @Override
     @ConcurrentMethod
     Table minBy(Selectable... groupByColumns);
 
@@ -1376,6 +1413,7 @@ public interface Table extends
      *
      * @param groupByColumns The grouping columns as in {@link Table#groupBy}
      */
+    @Override
     @ConcurrentMethod
     Table minBy(String... groupByColumns);
 
@@ -1384,6 +1422,7 @@ public interface Table extends
      *
      * @param groupByColumns The grouping columns as in {@link Table#groupBy}
      */
+    @Override
     @ConcurrentMethod
     Table minBy(Collection<String> groupByColumns);
 
@@ -1392,6 +1431,7 @@ public interface Table extends
      * <p>
      * When the input table is empty, zero output rows are produced.
      */
+    @Override
     @ConcurrentMethod
     Table minBy();
 
@@ -1400,6 +1440,7 @@ public interface Table extends
      *
      * @param groupByColumns The grouping columns as in {@link Table#groupBy} }
      */
+    @Override
     @ConcurrentMethod
     Table maxBy(Selectable... groupByColumns);
 
@@ -1408,6 +1449,7 @@ public interface Table extends
      *
      * @param groupByColumns The grouping columns as in {@link Table#groupBy} }
      */
+    @Override
     @ConcurrentMethod
     Table maxBy(String... groupByColumns);
 
@@ -1416,6 +1458,7 @@ public interface Table extends
      *
      * @param groupByColumns The grouping columns as in {@link Table#groupBy} }
      */
+    @Override
     @ConcurrentMethod
     Table maxBy(Collection<String> groupByColumns);
 
@@ -1424,6 +1467,7 @@ public interface Table extends
      * <p>
      * When the input table is empty, zero output rows are produced.
      */
+    @Override
     @ConcurrentMethod
     Table maxBy();
 
@@ -1433,6 +1477,7 @@ public interface Table extends
      *
      * @param groupByColumns The grouping columns as in {@link Table#groupBy} }
      */
+    @Override
     @ConcurrentMethod
     Table medianBy(Selectable... groupByColumns);
 
@@ -1442,6 +1487,7 @@ public interface Table extends
      *
      * @param groupByColumns The grouping columns as in {@link Table#groupBy} }
      */
+    @Override
     @ConcurrentMethod
     Table medianBy(String... groupByColumns);
 
@@ -1451,6 +1497,7 @@ public interface Table extends
      *
      * @param groupByColumns The grouping columns as in {@link Table#groupBy} }
      */
+    @Override
     @ConcurrentMethod
     Table medianBy(Collection<String> groupByColumns);
 
@@ -1459,6 +1506,7 @@ public interface Table extends
      * <p>
      * When the input table is empty, zero output rows are produced.
      */
+    @Override
     @ConcurrentMethod
     Table medianBy();
 

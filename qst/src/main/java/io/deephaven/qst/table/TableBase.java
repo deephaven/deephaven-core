@@ -501,6 +501,246 @@ public abstract class TableBase implements TableSpec {
     }
 
     @Override
+    public final AggregateAllByTable firstBy() {
+        return aggAllBy(AggSpec.first());
+    }
+
+    @Override
+    public final AggregateAllByTable firstBy(String... groupByColumns) {
+        return aggAllBy(AggSpec.first(), groupByColumns);
+    }
+
+    @Override
+    public final AggregateAllByTable firstBy(Selectable... groupByColumns) {
+        return aggAllBy(AggSpec.first(), groupByColumns);
+    }
+
+    @Override
+    public final AggregateAllByTable firstBy(Collection<String> groupByColumns) {
+        return aggAllBy(AggSpec.first(), groupByColumns);
+    }
+
+    @Override
+    public final AggregateAllByTable lastBy() {
+        return aggAllBy(AggSpec.last());
+    }
+
+    @Override
+    public final AggregateAllByTable lastBy(String... groupByColumns) {
+        return aggAllBy(AggSpec.last(), groupByColumns);
+    }
+
+    @Override
+    public final AggregateAllByTable lastBy(Selectable... groupByColumns) {
+        return aggAllBy(AggSpec.last(), groupByColumns);
+    }
+
+    @Override
+    public final AggregateAllByTable lastBy(Collection<String> groupByColumns) {
+        return aggAllBy(AggSpec.last(), groupByColumns);
+    }
+
+    @Override
+    public final AggregateAllByTable minBy() {
+        return aggAllBy(AggSpec.min());
+    }
+
+    @Override
+    public final AggregateAllByTable minBy(String... groupByColumns) {
+        return aggAllBy(AggSpec.min(), groupByColumns);
+    }
+
+    @Override
+    public final AggregateAllByTable minBy(Selectable... groupByColumns) {
+        return aggAllBy(AggSpec.min(), groupByColumns);
+    }
+
+    @Override
+    public final AggregateAllByTable minBy(Collection<String> groupByColumns) {
+        return aggAllBy(AggSpec.min(), groupByColumns);
+    }
+
+    @Override
+    public final AggregateAllByTable maxBy() {
+        return aggAllBy(AggSpec.max());
+    }
+
+    @Override
+    public final AggregateAllByTable maxBy(String... groupByColumns) {
+        return aggAllBy(AggSpec.max(), groupByColumns);
+    }
+
+    @Override
+    public final AggregateAllByTable maxBy(Selectable... groupByColumns) {
+        return aggAllBy(AggSpec.max(), groupByColumns);
+    }
+
+    @Override
+    public final AggregateAllByTable maxBy(Collection<String> groupByColumns) {
+        return aggAllBy(AggSpec.max(), groupByColumns);
+    }
+
+    @Override
+    public final AggregateAllByTable sumBy() {
+        return aggAllBy(AggSpec.sum());
+    }
+
+    @Override
+    public final AggregateAllByTable sumBy(String... groupByColumns) {
+        return aggAllBy(AggSpec.sum(), groupByColumns);
+    }
+
+    @Override
+    public final AggregateAllByTable sumBy(Selectable... groupByColumns) {
+        return aggAllBy(AggSpec.sum(), groupByColumns);
+    }
+
+    @Override
+    public final AggregateAllByTable sumBy(Collection<String> groupByColumns) {
+        return aggAllBy(AggSpec.sum(), groupByColumns);
+    }
+
+    @Override
+    public final AggregateAllByTable avgBy() {
+        return aggAllBy(AggSpec.avg());
+    }
+
+    @Override
+    public final AggregateAllByTable avgBy(String... groupByColumns) {
+        return aggAllBy(AggSpec.avg(), groupByColumns);
+    }
+
+    @Override
+    public final AggregateAllByTable avgBy(Selectable... groupByColumns) {
+        return aggAllBy(AggSpec.avg(), groupByColumns);
+    }
+
+    @Override
+    public final AggregateAllByTable avgBy(Collection<String> groupByColumns) {
+        return aggAllBy(AggSpec.avg(), groupByColumns);
+    }
+
+    @Override
+    public final AggregateAllByTable medianBy() {
+        return aggAllBy(AggSpec.median());
+    }
+
+    @Override
+    public final AggregateAllByTable medianBy(String... groupByColumns) {
+        return aggAllBy(AggSpec.median(), groupByColumns);
+    }
+
+    @Override
+    public final AggregateAllByTable medianBy(Selectable... groupByColumns) {
+        return aggAllBy(AggSpec.median(), groupByColumns);
+    }
+
+    @Override
+    public final AggregateAllByTable medianBy(Collection<String> groupByColumns) {
+        return aggAllBy(AggSpec.median(), groupByColumns);
+    }
+
+    @Override
+    public final AggregateAllByTable stdBy() {
+        return aggAllBy(AggSpec.std());
+    }
+
+    @Override
+    public final AggregateAllByTable stdBy(String... groupByColumns) {
+        return aggAllBy(AggSpec.std(), groupByColumns);
+    }
+
+    @Override
+    public final AggregateAllByTable stdBy(Selectable... groupByColumns) {
+        return aggAllBy(AggSpec.std(), groupByColumns);
+    }
+
+    @Override
+    public final AggregateAllByTable stdBy(Collection<String> groupByColumns) {
+        return aggAllBy(AggSpec.std(), groupByColumns);
+    }
+
+    @Override
+    public final AggregateAllByTable varBy() {
+        return aggAllBy(AggSpec.var());
+    }
+
+    @Override
+    public final AggregateAllByTable varBy(String... groupByColumns) {
+        return aggAllBy(AggSpec.var(), groupByColumns);
+    }
+
+    @Override
+    public final AggregateAllByTable varBy(Selectable... groupByColumns) {
+        return aggAllBy(AggSpec.var(), groupByColumns);
+    }
+
+    @Override
+    public final AggregateAllByTable varBy(Collection<String> groupByColumns) {
+        return aggAllBy(AggSpec.var(), groupByColumns);
+    }
+
+    @Override
+    public final AggregateAllByTable absSumBy() {
+        return aggAllBy(AggSpec.absSum());
+    }
+
+    @Override
+    public final AggregateAllByTable absSumBy(String... groupByColumns) {
+        return aggAllBy(AggSpec.absSum(), groupByColumns);
+    }
+
+    @Override
+    public final AggregateAllByTable absSumBy(Selectable... groupByColumns) {
+        return aggAllBy(AggSpec.absSum(), groupByColumns);
+    }
+
+    @Override
+    public final AggregateAllByTable absSumBy(Collection<String> groupByColumns) {
+        return aggAllBy(AggSpec.absSum(), groupByColumns);
+    }
+
+    @Override
+    public final AggregateAllByTable wsumBy(String weightColumn) {
+        return aggAllBy(AggSpec.wsum(weightColumn));
+    }
+
+    @Override
+    public final AggregateAllByTable wsumBy(String weightColumn, String... groupByColumns) {
+        return aggAllBy(AggSpec.wsum(weightColumn), groupByColumns);
+    }
+
+    @Override
+    public final AggregateAllByTable wsumBy(String weightColumn, Selectable... groupByColumns) {
+        return aggAllBy(AggSpec.wsum(weightColumn), groupByColumns);
+    }
+
+    @Override
+    public final AggregateAllByTable wsumBy(String weightColumn, Collection<String> groupByColumns) {
+        return aggAllBy(AggSpec.wsum(weightColumn), groupByColumns);
+    }
+
+    @Override
+    public final AggregateAllByTable wavgBy(String weightColumn) {
+        return aggAllBy(AggSpec.wavg(weightColumn));
+    }
+
+    @Override
+    public final AggregateAllByTable wavgBy(String weightColumn, String... groupByColumns) {
+        return aggAllBy(AggSpec.wavg(weightColumn), groupByColumns);
+    }
+
+    @Override
+    public final AggregateAllByTable wavgBy(String weightColumn, Selectable... groupByColumns) {
+        return aggAllBy(AggSpec.wavg(weightColumn), groupByColumns);
+    }
+
+    @Override
+    public final AggregateAllByTable wavgBy(String weightColumn, Collection<String> groupByColumns) {
+        return aggAllBy(AggSpec.wavg(weightColumn), groupByColumns);
+    }
+
+    @Override
     public final <V extends TableSchema.Visitor> V walk(V visitor) {
         visitor.visit(this);
         return visitor;
