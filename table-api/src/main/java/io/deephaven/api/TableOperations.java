@@ -573,4 +573,14 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
     TOPS maxBy(Collection<String> groupByColumns);
 
     // -------------------------------------------------------------------------------------------
+
+    TOPS sumBy();
+
+    TOPS sumBy(String... groupByColumns);
+
+    TOPS sumBy(Selectable... groupByColumns);
+
+    TOPS sumBy(Collection<String> groupByColumns);
+
+    // -------------------------------------------------------------------------------------------
 }

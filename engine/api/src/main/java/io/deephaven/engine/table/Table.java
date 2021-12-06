@@ -1045,6 +1045,7 @@ public interface Table extends
      *
      * @param groupByColumns The grouping columns as in {@link Table#groupBy}
      */
+    @Override
     @ConcurrentMethod
     Table sumBy(Selectable... groupByColumns);
 
@@ -1053,6 +1054,7 @@ public interface Table extends
      *
      * @param groupByColumns The grouping columns as in {@link Table#groupBy}
      */
+    @Override
     @ConcurrentMethod
     Table sumBy(String... groupByColumns);
 
@@ -1061,6 +1063,7 @@ public interface Table extends
      *
      * @param groupByColumns The grouping columns as in {@link Table#groupBy}
      */
+    @Override
     @ConcurrentMethod
     Table sumBy(Collection<String> groupByColumns);
 
@@ -1069,6 +1072,7 @@ public interface Table extends
      * <p>
      * When the input table is empty, zero output rows are produced.
      */
+    @Override
     @ConcurrentMethod
     Table sumBy();
 
