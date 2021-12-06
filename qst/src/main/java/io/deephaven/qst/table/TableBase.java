@@ -561,6 +561,26 @@ public abstract class TableBase implements TableSpec {
     }
 
     @Override
+    public final AggregateAllByTable maxBy() {
+        return aggAllBy(AggSpec.max());
+    }
+
+    @Override
+    public final AggregateAllByTable maxBy(String... groupByColumns) {
+        return aggAllBy(AggSpec.max(), groupByColumns);
+    }
+
+    @Override
+    public final AggregateAllByTable maxBy(Selectable... groupByColumns) {
+        return aggAllBy(AggSpec.max(), groupByColumns);
+    }
+
+    @Override
+    public final AggregateAllByTable maxBy(Collection<String> groupByColumns) {
+        return aggAllBy(AggSpec.max(), groupByColumns);
+    }
+
+    @Override
     public final <V extends TableSchema.Visitor> V walk(V visitor) {
         visitor.visit(this);
         return visitor;

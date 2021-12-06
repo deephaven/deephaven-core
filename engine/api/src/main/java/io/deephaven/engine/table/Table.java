@@ -1412,6 +1412,7 @@ public interface Table extends
      *
      * @param groupByColumns The grouping columns as in {@link Table#groupBy} }
      */
+    @Override
     @ConcurrentMethod
     Table maxBy(Selectable... groupByColumns);
 
@@ -1420,6 +1421,7 @@ public interface Table extends
      *
      * @param groupByColumns The grouping columns as in {@link Table#groupBy} }
      */
+    @Override
     @ConcurrentMethod
     Table maxBy(String... groupByColumns);
 
@@ -1428,6 +1430,7 @@ public interface Table extends
      *
      * @param groupByColumns The grouping columns as in {@link Table#groupBy} }
      */
+    @Override
     @ConcurrentMethod
     Table maxBy(Collection<String> groupByColumns);
 
@@ -1436,6 +1439,7 @@ public interface Table extends
      * <p>
      * When the input table is empty, zero output rows are produced.
      */
+    @Override
     @ConcurrentMethod
     Table maxBy();
 

@@ -410,4 +410,24 @@ public abstract class TableOperationsAdapter<TOPS_1 extends TableOperations<TOPS
     public final TOPS_1 minBy(Collection<String> groupByColumns) {
         return adapt(delegate.minBy(groupByColumns));
     }
+
+    @Override
+    public final TOPS_1 maxBy() {
+        return adapt(delegate.maxBy());
+    }
+
+    @Override
+    public final TOPS_1 maxBy(String... groupByColumns) {
+        return adapt(delegate.maxBy(groupByColumns));
+    }
+
+    @Override
+    public final TOPS_1 maxBy(Selectable... groupByColumns) {
+        return adapt(delegate.maxBy(groupByColumns));
+    }
+
+    @Override
+    public final TOPS_1 maxBy(Collection<String> groupByColumns) {
+        return adapt(delegate.maxBy(groupByColumns));
+    }
 }
