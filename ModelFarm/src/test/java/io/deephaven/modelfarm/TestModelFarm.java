@@ -22,7 +22,7 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
 public class TestModelFarm extends TestCase {
 
     private final long testShutdownTimeoutSecs =
-            Configuration.getInstance().getIntegerWithDefault("TestModelFarm.testShutdownTimeoutSecs", 5);
+            Configuration.getInstance().getIntegerWithDefault("TestModelFarm.testShutdownTimeoutSecs", 1);
     private final int nModelFarmThreadsDefault = 8;
 
     /**
