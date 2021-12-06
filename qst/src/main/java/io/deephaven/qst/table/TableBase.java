@@ -541,6 +541,26 @@ public abstract class TableBase implements TableSpec {
     }
 
     @Override
+    public final AggregateAllByTable minBy() {
+        return aggAllBy(AggSpec.min());
+    }
+
+    @Override
+    public final AggregateAllByTable minBy(String... groupByColumns) {
+        return aggAllBy(AggSpec.min(), groupByColumns);
+    }
+
+    @Override
+    public final AggregateAllByTable minBy(Selectable... groupByColumns) {
+        return aggAllBy(AggSpec.min(), groupByColumns);
+    }
+
+    @Override
+    public final AggregateAllByTable minBy(Collection<String> groupByColumns) {
+        return aggAllBy(AggSpec.min(), groupByColumns);
+    }
+
+    @Override
     public final <V extends TableSchema.Visitor> V walk(V visitor) {
         visitor.visit(this);
         return visitor;

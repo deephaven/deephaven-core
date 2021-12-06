@@ -1376,6 +1376,7 @@ public interface Table extends
      *
      * @param groupByColumns The grouping columns as in {@link Table#groupBy}
      */
+    @Override
     @ConcurrentMethod
     Table minBy(Selectable... groupByColumns);
 
@@ -1384,6 +1385,7 @@ public interface Table extends
      *
      * @param groupByColumns The grouping columns as in {@link Table#groupBy}
      */
+    @Override
     @ConcurrentMethod
     Table minBy(String... groupByColumns);
 
@@ -1392,6 +1394,7 @@ public interface Table extends
      *
      * @param groupByColumns The grouping columns as in {@link Table#groupBy}
      */
+    @Override
     @ConcurrentMethod
     Table minBy(Collection<String> groupByColumns);
 
@@ -1400,6 +1403,7 @@ public interface Table extends
      * <p>
      * When the input table is empty, zero output rows are produced.
      */
+    @Override
     @ConcurrentMethod
     Table minBy();
 

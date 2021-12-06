@@ -553,4 +553,14 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
     TOPS lastBy(Collection<String> groupByColumns);
 
     // -------------------------------------------------------------------------------------------
+
+    TOPS minBy();
+
+    TOPS minBy(String... groupByColumns);
+
+    TOPS minBy(Selectable... groupByColumns);
+
+    TOPS minBy(Collection<String> groupByColumns);
+
+    // -------------------------------------------------------------------------------------------
 }
