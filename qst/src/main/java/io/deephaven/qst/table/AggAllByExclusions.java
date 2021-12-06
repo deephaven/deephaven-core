@@ -9,6 +9,7 @@ import io.deephaven.api.agg.spec.AggSpecAvg;
 import io.deephaven.api.agg.spec.AggSpecCountDistinct;
 import io.deephaven.api.agg.spec.AggSpecDistinct;
 import io.deephaven.api.agg.spec.AggSpecFirst;
+import io.deephaven.api.agg.spec.AggSpecFormula;
 import io.deephaven.api.agg.spec.AggSpecGroup;
 import io.deephaven.api.agg.spec.AggSpecLast;
 import io.deephaven.api.agg.spec.AggSpecMax;
@@ -76,6 +77,11 @@ final class AggAllByExclusions implements Visitor {
 
     @Override
     public void visit(AggSpecFirst first) {
+        out = Collections.emptySet();
+    }
+
+    @Override
+    public void visit(AggSpecFormula formula) {
         out = Collections.emptySet();
     }
 

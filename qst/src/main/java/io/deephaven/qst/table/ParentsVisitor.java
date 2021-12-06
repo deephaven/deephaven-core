@@ -269,6 +269,16 @@ public class ParentsVisitor implements Visitor {
         });
     }
 
+    @Override
+    public void visit(SelectDistinctTable selectDistinctTable) {
+        out = single(selectDistinctTable);
+    }
+
+    @Override
+    public void visit(CountByTable countByTable) {
+        out = single(countByTable);
+    }
+
     private static class Search {
 
         private final Predicate<TableSpec> excludePaths;

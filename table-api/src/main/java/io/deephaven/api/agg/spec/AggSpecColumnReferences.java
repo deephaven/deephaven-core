@@ -51,6 +51,11 @@ public class AggSpecColumnReferences implements AggSpec.Visitor {
     }
 
     @Override
+    public void visit(AggSpecFormula formula) {
+        out = Collections.emptySet();
+    }
+
+    @Override
     public void visit(AggSpecLast last) {
         out = Collections.emptySet();
     }

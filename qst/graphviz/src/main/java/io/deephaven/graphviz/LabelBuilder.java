@@ -4,6 +4,7 @@ import io.deephaven.api.Strings;
 import io.deephaven.qst.table.AggregateAllByTable;
 import io.deephaven.qst.table.AggregationTable;
 import io.deephaven.qst.table.AsOfJoinTable;
+import io.deephaven.qst.table.CountByTable;
 import io.deephaven.qst.table.EmptyTable;
 import io.deephaven.qst.table.ExactJoinTable;
 import io.deephaven.qst.table.HeadTable;
@@ -14,6 +15,7 @@ import io.deephaven.qst.table.Join;
 import io.deephaven.qst.table.JoinTable;
 import io.deephaven.qst.table.NaturalJoinTable;
 import io.deephaven.qst.table.ReverseAsOfJoinTable;
+import io.deephaven.qst.table.SelectDistinctTable;
 import io.deephaven.qst.table.SelectTable;
 import io.deephaven.qst.table.SelectableTable;
 import io.deephaven.qst.table.TableSpec;
@@ -162,6 +164,20 @@ public class LabelBuilder extends TableVisitorGeneric {
                 sb.append("InMemoryKeyBackedInputTable(...)");
             }
         });
+    }
+
+    @Override
+    public void visit(SelectDistinctTable selectDistinctTable) {
+        sb.append("selectDistinct(");
+        append(Strings::of, selectDistinctTable.groupByColumns(), sb);
+        sb.append(')');
+    }
+
+    @Override
+    public void visit(CountByTable countByTable) {
+        sb.append("countBy(").append(countByTable.countName()).append(',');
+        append(Strings::of, countByTable.groupByColumns(), sb);
+        sb.append(')');
     }
 
     private void join(String name, Join j) {

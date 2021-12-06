@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.api.agg.spec.AggSpecFormula",
+ "methods": {
+  "formula": ":return: java.lang.String",
+  "formulaParam": ":return: java.lang.String",
+  "of": "*Overload 1*  \n  :param formula: java.lang.String\n  :return: io.deephaven.api.agg.spec.AggSpecFormula\n  \n*Overload 2*  \n  :param formula: java.lang.String\n  :param formulaParam: java.lang.String\n  :return: io.deephaven.api.agg.spec.AggSpecFormula",
+  "walk": "Note: Java generics information - <V extends io.deephaven.api.agg.spec.AggSpec.Visitor>\n\n:param visitor: V\n:return: V"
+ },
+ "path": "io.deephaven.api.agg.spec.AggSpecFormula",
+ "typeName": "class"
+}

@@ -88,6 +88,9 @@ class AggregateAllExample extends FlightExampleBase {
         final TableSpec spec = InMemoryKeyBackedInputTable.of(TableHeader.of(inputKey, groupKey, u, v, w, x, y, z),
                 Collections.singletonList(inputKey.name()));
         builder.putMap("base", spec);
+        builder.putMap("countBy", spec.countBy("Count", groupKey.name()).sort(groupKey.name()));
+        builder.putMap("selectDistinct", spec.selectDistinct(groupKey.name()).sort(groupKey.name()));
+
         // todo: countBy
         for (AggSpec aggSpec : aggSpecs()) {
             final String name = aggSpec.toString()
@@ -96,7 +99,7 @@ class AggregateAllExample extends FlightExampleBase {
                     .replace('}', '_')
                     .replace(' ', '_')
                     .replace('.', '_');
-            final TableSpec tableSpec = spec.aggAllBy(aggSpec, groupKey.name());
+            final TableSpec tableSpec = spec.aggAllBy(aggSpec, groupKey.name()).sort(groupKey.name());
             builder.putMap(name, tableSpec);
         }
         final LabeledTables tables = builder.build();

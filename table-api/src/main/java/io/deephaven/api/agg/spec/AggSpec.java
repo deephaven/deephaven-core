@@ -42,6 +42,14 @@ public interface AggSpec {
         return AggSpecFirst.of();
     }
 
+    static AggSpecFormula formula(String formula) {
+        return AggSpecFormula.of(formula);
+    }
+
+    static AggSpecFormula formula(String formula, String formulaParam) {
+        return AggSpecFormula.of(formula, formulaParam);
+    }
+
     static AggSpecGroup group() {
         return AggSpecGroup.of();
     }
@@ -146,6 +154,8 @@ public interface AggSpec {
         void visit(AggSpecAvg avg);
 
         void visit(AggSpecFirst first);
+
+        void visit(AggSpecFormula formula);
 
         void visit(AggSpecLast last);
 
