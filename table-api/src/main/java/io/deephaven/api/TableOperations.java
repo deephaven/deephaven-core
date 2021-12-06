@@ -613,4 +613,14 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
     TOPS stdBy(Collection<String> groupByColumns);
 
     // -------------------------------------------------------------------------------------------
+
+    TOPS varBy();
+
+    TOPS varBy(String... groupByColumns);
+
+    TOPS varBy(Selectable... groupByColumns);
+
+    TOPS varBy(Collection<String> groupByColumns);
+
+    // -------------------------------------------------------------------------------------------
 }

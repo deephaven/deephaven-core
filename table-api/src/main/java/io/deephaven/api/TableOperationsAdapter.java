@@ -510,4 +510,24 @@ public abstract class TableOperationsAdapter<TOPS_1 extends TableOperations<TOPS
     public final TOPS_1 stdBy(Collection<String> groupByColumns) {
         return adapt(delegate.stdBy(groupByColumns));
     }
+
+    @Override
+    public final TOPS_1 varBy() {
+        return adapt(delegate.varBy());
+    }
+
+    @Override
+    public final TOPS_1 varBy(String... groupByColumns) {
+        return adapt(delegate.varBy(groupByColumns));
+    }
+
+    @Override
+    public final TOPS_1 varBy(Selectable... groupByColumns) {
+        return adapt(delegate.varBy(groupByColumns));
+    }
+
+    @Override
+    public final TOPS_1 varBy(Collection<String> groupByColumns) {
+        return adapt(delegate.varBy(groupByColumns));
+    }
 }
