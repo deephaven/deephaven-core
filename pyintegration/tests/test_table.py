@@ -24,6 +24,13 @@ class TableTestCase(BaseTestCase):
     #
     # Table operation category: Select
     #
+    def test_eq(self):
+        t = self.test_table.select()
+        self.assertEqual(t, self.test_table)
+
+        t = self.test_table.where(["a > 500"])
+        self.assertNotEqual(t, self.test_table)
+
     def test_drop_columns(self):
         column_names = [f.name for f in self.test_table.columns]
         result_table = self.test_table.drop_columns(cols=column_names[:-1])
