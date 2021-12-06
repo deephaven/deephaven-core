@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.uri.DeephavenUri",
+ "methods": {
+  "isValidScheme": ":param scheme: java.lang.String\n:return: boolean"
+ },
+ "path": "io.deephaven.uri.DeephavenUri",
+ "text": "A Deephaven URI is a structure URI that has a Deephaven-specific scheme, either dh or dh+plain.",
+ "typeName": "interface"
+}

@@ -1,0 +1,10 @@
+plugins {
+    id 'java-library'
+}
+
+description 'Engine Base: Exposes a few classes needed by both engine-tuplesource and engine-table'
+
+dependencies {
+    api project(':engine-rowset'),
+            project(':engine-api')
+}

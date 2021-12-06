@@ -1,5 +1,7 @@
 project(':deephaven-jpy') {
 
+  evaluationDependsOn ':docker-java-and-python'
+
   apply plugin: 'com.bmuschko.docker-remote-api'
 
   test {
@@ -24,24 +26,18 @@ project(':deephaven-jpy') {
   // For OSS, we need to currently move fast, and will prefer to make edits directly in py/jpy.
   // These can be backported to jpy proper in the future if necessary.
 
-  task prepareDocker(type: Sync) {
-    from(project.projectDir) {
-      exclude 'build'
+  Docker.registerDockerTask(project, 'buildWheel') {
+    copyIn {
+      from(project.projectDir) {
+        exclude 'build'
+      }
     }
-    into 'build/docker'
-  }
-  Docker.registerDockerImage(project, 'buildDockerForRuntime') {
-    dependsOn prepareDocker
-    buildArgs.put('DEEPHAVEN_VERSION', "${project.version}")
-    images.add('deephaven/java-and-python:local-build')
-    target.set('runtime_reqs')
-  }
-
-  Docker.registerDockerImage(project, 'buildDockerForWheel') {
-    dependsOn prepareDocker
-    buildArgs.put('DEEPHAVEN_VERSION', "${project.version}")
-    images.add('deephaven/deephaven-jpy-wheel:local-build')
-
-    target.set('build')
+    parentContainers = [ project(':docker-java-and-python').tasks.findByName('buildDocker') ]
+    buildArgs = [ DEEPHAVEN_VERSION: project.version.toString() ]
+    imageName = 'deephaven/deephaven-jpy-wheel:local-build'
+    containerOutPath = '/usr/src/app/dist'
+    copyOut {
+      into 'build/deephaven-jpy-wheel'
+    }
   }
 }

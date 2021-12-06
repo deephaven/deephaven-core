@@ -2,6 +2,6 @@
  "className": "io.deephaven.util.QueryConstants",
  "methods": {},
  "path": "io.deephaven.util.QueryConstants",
- "text": "Constants for null and infinite values within the Deephaven engine.",
+ "text": "Constants for primitive types within the Deephaven engine. These constants include null values, ranges of values,\n infinite values, and NaN values.",
  "typeName": "class"
 }

@@ -1,0 +1,15 @@
+{
+ "className": "io.deephaven.vector.ObjectVectorSlice",
+ "methods": {
+  "get": ":param index: long\n:return: ObjectVectorSlice.T",
+  "getComponentType": ":return: java.lang.Class<ObjectVectorSlice.T>",
+  "getDirect": "Return a version of this Vector that is flattened out to only reference memory.\n\n:return: io.deephaven.vector.ObjectVector<ObjectVectorSlice.T>",
+  "isEmpty": ":return: boolean",
+  "size": "The size of this data structure.\n\n:return: (long) The size",
+  "subVector": ":param fromIndexInclusive: long\n:param toIndexExclusive: long\n:return: io.deephaven.vector.ObjectVector<ObjectVectorSlice.T>",
+  "subVectorByPositions": ":param positions: long[]\n:return: io.deephaven.vector.ObjectVector<ObjectVectorSlice.T>",
+  "toArray": ":return: ObjectVectorSlice.T[]"
+ },
+ "path": "io.deephaven.vector.ObjectVectorSlice",
+ "typeName": "class"
+}

@@ -1,8 +1,8 @@
 package io.deephaven.benchmarking.impl;
 
-import io.deephaven.db.tables.Table;
-import io.deephaven.db.tables.utils.TableTools;
-import io.deephaven.db.v2.QueryTableTestBase;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.util.TableTools;
+import io.deephaven.engine.table.impl.QueryTableTestBase;
 import io.deephaven.benchmarking.BenchmarkTable;
 import io.deephaven.benchmarking.BenchmarkTableBuilder;
 import io.deephaven.benchmarking.BenchmarkTools;
@@ -75,7 +75,7 @@ public class TestTableGeneration extends QueryTableTestBase {
         final Table resultTable = BenchmarkTools.applySparsity(bt.getTable(), 2000, 1, 0);
 
         assertEquals(2000, resultTable.size());
-        assertTrue(resultTable.getIndex().lastKey() > 100000);
+        assertTrue(resultTable.getRowSet().lastRowKey() > 100000);
         // Make sure we can generate more
         bt.cleanup();
     }

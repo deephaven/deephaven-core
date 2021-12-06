@@ -73,6 +73,10 @@ public class OperationHelper {
                 return Stream.of(op.getFetchPandasTable().getSourceId());
             case APPLY_PREVIEW_COLUMNS:
                 return Stream.of(op.getApplyPreviewColumns().getSourceId());
+            case CREATE_INPUT_TABLE:
+                return op.getCreateInputTable().hasSourceTableId()
+                        ? Stream.of(op.getCreateInputTable().getSourceTableId())
+                        : Stream.empty();
             case OP_NOT_SET:
                 throw new IllegalStateException("Operation id not set");
             default:

@@ -197,8 +197,8 @@ public:
   static Aggregate absSum(std::vector<std::string> columnSpecs);
 
   template<typename ...Args>
-  static Aggregate array(Args &&... args);
-  static Aggregate array(std::vector<std::string> columnSpecs);
+  static Aggregate group(Args &&... args);
+  static Aggregate group(std::vector<std::string> columnSpecs);
 
   template<typename ...Args>
   static Aggregate avg(Args &&... args);
@@ -277,8 +277,8 @@ Aggregate aggAbsSum(Args &&... args) {
 }
 
 template<typename ...Args>
-Aggregate aggArray(Args &&... args) {
-  return Aggregate::array(std::forward<Args>(args)...);
+Aggregate aggGroup(Args &&... args) {
+  return Aggregate::group(std::forward<Args>(args)...);
 }
 
 template<typename ...Args>
@@ -962,7 +962,7 @@ public:
    * the columns in `columnsToMatch`, and columns from `rightSide` are brought in and optionally
    * renamed by `columnsToAdd`. Example:
    * @code
-   * t1.naturalJoin({"Col1", "Col2"}, {"Col3", "NewCol=Col4"})
+   * t1.exactJoin({"Col1", "Col2"}, {"Col3", "NewCol=Col4"})
    * @endcode
    * @param rightSide The table to join with this table
    * @param columnsToMatch The columns to join on
@@ -983,34 +983,6 @@ public:
    * @return
    */
   TableHandle exactJoin(const TableHandle &rightSide, std::vector<MatchWithColumn> columnsToMatch,
-      std::vector<SelectColumn> columnsToAdd) const;
-
-  /**
-   * Creates a new table by left joining this table with `rightSide`. The tables are joined by
-   * the columns in `columnsToMatch`, and columns from `rightSide` are brought in and optionally
-   * renamed by `columnsToAdd`. Example:
-   * @code
-   * t1.naturalJoin({"Col1", "Col2"}, {"Col3", "NewCol=Col4"})
-   * @endcode
-   * @param rightSide The table to join with this table
-   * @param columnsToMatch The columns to join on
-   * @param columnsToAdd The columns from the right side to add, and possibly rename.
-   * @return A TableHandle referencing the new table
-   */
-  TableHandle leftJoin(const TableHandle &rightSide, std::vector<std::string> columnsToMatch,
-      std::vector<std::string> columnsToAdd) const;
-  /**
-   * The fluent version of leftJoin(const TableHandle &, std::vector<std::string>, std::vector<std::string>) const.
-   * @code
-   * t1.leftJoin(col1, col2}, {col3, col4.as("NewCol"})
-   * @endcode
-
-   * @param rightSide The table to join with this table
-   * @param columnsToMatch The columns to join on
-   * @param columnsToAdd The columns from the right side to add, and possibly rename.
-   * @return
-   */
-  TableHandle leftJoin(const TableHandle &rightSide, std::vector<MatchWithColumn> columnsToMatch,
       std::vector<SelectColumn> columnsToAdd) const;
 
   /**
@@ -1174,11 +1146,11 @@ Aggregate Aggregate::absSum(Args &&... args) {
 }
 
 template<typename ...Args>
-Aggregate Aggregate::array(Args &&... args) {
+Aggregate Aggregate::group(Args &&... args) {
   std::vector<std::string> columnSpecs = {
       internal::ConvertToString::toString(std::forward<Args>(args))...
   };
-  return array(std::move(columnSpecs));
+  return group(std::move(columnSpecs));
 }
 
 template<typename ...Args>

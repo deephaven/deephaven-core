@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.engine.table.impl.sources.regioned.ColumnRegionObject$DictionaryKeysWrapper",
+ "methods": {
+  "create": ":param parameters: io.deephaven.engine.table.impl.sources.regioned.RegionedPageStore.Parameters\n:param regionIndex: int\n:param sourceRegion: io.deephaven.engine.table.impl.sources.regioned.ColumnRegionObject<?,?>\n:return: io.deephaven.engine.table.impl.sources.regioned.ColumnRegionLong<io.deephaven.engine.table.impl.chunkattributes.DictionaryKeys>",
+  "fillChunkAppend": "Appends the values referenced by orderKeys onto destination. orderKeys are assumed to\n be entirely contained on this Page.\n\n:param context: io.deephaven.engine.table.ChunkSource.FillContext\n:param destination: io.deephaven.chunk.WritableChunk<? superio.deephaven.engine.table.impl.chunkattributes.DictionaryKeys>\n:param rowSequence: io.deephaven.engine.rowset.RowSequence",
+  "getLong": "Get a single long from this region.\n\n*Overload 1*  \n  :param elementIndex: (long) - Element row key in the table's address space\n  :return: (long) The long value at the specified element row key\n  \n*Overload 2*  \n  :param context: (io.deephaven.engine.table.ChunkSource.FillContext) - A RegionContextHolder to enable resource caching where suitable, with current\n                       region index pointing to this region\n  :param elementIndex: (long) - Element row key in the table's address space\n  :return: (long) The long value at the specified element row key",
+  "mask": "This mask is applied to RowSequence which are passed into\n ChunkSource.getChunk(ChunkSource.GetContext, RowSequence) and\n ChunkSource.fillChunk(ChunkSource.FillContext, WritableChunk, RowSequence). This allows the PagingChunkSources to be cached, and reused even if they are properly relocated in key space.\n\n:return: (long) the mask for this page, which must be a bitmask representing the some number of lower order bits of a\n         long."
+ },
+ "path": "io.deephaven.engine.table.impl.sources.regioned.ColumnRegionObject.DictionaryKeysWrapper",
+ "typeName": "class"
+}

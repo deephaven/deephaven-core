@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.api.agg.spec.AggSpecMedian",
+ "methods": {
+  "averageMedian": ":return: boolean",
+  "of": "*Overload 1*  \n  :return: io.deephaven.api.agg.spec.AggSpecMedian\n  \n*Overload 2*  \n  :param averageMedian: boolean\n  :return: io.deephaven.api.agg.spec.AggSpecMedian",
+  "walk": "Note: Java generics information - <V extends io.deephaven.api.agg.spec.AggSpec.Visitor>\n\n:param visitor: V\n:return: V"
+ },
+ "path": "io.deephaven.api.agg.spec.AggSpecMedian",
+ "typeName": "class"
+}

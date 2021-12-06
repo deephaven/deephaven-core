@@ -6,13 +6,13 @@ import dagger.Module;
 import dagger.Provides;
 import dagger.multibindings.IntoSet;
 import io.deephaven.base.verify.Assert;
-import io.deephaven.db.tables.Table;
-import io.deephaven.db.tables.live.LiveTableMonitor;
-import io.deephaven.db.tables.utils.TableDiff;
-import io.deephaven.db.tables.utils.TableTools;
-import io.deephaven.db.util.AbstractScriptSession;
-import io.deephaven.db.util.NoLanguageDeephavenSession;
-import io.deephaven.db.util.liveness.LivenessScopeStack;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.util.TableDiff;
+import io.deephaven.engine.util.TableTools;
+import io.deephaven.engine.util.AbstractScriptSession;
+import io.deephaven.engine.util.NoLanguageDeephavenSession;
+import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.grpc_api.arrow.FlightServiceGrpcBinding;
 import io.deephaven.grpc_api.auth.AuthContextModule;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
@@ -26,11 +26,15 @@ import io.deephaven.grpc_api.session.SessionState;
 import io.deephaven.grpc_api.session.TicketResolver;
 import io.deephaven.grpc_api.util.FlightExportTicketHelper;
 import io.deephaven.grpc_api.util.Scheduler;
+import io.deephaven.grpc_api.util.ScopeTicketHelper;
 import io.deephaven.proto.backplane.grpc.HandshakeRequest;
 import io.deephaven.proto.backplane.grpc.HandshakeResponse;
 import io.deephaven.proto.backplane.grpc.SessionServiceGrpc;
 import io.deephaven.util.SafeCloseable;
-import io.grpc.*;
+import io.grpc.ManagedChannel;
+import io.grpc.ManagedChannelBuilder;
+import io.grpc.Server;
+import io.grpc.ServerInterceptor;
 import io.grpc.netty.NettyServerBuilder;
 import org.apache.arrow.flight.*;
 import org.apache.arrow.flight.impl.Flight;
@@ -247,7 +251,7 @@ public class FlightMessageRoundTripTest {
         assertRoundTripDataEqual(TableTools.emptyTable(10).update("empty=\"\""));
         assertRoundTripDataEqual(TableTools.emptyTable(10).update("empty=0"));
 
-        // non-flat index
+        // non-flat RowSet
         assertRoundTripDataEqual(TableTools.emptyTable(10).where("i % 2 == 0").update("I=i"));
 
         // all null values in columns
@@ -259,13 +263,56 @@ public class FlightMessageRoundTripTest {
         assertRoundTripDataEqual(
                 TableTools.emptyTable(10).update("empty= ((i % 2) == 0) ? String.valueOf(i) : (String)null"));
 
-        // list columns TODO(#755): support for DBArray
-        // assertRoundTripDataEqual(TableTools.emptyTable(5).update("A=i").by().join(TableTools.emptyTable(5)));
+        // list columns TODO(#755): support for Vector
+        // assertRoundTripDataEqual(TableTools.emptyTable(5).update("A=i").groupBy().join(TableTools.emptyTable(5)));
     }
 
     @Test
     public void testTimestampColumn() throws InterruptedException, ExecutionException {
-        assertRoundTripDataEqual(TableTools.emptyTable(10).update("tm = DBDateTime.now()"));
+        assertRoundTripDataEqual(TableTools.emptyTable(10).update("tm = DateTime.now()"));
+    }
+
+    @Test
+    public void testStringCol() throws InterruptedException, ExecutionException {
+        assertRoundTripDataEqual(TableTools.emptyTable(10).update("S = \"test\""));
+        assertRoundTripDataEqual(TableTools.emptyTable(10).update("S = new String[] {\"test\", \"42\"}"));
+        assertRoundTripDataEqual(TableTools.emptyTable(10).update("S = new String[][] {new String[] {\"t1\"}}"));
+
+        assertRoundTripDataEqual(TableTools.emptyTable(10).update("S = new String[][][] {" +
+                "null, new String[][] {" +
+                "   null, " +
+                "   new String[] {" +
+                "       null, \"elem_1_1_1\"" +
+                "}}, new String[][] {" +
+                "   null, " +
+                "   new String[] {" +
+                "       null, \"elem_2_1_1\"" +
+                "   }, new String[] {" +
+                "       null, \"elem_2_2_1\", \"elem_2_2_2\"" +
+                "}}, new String[][] {" +
+                "   null, " +
+                "   new String[] {" +
+                "       null, \"elem_3_1_1\"" +
+                "   }, new String[] {" +
+                "       null, \"elem_3_2_1\", \"elem_3_2_2\"" +
+                "   }, new String[] {" +
+                "       null, \"elem_3_3_1\", \"elem_3_3_2\", \"elem_3_3_3\"" +
+                "}}}"));
+    }
+
+    @Test
+    public void testLongCol() throws InterruptedException, ExecutionException {
+        assertRoundTripDataEqual(TableTools.emptyTable(10).update("L = ii"));
+        assertRoundTripDataEqual(TableTools.emptyTable(10).update("L = new long[] {ii}"));
+        assertRoundTripDataEqual(TableTools.emptyTable(10).update("L = new long[][] {new long[] {ii}}"));
+        assertRoundTripDataEqual(TableTools.emptyTable(10).update("L = (Long)ii"));
+        assertRoundTripDataEqual(TableTools.emptyTable(10).update("L = new Long[] {ii}"));
+        assertRoundTripDataEqual(TableTools.emptyTable(10).update("L = new Long[] {ii, null}"));
+        assertRoundTripDataEqual(TableTools.emptyTable(10).update("L = new Long[][] {new Long[] {ii}}"));
+        assertRoundTripDataEqual(TableTools.emptyTable(10).update("L = new Long[][] {null, new Long[] {null, ii}}"));
+        assertRoundTripDataEqual(TableTools.emptyTable(10).update("L = io.deephaven.util.QueryConstants.NULL_LONG"));
+        assertRoundTripDataEqual(
+                TableTools.emptyTable(10).update("L = new long[] {0, -1, io.deephaven.util.QueryConstants.NULL_LONG}"));
     }
 
     @Test
@@ -274,7 +321,7 @@ public class FlightMessageRoundTripTest {
         final String tickingTableName = "flightInfoTestTicking";
         final Table table = TableTools.emptyTable(10).update("I = i");
 
-        final Table tickingTable = LiveTableMonitor.DEFAULT.sharedLock()
+        final Table tickingTable = UpdateGraphProcessor.DEFAULT.sharedLock()
                 .computeLocked(() -> TableTools.timeTable(1_000_000).update("I = i"));
 
         // stuff table into the scope
@@ -305,7 +352,7 @@ public class FlightMessageRoundTripTest {
         final String tickingTableName = "flightInfoTestTicking";
         final Table table = TableTools.emptyTable(10).update("I = i");
 
-        final Table tickingTable = LiveTableMonitor.DEFAULT.sharedLock()
+        final Table tickingTable = UpdateGraphProcessor.DEFAULT.sharedLock()
                 .computeLocked(() -> TableTools.timeTable(1_000_000).update("I = i"));
 
         try (final SafeCloseable ignored = LivenessScopeStack.open(scriptSession, false)) {
@@ -335,7 +382,7 @@ public class FlightMessageRoundTripTest {
     }
 
     private static FlightDescriptor arrowFlightDescriptorForName(String name) {
-        return FlightDescriptor.path(ScopeTicketResolver.descriptorForName(name).getPathList());
+        return FlightDescriptor.path(ScopeTicketHelper.nameToPath(name));
     }
 
     @Test
@@ -358,7 +405,7 @@ public class FlightMessageRoundTripTest {
     }
 
     private void assertInfoMatchesTable(FlightInfo info, Table table) {
-        if (table.isLive()) {
+        if (table.isRefreshing()) {
             Assert.eq(info.getRecords(), "info.getRecords()", -1);
         } else {
             Assert.eq(info.getRecords(), "info.getRecords()", table.size(), "table.size()");
@@ -373,7 +420,7 @@ public class FlightMessageRoundTripTest {
         Assert.eq(schema.getFields().size(), "schema.getFields().size()", table.getColumns().length,
                 "table.getColumns().length");
         Assert.equals(BarrageUtil.convertArrowSchema(schema).tableDef,
-                "BarrageSchemaUtil.schemaToTableDefinition(schema)",
+                "BarrageUtil.convertArrowSchema(schema)",
                 table.getDefinition(), "table.getDefinition()");
     }
 

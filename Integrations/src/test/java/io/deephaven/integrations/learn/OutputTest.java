@@ -1,5 +1,6 @@
 package io.deephaven.integrations.learn;
 
+import io.deephaven.api.util.NameValidator;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -33,7 +34,7 @@ public class OutputTest {
         Assert.assertEquals(type, output.getType());
     }
 
-    @Test(expected = io.deephaven.db.tables.utils.NameValidator.InvalidNameException.class)
+    @Test(expected = NameValidator.InvalidNameException.class)
     public void invalidColumnNameTest() {
         final String colName = " Outcol";
         final Function<Object[], Object> func = args -> args;
@@ -71,6 +72,7 @@ public class OutputTest {
 
         Assert.assertEquals("Output{" +
                 "colName='" + colName + '\'' +
+                ", isPythonScatterFunc=" + output.isPythonScatterFunc() +
                 ", scatterFunc=" + func +
                 ", type='" + type + '\'' +
                 '}', output.toString());

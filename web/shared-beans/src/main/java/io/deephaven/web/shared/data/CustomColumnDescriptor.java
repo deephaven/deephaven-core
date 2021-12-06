@@ -1,10 +1,7 @@
 package io.deephaven.web.shared.data;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 /**
  * We still send plain strings to the server and receive plain strings from the client.
@@ -24,7 +21,7 @@ public class CustomColumnDescriptor implements Serializable {
     /**
      * Extracts the column name from a given column expression.
      *
-     * Based on the logic in io.deephaven.db.tables.select.SelectColumnFactory, the valid expressions take the form:
+     * Based on the logic in io.deephaven.engine.tables.select.SelectColumnFactory, the valid expressions take the form:
      * 
      * <pre>
      *     <ColumnName>
@@ -95,9 +92,14 @@ public class CustomColumnDescriptor implements Serializable {
     }
 
     public static List<CustomColumnDescriptor> from(String[] newCustomColumns) {
+        final Set<String> descriptorNames = new HashSet<>();
         final List<CustomColumnDescriptor> list = new ArrayList<>();
         for (String col : newCustomColumns) {
-            list.add(new CustomColumnDescriptor().setExpression(col));
+            CustomColumnDescriptor descriptor = new CustomColumnDescriptor().setExpression(col);
+            if (!descriptorNames.add(descriptor.getName())) {
+                throw new IllegalArgumentException("Duplicate custom column: " + descriptor.getName());
+            }
+            list.add(descriptor);
         }
         return list;
     }

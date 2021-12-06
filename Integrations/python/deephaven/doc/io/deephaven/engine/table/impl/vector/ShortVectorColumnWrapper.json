@@ -1,0 +1,12 @@
+{
+ "className": "io.deephaven.engine.table.impl.vector.ShortVectorColumnWrapper",
+ "methods": {
+  "get": ":param i: long\n:return: short",
+  "size": "The size of this data structure.\n\n:return: (long) The size",
+  "subVector": ":param fromIndex: long\n:param toIndex: long\n:return: io.deephaven.vector.ShortVector",
+  "subVectorByPositions": ":param positions: long[]\n:return: io.deephaven.vector.ShortVector",
+  "toArray": "*Overload 1*  \n  :return: short[]\n  \n*Overload 2*  \n  :param shouldBeNullIfOutofBounds: boolean\n  :param maxSize: int\n  :return: short[]"
+ },
+ "path": "io.deephaven.engine.table.impl.vector.ShortVectorColumnWrapper",
+ "typeName": "class"
+}

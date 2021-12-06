@@ -3,11 +3,12 @@ package io.deephaven.grpc_api.table.ops;
 import com.google.rpc.Code;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.CollectionUtil;
-import io.deephaven.db.tables.DataColumn;
-import io.deephaven.db.tables.Table;
-import io.deephaven.db.tables.select.SelectColumnFactory;
-import io.deephaven.db.v2.by.ComboAggregateFactory;
-import io.deephaven.db.v2.select.SelectColumn;
+import io.deephaven.engine.table.DataColumn;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.impl.QueryTable;
+import io.deephaven.engine.table.impl.select.SelectColumnFactory;
+import io.deephaven.engine.table.impl.by.AggregationFactory;
+import io.deephaven.engine.table.impl.select.SelectColumn;
 import io.deephaven.grpc_api.session.SessionState;
 import io.deephaven.grpc_api.table.validation.ColumnExpressionValidator;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
@@ -124,8 +125,8 @@ public class ComboAggregateGrpcImpl extends GrpcTableOperation<ComboAggregateReq
                 return parent.sumBy(groupByColumns);
             case ABS_SUM:
                 return parent.absSumBy(groupByColumns);
-            case ARRAY:
-                return parent.by(groupByColumns);
+            case GROUP:
+                return parent.groupBy(Arrays.asList(groupByColumns));
             case AVG:
                 return parent.avgBy(groupByColumns);
             case COUNT:
@@ -156,8 +157,8 @@ public class ComboAggregateGrpcImpl extends GrpcTableOperation<ComboAggregateReq
         final Set<String> groupByColumnSet =
                 Arrays.stream(groupByColumns).map(SelectColumn::getName).collect(Collectors.toSet());
 
-        final ComboAggregateFactory.ComboBy[] comboBy =
-                new ComboAggregateFactory.ComboBy[aggregates.size()];
+        final AggregationFactory.AggregationElement[] aggregationElement =
+                new AggregationFactory.AggregationElement[aggregates.size()];
 
         for (int i = 0; i < aggregates.size(); i++) {
             final ComboAggregateRequest.Aggregate agg = aggregates.get(i);
@@ -177,44 +178,44 @@ public class ComboAggregateGrpcImpl extends GrpcTableOperation<ComboAggregateReq
                 ColumnExpressionValidator.validateColumnExpressions(matchPairExpressions, matchPairs, parent);
             }
 
-            final Supplier<ComboAggregateFactory.ComboBy> comboMapper = () -> {
+            final Supplier<AggregationFactory.AggregationElement> comboMapper = () -> {
                 switch (agg.getType()) {
                     case SUM:
-                        return ComboAggregateFactory.AggSum(matchPairs);
+                        return AggregationFactory.AggSum(matchPairs);
                     case ABS_SUM:
-                        return ComboAggregateFactory.AggAbsSum(matchPairs);
-                    case ARRAY:
-                        return ComboAggregateFactory.AggArray(matchPairs);
+                        return AggregationFactory.AggAbsSum(matchPairs);
+                    case GROUP:
+                        return AggregationFactory.AggGroup(matchPairs);
                     case AVG:
-                        return ComboAggregateFactory.AggAvg(matchPairs);
+                        return AggregationFactory.AggAvg(matchPairs);
                     case COUNT:
-                        return ComboAggregateFactory.AggCount(agg.getColumnName());
+                        return AggregationFactory.AggCount(agg.getColumnName());
                     case FIRST:
-                        return ComboAggregateFactory.AggFirst(matchPairs);
+                        return AggregationFactory.AggFirst(matchPairs);
                     case LAST:
-                        return ComboAggregateFactory.AggLast(matchPairs);
+                        return AggregationFactory.AggLast(matchPairs);
                     case MIN:
-                        return ComboAggregateFactory.AggMin(matchPairs);
+                        return AggregationFactory.AggMin(matchPairs);
                     case MAX:
-                        return ComboAggregateFactory.AggMax(matchPairs);
+                        return AggregationFactory.AggMax(matchPairs);
                     case MEDIAN:
-                        return ComboAggregateFactory.AggMed(matchPairs);
+                        return AggregationFactory.AggMed(matchPairs);
                     case PERCENTILE:
-                        return ComboAggregateFactory.AggPct(agg.getPercentile(), agg.getAvgMedian(), matchPairs);
+                        return AggregationFactory.AggPct(agg.getPercentile(), agg.getAvgMedian(), matchPairs);
                     case STD:
-                        return ComboAggregateFactory.AggStd(matchPairs);
+                        return AggregationFactory.AggStd(matchPairs);
                     case VAR:
-                        return ComboAggregateFactory.AggVar(matchPairs);
+                        return AggregationFactory.AggVar(matchPairs);
                     case WEIGHTED_AVG:
-                        return ComboAggregateFactory.AggWAvg(agg.getColumnName(), matchPairs);
+                        return AggregationFactory.AggWAvg(agg.getColumnName(), matchPairs);
                     default:
                         throw new UnsupportedOperationException("Unsupported aggregate: " + agg.getType());
                 }
             };
 
-            comboBy[i] = comboMapper.get();
+            aggregationElement[i] = comboMapper.get();
         }
 
-        return parent.by(ComboAggregateFactory.AggCombo(comboBy), groupByColumns);
+        return ((QueryTable) parent).by(AggregationFactory.AggCombo(aggregationElement), groupByColumns);
     }
 }

@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.table.impl.LocalTableMap$PopulateCallback",
+ "methods": {
+  "populate": ":param key: java.lang.Object"
+ },
+ "path": "io.deephaven.engine.table.impl.LocalTableMap.PopulateCallback",
+ "text": "The TableMaps don't know how to create empty tables for themselves, if the TableMap needs to be pre-populated, it\n must pass this callback into the constructor. When the populateKeys call on the TableMap is invoked, the populate\n function is called for each of the new keys.",
+ "typeName": "interface"
+}

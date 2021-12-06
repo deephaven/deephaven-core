@@ -6,12 +6,13 @@ package io.deephaven.grpc_api.session;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.AssertionFailure;
-import io.deephaven.db.tables.utils.DBTimeUtils;
-import io.deephaven.db.util.liveness.LivenessArtifact;
-import io.deephaven.db.util.liveness.LivenessReferent;
-import io.deephaven.db.util.liveness.LivenessScope;
-import io.deephaven.db.util.liveness.LivenessScopeStack;
-import io.deephaven.db.util.liveness.LivenessStateException;
+import io.deephaven.time.DateTimeUtils;
+import io.deephaven.engine.liveness.LivenessArtifact;
+import io.deephaven.engine.liveness.LivenessReferent;
+import io.deephaven.engine.liveness.LivenessScope;
+import io.deephaven.engine.liveness.LivenessScopeStack;
+import io.deephaven.engine.liveness.LivenessStateException;
+import io.deephaven.grpc_api.util.ExportTicketHelper;
 import io.deephaven.grpc_api.util.TestControlledScheduler;
 import io.deephaven.proto.backplane.grpc.ExportNotification;
 import io.deephaven.proto.backplane.grpc.Ticket;
@@ -33,7 +34,6 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import static io.deephaven.grpc_api.util.ExportTicketHelper.wrapExportIdInTicket;
 import static io.deephaven.grpc_api.util.ExportTicketHelper.ticketToExportId;
 import static io.deephaven.proto.backplane.grpc.ExportNotification.State.CANCELLED;
 import static io.deephaven.proto.backplane.grpc.ExportNotification.State.DEPENDENCY_FAILED;
@@ -61,7 +61,7 @@ public class SessionStateTest {
         scheduler = new TestControlledScheduler();
         session = new SessionState(scheduler, AUTH_CONTEXT);
         session.initializeExpiration(new SessionService.TokenExpiration(UUID.randomUUID(),
-                DBTimeUtils.nanosToTime(Long.MAX_VALUE), session));
+                DateTimeUtils.nanosToTime(Long.MAX_VALUE), session));
         nextExportId = 1;
     }
 
@@ -91,7 +91,8 @@ public class SessionStateTest {
 
         // assert lookup is same object
         Assert.eq(session.getExport(nextExportId - 1), "session.getExport(nextExport - 1)", exportObj, "exportObj");
-        Assert.equals(exportObj.getExportId(), "exportObj.getExportId()", wrapExportIdInTicket(nextExportId - 1),
+        Assert.equals(exportObj.getExportId(), "exportObj.getExportId()",
+                ExportTicketHelper.wrapExportIdInTicket(nextExportId - 1),
                 "nextExportId - 1");
 
         // release
@@ -137,7 +138,8 @@ public class SessionStateTest {
         // assert lookup is same object
         Assert.eq(session.getExport(nextExportId - 1),
                 "session.getExport(nextExport - 1)", exportObj, "exportObj");
-        Assert.equals(exportObj.getExportId(), "exportObj.getExportId()", wrapExportIdInTicket(nextExportId - 1),
+        Assert.equals(exportObj.getExportId(), "exportObj.getExportId()",
+                ExportTicketHelper.wrapExportIdInTicket(nextExportId - 1),
                 "nextExportId - 1");
 
         // release
@@ -635,7 +637,8 @@ public class SessionStateTest {
     public void testVerifyExpirationSession() {
         final SessionState session = new SessionState(scheduler, AUTH_CONTEXT);
         final SessionService.TokenExpiration expiration =
-                new SessionService.TokenExpiration(UUID.randomUUID(), DBTimeUtils.nanosToTime(Long.MAX_VALUE), session);
+                new SessionService.TokenExpiration(UUID.randomUUID(), DateTimeUtils.nanosToTime(Long.MAX_VALUE),
+                        session);
         expectException(IllegalArgumentException.class, () -> this.session.initializeExpiration(expiration));
         expectException(IllegalArgumentException.class, () -> this.session.updateExpiration(expiration));
     }
@@ -780,7 +783,7 @@ public class SessionStateTest {
         session.addExportListener(listener);
         listener.validateNotificationQueue(e1, EXPORTED);
 
-        // ensure export was from refresh
+        // ensure export was from run
         Assert.eq(listener.notifications.size(), "notifications.size()", 2);
         final ExportNotification refreshComplete = listener.notifications.get(1);
         Assert.eq(ticketToExportId(refreshComplete.getTicket(), "test"), "lastNotification.getTicket()",
@@ -962,7 +965,7 @@ public class SessionStateTest {
             }
         };
         session.addExportListener(listener);
-        listener.validateIsRefreshComplete(5); // note that we receive refresh complete after receiving updates to b2
+        listener.validateIsRefreshComplete(5); // note that we receive run complete after receiving updates to b2
         listener.validateNotificationQueue(b1, UNKNOWN);
         listener.validateNotificationQueue(b2, UNKNOWN, PENDING, QUEUED);
         listener.validateNotificationQueue(b3, UNKNOWN);
@@ -1069,7 +1072,7 @@ public class SessionStateTest {
             }
         };
         session.addExportListener(listener);
-        listener.validateIsRefreshComplete(4); // note we receive refresh complete after the update to b2
+        listener.validateIsRefreshComplete(4); // note we receive run complete after the update to b2
         listener.validateNotificationQueue(b1, UNKNOWN);
         listener.validateNotificationQueue(b2, UNKNOWN, CANCELLED);
         listener.validateNotificationQueue(b3, UNKNOWN);
@@ -1138,7 +1141,7 @@ public class SessionStateTest {
             }
         };
         session.addExportListener(listener);
-        listener.validateIsRefreshComplete(4); // new export occurs prior to refresh completing
+        listener.validateIsRefreshComplete(4); // new export occurs prior to run completing
         listener.validateNotificationQueue(b1, UNKNOWN);
         listener.validateNotificationQueue(b2, UNKNOWN);
         listener.validateNotificationQueue(b3, UNKNOWN);
@@ -1168,7 +1171,7 @@ public class SessionStateTest {
         };
 
         session.addExportListener(listener);
-        listener.validateIsRefreshComplete(3); // refresh completes, then we see new export
+        listener.validateIsRefreshComplete(3); // run completes, then we see new export
         listener.validateNotificationQueue(b1, UNKNOWN);
         listener.validateNotificationQueue(b2, UNKNOWN);
         listener.validateNotificationQueue(b3, UNKNOWN);
@@ -1189,7 +1192,7 @@ public class SessionStateTest {
         final SessionState.ExportObject<SessionState> b4 =
                 session.<SessionState>newExport(nextExportId++).submit(() -> session);
 
-        // for fun we'll flush after refresh
+        // for fun we'll flush after run
         scheduler.runUntilQueueEmpty();
 
         listener.validateIsRefreshComplete(3);

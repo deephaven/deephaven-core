@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.engine.table.impl.sources.regioned.ColumnRegion",
+ "methods": {
+  "firstRowOffset": ":return: (long) the first row of this page, after applying the PagingChunkSource.mask(), which refers to the first row of this\n         page."
+ },
+ "path": "io.deephaven.engine.table.impl.sources.regioned.ColumnRegion",
+ "typeName": "interface"
+}

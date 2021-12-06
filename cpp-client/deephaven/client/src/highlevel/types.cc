@@ -41,10 +41,10 @@ const int64_t DeephavenConstants::NULL_LONG;
 const int64_t DeephavenConstants::MIN_LONG;
 const int64_t DeephavenConstants::MAX_LONG;
 
-DBDateTime::DBDateTime(int year, int month, int day) : DBDateTime(year, month, day, 0, 0, 0, 0) {}
-DBDateTime::DBDateTime(int year, int month, int day, int hour, int minute, int second) :
-DBDateTime(year, month, day, hour, minute, second, 0) {}
-DBDateTime::DBDateTime(int year, int month, int day, int hour, int minute, int second,
+DateTime::DateTime(int year, int month, int day) : DateTime(year, month, day, 0, 0, 0, 0) {}
+DateTime::DateTime(int year, int month, int day, int hour, int minute, int second) :
+DateTime(year, month, day, hour, minute, second, 0) {}
+DateTime::DateTime(int year, int month, int day, int hour, int minute, int second,
     long nanos) {
   struct tm tm = {};
   tm.tm_year = year;
@@ -58,7 +58,7 @@ DBDateTime::DBDateTime(int year, int month, int day, int hour, int minute, int s
   nanos_ = static_cast<long>(time) + nanos;
 }
 
-void DBDateTime::streamIrisRepresentation(std::ostream &s) const {
+void DateTime::streamIrisRepresentation(std::ostream &s) const {
   size_t oneBillion = 1000000000;
   time_t timeSecs = nanos_ / oneBillion;
   auto nanos = nanos_ % oneBillion;

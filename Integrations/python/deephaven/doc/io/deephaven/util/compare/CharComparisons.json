@@ -1,0 +1,13 @@
+{
+ "className": "io.deephaven.util.compare.CharComparisons",
+ "methods": {
+  "compare": ":param lhs: char\n:param rhs: char\n:return: int",
+  "eq": ":param lhs: char\n:param rhs: char\n:return: boolean",
+  "geq": ":param lhs: char\n:param rhs: char\n:return: boolean",
+  "gt": ":param lhs: char\n:param rhs: char\n:return: boolean",
+  "leq": ":param lhs: char\n:param rhs: char\n:return: boolean",
+  "lt": ":param lhs: char\n:param rhs: char\n:return: boolean"
+ },
+ "path": "io.deephaven.util.compare.CharComparisons",
+ "typeName": "class"
+}

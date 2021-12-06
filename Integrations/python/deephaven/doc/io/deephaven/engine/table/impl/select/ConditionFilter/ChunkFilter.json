@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.engine.table.impl.select.ConditionFilter$ChunkFilter",
+ "methods": {
+  "filter": "See WhereFilter.filter(RowSet, RowSet, Table, boolean) for basic documentation of selection,\n fullSet, table, and usePrev.\n\n:param selection: io.deephaven.engine.rowset.RowSet\n:param fullSet: io.deephaven.engine.rowset.RowSet\n:param table: io.deephaven.engine.table.Table\n:param usePrev: boolean\n:param formula: java.lang.String\n:param params: io.deephaven.engine.table.lang.QueryScopeParam...\n:return: io.deephaven.engine.rowset.WritableRowSet"
+ },
+ "path": "io.deephaven.engine.table.impl.select.ConditionFilter.ChunkFilter",
+ "typeName": "class"
+}

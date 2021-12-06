@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.db.v2.utils.SingleValueRedirectionIndex",
- "methods": {
-  "getValue": ":return: long",
-  "setValue": ":param value: long"
- },
- "path": "io.deephaven.db.v2.utils.SingleValueRedirectionIndex",
- "typeName": "interface"
-}

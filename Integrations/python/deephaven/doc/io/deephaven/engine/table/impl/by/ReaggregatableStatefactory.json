@@ -1,0 +1,6 @@
+{
+ "className": "io.deephaven.engine.table.impl.by.ReaggregatableStatefactory",
+ "methods": {},
+ "path": "io.deephaven.engine.table.impl.by.ReaggregatableStatefactory",
+ "typeName": "class"
+}

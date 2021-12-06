@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.engine.table.impl.join.dupcompact.FloatReverseDupCompactKernel",
+ "methods": {
+  "compactDuplicates": "Remove all adjacent values from chunkToCompact, except the last value in any adjacent run. The keyIndices are\n parallel to the chunkToCompact; and when a value is removed from chunkToCompact it is also removed from\n keyIndices\n\n Additionally, verify that the elements are properly ordered; returning the first position of an out of order\n element.\n\n:param chunkToCompact: (io.deephaven.chunk.WritableChunk<? extendsio.deephaven.chunk.attributes.Any>) - the values to remove duplicates from\n:param keyIndices: (io.deephaven.chunk.WritableLongChunk<io.deephaven.engine.rowset.chunkattributes.RowKeys>) - the key indices parallel to chunkToCompact\n:return: (int) the first position of an out-of-order element, or -1 if all elements are in order"
+ },
+ "path": "io.deephaven.engine.table.impl.join.dupcompact.FloatReverseDupCompactKernel",
+ "typeName": "class"
+}

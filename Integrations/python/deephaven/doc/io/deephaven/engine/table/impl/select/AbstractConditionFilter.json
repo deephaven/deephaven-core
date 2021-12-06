@@ -1,0 +1,16 @@
+{
+ "className": "io.deephaven.engine.table.impl.select.AbstractConditionFilter",
+ "methods": {
+  "copy": "Create a copy of this WhereFilter.\n\n:return: (io.deephaven.engine.table.impl.select.AbstractConditionFilter) an independent copy of this WhereFilter.",
+  "filter": "Filter selection to only matching rows.\n\n:param selection: (io.deephaven.engine.rowset.RowSet) - the indices that should be filtered. The selection must be a subset of fullSet, and may include\n        rows that the engine determines need not be evaluated to produce the result. Implementations may\n        not mutate or close selection.\n:param fullSet: (io.deephaven.engine.rowset.RowSet) - the complete RowSet of the table to filter. The fullSet is used for calculating variables like \"i\"\n        or \"ii\". Implementations may not mutate or close fullSet.\n:param table: (io.deephaven.engine.table.Table) - the table to filter\n:param usePrev: (boolean) - true if previous values should be used. Implementing previous value filtering is optional, and a\n        WhereFilter.PreviousFilteringNotSupported exception may be thrown. If a PreviousFiltering exception is thrown,\n        then the caller must acquire the UpdateGraphProcessor lock.\n:return: (io.deephaven.engine.rowset.WritableRowSet) The subset of selection accepted by this filter; ownership passes to the caller",
+  "getColumnArrays": "Get the array columns required by this select filter.\n\n:return: (java.util.List<java.lang.String>) the columns used as array input by this select filter.",
+  "getColumns": "Get the columns required by this select filter.\n\n:return: (java.util.List<java.lang.String>) the columns used as input by this select filter.",
+  "init": "Initialize this select filter given the table definition\n\n:param tableDefinition: (io.deephaven.engine.table.TableDefinition) - the definition of the table that will be filtered",
+  "isSimpleFilter": ":return: (boolean) true if this is a filter that does not require any code execution, but rather is handled entirely within\n         the database engine.",
+  "renameFilter": ":param renames: java.util.Map<java.lang.String,java.lang.String>\n:return: io.deephaven.engine.table.impl.select.AbstractConditionFilter",
+  "setRecomputeListener": "Set the ShiftObliviousListener that should be notified if results based on this filter must be recomputed.\n\n:param listener: (io.deephaven.engine.table.impl.select.WhereFilter.RecomputeListener) - the listener to notify.",
+  "toString": ":return: java.lang.String"
+ },
+ "path": "io.deephaven.engine.table.impl.select.AbstractConditionFilter",
+ "typeName": "class"
+}

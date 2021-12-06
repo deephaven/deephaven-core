@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.table.impl.util.MergeSortedHelper",
+ "methods": {
+  "mergeSortedHelper": ":param keyColumn: java.lang.String\n:param tables: java.util.Collection<io.deephaven.engine.table.Table>\n:return: io.deephaven.engine.table.Table"
+ },
+ "path": "io.deephaven.engine.table.impl.util.MergeSortedHelper",
+ "text": "Utility to take a set of tables, each of which is sorted; and merge them together into a single table, which will\n also be sorted. For now we do not support refreshing tables, just zipping together tables that are already sorted and\n will not tick.\n\n To handle ticking tables; the data structures would need to be changed, we're storing everything in parallel arrays\n and to tick we would need to shift those around. Handling append only could work; but there would be a lot of\n shifting if the data arrives particularly out of order.",
+ "typeName": "class"
+}

@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.kafka.ingest.JsonRecordUtil$JsonDoubleSetter",
- "methods": {
-  "set": "A RowSetter that will set a value obtained from a JsonRecord as indicated in the\n record by the key. The setter and the value it sets will be matched to the type of the\n column.\n\n:param record: (io.deephaven.kafka.ingest.JsonRecord) - The JsonRecord from which to get the value.\n:param key: (java.lang.String) - The property name by which to retrieve the value from the record.\n:param setter: (io.deephaven.tablelogger.RowSetter) - The RowSetter for which the set method will be called."
- },
- "path": "io.deephaven.kafka.ingest.JsonRecordUtil.JsonDoubleSetter",
- "text": "Provides a Deephaven double-typed set method to call a RowSetter set method and populate it with a\n value from a JsonRecord.",
- "typeName": "class"
-}

@@ -162,9 +162,6 @@ public:
   std::shared_ptr<TableHandleImpl> exactJoin(const TableHandleImpl &rightSide,
       std::vector<std::string> columnsToMatch, std::vector<std::string> columnsToAdd) const;
 
-  std::shared_ptr<TableHandleImpl> leftJoin(const TableHandleImpl &rightSide,
-      std::vector<std::string> columnsToMatch, std::vector<std::string> columnsToAdd) const;
-
   std::shared_ptr<TableHandleImpl> asOfJoin(AsOfJoinTablesRequest::MatchRule matchRule,
       const TableHandleImpl &rightSide, std::vector<std::string> columnsToMatch,
       std::vector<std::string> columnsToAdd);

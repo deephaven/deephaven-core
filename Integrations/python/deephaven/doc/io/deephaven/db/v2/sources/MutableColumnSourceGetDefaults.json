@@ -1,7 +1,0 @@
-{
- "className": "io.deephaven.db.v2.sources.MutableColumnSourceGetDefaults",
- "methods": {},
- "path": "io.deephaven.db.v2.sources.MutableColumnSourceGetDefaults",
- "text": "Defaulted interfaces for various mutable ColumnSource types, in order to avoid having defaults at higher\n levels in the class hierarchy.",
- "typeName": "class"
-}

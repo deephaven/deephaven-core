@@ -6,6 +6,7 @@ plugins {
 
 evaluationDependsOn ':web-client-ui'
 evaluationDependsOn ':proto:raw-js-openapi'
+evaluationDependsOn Docker.registryProject('nginx')
 
 apply from: "$rootDir/gradle/web-client.gradle"
 
@@ -24,20 +25,22 @@ Task jsOut = project(':proto:raw-js-openapi').tasks.findByName('webpackSourcesMa
 
 Task gwtc = tasks.getByName('gwtCompile')
 
-def dockerLicenses = License.createFrom(project).syncDockerLicense().get()
+def dockerLicenses = License.createFrom(project).syncDockerLicense()
 
-task prepareDocker(type: Sync) {
+def prepareDocker = project.tasks.register('prepareDocker', Sync) {
+    // TODO(deephaven-core#1596): Remove extra dependencies for build-ci.yml
     // Note: GH actions currently prepares docker via gradle, but does its own building via
     // a native GH action. As such, we need to make sure that the prepare also invokes the
     // necessarily build pre-reqs. If GH actions eventually calls buildDocker instead, we
     // can remove these dependencies.
     inputs.files([dhide, jsOut].each { t -> t.outputs.files })
+    inputs.files Docker.registryFiles(project, 'nginx')
 
     into "${buildDir}/docker"
     from(gwtc.outputs.files) {
         include("dhapi/**")
     }
-    from (dockerLicenses.outputs) {
+    from (dockerLicenses.get().outputs) {
         into 'licenses'
     }
     from 'docker/Dockerfile'
@@ -47,8 +50,8 @@ task prepareDocker(type: Sync) {
 }
 
 Docker.registerDockerImage(project, 'buildDocker') {
-    inputs.files([prepareDocker, dhide, jsOut].each { t -> t.outputs.files })
+    inputs.files([prepareDocker.get(), dhide, jsOut].each { t -> t.outputs.files })
+    inputs.files Docker.registryFiles(project, 'nginx')
     //buildArgs.put('DEEPHAVEN_VERSION', "${project.version}")
     images.add('deephaven/web:local-build')
 }
-

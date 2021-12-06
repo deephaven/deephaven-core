@@ -1,7 +1,7 @@
 package io.deephaven.qst.column.header;
 
 import io.deephaven.annotations.SimpleStyle;
-import io.deephaven.db.tables.utils.NameValidator;
+import io.deephaven.api.util.NameValidator;
 import io.deephaven.qst.array.Array;
 import io.deephaven.qst.array.ArrayBuilder;
 import io.deephaven.qst.column.Column;

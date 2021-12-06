@@ -1,7 +1,0 @@
-{
- "className": "io.deephaven.db.tables.utils.DBTimeUtils$DBDateTimeOverflowException",
- "methods": {},
- "path": "io.deephaven.db.tables.utils.DBTimeUtils.DBDateTimeOverflowException",
- "text": "A type of RuntimeException thrown when operations resulting in DBDateTime values would exceed the range\n available by max or min long nanoseconds.",
- "typeName": "class"
-}

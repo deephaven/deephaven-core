@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.db.util.DBColorUtilImpl$DistinctFormatter",
- "methods": {
-  "getColor": ":param value: java.lang.Object\n:return: java.lang.Long"
- },
- "path": "io.deephaven.db.util.DBColorUtilImpl.DistinctFormatter",
- "text": "Creates distinct and unique coloration for each unique input value.",
- "typeName": "class"
-}

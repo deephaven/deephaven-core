@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.engine.table.impl.util.UpdateCoalescer",
+ "methods": {
+  "coalesce": ":return: io.deephaven.engine.table.TableUpdate",
+  "update": ":param update: io.deephaven.engine.table.TableUpdate\n:return: io.deephaven.engine.table.impl.util.UpdateCoalescer"
+ },
+ "path": "io.deephaven.engine.table.impl.util.UpdateCoalescer",
+ "text": "Helper utility for coalescing multiple updates.",
+ "typeName": "class"
+}

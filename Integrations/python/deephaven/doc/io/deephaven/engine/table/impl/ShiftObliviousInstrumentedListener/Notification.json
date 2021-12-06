@@ -1,0 +1,7 @@
+{
+ "className": "io.deephaven.engine.table.impl.ShiftObliviousInstrumentedListener$Notification",
+ "methods": {},
+ "path": "io.deephaven.engine.table.impl.ShiftObliviousInstrumentedListener.Notification",
+ "text": "Delivers the desired update, bracketed by performance instrumentation.",
+ "typeName": "class"
+}

@@ -1,0 +1,6 @@
+{
+ "className": "io.deephaven.engine.updategraph.UpdateCommitter",
+ "methods": {},
+ "path": "io.deephaven.engine.updategraph.UpdateCommitter",
+ "typeName": "class"
+}

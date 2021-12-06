@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.api.agg.spec.AggSpecAbsSum",
+ "methods": {
+  "of": ":return: io.deephaven.api.agg.spec.AggSpecAbsSum",
+  "walk": "Note: Java generics information - <V extends io.deephaven.api.agg.spec.AggSpec.Visitor>\n\n:param visitor: V\n:return: V"
+ },
+ "path": "io.deephaven.api.agg.spec.AggSpecAbsSum",
+ "typeName": "class"
+}

@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.kafka.ingest.JsonNodeObjectFieldCopier",
- "methods": {
-  "copyField": "Copy fields from a chunk of Kafka key or value objects to a chunk that will be published to a stream table.\n\n:param inputChunk: (io.deephaven.db.v2.sources.chunk.ObjectChunk<java.lang.Object,io.deephaven.db.v2.sources.chunk.Attributes.Values>) - the chunk containing Kafka keys or values\n:param publisherChunk: (io.deephaven.db.v2.sources.chunk.WritableChunk<io.deephaven.db.v2.sources.chunk.Attributes.Values>) - the output chunk for the provided field\n:param sourceOffset: (int) - the source chunk offset\n:param destOffset: (int) - the destination chunk offset\n:param length: int"
- },
- "path": "io.deephaven.kafka.ingest.JsonNodeObjectFieldCopier",
- "typeName": "class"
-}

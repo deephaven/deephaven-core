@@ -11,15 +11,12 @@ dependencies {
 test {
     useJUnit()
 
-    workingDir = "$rootDir"
     enableAssertions = true
     maxHeapSize = '3g'
 
     systemProperty 'Configuration.rootFile', 'lib-tests.prop'
     systemProperty 'devroot', "$rootDir"
     systemProperty 'workspace', "$rootDir/tmp/workspace"
-    systemProperty 'log4j.configuration', 'log4j.teamcity.xml'
-    systemProperty 'disable.pdsport.rotate', 'true'
     systemProperty 'configuration.quiet', 'true'
 
     exclude '**/NoTest*'

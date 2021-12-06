@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.qst.table.ByTableBase",
+ "methods": {
+  "groupByColumns": ":return: java.util.List<io.deephaven.api.Selectable>",
+  "parent": ":return: io.deephaven.qst.table.TableSpec"
+ },
+ "path": "io.deephaven.qst.table.ByTableBase",
+ "typeName": "class"
+}

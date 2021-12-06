@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.engine.rowset.impl.RowSetUtils$Comparator",
+ "methods": {
+  "directionToTargetFrom": "Compare the underlying target to the provided value. Return -1, 0, or 1 if target is less than, equal, or\n greater than the provided value, respectively.\n\n:param value: (long) - \n:return: (int) -1 if target < value; 0 if value == target; +1 if value < target."
+ },
+ "path": "io.deephaven.engine.rowset.impl.RowSetUtils.Comparator",
+ "typeName": "interface"
+}

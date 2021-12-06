@@ -1,10 +1,10 @@
 package io.deephaven.qst.table;
 
 import io.deephaven.api.TableOperations;
+import io.deephaven.qst.TableCreationLogic;
 import io.deephaven.qst.TableCreator;
 import io.deephaven.qst.TableCreator.OperationsToTable;
 import io.deephaven.qst.TableCreator.TableToOperations;
-import io.deephaven.qst.TableCreationLogic;
 import org.immutables.value.Value.Derived;
 
 import java.io.BufferedInputStream;
@@ -12,7 +12,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.Serializable;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
@@ -31,7 +30,7 @@ import java.util.Collection;
  * @see TableCreator
  * @see io.deephaven.api.TableOperations
  */
-public interface TableSpec extends TableOperations<TableSpec, TableSpec>, Serializable {
+public interface TableSpec extends TableOperations<TableSpec, TableSpec>, TableSchema, Serializable {
 
     static EmptyTable empty(long size) {
         return EmptyTable.of(size);
@@ -128,8 +127,6 @@ public interface TableSpec extends TableOperations<TableSpec, TableSpec>, Serial
 
         void visit(JoinTable joinTable);
 
-        void visit(LeftJoinTable leftJoinTable);
-
         void visit(AsOfJoinTable aj);
 
         void visit(ReverseAsOfJoinTable raj);
@@ -142,10 +139,16 @@ public interface TableSpec extends TableOperations<TableSpec, TableSpec>, Serial
 
         void visit(UpdateTable updateTable);
 
-        void visit(ByTable byTable);
-
         void visit(AggregationTable aggregationTable);
 
+        void visit(AggregateAllByTable aggAllByTable);
+
         void visit(TicketTable ticketTable);
+
+        void visit(InputTable inputTable);
+
+        void visit(SelectDistinctTable selectDistinctTable);
+
+        void visit(CountByTable countByTable);
     }
 }

@@ -1,0 +1,7 @@
+{
+ "className": "io.deephaven.plot.datasets.category.CategoryTableDataSeriesInternal",
+ "methods": {},
+ "path": "io.deephaven.plot.datasets.category.CategoryTableDataSeriesInternal",
+ "text": "Category data series backed by a Table.",
+ "typeName": "interface"
+}

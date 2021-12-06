@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.table.impl.locations.TableKey",
+ "methods": {
+  "makeImmutable": "Get an ImmutableTableKey that is equal to this.\n\n:return: (io.deephaven.engine.table.impl.locations.ImmutableTableKey) An immutable version of this key"
+ },
+ "path": "io.deephaven.engine.table.impl.locations.TableKey",
+ "text": "Interface for opaque table keys for use in TableDataService implementations.",
+ "typeName": "interface"
+}

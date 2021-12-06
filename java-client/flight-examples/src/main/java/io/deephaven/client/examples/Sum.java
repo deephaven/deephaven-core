@@ -1,6 +1,7 @@
 package io.deephaven.client.examples;
 
 import io.deephaven.api.TableOperations;
+import io.deephaven.api.agg.Aggregation;
 import io.deephaven.qst.TableCreationLogic;
 import io.deephaven.qst.TableCreator;
 import io.deephaven.qst.table.TableSpec;
@@ -28,7 +29,7 @@ class Sum extends FlightCannedTableBase implements TableCreationLogic {
     public <T extends TableOperations<T, T>> T create(TableCreator<T> c) {
         return c.of(TableSpec.empty(count))
                 .view("I=i")
-                .by(Collections.emptyList(), Collections.singleton(io.deephaven.api.agg.Sum.of("Sum=I")));
+                .aggBy(Collections.singleton(Aggregation.AggSum("Sum=I")), Collections.emptyList());
     }
 
     public static void main(String[] args) {

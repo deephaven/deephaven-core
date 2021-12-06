@@ -114,7 +114,7 @@ class TestConsumeKafka(unittest.TestCase):
         Check an Avro Kafka subscription creates the right table.
         """
 
-        avro_as_json = \
+        schema = \
         """
         { "type" : "record",
           "namespace" : "io.deephaven.examples",
@@ -128,16 +128,23 @@ class TestConsumeKafka(unittest.TestCase):
         }
         """
 
-        sys_str = "curl -X POST -H 'Content-type: application/json; artifactType=AVRO' " + \
-          "-H 'X-Registry-ArtifactId: share_price_record' -H 'X-Registry-Version: 1' " + \
-          "--data-binary '%s' http://registry:8080/api/artifacts" % (avro_as_json)
+        schema_str = '{ "schema" : "%s" }' % \
+            schema.replace('\n', ' ').replace('"', '\\"')
+
+        sys_str = \
+        """
+        curl -X POST \
+            -H 'Content-type: application/vnd.schemaregistry.v1+json; artifactType=AVRO' \
+            --data-binary '%s' \
+            http://redpanda:8081/subjects/share_price_record/versions
+        """ % schema_str
 
         r = os.system(sys_str)
         self.assertEquals(0, r)
         
         t = ck.consumeToTable(
             { 'bootstrap.servers' : 'redpanda:29092',
-              'schema.registry.url' : 'http://registry:8080/api/ccompat' },
+              'schema.registry.url' : 'http://redpanda:8081' },
             'share_price',
             key = ck.IGNORE,
             value = ck.avro('share_price_record', schema_version='1'),

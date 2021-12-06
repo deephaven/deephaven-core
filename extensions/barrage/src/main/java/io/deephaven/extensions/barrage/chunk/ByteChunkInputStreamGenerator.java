@@ -8,16 +8,16 @@
 package io.deephaven.extensions.barrage.chunk;
 
 import gnu.trove.iterator.TLongIterator;
+import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
-import io.deephaven.db.v2.sources.chunk.ByteChunk;
 import com.google.common.io.LittleEndianDataOutputStream;
 import io.deephaven.UncheckedDeephavenException;
-import io.deephaven.db.util.LongSizedDataStructure;
-import io.deephaven.db.v2.sources.chunk.Attributes;
-import io.deephaven.db.v2.sources.chunk.Chunk;
-import io.deephaven.db.v2.sources.chunk.WritableByteChunk;
-import io.deephaven.db.v2.sources.chunk.WritableLongChunk;
-import io.deephaven.db.v2.utils.Index;
+import io.deephaven.util.datastructures.LongSizedDataStructure;
+import io.deephaven.chunk.ByteChunk;
+import io.deephaven.chunk.Chunk;
+import io.deephaven.chunk.WritableByteChunk;
+import io.deephaven.chunk.WritableLongChunk;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.DataInput;
@@ -27,20 +27,20 @@ import java.util.Iterator;
 
 import static io.deephaven.util.QueryConstants.*;
 
-public class ByteChunkInputStreamGenerator extends BaseChunkInputStreamGenerator<ByteChunk<Attributes.Values>> {
+public class ByteChunkInputStreamGenerator extends BaseChunkInputStreamGenerator<ByteChunk<Values>> {
     private static final String DEBUG_NAME = "ByteChunkInputStreamGenerator";
 
-    ByteChunkInputStreamGenerator(final ByteChunk<Attributes.Values> chunk, final int elementSize) {
+    ByteChunkInputStreamGenerator(final ByteChunk<Values> chunk, final int elementSize) {
         super(chunk, elementSize);
     }
 
     @Override
-    public DrainableColumn getInputStream(final BarrageSubscriptionOptions options, final @Nullable Index subset) {
+    public DrainableColumn getInputStream(final BarrageSubscriptionOptions options, final @Nullable RowSet subset) {
         return new ByteChunkInputStream(options, subset);
     }
 
     private class ByteChunkInputStream extends BaseChunkInputStream {
-        private ByteChunkInputStream(final BarrageSubscriptionOptions options, final Index subset) {
+        private ByteChunkInputStream(final BarrageSubscriptionOptions options, final RowSet subset) {
             super(chunk, options, subset);
         }
 
@@ -53,7 +53,7 @@ public class ByteChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
             }
             if (cachedNullCount == -1) {
                 cachedNullCount = 0;
-                subset.forAllLongs(row -> {
+                subset.forAllRowKeys(row -> {
                     if (chunk.get((int) row) == NULL_BYTE) {
                         ++cachedNullCount;
                     }
@@ -88,36 +88,36 @@ public class ByteChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
 
             long bytesWritten = 0;
             read = true;
-            try (final LittleEndianDataOutputStream dos = new LittleEndianDataOutputStream(outputStream)) {
-                // write the validity array with LSB indexing
-                if (sendValidityBuffer()) {
-                    final SerContext context = new SerContext();
-                    final Runnable flush = () -> {
-                        try {
-                            dos.writeLong(context.accumulator);
-                        } catch (final IOException e) {
-                            throw new UncheckedDeephavenException("Unexpected exception while draining data to OutputStream: ", e);
-                        }
-                        context.accumulator = 0;
-                        context.count = 0;
-                    };
-                    subset.forAllLongs(row -> {
-                        if (chunk.get((int) row) != NULL_BYTE) {
-                            context.accumulator |= 1L << context.count;
-                        }
-                        if (++context.count == 64) {
-                            flush.run();
-                        }
-                    });
-                    if (context.count > 0) {
+            final LittleEndianDataOutputStream dos = new LittleEndianDataOutputStream(outputStream);
+            // write the validity array with LSB indexing
+            if (sendValidityBuffer()) {
+                final SerContext context = new SerContext();
+                final Runnable flush = () -> {
+                    try {
+                        dos.writeLong(context.accumulator);
+                    } catch (final IOException e) {
+                        throw new UncheckedDeephavenException("Unexpected exception while draining data to OutputStream: ", e);
+                    }
+                    context.accumulator = 0;
+                    context.count = 0;
+                };
+                subset.forAllRowKeys(row -> {
+                    if (chunk.get((int) row) != NULL_BYTE) {
+                        context.accumulator |= 1L << context.count;
+                    }
+                    if (++context.count == 64) {
                         flush.run();
                     }
-
-                    bytesWritten += getValidityMapSerializationSizeFor(subset.intSize());
+                });
+                if (context.count > 0) {
+                    flush.run();
                 }
 
+                bytesWritten += getValidityMapSerializationSizeFor(subset.intSize());
+            }
+
                 // write the included values
-                subset.forAllLongs(row -> {
+                subset.forAllRowKeys(row -> {
                     try {
                         final byte val = chunk.get((int) row);
                         dos.writeByte(val);
@@ -130,9 +130,8 @@ public class ByteChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
                 final long bytesExtended = bytesWritten & REMAINDER_MOD_8_MASK;
                 if (bytesExtended > 0) {
                     bytesWritten += 8 - bytesExtended;
-                    dos.write(PADDING_BUFFER, 0, (int)(8 - bytesExtended));
+                    dos.write(PADDING_BUFFER, 0, (int) (8 - bytesExtended));
                 }
-            }
             return LongSizedDataStructure.intSize("ByteChunkInputStreamGenerator", bytesWritten);
         }
     }
@@ -143,7 +142,7 @@ public class ByteChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
         ByteConversion IDENTITY = (byte a) -> a;
     }
 
-    static Chunk<Attributes.Values> extractChunkFromInputStream(
+    static Chunk<Values> extractChunkFromInputStream(
             final int elementSize,
             final BarrageSubscriptionOptions options,
             final Iterator<FieldNodeInfo> fieldNodeIter,
@@ -153,7 +152,7 @@ public class ByteChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
                 elementSize, options, ByteConversion.IDENTITY, fieldNodeIter, bufferInfoIter, is);
     }
 
-    static Chunk<Attributes.Values> extractChunkFromInputStreamWithConversion(
+    static Chunk<Values> extractChunkFromInputStreamWithConversion(
             final int elementSize,
             final BarrageSubscriptionOptions options,
             final ByteConversion conversion,
@@ -165,14 +164,14 @@ public class ByteChunkInputStreamGenerator extends BaseChunkInputStreamGenerator
         final long validityBuffer = bufferInfoIter.next();
         final long payloadBuffer = bufferInfoIter.next();
 
-        final WritableByteChunk<Attributes.Values> chunk = WritableByteChunk.makeWritableChunk(nodeInfo.numElements);
+        final WritableByteChunk<Values> chunk = WritableByteChunk.makeWritableChunk(nodeInfo.numElements);
 
         if (nodeInfo.numElements == 0) {
             return chunk;
         }
 
         final int numValidityLongs = options.useDeephavenNulls() ? 0 : (nodeInfo.numElements + 63) / 64;
-        try (final WritableLongChunk<Attributes.Values> isValid = WritableLongChunk.makeWritableChunk(numValidityLongs)) {
+        try (final WritableLongChunk<Values> isValid = WritableLongChunk.makeWritableChunk(numValidityLongs)) {
             if (options.useDeephavenNulls() && validityBuffer != 0) {
                 throw new IllegalStateException("validity buffer is non-empty, but is unnecessary");
             }

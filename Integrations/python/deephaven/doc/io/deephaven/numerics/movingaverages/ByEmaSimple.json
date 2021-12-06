@@ -2,6 +2,6 @@
  "className": "io.deephaven.numerics.movingaverages.ByEmaSimple",
  "methods": {},
  "path": "io.deephaven.numerics.movingaverages.ByEmaSimple",
- "text": "A DB aware EMA which can compute \"by\" emas without grouping and then ungrouping.",
+ "text": "An engine aware EMA which can compute \"groupBy\" emas without grouping and then ungrouping.",
  "typeName": "class"
 }

@@ -1,6 +1,8 @@
 {
  "className": "io.deephaven.grpc_api.table.TableModule",
  "methods": {
+  "bindApplyPreviewColumns": ":param op: io.deephaven.grpc_api.table.ops.ApplyPreviewColumnsGrpcImpl\n:return: io.deephaven.grpc_api.table.ops.GrpcTableOperation<?>",
+  "bindCreateInputTable": ":param op: io.deephaven.grpc_api.table.ops.CreateInputTableGrpcImpl\n:return: io.deephaven.grpc_api.table.ops.GrpcTableOperation<?>",
   "bindFetchTable": ":param op: io.deephaven.grpc_api.table.ops.FetchTableGrpcImpl\n:return: io.deephaven.grpc_api.table.ops.GrpcTableOperation<?>",
   "bindOperationAsOfJoin": ":param op: io.deephaven.grpc_api.table.ops.JoinTablesGrpcImpl.AsOfJoinTablesGrpcImpl\n:return: io.deephaven.grpc_api.table.ops.GrpcTableOperation<?>",
   "bindOperationComboAgg": ":param op: io.deephaven.grpc_api.table.ops.ComboAggregateGrpcImpl\n:return: io.deephaven.grpc_api.table.ops.GrpcTableOperation<?>",

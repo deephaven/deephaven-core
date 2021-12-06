@@ -7,10 +7,10 @@ def archivesBaseNamePrefix = 'deephaven-'
 def compilerVersion = Integer.parseInt((String)project.findProperty('compilerVersion') ?: '11')
 
 def languageLevel = Integer.parseInt((String)project.findProperty('languageLevel') ?: '11')
-def runtimeVersion = Integer.parseInt((String)project.findProperty('runtimeVersion') ?: '17')
+def runtimeVersion = Integer.parseInt((String)project.findProperty('runtimeVersion') ?: '11')
 
 def testLanguageLevel = Integer.parseInt((String)project.findProperty('testLanguageLevel') ?: '11')
-def testRuntimeVersion = Integer.parseInt((String)project.findProperty('testRuntimeVersion') ?: '17')
+def testRuntimeVersion = Integer.parseInt((String)project.findProperty('testRuntimeVersion') ?: '11')
 
 if (languageLevel > compilerVersion) {
   throw new IllegalArgumentException("languageLevel must be less than or equal to compileVersion")

@@ -8,16 +8,17 @@ import com.google.common.base.Charsets;
 import com.google.common.io.LittleEndianDataOutputStream;
 import gnu.trove.iterator.TLongIterator;
 import io.deephaven.UncheckedDeephavenException;
+import io.deephaven.chunk.attributes.ChunkPositions;
+import io.deephaven.chunk.attributes.Values;
+import io.deephaven.util.datastructures.LongSizedDataStructure;
+import io.deephaven.chunk.IntChunk;
+import io.deephaven.chunk.ObjectChunk;
+import io.deephaven.chunk.WritableIntChunk;
+import io.deephaven.chunk.WritableLongChunk;
+import io.deephaven.chunk.WritableObjectChunk;
+import io.deephaven.chunk.util.pools.PoolableChunk;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.extensions.barrage.BarrageSubscriptionOptions;
-import io.deephaven.db.util.LongSizedDataStructure;
-import io.deephaven.db.v2.sources.chunk.Attributes;
-import io.deephaven.db.v2.sources.chunk.IntChunk;
-import io.deephaven.db.v2.sources.chunk.ObjectChunk;
-import io.deephaven.db.v2.sources.chunk.WritableIntChunk;
-import io.deephaven.db.v2.sources.chunk.WritableLongChunk;
-import io.deephaven.db.v2.sources.chunk.WritableObjectChunk;
-import io.deephaven.db.v2.sources.chunk.util.pools.PoolableChunk;
-import io.deephaven.db.v2.utils.Index;
 import io.deephaven.extensions.barrage.util.BarrageProtoUtil;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableLong;
@@ -28,16 +29,16 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Iterator;
 
-public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamGenerator<ObjectChunk<T, Attributes.Values>> {
+public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamGenerator<ObjectChunk<T, Values>> {
     private static final String DEBUG_NAME = "ObjectChunkInputStream Serialization";
 
     private final Class<T> type;
     private final Appender<T> appendItem;
 
     private byte[] bytes;
-    private WritableIntChunk<Attributes.ChunkPositions> offsets;
+    private WritableIntChunk<ChunkPositions> offsets;
     private byte[] stringBytes;
-    private WritableIntChunk<Attributes.ChunkPositions> stringOffsets;
+    private WritableIntChunk<ChunkPositions> stringOffsets;
 
     public interface Appender<T> {
         void append(OutputStream out, T item) throws IOException;
@@ -47,7 +48,7 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
         T constructFrom(final byte[] buf, int offset, int length) throws IOException;
     }
 
-    VarBinaryChunkInputStreamGenerator(final Class<T> type, final ObjectChunk<T, Attributes.Values> chunk,
+    VarBinaryChunkInputStreamGenerator(final Class<T> type, final ObjectChunk<T, Values> chunk,
                                        final Appender<T> appendItem) {
         super(chunk, 0);
         this.type = type;
@@ -110,7 +111,7 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
     }
 
     @Override
-    public DrainableColumn getInputStream(final BarrageSubscriptionOptions options, final @Nullable Index subset) throws IOException {
+    public DrainableColumn getInputStream(final BarrageSubscriptionOptions options, final @Nullable RowSet subset) throws IOException {
         if (type == String.class) {
             computePayload();
             return new ObjectChunkInputStream(options, offsets, bytes, subset);
@@ -123,12 +124,12 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
     private class ObjectChunkInputStream extends BaseChunkInputStream {
         private int cachedSize = -1;
         private final byte[] myBytes;
-        private final IntChunk<Attributes.ChunkPositions> myOffsets;
+        private final IntChunk<ChunkPositions> myOffsets;
 
         private ObjectChunkInputStream(
                 final BarrageSubscriptionOptions options,
-                final IntChunk<Attributes.ChunkPositions> myOffsets,
-                final byte[] myBytes, final Index subset) {
+                final IntChunk<ChunkPositions> myOffsets,
+                final byte[] myBytes, final RowSet subset) {
             super(chunk, options, subset);
             this.myBytes = myBytes;
             this.myOffsets = myOffsets;
@@ -140,7 +141,7 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
         public int nullCount() {
             if (cachedNullCount == -1) {
                 cachedNullCount = 0;
-                subset.forAllLongs(i -> {
+                subset.forAllRowKeys(i -> {
                     if (chunk.get((int)i) == null) {
                         ++cachedNullCount;
                     }
@@ -170,7 +171,7 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
 
             // payload
             final MutableLong numPayloadBytes = new MutableLong();
-            subset.forAllLongRanges((s, e) -> {
+            subset.forAllRowKeyRanges((s, e) -> {
                 // account for payload
                 numPayloadBytes.add(myOffsets.get(LongSizedDataStructure.intSize(DEBUG_NAME, e + 1)));
                 numPayloadBytes.subtract(myOffsets.get(LongSizedDataStructure.intSize(DEBUG_NAME, s)));
@@ -196,7 +197,7 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
                     cachedSize += myOffsets.get(subset.intSize(DEBUG_NAME)) - myOffsets.get(0);
                 } else  {
                     cachedSize += subset.isEmpty() ? 0 : Integer.BYTES; // account for the n+1 offset
-                    subset.forAllLongRanges((s, e) -> {
+                    subset.forAllRowKeyRanges((s, e) -> {
                         // account for offsets
                         cachedSize += (e - s + 1) * Integer.BYTES;
                         // account for payload
@@ -221,82 +222,81 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
 
             read = true;
             long bytesWritten = 0;
-            try (final LittleEndianDataOutputStream dos = new LittleEndianDataOutputStream(outputStream)) {
-                // write the validity array with LSB indexing
-                if (sendValidityBuffer()) {
-                    final SerContext context = new SerContext();
-                    final Runnable flush = () -> {
-                        try {
-                            dos.writeLong(context.accumulator);
-                        } catch (final IOException e) {
-                            throw new UncheckedDeephavenException("couldn't drain data to OutputStream", e);
-                        }
-                        context.accumulator = 0;
-                        context.count = 0;
-                    };
-                    subset.forAllLongs(rawRow -> {
-                        final int row = LongSizedDataStructure.intSize(DEBUG_NAME, rawRow);
-                        if (chunk.get(row) != null) {
-                            context.accumulator |= 1L << context.count;
-                        }
-                        if (++context.count == 64) {
-                            flush.run();
-                        }
-                    });
-                    if (context.count > 0) {
-                        flush.run();
-                    }
-                    bytesWritten += getValidityMapSerializationSizeFor(subset.intSize(DEBUG_NAME));
-                }
-
-                // write offsets array
-                dos.writeInt(0);
-
-                final MutableInt logicalSize = new MutableInt();
-                subset.forAllLongs((rawRow) -> {
+            final LittleEndianDataOutputStream dos = new LittleEndianDataOutputStream(outputStream);
+            // write the validity array with LSB indexing
+            if (sendValidityBuffer()) {
+                final SerContext context = new SerContext();
+                final Runnable flush = () -> {
                     try {
-                        final int rowEnd = LongSizedDataStructure.intSize(DEBUG_NAME, rawRow + 1);
-                        final int size = myOffsets.get(rowEnd) - myOffsets.get(rowEnd - 1);
-                        logicalSize.add(size);
-                        dos.writeInt(logicalSize.intValue());
+                        dos.writeLong(context.accumulator);
                     } catch (final IOException e) {
                         throw new UncheckedDeephavenException("couldn't drain data to OutputStream", e);
                     }
-                });
-                bytesWritten += Integer.BYTES * (subset.size() + 1);
-
-                if ((subset.size() & 0x1) == 0) {
-                    // then we must pad to align next buffer
-                    dos.writeInt(0);
-                    bytesWritten += Integer.BYTES;
-                }
-
-                final MutableLong payloadLen = new MutableLong();
-                subset.forAllLongRanges((s, e) -> {
-                    try {
-                        // we have already int-size verified all rows in the index
-                        final int startOffset = myOffsets.get((int) s);
-                        final int endOffset = myOffsets.get((int) e + 1);
-                        dos.write(myBytes, startOffset, endOffset - startOffset);
-                        payloadLen.add(endOffset - startOffset);
-                    } catch (final IOException err) {
-                        throw new UncheckedDeephavenException("couldn't drain data to OutputStream", err);
+                    context.accumulator = 0;
+                    context.count = 0;
+                };
+                subset.forAllRowKeys(rawRow -> {
+                    final int row = LongSizedDataStructure.intSize(DEBUG_NAME, rawRow);
+                    if (chunk.get(row) != null) {
+                        context.accumulator |= 1L << context.count;
+                    }
+                    if (++context.count == 64) {
+                        flush.run();
                     }
                 });
-                bytesWritten += payloadLen.longValue();
-
-                final long bytesExtended = bytesWritten & REMAINDER_MOD_8_MASK;
-                if (bytesExtended > 0) {
-                    bytesWritten += 8 - bytesExtended;
-                    dos.write(PADDING_BUFFER, 0, (int)(8 - bytesExtended));
+                if (context.count > 0) {
+                    flush.run();
                 }
+                bytesWritten += getValidityMapSerializationSizeFor(subset.intSize(DEBUG_NAME));
+            }
+
+            // write offsets array
+            dos.writeInt(0);
+
+            final MutableInt logicalSize = new MutableInt();
+            subset.forAllRowKeys((rawRow) -> {
+                try {
+                    final int rowEnd = LongSizedDataStructure.intSize(DEBUG_NAME, rawRow + 1);
+                    final int size = myOffsets.get(rowEnd) - myOffsets.get(rowEnd - 1);
+                    logicalSize.add(size);
+                    dos.writeInt(logicalSize.intValue());
+                } catch (final IOException e) {
+                    throw new UncheckedDeephavenException("couldn't drain data to OutputStream", e);
+                }
+            });
+            bytesWritten += Integer.BYTES * (subset.size() + 1);
+
+            if ((subset.size() & 0x1) == 0) {
+                // then we must pad to align next buffer
+                dos.writeInt(0);
+                bytesWritten += Integer.BYTES;
+            }
+
+            final MutableLong payloadLen = new MutableLong();
+            subset.forAllRowKeyRanges((s, e) -> {
+                try {
+                    // we have already int-size verified all rows in the RowSet
+                    final int startOffset = myOffsets.get((int) s);
+                    final int endOffset = myOffsets.get((int) e + 1);
+                    dos.write(myBytes, startOffset, endOffset - startOffset);
+                    payloadLen.add(endOffset - startOffset);
+                } catch (final IOException err) {
+                    throw new UncheckedDeephavenException("couldn't drain data to OutputStream", err);
+                }
+            });
+            bytesWritten += payloadLen.longValue();
+
+            final long bytesExtended = bytesWritten & REMAINDER_MOD_8_MASK;
+            if (bytesExtended > 0) {
+                bytesWritten += 8 - bytesExtended;
+                dos.write(PADDING_BUFFER, 0, (int) (8 - bytesExtended));
             }
 
             return LongSizedDataStructure.intSize(DEBUG_NAME, bytesWritten);
         }
     }
 
-    static <T> ObjectChunk<T, Attributes.Values> extractChunkFromInputStream(
+    static <T> ObjectChunk<T, Values> extractChunkFromInputStream(
             final DataInput is,
             final Iterator<FieldNodeInfo> fieldNodeIter,
             final TLongIterator bufferInfoIter,
@@ -306,15 +306,15 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
         final long offsetsBuffer = bufferInfoIter.next();
         final long payloadBuffer = bufferInfoIter.next();
 
-        final WritableObjectChunk<T, Attributes.Values> chunk = WritableObjectChunk.makeWritableChunk(nodeInfo.numElements);
+        final WritableObjectChunk<T, Values> chunk = WritableObjectChunk.makeWritableChunk(nodeInfo.numElements);
 
         if (nodeInfo.numElements == 0) {
             return chunk;
         }
 
         final int numValidityLongs = (nodeInfo.numElements + 63) / 64;
-        try (final WritableLongChunk<Attributes.Values> isValid = WritableLongChunk.makeWritableChunk(numValidityLongs);
-             final WritableIntChunk<Attributes.Values> offsets = WritableIntChunk.makeWritableChunk(nodeInfo.numElements + 1)) {
+        try (final WritableLongChunk<Values> isValid = WritableLongChunk.makeWritableChunk(numValidityLongs);
+             final WritableIntChunk<Values> offsets = WritableIntChunk.makeWritableChunk(nodeInfo.numElements + 1)) {
             // Read validity buffer:
             int jj = 0;
             for (; jj < Math.min(numValidityLongs, validityBuffer / 8); ++jj) {

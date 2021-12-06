@@ -11,7 +11,7 @@ from pydeephaven.dherror import DHError
 from pydeephaven.combo_agg import ComboAggregation
 from pydeephaven._table_ops import UpdateOp, LazyUpdateOp, ViewOp, UpdateViewOp, SelectOp, DropColumnsOp, \
     SelectDistinctOp, SortOp, UnstructuredFilterOp, HeadOp, TailOp, HeadByOp, TailByOp, UngroupOp, NaturalJoinOp, \
-    ExactJoinOp, LeftJoinOp, CrossJoinOp, AsOfJoinOp, DedicatedAggOp, ComboAggOp
+    ExactJoinOp, CrossJoinOp, AsOfJoinOp, DedicatedAggOp, ComboAggOp
 from pydeephaven.constants import MatchRule, SortDirection
 from pydeephaven._constants import AggType
 
@@ -87,7 +87,7 @@ class TableInterface(ABC):
         return self.table_op_handler(table_op)
 
     def update_view(self, formulas: List[str]):
-        """ Perform a update-view operation on the table and return the result table.
+        """ Perform an update-view operation on the table and return the result table.
 
         Args:
             formulas (List[str]): the column formulas
@@ -233,26 +233,6 @@ class TableInterface(ABC):
         table_op = ExactJoinOp(table=table, keys=on, columns_to_add=joins)
         return self.table_op_handler(table_op)
 
-    def left_join(self, table: Any, on: List[str], joins: List[str] = []):
-        """ Perform a left-join between this table as the left table and another table as the right table) and
-        returns the result table.
-
-        Args:
-            table (Table): the right-table of the join
-            on (List[str]): the columns to match, can be a common name or an equal expression,
-                i.e. "col_a = col_b" for different column names
-            joins (List[str], optional): a list of the columns to be added from the right table to the result
-                table, can be renaming expressions, i.e. "new_col = col"; default is empty
-
-        Returns:
-            a Table object
-
-        Raises:
-            DHError
-        """
-        table_op = LeftJoinOp(table=table, keys=on, columns_to_add=joins)
-        return self.table_op_handler(table_op)
-
     def join(self, table: Any, on: List[str] = [], joins: List[str] = [], reserve_bits: int = 10):
         """ Perform a cross-join between this table as the left table and another table as the right table) and
         returns the result table.
@@ -366,7 +346,7 @@ class TableInterface(ABC):
         Raises:
             DHError
         """
-        table_op = DedicatedAggOp(AggType.ARRAY, column_names=by)
+        table_op = DedicatedAggOp(AggType.GROUP, column_names=by)
         return self.table_op_handler(table_op)
 
     def ungroup(self, cols: List[str] = [], null_fill: bool = True):
@@ -564,12 +544,12 @@ class TableInterface(ABC):
         table_op = DedicatedAggOp(AggType.COUNT, count_column=col)
         return self.table_op_handler(table_op)
 
-    def combo_by(self, by: List[str], agg: ComboAggregation):
+    def agg_by(self, agg: ComboAggregation, by: List[str]):
         """ Perform a Combined Aggregation operation on the table and return the result table.
 
         Args:
-            by (List[str]): the group-by column names
             agg (ComboAggregation): the combined aggregation definition
+            by (List[str]): the group-by column names
 
         Returns:
             a Table object

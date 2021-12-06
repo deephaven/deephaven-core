@@ -4,6 +4,7 @@ plugins {
 
 evaluationDependsOn ':proto'
 evaluationDependsOn ':proto:proto-backplane-grpc'
+evaluationDependsOn Docker.registryProject('node')
 
 def backplaneProject = project(':proto:proto-backplane-grpc')
 def webpackSourcesLocation = "${buildDir}/dhapi"
@@ -31,6 +32,7 @@ Docker.registerDockerTask(project, 'webpackSources') {
         from ('../package-lock.json')
 
     }
+    parentContainers = [ Docker.registryTask(project, 'node') ]
     imageName = 'deephaven/js-out:local-build'
     containerOutPath = '/usr/src/app/raw-js-openapi/build/js-out'
     copyOut {

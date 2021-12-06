@@ -10,7 +10,7 @@ import javax.inject.Named;
 public class ServerBuilderModule {
 
     @Provides
-    static ServerBuilder<?> serverBuilder(final @Named("grpc.port") int port) {
+    static ServerBuilder<?> serverBuilder(final @Named("http.port") int port) {
         return ServerBuilder.forPort(port);
     }
 }

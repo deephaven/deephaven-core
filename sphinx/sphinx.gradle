@@ -6,7 +6,7 @@ plugins {
 
 description = 'Generates docs for the python libraries provided in Deephaven Core'
 
-evaluationDependsOn ':Integrations'
+evaluationDependsOn ':docker-runtime-base'
 evaluationDependsOn ':pyclient'
 
 def copyPyClientWhl = tasks.register('copyPyClientWhl', Sync) {
@@ -37,7 +37,7 @@ def sphinxImage = Docker.registerDockerImage(project, 'sphinx') {
     inputs.files copyPyClientWhl.get().outputs.files
     inputs.files copySphinxLib.get().outputs.files
     inputDir.set layout.buildDirectory.dir('sphinx-image')
-    inputs.files project(':Integrations').tasks.findByName('buildDeephavenPython').outputs.files // deephaven/runtime-base
+    inputs.files project(':docker-runtime-base').tasks.findByName('buildDocker').outputs.files // deephaven/runtime-base
     images.add('deephaven/sphinx:local-build')
 }
 
@@ -89,7 +89,9 @@ def cppClientDoxygenTask = Docker.registerDockerTask(project, 'cppClientDoxygen'
         from 'deephaven/runtime-base:local-build'
 
         runCommand('''set -eux; \\
-                      apt-get -y install doxygen graphviz
+                      apt-get update; \\
+                      apt-get -y install doxygen graphviz; \\
+                      rm -rf /var/lib/apt/lists/*
                       ''')
 
         copyFile('.', '/project')
@@ -99,7 +101,7 @@ def cppClientDoxygenTask = Docker.registerDockerTask(project, 'cppClientDoxygen'
                       doxygen
                       ''')
     }
-    parentContainers = [project(':Integrations').tasks.findByName('buildDeephavenPython')] // deephaven/runtime-base
+    parentContainers = [project(':docker-runtime-base').tasks.findByName('buildDocker')] // deephaven/runtime-base
     containerOutPath = '/project/doc/doxygenoutput'
     copyOut {
         into "$buildDir/cppClientDoxygen"

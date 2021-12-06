@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.engine.table.iterators.ByteColumnIterator",
+ "methods": {
+  "forEachRemaining": ":param action: io.deephaven.base.Procedure.UnaryByte",
+  "nextByte": ":return: byte"
+ },
+ "path": "io.deephaven.engine.table.iterators.ByteColumnIterator",
+ "text": "Iteration support for boxed or primitive bytes contained with a ColumnSource.",
+ "typeName": "class"
+}

@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.api.agg.spec.AggSpecEmptyBase",
+ "methods": {
+  "hashCode": ":return: int"
+ },
+ "path": "io.deephaven.api.agg.spec.AggSpecEmptyBase",
+ "typeName": "class"
+}

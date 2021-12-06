@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.table.impl.util.AsyncErrorLogger",
+ "methods": {
+  "getErrorLog": ":return: io.deephaven.engine.table.Table",
+  "log": ":param time: io.deephaven.time.DateTime\n:param entry: io.deephaven.engine.table.TableListener.Entry\n:param sourceEntry: io.deephaven.engine.table.TableListener.Entry\n:param originalException: java.lang.Throwable"
+ },
+ "path": "io.deephaven.engine.table.impl.util.AsyncErrorLogger",
+ "typeName": "class"
+}

@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.engine.table.TableListener",
+ "methods": {
+  "getErrorNotification": "Creates a notification for the exception.\n\n:param originalException: (java.lang.Throwable) - exception\n:param sourceEntry: (io.deephaven.engine.table.TableListener.Entry) - performance tracking\n:return: (io.deephaven.engine.updategraph.NotificationQueue.ErrorNotification) exception notification",
+  "onFailure": "Notification of exceptions.\n\n:param originalException: (java.lang.Throwable) - exception\n:param sourceEntry: (io.deephaven.engine.table.TableListener.Entry) - performance tracking"
+ },
+ "path": "io.deephaven.engine.table.TableListener",
+ "text": "Listener implementation for Table changes.",
+ "typeName": "interface"
+}

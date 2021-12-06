@@ -1,0 +1,7 @@
+{
+ "className": "io.deephaven.engine.exceptions.CancellationException",
+ "methods": {},
+ "path": "io.deephaven.engine.exceptions.CancellationException",
+ "text": "UncheckedDeephavenException used when an action is cancelled or interrupted.",
+ "typeName": "class"
+}

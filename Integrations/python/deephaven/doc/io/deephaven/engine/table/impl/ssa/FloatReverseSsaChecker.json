@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.engine.table.impl.ssa.FloatReverseSsaChecker",
+ "methods": {
+  "checkSsa": ":param ssa: io.deephaven.engine.table.impl.ssa.SegmentedSortedArray\n:param valueChunk: io.deephaven.chunk.Chunk<? extendsio.deephaven.chunk.attributes.Values>\n:param tableIndexChunk: io.deephaven.chunk.LongChunk<? extendsio.deephaven.engine.rowset.chunkattributes.RowKeys>"
+ },
+ "path": "io.deephaven.engine.table.impl.ssa.FloatReverseSsaChecker",
+ "typeName": "class"
+}

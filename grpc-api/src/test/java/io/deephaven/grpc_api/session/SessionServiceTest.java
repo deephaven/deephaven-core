@@ -1,12 +1,10 @@
 package io.deephaven.grpc_api.session;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.db.util.liveness.LivenessScopeStack;
+import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.grpc_api.util.TestControlledScheduler;
-import io.deephaven.grpc_api.util.TestUtil;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.auth.AuthContext;
-import io.grpc.StatusRuntimeException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -58,7 +56,7 @@ public class SessionServiceTest {
 
     @Test
     public void testTokenRotationHasSpamProtection() {
-        // because we need to keep some state per refresh token, we must protect slightly from accidental DOS spam
+        // because we need to keep some state per run token, we must protect slightly from accidental DOS spam
         final SessionState session = sessionService.newSession(AUTH_CONTEXT);
         final SessionService.TokenExpiration initialToken = session.getExpiration();
         Assert.eq(sessionService.refreshToken(session), "sessionService.refreshToken(session)", initialToken,

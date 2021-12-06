@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.engine.table.impl.sources.deltaaware.ChunkAdapter",
+ "methods": {
+  "create": "Note: Java generics information - <T>\n\n:param type: java.lang.Class\n:param baseline: io.deephaven.engine.table.ChunkSink\n:param delta: io.deephaven.engine.table.ChunkSink\n:return: io.deephaven.engine.table.impl.sources.deltaaware.ChunkAdapter<T>"
+ },
+ "path": "io.deephaven.engine.table.impl.sources.deltaaware.ChunkAdapter",
+ "typeName": "class"
+}

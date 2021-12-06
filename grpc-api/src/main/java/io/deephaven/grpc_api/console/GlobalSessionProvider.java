@@ -1,6 +1,6 @@
 package io.deephaven.grpc_api.console;
 
-import io.deephaven.db.util.ScriptSession;
+import io.deephaven.engine.util.ScriptSession;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;

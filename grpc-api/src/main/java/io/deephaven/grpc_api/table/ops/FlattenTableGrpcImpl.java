@@ -1,7 +1,7 @@
 package io.deephaven.grpc_api.table.ops;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.db.tables.Table;
+import io.deephaven.engine.table.Table;
 import io.deephaven.grpc_api.session.SessionState;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.FlattenRequest;

@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.engine.table.impl.TableCreatorImpl$TableCreatorProvider",
+ "methods": {
+  "get": ":return: io.deephaven.qst.TableCreator<io.deephaven.engine.table.Table>"
+ },
+ "path": "io.deephaven.engine.table.impl.TableCreatorImpl.TableCreatorProvider",
+ "typeName": "class"
+}

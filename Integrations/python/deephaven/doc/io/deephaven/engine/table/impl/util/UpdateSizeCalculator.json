@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.table.impl.util.UpdateSizeCalculator",
+ "methods": {
+  "chunkSize": "**Incompatible overloads text - text from the first overload:**\n\nReturn the size of chunk needed to process the shifts in this update update.\n\n*Overload 1*  \n  :param upstream: (io.deephaven.engine.table.TableUpdate) - the update to process\n  :param chunkSize: (int) - the maximum chunk size (a maximum for our size)\n  :return: (int) an appropriate maximum chunk size for this update\n  \n*Overload 2*  \n  :param updateSize: (long) - the existing update size (a minimum for our size)\n  :param shifted: (io.deephaven.engine.rowset.RowSetShiftData) - the shift to get the effective size for (clamped to chunkSize)\n  :param chunkSize: (int) - the maximum chunk size (a maximum for our size)\n  :return: (int) an appropriate maximum chunk size for this update"
+ },
+ "path": "io.deephaven.engine.table.impl.util.UpdateSizeCalculator",
+ "text": "Calculate the size of the chunks needed to process an update.\n\n The assumption is that the operation processes removed, modified, and added values sequentially (not concurrently);\n so the largest add/modified/removed RowSet is all that is needed at one time. The effective shifts size is also\n included in the required update size.",
+ "typeName": "class"
+}

@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.db.plot.util.functions.ClosureFunction",
- "methods": {
-  "apply": ":param t: ClosureFunction.T\n:return: ClosureFunction.R"
- },
- "path": "io.deephaven.db.plot.util.functions.ClosureFunction",
- "text": "Wraps a SerializableClosure with the API of a function.",
- "typeName": "class"
-}

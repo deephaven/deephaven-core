@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.qst.table.TableSchema",
+ "methods": {
+  "walk": "Note: Java generics information - <V extends io.deephaven.qst.table.TableSchema.Visitor>\n\n:param visitor: V\n:return: V"
+ },
+ "path": "io.deephaven.qst.table.TableSchema",
+ "text": "A table schema is used to refer to a schema. A schema may be referenced directly via TableHeader; or\n indirectly via TableSpec, which means the schema is the same as the other TableSpec schema.",
+ "typeName": "interface"
+}

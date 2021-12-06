@@ -18,7 +18,7 @@ public class JsData {
                 return Js.uncheckedCast(new double[0]);
             case "float":
                 return Js.uncheckedCast(new float[0]);
-            case "io.deephaven.db.tables.utils.DBDateTime":
+            case "io.deephaven.time.DateTime":
             case "long":
                 return Js.uncheckedCast(new long[0]);
             case "int":

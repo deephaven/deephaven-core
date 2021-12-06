@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.csv.InferenceSpecs$Builder",
+ "methods": {
+  "addAllParsers": ":param items: java.lang.Iterable<? extendsio.deephaven.csv.Parser<?>>\n:return: io.deephaven.csv.InferenceSpecs.Builder",
+  "addParsers": "*Overload 1*  \n  :param item: io.deephaven.csv.Parser<?>\n  :return: io.deephaven.csv.InferenceSpecs.Builder\n  \n*Overload 2*  \n  :param items: io.deephaven.csv.Parser<?>...\n  :return: io.deephaven.csv.InferenceSpecs.Builder",
+  "build": ":return: io.deephaven.csv.InferenceSpecs",
+  "onNullParser": ":param parser: io.deephaven.csv.Parser<?>\n:return: io.deephaven.csv.InferenceSpecs.Builder"
+ },
+ "path": "io.deephaven.csv.InferenceSpecs.Builder",
+ "typeName": "interface"
+}

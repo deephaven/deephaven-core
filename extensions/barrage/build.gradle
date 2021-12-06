@@ -11,8 +11,8 @@ description = 'An extension integrating Barrage with Deephavens Table Model'
 
 dependencies {
     api project(':Base')
-    api project(':DB')
     api project(':Util')
+    api project(':engine-table')
     api project(':proto:proto-backplane-grpc-flight')
     api project(':log-factory')
     api "io.deephaven.barrage:barrage-format:0.3.0"
@@ -24,7 +24,7 @@ dependencies {
 
     Classpaths.inheritImmutables(project)
 
-    testImplementation TestTools.projectDependency(project, 'DB'),
+    testImplementation TestTools.projectDependency(project, 'engine-table'),
             TestTools.projectDependency(project, 'Util')
 
     Classpaths.inheritSlf4j(project, 'slf4j-api', 'implementation')
@@ -34,21 +34,6 @@ dependencies {
     Classpaths.inheritJUnitPlatform(project)
     Classpaths.inheritAssertJ(project)
     testImplementation 'org.junit.jupiter:junit-jupiter'
-}
-
-def createMainExecTask = {
-    taskName, mainClass -> tasks.create(taskName, JavaExec, { JavaExec task ->
-        task.workingDir "$rootDir"
-        task.classpath = sourceSets.main.runtimeClasspath
-        task.main = mainClass
-        return
-    })
-}
-
-createMainExecTask('replicateBarrageUtils', 'io.deephaven.extensions.barrage.chunk.ReplicateBarrageUtils')
-
-task replicate {
-    dependsOn 'replicateBarrageUtils'
 }
 
 spotless {

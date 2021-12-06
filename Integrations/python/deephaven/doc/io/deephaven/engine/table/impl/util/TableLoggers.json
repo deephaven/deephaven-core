@@ -1,0 +1,14 @@
+{
+ "className": "io.deephaven.engine.table.impl.util.TableLoggers",
+ "methods": {
+  "processInfoLog": "Return a static table with process information for the current engine process.\n\n:return: (io.deephaven.engine.table.impl.QueryTable) A table with process information for the current engine process.",
+  "processMemoryLog": "Return a table with process memory utilization and garbage collection data.\n\n:return: (io.deephaven.engine.table.impl.QueryTable) A table with memory and GC data.",
+  "processMetricsLog": "Return a table with metrics collected for the current engine process.\n\n:return: (io.deephaven.engine.table.impl.QueryTable) A table with metrics fopr the current engine process.",
+  "queryOperationPerformanceLog": "Return a table with individual subquery performance data.\n\n:return: (io.deephaven.engine.table.impl.QueryTable) A table with subquery performance data.",
+  "queryPerformanceLog": "Return a table with query performance data. Individual sub-operations in the query are referenced in\n QueryOperationPerformanceLog.\n\n:return: (io.deephaven.engine.table.impl.QueryTable) A table with query performance data.",
+  "updatePerformanceLog": "Return a table with update performance data.\n\n Note this table will only tick if/since startUpdatePerformanceLog is called.\n\n:return: (io.deephaven.engine.table.impl.QueryTable) A table with update performance data."
+ },
+ "path": "io.deephaven.engine.table.impl.util.TableLoggers",
+ "text": "Tools to obtain internal, Deephaven logs as tables. These tables include query logs and performance logs.",
+ "typeName": "class"
+}

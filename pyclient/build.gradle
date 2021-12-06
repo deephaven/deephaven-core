@@ -9,6 +9,8 @@ plugins {
     id 'com.bmuschko.docker-remote-api'
 }
 
+evaluationDependsOn Docker.registryProject('python')
+
 // Build the pydeephaven wheel from sources in a vanilla docker container
 tasks.getByName('build').dependsOn(Docker.registerDockerTask(project, 'buildPyClient') {
     copyIn {
@@ -26,11 +28,12 @@ tasks.getByName('build').dependsOn(Docker.registerDockerTask(project, 'buildPyCl
         }
     }
     dockerfile {
-        from('docker.io/library/python:3.7.10')
+        from('deephaven/python:local-build')
         copyFile('project', '/project')
         workingDir('/project')
         runCommand('python3 setup.py bdist_wheel')
     }
+    parentContainers = [ Docker.registryTask(project, 'python') ]
     containerOutPath = '/project/dist'
     copyOut {
         into 'build/wheel'
@@ -94,7 +97,7 @@ tasks.getByName('check').dependsOn(Docker.registerDockerTask(project, 'testPyCli
     containerDependencies.finalizedBy = stopDeephavenGrpcApi
     network = dockerNetworkName
     dockerfile {
-        from('docker.io/library/python:3.7.10')
+        from('deephaven/python:local-build')
         runCommand '''set -eux; \\
                       pip3 install unittest-xml-reporting==3.0.4 pyarrow==5.0.0 protobuf==3.17.3 grpcio==1.39.0 bitstring==3.1.9 pandas==1.2.5;\\
                       mkdir -p /out/report'''
@@ -104,7 +107,7 @@ tasks.getByName('check').dependsOn(Docker.registerDockerTask(project, 'testPyCli
         copyFile('project', '/project')
         workingDir('/project')
     }
-
+    parentContainers = [ Docker.registryTask(project, 'python') ]
     entrypoint = ['python', '-m', 'xmlrunner', 'discover', 'tests', '-v', '-o', '/out/report']
     copyOut {
         into layout.buildDirectory.dir('test-results')

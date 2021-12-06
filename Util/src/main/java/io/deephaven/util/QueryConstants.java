@@ -29,12 +29,22 @@ public class QueryConstants {
     /**
      * Null char value.
      */
-    public static final char NULL_CHAR = Character.MAX_VALUE - 1;
+    public static final char NULL_CHAR = Character.MAX_VALUE;
 
     /**
      * Null boxed Character value.
      */
     public static final Character NULL_CHAR_BOXED = NULL_CHAR;
+
+    /**
+     * Minimum value of type char.
+     */
+    public static final char MIN_CHAR = Character.MIN_VALUE;
+
+    /**
+     * Maximum value of type char.
+     */
+    public static final char MAX_CHAR = Character.MAX_VALUE - 1;
 
 
     /////////////////////////////////////////////////////////////////
@@ -46,7 +56,7 @@ public class QueryConstants {
     public static final byte NULL_BYTE = Byte.MIN_VALUE;
 
     /**
-     * Null boxed Byte value.
+     * Null boxed Byte value.F
      */
     public static final Byte NULL_BYTE_BOXED = NULL_BYTE;
 

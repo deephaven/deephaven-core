@@ -1,9 +1,12 @@
 package io.deephaven.client;
 
 import io.deephaven.api.TableOperations;
+import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.qst.TableCreationLogic;
 import io.deephaven.qst.TableCreationLogic1Input;
 import io.deephaven.qst.TableCreator;
+import io.deephaven.qst.column.header.ColumnHeader;
+import io.deephaven.qst.table.TableHeader;
 
 import java.time.Duration;
 import java.util.LinkedHashMap;
@@ -15,33 +18,40 @@ import static io.deephaven.client.AnnotatedTable.ofStatic;
 
 public class AnnotatedTables {
 
-    public static final AnnotatedTable EMPTY_0 = ofStatic(AnnotatedTables::empty0, 0);
-    public static final AnnotatedTable EMPTY_1 = ofStatic(AnnotatedTables::empty1, 1);
-    public static final AnnotatedTable EMPTY_2 = ofStatic(AnnotatedTables::empty2, 2);
+    public static final TableHeader TIME = TableHeader.of(ColumnHeader.ofInstant("Timestamp"));
 
-    public static final AnnotatedTable TIME_1 = ofDynamic(AnnotatedTables::time1);
-    public static final AnnotatedTable TIME_2 = ofDynamic(AnnotatedTables::time2);
+    public static final TableHeader INDEX = TableHeader.of(ColumnHeader.ofLong("I"));
 
-    public static final AnnotatedTable MERGE_STATIC = ofStatic(AnnotatedTables::mergeStatic, 3);
-    public static final AnnotatedTable MERGE = ofDynamic(AnnotatedTables::merge);
+    public static final TableHeader TIME_INDEX =
+            TableHeader.of(ColumnHeader.ofInstant("Timestamp"), ColumnHeader.ofLong("I"));
 
-    public static final AnnotatedTable VIEW_STATIC = ofStatic(AnnotatedTables::viewStatic, 1);
-    public static final AnnotatedTable VIEW = ofDynamic(AnnotatedTables::view);
+    public static final AnnotatedTable EMPTY_0 = ofStatic(TableHeader.empty(), AnnotatedTables::empty0, 0);
+    public static final AnnotatedTable EMPTY_1 = ofStatic(TableHeader.empty(), AnnotatedTables::empty1, 1);
+    public static final AnnotatedTable EMPTY_2 = ofStatic(TableHeader.empty(), AnnotatedTables::empty2, 2);
 
-    public static final AnnotatedTable UPDATE_VIEW_STATIC = ofStatic(AnnotatedTables::updateViewStatic, 1);
-    public static final AnnotatedTable UPDATE_VIEW = ofDynamic(AnnotatedTables::updateView);
+    public static final AnnotatedTable TIME_1 = ofDynamic(TIME, AnnotatedTables::time1);
+    public static final AnnotatedTable TIME_2 = ofDynamic(TIME, AnnotatedTables::time2);
 
-    public static final AnnotatedTable UPDATE_STATIC = ofStatic(AnnotatedTables::updateStatic, 1);
-    public static final AnnotatedTable UPDATE = ofDynamic(AnnotatedTables::update);
+    public static final AnnotatedTable MERGE_STATIC = ofStatic(TableHeader.empty(), AnnotatedTables::mergeStatic, 3);
+    public static final AnnotatedTable MERGE = ofDynamic(TIME, AnnotatedTables::merge);
 
-    public static final AnnotatedTable SELECT_STATIC = ofStatic(AnnotatedTables::selectStatic, 1);
-    public static final AnnotatedTable SELECT = ofDynamic(AnnotatedTables::select);
+    public static final AnnotatedTable VIEW_STATIC = ofStatic(INDEX, AnnotatedTables::viewStatic, 1);
+    public static final AnnotatedTable VIEW = ofDynamic(INDEX, AnnotatedTables::view);
 
-    public static final AnnotatedTable HEAD_STATIC = ofStatic(AnnotatedTables::headStatic, 1);
-    public static final AnnotatedTable HEAD = ofDynamic(AnnotatedTables::head);
+    public static final AnnotatedTable UPDATE_VIEW_STATIC = ofStatic(INDEX, AnnotatedTables::updateViewStatic, 1);
+    public static final AnnotatedTable UPDATE_VIEW = ofDynamic(TIME_INDEX, AnnotatedTables::updateView);
 
-    public static final AnnotatedTable TAIL_STATIC = ofStatic(AnnotatedTables::tailStatic, 1);
-    public static final AnnotatedTable TAIL = ofDynamic(AnnotatedTables::tail);
+    public static final AnnotatedTable UPDATE_STATIC = ofStatic(INDEX, AnnotatedTables::updateStatic, 1);
+    public static final AnnotatedTable UPDATE = ofDynamic(TIME_INDEX, AnnotatedTables::update);
+
+    public static final AnnotatedTable SELECT_STATIC = ofStatic(INDEX, AnnotatedTables::selectStatic, 1);
+    public static final AnnotatedTable SELECT = ofDynamic(INDEX, AnnotatedTables::select);
+
+    public static final AnnotatedTable HEAD_STATIC = ofStatic(TableHeader.empty(), AnnotatedTables::headStatic, 1);
+    public static final AnnotatedTable HEAD = ofDynamic(TIME, AnnotatedTables::head);
+
+    public static final AnnotatedTable TAIL_STATIC = ofStatic(TableHeader.empty(), AnnotatedTables::tailStatic, 1);
+    public static final AnnotatedTable TAIL = ofDynamic(TIME, AnnotatedTables::tail);
 
     public static final Adapter REVERSE_ADAPTER = AnnotatedTables::reverse;
 
@@ -57,8 +67,6 @@ public class AnnotatedTables {
 
     public static final Adapter TAIL_2_ADAPTER = in -> tail(in, 2);
 
-    public static final Adapter BY_ADAPTER = AnnotatedTables::by;
-
     public static final Adapter MERGE_2 = in -> {
         final TableCreationLogic merge2 = new TableCreationLogic() {
             @Override
@@ -68,9 +76,9 @@ public class AnnotatedTables {
             }
         };
         if (in.isStatic()) {
-            return AnnotatedTable.ofStatic(merge2, in.size() * 2);
+            return AnnotatedTable.ofStatic(in.header(), merge2, in.size() * 2);
         } else {
-            return AnnotatedTable.ofDynamic(merge2);
+            return AnnotatedTable.ofDynamic(in.header(), merge2);
         }
     };
 
@@ -83,9 +91,9 @@ public class AnnotatedTables {
             }
         };
         if (in.isStatic()) {
-            return AnnotatedTable.ofStatic(merge3, in.size() * 3);
+            return AnnotatedTable.ofStatic(in.header(), merge3, in.size() * 3);
         } else {
-            return AnnotatedTable.ofDynamic(merge3);
+            return AnnotatedTable.ofDynamic(in.header(), merge3);
         }
     };
 
@@ -123,9 +131,17 @@ public class AnnotatedTables {
         map.put("TAIL_0", TAIL_0_ADAPTER);
         map.put("TAIL_1", TAIL_1_ADAPTER);
         map.put("TAIL_2", TAIL_2_ADAPTER);
-        map.put("BY", BY_ADAPTER);
         map.put("MERGE_2", MERGE_2);
         map.put("MERGE_3", MERGE_3);
+        return map;
+    }
+
+    public static Map<String, Adapter> headerPreservingAggAllBy() {
+        final Map<String, Adapter> map = new LinkedHashMap<>();
+        map.put("AGGALL_BY_FIRST", a -> headerPreservingAgg(a, AggSpec.first()));
+        map.put("AGGALL_BY_LAST", a -> headerPreservingAgg(a, AggSpec.last()));
+        map.put("AGGALL_BY_MAX", a -> headerPreservingAgg(a, AggSpec.max()));
+        map.put("AGGALL_BY_MIN", a -> headerPreservingAgg(a, AggSpec.min()));
         return map;
     }
 
@@ -155,6 +171,14 @@ public class AnnotatedTables {
                 final String doubleKey = key + " + " + a1.getKey();
                 final AnnotatedTable derivativeSpec = a1.getValue().apply(value);
                 out.put(doubleKey, derivativeSpec);
+            }
+
+            if (value.header().numColumns() > 0) {
+                for (Entry<String, Adapter> a1 : headerPreservingAggAllBy().entrySet()) {
+                    final String doubleKey = key + " + " + a1.getKey();
+                    final AnnotatedTable derivativeSpec = a1.getValue().apply(value);
+                    out.put(doubleKey, derivativeSpec);
+                }
             }
         }
     }
@@ -207,35 +231,35 @@ public class AnnotatedTables {
     }
 
     public static <T extends TableOperations<T, T>> T viewStatic(TableCreator<T> c) {
-        return empty1(c).view("I=i");
+        return empty1(c).view("I=ii");
     }
 
     public static <T extends TableOperations<T, T>> T updateStatic(TableCreator<T> c) {
-        return empty1(c).update("I=i");
+        return empty1(c).update("I=ii");
     }
 
     public static <T extends TableOperations<T, T>> T updateViewStatic(TableCreator<T> c) {
-        return empty1(c).updateView("I=i");
+        return empty1(c).updateView("I=ii");
     }
 
     public static <T extends TableOperations<T, T>> T selectStatic(TableCreator<T> c) {
-        return empty1(c).select("I=i");
+        return empty1(c).select("I=ii");
     }
 
     public static <T extends TableOperations<T, T>> T view(TableCreator<T> c) {
-        return time1(c).view("I=i");
+        return time1(c).view("I=ii");
     }
 
     public static <T extends TableOperations<T, T>> T update(TableCreator<T> c) {
-        return time1(c).update("I=i");
+        return time1(c).update("I=ii");
     }
 
     public static <T extends TableOperations<T, T>> T updateView(TableCreator<T> c) {
-        return time1(c).updateView("I=i");
+        return time1(c).updateView("I=ii");
     }
 
     public static <T extends TableOperations<T, T>> T select(TableCreator<T> c) {
-        return time1(c).select("I=i");
+        return time1(c).select("I=ii");
     }
 
     public static <T extends TableOperations<T, T>> T headStatic(TableCreator<T> c) {
@@ -259,12 +283,23 @@ public class AnnotatedTables {
     }
 
     public static AnnotatedTable reverse(AnnotatedTable in) {
-        return new AnnotatedTable(in.logic().andThen(TableOperations::reverse), in.isStatic(), in.size());
+        return new AnnotatedTable(in.header(), in.logic().andThen(TableOperations::reverse), in.isStatic(), in.size());
     }
 
-    public static AnnotatedTable by(AnnotatedTable in) {
-        return new AnnotatedTable(in.logic().andThen(TableOperations::by), in.isStatic(), Math.min(in.size(), 1));
+    public static AnnotatedTable headerPreservingAgg(AnnotatedTable in, AggSpec spec) {
+        return new AnnotatedTable(in.header(), in.logic().andThen(aggAllBy(spec)), in.isStatic(),
+                Math.min(in.size(), 1));
     }
+
+    private static TableCreationLogic1Input aggAllBy(AggSpec spec) {
+        return new TableCreationLogic1Input() {
+            @Override
+            public <T extends TableOperations<T, T>> T create(T t1) {
+                return t1.aggAllBy(spec);
+            }
+        };
+    }
+
 
     public static AnnotatedTable head(AnnotatedTable in, int size) {
         final TableCreationLogic1Input op = new TableCreationLogic1Input() {
@@ -275,9 +310,9 @@ public class AnnotatedTables {
         };
         final TableCreationLogic headLogic = in.logic().andThen(op);
         if (in.isStatic() || size == 0) {
-            return AnnotatedTable.ofStatic(headLogic, Math.min(in.size(), size));
+            return AnnotatedTable.ofStatic(in.header(), headLogic, Math.min(in.size(), size));
         } else {
-            return AnnotatedTable.ofDynamic(headLogic);
+            return AnnotatedTable.ofDynamic(in.header(), headLogic);
         }
     }
 
@@ -290,9 +325,9 @@ public class AnnotatedTables {
         };
         final TableCreationLogic tailLogic = in.logic().andThen(op);
         if (in.isStatic() || size == 0) {
-            return AnnotatedTable.ofStatic(tailLogic, Math.min(in.size(), size));
+            return AnnotatedTable.ofStatic(in.header(), tailLogic, Math.min(in.size(), size));
         } else {
-            return AnnotatedTable.ofDynamic(tailLogic);
+            return AnnotatedTable.ofDynamic(in.header(), tailLogic);
         }
     }
 }

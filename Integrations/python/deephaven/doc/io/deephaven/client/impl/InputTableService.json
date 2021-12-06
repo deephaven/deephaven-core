@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.client.impl.InputTableService",
+ "methods": {
+  "addToInputTable": "Add source to the input table destination.\n\n:param destination: (io.deephaven.client.impl.HasTicketId) - the input table\n:param source: (io.deephaven.client.impl.HasTicketId) - the source to add\n:return: (java.util.concurrent.CompletableFuture<java.lang.Void>) the future",
+  "deleteFromInputTable": "Delete source from the input table destination.\n\n:param destination: (io.deephaven.client.impl.HasTicketId) - the input table\n:param source: (io.deephaven.client.impl.HasTicketId) - the source to delete\n:return: (java.util.concurrent.CompletableFuture<java.lang.Void>) the future"
+ },
+ "path": "io.deephaven.client.impl.InputTableService",
+ "typeName": "interface"
+}

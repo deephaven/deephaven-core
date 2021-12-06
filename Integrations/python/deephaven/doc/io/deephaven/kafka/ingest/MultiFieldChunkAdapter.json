@@ -1,7 +1,7 @@
 {
  "className": "io.deephaven.kafka.ingest.MultiFieldChunkAdapter",
  "methods": {
-  "handleChunk": "After consuming a set of generic records for a batch that are not raw objects, we pass the keys or values to an\n appropriate handler. The handler must know its data types and offsets within the publisher chunks, and \"copy\" the\n data from the inputChunk to the appropriate chunks for the stream publisher.\n\n:param inputChunk: (io.deephaven.db.v2.sources.chunk.ObjectChunk<java.lang.Object,io.deephaven.db.v2.sources.chunk.Attributes.Values>) - the chunk containing the keys or values as Kafka deserialized them from the consumer record\n:param publisherChunks: (io.deephaven.db.v2.sources.chunk.WritableChunk<io.deephaven.db.v2.sources.chunk.Attributes.Values>[]) - the output chunks for this table that must be appended to."
+  "handleChunk": "After consuming a set of generic records for a batch that are not raw objects, we pass the keys or values to an\n appropriate handler. The handler must know its data types and offsets within the publisher chunks, and \"copy\" the\n data from the inputChunk to the appropriate chunks for the stream publisher.\n\n:param inputChunk: (io.deephaven.chunk.ObjectChunk<java.lang.Object,io.deephaven.chunk.attributes.Values>) - the chunk containing the keys or values as Kafka deserialized them from the consumer record\n:param publisherChunks: (io.deephaven.chunk.WritableChunk<io.deephaven.chunk.attributes.Values>[]) - the output chunks for this table that must be appended to."
  },
  "path": "io.deephaven.kafka.ingest.MultiFieldChunkAdapter",
  "typeName": "class"

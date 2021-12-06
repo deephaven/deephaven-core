@@ -169,7 +169,7 @@ public class ViewportData implements TableData {
                 }
                 return cleanData;
             }
-            case "io.deephaven.db.tables.utils.DBDateTime": {
+            case "io.deephaven.time.DateTime": {
                 JsArray<Any> values = Js.uncheckedCast(dataColumn);
                 DateWrapper[] cleanData = new DateWrapper[values.length];
                 for (int i = 0; i < values.length; i++) {
@@ -492,11 +492,11 @@ public class ViewportData implements TableData {
             }
         }
 
-        for (Iterator<Integer> it = updated.modified.iterator(); it.hasNext();) {
-            int ii = it.next();
-            updated.added.remove(ii);
-            updated.removed.remove(ii);
-        }
+        // exclude added items from being marked as modified, since we're hiding shifts from api consumers
+        updated.modified.removeAll(updated.added);
+
+        // Any position which was both added and removed should instead be marked as modified, this cleans
+        // up anything excluded above that didn't otherwise make sense
         for (Iterator<Integer> it = updated.removed.iterator(); it.hasNext();) {
             int ii = it.next();
             if (updated.added.remove(ii)) {

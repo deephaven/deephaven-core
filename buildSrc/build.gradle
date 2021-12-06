@@ -29,7 +29,7 @@ dependencies {
         exclude group: 'org.codehaus.groovy'
     }
 
-    compile 'com.bmuschko:gradle-docker-plugin:6.7.0'
+    compile 'com.bmuschko:gradle-docker-plugin:7.1.0'
 
     compile ('com.avast.gradle:gradle-docker-compose-plugin:0.14.9')
 

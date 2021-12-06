@@ -4,13 +4,13 @@
 
 package io.deephaven.grpc_api.example;
 
+import io.deephaven.time.DateTimeUtils;
 import io.deephaven.grpc_api.console.ScopeTicketResolver;
 import io.deephaven.grpc_api.util.ExportTicketHelper;
 import io.deephaven.io.log.LogEntry;
 import io.deephaven.io.logger.Logger;
 import com.google.protobuf.ByteString;
-import io.deephaven.db.tables.live.LiveTableMonitor;
-import io.deephaven.db.tables.utils.DBTimeUtils;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.grpc_api.runner.DeephavenApiServerModule;
 import io.deephaven.grpc_api.util.Scheduler;
 import io.deephaven.internal.log.LoggerFactory;
@@ -89,7 +89,7 @@ public class ConsoleClient {
     }
 
     private void start() {
-        LiveTableMonitor.DEFAULT.start();
+        UpdateGraphProcessor.DEFAULT.start();
 
         // no payload in this simple server auth
         sessionService.newSession(HandshakeRequest.newBuilder().setAuthProtocol(1).build(),
@@ -233,12 +233,12 @@ public class ConsoleClient {
                 .append(this.sessionHeader).append("', token: '")
                 .append(this.session.toString()).append("}").endl();
 
-        // Guess a good time to do the next refresh.
+        // Guess a good time to do the next run.
         final long refreshDelayMs = Math.min(
                 scheduler.currentTime().getMillis() + result.getTokenExpirationDelayMillis() / 3,
                 result.getTokenDeadlineTimeMillis() - result.getTokenExpirationDelayMillis() / 10);
 
-        scheduler.runAtTime(DBTimeUtils.millisToTime(refreshDelayMs), this::refreshToken);
+        scheduler.runAtTime(DateTimeUtils.millisToTime(refreshDelayMs), this::refreshToken);
     }
 
     private void refreshToken() {

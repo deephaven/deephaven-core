@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.table.iterators.LongColumnIterator",
+ "methods": {
+  "nextLong": ":return: long"
+ },
+ "path": "io.deephaven.engine.table.iterators.LongColumnIterator",
+ "text": "Iteration support for boxed or primitive longs contained with a ColumnSource.",
+ "typeName": "class"
+}

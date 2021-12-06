@@ -1,0 +1,13 @@
+{
+ "className": "io.deephaven.engine.liveness.ReferenceCountedLivenessNode",
+ "methods": {
+  "dropReference": "Drop a previously-retained reference to this referent.",
+  "getWeakReference": "Get a WeakReference to this referent. This may be cached, or newly created.\n\n:return: (java.lang.ref.WeakReference<? extends io.deephaven.engine.liveness.LivenessReferent>) A new or cached reference to this referent",
+  "initializeTransientFieldsForLiveness": "Package-private for Serializable sub-classes to use in readObject only.\n Public to allow unit tests in another package to work around mock issues where the constructor is never invoked.",
+  "tryManage": "Attempt to add the specified referent to this manager.\n\n:param referent: (io.deephaven.engine.liveness.LivenessReferent) - The referent to add\n:return: (boolean) Whether the referent was in fact added",
+  "tryRetainReference": "If this referent is \"live\", behave as LivenessReferent.retainReference() and return true. Otherwise, returns false rather\n than throwing an exception.\n\n:return: (boolean) True if this referent was retained, false otherwise"
+ },
+ "path": "io.deephaven.engine.liveness.ReferenceCountedLivenessNode",
+ "text": "LivenessNode implementation that relies on reference counting to determine its liveness.",
+ "typeName": "class"
+}

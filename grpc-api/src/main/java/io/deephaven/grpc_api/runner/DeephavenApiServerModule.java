@@ -3,8 +3,9 @@ package io.deephaven.grpc_api.runner;
 import dagger.Module;
 import dagger.Provides;
 import dagger.multibindings.ElementsIntoSet;
-import io.deephaven.db.tables.live.LiveTableMonitor;
-import io.deephaven.db.v2.sources.chunk.util.pools.MultiChunkPool;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.chunk.util.pools.MultiChunkPool;
+import io.deephaven.grpc_api.appmode.AppMode;
 import io.deephaven.grpc_api.appmode.AppModeModule;
 import io.deephaven.grpc_api.arrow.ArrowModule;
 import io.deephaven.grpc_api.auth.AuthContextModule;
@@ -14,6 +15,7 @@ import io.deephaven.grpc_api.console.python.PythonConsoleSessionModule;
 import io.deephaven.grpc_api.log.LogModule;
 import io.deephaven.grpc_api.session.SessionModule;
 import io.deephaven.grpc_api.table.TableModule;
+import io.deephaven.grpc_api.table.inputtables.InputTableModule;
 import io.deephaven.grpc_api.uri.UriModule;
 import io.deephaven.grpc_api.util.Scheduler;
 import io.deephaven.util.process.ProcessEnvironment;
@@ -46,6 +48,7 @@ import java.util.concurrent.TimeUnit;
         UriModule.class,
         SessionModule.class,
         TableModule.class,
+        InputTableModule.class,
         ConsoleModule.class,
         GroovyConsoleSessionModule.class,
         PythonConsoleSessionModule.class
@@ -79,6 +82,12 @@ public class DeephavenApiServerModule {
     @ElementsIntoSet
     static Set<ServerInterceptor> primeInterceptors() {
         return Collections.emptySet();
+    }
+
+    @Provides
+    @Singleton
+    public static AppMode provideAppMode() {
+        return AppMode.currentMode();
     }
 
     @Provides
@@ -131,8 +140,8 @@ public class DeephavenApiServerModule {
 
     @Provides
     @Singleton
-    public static LiveTableMonitor provideLiveTableMonitor() {
-        return LiveTableMonitor.DEFAULT;
+    public static UpdateGraphProcessor provideUpdateGraphProcessor() {
+        return UpdateGraphProcessor.DEFAULT;
     }
 
     private static class ThreadFactory extends NamingThreadFactory {

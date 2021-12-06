@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.db.v2.sort.permute.ShortPermuteKernel",
- "methods": {
-  "permute": "*Overload 1*  \n  Note: Java generics information - <T extends io.deephaven.db.v2.sources.chunk.Attributes.Any>\n  \n  :param extend: io.deephaven.db.v2.sources.chunk.ShortChunk<?\n  :param outputPositions: io.deephaven.db.v2.sources.chunk.IntChunk<io.deephaven.db.v2.sources.chunk.Attributes.ChunkPositions>\n  :param supe: io.deephaven.db.v2.sources.chunk.WritableShortChunk<?\n  \n*Overload 2*  \n  Note: Java generics information - <T extends io.deephaven.db.v2.sources.chunk.Attributes.Any>\n  \n  :param inputPositions: io.deephaven.db.v2.sources.chunk.IntChunk<io.deephaven.db.v2.sources.chunk.Attributes.ChunkPositions>\n  :param extend: io.deephaven.db.v2.sources.chunk.ShortChunk<?\n  :param outputPositions: io.deephaven.db.v2.sources.chunk.IntChunk<io.deephaven.db.v2.sources.chunk.Attributes.ChunkPositions>\n  :param supe: io.deephaven.db.v2.sources.chunk.WritableShortChunk<?",
-  "permuteInput": "Note: Java generics information - <T extends io.deephaven.db.v2.sources.chunk.Attributes.Any>\n\n:param extend: io.deephaven.db.v2.sources.chunk.ShortChunk<?\n:param inputPositions: io.deephaven.db.v2.sources.chunk.IntChunk<io.deephaven.db.v2.sources.chunk.Attributes.ChunkPositions>\n:param supe: io.deephaven.db.v2.sources.chunk.WritableShortChunk<?"
- },
- "path": "io.deephaven.db.v2.sort.permute.ShortPermuteKernel",
- "typeName": "class"
-}

@@ -1,0 +1,14 @@
+{
+ "className": "io.deephaven.engine.table.impl.vector.ObjectVectorColumnWrapper",
+ "methods": {
+  "get": ":param i: long\n:return: ObjectVectorColumnWrapper.T",
+  "getComponentType": ":return: java.lang.Class<ObjectVectorColumnWrapper.T>",
+  "getDirect": "Return a version of this Vector that is flattened out to only reference memory.\n\n:return: io.deephaven.vector.ObjectVector<ObjectVectorColumnWrapper.T>",
+  "size": "The size of this data structure.\n\n:return: (long) The size",
+  "subVector": ":param fromIndexInclusive: long\n:param toIndexExclusive: long\n:return: io.deephaven.vector.ObjectVector<ObjectVectorColumnWrapper.T>",
+  "subVectorByPositions": ":param positions: long[]\n:return: io.deephaven.vector.ObjectVector<ObjectVectorColumnWrapper.T>",
+  "toArray": "*Overload 1*  \n  :return: ObjectVectorColumnWrapper.T[]\n  \n*Overload 2*  \n  :param shouldBeNullIfOutofBounds: boolean\n  :param maxSize: long\n  :return: ObjectVectorColumnWrapper.T[]"
+ },
+ "path": "io.deephaven.engine.table.impl.vector.ObjectVectorColumnWrapper",
+ "typeName": "class"
+}

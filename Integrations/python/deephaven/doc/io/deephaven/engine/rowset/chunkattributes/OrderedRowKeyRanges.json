@@ -1,0 +1,7 @@
+{
+ "className": "io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges",
+ "methods": {},
+ "path": "io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges",
+ "text": "Attribute that specifies that a Chunk contains ordered row key ranges, which must be in strictly ascending\n order.\n \n These are to be represented as pairs of an inclusive start and an inclusive end in even and odd slots, respectively.",
+ "typeName": "interface"
+}

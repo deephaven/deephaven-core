@@ -1,5 +1,5 @@
 # Basing our image on node, so we can easily install and invoke ts-protoc-gen protoc plugin
-FROM docker.io/library/node:14.16.0
+FROM deephaven/node:local-build
 
 WORKDIR /usr/src/app
 

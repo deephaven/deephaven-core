@@ -24,9 +24,9 @@ import static org.gradle.api.plugins.JavaPlugin.TEST_RUNTIME_CLASSPATH_CONFIGURA
 //@CompileStatic
 class TestTools {
 
-    static final String TEST_GROUP = "~Iris Test"
+    static final String TEST_GROUP = "~Deephaven Test"
 
-    static Test addDbTest(Project project, String type, boolean parallel=false, boolean passwordEnabled=false, boolean isolated=false) {
+    static Test addEngineTest(Project project, String type, boolean parallel=false, boolean passwordEnabled=false, boolean isolated=false) {
         Test mainTest = project.tasks.getByName('test') as Test
         Test t = project.tasks.create("test$type", Test)
 

@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.engine.table.impl.chunkfilter.LongRangeComparator",
+ "methods": {
+  "makeLongFilter": ":param lower: long\n:param upper: long\n:param lowerInclusive: boolean\n:param upperInclusive: boolean\n:return: io.deephaven.engine.table.impl.chunkfilter.ChunkFilter.LongChunkFilter"
+ },
+ "path": "io.deephaven.engine.table.impl.chunkfilter.LongRangeComparator",
+ "typeName": "class"
+}

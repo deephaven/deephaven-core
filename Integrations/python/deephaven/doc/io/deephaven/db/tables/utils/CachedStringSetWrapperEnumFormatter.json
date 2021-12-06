@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.db.tables.utils.CachedStringSetWrapperEnumFormatter",
- "methods": {
-  "formatStringSetWrapper": ":param index: int\n:return: io.deephaven.db.tables.StringSetWrapper"
- },
- "path": "io.deephaven.db.tables.utils.CachedStringSetWrapperEnumFormatter",
- "text": "This object extends the EnumFormatter class and affords the caching of string set results Be warned this could create\n a large hash if the possible enum combinations get very large.",
- "typeName": "class"
-}

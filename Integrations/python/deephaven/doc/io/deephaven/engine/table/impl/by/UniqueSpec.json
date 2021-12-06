@@ -1,0 +1,13 @@
+{
+ "className": "io.deephaven.engine.table.impl.by.UniqueSpec",
+ "methods": {
+  "countNulls": ":return: boolean",
+  "getChunkedOperator": ":param type: java.lang.Class\n:param name: java.lang.String\n:param exposeInternalColumns: boolean\n:return: io.deephaven.engine.table.impl.by.IterativeChunkedAggregationOperator",
+  "getMemoKey": "Produces a MemoKey for this AggregationSpec.\n\n \n If two AggregationSpecs have equal memoKeys, then Table.groupBy(java.util.Collection<? extends io.deephaven.api.Selectable>) operations that have the same group by\n columns may be memoized. In that case instead of recomputing the result; the original result will be used.\n \n\n If null is returned, the operation will not be memoized.\n \n\n:return: (io.deephaven.engine.table.impl.by.AggregationMemoKey) an AggregationMemoKey, null if this operation can not be memoized.",
+  "getNoKeyValue": ":return: java.lang.Object",
+  "getNonUniqueValue": ":return: java.lang.Object"
+ },
+ "path": "io.deephaven.engine.table.impl.by.UniqueSpec",
+ "text": "An Iterative state factory that displays the singular unique value of the items within a particular state, or default\n values if none are present, or the values are not unique.",
+ "typeName": "class"
+}
