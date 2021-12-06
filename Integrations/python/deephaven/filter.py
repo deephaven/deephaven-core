@@ -58,4 +58,4 @@ def or_(filters:List[str]) -> object:
         a filter that evaluates to true when any of the input filters evaluates to true
     """
 
-    return _JFilterOr.of(_JFilter.from(filters))
+    return _JFilterOr.of(_JFilter.from_(filters))
