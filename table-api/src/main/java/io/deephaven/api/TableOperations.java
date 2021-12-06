@@ -643,4 +643,14 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
     TOPS wsumBy(String weightColumn, Collection<String> groupByColumns);
 
     // -------------------------------------------------------------------------------------------
+
+    TOPS wavgBy(String weightColumn);
+
+    TOPS wavgBy(String weightColumn, String... groupByColumns);
+
+    TOPS wavgBy(String weightColumn, Selectable... groupByColumns);
+
+    TOPS wavgBy(String weightColumn, Collection<String> groupByColumns);
+
+    // -------------------------------------------------------------------------------------------
 }

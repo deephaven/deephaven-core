@@ -1161,6 +1161,7 @@ public interface Table extends
      * @param weightColumn the column to use for the weight
      * @param groupByColumns The grouping columns as in {@link Table#groupBy}
      */
+    @Override
     @ConcurrentMethod
     Table wavgBy(String weightColumn, Selectable... groupByColumns);
 
@@ -1171,6 +1172,7 @@ public interface Table extends
      * @param weightColumn the column to use for the weight
      * @param groupByColumns The grouping columns as in {@link Table#groupBy}
      */
+    @Override
     @ConcurrentMethod
     Table wavgBy(String weightColumn, String... groupByColumns);
 
@@ -1181,6 +1183,7 @@ public interface Table extends
      * @param weightColumn the column to use for the weight
      * @param groupByColumns The grouping columns as in {@link Table#groupBy}
      */
+    @Override
     @ConcurrentMethod
     Table wavgBy(String weightColumn, Collection<String> groupByColumns);
 
@@ -1191,6 +1194,7 @@ public interface Table extends
      *
      * @param weightColumn the column to use for the weight
      */
+    @Override
     @ConcurrentMethod
     Table wavgBy(String weightColumn);
 

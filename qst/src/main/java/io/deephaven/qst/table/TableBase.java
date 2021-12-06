@@ -721,6 +721,26 @@ public abstract class TableBase implements TableSpec {
     }
 
     @Override
+    public final AggregateAllByTable wavgBy(String weightColumn) {
+        return aggAllBy(AggSpec.wavg(weightColumn));
+    }
+
+    @Override
+    public final AggregateAllByTable wavgBy(String weightColumn, String... groupByColumns) {
+        return aggAllBy(AggSpec.wavg(weightColumn), groupByColumns);
+    }
+
+    @Override
+    public final AggregateAllByTable wavgBy(String weightColumn, Selectable... groupByColumns) {
+        return aggAllBy(AggSpec.wavg(weightColumn), groupByColumns);
+    }
+
+    @Override
+    public final AggregateAllByTable wavgBy(String weightColumn, Collection<String> groupByColumns) {
+        return aggAllBy(AggSpec.wavg(weightColumn), groupByColumns);
+    }
+
+    @Override
     public final <V extends TableSchema.Visitor> V walk(V visitor) {
         visitor.visit(this);
         return visitor;

@@ -570,4 +570,24 @@ public abstract class TableOperationsAdapter<TOPS_1 extends TableOperations<TOPS
     public final TOPS_1 wsumBy(String weightColumn, Collection<String> groupByColumns) {
         return adapt(delegate.wsumBy(weightColumn, groupByColumns));
     }
+
+    @Override
+    public final TOPS_1 wavgBy(String weightColumn) {
+        return adapt(delegate.wavgBy(weightColumn));
+    }
+
+    @Override
+    public final TOPS_1 wavgBy(String weightColumn, String... groupByColumns) {
+        return adapt(delegate.wavgBy(weightColumn, groupByColumns));
+    }
+
+    @Override
+    public final TOPS_1 wavgBy(String weightColumn, Selectable... groupByColumns) {
+        return adapt(delegate.wavgBy(weightColumn, groupByColumns));
+    }
+
+    @Override
+    public final TOPS_1 wavgBy(String weightColumn, Collection<String> groupByColumns) {
+        return adapt(delegate.wavgBy(weightColumn, groupByColumns));
+    }
 }
