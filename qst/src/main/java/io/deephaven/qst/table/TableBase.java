@@ -621,6 +621,26 @@ public abstract class TableBase implements TableSpec {
     }
 
     @Override
+    public final AggregateAllByTable medianBy() {
+        return aggAllBy(AggSpec.median());
+    }
+
+    @Override
+    public final AggregateAllByTable medianBy(String... groupByColumns) {
+        return aggAllBy(AggSpec.median(), groupByColumns);
+    }
+
+    @Override
+    public final AggregateAllByTable medianBy(Selectable... groupByColumns) {
+        return aggAllBy(AggSpec.median(), groupByColumns);
+    }
+
+    @Override
+    public final AggregateAllByTable medianBy(Collection<String> groupByColumns) {
+        return aggAllBy(AggSpec.median(), groupByColumns);
+    }
+
+    @Override
     public final <V extends TableSchema.Visitor> V walk(V visitor) {
         visitor.visit(this);
         return visitor;

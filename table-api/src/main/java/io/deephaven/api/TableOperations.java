@@ -593,4 +593,14 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
     TOPS avgBy(Collection<String> groupByColumns);
 
     // -------------------------------------------------------------------------------------------
+
+    TOPS medianBy();
+
+    TOPS medianBy(String... groupByColumns);
+
+    TOPS medianBy(Selectable... groupByColumns);
+
+    TOPS medianBy(Collection<String> groupByColumns);
+
+    // -------------------------------------------------------------------------------------------
 }

@@ -1457,6 +1457,7 @@ public interface Table extends
      *
      * @param groupByColumns The grouping columns as in {@link Table#groupBy} }
      */
+    @Override
     @ConcurrentMethod
     Table medianBy(Selectable... groupByColumns);
 
@@ -1466,6 +1467,7 @@ public interface Table extends
      *
      * @param groupByColumns The grouping columns as in {@link Table#groupBy} }
      */
+    @Override
     @ConcurrentMethod
     Table medianBy(String... groupByColumns);
 
@@ -1475,6 +1477,7 @@ public interface Table extends
      *
      * @param groupByColumns The grouping columns as in {@link Table#groupBy} }
      */
+    @Override
     @ConcurrentMethod
     Table medianBy(Collection<String> groupByColumns);
 
@@ -1483,6 +1486,7 @@ public interface Table extends
      * <p>
      * When the input table is empty, zero output rows are produced.
      */
+    @Override
     @ConcurrentMethod
     Table medianBy();
 

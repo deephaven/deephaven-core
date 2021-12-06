@@ -470,4 +470,24 @@ public abstract class TableOperationsAdapter<TOPS_1 extends TableOperations<TOPS
     public final TOPS_1 avgBy(Collection<String> groupByColumns) {
         return adapt(delegate.avgBy(groupByColumns));
     }
+
+    @Override
+    public final TOPS_1 medianBy() {
+        return adapt(delegate.medianBy());
+    }
+
+    @Override
+    public final TOPS_1 medianBy(String... groupByColumns) {
+        return adapt(delegate.medianBy(groupByColumns));
+    }
+
+    @Override
+    public final TOPS_1 medianBy(Selectable... groupByColumns) {
+        return adapt(delegate.medianBy(groupByColumns));
+    }
+
+    @Override
+    public final TOPS_1 medianBy(Collection<String> groupByColumns) {
+        return adapt(delegate.medianBy(groupByColumns));
+    }
 }
