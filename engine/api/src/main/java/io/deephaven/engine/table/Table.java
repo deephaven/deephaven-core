@@ -1336,6 +1336,7 @@ public interface Table extends
      *
      * @param groupByColumns The grouping columns as in {@link Table#groupBy}
      */
+    @Override
     @ConcurrentMethod
     Table firstBy(Selectable... groupByColumns);
 
@@ -1345,6 +1346,7 @@ public interface Table extends
      *
      * @param groupByColumns The grouping columns as in {@link Table#groupBy}
      */
+    @Override
     @ConcurrentMethod
     Table firstBy(String... groupByColumns);
 
@@ -1354,12 +1356,14 @@ public interface Table extends
      *
      * @param groupByColumns The grouping columns as in {@link Table#groupBy}
      */
+    @Override
     @ConcurrentMethod
     Table firstBy(Collection<String> groupByColumns);
 
     /**
      * Returns the first row of the given table.
      */
+    @Override
     @ConcurrentMethod
     Table firstBy();
 

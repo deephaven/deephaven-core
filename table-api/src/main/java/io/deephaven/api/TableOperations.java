@@ -533,4 +533,14 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
     TOPS countBy(String countColumnName, Collection<String> groupByColumns);
 
     // -------------------------------------------------------------------------------------------
+
+    TOPS firstBy();
+
+    TOPS firstBy(String... groupByColumns);
+
+    TOPS firstBy(Selectable... groupByColumns);
+
+    TOPS firstBy(Collection<String> groupByColumns);
+
+    // -------------------------------------------------------------------------------------------
 }
