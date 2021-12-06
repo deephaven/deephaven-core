@@ -25,8 +25,8 @@ public class Future {
     /**
      * Creates a new Future.
      *
-     * @param func      function that performs computation on gathered data.
-     * @param inputs    inputs to the Future computation.
+     * @param func function that performs computation on gathered data.
+     * @param inputs inputs to the Future computation.
      * @param batchSize maximum number of rows for deferred computation.
      */
     Future(Function<Object[], Object> func, Input[] inputs, ColumnSource<?>[][] colSets, int batchSize) {
@@ -69,12 +69,12 @@ public class Future {
     /**
      * Computes the result of applying the gather function to the given input.
      *
-     * @param input  input that contains the gather function and the column names to gather.
+     * @param input input that contains the gather function and the column names to gather.
      * @param colSet set of column sources from which to extract data.
      * @return gathered data
      */
     Object gather(Input input, ColumnSource<?>[] colSet) {
-        return input.getGatherFunc().apply(new Object[]{this.rowSet, colSet});
+        return input.getGatherFunc().apply(new Object[] {this.rowSet, colSet});
     }
 
     /**
@@ -107,8 +107,8 @@ public class Future {
     }
 
     /**
-     * Returns true if this future is full of keys to process; false otherwise.
-     * The future is full of keys if the size is equal to the batch size.
+     * Returns true if this future is full of keys to process; false otherwise. The future is full of keys if the size
+     * is equal to the batch size.
      *
      * @return true if this future is full of keys to process; false otherwise.
      */

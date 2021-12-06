@@ -19,18 +19,18 @@ public class FutureTest {
     @BeforeClass
     public static void createTable() {
         table = new InMemoryTable(
-                new String[]{"Column1", "Column2", "Column3"},
-                new Object[]{
-                        new int[]{1, 2, 1, 2, 3, 1, 2, 3, 4},
-                        new long[]{2L, 4L, 2L, 4L, 6L, 2L, 4L, 6L, 8L},
-                        new double[]{5.1, 2.8, 5.7, 2.4, 7.5, 2.2, 6.4, 2.1, 7.8}
+                new String[] {"Column1", "Column2", "Column3"},
+                new Object[] {
+                        new int[] {1, 2, 1, 2, 3, 1, 2, 3, 4},
+                        new long[] {2L, 4L, 2L, 4L, 6L, 2L, 4L, 6L, 8L},
+                        new double[] {5.1, 2.8, 5.7, 2.4, 7.5, 2.2, 6.4, 2.1, 7.8}
                 });
 
     }
 
     @SafeVarargs
     private static Input[] createInputs(Function<Object[], Object>... gatherFuncs) {
-        return new Input[]{new Input(new String[]{"Column1", "Column2"}, gatherFuncs[0]),
+        return new Input[] {new Input(new String[] {"Column1", "Column2"}, gatherFuncs[0]),
                 new Input("Column3", gatherFuncs[1])};
     }
 
@@ -40,7 +40,7 @@ public class FutureTest {
 
     private static Future createFuture(Function<Object[], Object> modelFunc, Input[] inputs, int batchSize) {
         return new Future(modelFunc, inputs,
-                new ColumnSource[][]{
+                new ColumnSource[][] {
                         table.view("Column1", "Column2").getColumnSources()
                                 .toArray(ColumnSource.ZERO_LENGTH_COLUMN_SOURCE_ARRAY),
                         table.view("Column3").getColumnSources()
@@ -64,7 +64,7 @@ public class FutureTest {
         Function<Object[], Object> myGather1 = (params) -> {
             Assert.assertEquals(2, params.length);
             Assert.assertEquals(rowSetTarget[0], params[0]);
-            Assert.assertTrue(Objects.deepEquals(new Object[]{colSourceTarget[0]}[0], params[1]));
+            Assert.assertTrue(Objects.deepEquals(new Object[] {colSourceTarget[0]}[0], params[1]));
 
             return 4;
         };
@@ -72,7 +72,7 @@ public class FutureTest {
         Function<Object[], Object> myGather2 = (params) -> {
             Assert.assertEquals(2, params.length);
             Assert.assertEquals(rowSetTarget[0], params[0]);
-            Assert.assertTrue(Objects.deepEquals(new Object[]{colSourceTarget[1]}[0], params[1]));
+            Assert.assertTrue(Objects.deepEquals(new Object[] {colSourceTarget[1]}[0], params[1]));
 
             return 5;
         };
@@ -105,7 +105,7 @@ public class FutureTest {
         Function<Object[], Object> myGather1 = (params) -> {
             Assert.assertEquals(2, params.length);
             Assert.assertEquals(rowSetTarget[0], params[0]);
-            Assert.assertTrue(Objects.deepEquals(new Object[]{colSourceTarget[0]}[0], params[1]));
+            Assert.assertTrue(Objects.deepEquals(new Object[] {colSourceTarget[0]}[0], params[1]));
 
             return 10;
         };
@@ -113,7 +113,7 @@ public class FutureTest {
         Function<Object[], Object> myGather2 = (params) -> {
             Assert.assertEquals(2, params.length);
             Assert.assertEquals(rowSetTarget[0], params[0]);
-            Assert.assertTrue(Objects.deepEquals(new Object[]{colSourceTarget[1]}[0], params[1]));
+            Assert.assertTrue(Objects.deepEquals(new Object[] {colSourceTarget[1]}[0], params[1]));
 
             return 11;
         };
