@@ -64,8 +64,8 @@ Let's return to our crypto data.
 Read in a CSV of batch crypto data sourced on 09/22/2021.
 
 ```python
-from deephaven.TableTools import readCsv
-trades_batch_view = readCsv("/data/large/crypto/CryptoTrades_20210922.csv")
+from deephaven import csv
+trades_batch_view = csv.read("/data/large/crypto/CryptoTrades_20210922.csv")
 ```
 
 \
@@ -93,15 +93,26 @@ The following scripts will demonstrate much the same with two examples:
 
 ```python
 # the table decoration
-from deephaven.DBTimeUtils import formatDate
+from deephaven.DateTimeUtils import formatDate
 
 add_column_streaming = trades_stream_view.updateView("Date = formatDate(KafkaTimestamp, TZ_NY)")
 add_column_batch     = trades_batch_view .updateView("Date = formatDate(Timestamp, TZ_NY)")
 
 # the table aggregation
-from deephaven import ComboAggregateFactory as caf
-agg_streaming = add_column_streaming.by(caf.AggCombo(caf.AggFirst("Price"), caf.AggAvg("Avg_Price = Price")), "Date", "Exchange", "Instrument")
-agg_batch     = add_column_batch    .by(caf.AggCombo(caf.AggFirst("Price"), caf.AggAvg("Avg_Price = Price")), "Date", "Exchange", "Instrument")
+from deephaven import Aggregation as agg, combo_agg
+
+agg_list = combo_agg([
+    agg.AggFirst("Price"),
+    agg.AggAvg("Avg_Price = Price"),
+])
+
+agg_streaming = add_column_streaming.aggBy(
+    agg_list, "Date", "Exchange", "Instrument"
+)
+
+agg_batch = add_column_batch.aggBy(
+    agg_list, "Date", "Exchange", "Instrument"
+)
 ```
 
 \

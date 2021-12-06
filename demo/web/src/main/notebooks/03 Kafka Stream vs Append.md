@@ -17,7 +17,7 @@ Start by importing some requisite packages. There is documentation on [installin
 [ComboAggregateFactory](https://deephaven.io/core/docs/reference/table-operations/group-and-aggregate/AggCombo/), [emptyTable](https://deephaven.io/core/docs/how-to-guides/empty-table/#related-documentation), and [merge](https://deephaven.io/core/docs/how-to-guides/merge-tables/#merge-tables).
 
 ```python
-from deephaven import KafkaTools as kt, ComboAggregateFactory as caf
+from deephaven import ConsumeKafka as ck, Aggregation as agg, combo_agg
 from deephaven.TableTools import emptyTable, merge
 ```
 
@@ -32,12 +32,12 @@ This demo will demonstrate the impact of choices related to `offsets` and `table
 
 ```python
 def get_trades(*, offsets, table_type):
-    return kt.consumeToTable(
+    return ck.consumeToTable(
         {  'bootstrap.servers' : 'demo-kafka.c.deephaven-oss.internal:9092',
           'schema.registry.url' : 'http://demo-kafka.c.deephaven-oss.internal:8081' },
         'io.deephaven.crypto.kafka.TradesTopic',
-        key = kt.IGNORE,
-        value = kt.avro('io.deephaven.crypto.kafka.TradesTopic-io.deephaven.crypto.Trade'),
+        key = ck.IGNORE,
+        value = ck.avro('io.deephaven.crypto.kafka.TradesTopic-io.deephaven.crypto.Trade'),
         offsets=offsets,
         table_type=table_type)
 ```
@@ -50,7 +50,7 @@ In this demo, imagine you want to start your Kafka feed "1 million events ago" (
 Create a Deephaven table that listens to current records (-- i.e. crypto trades happening now).
 
 ```python
-latest_offset = get_trades(offsets=kt.ALL_PARTITIONS_SEEK_TO_END, table_type='stream')
+latest_offset = get_trades(offsets=ck.ALL_PARTITIONS_SEEK_TO_END, table_type='stream')
 ```
 
 \
@@ -100,9 +100,13 @@ Define a [table aggregation function](https://deephaven.io/core/docs/reference/t
 
 ```python
 def trades_agg(table):
-    return table.by(caf.AggCombo(caf.AggCount("Trade_Count"),caf.AggSum("Total_Size = Size")),"Exchange", "Instrument")\
-    .sort("Exchange", "Instrument")\
-    .formatColumnWhere("Instrument", "Instrument.startsWith(`BTC`)", "IVORY")
+    agg_list = combo_agg([
+        agg.AggCount("Trade_Count"),
+        agg.AggSum("Total_Size = Size"),
+    ])
+    return table.aggBy(agg_list, "Exchange", "Instrument").\
+        sort("Exchange", "Instrument").\
+        formatColumnWhere("Instrument", "Instrument.startsWith(`BTC`)", "IVORY")
 ```
 
 \
