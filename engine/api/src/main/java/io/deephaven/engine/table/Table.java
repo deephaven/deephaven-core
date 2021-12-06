@@ -1082,6 +1082,7 @@ public interface Table extends
      *
      * @param groupByColumns The grouping columns as in {@link Table#groupBy}
      */
+    @Override
     @ConcurrentMethod
     Table absSumBy(Selectable... groupByColumns);
 
@@ -1091,6 +1092,7 @@ public interface Table extends
      *
      * @param groupByColumns The grouping columns as in {@link Table#groupBy}
      */
+    @Override
     @ConcurrentMethod
     Table absSumBy(String... groupByColumns);
 
@@ -1100,6 +1102,7 @@ public interface Table extends
      *
      * @param groupByColumns The grouping columns as in {@link Table#groupBy}
      */
+    @Override
     @ConcurrentMethod
     Table absSumBy(Collection<String> groupByColumns);
 
@@ -1108,6 +1111,7 @@ public interface Table extends
      * <p>
      * When the input table is empty, zero output rows are produced.
      */
+    @Override
     @ConcurrentMethod
     Table absSumBy();
 

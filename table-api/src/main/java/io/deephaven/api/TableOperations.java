@@ -623,4 +623,14 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
     TOPS varBy(Collection<String> groupByColumns);
 
     // -------------------------------------------------------------------------------------------
+
+    TOPS absSumBy();
+
+    TOPS absSumBy(String... groupByColumns);
+
+    TOPS absSumBy(Selectable... groupByColumns);
+
+    TOPS absSumBy(Collection<String> groupByColumns);
+
+    // -------------------------------------------------------------------------------------------
 }
