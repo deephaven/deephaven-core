@@ -450,4 +450,24 @@ public abstract class TableOperationsAdapter<TOPS_1 extends TableOperations<TOPS
     public final TOPS_1 sumBy(Collection<String> groupByColumns) {
         return adapt(delegate.sumBy(groupByColumns));
     }
+
+    @Override
+    public final TOPS_1 avgBy() {
+        return adapt(delegate.avgBy());
+    }
+
+    @Override
+    public final TOPS_1 avgBy(String... groupByColumns) {
+        return adapt(delegate.avgBy(groupByColumns));
+    }
+
+    @Override
+    public final TOPS_1 avgBy(Selectable... groupByColumns) {
+        return adapt(delegate.avgBy(groupByColumns));
+    }
+
+    @Override
+    public final TOPS_1 avgBy(Collection<String> groupByColumns) {
+        return adapt(delegate.avgBy(groupByColumns));
+    }
 }

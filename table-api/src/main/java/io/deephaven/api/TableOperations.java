@@ -583,4 +583,14 @@ public interface TableOperations<TOPS extends TableOperations<TOPS, TABLE>, TABL
     TOPS sumBy(Collection<String> groupByColumns);
 
     // -------------------------------------------------------------------------------------------
+
+    TOPS avgBy();
+
+    TOPS avgBy(String... groupByColumns);
+
+    TOPS avgBy(Selectable... groupByColumns);
+
+    TOPS avgBy(Collection<String> groupByColumns);
+
+    // -------------------------------------------------------------------------------------------
 }
