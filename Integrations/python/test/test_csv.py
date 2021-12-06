@@ -55,7 +55,7 @@ class CsvTestCase(TestCase):
         self.assertEqual(t_cols, get_col_names(t))
 
         col_names = ["Strings", "Longs", "Floats"]
-        col_types = [Types.string, Types.long, Types.float_]
+        col_types = [Types.string, Types.long_, Types.float_]
         table_header = {k: v for k, v in zip(col_names, col_types)}
         t = read_csv('test/data/test_csv.csv', header=table_header)
         write_csv(t, "./test_write.csv", cols=col_names)
