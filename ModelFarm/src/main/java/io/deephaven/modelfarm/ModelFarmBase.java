@@ -56,7 +56,7 @@ public abstract class ModelFarmBase<DATATYPE> implements ModelFarm {
          * Performs an operation using data from a query.
          *
          * @param usePrev Whether to use the previous data at a given row key when retrieving data (i.e. if
-         *                {@code true}, use {@link ColumnSource#getPrev} instead of {@link ColumnSource#get}).
+         *        {@code true}, use {@link ColumnSource#getPrev} instead of {@link ColumnSource#get}).
          */
         void retrieveData(boolean usePrev);
 
@@ -151,7 +151,7 @@ public abstract class ModelFarmBase<DATATYPE> implements ModelFarm {
      * Create a multithreaded resource to execute data driven models.
      *
      * @param nThreads number of worker threads.
-     * @param model    model to execute.
+     * @param model model to execute.
      */
     @SuppressWarnings("WeakerAccess")
     protected ModelFarmBase(final int nThreads, final Model<DATATYPE> model) {
@@ -183,7 +183,7 @@ public abstract class ModelFarmBase<DATATYPE> implements ModelFarm {
     /**
      * Interface for getting the most recent row data for a unique identifier.
      *
-     * @param <KEYTYPE>  unique ID key type
+     * @param <KEYTYPE> unique ID key type
      * @param <DATATYPE> data type
      */
     @FunctionalInterface
@@ -193,7 +193,7 @@ public abstract class ModelFarmBase<DATATYPE> implements ModelFarm {
          *
          * @param key unique identifier
          * @return most recent row data for the unique identifier, or null, if there is no data for the unique
-         * identifier.
+         *         identifier.
          */
         DATATYPE get(final KEYTYPE key);
     }
