@@ -166,4 +166,4 @@ def write(table: object, path: str, cols: List[str] = []) -> None:
     Raises:
         Exception
     """
-    _JCsvTools.writeCsv(table.j_table, False, path, *cols)
+    _JCsvTools.writeCsv(table, False, path, *cols)
