@@ -341,11 +341,13 @@ public abstract class ModelFarmBase<DATATYPE> implements ModelFarm {
         boolean allThreadsTerminated = false;
 
         synchronized (ModelFarmBase.this) {
-            while (!allThreadsTerminated && System.currentTimeMillis() < timeoutMillis) {
+            long currentTime = System.currentTimeMillis();
+
+            while (!allThreadsTerminated && currentTime < timeoutMillis) {
                 if (!threads.isEmpty()) {
                     try {
                         // Wait for the state to change. (The last thread to exit will update the state to TERMINATED.)
-                        ModelFarmBase.this.wait(timeoutMillis - System.currentTimeMillis());
+                        ModelFarmBase.this.wait(timeoutMillis - currentTime);
 
                         if (threads.isEmpty()) {
                             allThreadsTerminated = true;
@@ -360,6 +362,8 @@ public abstract class ModelFarmBase<DATATYPE> implements ModelFarm {
                 } else {
                     allThreadsTerminated = true;
                 }
+
+                currentTime = System.currentTimeMillis();
             }
         }
 
