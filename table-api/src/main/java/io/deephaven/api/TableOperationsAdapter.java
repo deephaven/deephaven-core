@@ -370,4 +370,24 @@ public abstract class TableOperationsAdapter<TOPS_1 extends TableOperations<TOPS
     public final TOPS_1 firstBy(Collection<String> groupByColumns) {
         return adapt(delegate.firstBy(groupByColumns));
     }
+
+    @Override
+    public final TOPS_1 lastBy() {
+        return adapt(delegate.lastBy());
+    }
+
+    @Override
+    public final TOPS_1 lastBy(String... groupByColumns) {
+        return adapt(delegate.lastBy(groupByColumns));
+    }
+
+    @Override
+    public final TOPS_1 lastBy(Selectable... groupByColumns) {
+        return adapt(delegate.lastBy(groupByColumns));
+    }
+
+    @Override
+    public final TOPS_1 lastBy(Collection<String> groupByColumns) {
+        return adapt(delegate.lastBy(groupByColumns));
+    }
 }

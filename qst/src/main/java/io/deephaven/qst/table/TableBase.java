@@ -521,6 +521,26 @@ public abstract class TableBase implements TableSpec {
     }
 
     @Override
+    public final AggregateAllByTable lastBy() {
+        return aggAllBy(AggSpec.last());
+    }
+
+    @Override
+    public final AggregateAllByTable lastBy(String... groupByColumns) {
+        return aggAllBy(AggSpec.last(), groupByColumns);
+    }
+
+    @Override
+    public final AggregateAllByTable lastBy(Selectable... groupByColumns) {
+        return aggAllBy(AggSpec.last(), groupByColumns);
+    }
+
+    @Override
+    public final AggregateAllByTable lastBy(Collection<String> groupByColumns) {
+        return aggAllBy(AggSpec.last(), groupByColumns);
+    }
+
+    @Override
     public final <V extends TableSchema.Visitor> V walk(V visitor) {
         visitor.visit(this);
         return visitor;

@@ -1305,6 +1305,7 @@ public interface Table extends
      *
      * @param groupByColumns The grouping columns as in {@link Table#groupBy}
      */
+    @Override
     @ConcurrentMethod
     Table lastBy(Selectable... groupByColumns);
 
@@ -1313,6 +1314,7 @@ public interface Table extends
      *
      * @param groupByColumns The grouping columns as in {@link Table#groupBy}
      */
+    @Override
     @ConcurrentMethod
     Table lastBy(String... groupByColumns);
 
@@ -1321,12 +1323,14 @@ public interface Table extends
      *
      * @param groupByColumns The grouping columns as in {@link Table#groupBy}
      */
+    @Override
     @ConcurrentMethod
     Table lastBy(Collection<String> groupByColumns);
 
     /**
      * Returns the last row of the given table.
      */
+    @Override
     @ConcurrentMethod
     Table lastBy();
 
