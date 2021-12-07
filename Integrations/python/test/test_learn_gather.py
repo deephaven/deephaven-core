@@ -21,8 +21,6 @@ class TestGather(unittest.TestCase):
     Test cases for deephaven.learn submodule
     """
 
-    IndexSet = jpy.get_type("io.deephaven.integrations.learn.IndexSet")
-
     @classmethod
     def setUpClass(cls):
         """
