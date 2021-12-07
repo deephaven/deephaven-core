@@ -6,6 +6,7 @@ Utilities for gathering Deephaven table data into Python objects
 """
 
 import numpy as np
+import enum
 import jpy
 import wrapt
 
@@ -17,9 +18,19 @@ def _defineSymbols():
         raise SystemError("No java functionality can be used until the JVM has been initialized through the jpy module")
 
     global _gatherer
+    global MemoryLayout
 
     if _gatherer is None:
-        _gatherer = jpy.get_type("io.deephaven.integrations.learn.Gatherer")
+        _gatherer = jpy.get_type("io.deephaven.integrations.learn.gather.NumPy")
+        class MemoryLayout(enum.Enum):
+            ROW_MAJOR = True
+            COLUMN_MAJOR = False
+            C = True
+            FORTRAN = False
+
+            def __init__(self, is_row_major):
+                self.is_row_major = is_row_major
+
 
 # Every method that depends on symbols defined via _defineSymbols() should be decorated with @_passThrough
 @wrapt.decorator
@@ -43,77 +54,69 @@ except Exception as e:
     pass
 
 @_passThrough
-def table_to_numpy_2d(row_set, col_set, order = 0, dtype = None):
-    """
-    Convert Deephaven table data to a 2d NumPy array of the appropriate size
-
-    :param row_set: A RowSequence describing the number of rows in the table
-    :param col_set: ColumnSources describing which columns to copy
-    :param order: The major order of copying -> either row major or column major
-    :param dtype: The desired NumPy data type of the output NumPy array
-    :return: A NumPy ndarray
-    """
-
+def convert_to_numpy_dtype(dtype):
     if dtype == bool:
         dtype = np.bool_
     elif dtype == float:
         dtype = np.double
     elif dtype == int:
         dtype = np.intc
-
-    if dtype == np.bool_:
-        if order == 0:
-            buffer = _gatherer.tensorBuffer2DBooleanColumns(row_set, col_set)
-        elif order == 1:
-            buffer = _gatherer.tensorBuffer2DBooleanRows(row_set, col_set)
-        else:
-            raise ValueError("Order must be either 0 (row major) or 1 (column major).  The default is 0.")
-    elif dtype == np.byte:
-        if order == 0:
-            buffer = _gatherer.tensorBuffer2DByteRows(row_set, col_set)
-        elif order == 1:
-            buffer = _gatherer.tensorBuffer2DByteColumns(row_set, col_set)
-        else:
-            raise ValueError("Order must be either 0 (row major) or 1 (column major).  The default is 0.")
-    elif dtype == np.short:
-        if order == 0:
-            buffer = _gatherer.tensorBuffer2DShortRows(row_set, col_set)
-        elif order == 1:
-            buffer = _gatherer.tensorBuffer2DShortColumns(row_set, col_set)
-        else:
-            raise ValueError("Order must be either 0 (row major) or 1 (column major).  The default is 0.")
-    elif dtype == np.intc:
-        if order == 0:
-            buffer = _gatherer.tensorBuffer2DIntRows(row_set, col_set)
-        elif order == 1:
-            buffer = _gatherer.tensorBuffer2DIntColumns(row_set, col_set)
-        else:
-            raise ValueError("Order must be either 0 (row major) or 1 (column major).  The default is 0.")
-    elif dtype == np.int_:
-        if order == 0:
-            buffer = _gatherer.tensorBuffer2DLongRows(row_set, col_set)
-        elif order == 1:
-            buffer = _gatherer.tensorBuffer2DLongColumns(row_set, col_set)
-        else:
-            raise ValueError("Order must be either 0 (row major) or 1 (column major).  The default is 0.")
-    elif dtype == np.single:
-        if order == 0:
-            buffer = _gatherer.tensorBuffer2DFloatRows(row_set, col_set)
-        elif order == 1:
-            buffer = _gatherer.tensorBuffer2DFloatColumns(row_set, col_set)
-        else:
-            raise ValueError("Order must be either 0 (row major) or 1 (column major).  The default is 0.")
-    elif dtype == np.double:
-        if order == 0:
-            buffer = _gatherer.tensorBuffer2DDoubleRows(row_set, col_set)
-        elif order == 1:
-            buffer = _gatherer.tensorBuffer2DDoubleColumns(row_set, col_set)
-        else:
-            raise ValueError("Order must be either 0 (row major) or 1 (column major).  The default is 0.")
     else:
+        raise ValueError("{} is not a data type that can be converted to a NumPy dtype.".format(dtype))
+    return dtype
+
+@_passThrough
+def table_to_numpy_2d(row_set, col_set, order = MemoryLayout.ROW_MAJOR, dtype:np.dtype = np.intc):
+    """
+    Convert Deephaven table data to a 2d NumPy array of the appropriate size
+
+    :param row_set: A RowSequence describing the number of rows in the table
+    :param col_set: ColumnSources describing which columns to copy
+    :param order: :param order: The desired memory layout of the output array
+    :param dtype: The desired NumPy data type of the output NumPy array
+    :return: A NumPy ndarray
+    """
+
+    if order == MemoryLayout.ROW_MAJOR or order == MemoryLayout.C:
+        flag = True
+    elif order == MemoryLayout.COLUMN_MAJOR or order == MemoryLayout.FORTRAN:
+        flag = False
+    else:
+        raise ValueError("Invalid major order.  Please use an enum value from MemoryLayout.")
+
+    if dtype == bool or dtype == float or dypte == int:
+        dtype = convert_to_numpy_dtype(dtype)
+
+    if dtype == np.byte:
+
+        buffer = _gatherer.tensorBuffer2DByte(row_set, col_set, flag)
+
+    elif dtype == np.short:
+
+        buffer = _gatherer.tensorBuffer2DShort(row_set, col_set, flag)
+
+    elif dtype == np.intc:
+
+        buffer = _gatherer.tensorBuffer2DInt(row_set, col_set, flag)
+
+    elif dtype == np.int_:
+
+        buffer = _gatherer.tensorBuffer2DLong(row_set, col_set, flag)
+
+    elif dtype == np.single:
+
+        buffer = _gatherer.tensorBuffer2DFloat(row_set, col_set, flag)
+
+    elif dtype == np.double:
+
+        buffer = _gatherer.tensorBuffer2DFloat(row_set, col_set, flag)
+
+    else:
+
         raise ValueError("Data type {input_type} is not supported.".format(input_type = dtype))
 
     tensor = np.frombuffer(buffer, dtype = dtype)
+
     if order == 0:
         tensor.shape = (row_set.intSize(), len(col_set))
         return tensor

@@ -1,4 +1,4 @@
-package io.deephaven.integrations.learn;
+package io.deephaven.integrations.learn.gather;
 
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
@@ -12,19 +12,38 @@ import io.deephaven.util.SafeCloseableList;
  * Gatherer takes Deephaven columnar data and places it into a buffer to be used by Python. The Python object will take
  * data from the buffer and use it to construct a 2d array of specified size.
  */
-public class Gatherer {
+public class NumPy {
 
     private static final int COPY_CHUNK_SIZE = 2048;
+
+    /**
+     * Copy data from a table into a 2d tensor of Booleans.
+     *
+     * @param rowSeq indices of the rows of the table to put into the tensor
+     * @param columnSources columns of data to put into the tensor
+     * @param ColumnMajorOrder the major order of the operation
+     * @return contiguous RAM allocated for the tensor
+     */
+    public static boolean[] tensorBuffer2DBoolean(final RowSequence rowSeq, final ColumnSource<?>[] columnSources, boolean ColumnMajorOrder) {
+        if (ColumnMajorOrder) {
+            boolean[] tensor = tensorBuffer2DBooleanColumnMajor(rowSeq, columnSources);
+            return tensor;
+        }
+        else
+        {
+            boolean[] tensor = tensorBuffer2DBooleanRowMajor(rowSeq, columnSources);
+            return tensor;
+        }
+    }
 
     /**
      * Copy data from a table into a 2d tensor of Booleans in column-major order.
      *
      * @param rowSeq indices of the rows of the table to put into the tensor
      * @param columnSources columns of data to put into the tensor
-     * @return contiguous RAM allocated for the tensor. When a numpy tensor is passed in for this argument, jpy will
-     *         handle passing the memory reference as a 1d java array here.
+     * @return contiguous RAM allocated for the tensor
      */
-    public static boolean[] tensorBuffer2DBooleanColumns(final RowSequence rowSeq,
+    public static boolean[] tensorBuffer2DBooleanColumnMajor(final RowSequence rowSeq,
             final ColumnSource<?>[] columnSources) {
         final int nRows = rowSeq.intSize();
         final int nCols = columnSources.length;
@@ -53,10 +72,9 @@ public class Gatherer {
      *
      * @param rowSeq indices of the rows of the table to put into the tensor
      * @param columnSources columns of data to put into the tensor
-     * @return contiguous RAM allocated for the tensor. When a numpy tensor is passed in for this argument, jpy will
-     *         handle passing the memory reference as a 1d java array here.
+     * @return contiguous RAM allocated for the tensor
      */
-    public static boolean[] tensorBuffer2DBooleanRows(final RowSequence rowSeq, final ColumnSource<?>[] columnSources) {
+    public static boolean[] tensorBuffer2DBooleanRowMajor(final RowSequence rowSeq, final ColumnSource<?>[] columnSources) {
         final int nRows = rowSeq.intSize();
         final int nCols = columnSources.length;
         final boolean[] tensor = new boolean[nRows * nCols];
@@ -93,14 +111,33 @@ public class Gatherer {
     }
 
     /**
+     * Copy data from a table into a 2d tensor of Bytes.
+     *
+     * @param rowSeq indices of the rows of the table to put into the tensor
+     * @param columnSources columns of data to put into the tensor
+     * @param ColumnMajorOrder the major order of the operation
+     * @return contiguous RAM allocated for the tensor
+     */
+    public static byte[] tensorBuffer2DByte(final RowSequence rowSeq, final ColumnSource<?>[] columnSources, boolean ColumnMajorOrder) {
+        if (ColumnMajorOrder) {
+            byte[] tensor = tensorBuffer2DByteColumnMajor(rowSeq, columnSources);
+            return tensor;
+        }
+        else
+        {
+            byte[] tensor = tensorBuffer2DByteRowMajor(rowSeq, columnSources);
+            return tensor;
+        }
+    }
+
+    /**
      * Copy data from a table into a 2d tensor of bytes in column-major order.
      *
      * @param rowSeq indices of the rows of the table to put into the tensor
      * @param columnSources columns of data to put into the tensor
-     * @return contiguous RAM allocated for the tensor. When a numpy tensor is passed in for this argument, jpy will
-     *         handle passing the memory reference as a 1d java array here.
+     * @return contiguous RAM allocated for the tensor
      */
-    public static byte[] tensorBuffer2DByteColumns(final RowSequence rowSeq, final ColumnSource<?>[] columnSources) {
+    public static byte[] tensorBuffer2DByteColumnMajor(final RowSequence rowSeq, final ColumnSource<?>[] columnSources) {
         final int nRows = rowSeq.intSize();
         final int nCols = columnSources.length;
         final byte[] tensor = new byte[nRows * nCols];
@@ -128,10 +165,9 @@ public class Gatherer {
      *
      * @param rowSeq indices of the rows of the table to put into the tensor
      * @param columnSources columns of data to put into the tensor
-     * @return contiguous RAM allocated for the tensor. When a numpy tensor is passed in for this argument, jpy will
-     *         handle passing the memory reference as a 1d java array here.
+     * @return contiguous RAM allocated for the tensor
      */
-    public static byte[] tensorBuffer2DByteRows(final RowSequence rowSeq, final ColumnSource<?>[] columnSources) {
+    public static byte[] tensorBuffer2DByteRowMajor(final RowSequence rowSeq, final ColumnSource<?>[] columnSources) {
         final int nRows = rowSeq.intSize();
         final int nCols = columnSources.length;
         final byte[] tensor = new byte[nRows * nCols];
@@ -167,15 +203,34 @@ public class Gatherer {
     }
 
     /**
+     * Copy data from a table into a 2d tensor of shorts.
+     *
+     * @param rowSeq indices of the rows of the table to put into the tensor
+     * @param columnSources columns of data to put into the tensor
+     * @param ColumnMajorOrder the major order of the operation
+     * @return contiguous RAM allocated for the tensor
+     */
+    public static short[] tensorBuffer2DShort(final RowSequence rowSeq, final ColumnSource<?>[] columnSources, boolean ColumnMajorOrder) {
+        if (ColumnMajorOrder) {
+            short[] tensor = tensorBuffer2DShortColumnMajor(rowSeq, columnSources);
+            return tensor;
+        }
+        else
+        {
+            short[] tensor = tensorBuffer2DShortRowMajor(rowSeq, columnSources);
+            return tensor;
+        }
+    }
+
+    /**
      * Copy data from a table into a 2d tensor of shorts in column-major order.
      *
      * @param rowSeq indices of the rows of the table to put into the tensor
      * @param columnSources columns of data to put into the tensor
-     * @return contiguous RAM allocated for the tensor. When a numpy tensor is passed in for this argument, jpy will
-     *         handle passing the memory reference as a 1d java array here.
+     * @return contiguous RAM allocated for the tensor
      */
 
-    public static short[] tensorBuffer2DShortColumns(final RowSequence rowSeq, final ColumnSource<?>[] columnSources) {
+    public static short[] tensorBuffer2DShortColumnMajor(final RowSequence rowSeq, final ColumnSource<?>[] columnSources) {
         final int nRows = rowSeq.intSize();
         final int nCols = columnSources.length;
         final short[] tensor = new short[nRows * nCols];
@@ -203,10 +258,9 @@ public class Gatherer {
      *
      * @param rowSeq indices of the rows of the table to put into the tensor
      * @param columnSources columns of data to put into the tensor
-     * @return contiguous RAM allocated for the tensor. When a numpy tensor is passed in for this argument, jpy will
-     *         handle passing the memory reference as a 1d java array here.
+     * @return contiguous RAM allocated for the tensor
      */
-    public static short[] tensorBuffer2DShortRows(final RowSequence rowSeq, final ColumnSource<?>[] columnSources) {
+    public static short[] tensorBuffer2DShortRowMajor(final RowSequence rowSeq, final ColumnSource<?>[] columnSources) {
         final int nRows = rowSeq.intSize();
         final int nCols = columnSources.length;
         final short[] tensor = new short[nRows * nCols];
@@ -242,14 +296,33 @@ public class Gatherer {
     }
 
     /**
+     * Copy data from a table into a 2d tensor of ints.
+     *
+     * @param rowSeq indices of the rows of the table to put into the tensor
+     * @param columnSources columns of data to put into the tensor
+     * @param ColumnMajorOrder the major order of the operation
+     * @return contiguous RAM allocated for the tensor
+     */
+    public static int[] tensorBuffer2DInt(final RowSequence rowSeq, final ColumnSource<?>[] columnSources, boolean ColumnMajorOrder) {
+        if (ColumnMajorOrder) {
+            int[] tensor = tensorBuffer2DIntColumnMajor(rowSeq, columnSources);
+            return tensor;
+        }
+        else
+        {
+            int[] tensor = tensorBuffer2DIntRowMajor(rowSeq, columnSources);
+            return tensor;
+        }
+    }
+
+    /**
      * Copy data from a table into a 2d tensor of ints in column-major order.
      *
      * @param rowSeq indices of the rows of the table to put into the tensor
      * @param columnSources columns of data to put into the tensor
-     * @return contiguous RAM allocated for the tensor. When a numpy tensor is passed in for this argument, jpy will
-     *         handle passing the memory reference as a 1d java array here.
+     * @return contiguous RAM allocated for the tensor
      */
-    public static int[] tensorBuffer2DIntColumns(final RowSequence rowSeq, final ColumnSource<?>[] columnSources) {
+    public static int[] tensorBuffer2DIntColumnMajor(final RowSequence rowSeq, final ColumnSource<?>[] columnSources) {
         final int nRows = rowSeq.intSize();
         final int nCols = columnSources.length;
         final int[] tensor = new int[nRows * nCols];
@@ -277,10 +350,9 @@ public class Gatherer {
      *
      * @param rowSeq indices of the rows of the table to put into the tensor
      * @param columnSources columns of data to put into the tensor
-     * @return contiguous RAM allocated for the tensor. When a numpy tensor is passed in for this argument, jpy will
-     *         handle passing the memory reference as a 1d java array here.
+     * @return contiguous RAM allocated for the tensor
      */
-    public static int[] tensorBuffer2DIntRows(final RowSequence rowSeq, final ColumnSource<?>[] columnSources) {
+    public static int[] tensorBuffer2DIntRowMajor(final RowSequence rowSeq, final ColumnSource<?>[] columnSources) {
         final int nRows = rowSeq.intSize();
         final int nCols = columnSources.length;
         final int[] tensor = new int[nRows * nCols];
@@ -320,11 +392,30 @@ public class Gatherer {
      *
      * @param rowSeq indices of the rows of the table to put into the tensor
      * @param columnSources columns of data to put into the tensor
-     * @return contiguous RAM allocated for the tensor. When a numpy tensor is passed in for this argument, jpy will
-     *         handle passing the memory reference as a 1d java array here.
+     * @param ColumnMajorOrder the major order of the operation
+     * @return contiguous RAM allocated for the tensor
+     */
+    public static long[] tensorBuffer2DLong(final RowSequence rowSeq, final ColumnSource<?>[] columnSources, boolean ColumnMajorOrder) {
+        if (ColumnMajorOrder) {
+            long[] tensor = tensorBuffer2DLongColumnMajor(rowSeq, columnSources);
+            return tensor;
+        }
+        else
+        {
+            long[] tensor = tensorBuffer2DLongRowMajor(rowSeq, columnSources);
+            return tensor;
+        }
+    }
+
+    /**
+     * Copy data from a table into a 2d tensor of longs.
+     *
+     * @param rowSeq indices of the rows of the table to put into the tensor
+     * @param columnSources columns of data to put into the tensor
+     * @return contiguous RAM allocated for the tensor
      */
 
-    public static long[] tensorBuffer2DLongColumns(final RowSequence rowSeq, final ColumnSource<?>[] columnSources) {
+    public static long[] tensorBuffer2DLongColumnMajor(final RowSequence rowSeq, final ColumnSource<?>[] columnSources) {
         final int nRows = rowSeq.intSize();
         final int nCols = columnSources.length;
         final long[] tensor = new long[nRows * nCols];
@@ -352,10 +443,9 @@ public class Gatherer {
      *
      * @param rowSeq indices of the rows of the table to put into the tensor
      * @param columnSources columns of data to put into the tensor
-     * @return contiguous RAM allocated for the tensor. When a numpy tensor is passed in for this argument, jpy will
-     *         handle passing the memory reference as a 1d java array here.
+     * @return contiguous RAM allocated for the tensor
      */
-    public static long[] tensorBuffer2DLongRows(final RowSequence rowSeq, final ColumnSource<?>[] columnSources) {
+    public static long[] tensorBuffer2DLongRowMajor(final RowSequence rowSeq, final ColumnSource<?>[] columnSources) {
         final int nRows = rowSeq.intSize();
         final int nCols = columnSources.length;
         final long[] tensor = new long[nRows * nCols];
@@ -391,15 +481,34 @@ public class Gatherer {
     }
 
     /**
+     * Copy data from a table into a 2d tensor of floats.
+     *
+     * @param rowSeq indices of the rows of the table to put into the tensor
+     * @param columnSources columns of data to put into the tensor
+     * @param ColumnMajorOrder the major order of the operation
+     * @return contiguous RAM allocated for the tensor
+     */
+    public static float[] tensorBuffer2DFloat(final RowSequence rowSeq, final ColumnSource<?>[] columnSources, boolean ColumnMajorOrder) {
+        if (ColumnMajorOrder) {
+            float[] tensor = tensorBuffer2DFloatColumnMajor(rowSeq, columnSources);
+            return tensor;
+        }
+        else
+        {
+            float[] tensor = tensorBuffer2DFloatRowMajor(rowSeq, columnSources);
+            return tensor;
+        }
+    }
+
+    /**
      * Copy data from a table into a 2d tensor of floats in column-major order.
      *
      * @param rowSeq indices of the rows of the table to put into the tensor
      * @param columnSources columns of data to put into the tensor
-     * @return contiguous RAM allocated for the tensor. When a numpy tensor is passed in for this argument, jpy will
-     *         handle passing the memory reference as a 1d java array here.
+     * @return contiguous RAM allocated for the tensor
      */
 
-    public static float[] tensorBuffer2DFloatColumns(final RowSequence rowSeq, final ColumnSource<?>[] columnSources) {
+    public static float[] tensorBuffer2DFloatColumnMajor(final RowSequence rowSeq, final ColumnSource<?>[] columnSources) {
         final int nRows = rowSeq.intSize();
         final int nCols = columnSources.length;
         final float[] tensor = new float[nRows * nCols];
@@ -427,10 +536,9 @@ public class Gatherer {
      *
      * @param rowSeq indices of the rows of the table to put into the tensor
      * @param columnSources columns of data to put into the tensor
-     * @return contiguous RAM allocated for the tensor. When a numpy tensor is passed in for this argument, jpy will
-     *         handle passing the memory reference as a 1d java array here.
+     * @return contiguous RAM allocated for the tensor
      */
-    public static float[] tensorBuffer2DFloatRows(final RowSequence rowSeq, final ColumnSource<?>[] columnSources) {
+    public static float[] tensorBuffer2DFloatRowMajor(final RowSequence rowSeq, final ColumnSource<?>[] columnSources) {
         final int nRows = rowSeq.intSize();
         final int nCols = columnSources.length;
         final float[] tensor = new float[nRows * nCols];
@@ -466,14 +574,33 @@ public class Gatherer {
     }
 
     /**
+     * Copy data from a table into a 2d tensor of doubles.
+     *
+     * @param rowSeq indices of the rows of the table to put into the tensor
+     * @param columnSources columns of data to put into the tensor
+     * @param ColumnMajorOrder the major order of the operation
+     * @return contiguous RAM allocated for the tensor
+     */
+    public static double[] tensorBuffer2DDouble(final RowSequence rowSeq, final ColumnSource<?>[] columnSources, boolean ColumnMajorOrder) {
+        if (ColumnMajorOrder) {
+            double[] tensor = tensorBuffer2DDoubleColumnMajor(rowSeq, columnSources);
+            return tensor;
+        }
+        else
+        {
+            double[] tensor = tensorBuffer2DDoubleRowMajor(rowSeq, columnSources);
+            return tensor;
+        }
+    }
+
+    /**
      * Copy data from a table into a 2d tensor of doubles in column-major order.
      *
      * @param rowSeq indices of the rows of the table to put into the tensor
      * @param columnSources columns of data to put into the tensor
-     * @return contiguous RAM allocated for the tensor. When a numpy tensor is passed in for this argument, jpy will
-     *         handle passing the memory reference as a 1d java array here.
+     * @return contiguous RAM allocated for the tensor
      */
-    public static double[] tensorBuffer2DDoubleColumns(final RowSequence rowSeq,
+    public static double[] tensorBuffer2DDoubleColumnMajor(final RowSequence rowSeq,
             final ColumnSource<?>[] columnSources) {
         final int nRows = rowSeq.intSize();
         final int nCols = columnSources.length;
@@ -502,10 +629,9 @@ public class Gatherer {
      *
      * @param rowSeq indices of the rows of the table to put into the tensor
      * @param columnSources columns of data to put into the tensor
-     * @return contiguous RAM allocated for the tensor. When a numpy tensor is passed in for this argument, jpy will
-     *         handle passing the memory reference as a 1d java array here.
+     * @return contiguous RAM allocated for the tensor
      */
-    public static double[] tensorBuffer2DDoubleRows(final RowSequence rowSeq, final ColumnSource<?>[] columnSources) {
+    public static double[] tensorBuffer2DDoubleRowMajor(final RowSequence rowSeq, final ColumnSource<?>[] columnSources) {
         final int nRows = rowSeq.intSize();
         final int nCols = columnSources.length;
         final double[] tensor = new double[nRows * nCols];

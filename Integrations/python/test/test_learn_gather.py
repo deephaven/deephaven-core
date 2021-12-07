@@ -102,65 +102,39 @@ class TestGather(unittest.TestCase):
         return np.count_nonzero(features, axis = 1) < 2
 
     # Model for learn to use when dtype = [np.byte, np.short, np.intc, np.int_]
-    def whole_model(self, features):
+    def integer_model(self, features):
         return np.sum(features, axis = 1)
 
     # Model for learn to use when dtype = [np.single, np.double]
     def decimal_model(self, features):
         return np.prod(features, axis = 1)
 
-    # Test boolean data types
-    def test_boolean(self):
-        # self.base_test(np_dtype = np.bool_)
-        return
-
     # Test byte data types
     def test_byte(self):
-        self.base_test(np_dtype = np.byte)
+        self.base_test(source = self.byte_table, model = self.integer_model, np_dtype = np.byte)
 
     # Test short data types
     def test_short(self):
-        self.base_test(np_dtype = np.short)
+        self.base_test(source = self.short_table, model = self.integer_model, np_dtype = np.short)
 
     # Test int data types
     def test_int(self):
-        self.base_test(np_dtype = np.intc)
+        self.base_test(source = self.int_table, model = self.integer_model, np_dtype = np.intc)
 
     # Test long data types
     def test_long(self):
-        self.base_test(np_dtype = np.int_)
+        self.base_test(source = self.long_table, model = self.integer_model, np_dtype = np.int_)
 
     # Test float data types
     def test_float(self):
-        self.base_test(np_dtype = np.single)
+        self.base_test(source = self.float_table, model = self.decimal_model, np_dtype = np.single)
 
     # Test double data types
     def test_double(self):
-        self.base_test(np_dtype = np.double)
+        self.base_test(source = self.double_table, model = self.decimal_model, np_dtype = np.double)
 
     # The base test, which other tests will be built from
-    def base_test(self, np_dtype):
-        if np_dtype == np.bool_:
-            source = self.bool_table
-            model = self.boolean_model
-        elif np_dtype == np.byte:
-            source = self.byte_table
-            model = self.whole_model
-        elif np_dtype == np.short:
-            source = self.short_table
-            model = self.whole_model
-        elif np_dtype == np.intc:
-            source = self.int_table
-            model = self.whole_model
-        elif np_dtype == np.int_:
-            source = self.long_table
-            model = self.whole_model
-        elif np_dtype == np.single:
-            source = self.float_table
-            model = self.decimal_model
-        elif np_dtype == np.double:
-            source = self.double_table
-            model = self.decimal_model
+    def base_test(self, source, model, np_dtype):
 
         rows = source.getRowSet()
         cols = [source.getColumnSource(col) for col in ["X", "Y", "Z"]]
