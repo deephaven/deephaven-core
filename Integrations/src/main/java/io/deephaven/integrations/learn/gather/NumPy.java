@@ -24,13 +24,12 @@ public class NumPy {
      * @param ColumnMajorOrder the major order of the operation
      * @return contiguous RAM allocated for the tensor
      */
-    public static boolean[] tensorBuffer2DBoolean(final RowSequence rowSeq, final ColumnSource<?>[] columnSources, boolean ColumnMajorOrder) {
+    public static boolean[] tensorBuffer2DBoolean(final RowSequence rowSeq, final ColumnSource<?>[] columnSources,
+            boolean ColumnMajorOrder) {
         if (ColumnMajorOrder) {
             boolean[] tensor = tensorBuffer2DBooleanColumnMajor(rowSeq, columnSources);
             return tensor;
-        }
-        else
-        {
+        } else {
             boolean[] tensor = tensorBuffer2DBooleanRowMajor(rowSeq, columnSources);
             return tensor;
         }
@@ -74,7 +73,8 @@ public class NumPy {
      * @param columnSources columns of data to put into the tensor
      * @return contiguous RAM allocated for the tensor
      */
-    public static boolean[] tensorBuffer2DBooleanRowMajor(final RowSequence rowSeq, final ColumnSource<?>[] columnSources) {
+    public static boolean[] tensorBuffer2DBooleanRowMajor(final RowSequence rowSeq,
+            final ColumnSource<?>[] columnSources) {
         final int nRows = rowSeq.intSize();
         final int nCols = columnSources.length;
         final boolean[] tensor = new boolean[nRows * nCols];
@@ -118,13 +118,12 @@ public class NumPy {
      * @param ColumnMajorOrder the major order of the operation
      * @return contiguous RAM allocated for the tensor
      */
-    public static byte[] tensorBuffer2DByte(final RowSequence rowSeq, final ColumnSource<?>[] columnSources, boolean ColumnMajorOrder) {
+    public static byte[] tensorBuffer2DByte(final RowSequence rowSeq, final ColumnSource<?>[] columnSources,
+            boolean ColumnMajorOrder) {
         if (ColumnMajorOrder) {
             byte[] tensor = tensorBuffer2DByteColumnMajor(rowSeq, columnSources);
             return tensor;
-        }
-        else
-        {
+        } else {
             byte[] tensor = tensorBuffer2DByteRowMajor(rowSeq, columnSources);
             return tensor;
         }
@@ -137,7 +136,8 @@ public class NumPy {
      * @param columnSources columns of data to put into the tensor
      * @return contiguous RAM allocated for the tensor
      */
-    public static byte[] tensorBuffer2DByteColumnMajor(final RowSequence rowSeq, final ColumnSource<?>[] columnSources) {
+    public static byte[] tensorBuffer2DByteColumnMajor(final RowSequence rowSeq,
+            final ColumnSource<?>[] columnSources) {
         final int nRows = rowSeq.intSize();
         final int nCols = columnSources.length;
         final byte[] tensor = new byte[nRows * nCols];
@@ -210,13 +210,12 @@ public class NumPy {
      * @param ColumnMajorOrder the major order of the operation
      * @return contiguous RAM allocated for the tensor
      */
-    public static short[] tensorBuffer2DShort(final RowSequence rowSeq, final ColumnSource<?>[] columnSources, boolean ColumnMajorOrder) {
+    public static short[] tensorBuffer2DShort(final RowSequence rowSeq, final ColumnSource<?>[] columnSources,
+            boolean ColumnMajorOrder) {
         if (ColumnMajorOrder) {
             short[] tensor = tensorBuffer2DShortColumnMajor(rowSeq, columnSources);
             return tensor;
-        }
-        else
-        {
+        } else {
             short[] tensor = tensorBuffer2DShortRowMajor(rowSeq, columnSources);
             return tensor;
         }
@@ -230,7 +229,8 @@ public class NumPy {
      * @return contiguous RAM allocated for the tensor
      */
 
-    public static short[] tensorBuffer2DShortColumnMajor(final RowSequence rowSeq, final ColumnSource<?>[] columnSources) {
+    public static short[] tensorBuffer2DShortColumnMajor(final RowSequence rowSeq,
+            final ColumnSource<?>[] columnSources) {
         final int nRows = rowSeq.intSize();
         final int nCols = columnSources.length;
         final short[] tensor = new short[nRows * nCols];
@@ -303,13 +303,12 @@ public class NumPy {
      * @param ColumnMajorOrder the major order of the operation
      * @return contiguous RAM allocated for the tensor
      */
-    public static int[] tensorBuffer2DInt(final RowSequence rowSeq, final ColumnSource<?>[] columnSources, boolean ColumnMajorOrder) {
+    public static int[] tensorBuffer2DInt(final RowSequence rowSeq, final ColumnSource<?>[] columnSources,
+            boolean ColumnMajorOrder) {
         if (ColumnMajorOrder) {
             int[] tensor = tensorBuffer2DIntColumnMajor(rowSeq, columnSources);
             return tensor;
-        }
-        else
-        {
+        } else {
             int[] tensor = tensorBuffer2DIntRowMajor(rowSeq, columnSources);
             return tensor;
         }
@@ -395,13 +394,12 @@ public class NumPy {
      * @param ColumnMajorOrder the major order of the operation
      * @return contiguous RAM allocated for the tensor
      */
-    public static long[] tensorBuffer2DLong(final RowSequence rowSeq, final ColumnSource<?>[] columnSources, boolean ColumnMajorOrder) {
+    public static long[] tensorBuffer2DLong(final RowSequence rowSeq, final ColumnSource<?>[] columnSources,
+            boolean ColumnMajorOrder) {
         if (ColumnMajorOrder) {
             long[] tensor = tensorBuffer2DLongColumnMajor(rowSeq, columnSources);
             return tensor;
-        }
-        else
-        {
+        } else {
             long[] tensor = tensorBuffer2DLongRowMajor(rowSeq, columnSources);
             return tensor;
         }
@@ -415,7 +413,8 @@ public class NumPy {
      * @return contiguous RAM allocated for the tensor
      */
 
-    public static long[] tensorBuffer2DLongColumnMajor(final RowSequence rowSeq, final ColumnSource<?>[] columnSources) {
+    public static long[] tensorBuffer2DLongColumnMajor(final RowSequence rowSeq,
+            final ColumnSource<?>[] columnSources) {
         final int nRows = rowSeq.intSize();
         final int nCols = columnSources.length;
         final long[] tensor = new long[nRows * nCols];
@@ -488,13 +487,12 @@ public class NumPy {
      * @param ColumnMajorOrder the major order of the operation
      * @return contiguous RAM allocated for the tensor
      */
-    public static float[] tensorBuffer2DFloat(final RowSequence rowSeq, final ColumnSource<?>[] columnSources, boolean ColumnMajorOrder) {
+    public static float[] tensorBuffer2DFloat(final RowSequence rowSeq, final ColumnSource<?>[] columnSources,
+            boolean ColumnMajorOrder) {
         if (ColumnMajorOrder) {
             float[] tensor = tensorBuffer2DFloatColumnMajor(rowSeq, columnSources);
             return tensor;
-        }
-        else
-        {
+        } else {
             float[] tensor = tensorBuffer2DFloatRowMajor(rowSeq, columnSources);
             return tensor;
         }
@@ -508,7 +506,8 @@ public class NumPy {
      * @return contiguous RAM allocated for the tensor
      */
 
-    public static float[] tensorBuffer2DFloatColumnMajor(final RowSequence rowSeq, final ColumnSource<?>[] columnSources) {
+    public static float[] tensorBuffer2DFloatColumnMajor(final RowSequence rowSeq,
+            final ColumnSource<?>[] columnSources) {
         final int nRows = rowSeq.intSize();
         final int nCols = columnSources.length;
         final float[] tensor = new float[nRows * nCols];
@@ -581,13 +580,12 @@ public class NumPy {
      * @param ColumnMajorOrder the major order of the operation
      * @return contiguous RAM allocated for the tensor
      */
-    public static double[] tensorBuffer2DDouble(final RowSequence rowSeq, final ColumnSource<?>[] columnSources, boolean ColumnMajorOrder) {
+    public static double[] tensorBuffer2DDouble(final RowSequence rowSeq, final ColumnSource<?>[] columnSources,
+            boolean ColumnMajorOrder) {
         if (ColumnMajorOrder) {
             double[] tensor = tensorBuffer2DDoubleColumnMajor(rowSeq, columnSources);
             return tensor;
-        }
-        else
-        {
+        } else {
             double[] tensor = tensorBuffer2DDoubleRowMajor(rowSeq, columnSources);
             return tensor;
         }
@@ -631,7 +629,8 @@ public class NumPy {
      * @param columnSources columns of data to put into the tensor
      * @return contiguous RAM allocated for the tensor
      */
-    public static double[] tensorBuffer2DDoubleRowMajor(final RowSequence rowSeq, final ColumnSource<?>[] columnSources) {
+    public static double[] tensorBuffer2DDoubleRowMajor(final RowSequence rowSeq,
+            final ColumnSource<?>[] columnSources) {
         final int nRows = rowSeq.intSize();
         final int nCols = columnSources.length;
         final double[] tensor = new double[nRows * nCols];
