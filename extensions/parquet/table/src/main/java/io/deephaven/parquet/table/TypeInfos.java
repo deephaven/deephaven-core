@@ -111,12 +111,12 @@ class TypeInfos {
         }
     }
 
-    private static PrecisionAndScale getPrecisionAndScale(final TrackingRowSet rowSet,
-            final ColumnSource<BigDecimal> source) {
+    private static PrecisionAndScale computePrecisionAndScale(final TrackingRowSet rowSet,
+                                                              final ColumnSource<BigDecimal> source) {
         final int sz = 4096;
-        // we first compute max(precision - scale) and max(scale), which corresponds to max(digits left of the decimal
-        // point),
-        // max(digits right of the decimal point). Then we convert to (precision, scale) before returning.
+        // we first compute max(precision - scale) and max(scale), which corresponds to
+        // max(digits left of the decimal point), max(digits right of the decimal point).
+        // Then we convert to (precision, scale) before returning.
         int maxPrecisionMinusScale = 0;
         int maxScale = 0;
         try (final ChunkSource.GetContext context = source.makeGetContext(sz);
@@ -144,21 +144,10 @@ class TypeInfos {
             final String columnName,
             final TrackingRowSet rowSet,
             Supplier<ColumnSource<BigDecimal>> columnSourceSupplier) {
-        Map<ParquetTableWriter.CacheTags, Object> columnCache = computedCache.get(columnName);
-        if (columnCache != null) {
-            final Object cached = columnCache.get(ParquetTableWriter.CacheTags.DECIMAL_ARGS);
-            if (cached != null) {
-                return (PrecisionAndScale) cached;
-            }
-        }
-        // noinspection unchecked
-        final PrecisionAndScale ans = getPrecisionAndScale(rowSet, columnSourceSupplier.get());
-        if (columnCache == null) {
-            columnCache = new HashMap<>();
-            computedCache.put(columnName, columnCache);
-        }
-        columnCache.put(ParquetTableWriter.CacheTags.DECIMAL_ARGS, ans);
-        return ans;
+        return (PrecisionAndScale) computedCache
+                .computeIfAbsent(columnName, unusedColumnName -> new HashMap<>())
+                .computeIfAbsent(ParquetTableWriter.CacheTags.DECIMAL_ARGS,
+                        unusedCacheTag -> computePrecisionAndScale(rowSet, columnSourceSupplier.get()));
     }
 
     static TypeInfo bigDecimalTypeInfo(

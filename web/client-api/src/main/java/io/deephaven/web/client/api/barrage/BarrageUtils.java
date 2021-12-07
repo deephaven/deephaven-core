@@ -458,6 +458,7 @@ public class BarrageUtils {
 
     private static BigInteger readBigInt(ByteBuffer data, byte[] buf) {
         // TODO: Change to the code below when the Java 9 BigInteger(byte[], int, int) constructor is available.
+        // https://github.com/deephaven/deephaven-core/issues/1626
         // Make the call take an additional len parameter, and make the calling logic reallocate only when
         // there is a need to grow, instead of the current need for an exact match.
         //

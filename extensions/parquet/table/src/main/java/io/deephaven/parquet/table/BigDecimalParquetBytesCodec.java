@@ -1,6 +1,7 @@
-package io.deephaven.util.codec;
+package io.deephaven.parquet.table;
 
 import io.deephaven.datastructures.util.CollectionUtil;
+import io.deephaven.util.codec.ObjectCodec;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -78,9 +79,9 @@ public class BigDecimalParquetBytesCodec implements ObjectCodec<BigDecimal> {
         }
 
         final BigDecimal value = (input.scale() == scale) ? input : input.setScale(scale, roundingMode);
-        final BigInteger unescaledValue = value.unscaledValue();
+        final BigInteger unscaledValue = value.unscaledValue();
 
-        final byte[] bytes = unescaledValue.toByteArray();
+        final byte[] bytes = unscaledValue.toByteArray();
         return bytes;
     }
 

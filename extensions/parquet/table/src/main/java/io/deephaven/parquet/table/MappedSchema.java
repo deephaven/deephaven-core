@@ -22,19 +22,19 @@ class MappedSchema {
     static MappedSchema create(
             final Map<String, Map<ParquetTableWriter.CacheTags, Object>> computedCache,
             final TableDefinition definition,
-            final TrackingRowSet index,
+            final TrackingRowSet rowSet,
             final Map<String, ? extends ColumnSource<?>> columnSourceMap,
             final ParquetInstructions instructions,
             final ColumnDefinition... extraColumns) {
         final MessageTypeBuilder builder = Types.buildMessage();
         for (final ColumnDefinition<?> columnDefinition : definition.getColumns()) {
             TypeInfos.TypeInfo typeInfo =
-                    getTypeInfo(computedCache, columnDefinition, index, columnSourceMap, instructions);
+                    getTypeInfo(computedCache, columnDefinition, rowSet, columnSourceMap, instructions);
             Type schemaType = typeInfo.createSchemaType(columnDefinition, instructions);
             builder.addField(schemaType);
         }
         for (final ColumnDefinition<?> extraColumn : extraColumns) {
-            builder.addField(getTypeInfo(computedCache, extraColumn, index, columnSourceMap, instructions)
+            builder.addField(getTypeInfo(computedCache, extraColumn, rowSet, columnSourceMap, instructions)
                     .createSchemaType(extraColumn, instructions));
         }
         MessageType schema = builder.named("root");
