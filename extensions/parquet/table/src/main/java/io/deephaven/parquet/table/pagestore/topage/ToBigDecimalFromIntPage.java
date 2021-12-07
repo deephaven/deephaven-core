@@ -1,47 +1,41 @@
 package io.deephaven.parquet.table.pagestore.topage;
 
 import io.deephaven.chunk.attributes.Any;
-import io.deephaven.vector.ObjectVector;
-import io.deephaven.vector.ObjectVectorDirect;
 import org.jetbrains.annotations.NotNull;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
 
-public class ToBigDecimalFromIntPage<ATTR extends Any> extends ToIntPage<ATTR> {
-    private final byte scale;
+import static io.deephaven.util.QueryConstants.NULL_INT_BOXED;
+
+public class ToBigDecimalFromIntPage<ATTR extends Any> extends ToBigDecimalBase<ATTR> {
 
     public static <ATTR extends Any> ToPage<ATTR, BigDecimal[]> create(
             @NotNull final Class<?> nativeType,
             final int precision,
             final int scale
     ) {
-        if (!BigDecimal.class.equals(nativeType)) {
-            throw new IllegalArgumentException(
-                    "The native type for a BigDecimal column is " + nativeType.getCanonicalName());
-        }
-
-        return new ToBigDecimalFromIntPage(precision, scale);
+        return new ToBigDecimalFromIntPage(nativeType, precision, scale);
     }
 
-    protected ToBigDecimalFromIntPage(final int precision, final int scale) {
-        this.scale = (byte) scale;
-        if (((int) this.scale) != scale) {
-            throw new IllegalArgumentException("precision=" + precision + " and scale=" + scale + " can't be represented");
+    protected ToBigDecimalFromIntPage(@NotNull final Class<?> nativeType, final int precision, final int scale) {
+        super(nativeType, precision, scale);
+    }
+
+    @Override
+    public BigDecimal[] convertResult(@NotNull final Object result) {
+        final int[] in = (int[]) result;
+        final int resultLength = in.length;
+        final BigDecimal[] out = new BigDecimal[resultLength];
+        for (int ri = 0; ri < resultLength; ++ri) {
+            out[ri] = new BigDecimal(BigInteger.valueOf(in[ri]), scale);
         }
+        return out;
     }
 
     @Override
     @NotNull
-    public ObjectVector<BigDecimal> makeVector(final int[] result) {
-        final BigDecimal[] to = new BigDecimal[result.length];
-        for (int i = 0; i < result.length; ++i) {
-            to[i] = BigDecimal.valueOf(result[i], scale);
-        }
-        return new ObjectVectorDirect<>(to);
-    }
-
-    @Override
-    public int[] convertResult(@NotNull final Object result) {
-        return (int[]) result;
+    public final Object nullValue() {
+        return NULL_INT_BOXED;
     }
 }
