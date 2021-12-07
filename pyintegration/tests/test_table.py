@@ -5,7 +5,8 @@ import unittest
 from time import sleep
 
 from deephaven2 import DHError, read_csv, time_table, empty_table, SortDirection
-from deephaven2.agg import sum_, weighted_avg, avg, pct
+from deephaven2.agg import sum_, weighted_avg, avg, pct, group, count_, first, last, max_, median, min_, std, abs_sum, \
+    var
 from deephaven2.table import Table
 from tests.testbase import BaseTestCase
 
@@ -257,6 +258,30 @@ class TableTestCase(BaseTestCase):
 
         result_table = self.test_table.agg_by(aggs=aggs, by=["a"])
         self.assertEqual(result_table.size, num_distinct_a)
+
+    def test_agg_by_2(self):
+        test_table = empty_table(10)
+        test_table = test_table.update(["dumb=(int)(i/5)", "var=(int)i", "weights=(double)1.0/(i+1)"])
+
+        aggs = [group(["aggGroup=var"]),
+                avg(["aggAvg=var"]),
+                count_("aggCount"),
+                first(["aggFirst=var"]),
+                last(["aggLast=var"]),
+                max_(["aggMax=var"]),
+                median(["aggMed=var"]),
+                min_(["aggMin=var"]),
+                pct(0.20, ["aggPct=var"]),
+                std(["aggStd=var"]),
+                sum_(["aggSum=var"]),
+                abs_sum(["aggAbsSum=var"]),
+                var(["aggVar=var"]),
+                weighted_avg("var", ["weights"])]
+
+        result_table = test_table.agg_by(aggs, ["dumb"])
+        # TODO: AggFormula - this is terrible
+
+        self.assertGreaterEqual(result_table.size, 1)
 
     def test_snapshot(self):
         with self.subTest("do_init is False"):
