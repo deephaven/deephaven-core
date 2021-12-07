@@ -3,8 +3,8 @@ package io.deephaven.integrations.learn;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.WritableRowSet;
-import io.deephaven.engine.table.impl.InMemoryTable;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.impl.InMemoryTable;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -83,14 +83,16 @@ public class FutureTest {
 
         Future future = createFuture(modelFunc, thisInput, batchSize);
 
-        for (int i = 0; i < 3; i++) {
-            future.insertRowKey(i);
+        try (final WritableRowSet rowSet = RowSetFactory.empty()) {
+            for (int i = 0; i < 3; i++) {
+                rowSet.insert(i);
+                future.addRowKey(i);
+            }
+
+            rowSetTarget[0] = rowSet;
+            Assert.assertEquals(3, future.get());
+            rowSetTarget[0] = null;
         }
-
-        rowSetTarget[0] = future.getRowSet();
-
-        Assert.assertEquals(3, future.get());
-
     }
 
     @Test
@@ -128,15 +130,20 @@ public class FutureTest {
 
         Future future = createFuture(modelFunc, thisInput, batchSize);
 
-        for (int i = 0; i < 3; i++) {
-            future.insertRowKey(i);
-        }
+        try (final WritableRowSet rowSet = RowSetFactory.empty()) {
+            for (int i = 0; i < 3; i++) {
+                rowSet.insert(i);
+                future.addRowKey(i);
+            }
 
-        rowSetTarget[0] = future.getRowSet();
+            rowSetTarget[0] = rowSet;
 
-        for (int i = 0; i < thisInput.length; i++) {
-            Assert.assertEquals((i == 0) ? 10 : 11,
-                    future.gather(thisInput[i], thisInput[i].createColumnSource(table)));
+            for (int i = 0; i < thisInput.length; i++) {
+                Assert.assertEquals((i == 0) ? 10 : 11,
+                        future.gather(thisInput[i], thisInput[i].createColumnSource(table), rowSet));
+            }
+
+            rowSetTarget[0] = null;
         }
     }
 
@@ -149,22 +156,24 @@ public class FutureTest {
 
         Function<Object[], Object> modelFunc = (params) -> 3;
 
+        for (int i = 0; i < batchSize; i++) {
+            getIndexSetTest(modelFunc, thisInput, batchSize, i);
+        }
+    }
+
+    public void getIndexSetTest(final Function<Object[], Object> modelFunc, final Input[] thisInput,
+            final int batchSize, final int n) {
         Future future = createFuture(modelFunc, thisInput, batchSize);
 
-        WritableRowSet rowSetTarget = RowSetFactory.empty();
-
-        for (int i = 0; i < 9; i++) {
-            if (i % batchSize != 0) {
+        try (final WritableRowSet rowSetTarget = RowSetFactory.empty()) {
+            for (int i = 0; i < n; i++) {
                 rowSetTarget.insert(i);
-                future.insertRowKey(i);
-                Assert.assertEquals(rowSetTarget, future.getRowSet());
-            } else {
-                future = createFuture(modelFunc, thisInput, batchSize);
-                rowSetTarget.close();
-                rowSetTarget = RowSetFactory.empty();
+                future.addRowKey(i);
+            }
+
+            try (final RowSet rowSet = future.makeRowSet()) {
+                Assert.assertEquals(rowSetTarget, rowSet);
             }
         }
-
-        rowSetTarget.close();
     }
 }

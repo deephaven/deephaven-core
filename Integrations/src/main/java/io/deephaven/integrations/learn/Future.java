@@ -2,8 +2,8 @@ package io.deephaven.integrations.learn;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetBuilderRandom;
 import io.deephaven.engine.rowset.RowSetFactory;
-import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ColumnSource;
 
 import java.util.function.Function;
@@ -17,7 +17,9 @@ public class Future {
     private final Input[] inputs;
     private final ColumnSource<?>[][] colSets;
     private final int batchSize;
-    private WritableRowSet rowSet;
+    private long count = 0;
+    private boolean rowSetBuilt = false;
+    private RowSetBuilderRandom rowSetBuilder;
     private boolean called;
     private Object result;
 
@@ -34,7 +36,7 @@ public class Future {
         this.inputs = inputs;
         this.colSets = colSets;
         this.batchSize = batchSize;
-        this.rowSet = RowSetFactory.empty();
+        this.rowSetBuilder = RowSetFactory.builderRandom();
         this.called = false;
         this.result = null;
     }
@@ -47,17 +49,16 @@ public class Future {
     public Object get() {
 
         if (!called) {
-            try {
+            try (final RowSet rowSet = makeRowSet()) {
                 Object[] gathered = new Object[inputs.length];
 
                 for (int i = 0; i < inputs.length; i++) {
-                    gathered[i] = gather(inputs[i], colSets[i]);
+                    gathered[i] = gather(inputs[i], colSets[i], rowSet);
                 }
 
                 result = func.apply(gathered);
             } finally {
-                rowSet.close();
-                rowSet = null;
+                rowSetBuilder = null;
                 called = true;
             }
         }
@@ -70,19 +71,24 @@ public class Future {
      *
      * @param input input that contains the gather function and the column names to gather.
      * @param colSet set of column sources from which to extract data.
+     * @param rowSet row set to gather.
      * @return gathered data
      */
-    Object gather(Input input, ColumnSource<?>[] colSet) {
-        return input.getGatherFunc().apply(new Object[] {this.rowSet, colSet});
+    Object gather(final Input input, final ColumnSource<?>[] colSet, final RowSet rowSet) {
+        return input.getGatherFunc().apply(new Object[] {rowSet, colSet});
     }
 
     /**
-     * Gets the current row set.
+     * Makes the row set.
      *
-     * @return the current row set.
+     * To avoid memory leaks, the result must be used in a try-with-resources statement or closed explicitly.
+     *
+     * @return row set.
      */
-    RowSet getRowSet() {
-        return rowSet;
+    RowSet makeRowSet() {
+        Assert.eqFalse(rowSetBuilt, "RowSet has already been built");
+        rowSetBuilt = true;
+        return rowSetBuilder.build();
     }
 
     /**
@@ -90,9 +96,11 @@ public class Future {
      *
      * @param key row key
      */
-    void insertRowKey(long key) {
+    void addRowKey(long key) {
+        Assert.eqFalse(rowSetBuilt, "RowSet has already been built");
         Assert.assertion(!isFull(), "Attempting to insert into a full Future");
-        rowSet.insert(key);
+        count++;
+        rowSetBuilder.addKey(key);
     }
 
     /**
@@ -101,7 +109,7 @@ public class Future {
      * @return number of keys being processed by this future.
      */
     long size() {
-        return rowSet.size();
+        return count;
     }
 
     /**
