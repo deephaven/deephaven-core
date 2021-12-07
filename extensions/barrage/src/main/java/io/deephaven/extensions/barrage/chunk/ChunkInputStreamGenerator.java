@@ -149,8 +149,11 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
                             bufferInfoIter,
                             (final byte[] buf, final int offset, final int length) -> {
                                 // read the int scale value as little endian, arrow's endianness.
-                                final int bigEndianScale = ByteBuffer.wrap(buf, offset, 4).getInt();
-                                final int scale = Integer.reverseBytes(bigEndianScale);
+                                final byte b1 = buf[offset];
+                                final byte b2 = buf[offset + 1];
+                                final byte b3 = buf[offset + 2];
+                                final byte b4 = buf[offset + 3];
+                                final int scale = b4 << 24 | (b3 & 0xFF) << 16 | (b2 & 0xFF) << 8 | (b1 & 0xFF);
                                 return new BigDecimal(new BigInteger(buf, offset + 4, length - 4), scale);
                             }
                     );

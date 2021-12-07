@@ -30,8 +30,8 @@ public class GenericRecordChunkAdapter extends MultiFieldChunkAdapter {
             final String separator,
             final Schema schema,
             final boolean allowNulls) {
-        super(definition, chunkTypeForIndex, fieldNamesToColumnNames, allowNulls, (fieldName, chunkType,
-                dataType) -> GenericRecordChunkAdapter.makeFieldCopier(schema, fieldName, separator, chunkType,
+        super(definition, chunkTypeForIndex, fieldNamesToColumnNames, allowNulls, (fieldPathStr, chunkType,
+                dataType) -> GenericRecordChunkAdapter.makeFieldCopier(schema, fieldPathStr, separator, chunkType,
                         dataType));
     }
 
@@ -40,7 +40,7 @@ public class GenericRecordChunkAdapter extends MultiFieldChunkAdapter {
      *
      * @param definition the definition of the output table
      * @param chunkTypeForIndex a function from column index to chunk type
-     * @param columns a map from Avro field names to Deephaven column names
+     * @param columns a map from Avro field paths to Deephaven column names
      * @param separator separator for composite fields names
      * @param schema the Avro schema for our input
      * @param allowNulls true if null records should be allowed, if false then an ISE is thrown
@@ -59,65 +59,65 @@ public class GenericRecordChunkAdapter extends MultiFieldChunkAdapter {
 
     private static FieldCopier makeFieldCopier(
             final Schema schema,
-            final String fieldName,
+            final String fieldPathStr,
             final String separator,
             final ChunkType chunkType,
             final Class<?> dataType) {
         switch (chunkType) {
             case Char:
-                return new GenericRecordCharFieldCopier(fieldName, separator);
+                return new GenericRecordCharFieldCopier(fieldPathStr, separator);
             case Byte:
                 if (dataType == Boolean.class || dataType == boolean.class) {
-                    return new GenericRecordBooleanFieldCopier(fieldName);
+                    return new GenericRecordBooleanFieldCopier(fieldPathStr);
                 }
-                return new GenericRecordByteFieldCopier(fieldName, separator);
+                return new GenericRecordByteFieldCopier(fieldPathStr, separator);
             case Short:
-                return new GenericRecordShortFieldCopier(fieldName, separator);
+                return new GenericRecordShortFieldCopier(fieldPathStr, separator);
             case Int:
-                return new GenericRecordIntFieldCopier(fieldName, separator);
+                return new GenericRecordIntFieldCopier(fieldPathStr, separator);
             case Long:
                 if (dataType == DateTime.class) {
-                    final String[] fieldPath = GenericRecordUtil.getFieldPath(fieldName, separator);
+                    final String[] fieldPath = GenericRecordUtil.getFieldPath(fieldPathStr, separator);
                     final Schema fieldSchema = GenericRecordUtil.getFieldSchema(schema, fieldPath);
                     final LogicalType logicalType = fieldSchema.getLogicalType();
                     if (logicalType == null) {
                         throw new IllegalArgumentException(
-                                "Can not map field without a logical type to DateTime: field=" + fieldName);
+                                "Can not map field without a logical type to DateTime: field=" + fieldPathStr);
                     }
                     if (logicalType instanceof LogicalTypes.TimestampMillis) {
                         // micros to nanos
-                        return new GenericRecordLongFieldCopierWithMultiplier(fieldName, 1000L);
+                        return new GenericRecordLongFieldCopierWithMultiplier(fieldPathStr, 1000L);
                     }
                     if (logicalType instanceof LogicalTypes.TimestampMicros) {
                         // millis to nanos
-                        return new GenericRecordLongFieldCopierWithMultiplier(fieldName, 1000L * 1000L);
+                        return new GenericRecordLongFieldCopierWithMultiplier(fieldPathStr, 1000_000L);
                     }
                     throw new IllegalArgumentException(
-                            "Can not map field with unknown logical type to DateTime: field=" + fieldName
+                            "Can not map field with unknown logical type to DateTime: field=" + fieldPathStr
                                     + ", type=" + logicalType);
 
                 }
-                return new GenericRecordLongFieldCopier(fieldName, separator);
+                return new GenericRecordLongFieldCopier(fieldPathStr, separator);
             case Float:
-                return new GenericRecordFloatFieldCopier(fieldName, separator);
+                return new GenericRecordFloatFieldCopier(fieldPathStr, separator);
             case Double:
-                return new GenericRecordDoubleFieldCopier(fieldName, separator);
+                return new GenericRecordDoubleFieldCopier(fieldPathStr, separator);
             case Object:
                 if (dataType == String.class) {
-                    return new GenericRecordStringFieldCopier(fieldName, separator);
+                    return new GenericRecordStringFieldCopier(fieldPathStr, separator);
                 }
-                final Schema.Field field = schema.getField(fieldName);
+                final Schema.Field field = schema.getField(fieldPathStr);
                 if (field != null) {
-                    final String[] fieldPath = GenericRecordUtil.getFieldPath(fieldName, separator);
+                    final String[] fieldPath = GenericRecordUtil.getFieldPath(fieldPathStr, separator);
                     final Schema fieldSchema = GenericRecordUtil.getFieldSchema(schema, fieldPath);
                     final LogicalType logicalType = fieldSchema.getLogicalType();
                     if (logicalType instanceof LogicalTypes.Decimal) {
                         final LogicalTypes.Decimal decimalType = (LogicalTypes.Decimal) logicalType;
                         return new GenericRecordBigDecimalFieldCopier(
-                                fieldName, decimalType.getPrecision(), decimalType.getScale());
+                                fieldPathStr, decimalType.getPrecision(), decimalType.getScale());
                     }
                 }
-                return new GenericRecordObjectFieldCopier(fieldName, separator);
+                return new GenericRecordObjectFieldCopier(fieldPathStr, separator);
         }
         throw new IllegalArgumentException("Can not convert field of type " + dataType);
     }

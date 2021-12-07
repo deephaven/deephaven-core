@@ -164,7 +164,7 @@ public class KafkaTools {
         }
         final Schema.Type fieldType = fieldSchema.getType();
         pushColumnTypesFromAvroField(
-                columnsOut, mappedOut, prefix, field, fieldName, fieldSchema, mappedName, fieldType,
+                columnsOut, mappedOut, prefix, fieldName, fieldSchema, mappedName, fieldType,
                 fieldNameToColumnName);
 
     }
@@ -173,7 +173,6 @@ public class KafkaTools {
             final List<ColumnDefinition<?>> columnsOut,
             final Map<String, String> mappedOut,
             final String prefix,
-            final Schema.Field field,
             final String fieldName,
             final Schema fieldSchema,
             final String mappedName,
@@ -209,7 +208,7 @@ public class KafkaTools {
             case UNION:
                 final Schema effectiveSchema = Utils.getEffectiveSchema(fieldName, fieldSchema);
                 pushColumnTypesFromAvroField(
-                        columnsOut, mappedOut, prefix, field, fieldName, effectiveSchema, mappedName,
+                        columnsOut, mappedOut, prefix, fieldName, effectiveSchema, mappedName,
                         effectiveSchema.getType(),
                         fieldNameToColumnName);
                 return;
@@ -1284,20 +1283,20 @@ public class KafkaTools {
                 return GenericRecordChunkAdapter.make(
                         tableDef,
                         streamToTableAdapter::chunkTypeForIndex,
-                        data.fieldNameToColumnName,
+                        data.fieldPathToColumnName,
                         NESTED_FIELD_NAME_SEPARATOR,
                         (Schema) data.extra,
                         true);
             case JSON:
                 return JsonNodeChunkAdapter.make(
-                        tableDef, streamToTableAdapter::chunkTypeForIndex, data.fieldNameToColumnName, true);
+                        tableDef, streamToTableAdapter::chunkTypeForIndex, data.fieldPathToColumnName, true);
             default:
                 throw new IllegalStateException("Unknown KeyOrvalueSpec value" + spec.dataFormat());
         }
     }
 
     private static class KeyOrValueIngestData {
-        public Map<String, String> fieldNameToColumnName;
+        public Map<String, String> fieldPathToColumnName;
         public int simpleColumnIndex = -1;
         public Function<Object, Object> toObjectChunkMapper = Function.identity();
         public Object extra;
@@ -1331,7 +1330,7 @@ public class KafkaTools {
             case AVRO:
                 setDeserIfNotSet(kafkaConsumerProperties, keyOrValue, AVRO_DESERIALIZER);
                 final Consume.KeyOrValueSpec.Avro avroSpec = (Consume.KeyOrValueSpec.Avro) keyOrValueSpec;
-                data.fieldNameToColumnName = new HashMap<>();
+                data.fieldPathToColumnName = new HashMap<>();
                 final Schema schema;
                 if (avroSpec.schema != null) {
                     schema = avroSpec.schema;
@@ -1345,7 +1344,7 @@ public class KafkaTools {
                     schema = getAvroSchema(schemaServiceUrl, avroSpec.schemaName, avroSpec.schemaVersion);
                 }
                 avroSchemaToColumnDefinitions(
-                        columnDefinitions, data.fieldNameToColumnName, schema, avroSpec.fieldNameToColumnName);
+                        columnDefinitions, data.fieldPathToColumnName, schema, avroSpec.fieldNameToColumnName);
                 data.extra = schema;
                 break;
             case JSON:
@@ -1354,19 +1353,19 @@ public class KafkaTools {
                 final Consume.KeyOrValueSpec.Json jsonSpec = (Consume.KeyOrValueSpec.Json) keyOrValueSpec;
                 columnDefinitions.addAll(Arrays.asList(jsonSpec.columnDefinitions));
                 // Populate out field to column name mapping from two potential sources.
-                data.fieldNameToColumnName = new HashMap<>(jsonSpec.columnDefinitions.length);
+                data.fieldPathToColumnName = new HashMap<>(jsonSpec.columnDefinitions.length);
                 final Set<String> coveredColumns = new HashSet<>(jsonSpec.columnDefinitions.length);
                 if (jsonSpec.fieldNameToColumnName != null) {
                     for (final Map.Entry<String, String> entry : jsonSpec.fieldNameToColumnName.entrySet()) {
                         final String colName = entry.getValue();
-                        data.fieldNameToColumnName.put(entry.getKey(), colName);
+                        data.fieldPathToColumnName.put(entry.getKey(), colName);
                         coveredColumns.add(colName);
                     }
                 }
                 for (final ColumnDefinition<?> colDef : jsonSpec.columnDefinitions) {
                     final String colName = colDef.getName();
                     if (!coveredColumns.contains(colName)) {
-                        data.fieldNameToColumnName.put(colName, colName);
+                        data.fieldPathToColumnName.put(colName, colName);
                     }
                 }
                 break;

@@ -28,7 +28,6 @@ import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.util.QueryConstants;
-import io.deephaven.util.codec.BigDecimalParquetBytesCodec;
 import io.deephaven.util.codec.ObjectCodec;
 import io.deephaven.util.type.TypeUtils;
 import io.deephaven.parquet.base.ColumnWriter;

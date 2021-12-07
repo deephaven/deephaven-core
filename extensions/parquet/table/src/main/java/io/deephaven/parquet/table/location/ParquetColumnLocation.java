@@ -40,7 +40,7 @@ import io.deephaven.parquet.base.RowGroupReader;
 import io.deephaven.parquet.base.tempfix.ParquetMetadataConverter;
 import io.deephaven.parquet.table.pagestore.topage.*;
 import io.deephaven.parquet.table.region.*;
-import io.deephaven.util.codec.BigDecimalParquetBytesCodec;
+import io.deephaven.parquet.table.BigDecimalParquetBytesCodec;
 import io.deephaven.util.codec.CodecCache;
 import io.deephaven.util.codec.ObjectCodec;
 import io.deephaven.util.codec.SimpleByteArrayCodec;
