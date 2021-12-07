@@ -73,8 +73,7 @@ public class CodecLookup {
                 // appropriate precision and scale calculated from column data,
                 // unless the user explicitly requested something else
                 // via instructions.
-                dataType == BigDecimal.class
-                ;
+                dataType == BigDecimal.class;
     }
 
     /**

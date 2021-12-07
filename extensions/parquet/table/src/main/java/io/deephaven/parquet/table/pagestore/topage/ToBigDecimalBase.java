@@ -8,6 +8,7 @@ import java.math.BigDecimal;
 
 public abstract class ToBigDecimalBase<ATTR extends Any> implements ToPage<ATTR, BigDecimal[]> {
     protected final byte scale;
+
     protected ToBigDecimalBase(@NotNull final Class<?> nativeType, final int precision, final int scale) {
         if (!BigDecimal.class.equals(nativeType)) {
             throw new IllegalArgumentException(
@@ -16,7 +17,8 @@ public abstract class ToBigDecimalBase<ATTR extends Any> implements ToPage<ATTR,
 
         this.scale = (byte) scale;
         if (((int) this.scale) != scale) {
-            throw new IllegalArgumentException("precision=" + precision + " and scale=" + scale + " can't be represented");
+            throw new IllegalArgumentException(
+                    "precision=" + precision + " and scale=" + scale + " can't be represented");
         }
     }
 

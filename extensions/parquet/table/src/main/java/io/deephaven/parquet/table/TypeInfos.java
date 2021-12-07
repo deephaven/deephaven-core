@@ -112,7 +112,7 @@ class TypeInfos {
     }
 
     private static PrecisionAndScale computePrecisionAndScale(final TrackingRowSet rowSet,
-                                                              final ColumnSource<BigDecimal> source) {
+            final ColumnSource<BigDecimal> source) {
         final int sz = 4096;
         // we first compute max(precision - scale) and max(scale), which corresponds to
         // max(digits left of the decimal point), max(digits right of the decimal point).
