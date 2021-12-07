@@ -55,25 +55,27 @@ public class InputTest {
         final String[] colNames = new String[] {"Column1", null};
         final Function<Object[], Object> func = args -> args;
 
-        Input input = new Input(colNames, func);
+        new Input(colNames, func);
     }
 
+    @SuppressWarnings("ConstantConditions")
     @Test(expected = io.deephaven.base.verify.RequirementFailure.class)
     public void nullColumnNameArrayTest() {
 
         final String[] colNames = null;
         final Function<Object[], Object> func = args -> args;
 
-        Input input = new Input(colNames, func);
+        new Input(colNames, func);
     }
 
+    @SuppressWarnings("ConstantConditions")
     @Test(expected = io.deephaven.base.verify.RequirementFailure.class)
     public void nullGatherFunctionTest() {
 
         final String[] colNames = new String[] {"Column1", "Column2"};
         final Function<Object[], Object> func = null;
 
-        Input input = new Input(colNames, func);
+        new Input(colNames, func);
     }
 
     @Test(expected = NameValidator.InvalidNameException.class)
@@ -82,7 +84,7 @@ public class InputTest {
         final String[] colNames = new String[] {" Column1", "Column2"};
         final Function<Object[], Object> func = args -> args;
 
-        Input input = new Input(colNames, func);
+        new Input(colNames, func);
     }
 
     @Test
@@ -93,7 +95,7 @@ public class InputTest {
 
         Input input = new Input(colNames, func);
 
-        Assert.assertEquals(colNames, input.getColNames());
+        Assert.assertArrayEquals(colNames, input.getColNames());
     }
 
     @Test
