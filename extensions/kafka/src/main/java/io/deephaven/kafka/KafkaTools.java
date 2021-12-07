@@ -154,10 +154,10 @@ public class KafkaTools {
             final Map<String, String> mappedOut,
             final String prefix,
             final Schema.Field field,
-            final Function<String, String> fieldNameToColumnName) {
+            final Function<String, String> fieldPathToColumnName) {
         final Schema fieldSchema = field.schema();
         final String fieldName = field.name();
-        final String mappedName = fieldNameToColumnName.apply(prefix + fieldName);
+        final String mappedName = fieldPathToColumnName.apply(prefix + fieldName);
         if (mappedName == null) {
             // allow the user to specify fields to skip by providing a mapping to null.
             return;
@@ -165,7 +165,7 @@ public class KafkaTools {
         final Schema.Type fieldType = fieldSchema.getType();
         pushColumnTypesFromAvroField(
                 columnsOut, mappedOut, prefix, fieldName, fieldSchema, mappedName, fieldType,
-                fieldNameToColumnName);
+                fieldPathToColumnName);
 
     }
 
@@ -177,7 +177,7 @@ public class KafkaTools {
             final Schema fieldSchema,
             final String mappedName,
             final Schema.Type fieldType,
-            final Function<String, String> fieldNameToColumnName) {
+            final Function<String, String> fieldPathToColumnName) {
         switch (fieldType) {
             case BOOLEAN:
                 columnsOut.add(ColumnDefinition.ofBoolean(mappedName));
@@ -210,7 +210,7 @@ public class KafkaTools {
                 pushColumnTypesFromAvroField(
                         columnsOut, mappedOut, prefix, fieldName, effectiveSchema, mappedName,
                         effectiveSchema.getType(),
-                        fieldNameToColumnName);
+                        fieldPathToColumnName);
                 return;
             case RECORD:
                 // Linearize any nesting.
@@ -219,7 +219,7 @@ public class KafkaTools {
                             columnsOut, mappedOut,
                             prefix + fieldName + NESTED_FIELD_NAME_SEPARATOR,
                             nestedField,
-                            fieldNameToColumnName);
+                            fieldPathToColumnName);
                 }
                 return;
             case BYTES:
@@ -242,10 +242,10 @@ public class KafkaTools {
     }
 
     public static void avroSchemaToColumnDefinitions(
-            final List<ColumnDefinition<?>> columns,
-            final Map<String, String> mappedOut,
+            final List<ColumnDefinition<?>> columnsOut,
+            final Map<String, String> fieldPathToColumnNameOut,
             final Schema schema,
-            final Function<String, String> fieldNameToColumnName) {
+            final Function<String, String> requestedFieldPathToColumnName) {
         if (schema.isUnion()) {
             throw new UnsupportedOperationException("Schemas defined as a union of records are not supported");
         }
@@ -255,35 +255,35 @@ public class KafkaTools {
         }
         final List<Schema.Field> fields = schema.getFields();
         for (final Schema.Field field : fields) {
-            pushColumnTypesFromAvroField(columns, mappedOut, "", field, fieldNameToColumnName);
+            pushColumnTypesFromAvroField(columnsOut, fieldPathToColumnNameOut, "", field, requestedFieldPathToColumnName);
         }
     }
 
     /**
      * Convert an Avro schema to a list of column definitions.
      *
-     * @param columns Column definitions for output; should be empty on entry.
+     * @param columnsOut Column definitions for output; should be empty on entry.
      * @param schema Avro schema
-     * @param fieldNameToColumnName An optional mapping to specify selection and naming of columns from Avro fields, or
-     *        null for map all fields using field name for column name.
+     * @param requestedFieldPathToColumnName An optional mapping to specify selection and naming of columns from Avro fields, or
+     *        null for map all fields using field path for column name.
      */
     public static void avroSchemaToColumnDefinitions(
-            final List<ColumnDefinition<?>> columns,
+            final List<ColumnDefinition<?>> columnsOut,
             final Schema schema,
-            final Function<String, String> fieldNameToColumnName) {
-        avroSchemaToColumnDefinitions(columns, null, schema, fieldNameToColumnName);
+            final Function<String, String> requestedFieldPathToColumnName) {
+        avroSchemaToColumnDefinitions(columnsOut, null, schema, requestedFieldPathToColumnName);
     }
 
     /**
      * Convert an Avro schema to a list of column definitions, mapping every avro field to a column of the same name.
      *
-     * @param columns Column definitions for output; should be empty on entry.
+     * @param columnsOut Column definitions for output; should be empty on entry.
      * @param schema Avro schema
      */
     public static void avroSchemaToColumnDefinitions(
-            final List<ColumnDefinition<?>> columns,
+            final List<ColumnDefinition<?>> columnsOut,
             final Schema schema) {
-        avroSchemaToColumnDefinitions(columns, schema, DIRECT_MAPPING);
+        avroSchemaToColumnDefinitions(columnsOut, schema, DIRECT_MAPPING);
     }
 
     /**
@@ -328,22 +328,22 @@ public class KafkaTools {
                 final String schemaName;
                 final String schemaVersion;
                 /** fields mapped to null are skipped. */
-                final Function<String, String> fieldNameToColumnName;
+                final Function<String, String> fieldPathToColumnName;
 
-                private Avro(final Schema schema, final Function<String, String> fieldNameToColumnName) {
+                private Avro(final Schema schema, final Function<String, String> fieldPathToColumnName) {
                     this.schema = schema;
                     this.schemaName = null;
                     this.schemaVersion = null;
-                    this.fieldNameToColumnName = fieldNameToColumnName;
+                    this.fieldPathToColumnName = fieldPathToColumnName;
                 }
 
                 private Avro(final String schemaName,
                         final String schemaVersion,
-                        final Function<String, String> fieldNameToColumnName) {
+                        final Function<String, String> fieldPathToColumnName) {
                     this.schema = null;
                     this.schemaName = schemaName;
                     this.schemaVersion = schemaVersion;
-                    this.fieldNameToColumnName = fieldNameToColumnName;
+                    this.fieldPathToColumnName = fieldPathToColumnName;
                 }
 
                 @Override
@@ -1344,7 +1344,7 @@ public class KafkaTools {
                     schema = getAvroSchema(schemaServiceUrl, avroSpec.schemaName, avroSpec.schemaVersion);
                 }
                 avroSchemaToColumnDefinitions(
-                        columnDefinitions, data.fieldPathToColumnName, schema, avroSpec.fieldNameToColumnName);
+                        columnDefinitions, data.fieldPathToColumnName, schema, avroSpec.fieldPathToColumnName);
                 data.extra = schema;
                 break;
             case JSON:
