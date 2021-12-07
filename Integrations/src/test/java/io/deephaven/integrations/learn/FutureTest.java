@@ -83,6 +83,10 @@ public class FutureTest {
 
         Future future = createFuture(modelFunc, thisInput, batchSize);
 
+        for(int i=0; i<3; i++){
+            future.insertRowKey(i);
+        }
+
         rowSetTarget[0] = future.getRowSet();
 
         Assert.assertEquals(3, future.get());
@@ -123,6 +127,10 @@ public class FutureTest {
         Function<Object[], Object> modelFunc = (params) -> 3;
 
         Future future = createFuture(modelFunc, thisInput, batchSize);
+
+        for(int i=0; i<3; i++){
+            future.insertRowKey(i);
+        }
 
         rowSetTarget[0] = future.getRowSet();
 
