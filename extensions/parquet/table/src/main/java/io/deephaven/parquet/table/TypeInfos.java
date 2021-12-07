@@ -114,15 +114,15 @@ class TypeInfos {
     private static PrecisionAndScale getPrecisionAndScale(final TrackingRowSet rowSet,
             final ColumnSource<BigDecimal> source) {
         final int sz = 4096;
-        final ChunkSource.GetContext context = source.makeGetContext(sz);
         // we first compute max(precision - scale) and max(scale), which corresponds to max(digits left of the decimal
         // point),
         // max(digits right of the decimal point). Then we convert to (precision, scale) before returning.
         int maxPrecisionMinusScale = 0;
         int maxScale = 0;
-        try (final RowSequence.Iterator it = rowSet.getRowSequenceIterator()) {
-            final RowSequence ok = it.getNextRowSequenceWithLength(sz);
-            final ObjectChunk<BigDecimal, ? extends Values> chunk = source.getChunk(context, ok).asObjectChunk();
+        try (final ChunkSource.GetContext context = source.makeGetContext(sz);
+                final RowSequence.Iterator it = rowSet.getRowSequenceIterator()) {
+            final RowSequence rowSeq = it.getNextRowSequenceWithLength(sz);
+            final ObjectChunk<BigDecimal, ? extends Values> chunk = source.getChunk(context, rowSeq).asObjectChunk();
             for (int i = 0; i < chunk.size(); ++i) {
                 final BigDecimal x = chunk.get(i);
                 final int precision = x.precision();

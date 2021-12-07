@@ -38,8 +38,7 @@ public class CodecLookup {
      * @return Whether a codec is required
      */
     public static boolean codecRequired(@NotNull final Class<?> dataType, @Nullable final Class<?> componentType) {
-        if (dataType.isPrimitive() || dataType == Boolean.class || dataType == DateTime.class
-                || dataType == String.class || StringSet.class.isAssignableFrom(dataType)) {
+        if (dataType.isPrimitive() || noCodecRequired(dataType) || StringSet.class.isAssignableFrom(dataType)) {
             // Primitive, basic, and special types do not require codecs
             return false;
         }
@@ -49,8 +48,7 @@ public class CodecLookup {
                         "Array type " + dataType + " does not match component type " + componentType);
             }
             // Arrays of primitives or basic types do not require codecs
-            return !(componentType.isPrimitive() || componentType == Boolean.class || componentType == DateTime.class
-                    || componentType == String.class);
+            return !(componentType.isPrimitive() || noCodecRequired(dataType));
         }
         if (Vector.class.isAssignableFrom(dataType)) {
             if (componentType == null) {
@@ -58,20 +56,25 @@ public class CodecLookup {
             }
             if (ObjectVector.class.isAssignableFrom(dataType)) {
                 // Vectors of basic types do not require codecs
-                return !(componentType == Boolean.class || componentType == DateTime.class
-                        || componentType == String.class);
+                return !noCodecRequired(dataType);
             }
             // VectorBases of primitive types do not require codecs
             return false;
         }
-        if (BigDecimal.class.equals(dataType)) {
-            // A BigDecimal column maps to a logical type of decimal with the appropriate
-            // precision and scale (unless the user explicitly requested something else
-            // via instructions).
-            return false;
-        }
         // Anything else must have a codec
         return true;
+    }
+
+    private static boolean noCodecRequired(@NotNull final Class<?> dataType) {
+        return dataType == Boolean.class ||
+                dataType == DateTime.class ||
+                dataType == String.class ||
+                // A BigDecimal column maps to a logical type of decimal, with
+                // appropriate precision and scale calculated from column data,
+                // unless the user explicitly requested something else
+                // via instructions.
+                dataType == BigDecimal.class
+                ;
     }
 
     /**
