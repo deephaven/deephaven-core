@@ -1,8 +1,8 @@
 package io.deephaven.integrations.learn;
 
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.WritableRowSet;
-import io.deephaven.engine.rowset.impl.WritableRowSetImpl;
 import io.deephaven.engine.table.impl.InMemoryTable;
 import io.deephaven.engine.table.ColumnSource;
 import org.junit.Assert;
@@ -143,17 +143,17 @@ public class FutureTest {
 
         Future future = createFuture(modelFunc, thisInput, batchSize);
 
-        WritableRowSet rowSetTarget = new WritableRowSetImpl();
+        WritableRowSet rowSetTarget = RowSetFactory.empty();
 
         for (int i = 0; i < 9; i++) {
             if (i % batchSize != 0) {
                 rowSetTarget.insert(i);
-                future.insertIndex(i);
+                future.insertRowKey(i);
                 Assert.assertEquals(rowSetTarget, future.getRowSet());
             } else {
                 future = createFuture(modelFunc, thisInput, batchSize);
                 rowSetTarget.close();
-                rowSetTarget = new WritableRowSetImpl();
+                rowSetTarget = RowSetFactory.empty();
             }
         }
 

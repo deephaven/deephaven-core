@@ -92,7 +92,7 @@ public class Computer {
             offset = -1;
         }
 
-        current.insertIndex(k);
+        current.insertRowKey(k);
         offset += 1;
 
         final FutureOffset fo = new FutureOffset(current, offset);

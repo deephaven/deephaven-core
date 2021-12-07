@@ -2,8 +2,8 @@ package io.deephaven.integrations.learn;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.rowset.WritableRowSet;
-import io.deephaven.engine.rowset.impl.WritableRowSetImpl;
 import io.deephaven.engine.table.ColumnSource;
 
 import java.util.function.Function;
@@ -17,7 +17,6 @@ public class Future {
     private final Input[] inputs;
     private final ColumnSource<?>[][] colSets;
     private final int batchSize;
-    private int count = 0;
     private WritableRowSet rowSet;
     private boolean called;
     private Object result;
@@ -35,7 +34,7 @@ public class Future {
         this.inputs = inputs;
         this.colSets = colSets;
         this.batchSize = batchSize;
-        this.rowSet = new WritableRowSetImpl();
+        this.rowSet = RowSetFactory.empty();
         this.called = false;
         this.result = null;
     }
@@ -87,13 +86,12 @@ public class Future {
     }
 
     /**
-     * Add a new index key to those being processed by this future.
+     * Add a new row key to those being processed by this future.
      *
-     * @param key index key
+     * @param key row key
      */
-    void insertIndex(long key) {
+    void insertRowKey(long key) {
         Assert.assertion(!isFull(), "Attempting to insert into a full Future");
-        count++;
         rowSet.insert(key);
     }
 
@@ -102,8 +100,8 @@ public class Future {
      *
      * @return number of keys being processed by this future.
      */
-    int size() {
-        return count;
+    long size() {
+        return rowSet.size();
     }
 
     /**
@@ -113,6 +111,6 @@ public class Future {
      * @return true if this future is full of keys to process; false otherwise.
      */
     boolean isFull() {
-        return count >= batchSize;
+        return size() >= batchSize;
     }
 }
