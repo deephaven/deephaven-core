@@ -10,9 +10,10 @@ import java.util.List;
 import java.util.Map.Entry;
 
 /**
- * Optimizes a collection of {@link Aggregation aggregations} by grouping like-speccedd aggregations together.
+ * Optimizes a collection of {@link Aggregation aggregations} by grouping like-specced aggregations together.
  */
 public final class AggregationOptimizer implements Aggregation.Visitor {
+
     private static final Object COUNT_OBJ = new Object();
 
     /**
