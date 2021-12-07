@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.api.agg.spec.AggSpecPercentile",
+ "methods": {
+  "averageMedian": ":return: boolean",
+  "of": "*Overload 1*  \n  :param percentile: double\n  :return: io.deephaven.api.agg.spec.AggSpecPercentile\n  \n*Overload 2*  \n  :param percentile: double\n  :param averageMedian: boolean\n  :return: io.deephaven.api.agg.spec.AggSpecPercentile",
+  "percentile": ":return: double",
+  "walk": "Note: Java generics information - <V extends io.deephaven.api.agg.spec.AggSpec.Visitor>\n\n:param visitor: V\n:return: V"
+ },
+ "path": "io.deephaven.api.agg.spec.AggSpecPercentile",
+ "typeName": "class"
+}

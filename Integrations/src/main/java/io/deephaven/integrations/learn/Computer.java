@@ -87,12 +87,12 @@ public class Computer {
      */
     public FutureOffset compute(long k) {
 
-        if (current == null || current.getIndexSet().isFull()) {
+        if (current == null || current.isFull()) {
             current = new Future(modelFunc, inputs, colSets, batchSize);
             offset = -1;
         }
 
-        current.getIndexSet().add(k);
+        current.insertRowKey(k);
         offset += 1;
 
         final FutureOffset fo = new FutureOffset(current, offset);

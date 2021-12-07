@@ -42,6 +42,8 @@ applicationDistribution.into('bin') {
     from(createApplication('poll-tsv', 'io.deephaven.client.examples.PollTsv'))
     from(createApplication('list-tables', 'io.deephaven.client.examples.ListTables'))
     from(createApplication('excessive', 'io.deephaven.client.examples.ExampleExcessive'))
+    from(createApplication('aggregate-all', 'io.deephaven.client.examples.AggregateAllExample'))
+    from(createApplication('agg-by', 'io.deephaven.client.examples.AggByExample'))
 
     from(createApplication('do-put-new', 'io.deephaven.client.examples.DoPutNew'))
     from(createApplication('do-put-spray', 'io.deephaven.client.examples.DoPutSpray'))

@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.api.agg.AggregationOptimizer",
+ "methods": {
+  "build": ":return: java.util.List<io.deephaven.api.agg.Aggregation>",
+  "of": "Optimizes a collection of aggregations by grouping like-specced aggregations together. The\n input order will be preserved based on the spec-encountered order.\n\n:param aggregations: (java.util.Collection<? extendsio.deephaven.api.agg.Aggregation>) - the aggregations\n:return: (java.util.List<io.deephaven.api.agg.Aggregation>) the optimized aggregations",
+  "visit": "*Overload 1*  \n  :param count: io.deephaven.api.agg.Count\n  \n*Overload 2*  \n  :param normalAgg: io.deephaven.api.agg.NormalAggregation\n  \n*Overload 3*  \n  :param normalAggs: io.deephaven.api.agg.NormalAggregations"
+ },
+ "path": "io.deephaven.api.agg.AggregationOptimizer",
+ "text": "Optimizes a collection of aggregations by grouping like-speccedd aggregations together.",
+ "typeName": "class"
+}

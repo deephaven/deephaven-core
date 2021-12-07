@@ -4,6 +4,7 @@ import io.deephaven.api.JoinMatch;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.SortColumn;
 import io.deephaven.api.agg.Aggregation;
+import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.engine.rowset.TrackingRowSet;
 import io.deephaven.engine.table.MatchPair;
@@ -154,31 +155,6 @@ public class HierarchicalTable extends QueryTable {
     }
 
     @Override
-    public Table lastBy(Selectable... groupByColumns) {
-        return throwUnsupported("lastBy()");
-    }
-
-    @Override
-    public Table firstBy(Selectable... groupByColumns) {
-        return throwUnsupported("firstBy()");
-    }
-
-    @Override
-    public Table minBy(Selectable... groupByColumns) {
-        return throwUnsupported("minBy()");
-    }
-
-    @Override
-    public Table maxBy(Selectable... groupByColumns) {
-        return throwUnsupported("maxBy()");
-    }
-
-    @Override
-    public Table medianBy(Selectable... groupByColumns) {
-        return throwUnsupported("medianBy()");
-    }
-
-    @Override
     public Table countBy(String countColumnName, Selectable... groupByColumns) {
         return throwUnsupported("countBy()");
     }
@@ -199,8 +175,8 @@ public class HierarchicalTable extends QueryTable {
     }
 
     @Override
-    public Table groupBy(Collection<? extends Selectable> groupByColumns) {
-        return throwUnsupported("groupBy()");
+    public Table aggAllBy(AggSpec spec, Selectable... groupByColumns) {
+        return throwUnsupported("aggAllBy(" + spec + ")");
     }
 
     @Override
@@ -217,42 +193,6 @@ public class HierarchicalTable extends QueryTable {
     @Override
     public Table tailBy(long nRows, String... groupByColumns) {
         return throwUnsupported("tailBy()");
-    }
-
-    @Override
-    public Table applyToAllBy(String formulaColumn, String columnParamName,
-            Collection<? extends Selectable> groupByColumns) {
-        return throwUnsupported("applyToAllBy()");
-    }
-
-    @Override
-    public Table sumBy(Selectable... groupByColumns) {
-        return throwUnsupported("sumBy()");
-    }
-
-    @Override
-    public Table absSumBy(Selectable... groupByColumns) {
-        return throwUnsupported("absSumBy()");
-    }
-
-    @Override
-    public Table avgBy(Selectable... groupByColumns) {
-        return throwUnsupported("avgBy()");
-    }
-
-    @Override
-    public Table wavgBy(String weightColumn, Selectable... groupByColumns) {
-        return throwUnsupported("wavgBy()");
-    }
-
-    @Override
-    public Table stdBy(Selectable... groupByColumns) {
-        return throwUnsupported("stdBy()");
-    }
-
-    @Override
-    public Table varBy(Selectable... groupByColumns) {
-        return throwUnsupported("varBy()");
     }
 
     @Override
@@ -273,11 +213,6 @@ public class HierarchicalTable extends QueryTable {
     @Override
     public Table select(Collection<? extends Selectable> selectColumns) {
         return throwUnsupported("select()");
-    }
-
-    @Override
-    public Table selectDistinct(Collection<? extends Selectable> columns) {
-        return throwUnsupported("selectDistinct()");
     }
 
     @Override

@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.api.agg.NormalAggregations$Builder",
+ "methods": {
+  "addAllPairs": ":param elements: java.lang.Iterable<? extendsio.deephaven.api.agg.Pair>\n:return: io.deephaven.api.agg.NormalAggregations.Builder",
+  "addPairs": "*Overload 1*  \n  :param element: io.deephaven.api.agg.Pair\n  :return: io.deephaven.api.agg.NormalAggregations.Builder\n  \n*Overload 2*  \n  :param elements: io.deephaven.api.agg.Pair...\n  :return: io.deephaven.api.agg.NormalAggregations.Builder",
+  "build": ":return: io.deephaven.api.agg.NormalAggregations",
+  "spec": ":param spec: io.deephaven.api.agg.spec.AggSpec\n:return: io.deephaven.api.agg.NormalAggregations.Builder"
+ },
+ "path": "io.deephaven.api.agg.NormalAggregations.Builder",
+ "typeName": "interface"
+}

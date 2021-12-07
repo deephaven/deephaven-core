@@ -2828,15 +2828,15 @@ public class QueryTableTest extends QueryTableTestBase {
             testMemoize(source, t -> t.aggBy(List.of(AggSum("intCol"), AggAbsSum("absInt=intCol"), AggMax("doubleCol"),
                     AggFirst("Sym"), AggCountDistinct("UniqueCountSym=Sym"), AggDistinct("UniqueSym=Sym"))));
             testMemoize(source, t -> t.aggBy(List.of(AggCountDistinct("UniqueCountSym=Sym"))));
-            testMemoize(source, t -> t.aggBy(List.of(AggCountDistinct("UniqueCountSym=Sym").withNulls())));
+            testMemoize(source, t -> t.aggBy(List.of(AggCountDistinct(true, "UniqueCountSym=Sym"))));
             testNoMemoize(source, t -> t.aggBy(List.of(AggCountDistinct("UniqueCountSym=Sym"))),
-                    t -> t.aggBy(List.of(AggCountDistinct("UniqueCountSym=Sym").withNulls())));
+                    t -> t.aggBy(List.of(AggCountDistinct(true, "UniqueCountSym=Sym"))));
             testMemoize(source, t -> t.aggBy(List.of(AggDistinct("UniqueSym=Sym"))));
-            testMemoize(source, t -> t.aggBy(List.of(AggDistinct("UniqueSym=Sym").withNulls())));
+            testMemoize(source, t -> t.aggBy(List.of(AggDistinct(true, "UniqueSym=Sym"))));
             testNoMemoize(source, t -> t.aggBy(List.of(AggCountDistinct("UniqueCountSym=Sym"))),
                     t -> t.aggBy(List.of(AggDistinct("UniqueCountSym=Sym"))));
             testNoMemoize(source, t -> t.aggBy(List.of(AggDistinct("UniqueSym=Sym"))),
-                    t -> t.aggBy(List.of(AggDistinct("UniqueSym=Sym").withNulls())));
+                    t -> t.aggBy(List.of(AggDistinct(true, "UniqueSym=Sym"))));
             testNoMemoize(source, t -> t.countBy("Sym"), t -> t.countBy("Count", "Sym"));
             testNoMemoize(source, t -> t.sumBy("Sym"), t -> t.countBy("Count", "Sym"));
             testNoMemoize(source, t -> t.sumBy("Sym"), t -> t.avgBy("Sym"));
