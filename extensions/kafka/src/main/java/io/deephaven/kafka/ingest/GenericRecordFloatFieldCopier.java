@@ -11,10 +11,10 @@ import io.deephaven.util.type.TypeUtils;
 import org.apache.avro.generic.GenericRecord;
 
 public class GenericRecordFloatFieldCopier implements FieldCopier {
-    private final String fieldName;
+    private final String[] fieldPath;
 
-    public GenericRecordFloatFieldCopier(final String fieldName) {
-        this.fieldName = fieldName;
+    public GenericRecordFloatFieldCopier(final String fieldName, final String separator) {
+        this.fieldPath = GenericRecordUtil.getFieldPath(fieldName, separator);
     }
 
     @Override
@@ -26,8 +26,8 @@ public class GenericRecordFloatFieldCopier implements FieldCopier {
             final int length) {
         final WritableFloatChunk<Values> output = publisherChunk.asWritableFloatChunk();
         for (int ii = 0; ii < length; ++ii) {
-            final GenericRecord genericRecord = (GenericRecord) inputChunk.get(ii + sourceOffset);
-            final Float value = genericRecord == null ? null : (Float) genericRecord.get(fieldName);
+            final GenericRecord record = (GenericRecord) inputChunk.get(ii + sourceOffset);
+            final Float value = (Float) GenericRecordUtil.getPath(record, fieldPath);
             output.set(ii + destOffset, TypeUtils.unbox(value));
         }
     }

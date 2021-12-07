@@ -53,6 +53,7 @@ import org.apache.kafka.common.serialization.*;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
@@ -185,7 +186,7 @@ public class KafkaTools {
             case INT:
                 columnsOut.add(ColumnDefinition.ofInt(mappedName));
                 break;
-            case LONG:
+            case LONG: {
                 final LogicalType logicalType = fieldSchema.getLogicalType();
                 if (LogicalTypes.timestampMicros().equals(logicalType) ||
                         LogicalTypes.timestampMillis().equals(logicalType)) {
@@ -194,6 +195,7 @@ public class KafkaTools {
                     columnsOut.add(ColumnDefinition.ofLong(mappedName));
                 }
                 break;
+            }
             case FLOAT:
                 columnsOut.add(ColumnDefinition.ofFloat(mappedName));
                 break;
@@ -221,16 +223,22 @@ public class KafkaTools {
                             fieldNameToColumnName);
                 }
                 return;
+            case BYTES:
+            case FIXED: {
+                final LogicalType logicalType = fieldSchema.getLogicalType();
+                if (logicalType instanceof LogicalTypes.Decimal) {
+                    columnsOut.add(ColumnDefinition.fromGenericType(mappedName, BigDecimal.class));
+                    break;
+                }
+            }
             case MAP:
             case NULL:
             case ARRAY:
-            case BYTES:
-            case FIXED:
             default:
                 throw new UnsupportedOperationException("Type " + fieldType + " not supported for field " + fieldName);
         }
         if (mappedOut != null) {
-            mappedOut.put(fieldName, mappedName);
+            mappedOut.put(prefix + fieldName, mappedName);
         }
     }
 
@@ -249,7 +257,6 @@ public class KafkaTools {
         final List<Schema.Field> fields = schema.getFields();
         for (final Schema.Field field : fields) {
             pushColumnTypesFromAvroField(columns, mappedOut, "", field, fieldNameToColumnName);
-
         }
     }
 
@@ -1275,8 +1282,12 @@ public class KafkaTools {
                 return null;
             case AVRO:
                 return GenericRecordChunkAdapter.make(
-                        tableDef, streamToTableAdapter::chunkTypeForIndex, data.fieldNameToColumnName,
-                        (Schema) data.extra, true);
+                        tableDef,
+                        streamToTableAdapter::chunkTypeForIndex,
+                        data.fieldNameToColumnName,
+                        NESTED_FIELD_NAME_SEPARATOR,
+                        (Schema) data.extra,
+                        true);
             case JSON:
                 return JsonNodeChunkAdapter.make(
                         tableDef, streamToTableAdapter::chunkTypeForIndex, data.fieldNameToColumnName, true);
@@ -1327,7 +1338,7 @@ public class KafkaTools {
                 } else {
                     if (!kafkaConsumerProperties.containsKey(SCHEMA_SERVER_PROPERTY)) {
                         throw new IllegalArgumentException(
-                                "Avro schema name specified and schema server url propeorty " +
+                                "Avro schema name specified and schema server url property " +
                                         SCHEMA_SERVER_PROPERTY + " not found.");
                     }
                     final String schemaServiceUrl = kafkaConsumerProperties.getProperty(SCHEMA_SERVER_PROPERTY);

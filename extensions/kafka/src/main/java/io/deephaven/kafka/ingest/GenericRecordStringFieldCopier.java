@@ -9,18 +9,23 @@ import org.apache.avro.generic.GenericRecord;
 import java.util.Objects;
 
 public class GenericRecordStringFieldCopier implements FieldCopier {
-    private final String fieldName;
+    private final String[] fieldPath;
 
-    public GenericRecordStringFieldCopier(String fieldName) {
-        this.fieldName = fieldName;
+    public GenericRecordStringFieldCopier(final String fieldName, final String separator) {
+        this.fieldPath = GenericRecordUtil.getFieldPath(fieldName, separator);
     }
 
     @Override
-    public void copyField(ObjectChunk<Object, Values> inputChunk, WritableChunk<Values> publisherChunk, int sourceOffset, int destOffset, int length) {
+    public void copyField(
+            final ObjectChunk<Object, Values> inputChunk,
+            final WritableChunk<Values> publisherChunk,
+            final int sourceOffset,
+            final int destOffset,
+            final int length) {
         final WritableObjectChunk<Object, Values> output = publisherChunk.asWritableObjectChunk();
         for (int ii = 0; ii < length; ++ii) {
-            final GenericRecord genericRecord = (GenericRecord)inputChunk.get(ii + sourceOffset);
-            final Object value = genericRecord == null ? null : genericRecord.get(fieldName);
+            final GenericRecord record = (GenericRecord)inputChunk.get(ii + sourceOffset);
+            final Object value = GenericRecordUtil.getPath(record, fieldPath);
             output.set(ii + destOffset, value == null ? null : Objects.toString(value));
         }
     }

@@ -8,10 +8,10 @@ import io.deephaven.util.type.TypeUtils;
 import org.apache.avro.generic.GenericRecord;
 
 public class GenericRecordCharFieldCopier implements FieldCopier {
-    private final String fieldName;
+    private final String[] fieldPath;
 
-    public GenericRecordCharFieldCopier(final String fieldName) {
-        this.fieldName = fieldName;
+    public GenericRecordCharFieldCopier(final String fieldName, final String separator) {
+        this.fieldPath = GenericRecordUtil.getFieldPath(fieldName, separator);
     }
 
     @Override
@@ -23,8 +23,8 @@ public class GenericRecordCharFieldCopier implements FieldCopier {
             final int length) {
         final WritableCharChunk<Values> output = publisherChunk.asWritableCharChunk();
         for (int ii = 0; ii < length; ++ii) {
-            final GenericRecord genericRecord = (GenericRecord) inputChunk.get(ii + sourceOffset);
-            final Character value = genericRecord == null ? null : (Character) genericRecord.get(fieldName);
+            final GenericRecord record = (GenericRecord) inputChunk.get(ii + sourceOffset);
+            final Character value = (Character) GenericRecordUtil.getPath(record, fieldPath);
             output.set(ii + destOffset, TypeUtils.unbox(value));
         }
     }
