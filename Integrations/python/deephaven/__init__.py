@@ -97,7 +97,7 @@ from .Plot import figure_wrapper as figw
 
 from .csv import read as read_csv
 from .csv import write as write_csv
-from .conversion_utils import convertToJavaList as asList
+from .conversion_utils import convertToJavaList as as_list
 
 # NB: this must be defined BEFORE importing .jvm_init or .start_jvm (circular import)
 def initialize():
