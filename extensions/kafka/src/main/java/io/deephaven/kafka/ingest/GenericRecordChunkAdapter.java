@@ -82,7 +82,7 @@ public class GenericRecordChunkAdapter extends MultiFieldChunkAdapter {
                             return new GenericRecordLongFieldCopierWithMultiplier(fieldName, 1000L);
                         } else if (LogicalTypes.timestampMillis().equals(logicalType)) {
                             // millis to nanos
-                            return new GenericRecordLongFieldCopierWithMultiplier(fieldName, 1000000L);
+                            return new GenericRecordLongFieldCopierWithMultiplier(fieldName, 1000_000L);
                         }
                         throw new IllegalArgumentException(
                                 "Can not map field with unknown logical type to DateTime: field=" + fieldName

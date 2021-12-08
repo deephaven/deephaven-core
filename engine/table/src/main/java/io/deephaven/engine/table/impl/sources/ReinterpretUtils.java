@@ -18,7 +18,7 @@ public class ReinterpretUtils {
             return source.reinterpret(long.class);
         } else {
             // noinspection unchecked
-            return new DatetimeAsLongColumnSource((ColumnSource<DateTime>) source);
+            return new DateTimeAsLongColumnSource((ColumnSource<DateTime>) source);
         }
     }
 

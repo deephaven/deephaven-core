@@ -83,7 +83,7 @@ public abstract class ToDateTimePage<ATTR extends Any> extends ToLongPage<ATTR> 
         }
 
         @Override
-        public final long[] convertResult(@NotNull final Object result) {
+        public long[] convertResult(@NotNull final Object result) {
             return convertResultHelper(result, DateTimeUtils::microsToNanos);
         }
     }
@@ -96,7 +96,7 @@ public abstract class ToDateTimePage<ATTR extends Any> extends ToLongPage<ATTR> 
         }
 
         @Override
-        public final long[] convertResult(@NotNull final Object result) {
+        public long[] convertResult(@NotNull final Object result) {
             return convertResultHelper(result, DateTimeUtils::millisToNanos);
         }
     }

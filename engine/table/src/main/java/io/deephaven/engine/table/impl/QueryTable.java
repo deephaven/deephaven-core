@@ -2308,7 +2308,7 @@ public class QueryTable extends BaseTable {
             } else {
                 // noinspection unchecked
                 final ColumnSource<DateTime> columnSourceAsDateTime = (ColumnSource<DateTime>) columnSource;
-                return new DatetimeAsLongColumnSource(columnSourceAsDateTime);
+                return new DateTimeAsLongColumnSource(columnSourceAsDateTime);
             }
         }
 

@@ -16,14 +16,14 @@ import io.deephaven.engine.rowset.RowSequence;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Reinterpret result {@link ColumnSource} implementations that translates {@link Boolean} to {@code byte} values.
+ * Reinterpret result {@link ColumnSource} implementations that translates {@link DateTime} to {@code long} values.
  */
 @AbstractColumnSource.IsSerializable(value = true)
-public class DatetimeAsLongColumnSource extends AbstractColumnSource<Long> implements MutableColumnSourceGetDefaults.ForLong {
+public class DateTimeAsLongColumnSource extends AbstractColumnSource<Long> implements MutableColumnSourceGetDefaults.ForLong {
 
     private final ColumnSource<DateTime> alternateColumnSource;
 
-    public DatetimeAsLongColumnSource(@NotNull final ColumnSource<DateTime> alternateColumnSource) {
+    public DateTimeAsLongColumnSource(@NotNull final ColumnSource<DateTime> alternateColumnSource) {
         super(long.class);
         this.alternateColumnSource = alternateColumnSource;
     }
