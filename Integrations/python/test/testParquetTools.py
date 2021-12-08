@@ -93,8 +93,9 @@ class TestParquetTools(unittest.TestCase):
 
         ParquetTools.writeTable(table, fileLocation)
         table2 = ParquetTools.readTable(fileLocation)
-        joinRowCount = table.exactJoin(table2, 'decimal_value').size()
-        self.assertEquals(table.size(), joinRowCount)
+        self.assertEquals(table.size(), table2.size())
+        s = TableTools.diff(table, table2, 100)
+        self.assertEquals('', s)
         
         self.assertTrue(os.path.exists(fileLocation))
         shutil.rmtree(baseDir)

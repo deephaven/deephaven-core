@@ -4,7 +4,6 @@ import io.deephaven.chunk.attributes.Any;
 import org.jetbrains.annotations.NotNull;
 
 import java.math.BigDecimal;
-import java.math.BigInteger;
 
 import static io.deephaven.util.QueryConstants.NULL_LONG_BOXED;
 
@@ -28,7 +27,7 @@ public class ToBigDecimalFromLongPage<ATTR extends Any> extends ToBigDecimalBase
         final int resultLength = in.length;
         final BigDecimal[] out = new BigDecimal[resultLength];
         for (int ri = 0; ri < resultLength; ++ri) {
-            out[ri] = new BigDecimal(BigInteger.valueOf(in[ri]), scale);
+            out[ri] = BigDecimal.valueOf(in[ri], scale);
         }
         return out;
     }
