@@ -260,7 +260,8 @@ public class NumPy {
      * @param columnSources columns of data to put into the tensor
      * @return contiguous RAM allocated for the tensor
      */
-    private static short[] tensorBuffer2DShortRowMajor(final RowSequence rowSeq, final ColumnSource<?>[] columnSources) {
+    private static short[] tensorBuffer2DShortRowMajor(final RowSequence rowSeq,
+            final ColumnSource<?>[] columnSources) {
         final int nRows = rowSeq.intSize();
         final int nCols = columnSources.length;
         final short[] tensor = new short[nRows * nCols];
@@ -537,7 +538,8 @@ public class NumPy {
      * @param columnSources columns of data to put into the tensor
      * @return contiguous RAM allocated for the tensor
      */
-    private static float[] tensorBuffer2DFloatRowMajor(final RowSequence rowSeq, final ColumnSource<?>[] columnSources) {
+    private static float[] tensorBuffer2DFloatRowMajor(final RowSequence rowSeq,
+            final ColumnSource<?>[] columnSources) {
         final int nRows = rowSeq.intSize();
         final int nCols = columnSources.length;
         final float[] tensor = new float[nRows * nCols];
