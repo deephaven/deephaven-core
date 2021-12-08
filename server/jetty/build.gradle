@@ -1,0 +1,44 @@
+plugins {
+    id 'application'
+}
+
+configurations {
+    js
+}
+
+def jsJar = tasks.register('jsJar', Jar) {
+    from configurations.js.collect { tarTree(it) }
+}
+
+dependencies {
+    implementation project(':server'), project(':application-mode')
+    Classpaths.inheritDagger(project)
+
+    Classpaths.inheritGrpcPlatform(project)
+    implementation 'io.grpc:grpc-servlet-jakarta'
+    implementation('org.eclipse.jetty:jetty-servlet:11.0.7')
+    implementation 'org.eclipse.jetty:jetty-webapp:11.0.7'
+    implementation 'org.eclipse.jetty.http2:http2-server:11.0.7'
+
+    implementation project(':grpc-web-socket')
+    implementation 'org.eclipse.jetty.websocket:websocket-jakarta-server:11.0.7'
+
+    runtimeOnly project(':log-to-slf4j')
+    runtimeOnly project(':logback-print-stream-globals')
+    runtimeOnly project(':logback-logbuffer')
+    Classpaths.inheritLogbackClassic(project)
+
+    testImplementation project(':server-test')
+
+    runtimeOnly(project(path: ':web-client-ide', targetConfiguration: 'js'))
+}
+
+application {
+    mainClassName = 'io.deephaven.server.jetty.JettyMain'
+    applicationDefaultJvmArgs = [
+            '-server',
+            '-XX:+UseG1GC',
+            '-XX:MaxGCPauseMillis=100',
+            '-XX:+UseStringDeduplication',
+            '-XshowSettings:vm' ]
+}

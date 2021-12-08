@@ -4,6 +4,7 @@ import io.deephaven.internal.DeephavenLoggerFactory;
 import org.slf4j.ILoggerFactory;
 import org.slf4j.spi.LoggerFactoryBinder;
 
+// DELETE these static classes, update to service loader, if we update to alpha slf4j
 public final class StaticLoggerBinder implements LoggerFactoryBinder {
 
     // to avoid constant folding by the compiler, this field must *not* be final

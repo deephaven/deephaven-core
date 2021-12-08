@@ -13,7 +13,7 @@ public interface GrpcServer {
 
     void start() throws IOException;
 
-    void shutdown();
+    void shutdown() throws Exception;
 
     void shutdownNow();
 

@@ -60,6 +60,7 @@ allprojects {
                 includeGroup 'org.apache.kafka'
             }
         }
+        mavenLocal {}
     }
 }
 
@@ -106,6 +107,7 @@ Set<Project> modsAreBasic = subprojects.findAll {it.name in [
     'docker-runtime-base',
     'docker-server',
     'docker-server-slim',
+    'raw-js-openapi'
 ] }
 
 Set<Project> modsAreBin = subprojects.findAll {it.name in ['bin', 'configs', 'test-configs'] }

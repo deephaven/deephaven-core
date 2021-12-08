@@ -22,8 +22,10 @@ String[] mods = [
         'python-engine-test',
         'Parquet',
         'server',
+        'grpc-web-socket',
         'table-api',
-        'qst']
+        'qst'
+]
 
         // new web projects; these modules are intended to form a complete, modular web application,
         // with heavy dependency isolation that should enable very fast rebuilds.
@@ -117,6 +119,9 @@ project(':server-test').projectDir = file('server/test')
 
 include(':server-netty')
 project(':server-netty').projectDir = file('server/netty')
+
+include(':server-jetty')
+project(':server-jetty').projectDir = file('server/jetty')
 
 include(':Base')
 

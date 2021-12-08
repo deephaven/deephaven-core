@@ -33,12 +33,12 @@ var PAGE_SIZE = 20;
 (async () => {
     connection = new dh.IdeConnection(window.location.protocol + "//" + window.location.host);
 
-    ide = await connection.startSession("python");
-
-    await ide.runCode(`
-from deephaven.TableTools import timeTable
-remoteTable = timeTable("00:00:01").updateView("I=i", "J=I*I", "K=I%100").lastBy("K")
-    `)
+    ide = await connection.startSession("groovy");
+await ide.runCode('remoteTable = timeTable("00:00:01").updateView("I=i", "J=I*I", "K=I%100").lastBy("K")')
+//     await ide.runCode(`
+// from deephaven.TableTools import timeTable
+// remoteTable = timeTable("00:00:01").updateView("I=i", "J=I*I", "K=I%100").lastBy("K")
+//     `)
 
     openTable(await ide.getTable('remoteTable'));
 

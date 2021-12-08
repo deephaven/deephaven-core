@@ -11,6 +11,7 @@ import io.grpc.Channel;
 import io.grpc.ClientCall;
 import io.grpc.ClientInterceptor;
 import io.grpc.ClientInterceptors;
+import io.grpc.Context;
 import io.grpc.ForwardingClientCall;
 import io.grpc.ManagedChannel;
 import io.grpc.Metadata;
@@ -35,7 +36,25 @@ public class BarrageSession extends FlightSession implements BarrageSubscription
     protected BarrageSession(
             final SessionImpl session, final FlightClient client, final ManagedChannel channel) {
         super(session, client);
-        this.interceptedChannel = ClientInterceptors.intercept(channel, new AuthInterceptor());
+        Channel intercepted = ClientInterceptors.intercept(channel, new AuthInterceptor());
+        this.interceptedChannel = new Channel() {
+            @Override
+            public <RequestT, ResponseT> ClientCall<RequestT, ResponseT> newCall(
+                    MethodDescriptor<RequestT, ResponseT> methodDescriptor, CallOptions callOptions) {
+                final Context previous = Context.current();
+                try {
+                    Context.ROOT.attach();
+                    return intercepted.newCall(methodDescriptor, callOptions);
+                } finally {
+                    Context.ROOT.detach(previous);
+                }
+            }
+
+            @Override
+            public String authority() {
+                return intercepted.authority();
+            }
+        };
     }
 
     @Override

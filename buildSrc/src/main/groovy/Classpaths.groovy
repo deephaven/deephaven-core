@@ -76,7 +76,7 @@ class Classpaths {
 
     static final String LOGBACK_GROUP = 'ch.qos.logback'
     static final String LOGBACK_NAME = 'logback-classic'
-    static final String LOGBACK_VERSION = '1.2.3'
+    static final String LOGBACK_VERSION = '1.3.0-alpha10'
 
     static final String GROOVY_GROUP = 'org.codehaus.groovy'
     static final String GROOVY_VERSION = '3.0.9'

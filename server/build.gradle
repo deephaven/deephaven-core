@@ -39,6 +39,11 @@ dependencies {
         runtimeOnly project(':extensions-suanshu')
     }
 
+    Classpaths.inheritGrpcPlatform(project, 'implementation')
+    implementation "io.grpc:grpc-services"
+
+    testImplementation "io.grpc:grpc-testing"
+
     testImplementation project(':proto:proto-backplane-grpc')
 
     testImplementation TestTools.projectDependency(project, 'engine-table'),

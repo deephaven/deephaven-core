@@ -56,9 +56,9 @@ public class Main {
         // logback configuration may reference LogBufferAppender).
         LogBufferGlobal.setInstance(new LogBufferInterceptor(Integer.getInteger("logBuffer.history", 1024)));
 
-        final Logger log = LoggerFactory.getLogger(Main.class);
+        final Logger log = LoggerFactory.getLogger(mainClass);
 
-        log.info().append("Starting up ").append(Main.class.getName()).append("...").endl();
+        log.info().append("Starting up ").append(mainClass.getName()).append("...").endl();
 
         final Configuration config = Configuration.getInstance();
 
