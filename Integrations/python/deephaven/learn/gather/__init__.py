@@ -18,18 +18,19 @@ def _defineSymbols():
         raise SystemError("No java functionality can be used until the JVM has been initialized through the jpy module")
 
     global _gatherer
-    global MemoryLayout
+    global Layout
 
     if _gatherer is None:
         _gatherer = jpy.get_type("io.deephaven.integrations.learn.gather.NumPy")
-        class MemoryLayout(enum.Enum):
-            ROW_MAJOR = True
-            COLUMN_MAJOR = False
-            C = True
-            FORTRAN = False
-
-            def __init__(self, is_row_major):
-                self.is_row_major = is_row_major
+    
+class MemoryLayout(enum.Enum):
+    ROW_MAJOR = True
+    COLUMN_MAJOR = False
+    C = True
+    FORTRAN = False
+    def __init__(self, is_row_major):
+        self.is_row_major = is_row_major
+Layout = MemoryLayout(True)
 
 
 # Every method that depends on symbols defined via _defineSymbols() should be decorated with @_passThrough
@@ -66,7 +67,7 @@ def convert_to_numpy_dtype(dtype):
     return dtype
 
 @_passThrough
-def table_to_numpy_2d(row_set, col_set, order = MemoryLayout.ROW_MAJOR, dtype:np.dtype = np.intc):
+def table_to_numpy_2d(row_set, col_set, order = Layout.ROW_MAJOR, dtype:np.dtype = np.intc):
     """
     Convert Deephaven table data to a 2d NumPy array of the appropriate size
 
@@ -77,14 +78,16 @@ def table_to_numpy_2d(row_set, col_set, order = MemoryLayout.ROW_MAJOR, dtype:np
     :return: A NumPy ndarray
     """
 
-    if order == MemoryLayout.ROW_MAJOR or order == MemoryLayout.C:
+    global Layout
+
+    if order in [Layout.ROW_MAJOR, Layout.C, True]:
         flag = True
-    elif order == MemoryLayout.COLUMN_MAJOR or order == MemoryLayout.FORTRAN:
+    elif order in [Layout.COLUMN_MAJOR, Layout.FORTRAN, False]:
         flag = False
     else:
-        raise ValueError("Invalid major order.  Please use an enum value from MemoryLayout.")
+        raise ValueError("Invalid major order.  Please use an True, False, or an enum value from MemoryLayout.")
 
-    if dtype == bool or dtype == float or dypte == int:
+    if dtype == bool or dtype == float or dtype == int:
         dtype = convert_to_numpy_dtype(dtype)
 
     if dtype == np.byte:
@@ -109,7 +112,7 @@ def table_to_numpy_2d(row_set, col_set, order = MemoryLayout.ROW_MAJOR, dtype:np
 
     elif dtype == np.double:
 
-        buffer = _gatherer.tensorBuffer2DFloat(row_set, col_set, flag)
+        buffer = _gatherer.tensorBuffer2DDouble(row_set, col_set, flag)
 
     else:
 
