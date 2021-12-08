@@ -1,0 +1,12 @@
+{
+ "className": "io.deephaven.qst.table.CountByTable$Builder",
+ "methods": {
+  "addAllGroupByColumns": ":param elements: java.lang.Iterable<? extendsio.deephaven.api.Selectable>\n:return: io.deephaven.qst.table.CountByTable.Builder",
+  "addGroupByColumns": "*Overload 1*  \n  :param element: io.deephaven.api.Selectable\n  :return: io.deephaven.qst.table.CountByTable.Builder\n  \n*Overload 2*  \n  :param elements: io.deephaven.api.Selectable...\n  :return: io.deephaven.qst.table.CountByTable.Builder",
+  "build": ":return: io.deephaven.qst.table.CountByTable",
+  "countName": ":param countName: io.deephaven.api.ColumnName\n:return: io.deephaven.qst.table.CountByTable.Builder",
+  "parent": ":param parent: io.deephaven.qst.table.TableSpec\n:return: io.deephaven.qst.table.CountByTable.Builder"
+ },
+ "path": "io.deephaven.qst.table.CountByTable.Builder",
+ "typeName": "interface"
+}

@@ -164,7 +164,7 @@ public enum TimeZone {
      * This method returns the same contents as {@link TimeZone#values()}, but ordered by geographic location / UTC
      * offset. If two elements exist within the same timezone, they are second-order-sorted by name
      *
-     * @return An array of DBTimeZones ordered by UTC-offset
+     * @return An array of TimeZones ordered by UTC-offset
      */
     public static TimeZone[] valuesByOffset() {
         final List<TimeZone> allZones = Arrays.asList(values());

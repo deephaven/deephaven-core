@@ -85,11 +85,9 @@ public class GenericRecordChunkAdapter extends MultiFieldChunkAdapter {
                                 "Can not map field without a logical type to DateTime: field=" + fieldPathStr);
                     }
                     if (logicalType instanceof LogicalTypes.TimestampMillis) {
-                        // micros to nanos
                         return new GenericRecordLongFieldCopierWithMultiplier(fieldPathStr, 1000L);
                     }
                     if (logicalType instanceof LogicalTypes.TimestampMicros) {
-                        // millis to nanos
                         return new GenericRecordLongFieldCopierWithMultiplier(fieldPathStr, 1000_000L);
                     }
                     throw new IllegalArgumentException(

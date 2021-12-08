@@ -32,7 +32,7 @@ Additionally, the following methods have been imported into the main deephaven n
 * from conversion_utils import convertToJavaArray, convertToJavaList, convertToJavaArrayList,
        convertToJavaHashSet, convertToJavaHashMap
 
-* from TableManipulation import Aggregation, ColumnRenderersBuilder, DistinctFormatter,
+* from TableManipulation import Aggregation, ColumnName, ColumnRenderersBuilder, DistinctFormatter,
        DownsampledWhereFilter, DynamicTableWriter, LayoutHintBuilder,  
        Replayer, SmartKey, SortColumn, TotalsTableBuilder, WindowCheck
 
@@ -55,7 +55,7 @@ __all__ = [
     "convertToJavaArray", "convertToJavaList", "convertToJavaArrayList", "convertToJavaHashSet",
     "convertToJavaHashMap",  # from conversion_utils
 
-    'Aggregation', 'ColumnRenderersBuilder', 'DistinctFormatter', 'DownsampledWhereFilter', 'DynamicTableWriter',
+    'Aggregation', 'ColumnName', 'ColumnRenderersBuilder', 'DistinctFormatter', 'DownsampledWhereFilter', 'DynamicTableWriter',
     'LayoutHintBuilder', 'Replayer', 'SmartKey', 'SortColumn', 'TotalsTableBuilder', 'WindowCheck',  # from TableManipulation
 
     "cals", "af", "dtu", "figw", "mavg", "plt", "pt", "ttools", "tloggers",  # subpackages with abbreviated names
@@ -90,13 +90,14 @@ from . import Calendars as cals, \
     ParquetTools as pt, \
     TableTools as ttools, \
     TableLoggers as tloggers, \
-    Types as dh
+    Types as dh, \
+    filter as _filter
 
 from .Plot import figure_wrapper as figw
 
 from .csv import read as read_csv
 from .csv import write as write_csv
-
+from .conversion_utils import convertToJavaList as as_list
 
 # NB: this must be defined BEFORE importing .jvm_init or .start_jvm (circular import)
 def initialize():
@@ -119,12 +120,13 @@ def initialize():
     ttools._defineSymbols()
     tloggers._defineSymbols()
     csv._defineSymbols()
+    _filter._defineSymbols()
 
     import deephaven.TableManipulation
     deephaven.TableManipulation._defineSymbols()
-    global Aggregation, ColumnRenderersBuilder, DistinctFormatter, DownsampledWhereFilter, DynamicTableWriter, \
+    global Aggregation, ColumnName, ColumnRenderersBuilder, DistinctFormatter, DownsampledWhereFilter, DynamicTableWriter, \
         LayoutHintBuilder, Replayer, SmartKey, SortColumn, TotalsTableBuilder
-    from deephaven.TableManipulation import Aggregation, ColumnRenderersBuilder, DistinctFormatter, \
+    from deephaven.TableManipulation import Aggregation, ColumnName, ColumnRenderersBuilder, DistinctFormatter, \
         DownsampledWhereFilter, DynamicTableWriter, LayoutHintBuilder, Replayer, SmartKey, \
         SortColumn, TotalsTableBuilder
 
@@ -410,3 +412,17 @@ def doLocked(f, lock_type="shared"):
         UpdateGraphProcessor.DEFAULT.sharedLock().doLocked(ThrowingRunnable(f))
     else:
         raise ValueError("Unsupported lock type: lock_type={}".format(lock_type))
+
+
+def combo_agg(agg_list):
+    """
+    Combines aggregations.
+
+    :param agg_list: list of aggregations
+    :return: combined aggregations
+    """
+    _JArrayList = jpy.get_type("java.util.ArrayList")
+    j_agg_list = _JArrayList(len(agg_list))
+    for agg in agg_list:
+        j_agg_list.add(agg)
+    return j_agg_list

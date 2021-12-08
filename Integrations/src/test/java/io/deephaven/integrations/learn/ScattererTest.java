@@ -23,6 +23,7 @@ public class ScattererTest {
                 });
     }
 
+    @SafeVarargs
     private static Input[] createInputs(Function<Object[], Object>... gatherFuncs) {
         return new Input[] {new Input(new String[] {"Column1", "Column2"}, gatherFuncs[0]),
                 new Input("Column3", gatherFuncs[1])};
@@ -32,11 +33,13 @@ public class ScattererTest {
         return createInputs(gatherFunc, gatherFunc);
     }
 
+    @SafeVarargs
     private static Output[] createOutputs(Function<Object[], Object>... scatterFuncs) {
         return new Output[] {new Output("OutCol1", scatterFuncs[0], "int"),
                 new Output("OutCol2", scatterFuncs[1], null)};
     }
 
+    @SafeVarargs
     private static Output[] createOutputsPy(Function<Object[], Object>... scatterFuncs) {
         return new Output[] {new Output("OutCol1", true, scatterFuncs[0], "int"),
                 new Output("OutCol2", true, scatterFuncs[1], null)};
@@ -48,13 +51,13 @@ public class ScattererTest {
 
     @Test(expected = io.deephaven.base.verify.RequirementFailure.class)
     public void nullOutputArrayTest() {
-        Scatterer scatterer = new Scatterer(null);
+        new Scatterer(null);
     }
 
     @Test(expected = io.deephaven.base.verify.RequirementFailure.class)
     public void nullOutputElementTest() {
         Output[] outputs = createOutputs(args -> args);
-        Scatterer scatterer = new Scatterer(new Output[] {outputs[0], null});
+        new Scatterer(new Output[] {outputs[0], null});
     }
 
     @Test

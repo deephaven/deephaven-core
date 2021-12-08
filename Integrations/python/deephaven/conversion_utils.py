@@ -1107,9 +1107,8 @@ def _seqToSet(s):
     return r
 
 @_passThrough
-def _dictToFun(mapping, default_value):
-    mapping = _dictToMap(d)
+def _dictToFun(dict_mapping, default_value):
+    java_map = _dictToMap(dict_mapping)
     if default_value is IDENTITY:
-        return _python_tools_.functionFromMapWithIdentityDefaults(m)
-    else:
-        return _python_tools_.functionfromMapWithDefault(m, default_value)
+        return _python_tools_.functionFromMapWithIdentityDefaults(java_map)
+    return _python_tools_.functionFromMapWithDefault(java_map, default_value)

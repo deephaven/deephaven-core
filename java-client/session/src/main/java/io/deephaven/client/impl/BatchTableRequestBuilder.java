@@ -11,29 +11,32 @@ import io.deephaven.api.Selectable;
 import io.deephaven.api.SortColumn;
 import io.deephaven.api.SortColumn.Order;
 import io.deephaven.api.Strings;
-import io.deephaven.api.agg.AbsSum;
 import io.deephaven.api.agg.Aggregation;
-import io.deephaven.api.agg.Group;
-import io.deephaven.api.agg.Avg;
 import io.deephaven.api.agg.Count;
-import io.deephaven.api.agg.CountDistinct;
-import io.deephaven.api.agg.Distinct;
-import io.deephaven.api.agg.First;
-import io.deephaven.api.agg.Last;
-import io.deephaven.api.agg.Max;
-import io.deephaven.api.agg.Med;
-import io.deephaven.api.agg.Min;
-import io.deephaven.api.agg.Multi;
+import io.deephaven.api.agg.NormalAggregation;
+import io.deephaven.api.agg.NormalAggregations;
 import io.deephaven.api.agg.Pair;
-import io.deephaven.api.agg.Pct;
-import io.deephaven.api.agg.SortedFirst;
-import io.deephaven.api.agg.SortedLast;
-import io.deephaven.api.agg.Std;
-import io.deephaven.api.agg.Sum;
-import io.deephaven.api.agg.Unique;
-import io.deephaven.api.agg.Var;
-import io.deephaven.api.agg.WAvg;
-import io.deephaven.api.agg.WSum;
+import io.deephaven.api.agg.spec.AggSpec;
+import io.deephaven.api.agg.spec.AggSpecAbsSum;
+import io.deephaven.api.agg.spec.AggSpecAvg;
+import io.deephaven.api.agg.spec.AggSpecCountDistinct;
+import io.deephaven.api.agg.spec.AggSpecDistinct;
+import io.deephaven.api.agg.spec.AggSpecFirst;
+import io.deephaven.api.agg.spec.AggSpecFormula;
+import io.deephaven.api.agg.spec.AggSpecGroup;
+import io.deephaven.api.agg.spec.AggSpecLast;
+import io.deephaven.api.agg.spec.AggSpecMax;
+import io.deephaven.api.agg.spec.AggSpecMedian;
+import io.deephaven.api.agg.spec.AggSpecMin;
+import io.deephaven.api.agg.spec.AggSpecPercentile;
+import io.deephaven.api.agg.spec.AggSpecSortedFirst;
+import io.deephaven.api.agg.spec.AggSpecSortedLast;
+import io.deephaven.api.agg.spec.AggSpecStd;
+import io.deephaven.api.agg.spec.AggSpecSum;
+import io.deephaven.api.agg.spec.AggSpecUnique;
+import io.deephaven.api.agg.spec.AggSpecVar;
+import io.deephaven.api.agg.spec.AggSpecWAvg;
+import io.deephaven.api.agg.spec.AggSpecWSum;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.api.filter.FilterAnd;
 import io.deephaven.api.filter.FilterCondition;
@@ -72,6 +75,7 @@ import io.deephaven.proto.backplane.grpc.NaturalJoinTablesRequest;
 import io.deephaven.proto.backplane.grpc.NotCondition;
 import io.deephaven.proto.backplane.grpc.OrCondition;
 import io.deephaven.proto.backplane.grpc.Reference;
+import io.deephaven.proto.backplane.grpc.SelectDistinctRequest;
 import io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest;
 import io.deephaven.proto.backplane.grpc.SnapshotTableRequest;
 import io.deephaven.proto.backplane.grpc.SortDescriptor;
@@ -81,11 +85,44 @@ import io.deephaven.proto.backplane.grpc.TableReference;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.proto.backplane.grpc.TimeTableRequest;
 import io.deephaven.proto.backplane.grpc.UnstructuredFilterTableRequest;
-import io.deephaven.qst.table.*;
+import io.deephaven.qst.table.AggregateAllByTable;
+import io.deephaven.qst.table.AggregationTable;
+import io.deephaven.qst.table.AsOfJoinTable;
+import io.deephaven.qst.table.ByTableBase;
+import io.deephaven.qst.table.CountByTable;
+import io.deephaven.qst.table.EmptyTable;
+import io.deephaven.qst.table.ExactJoinTable;
+import io.deephaven.qst.table.HeadTable;
+import io.deephaven.qst.table.InMemoryAppendOnlyInputTable;
+import io.deephaven.qst.table.InMemoryKeyBackedInputTable;
+import io.deephaven.qst.table.InputTable;
+import io.deephaven.qst.table.JoinTable;
+import io.deephaven.qst.table.MergeTable;
+import io.deephaven.qst.table.NaturalJoinTable;
+import io.deephaven.qst.table.NewTable;
+import io.deephaven.qst.table.ReverseAsOfJoinTable;
+import io.deephaven.qst.table.ReverseTable;
+import io.deephaven.qst.table.SelectDistinctTable;
+import io.deephaven.qst.table.SelectTable;
+import io.deephaven.qst.table.SingleParentTable;
+import io.deephaven.qst.table.SnapshotTable;
+import io.deephaven.qst.table.SortTable;
+import io.deephaven.qst.table.TableHeader;
+import io.deephaven.qst.table.TableSchema;
+import io.deephaven.qst.table.TableSpec;
+import io.deephaven.qst.table.TailTable;
+import io.deephaven.qst.table.TicketTable;
 import io.deephaven.qst.table.TimeProvider.Visitor;
+import io.deephaven.qst.table.TimeProviderSystem;
+import io.deephaven.qst.table.TimeTable;
+import io.deephaven.qst.table.UpdateTable;
+import io.deephaven.qst.table.UpdateViewTable;
+import io.deephaven.qst.table.ViewTable;
+import io.deephaven.qst.table.WhereInTable;
+import io.deephaven.qst.table.WhereNotInTable;
+import io.deephaven.qst.table.WhereTable;
 
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -370,17 +407,13 @@ class BatchTableRequestBuilder {
         }
 
         @Override
-        public void visit(GroupByTable groupByTable) {
-            out = op(Builder::setComboAggregate, singleAgg(groupByTable, AggType.GROUP));
+        public void visit(AggregateAllByTable aggAllByTable) {
+            out = op(Builder::setComboAggregate, aggAllBy(aggAllByTable));
         }
 
         @Override
         public void visit(AggregationTable aggregationTable) {
-            ComboAggregateRequest.Builder builder = groupByColumns(aggregationTable);
-            for (Aggregation aggregation : aggregationTable.aggregations()) {
-                builder.addAllAggregates(AggregationAdapter.of(aggregation));
-            }
-            out = op(Builder::setComboAggregate, builder);
+            out = op(Builder::setComboAggregate, aggBy(aggregationTable));
         }
 
         @Override
@@ -422,6 +455,16 @@ class BatchTableRequestBuilder {
             out = op(Builder::setCreateInputTable, builder);
         }
 
+        @Override
+        public void visit(SelectDistinctTable selectDistinctTable) {
+            out = op(Builder::setSelectDistinct, selectDistinct(selectDistinctTable));
+        }
+
+        @Override
+        public void visit(CountByTable countByTable) {
+            out = op(Builder::setComboAggregate, countBy(countByTable));
+        }
+
         private SelectOrUpdateRequest selectOrUpdate(SingleParentTable x,
                 Collection<Selectable> columns) {
             SelectOrUpdateRequest.Builder builder =
@@ -432,166 +475,76 @@ class BatchTableRequestBuilder {
             return builder.build();
         }
 
-        private ComboAggregateRequest singleAgg(ByTableBase base, AggType type) {
-            return groupByColumns(base).addAggregates(Aggregate.newBuilder().setType(type).build()).build();
+        private ComboAggregateRequest aggAllBy(AggregateAllByTable agg) {
+            // A single aggregate without any input/output is how the protocol knows this is an "aggregate all by"
+            // as opposed to an AggregationTable with one agg.
+            final Aggregate aggregate = agg.spec().walk(new AggregateAdapter(Collections.emptyList())).out();
+            return groupByColumns(agg).addAggregates(aggregate).build();
+        }
+
+        private ComboAggregateRequest aggBy(AggregationTable agg) {
+            ComboAggregateRequest.Builder builder = groupByColumns(agg);
+            for (Aggregation aggregation : agg.aggregations()) {
+                builder.addAggregates(AggregationAdapter.of(aggregation));
+            }
+            return builder.build();
         }
 
         private ComboAggregateRequest.Builder groupByColumns(ByTableBase base) {
             ComboAggregateRequest.Builder builder = ComboAggregateRequest.newBuilder()
                     .setResultId(ticket)
                     .setSourceId(ref(base.parent()));
-            for (Selectable column : base.columns()) {
+            for (Selectable column : base.groupByColumns()) {
                 builder.addGroupByColumns(Strings.of(column));
             }
             return builder;
+        }
+
+        private SelectDistinctRequest selectDistinct(SelectDistinctTable selectDistinctTable) {
+            SelectDistinctRequest.Builder builder = SelectDistinctRequest.newBuilder()
+                    .setResultId(ticket)
+                    .setSourceId(ref(selectDistinctTable.parent()));
+            for (Selectable column : selectDistinctTable.groupByColumns()) {
+                builder.addColumnNames(Strings.of(column));
+            }
+            return builder.build();
+        }
+
+        private ComboAggregateRequest countBy(CountByTable countByTable) {
+            final Aggregate aggregate = Aggregate.newBuilder()
+                    .setType(AggType.COUNT)
+                    .setColumnName(countByTable.countName().name())
+                    .build();
+            return groupByColumns(countByTable).addAggregates(aggregate).build();
         }
     }
 
     private static class AggregationAdapter implements Aggregation.Visitor {
 
-        public static List<Aggregate> of(Aggregation aggregation) {
-            return aggregation.walk(new AggregationAdapter()).getOut();
+        public static Aggregate of(Aggregation aggregation) {
+            return aggregation.walk(new AggregationAdapter()).out();
         }
 
         private Aggregate out;
-        private List<Aggregate> multi;
 
-        public List<Aggregate> getOut() {
-            if (multi != null) {
-                return multi;
-            }
-            if (out != null) {
-                return Collections.singletonList(out);
-            }
-            throw new IllegalStateException();
-        }
-
-        private Aggregate.Builder of(AggType type, Pair specs) {
-            return Aggregate.newBuilder().setType(type).addMatchPairs(Strings.of(specs));
-        }
-
-        @Override
-        public void visit(Min min) {
-            out = of(AggType.MIN, min.pair()).build();
-        }
-
-        @Override
-        public void visit(Max max) {
-            out = of(AggType.MAX, max.pair()).build();
-        }
-
-        @Override
-        public void visit(Sum sum) {
-            out = of(AggType.SUM, sum.pair()).build();
-        }
-
-        @Override
-        public void visit(Var var) {
-            out = of(AggType.VAR, var.pair()).build();
-        }
-
-        @Override
-        public void visit(Avg avg) {
-            out = of(AggType.AVG, avg.pair()).build();
-        }
-
-        @Override
-        public void visit(First first) {
-            out = of(AggType.FIRST, first.pair()).build();
-        }
-
-        @Override
-        public void visit(Last last) {
-            out = of(AggType.LAST, last.pair()).build();
-        }
-
-        @Override
-        public void visit(Std std) {
-            out = of(AggType.STD, std.pair()).build();
-        }
-
-        @Override
-        public void visit(Med med) {
-            if (!med.averageMedian()) {
-                throw new UnsupportedOperationException(
-                        "TODO(deephaven-core#991): TableService aggregation coverage, https://github.com/deephaven/deephaven-core/issues/991");
-            }
-            out = of(AggType.MEDIAN, med.pair()).build();
-        }
-
-        @Override
-        public void visit(Pct pct) {
-            if (pct.averageMedian()) {
-                throw new UnsupportedOperationException(
-                        "TODO(deephaven-core#991): TableService aggregation coverage, https://github.com/deephaven/deephaven-core/issues/991");
-            }
-            out = of(AggType.PERCENTILE, pct.pair()).build();
-        }
-
-        @Override
-        public void visit(WSum wSum) {
-            throw new UnsupportedOperationException(
-                    "TODO(deephaven-core#991): TableService aggregation coverage, https://github.com/deephaven/deephaven-core/issues/991");
-        }
-
-        @Override
-        public void visit(WAvg wAvg) {
-            out = of(AggType.WEIGHTED_AVG, wAvg.pair()).setColumnName(wAvg.weight().name()).build();
+        public Aggregate out() {
+            return Objects.requireNonNull(out);
         }
 
         @Override
         public void visit(Count count) {
-            out = Aggregate.newBuilder().setType(AggType.COUNT).setColumnName(count.column().name())
-                    .build();
+            out = Aggregate.newBuilder().setType(AggType.COUNT).setColumnName(count.column().name()).build();
         }
 
         @Override
-        public void visit(CountDistinct countDistinct) {
-            throw new UnsupportedOperationException(
-                    "TODO(deephaven-core#991): TableService aggregation coverage, https://github.com/deephaven/deephaven-core/issues/991");
+        public void visit(NormalAggregation normalAgg) {
+            out = normalAgg.spec()
+                    .walk(new AggregateAdapter(Collections.singletonList(normalAgg.pair()))).out();
         }
 
         @Override
-        public void visit(Distinct distinct) {
-            throw new UnsupportedOperationException(
-                    "TODO(deephaven-core#991): TableService aggregation coverage, https://github.com/deephaven/deephaven-core/issues/991");
-        }
-
-        @Override
-        public void visit(Group group) {
-            out = of(AggType.GROUP, group.pair()).build();
-        }
-
-        @Override
-        public void visit(AbsSum absSum) {
-            out = of(AggType.ABS_SUM, absSum.pair()).build();
-        }
-
-        @Override
-        public void visit(Unique unique) {
-            throw new UnsupportedOperationException(
-                    "TODO(deephaven-core#991): TableService aggregation coverage, https://github.com/deephaven/deephaven-core/issues/991");
-        }
-
-        @Override
-        public void visit(SortedFirst sortedFirst) {
-            throw new UnsupportedOperationException(
-                    "TODO(deephaven-core#991): TableService aggregation coverage, https://github.com/deephaven/deephaven-core/issues/991");
-        }
-
-        @Override
-        public void visit(SortedLast sortedLast) {
-            throw new UnsupportedOperationException(
-                    "TODO(deephaven-core#991): TableService aggregation coverage, https://github.com/deephaven/deephaven-core/issues/991");
-        }
-
-        @Override
-        public void visit(Multi<?> multi) {
-            List<Aggregate> result = new ArrayList<>();
-            for (Aggregation aggregation : multi.aggregations()) {
-                result.addAll(of(aggregation));
-            }
-            this.multi = result;
+        public void visit(NormalAggregations normalAggs) {
+            out = normalAggs.spec().walk(new AggregateAdapter(normalAggs.pairs())).out();
         }
     }
 
@@ -708,6 +661,145 @@ class BatchTableRequestBuilder {
         @Override
         public void visit(RawString rawString) {
             throw new IllegalStateException("Can't build Condition with raw string");
+        }
+    }
+
+    private static Aggregate.Builder of(AggType type, List<Pair> pairs) {
+        final Aggregate.Builder builder = Aggregate.newBuilder().setType(type);
+        for (Pair pair : pairs) {
+            builder.addMatchPairs(Strings.of(pair));
+        }
+        return builder;
+    }
+
+    private static class AggregateAdapter implements AggSpec.Visitor {
+
+        private final List<Pair> pairs;
+
+        public AggregateAdapter(List<Pair> pairs) {
+            this.pairs = Objects.requireNonNull(pairs);
+        }
+
+        private Aggregate out;
+
+        private Aggregate out() {
+            return Objects.requireNonNull(out);
+        }
+
+        @Override
+        public void visit(AggSpecAbsSum absSum) {
+            out = of(AggType.ABS_SUM, pairs).build();
+        }
+
+        @Override
+        public void visit(AggSpecCountDistinct countDistinct) {
+            throw new UnsupportedOperationException(
+                    "TODO(deephaven-core#991): TableService aggregation coverage, https://github.com/deephaven/deephaven-core/issues/991");
+        }
+
+        @Override
+        public void visit(AggSpecDistinct distinct) {
+            throw new UnsupportedOperationException(
+                    "TODO(deephaven-core#991): TableService aggregation coverage, https://github.com/deephaven/deephaven-core/issues/991");
+        }
+
+        @Override
+        public void visit(AggSpecGroup group) {
+            out = of(AggType.GROUP, pairs).build();
+        }
+
+        @Override
+        public void visit(AggSpecAvg avg) {
+            out = of(AggType.AVG, pairs).build();
+        }
+
+        @Override
+        public void visit(AggSpecFirst first) {
+            out = of(AggType.FIRST, pairs).build();
+        }
+
+        @Override
+        public void visit(AggSpecFormula formula) {
+            throw new UnsupportedOperationException(
+                    "TODO(deephaven-core#991): TableService aggregation coverage, https://github.com/deephaven/deephaven-core/issues/991");
+        }
+
+        @Override
+        public void visit(AggSpecLast last) {
+            out = of(AggType.LAST, pairs).build();
+        }
+
+        @Override
+        public void visit(AggSpecMax max) {
+            out = of(AggType.MAX, pairs).build();
+        }
+
+        @Override
+        public void visit(AggSpecMedian median) {
+            if (!median.averageMedian()) {
+                throw new UnsupportedOperationException(
+                        "TODO(deephaven-core#991): TableService aggregation coverage, https://github.com/deephaven/deephaven-core/issues/991");
+            }
+            out = of(AggType.MEDIAN, pairs).build();
+        }
+
+        @Override
+        public void visit(AggSpecMin min) {
+            out = of(AggType.MIN, pairs).build();
+        }
+
+        @Override
+        public void visit(AggSpecPercentile pct) {
+            if (pct.averageMedian()) {
+                throw new UnsupportedOperationException(
+                        "TODO(deephaven-core#991): TableService aggregation coverage, https://github.com/deephaven/deephaven-core/issues/991");
+            }
+            out = of(AggType.PERCENTILE, pairs).build();
+        }
+
+        @Override
+        public void visit(AggSpecSortedFirst sortedFirst) {
+            throw new UnsupportedOperationException(
+                    "TODO(deephaven-core#991): TableService aggregation coverage, https://github.com/deephaven/deephaven-core/issues/991");
+        }
+
+        @Override
+        public void visit(AggSpecSortedLast sortedLast) {
+            throw new UnsupportedOperationException(
+                    "TODO(deephaven-core#991): TableService aggregation coverage, https://github.com/deephaven/deephaven-core/issues/991");
+        }
+
+        @Override
+        public void visit(AggSpecStd std) {
+            out = of(AggType.STD, pairs).build();
+        }
+
+        @Override
+        public void visit(AggSpecSum sum) {
+            out = of(AggType.SUM, pairs).build();
+        }
+
+        @Override
+        public void visit(AggSpecUnique unique) {
+            throw new UnsupportedOperationException(
+                    "TODO(deephaven-core#991): TableService aggregation coverage, https://github.com/deephaven/deephaven-core/issues/991");
+        }
+
+        @Override
+        public void visit(AggSpecWAvg wAvg) {
+            out = of(AggType.WEIGHTED_AVG, pairs).setColumnName(wAvg.weight().name()).build();
+
+        }
+
+        @Override
+        public void visit(AggSpecWSum wSum) {
+            throw new UnsupportedOperationException(
+                    "TODO(deephaven-core#991): TableService aggregation coverage, https://github.com/deephaven/deephaven-core/issues/991");
+        }
+
+        @Override
+        public void visit(AggSpecVar var) {
+            out = of(AggType.VAR, pairs).build();
         }
     }
 }

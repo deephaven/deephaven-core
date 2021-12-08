@@ -135,26 +135,23 @@ def read(path: str,
     if inference is None:
         inference = INFERENCE_STANDARD_TIMES
 
-    try:
-        csv_specs_builder = _JCsvSpecs.builder()
+    csv_specs_builder = _JCsvSpecs.builder()
 
-        # build the head spec
-        table_header = _build_header(header)
-        if table_header:
-            csv_specs_builder.header(table_header)
+    # build the head spec
+    table_header = _build_header(header)
+    if table_header:
+        csv_specs_builder.header(table_header)
 
-        csv_specs = (csv_specs_builder.inference(inference)
-                     .hasHeaderRow(not headless)
-                     .delimiter(ord(delimiter))
-                     .quote(ord(quote))
-                     .ignoreSurroundingSpaces(ignore_surrounding_spaces)
-                     .trim(trim)
-                     .charset(_JCharset.forName(charset))
-                     .build())
+    csv_specs = (csv_specs_builder.inference(inference)
+                 .hasHeaderRow(not headless)
+                 .delimiter(ord(delimiter))
+                 .quote(ord(quote))
+                 .ignoreSurroundingSpaces(ignore_surrounding_spaces)
+                 .trim(trim)
+                 .charset(_JCharset.forName(charset))
+                 .build())
 
-        return _JCsvHelpers.readCsv(path, csv_specs)
-    except Exception as e:
-        raise Exception(e, "read_csv failed") from e
+    return _JCsvHelpers.readCsv(path, csv_specs)
 
 
 @_passThrough
@@ -169,7 +166,4 @@ def write(table: object, path: str, cols: List[str] = []) -> None:
     Raises:
         Exception
     """
-    try:
-        _JCsvTools.writeCsv(table.j_table, False, path, *cols)
-    except Exception as e:
-        raise Exception("write csv failed.") from e
+    _JCsvTools.writeCsv(table, False, path, *cols)

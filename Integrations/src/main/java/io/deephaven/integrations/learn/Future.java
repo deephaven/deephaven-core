@@ -1,6 +1,11 @@
 package io.deephaven.integrations.learn;
 
+import io.deephaven.base.verify.Assert;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.WritableRowSet;
 import io.deephaven.engine.table.ColumnSource;
+
 import java.util.function.Function;
 
 /**
@@ -9,9 +14,10 @@ import java.util.function.Function;
 public class Future {
 
     private final Function<Object[], Object> func;
-    private final ColumnSource<?>[][] colSets;
     private final Input[] inputs;
-    private IndexSet indexSet;
+    private final ColumnSource<?>[][] colSets;
+    private final int batchSize;
+    private WritableRowSet rowSet;
     private boolean called;
     private Object result;
 
@@ -26,8 +32,9 @@ public class Future {
 
         this.func = func;
         this.inputs = inputs;
-        this.indexSet = new IndexSet(batchSize);
         this.colSets = colSets;
+        this.batchSize = batchSize;
+        this.rowSet = RowSetFactory.empty();
         this.called = false;
         this.result = null;
     }
@@ -40,15 +47,19 @@ public class Future {
     public Object get() {
 
         if (!called) {
-            Object[] gathered = new Object[inputs.length];
+            try {
+                Object[] gathered = new Object[inputs.length];
 
-            for (int i = 0; i < inputs.length; i++) {
-                gathered[i] = gather(inputs[i], colSets[i]);
+                for (int i = 0; i < inputs.length; i++) {
+                    gathered[i] = gather(inputs[i], colSets[i]);
+                }
+
+                result = func.apply(gathered);
+            } finally {
+                rowSet.close();
+                rowSet = null;
+                called = true;
             }
-
-            result = func.apply(gathered);
-            indexSet = null;
-            called = true;
         }
 
         return result;
@@ -62,15 +73,44 @@ public class Future {
      * @return gathered data
      */
     Object gather(Input input, ColumnSource<?>[] colSet) {
-        return input.getGatherFunc().apply(new Object[] {this.indexSet, colSet});
+        return input.getGatherFunc().apply(new Object[] {this.rowSet, colSet});
     }
 
     /**
-     * Gets the current index set.
+     * Gets the current row set.
      *
-     * @return the current index set.
+     * @return the current row set.
      */
-    IndexSet getIndexSet() {
-        return indexSet;
+    RowSet getRowSet() {
+        return rowSet;
+    }
+
+    /**
+     * Add a new row key to those being processed by this future.
+     *
+     * @param key row key
+     */
+    void insertRowKey(long key) {
+        Assert.assertion(!isFull(), "Attempting to insert into a full Future");
+        rowSet.insert(key);
+    }
+
+    /**
+     * Number of keys being processed by this future.
+     *
+     * @return number of keys being processed by this future.
+     */
+    long size() {
+        return rowSet.size();
+    }
+
+    /**
+     * Returns true if this future is full of keys to process; false otherwise. The future is full of keys if the size
+     * is equal to the batch size.
+     *
+     * @return true if this future is full of keys to process; false otherwise.
+     */
+    boolean isFull() {
+        return size() >= batchSize;
     }
 }

@@ -4,8 +4,7 @@ import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.RawString;
 import io.deephaven.api.Selectable;
-import io.deephaven.api.agg.First;
-import io.deephaven.api.agg.Last;
+import io.deephaven.api.agg.Aggregation;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.CodecLookup;
 import io.deephaven.vector.Vector;
@@ -966,7 +965,7 @@ public class ParquetTableWriter {
                 .view(List.of(Selectable.of(ColumnName.of(GROUPING_KEY), ColumnName.of(columnName)),
                         Selectable.of(ColumnName.of(BEGIN_POS), RawString.of("ii")), // Range start, inclusive
                         Selectable.of(ColumnName.of(END_POS), RawString.of("ii+1")))) // Range end, exclusive
-                .aggBy(List.of(First.of(ColumnName.of(BEGIN_POS)), Last.of(ColumnName.of(END_POS))),
+                .aggBy(List.of(Aggregation.AggFirst(BEGIN_POS), Aggregation.AggLast(END_POS)),
                         List.of(ColumnName.of(GROUPING_KEY)));
         final Table invalid = grouped.where(BEGIN_POS + " != 0 && " + BEGIN_POS + " != " + END_POS + "_[ii-1]");
         if (!invalid.isEmpty()) {

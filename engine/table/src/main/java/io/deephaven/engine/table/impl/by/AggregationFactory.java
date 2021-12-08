@@ -5,7 +5,7 @@
 package io.deephaven.engine.table.impl.by;
 
 import io.deephaven.api.agg.Aggregation;
-import io.deephaven.api.agg.Multi;
+import io.deephaven.api.agg.AggregationOptimizer;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.datastructures.util.SmartKey;
@@ -599,16 +599,13 @@ public class AggregationFactory implements AggregationSpec {
     public interface AggregationElement {
 
         /**
-         * Equivalent to {@code convertOrdered(Collections.singleton(aggregation))} or
-         * {@code optimizeAndConvert(Collections.singleton(aggregation))}.
+         * Converts an {@link Aggregation} to an {@link AggregationElement}.
          *
          * @param aggregation The {@link Aggregation aggregation}
-         * @return A list of {@link AggregationElement aggregation elements}
-         * @see #optimizeAndConvert(Collection)
-         * @see #convert(Collection)
+         * @return The {@link AggregationElement aggregation element}
          */
-        static List<AggregationElement> convert(Aggregation aggregation) {
-            return optimizeAndConvert(Collections.singleton(aggregation));
+        static AggregationElement of(Aggregation aggregation) {
+            return AggregationElementAdapter.of(aggregation);
         }
 
         /**
@@ -621,31 +618,31 @@ public class AggregationFactory implements AggregationSpec {
          *
          * @param aggregations The {@link Aggregation aggregation}
          * @return A list of {@link AggregationElement aggregation elements}
-         * @see #convert(Aggregation)
+         * @see AggregationOptimizer#of(Collection)
+         * @see #of(Aggregation)
          * @see #convert(Collection)
          */
         static List<AggregationElement> optimizeAndConvert(Collection<? extends Aggregation> aggregations) {
-            AggregationAdapterOptimized builder = new AggregationAdapterOptimized();
-            aggregations.forEach(a -> a.walk(builder));
-            return builder.build();
+            return convert(AggregationOptimizer.of(aggregations));
         }
 
         /**
-         * Converts and the aggregations, only collapsing {@link Multi multi} aggregations into single
-         * {@link AggregationElement elements}, leaving singular aggregations as they are.
+         * Converts the aggregations leaving singular aggregations as they are.
          *
          * <p>
          * Note: The results will preserve the intended order of the inputs.
          *
          * @param aggregations The {@link Aggregation aggregation}
          * @return A list of {@link AggregationElement aggregation elements}
-         * @see #convert(Aggregation)
+         * @see #of(Aggregation)
          * @see #optimizeAndConvert(Collection)
          */
         static List<AggregationElement> convert(Collection<? extends Aggregation> aggregations) {
-            AggregationAdapterOrdered builder = new AggregationAdapterOrdered();
-            aggregations.forEach(a -> a.walk(builder));
-            return builder.build();
+            final List<AggregationElement> out = new ArrayList<>(aggregations.size());
+            for (Aggregation aggregation : aggregations) {
+                out.add(of(aggregation));
+            }
+            return out;
         }
 
         AggregationSpec getSpec();

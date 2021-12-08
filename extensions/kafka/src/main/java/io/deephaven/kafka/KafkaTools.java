@@ -166,7 +166,6 @@ public class KafkaTools {
         pushColumnTypesFromAvroField(
                 columnsOut, mappedOut, prefix, fieldName, fieldSchema, mappedName, fieldType,
                 fieldPathToColumnName);
-
     }
 
     private static void pushColumnTypesFromAvroField(
