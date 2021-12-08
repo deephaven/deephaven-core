@@ -9,7 +9,7 @@ import org.junit.Test;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
-public class GathererTest {
+public class NumPyTest {
 
     private static InMemoryTable table;
     private static final String[] boolColNames = {"bool1", "bool2"};

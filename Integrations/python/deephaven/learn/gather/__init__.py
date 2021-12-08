@@ -23,14 +23,22 @@ def _defineSymbols():
     if _gatherer is None:
         _gatherer = jpy.get_type("io.deephaven.integrations.learn.gather.NumPy")
     
+# A class defining the memory layout of an array
 class MemoryLayout(enum.Enum):
+    """
+    Class with boolean values for memory layout of an array
+
+    :param enum.Enum: Base class for creating enumerated constants
+    """
     ROW_MAJOR = True
     COLUMN_MAJOR = False
     C = True
     FORTRAN = False
     def __init__(self, is_row_major):
         self.is_row_major = is_row_major
-Layout = MemoryLayout(True)
+    @classmethod
+    def has_value(cls, value):
+        return value in cls._value2member_map_ 
 
 
 # Every method that depends on symbols defined via _defineSymbols() should be decorated with @_passThrough
@@ -56,18 +64,25 @@ except Exception as e:
 
 @_passThrough
 def convert_to_numpy_dtype(dtype):
-    if dtype == bool:
+    """
+    Convert an input type to the corresponding NumPy data type
+
+    :param dtype: A Python type
+    """
+    if dtype.__module__ == np.__name__:
+        return dtype
+    elif dtype == bool:
         dtype = np.bool_
     elif dtype == float:
         dtype = np.double
     elif dtype == int:
         dtype = np.intc
     else:
-        raise ValueError("{} is not a data type that can be converted to a NumPy dtype.".format(dtype))
+        raise ValueError("{dtype} is not a data type that can be converted to a NumPy dtype.")
     return dtype
 
 @_passThrough
-def table_to_numpy_2d(row_set, col_set, order = Layout.ROW_MAJOR, dtype:np.dtype = np.intc):
+def table_to_numpy_2d(row_set, col_set, order:MemoryLayout = MemoryLayout.ROW_MAJOR, dtype:np.dtype = np.intc):
     """
     Convert Deephaven table data to a 2d NumPy array of the appropriate size
 
@@ -78,45 +93,25 @@ def table_to_numpy_2d(row_set, col_set, order = Layout.ROW_MAJOR, dtype:np.dtype
     :return: A NumPy ndarray
     """
 
-    global Layout
+    if not(MemoryLayout.has_value(order)):
+        raise ValueError("Invalid major order {order}.  Please use an enum value from MemoryLayout.")
 
-    if order in [Layout.ROW_MAJOR, Layout.C, True]:
-        flag = True
-    elif order in [Layout.COLUMN_MAJOR, Layout.FORTRAN, False]:
-        flag = False
-    else:
-        raise ValueError("Invalid major order.  Please use an True, False, or an enum value from MemoryLayout.")
-
-    if dtype == bool or dtype == float or dtype == int:
-        dtype = convert_to_numpy_dtype(dtype)
+    dtype = convert_to_numpy_dtype(dtype)
 
     if dtype == np.byte:
-
-        buffer = _gatherer.tensorBuffer2DByte(row_set, col_set, flag)
-
+        buffer = _gatherer.tensorBuffer2DByte(row_set, col_set, order)
     elif dtype == np.short:
-
-        buffer = _gatherer.tensorBuffer2DShort(row_set, col_set, flag)
-
+        buffer = _gatherer.tensorBuffer2DShort(row_set, col_set, order)
     elif dtype == np.intc:
-
-        buffer = _gatherer.tensorBuffer2DInt(row_set, col_set, flag)
-
+        buffer = _gatherer.tensorBuffer2DInt(row_set, col_set, order)
     elif dtype == np.int_:
-
-        buffer = _gatherer.tensorBuffer2DLong(row_set, col_set, flag)
-
+        buffer = _gatherer.tensorBuffer2DLong(row_set, col_set, order)
     elif dtype == np.single:
-
-        buffer = _gatherer.tensorBuffer2DFloat(row_set, col_set, flag)
-
+        buffer = _gatherer.tensorBuffer2DFloat(row_set, col_set, order)
     elif dtype == np.double:
-
-        buffer = _gatherer.tensorBuffer2DDouble(row_set, col_set, flag)
-
+        buffer = _gatherer.tensorBuffer2DDouble(row_set, col_set, order)
     else:
-
-        raise ValueError("Data type {input_type} is not supported.".format(input_type = dtype))
+        raise ValueError("Data type {dtype} is not supported.")
 
     tensor = np.frombuffer(buffer, dtype = dtype)
 
