@@ -23,22 +23,23 @@ def _defineSymbols():
     if _gatherer is None:
         _gatherer = jpy.get_type("io.deephaven.integrations.learn.gather.NumPy")
     
-# A class defining the memory layout of an array
 class MemoryLayout(enum.Enum):
     """
-    Class with boolean values for memory layout of an array
+    Memory layouts for an array.
 
-    :param enum.Enum: Base class for creating enumerated constants
+    :param enum.Enum: Base class for creating enumerated constants.
+    :param ROW_MAJOR: True - Constructs a flat array in row-major order.
+    :param COLUMN_MAJOR: False - Constructs a flat array in column-major order.
+    :param C: True - Constructs a flat array in row-major order.
+    :param FORTRAN: False - Constructs array in column-major order.
     """
     ROW_MAJOR = True
     COLUMN_MAJOR = False
     C = True
     FORTRAN = False
+
     def __init__(self, is_row_major):
         self.is_row_major = is_row_major
-    @classmethod
-    def has_value(cls, value):
-        return value in cls._value2member_map_ 
 
 
 # Every method that depends on symbols defined via _defineSymbols() should be decorated with @_passThrough
@@ -78,7 +79,7 @@ def convert_to_numpy_dtype(dtype):
     elif dtype == int:
         dtype = np.intc
     else:
-        raise ValueError("{dtype} is not a data type that can be converted to a NumPy dtype.")
+        raise ValueError(f"{dtype} is not a data type that can be converted to a NumPy dtype.")
     return dtype
 
 @_passThrough
@@ -93,25 +94,25 @@ def table_to_numpy_2d(row_set, col_set, order:MemoryLayout = MemoryLayout.ROW_MA
     :return: A NumPy ndarray
     """
 
-    if not(MemoryLayout.has_value(order)):
-        raise ValueError("Invalid major order {order}.  Please use an enum value from MemoryLayout.")
+    if not(isinstance(order, MemoryLayout)):
+        raise ValueError(f"Invalid major order {order}.  Please use an enum value from MemoryLayout.")
 
     dtype = convert_to_numpy_dtype(dtype)
 
     if dtype == np.byte:
-        buffer = _gatherer.tensorBuffer2DByte(row_set, col_set, order)
+        buffer = _gatherer.tensorBuffer2DByte(row_set, col_set, order.is_row_major)
     elif dtype == np.short:
-        buffer = _gatherer.tensorBuffer2DShort(row_set, col_set, order)
+        buffer = _gatherer.tensorBuffer2DShort(row_set, col_set, order.is_row_major)
     elif dtype == np.intc:
-        buffer = _gatherer.tensorBuffer2DInt(row_set, col_set, order)
+        buffer = _gatherer.tensorBuffer2DInt(row_set, col_set, order.is_row_major)
     elif dtype == np.int_:
-        buffer = _gatherer.tensorBuffer2DLong(row_set, col_set, order)
+        buffer = _gatherer.tensorBuffer2DLong(row_set, col_set, order.is_row_major)
     elif dtype == np.single:
-        buffer = _gatherer.tensorBuffer2DFloat(row_set, col_set, order)
+        buffer = _gatherer.tensorBuffer2DFloat(row_set, col_set, order.is_row_major)
     elif dtype == np.double:
-        buffer = _gatherer.tensorBuffer2DDouble(row_set, col_set, order)
+        buffer = _gatherer.tensorBuffer2DDouble(row_set, col_set, order.is_row_major)
     else:
-        raise ValueError("Data type {dtype} is not supported.")
+        raise ValueError(f"Data type {dtype} is not supported.")
 
     tensor = np.frombuffer(buffer, dtype = dtype)
 

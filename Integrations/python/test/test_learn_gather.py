@@ -139,8 +139,8 @@ class TestGather(unittest.TestCase):
         rows = source.getRowSet()
         cols = [source.getColumnSource(col) for col in ["X", "Y", "Z"]]
 
-        gatherer_rowmajor = lambda rowset, colset : gather.table_to_numpy_2d(rowset, colset, True, np_dtype)
-        gatherer_colmajor = lambda rowset, colset : gather.table_to_numpy_2d(rowset, colset, False, np_dtype)
+        gatherer_rowmajor = lambda rowset, colset : gather.table_to_numpy_2d(rowset, colset, gather.MemoryLayout.ROW_MAJOR, np_dtype)
+        gatherer_colmajor = lambda rowset, colset : gather.table_to_numpy_2d(rowset, colset, gather.MemoryLayout.COLUMN_MAJOR, np_dtype)
 
         array_from_table = tableToDataFrame(source).values
 
@@ -153,13 +153,9 @@ class TestGather(unittest.TestCase):
             self.assertTrue(gathered_colmajor.shape == array_from_table.shape)
             print("Column major gathered shape: {}".format(gathered_colmajor.shape))
         with self.subTest(msg = "Values in array"):
-            for idx1 in range(gathered_rowmajor.shape[0]):
-                for idx2 in range(gathered_rowmajor.shape[1]):
-                    self.assertTrue(gathered_rowmajor[idx1][idx2] == array_from_table[idx1][idx2])
+            self.assertTrue(np.allclose(gathered_rowmajor, array_from_table))
             print("All row-major array values are equal")
-            for idx1 in range(gathered_colmajor.shape[0]):
-                for idx2 in range(gathered_colmajor.shape[1]):
-                    self.assertTrue(gathered_colmajor[idx1][idx2] == array_from_table[idx1][idx2])
+            self.assertTrue(np.allclose(gathered_colmajor, array_from_table))
             print("All column-major array values are equal")
         with self.subTest(msg = "Array data type"):
             self.assertTrue(gathered_rowmajor.dtype == np_dtype)
