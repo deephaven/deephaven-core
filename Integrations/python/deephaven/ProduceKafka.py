@@ -9,7 +9,7 @@ import wrapt
 import deephaven.Types as dh
 
 from deephaven.conversion_utils import _isJavaType, _isStr, \
-    _typeFromName, _dictToProperties, _dictToMap, _seqToSet, IDENTITY
+    _typeFromName, _dictToProperties, _dictToMap, _seqToSet
 
 # None until the first _defineSymbols() call
 _java_type_ = None
