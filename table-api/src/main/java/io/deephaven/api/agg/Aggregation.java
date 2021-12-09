@@ -132,6 +132,10 @@ public interface Aggregation extends Serializable {
         return of(AggSpec.unique(includeNulls), pairs);
     }
 
+    static Aggregation AggUnique(boolean includeNulls, Object onlyNullsValue, Object nonUniqueValue, String... pairs) {
+        return of(AggSpec.unique(includeNulls, onlyNullsValue, nonUniqueValue), pairs);
+    }
+
     static Aggregation AggVar(String... pairs) {
         return of(AggSpec.var(), pairs);
     }

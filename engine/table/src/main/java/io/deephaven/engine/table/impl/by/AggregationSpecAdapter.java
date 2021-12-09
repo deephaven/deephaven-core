@@ -126,7 +126,7 @@ public class AggregationSpecAdapter implements AggSpec.Visitor {
 
     @Override
     public void visit(AggSpecUnique unique) {
-        out = new UniqueSpec(unique.includeNulls());
+        out = new UniqueSpec(unique.includeNulls(), unique.onlyNullsValue(), unique.nonUniqueValue());
     }
 
     @Override

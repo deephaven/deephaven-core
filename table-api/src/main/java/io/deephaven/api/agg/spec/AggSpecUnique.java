@@ -16,9 +16,27 @@ public abstract class AggSpecUnique extends AggSpecBase {
         return ImmutableAggSpecUnique.builder().includeNulls(includeNulls).build();
     }
 
+    public static AggSpecUnique of(boolean includeNulls, Object onlyNullsValue, Object nonUniqueValue) {
+        return ImmutableAggSpecUnique.builder()
+                .includeNulls(includeNulls)
+                .onlyNullsValue(onlyNullsValue)
+                .nonUniqueValue(nonUniqueValue)
+                .build();
+    }
+
     @Default
     public boolean includeNulls() {
         return false;
+    }
+
+    @Default
+    public Object onlyNullsValue() {
+        return null;
+    }
+
+    @Default
+    public Object nonUniqueValue() {
+        return null;
     }
 
     @Override

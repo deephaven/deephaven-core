@@ -122,6 +122,10 @@ public interface AggSpec {
         return AggSpecUnique.of(includeNulls);
     }
 
+    static AggSpecUnique unique(boolean includeNulls, Object onlyNullsValue, Object nonUniqueValue) {
+        return AggSpecUnique.of(includeNulls, onlyNullsValue, nonUniqueValue);
+    }
+
     static AggSpecVar var() {
         return AggSpecVar.of();
     }
