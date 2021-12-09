@@ -2,13 +2,7 @@ FROM deephaven/dhide:local-build as dhide
 
 FROM deephaven/js-out:local-build as js-out
 
-FROM deephaven/nginx:local-build
-
-# these installs are necessary to enable webdav class 2
-# https://github.com/arut/nginx-dav-ext-module
-RUN set -eux; \
-    apt-get update; \
-    apt-get install -y nginx-extras libnginx-mod-http-dav-ext;
+FROM deephaven/nginx-base:local-build
 
 COPY --from=dhide /usr/src/app/package/build /usr/share/nginx/html/ide
 COPY --from=js-out /usr/src/app/raw-js-openapi/build/js-out /usr/share/nginx/html/jsapi
