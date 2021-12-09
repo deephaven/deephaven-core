@@ -27,14 +27,14 @@ class MemoryLayout(enum.Enum):
     """
     Memory layouts for an array.
     """
-    """Row-major memory layout."""
     ROW_MAJOR = True
-    """Column-major memory layout."""
+    """Row-major memory layout."""
     COLUMN_MAJOR = False
-    """Memory layout consistent with C arrays (row-major)."""
+    """Column-major memory layout."""
     C = True
-    """Memory layout consistent with Fortran arrays (column-major)."""
+    """Memory layout consistent with C arrays (row-major)."""
     FORTRAN = False
+    """Memory layout consistent with Fortran arrays (column-major)."""
 
     def __init__(self, is_row_major):
         self.is_row_major = is_row_major
