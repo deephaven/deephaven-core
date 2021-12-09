@@ -64,8 +64,8 @@ Let's return to our crypto data.
 Read in a CSV of batch crypto data sourced on 09/22/2021.
 
 ```python
-from deephaven import csv
-trades_batch_view = csv.read("/data/large/crypto/CryptoTrades_20210922.csv")
+from deephaven import read_csv
+trades_batch_view = read_csv("/data/large/crypto/CryptoTrades_20210922.csv")
 ```
 
 \
