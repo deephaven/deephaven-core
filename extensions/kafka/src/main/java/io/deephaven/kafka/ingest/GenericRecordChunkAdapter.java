@@ -112,7 +112,8 @@ public class GenericRecordChunkAdapter extends MultiFieldChunkAdapter {
                     if (logicalType instanceof LogicalTypes.Decimal) {
                         final LogicalTypes.Decimal decimalType = (LogicalTypes.Decimal) logicalType;
                         return new GenericRecordBigDecimalFieldCopier(
-                                fieldPathStr, decimalType.getPrecision(), decimalType.getScale());
+                                fieldPathStr, separator,
+                                decimalType.getPrecision(), decimalType.getScale());
                     }
                 }
                 return new GenericRecordObjectFieldCopier(fieldPathStr, separator);

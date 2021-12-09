@@ -228,6 +228,7 @@ public class KafkaTools {
                     columnsOut.add(ColumnDefinition.fromGenericType(mappedName, BigDecimal.class));
                     break;
                 }
+                // fallthrough
             }
             case MAP:
             case NULL:
@@ -254,7 +255,8 @@ public class KafkaTools {
         }
         final List<Schema.Field> fields = schema.getFields();
         for (final Schema.Field field : fields) {
-            pushColumnTypesFromAvroField(columnsOut, fieldPathToColumnNameOut, "", field, requestedFieldPathToColumnName);
+            pushColumnTypesFromAvroField(columnsOut, fieldPathToColumnNameOut, "", field,
+                    requestedFieldPathToColumnName);
         }
     }
 
@@ -263,8 +265,8 @@ public class KafkaTools {
      *
      * @param columnsOut Column definitions for output; should be empty on entry.
      * @param schema Avro schema
-     * @param requestedFieldPathToColumnName An optional mapping to specify selection and naming of columns from Avro fields, or
-     *        null for map all fields using field path for column name.
+     * @param requestedFieldPathToColumnName An optional mapping to specify selection and naming of columns from Avro
+     *        fields, or null for map all fields using field path for column name.
      */
     public static void avroSchemaToColumnDefinitions(
             final List<ColumnDefinition<?>> columnsOut,

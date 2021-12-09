@@ -10,11 +10,15 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 
 public class GenericRecordBigDecimalFieldCopier implements FieldCopier {
-    private final String fieldName;
+    private final String[] fieldPath;
     private final int scale;
 
-    public GenericRecordBigDecimalFieldCopier(final String fieldName, final int precisionUnused, final int scale) {
-        this.fieldName = fieldName;
+    public GenericRecordBigDecimalFieldCopier(
+            final String fieldPathStr,
+            final String separator,
+            final int precisionUnused,
+            final int scale) {
+        this.fieldPath = GenericRecordUtil.getFieldPath(fieldPathStr, separator);
         this.scale = scale;
     }
 
@@ -27,8 +31,8 @@ public class GenericRecordBigDecimalFieldCopier implements FieldCopier {
             final int length) {
         final WritableObjectChunk<Object, Values> output = publisherChunk.asWritableObjectChunk();
         for (int ii = 0; ii < length; ++ii) {
-            final GenericRecord genericRecord = (GenericRecord) inputChunk.get(ii + sourceOffset);
-            final byte[] bytes = genericRecord == null ? null : (byte[]) genericRecord.get(fieldName);
+            final GenericRecord record = (GenericRecord) inputChunk.get(ii + sourceOffset);
+            final byte[] bytes = (byte[]) GenericRecordUtil.getPath(record, fieldPath);
             if (bytes == null) {
                 output.set(ii + destOffset, null);
                 return;
