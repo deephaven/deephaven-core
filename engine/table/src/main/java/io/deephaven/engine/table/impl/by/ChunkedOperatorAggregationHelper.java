@@ -48,11 +48,6 @@ import java.util.function.UnaryOperator;
 @SuppressWarnings("rawtypes")
 public class ChunkedOperatorAggregationHelper {
 
-    @VisibleForTesting
-    public static boolean KEY_ONLY_SUBSTITUTION_ENABLED =
-            Configuration.getInstance()
-                    .getBooleanWithDefault("ChunkedOperatorAggregationHelper.enableKeyOnlySubstitution", true);
-
     static final int CHUNK_SIZE = 1 << 12;
 
     public static QueryTable aggregation(AggregationContextFactory aggregationContextFactory, QueryTable queryTable,
@@ -68,15 +63,6 @@ public class ChunkedOperatorAggregationHelper {
                 && Arrays.stream(groupByColumns).anyMatch(selectColumn -> !selectColumn.isRetain());
         final QueryTable withView = !viewRequired ? queryTable : (QueryTable) queryTable.updateView(groupByColumns);
 
-        final AggregationContextFactory aggregationContextFactoryToUse;
-        if (KEY_ONLY_SUBSTITUTION_ENABLED
-                && withView.getDefinition().getColumns().length == groupByColumns.length
-                && aggregationContextFactory.allowKeyOnlySubstitution()) {
-            aggregationContextFactoryToUse = new KeyOnlyAggregationFactory();
-        } else {
-            aggregationContextFactoryToUse = aggregationContextFactory;
-        }
-
         if (queryTable.hasAttribute(Table.REVERSE_LOOKUP_ATTRIBUTE)) {
             withView.setAttribute(Table.REVERSE_LOOKUP_ATTRIBUTE,
                     queryTable.getAttribute(Table.REVERSE_LOOKUP_ATTRIBUTE));
@@ -86,9 +72,9 @@ public class ChunkedOperatorAggregationHelper {
         final SwapListener swapListener =
                 withView.createSwapListenerIfRefreshing(SwapListener::new);
         withView.initializeWithSnapshot(
-                "by(" + aggregationContextFactoryToUse + ", " + Arrays.toString(groupByColumns) + ")", swapListener,
+                "by(" + aggregationContextFactory + ", " + Arrays.toString(groupByColumns) + ")", swapListener,
                 (usePrev, beforeClockValue) -> {
-                    resultHolder.setValue(aggregation(control, swapListener, aggregationContextFactoryToUse, withView,
+                    resultHolder.setValue(aggregation(control, swapListener, aggregationContextFactory, withView,
                             groupByColumns, usePrev));
                     return true;
                 });

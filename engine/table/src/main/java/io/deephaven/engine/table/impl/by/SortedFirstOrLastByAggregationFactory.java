@@ -29,11 +29,6 @@ public class SortedFirstOrLastByAggregationFactory implements AggregationContext
     }
 
     @Override
-    public boolean allowKeyOnlySubstitution() {
-        return true;
-    }
-
-    @Override
     public AggregationContext makeAggregationContext(@NotNull final Table table,
             @NotNull final String... groupByColumns) {
         final Set<String> groupBySet = new HashSet<>(Arrays.asList(groupByColumns));
