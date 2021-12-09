@@ -26,16 +26,14 @@ def _defineSymbols():
 class MemoryLayout(enum.Enum):
     """
     Memory layouts for an array.
-
-    :param enum.Enum: Base class for creating enumerated constants.
-    :param ROW_MAJOR: True - Constructs a flat array in row-major order.
-    :param COLUMN_MAJOR: False - Constructs a flat array in column-major order.
-    :param C: True - Constructs a flat array in row-major order.
-    :param FORTRAN: False - Constructs array in column-major order.
     """
+    """Row-major memory layout."""
     ROW_MAJOR = True
+    """Column-major memory layout."""
     COLUMN_MAJOR = False
+    """Memory layout consistent with C arrays (row-major)."""
     C = True
+    """Memory layout consistent with Fortran arrays (column-major)."""
     FORTRAN = False
 
     def __init__(self, is_row_major):
