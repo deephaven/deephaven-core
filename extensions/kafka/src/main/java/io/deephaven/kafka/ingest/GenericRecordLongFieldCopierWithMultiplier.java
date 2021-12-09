@@ -9,11 +9,11 @@ import io.deephaven.util.type.TypeUtils;
 import org.apache.avro.generic.GenericRecord;
 
 public class GenericRecordLongFieldCopierWithMultiplier implements FieldCopier {
-    private final String fieldName;
+    private final String[] fieldPath;
     private final long multiplier;
 
-    public GenericRecordLongFieldCopierWithMultiplier(final String fieldName, final long multiplier) {
-        this.fieldName = fieldName;
+    public GenericRecordLongFieldCopierWithMultiplier(final String fieldName, final String separator, final long multiplier) {
+        this.fieldPath = GenericRecordUtil.getFieldPath(fieldName, separator);
         this.multiplier = multiplier;
     }
 
@@ -26,8 +26,8 @@ public class GenericRecordLongFieldCopierWithMultiplier implements FieldCopier {
             final int length) {
         final WritableLongChunk<Values> output = publisherChunk.asWritableLongChunk();
         for (int ii = 0; ii < length; ++ii) {
-            final GenericRecord genericRecord = (GenericRecord) inputChunk.get(ii + sourceOffset);
-            final Long value = genericRecord == null ? null : (Long) genericRecord.get(fieldName);
+            final GenericRecord record = (GenericRecord) inputChunk.get(ii + sourceOffset);
+            final Long value = (Long) GenericRecordUtil.getPath(record, fieldPath);
             long unbox = TypeUtils.unbox(value);
             if (unbox != QueryConstants.NULL_LONG) {
                 unbox *= multiplier;

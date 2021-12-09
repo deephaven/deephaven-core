@@ -8,10 +8,10 @@ import io.deephaven.util.BooleanUtils;
 import org.apache.avro.generic.GenericRecord;
 
 public class GenericRecordBooleanFieldCopier implements FieldCopier {
-    private final String fieldName;
+    private final String[] fieldPath;
 
-    public GenericRecordBooleanFieldCopier(String fieldName) {
-        this.fieldName = fieldName;
+    public GenericRecordBooleanFieldCopier(final String fieldName, final String separator) {
+        this.fieldPath = GenericRecordUtil.getFieldPath(fieldName, separator);
     }
 
     @Override
@@ -23,8 +23,8 @@ public class GenericRecordBooleanFieldCopier implements FieldCopier {
             final int length) {
         final WritableByteChunk<Values> output = publisherChunk.asWritableByteChunk();
         for (int ii = 0; ii < length; ++ii) {
-            final GenericRecord genericRecord = (GenericRecord) inputChunk.get(ii + sourceOffset);
-            final Boolean value = genericRecord == null ? null : (Boolean) genericRecord.get(fieldName);
+            final GenericRecord record = (GenericRecord) inputChunk.get(ii + sourceOffset);
+            final Boolean value = (Boolean) GenericRecordUtil.getPath(record, fieldPath);
             output.set(ii + destOffset, BooleanUtils.booleanAsByte(value));
         }
     }}

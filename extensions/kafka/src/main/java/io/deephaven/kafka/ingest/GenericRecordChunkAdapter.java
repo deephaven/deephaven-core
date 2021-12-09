@@ -68,7 +68,7 @@ public class GenericRecordChunkAdapter extends MultiFieldChunkAdapter {
                 return new GenericRecordCharFieldCopier(fieldPathStr, separator);
             case Byte:
                 if (dataType == Boolean.class || dataType == boolean.class) {
-                    return new GenericRecordBooleanFieldCopier(fieldPathStr);
+                    return new GenericRecordBooleanFieldCopier(fieldPathStr, separator);
                 }
                 return new GenericRecordByteFieldCopier(fieldPathStr, separator);
             case Short:
@@ -85,10 +85,10 @@ public class GenericRecordChunkAdapter extends MultiFieldChunkAdapter {
                                 "Can not map field without a logical type to DateTime: field=" + fieldPathStr);
                     }
                     if (logicalType instanceof LogicalTypes.TimestampMillis) {
-                        return new GenericRecordLongFieldCopierWithMultiplier(fieldPathStr, 1000L);
+                        return new GenericRecordLongFieldCopierWithMultiplier(fieldPathStr, separator,1000L);
                     }
                     if (logicalType instanceof LogicalTypes.TimestampMicros) {
-                        return new GenericRecordLongFieldCopierWithMultiplier(fieldPathStr, 1000_000L);
+                        return new GenericRecordLongFieldCopierWithMultiplier(fieldPathStr, separator,1000_000L);
                     }
                     throw new IllegalArgumentException(
                             "Can not map field with unknown logical type to DateTime: field=" + fieldPathStr
