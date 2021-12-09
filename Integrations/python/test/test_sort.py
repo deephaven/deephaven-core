@@ -17,10 +17,10 @@ class SortTestCase(TestCase):
             intCol("C", 1, 2, 3, 4, 5, 6),
         )
 
-        sort_columns = as_list(
+        sort_columns = as_list([
             SortColumn.asc(ColumnName.of("A")),
             SortColumn.desc(ColumnName.of("B"))
-        )
+        ])
 
         actual = source.sort(sort_columns)
 

@@ -413,20 +413,7 @@ def doLocked(f, lock_type="shared"):
         raise ValueError("Unsupported lock type: lock_type={}".format(lock_type))
 
 
-def combo_agg(agg_list):
-    """
-    Combines aggregations.
-
-    :param agg_list: list of aggregations
-    :return: combined aggregations
-    """
-    _JArrayList = jpy.get_type("java.util.ArrayList")
-    j_agg_list = _JArrayList(len(agg_list))
-    for agg in agg_list:
-        j_agg_list.add(agg)
-    return j_agg_list
-
-def as_list(*values):
+def as_list(values):
     """
     Creates a Java list containing the values.
 
