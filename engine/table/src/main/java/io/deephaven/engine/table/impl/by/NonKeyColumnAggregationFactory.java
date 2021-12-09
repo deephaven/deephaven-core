@@ -18,11 +18,6 @@ public class NonKeyColumnAggregationFactory implements AggregationContextFactory
     }
 
     @Override
-    public boolean allowKeyOnlySubstitution() {
-        return true;
-    }
-
-    @Override
     public AggregationContext makeAggregationContext(@NotNull final Table table,
             @NotNull final String... groupByColumns) {
         return getAllColumnOperators(table, groupByColumns, iterativeChunkedOperatorFactory);

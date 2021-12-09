@@ -432,9 +432,7 @@ public class QueryTableAggregationTest {
 
     @Test
     public void testStaticBy() {
-        Table table = newTable(0, new HashMap<>());
-        TestCase.assertEquals(0, table.groupBy().size());
-        TestCase.assertEquals(0, table.groupBy().getColumns().length);
+        Table table = newTable(intCol("V"));
         try {
             table.groupBy("i");
             TestCase.fail("Previous statement should have thrown an exception");
@@ -442,12 +440,12 @@ public class QueryTableAggregationTest {
             TestCase.assertEquals("Invalid column name \"i\": \"i\" is a reserved keyword", e.getMessage());
         }
         TestCase.assertEquals(0, table.groupBy("j=i").size());
-        TestCase.assertEquals(1, table.groupBy("j=i").getColumns().length);
+        TestCase.assertEquals(2, table.groupBy("j=i").getColumns().length);
         TestCase.assertEquals(int.class, table.groupBy("j=i").getColumnSource("j").getType());
 
-        table = newTable(1, new HashMap<>());
+        table = newTable(intCol("V", 100));
         TestCase.assertEquals(1, table.groupBy("j=i").size());
-        TestCase.assertEquals(1, table.groupBy("j=i").getColumns().length);
+        TestCase.assertEquals(2, table.groupBy("j=i").getColumns().length);
         TestCase.assertEquals(int.class, table.groupBy("j=i").getColumn("j").getType());
 
         table = TstUtils.testRefreshingTable(RowSetFactory.fromRange(0, 2).toTracking(),
@@ -804,7 +802,7 @@ public class QueryTableAggregationTest {
         final QueryTable table = getTable(size, random,
                 initColumnInfos(
                         new String[] {"Sym", "Date", "intCol", "doubleCol", "BooleanCol", "ByteCol", "CharCol",
-                                "ShortCol", "FloatCol", "LongCol", "BigDecimalCol"},
+                                "ShortCol", "FloatCol", "LongCol", "BigDecimalCol", "NonKey"},
                         new SetGenerator<>("aa", "bb", "bc", "cc", "dd"),
                         new UnsortedDateTimeLongGenerator(DateTimeUtils.convertDateTime("2018-10-15T09:30:00 NY"),
                                 DateTimeUtils.convertDateTime("2018-10-15T16:00:00 NY")),
@@ -816,16 +814,18 @@ public class QueryTableAggregationTest {
                         new ShortGenerator(),
                         new FloatGenerator(),
                         new LongGenerator(),
-                        new BigDecimalGenerator()));
+                        new BigDecimalGenerator(),
+                        new IntGenerator()));
 
-
-        final String[] columns = table.getColumnSourceMap().keySet().toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
+        final Set<String> keyColumnSet = new LinkedHashSet<>(table.getColumnSourceMap().keySet());
+        keyColumnSet.remove("NonKey");
+        final String[] keyColumns = keyColumnSet.toArray(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
 
         table.lastBy("Date", "Sym");
 
         // noinspection MismatchedQueryAndUpdateOfCollection
         final List<Table> tables = new ArrayList<>();
-        powerSet(columns, (String[] cols) -> tables.add(table.lastBy(cols)));
+        powerSet(keyColumns, (String[] cols) -> tables.add(table.lastBy(cols)));
     }
 
     @Test
@@ -3523,40 +3523,6 @@ public class QueryTableAggregationTest {
 
         TableTools.show(percentile);
         TestCase.assertEquals(BigInteger.valueOf(100), percentile.getColumn("Value").get(0));
-    }
-
-    @Test
-    public void testIds6593() {
-        final Table[][] resultSets = new Table[2][];
-        final boolean substitutionWasEnabled = ChunkedOperatorAggregationHelper.KEY_ONLY_SUBSTITUTION_ENABLED;
-        try {
-            for (final boolean substituteForThisIteration : new boolean[] {false, true}) {
-                ChunkedOperatorAggregationHelper.KEY_ONLY_SUBSTITUTION_ENABLED = substituteForThisIteration;
-                final BaseTable source = (BaseTable) emptyTable(100).updateView("A=i%10");
-                source.getRowSet().writableCast().removeRange(50, 100);
-                source.setRefreshing(true);
-
-                resultSets[substituteForThisIteration ? 1 : 0] = new Table[] {
-                        source.groupBy("A"),
-                        source.firstBy("A"),
-                        source.lastBy("A"),
-                        source.minBy("A"),
-                        source.maxBy("A"),
-                        source.varBy("A")
-                };
-
-                UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
-                    source.getRowSet().writableCast().insertRange(50, 100);
-                    source.notifyListeners(new TableUpdateImpl(ir(50, 100), i(), i(), RowSetShiftData.EMPTY,
-                            ModifiedColumnSet.EMPTY));
-                });
-            }
-        } finally {
-            ChunkedOperatorAggregationHelper.KEY_ONLY_SUBSTITUTION_ENABLED = substitutionWasEnabled;
-        }
-        for (int ti = 0; ti < resultSets[0].length; ++ti) {
-            assertTableEquals(resultSets[0][ti], resultSets[1][ti]);
-        }
     }
 
     @Test
