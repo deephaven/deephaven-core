@@ -12,7 +12,8 @@ public class GenericRecordLongFieldCopierWithMultiplier implements FieldCopier {
     private final String[] fieldPath;
     private final long multiplier;
 
-    public GenericRecordLongFieldCopierWithMultiplier(final String fieldName, final String separator, final long multiplier) {
+    public GenericRecordLongFieldCopierWithMultiplier(final String fieldName, final String separator,
+            final long multiplier) {
         this.fieldPath = GenericRecordUtil.getFieldPath(fieldName, separator);
         this.multiplier = multiplier;
     }
