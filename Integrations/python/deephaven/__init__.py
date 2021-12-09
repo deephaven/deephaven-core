@@ -97,7 +97,6 @@ from .Plot import figure_wrapper as figw
 
 from .csv import read as read_csv
 from .csv import write as write_csv
-from .conversion_utils import convertToJavaList as as_list
 
 # NB: this must be defined BEFORE importing .jvm_init or .start_jvm (circular import)
 def initialize():
@@ -426,3 +425,17 @@ def combo_agg(agg_list):
     for agg in agg_list:
         j_agg_list.add(agg)
     return j_agg_list
+
+def as_list(*values):
+    """
+    Creates a Java list containing the values.
+
+    :param values: values
+    :return: Java list containing the values.
+    """
+    _JArrayList = jpy.get_type("java.util.ArrayList")
+    j_list = _JArrayList(len(values))
+    for value in values:
+        j_list.add(value)
+    return j_list
+
