@@ -116,9 +116,9 @@ def table_to_numpy_2d(row_set, col_set, order:MemoryLayout = MemoryLayout.ROW_MA
 
     tensor = np.frombuffer(buffer, dtype = dtype)
 
-    if order == 0:
-        tensor.shape = (row_set.intSize(), len(col_set))
-        return tensor
-    else:
+    if order.is_row_major:
         tensor.shape = (len(col_set), row_set.intSize())
         return tensor.T
+    else:
+        tensor.shape = (row_set.intSize(), len(col_set))
+        return tensor
