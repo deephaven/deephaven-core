@@ -151,7 +151,7 @@ public class KafkaTools {
 
     private static void pushColumnTypesFromAvroField(
             final List<ColumnDefinition<?>> columnsOut,
-            final Map<String, String> mappedOut,
+            final Map<String, String> fieldPathToColumnNameOut,
             final String prefix,
             final Schema.Field field,
             final Function<String, String> fieldPathToColumnName) {
@@ -164,13 +164,13 @@ public class KafkaTools {
         }
         final Schema.Type fieldType = fieldSchema.getType();
         pushColumnTypesFromAvroField(
-                columnsOut, mappedOut, prefix, fieldName, fieldSchema, mappedName, fieldType,
+                columnsOut, fieldPathToColumnNameOut, prefix, fieldName, fieldSchema, mappedName, fieldType,
                 fieldPathToColumnName);
     }
 
     private static void pushColumnTypesFromAvroField(
             final List<ColumnDefinition<?>> columnsOut,
-            final Map<String, String> mappedOut,
+            final Map<String, String> fieldPathToColumnNameOut,
             final String prefix,
             final String fieldName,
             final Schema fieldSchema,
@@ -207,7 +207,7 @@ public class KafkaTools {
             case UNION:
                 final Schema effectiveSchema = Utils.getEffectiveSchema(fieldName, fieldSchema);
                 pushColumnTypesFromAvroField(
-                        columnsOut, mappedOut, prefix, fieldName, effectiveSchema, mappedName,
+                        columnsOut, fieldPathToColumnNameOut, prefix, fieldName, effectiveSchema, mappedName,
                         effectiveSchema.getType(),
                         fieldPathToColumnName);
                 return;
@@ -215,7 +215,7 @@ public class KafkaTools {
                 // Linearize any nesting.
                 for (final Schema.Field nestedField : fieldSchema.getFields()) {
                     pushColumnTypesFromAvroField(
-                            columnsOut, mappedOut,
+                            columnsOut, fieldPathToColumnNameOut,
                             prefix + fieldName + NESTED_FIELD_NAME_SEPARATOR,
                             nestedField,
                             fieldPathToColumnName);
@@ -236,8 +236,8 @@ public class KafkaTools {
             default:
                 throw new UnsupportedOperationException("Type " + fieldType + " not supported for field " + fieldName);
         }
-        if (mappedOut != null) {
-            mappedOut.put(prefix + fieldName, mappedName);
+        if (fieldPathToColumnNameOut != null) {
+            fieldPathToColumnNameOut.put(prefix + fieldName, mappedName);
         }
     }
 
