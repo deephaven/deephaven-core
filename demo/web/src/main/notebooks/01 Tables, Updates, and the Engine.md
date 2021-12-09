@@ -80,9 +80,9 @@ row_count_by_instrument = trades_stream_cleaner.countBy("Tot_Rows", "Instrument"
 Counts are informative, but often you'll be interested in other aggregations. The script below shows both how to [bin data by time](https://deephaven.io/core/docs/reference/cheat-sheets/datetime-cheat-sheet/#downsampling-temporal-data-via-time-binning) and to [do multiple aggregations](https://deephaven.io/core/docs/how-to-guides/combined-aggregations/).
 
 ```python
-from deephaven import Aggregation as agg, combo_agg
+from deephaven import Aggregation as agg, as_list
 
-agg_list = combo_agg([
+agg_list = as_list([
     agg.AggCount("Trade_Count"),
     agg.AggSum("Total_Size = Size"),
     agg.AggAvg("Avg_Size = Size", "Avg_Price = Price"),

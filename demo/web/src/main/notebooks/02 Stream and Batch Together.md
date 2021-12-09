@@ -99,9 +99,9 @@ add_column_streaming = trades_stream_view.updateView("Date = formatDate(KafkaTim
 add_column_batch     = trades_batch_view .updateView("Date = formatDate(Timestamp, TZ_NY)")
 
 # the table aggregation
-from deephaven import Aggregation as agg, combo_agg
+from deephaven import Aggregation as agg, as_list
 
-agg_list = combo_agg([
+agg_list = as_list([
     agg.AggFirst("Price"),
     agg.AggAvg("Avg_Price = Price"),
 ])
