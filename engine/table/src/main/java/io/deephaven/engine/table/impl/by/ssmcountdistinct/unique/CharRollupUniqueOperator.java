@@ -45,7 +45,7 @@ public class CharRollupUniqueOperator implements IterativeChunkedAggregationOper
     private final ColumnSource<?> externalResult;
     private final Supplier<SegmentedSortedMultiSet.RemoveContext> removeContextFactory;
     private final boolean countNull;
-    private final char noValueKey;
+    private final char onlyNullsValue;
     private final char nonUniqueKey;
 
     private UpdateCommitter<CharRollupUniqueOperator> prevFlusher = null;
@@ -56,12 +56,12 @@ public class CharRollupUniqueOperator implements IterativeChunkedAggregationOper
                                     // endregion Constructor
                                     String name,
                                     boolean countNulls,
-                                    char noValueKey,
+                                    char onlyNullsValue,
                                     char nonUniqueKey) {
         this.name = name;
         this.countNull = countNulls;
         this.nonUniqueKey = nonUniqueKey;
-        this.noValueKey = noValueKey;
+        this.onlyNullsValue = onlyNullsValue;
         // region SsmCreation
         this.ssms = new CharSsmBackedSource();
         // endregion SsmCreation
@@ -541,7 +541,7 @@ public class CharRollupUniqueOperator implements IterativeChunkedAggregationOper
     //region Private Helpers
     private void updateResult(CharSegmentedSortedMultiset ssm, long destination) {
         if(ssm.isEmpty()) {
-            internalResult.set(destination, noValueKey);
+            internalResult.set(destination, onlyNullsValue);
         } else if(ssm.size() == 1) {
             internalResult.set(destination, ssm.get(0));
         } else {

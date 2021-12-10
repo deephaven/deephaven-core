@@ -6,6 +6,7 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Produces an AggregationContext for aggregations given a table and the names of the group by columns.
  */
+@FunctionalInterface
 public interface AggregationContextFactory {
 
     /**

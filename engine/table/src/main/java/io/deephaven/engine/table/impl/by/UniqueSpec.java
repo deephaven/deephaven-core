@@ -90,7 +90,7 @@ public class UniqueSpec extends IterativeOperatorSpec {
     @Override
     public IterativeChunkedAggregationOperator getChunkedOperator(Class type, String name,
             boolean exposeInternalColumns) {
-        return getUniqueChunked(type, name, countNulls, exposeInternalColumns, noKeyValue, nonUniqueValue,
+        return getUniqueChunked(type, name, countNulls, noKeyValue, nonUniqueValue, exposeInternalColumns,
                 secondRollup);
     }
 

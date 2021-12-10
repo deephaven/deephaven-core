@@ -6,7 +6,6 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.configuration.Configuration;
 import io.deephaven.datastructures.util.SmartKey;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.*;
@@ -580,9 +579,6 @@ public class ChunkedOperatorAggregationHelper {
                     downstream.modified = modifiedStatesBuilder.build();
                     downstream.modified().writableCast().remove(downstream.added());
                     downstream.modified().writableCast().remove(downstream.removed());
-                    if (ac.addedBackModified()) {
-                        downstream.modified().writableCast().insert(addedBack);
-                    }
                 }
 
                 ac.propagateChangesToOperators(downstream, newStates);

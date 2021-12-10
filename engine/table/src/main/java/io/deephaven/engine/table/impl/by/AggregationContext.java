@@ -52,11 +52,6 @@ class AggregationContext {
     private final boolean requiresRunFinds;
 
     /**
-     * True if slots that are removed and then reincarnated should be modified.
-     */
-    private final boolean addedBackModified;
-
-    /**
      * Do any operators require inputs.
      */
     private final boolean requiresInputs;
@@ -82,22 +77,15 @@ class AggregationContext {
 
     AggregationContext(IterativeChunkedAggregationOperator[] operators, String[][] inputNames,
             ChunkSource.WithPrev<Values>[] inputColumns) {
-        this(operators, inputNames, inputColumns, true);
+        this(operators, inputNames, inputColumns, null);
     }
 
     AggregationContext(IterativeChunkedAggregationOperator[] operators, String[][] inputNames,
-            ChunkSource.WithPrev<Values>[] inputColumns, boolean addedBackModified) {
-        this(operators, inputNames, inputColumns, null, true);
-    }
-
-    AggregationContext(IterativeChunkedAggregationOperator[] operators, String[][] inputNames,
-            ChunkSource.WithPrev<Values>[] inputColumns, AggregationContextTransformer[] transformers,
-            boolean addedBackModified) {
+                       ChunkSource.WithPrev<Values>[] inputColumns, AggregationContextTransformer[] transformers) {
         this.operators = operators;
         this.inputNames = inputNames;
         this.inputColumns = inputColumns;
         this.transformers = transformers;
-        this.addedBackModified = addedBackModified;
         requiresIndices = Arrays.stream(this.operators).anyMatch(IterativeChunkedAggregationOperator::requiresRowKeys);
         requiresRunFinds =
                 Arrays.stream(this.operators).anyMatch(IterativeChunkedAggregationOperator::requiresRunFinds);
@@ -464,13 +452,6 @@ class AggregationContext {
             }
         }
         return permuteKernels;
-    }
-
-    /**
-     * Returns true if slots that are removed and then reincarnated on the same cycle should be marked as modified.
-     */
-    boolean addedBackModified() {
-        return addedBackModified;
     }
 
     void setReverseLookupFunction(ToIntFunction<Object> reverseLookupFunction) {

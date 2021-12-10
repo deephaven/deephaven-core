@@ -120,59 +120,60 @@ public interface DistinctOperatorFactory {
      * @return an appropriate operator.
      */
     static IterativeChunkedAggregationOperator createUnique(Class<?> type, String resultName, boolean countNulls,
-            boolean exposeInternal, Object noKeyValue, Object nonUniqueValue, boolean isRollup) {
-        checkType(resultName, "No Key Value", type, noKeyValue);
+                                                            Object onlyNullsValue, Object nonUniqueValue,
+                                                            boolean exposeInternal, boolean isRollup) {
+        checkType(resultName, "Only Nulls Value", type, onlyNullsValue);
         checkType(resultName, "Non Unique Value", type, nonUniqueValue);
 
         if (type == Byte.class || type == byte.class) {
-            final byte nkvAsType = (noKeyValue == null) ? NULL_BYTE : ((Number) noKeyValue).byteValue();
+            final byte onvAsType = (onlyNullsValue == null) ? NULL_BYTE : ((Number) onlyNullsValue).byteValue();
             final byte nuvAsType = (nonUniqueValue == null) ? NULL_BYTE : ((Number) nonUniqueValue).byteValue();
-            return isRollup ? new ByteRollupUniqueOperator(resultName, countNulls, nkvAsType, nuvAsType)
-                    : new ByteChunkedUniqueOperator(resultName, countNulls, exposeInternal, nkvAsType, nuvAsType);
+            return isRollup ? new ByteRollupUniqueOperator(resultName, countNulls, onvAsType, nuvAsType)
+                    : new ByteChunkedUniqueOperator(resultName, countNulls, exposeInternal, onvAsType, nuvAsType);
         } else if (type == Character.class || type == char.class) {
             return isRollup
                     ? new CharRollupUniqueOperator(resultName, countNulls,
-                            io.deephaven.util.type.TypeUtils.unbox((Character) noKeyValue),
+                            io.deephaven.util.type.TypeUtils.unbox((Character) onlyNullsValue),
                             io.deephaven.util.type.TypeUtils.unbox((Character) nonUniqueValue))
                     : new CharChunkedUniqueOperator(resultName, countNulls, exposeInternal,
-                            io.deephaven.util.type.TypeUtils.unbox((Character) noKeyValue),
+                            io.deephaven.util.type.TypeUtils.unbox((Character) onlyNullsValue),
                             io.deephaven.util.type.TypeUtils.unbox((Character) nonUniqueValue));
         } else if (type == Double.class || type == double.class) {
-            final double nkvAsType = (noKeyValue == null) ? NULL_DOUBLE : ((Number) noKeyValue).doubleValue();
+            final double onvAsType = (onlyNullsValue == null) ? NULL_DOUBLE : ((Number) onlyNullsValue).doubleValue();
             final double nuvAsType = (nonUniqueValue == null) ? NULL_DOUBLE : ((Number) nonUniqueValue).doubleValue();
-            return isRollup ? new DoubleRollupUniqueOperator(resultName, countNulls, nkvAsType, nuvAsType)
-                    : new DoubleChunkedUniqueOperator(resultName, countNulls, exposeInternal, nkvAsType, nuvAsType);
+            return isRollup ? new DoubleRollupUniqueOperator(resultName, countNulls, onvAsType, nuvAsType)
+                    : new DoubleChunkedUniqueOperator(resultName, countNulls, exposeInternal, onvAsType, nuvAsType);
         } else if (type == Float.class || type == float.class) {
-            final float nkvAsType = (noKeyValue == null) ? NULL_FLOAT : ((Number) noKeyValue).floatValue();
+            final float onvAsType = (onlyNullsValue == null) ? NULL_FLOAT : ((Number) onlyNullsValue).floatValue();
             final float nuvAsType = (nonUniqueValue == null) ? NULL_FLOAT : ((Number) nonUniqueValue).floatValue();
-            return isRollup ? new FloatRollupUniqueOperator(resultName, countNulls, nkvAsType, nuvAsType)
-                    : new FloatChunkedUniqueOperator(resultName, countNulls, exposeInternal, nkvAsType, nuvAsType);
+            return isRollup ? new FloatRollupUniqueOperator(resultName, countNulls, onvAsType, nuvAsType)
+                    : new FloatChunkedUniqueOperator(resultName, countNulls, exposeInternal, onvAsType, nuvAsType);
         } else if (type == Integer.class || type == int.class) {
-            final int nkvAsType = (noKeyValue == null) ? NULL_INT : ((Number) noKeyValue).intValue();
+            final int onvAsType = (onlyNullsValue == null) ? NULL_INT : ((Number) onlyNullsValue).intValue();
             final int nuvAsType = (nonUniqueValue == null) ? NULL_INT : ((Number) nonUniqueValue).intValue();
-            return isRollup ? new IntRollupUniqueOperator(resultName, countNulls, nkvAsType, nuvAsType)
-                    : new IntChunkedUniqueOperator(resultName, countNulls, exposeInternal, nkvAsType, nuvAsType);
+            return isRollup ? new IntRollupUniqueOperator(resultName, countNulls, onvAsType, nuvAsType)
+                    : new IntChunkedUniqueOperator(resultName, countNulls, exposeInternal, onvAsType, nuvAsType);
         } else if (type == Long.class || type == long.class || type == DateTime.class) {
-            final long nkvAsType;
+            final long onvAsType;
             final long nuvAsType;
             if (type == DateTime.class) {
-                nkvAsType = (noKeyValue == null) ? NULL_LONG : ((DateTime) noKeyValue).getNanos();
+                onvAsType = (onlyNullsValue == null) ? NULL_LONG : ((DateTime) onlyNullsValue).getNanos();
                 nuvAsType = (nonUniqueValue == null) ? NULL_LONG : ((DateTime) nonUniqueValue).getNanos();
             } else {
-                nkvAsType = (noKeyValue == null) ? NULL_LONG : ((Number) noKeyValue).longValue();
+                onvAsType = (onlyNullsValue == null) ? NULL_LONG : ((Number) onlyNullsValue).longValue();
                 nuvAsType = (nonUniqueValue == null) ? NULL_LONG : ((Number) nonUniqueValue).longValue();
             }
 
-            return isRollup ? new LongRollupUniqueOperator(type, resultName, countNulls, nkvAsType, nuvAsType)
-                    : new LongChunkedUniqueOperator(type, resultName, countNulls, exposeInternal, nkvAsType, nuvAsType);
+            return isRollup ? new LongRollupUniqueOperator(type, resultName, countNulls, onvAsType, nuvAsType)
+                    : new LongChunkedUniqueOperator(type, resultName, countNulls, exposeInternal, onvAsType, nuvAsType);
         } else if (type == Short.class || type == short.class) {
-            final short nkvAsType = (noKeyValue == null) ? NULL_SHORT : ((Number) noKeyValue).shortValue();
+            final short onvAsType = (onlyNullsValue == null) ? NULL_SHORT : ((Number) onlyNullsValue).shortValue();
             final short nuvAsType = (nonUniqueValue == null) ? NULL_SHORT : ((Number) nonUniqueValue).shortValue();
-            return isRollup ? new ShortRollupUniqueOperator(resultName, countNulls, nkvAsType, nuvAsType)
-                    : new ShortChunkedUniqueOperator(resultName, countNulls, exposeInternal, nkvAsType, nuvAsType);
+            return isRollup ? new ShortRollupUniqueOperator(resultName, countNulls, onvAsType, nuvAsType)
+                    : new ShortChunkedUniqueOperator(resultName, countNulls, exposeInternal, onvAsType, nuvAsType);
         } else {
-            return isRollup ? new ObjectRollupUniqueOperator(type, resultName, countNulls, noKeyValue, nonUniqueValue)
-                    : new ObjectChunkedUniqueOperator(type, resultName, countNulls, exposeInternal, noKeyValue,
+            return isRollup ? new ObjectRollupUniqueOperator(type, resultName, countNulls, onlyNullsValue, nonUniqueValue)
+                    : new ObjectChunkedUniqueOperator(type, resultName, countNulls, exposeInternal, onlyNullsValue,
                             nonUniqueValue);
         }
     }

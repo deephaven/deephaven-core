@@ -13,7 +13,7 @@ public class VarSpec extends IterativeOperatorSpec {
     @Override
     public IterativeChunkedAggregationOperator getChunkedOperator(Class type, String name,
             boolean exposeInternalColumns) {
-        return getVarChunked(type, false, name, exposeInternalColumns);
+        return getVarChunked(type, name, false, exposeInternalColumns);
     }
 
     private static final AggregationMemoKey VAR_INSTANCE = new AggregationMemoKey() {};

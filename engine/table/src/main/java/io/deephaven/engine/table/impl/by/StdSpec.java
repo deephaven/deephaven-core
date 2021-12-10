@@ -13,7 +13,7 @@ public class StdSpec extends IterativeOperatorSpec {
     @Override
     public IterativeChunkedAggregationOperator getChunkedOperator(Class type, String name,
             boolean exposeInternalColumns) {
-        return getVarChunked(type, true, name, exposeInternalColumns);
+        return getVarChunked(type, name, true, exposeInternalColumns);
     }
 
 

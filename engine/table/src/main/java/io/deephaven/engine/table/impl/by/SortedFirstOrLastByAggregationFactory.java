@@ -73,7 +73,7 @@ public class SortedFirstOrLastByAggregationFactory implements AggregationContext
         return (isFirst ? "SortedFirstBy" : "SortedLastBy") + Arrays.toString(sortColumns);
     }
 
-    private static IterativeChunkedAggregationOperator makeOperator(@NotNull final ChunkType chunkType,
+    static IterativeChunkedAggregationOperator makeOperator(@NotNull final ChunkType chunkType,
             final boolean isFirst,
             final boolean isCombo,
             @NotNull final MatchPair[] resultPairs,

@@ -19,7 +19,6 @@ import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.engine.table.impl.sources.SingleValueObjectColumnSource;
 import io.deephaven.engine.table.impl.ssms.SegmentedSortedMultiSet;
 import io.deephaven.time.DateTime;
-import io.deephaven.vector.Vector;
 import org.jetbrains.annotations.NotNull;
 
 import java.math.BigDecimal;
@@ -768,10 +767,8 @@ public class AggregationFactory implements AggregationSpec {
                                                     ((UniqueSpec) inputAggregationSpec).countNulls();
                                             // noinspection ConstantConditions
                                             op = IterativeOperatorSpec.getUniqueChunked(
-                                                    lastLevelResult.getType(), mp.leftColumn(), countNulls, true,
-                                                    ((UniqueSpec) inputAggregationSpec).getNoKeyValue(),
-                                                    ((UniqueSpec) inputAggregationSpec)
-                                                            .getNonUniqueValue(),
+                                                    lastLevelResult.getType(), mp.leftColumn(), countNulls, ((UniqueSpec) inputAggregationSpec).getNoKeyValue(), ((UniqueSpec) inputAggregationSpec)
+                                                            .getNonUniqueValue(), true,
                                                     true);
                                         }
 
@@ -805,8 +802,8 @@ public class AggregationFactory implements AggregationSpec {
                                                 ssmChunkedMinMaxOperator.makeSecondaryOperator(isMinimum, resultName));
                                         hasSource = false;
                                     } else {
-                                        operators.add(IterativeOperatorSpec.getMinMaxChunked(type, isMinimum,
-                                                isStream || isAddOnly, resultName));
+                                        operators.add(IterativeOperatorSpec.getMinMaxChunked(type, resultName, isMinimum,
+                                                isStream || isAddOnly));
                                         hasSource = true;
                                     }
                                 } else if (isPercentile) {
@@ -815,11 +812,11 @@ public class AggregationFactory implements AggregationSpec {
                                                 "Percentile or Median can not be used in a rollup!");
                                     }
                                     operators.add(IterativeOperatorSpec.getPercentileChunked(type,
-                                            ((PercentileBySpecImpl) inputAggregationSpec)
+                                            resultName, ((PercentileBySpecImpl) inputAggregationSpec)
                                                     .getPercentile(),
                                             ((PercentileBySpecImpl) inputAggregationSpec)
-                                                    .getAverageMedian(),
-                                            resultName));
+                                                    .getAverageMedian()
+                                    ));
                                     hasSource = true;
                                 } else {
                                     operators.add(((IterativeOperatorSpec) inputAggregationSpec)
@@ -984,7 +981,7 @@ public class AggregationFactory implements AggregationSpec {
             final ChunkSource.WithPrev<Values>[] inputColumnsArray =
                     inputColumns.toArray(ChunkSource.WithPrev.ZERO_LENGTH_CHUNK_SOURCE_WITH_PREV_ARRAY);
 
-            return new AggregationContext(operatorsArray, inputNamesArray, inputColumnsArray, transformersArray, true);
+            return new AggregationContext(operatorsArray, inputNamesArray, inputColumnsArray, transformersArray);
         };
     }
 

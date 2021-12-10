@@ -49,8 +49,8 @@ public abstract class IterativeOperatorSpec extends ReaggregatableStatefactory
         throw new UnsupportedOperationException("Unsupported type " + type);
     }
 
-    static IterativeChunkedAggregationOperator getMinMaxChunked(Class type, boolean minimum, boolean isStreamOrAddOnly,
-            String name) {
+    static IterativeChunkedAggregationOperator getMinMaxChunked(Class type, String name, boolean minimum,
+                                                                boolean isStreamOrAddOnly) {
         if (!isStreamOrAddOnly) {
             return new SsmChunkedMinMaxOperator(type, minimum, name);
         } else {
@@ -76,8 +76,8 @@ public abstract class IterativeOperatorSpec extends ReaggregatableStatefactory
         }
     }
 
-    static IterativeChunkedAggregationOperator getPercentileChunked(Class type, double percentile,
-            boolean averageMedian, String name) {
+    static IterativeChunkedAggregationOperator getPercentileChunked(Class type, String name, double percentile,
+                                                                    boolean averageMedian) {
         return new SsmChunkedPercentileOperator(type, percentile, averageMedian, name);
     }
 
@@ -92,8 +92,9 @@ public abstract class IterativeOperatorSpec extends ReaggregatableStatefactory
     }
 
     static IterativeChunkedAggregationOperator getUniqueChunked(Class type, String name, boolean countNulls,
-            boolean exposeInternal, Object noKeyValue, Object nonUniqueValue, boolean isRollup) {
-        return DistinctOperatorFactory.createUnique(type, name, countNulls, exposeInternal, noKeyValue, nonUniqueValue,
+                                                                Object noKeyValue, Object nonUniqueValue,
+                                                                boolean exposeInternal, boolean isRollup) {
+        return DistinctOperatorFactory.createUnique(type, name, countNulls, noKeyValue, nonUniqueValue, exposeInternal,
                 isRollup);
     }
 
@@ -149,8 +150,8 @@ public abstract class IterativeOperatorSpec extends ReaggregatableStatefactory
         throw new UnsupportedOperationException("Unsupported type " + type);
     }
 
-    static IterativeChunkedAggregationOperator getVarChunked(Class type, boolean std, String name,
-            boolean exposeInternalColumns) {
+    static IterativeChunkedAggregationOperator getVarChunked(Class type, String name, boolean std,
+                                                             boolean exposeInternalColumns) {
         if (type == Byte.class || type == byte.class) {
             return new ByteChunkedVarOperator(std, name, exposeInternalColumns);
         } else if (type == Character.class || type == char.class) {

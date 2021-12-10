@@ -22,7 +22,8 @@ import java.util.regex.Pattern;
 public abstract class AbstractRangeFilter extends WhereFilterImpl {
     private static final Pattern decimalPattern = Pattern.compile("(-)?\\d+(?:\\.((\\d+)0*)?)?");
 
-    protected final String columnName;
+    protected final String
+            columnName;
     protected final boolean upperInclusive;
     protected final boolean lowerInclusive;
 
