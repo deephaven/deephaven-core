@@ -89,15 +89,23 @@ idea {
     }
 }
 
+project.version = '0.7.0'
 ext.versionSource = versionSource
-ext.globalVersion = "0.7.0"
+ext.globalVersion = project.version
 
-// To set fishlibVersion, go to project-local gradle.properties file
-// (or, use the gradle.properties in $USER_HOME/.gradle for a global override)
-// If you have fishlib open in IDE, also set includeFish=true to get the
-// intellij projects wired up across repositories.
-
-Set<Project> modsAreBasic = subprojects.findAll {it.name in ['deephaven-wheel', 'deephaven2-wheel', 'envoy', 'grpc-proxy', 'web-client-ui', 'protoc', 'pyclient', 'sphinx', 'docker-java-and-python', 'docker-runtime-base'] }
+Set<Project> modsAreBasic = subprojects.findAll {it.name in [
+        'deephaven-wheel',
+        'deephaven2-wheel',
+        'envoy',
+        'grpc-proxy',
+        'web-client-ui',
+        'protoc',
+        'pyclient',
+        'sphinx',
+        'docker-runtime-base',
+        'docker-server',
+        'docker-server-slim',
+] }
 
 Set<Project> modsAreBin = subprojects.findAll {it.name in ['bin', 'configs', 'test-configs'] }
 
@@ -424,6 +432,15 @@ tasks.register 'writeJavadocVersion', {
         }
 }
 
+project.tasks.register('outputVersion') {task ->
+    def versionFile = project.layout.buildDirectory.file('version')
+    task.inputs.property('version', project.version)
+    task.outputs.file(versionFile)
+    task.doLast {
+        versionFile.get().asFile.text = project.version
+    }
+}
+
 project(':test-configs') {
     dependencies {
         // For unit-tests that explicitly (or transitively) depend on Configuration.getInstance(),
@@ -460,8 +477,9 @@ tasks.register('quick') {
 
 tasks.register('prepareCompose') {
     it.group 'Deephaven lifecycle'
-    it.description 'A lifecycle task that prepares prequisites for local docker-compose builds'
-    it.dependsOn project(':grpc-api-server-docker').tasks.findByName('dockerBuildImage'),
+    it.description 'A lifecycle task that prepares prerequisites for local docker-compose builds'
+    it.dependsOn project(':docker-server-slim').tasks.findByName('buildDocker'),
+            project(':docker-server').tasks.findByName('buildDocker-server'),
             project(':web-client-ide').tasks.findByName('buildDocker'),
             project(':envoy').tasks.findByName('buildDocker'),
             project(':grpc-proxy').tasks.findByName('buildDocker')
@@ -476,7 +494,8 @@ tasks.register('smoke') {
         allprojects.collect { it.tasks.matching { it.name == 'spotlessCheck' } }
     }
     it.dependsOn project(':grpc-api').tasks.findByName(LifecycleBasePlugin.CHECK_TASK_NAME)
-    it.dependsOn project(':grpc-api-server-docker').tasks.findByName('dockerCreateDockerfile')
+    it.dependsOn project(':docker-server-slim').tasks.findByName('prepareDocker')
+    it.dependsOn project(':docker-server').tasks.findByName('prepareDocker-server')
     it.dependsOn project(':web-client-ide').tasks.findByName('prepareDocker')
     it.dependsOn project(':Generators').tasks.findByName(LifecycleBasePlugin.CHECK_TASK_NAME)
 }

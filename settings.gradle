@@ -98,9 +98,6 @@ project(':log-example-stream').projectDir = file('log-factory/examples/example-s
 include(':log-example-file')
 project(':log-example-file').projectDir = file('log-factory/examples/example-file')
 
-include(':grpc-api-server-docker')
-project(':grpc-api-server-docker').projectDir = file('grpc-api/server/docker')
-
 include(':grpc-api-server-native')
 project(':grpc-api-server-native').projectDir = file('grpc-api/server/native')
 
@@ -243,15 +240,20 @@ project(':deephaven-wheel').projectDir = file('py/deephaven-wheel')
 include(':deephaven2-wheel')
 project(':deephaven2-wheel').projectDir = file('py/deephaven2-wheel')
 
-include(':docker-java-and-python')
-project(':docker-java-and-python').projectDir = file('docker/java-and-python')
-
 include(':docker-runtime-base')
 project(':docker-runtime-base').projectDir = file('docker/runtime-base')
 
+include(':docker-server')
+project(':docker-server').projectDir = file('docker/server')
+
+include(':docker-server-slim')
+project(':docker-server-slim').projectDir = file('docker/server-slim')
+
 file("${rootDir}/docker/registry").list().each {name ->
-    include(":docker-${name}")
-    project(":docker-${name}").projectDir = file("${rootDir}/docker/registry/${name}")
+    if(file("${rootDir}/docker/registry/${name}/gradle.properties").exists()) {
+        include(":docker-${name}")
+        project(":docker-${name}").projectDir = file("${rootDir}/docker/registry/${name}")
+    }
 }
 
 // Apply "vanity naming" (look for .gradle files matching ProjectName/ProjectName.gradle)
