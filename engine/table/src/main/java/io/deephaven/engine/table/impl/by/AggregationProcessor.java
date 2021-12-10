@@ -109,6 +109,16 @@ public class AggregationProcessor implements AggregationContextFactory {
         }
 
         @Override
+        public void visit(@NotNull final FirstRowKey firstRowKey) {
+            visitFirstOrLastAgg(true, firstRowKey.column().name());
+        }
+
+        @Override
+        public void visit(@NotNull final LastRowKey lastRowKey) {
+            visitFirstOrLastAgg(false, lastRowKey.column().name());
+        }
+
+        @Override
         public void visit(@NotNull final ColumnAggregation columnAgg) {
             resultPairs = List.of(columnAgg.pair());
             columnAgg.spec().walk(this);

@@ -15,6 +15,8 @@ import java.util.Map.Entry;
 public final class AggregationOptimizer implements Aggregation.Visitor {
 
     private static final Object COUNT_OBJ = new Object();
+    private static final Object FIRST_ROW_KEY_OBJ = new Object();
+    private static final Object LAST_ROW_KEY_OBJ = new Object();
 
     /**
      * Optimizes a collection of {@link Aggregation aggregations} by grouping like-specced aggregations together. The
@@ -40,6 +42,14 @@ public final class AggregationOptimizer implements Aggregation.Visitor {
                 for (Pair pair : e.getValue()) {
                     out.add(Count.of((ColumnName) pair));
                 }
+            } else if (e.getKey() == FIRST_ROW_KEY_OBJ) {
+                for (Pair pair : e.getValue()) {
+                    out.add(FirstRowKey.of((ColumnName) pair));
+                }
+            } else if (e.getKey() == LAST_ROW_KEY_OBJ) {
+                for (Pair pair : e.getValue()) {
+                    out.add(LastRowKey.of((ColumnName) pair));
+                }
             } else if (e.getValue().size() == 1) {
                 out.add(ColumnAggregation.of((AggSpec) e.getKey(), e.getValue().get(0)));
             } else {
@@ -52,6 +62,16 @@ public final class AggregationOptimizer implements Aggregation.Visitor {
     @Override
     public void visit(Count count) {
         visitOrder.computeIfAbsent(COUNT_OBJ, k -> new ArrayList<>()).add(count.column());
+    }
+
+    @Override
+    public void visit(FirstRowKey firstRowKey) {
+        visitOrder.computeIfAbsent(FIRST_ROW_KEY_OBJ, k -> new ArrayList<>()).add(firstRowKey.column());
+    }
+
+    @Override
+    public void visit(LastRowKey lastRowKey) {
+        visitOrder.computeIfAbsent(LAST_ROW_KEY_OBJ, k -> new ArrayList<>()).add(lastRowKey.column());
     }
 
     @Override

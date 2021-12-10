@@ -2,7 +2,6 @@ package io.deephaven.api.agg;
 
 import io.deephaven.api.agg.ColumnAggregations.Builder;
 import io.deephaven.api.agg.spec.AggSpec;
-import io.deephaven.api.agg.spec.AggSpecFormula;
 
 import java.io.Serializable;
 import java.util.Collection;
@@ -64,6 +63,10 @@ public interface Aggregation extends Serializable {
         return of(AggSpec.first(), pairs);
     }
 
+    static Aggregation AggFirstRowKey(String resultColumn) {
+        return FirstRowKey.of(resultColumn);
+    }
+
     static Aggregation AggFormula(String formula, String formulaParam, String... pairs) {
         return of(AggSpec.formula(formula, formulaParam), pairs);
     }
@@ -74,6 +77,10 @@ public interface Aggregation extends Serializable {
 
     static Aggregation AggLast(String... pairs) {
         return of(AggSpec.last(), pairs);
+    }
+
+    static Aggregation AggLastRowKey(String resultColumn) {
+        return LastRowKey.of(resultColumn);
     }
 
     static Aggregation AggMax(String... pairs) {
@@ -152,6 +159,10 @@ public interface Aggregation extends Serializable {
 
     interface Visitor {
         void visit(Count count);
+
+        void visit(FirstRowKey firstRowKey);
+
+        void visit(LastRowKey lastRowKey);
 
         void visit(ColumnAggregation columnAgg);
 

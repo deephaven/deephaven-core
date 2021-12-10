@@ -31,6 +31,16 @@ public class AggregationOutputs implements Aggregation.Visitor {
     }
 
     @Override
+    public void visit(FirstRowKey firstRowKey) {
+        out = Stream.of(firstRowKey.column());
+    }
+
+    @Override
+    public void visit(LastRowKey lastRowKey) {
+        out = Stream.of(lastRowKey.column());
+    }
+
+    @Override
     public void visit(ColumnAggregation columnAgg) {
         out = Stream.of(columnAgg.pair().output());
     }

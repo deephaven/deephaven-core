@@ -11,11 +11,7 @@ import io.deephaven.api.Selectable;
 import io.deephaven.api.SortColumn;
 import io.deephaven.api.SortColumn.Order;
 import io.deephaven.api.Strings;
-import io.deephaven.api.agg.Aggregation;
-import io.deephaven.api.agg.ColumnAggregation;
-import io.deephaven.api.agg.ColumnAggregations;
-import io.deephaven.api.agg.Count;
-import io.deephaven.api.agg.Pair;
+import io.deephaven.api.agg.*;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.agg.spec.AggSpecAbsSum;
 import io.deephaven.api.agg.spec.AggSpecAvg;
@@ -534,6 +530,18 @@ class BatchTableRequestBuilder {
         @Override
         public void visit(Count count) {
             out = Aggregate.newBuilder().setType(AggType.COUNT).setColumnName(count.column().name()).build();
+        }
+
+        @Override
+        public void visit(FirstRowKey firstRowKey) {
+            throw new UnsupportedOperationException(
+                    "TODO(deephaven-core#991): TableService aggregation coverage, https://github.com/deephaven/deephaven-core/issues/991");
+        }
+
+        @Override
+        public void visit(LastRowKey lastRowKey) {
+            throw new UnsupportedOperationException(
+                    "TODO(deephaven-core#991): TableService aggregation coverage, https://github.com/deephaven/deephaven-core/issues/991");
         }
 
         @Override

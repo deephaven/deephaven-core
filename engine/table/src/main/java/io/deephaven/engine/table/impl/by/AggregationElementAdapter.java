@@ -1,9 +1,6 @@
 package io.deephaven.engine.table.impl.by;
 
-import io.deephaven.api.agg.Aggregation;
-import io.deephaven.api.agg.ColumnAggregation;
-import io.deephaven.api.agg.ColumnAggregations;
-import io.deephaven.api.agg.Count;
+import io.deephaven.api.agg.*;
 import io.deephaven.engine.table.MatchPair;
 import io.deephaven.engine.table.impl.by.AggregationFactory.AggregationElement;
 import io.deephaven.engine.table.impl.by.AggregationFactory.AggregationElementImpl;
@@ -28,6 +25,20 @@ class AggregationElementAdapter implements Aggregation.Visitor {
     @Override
     public void visit(Count count) {
         out = new AggregationFactory.CountAggregationElement(count.column().name());
+    }
+
+    @Override
+    public void visit(FirstRowKey firstRowKey) {
+        out = new AggregationElementImpl(
+                new KeyOnlyFirstOrLastBySpec(firstRowKey.column().name(), AggType.First),
+                MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY);
+    }
+
+    @Override
+    public void visit(LastRowKey lastRowKey) {
+        out = new AggregationElementImpl(
+                new KeyOnlyFirstOrLastBySpec(lastRowKey.column().name(), AggType.Last),
+                MatchPair.ZERO_LENGTH_MATCH_PAIR_ARRAY);
     }
 
     @Override
