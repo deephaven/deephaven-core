@@ -1,0 +1,37 @@
+import io.deephaven.tools.License
+
+plugins {
+    id 'com.bmuschko.docker-remote-api'
+}
+
+configurations {
+    js
+}
+dependencies {
+    js project(path: ':web', targetConfiguration: 'js')
+}
+
+evaluationDependsOn Docker.registryProject('nginx-base')
+
+def dockerLicenses = License.createFrom(project).syncDockerLicense()
+
+def syncDir = layout.buildDirectory.dir('docker')
+def prepareDocker = project.tasks.register('prepareDocker', Sync) {
+    from layout.projectDirectory.dir('src/main/docker')
+    from(configurations.js) {
+        into 'static'
+    }
+    from (dockerLicenses.get().outputs) {
+        into 'licenses'
+    }
+    into syncDir
+}
+
+Docker.registerDockerImage(project, 'buildDocker') {
+    inputDir.set syncDir
+    inputs.files Docker.registryFiles(project, 'nginx-base')
+    inputs.files prepareDocker.get().outputs.files
+    images.add('deephaven/web:local-build')
+}
+
+assemble.dependsOn buildDocker
