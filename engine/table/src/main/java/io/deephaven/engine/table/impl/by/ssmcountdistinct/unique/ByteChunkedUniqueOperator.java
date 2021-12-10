@@ -53,18 +53,18 @@ public class ByteChunkedUniqueOperator implements IterativeChunkedAggregationOpe
     private final ByteSsmBackedSource ssms;
     private final ByteArraySource internalResult;
     private final ColumnSource<?> externalResult;
-    private final byte noValueKey;
-    private final byte nonUniqueKey;
+    private final byte onlyNullsSentinel;
+    private final byte nonUniqueSentinel;
 
     public ByteChunkedUniqueOperator(
             // region Constructor
             // endregion Constructor
-            String name, boolean countNulls, boolean exposeInternal, byte noValueKey, byte nonUniqueKey) {
+            String name, boolean countNulls, boolean exposeInternal, byte onlyNullsSentinel, byte nonUniqueSentinel) {
         this.name = name;
         this.countNull = countNulls;
         this.exposeInternal = exposeInternal;
-        this.noValueKey = noValueKey;
-        this.nonUniqueKey = nonUniqueKey;
+        this.onlyNullsSentinel = onlyNullsSentinel;
+        this.nonUniqueSentinel = nonUniqueSentinel;
 
         // region SsmCreation
         this.ssms = new ByteSsmBackedSource();
@@ -319,12 +319,12 @@ public class ByteChunkedUniqueOperator implements IterativeChunkedAggregationOpe
     private boolean setResult(ByteSegmentedSortedMultiset ssm, long destination) {
         final boolean resultChanged;
         if(ssm.isEmpty()) {
-            resultChanged = internalResult.getAndSetUnsafe(destination, noValueKey) != noValueKey;
+            resultChanged = internalResult.getAndSetUnsafe(destination, onlyNullsSentinel) != onlyNullsSentinel;
         } else if(ssm.size() == 1) {
             final byte newValue = ssm.get(0);
             resultChanged = internalResult.getAndSetUnsafe(destination, newValue) != newValue;
         } else {
-            resultChanged = internalResult.getAndSetUnsafe(destination, nonUniqueKey) != nonUniqueKey;
+            resultChanged = internalResult.getAndSetUnsafe(destination, nonUniqueSentinel) != nonUniqueSentinel;
         }
 
         return resultChanged || (exposeInternal && (ssm.getAddedSize() > 0 || ssm.getRemovedSize() > 0));

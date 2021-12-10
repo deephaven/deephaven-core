@@ -50,8 +50,8 @@ public class ObjectRollupUniqueOperator implements IterativeChunkedAggregationOp
     private final ColumnSource<?> externalResult;
     private final Supplier<SegmentedSortedMultiSet.RemoveContext> removeContextFactory;
     private final boolean countNull;
-    private final Object noValueKey;
-    private final Object nonUniqueKey;
+    private final Object onlyNullsSentinel;
+    private final Object nonUniqueSentinel;
 
     private UpdateCommitter<ObjectRollupUniqueOperator> prevFlusher = null;
     private WritableRowSet touchedStates;
@@ -62,12 +62,12 @@ public class ObjectRollupUniqueOperator implements IterativeChunkedAggregationOp
                                     // endregion Constructor
                                     String name,
                                     boolean countNulls,
-                                    Object noValueKey,
-                                    Object nonUniqueKey) {
+                                    Object onlyNullsSentinel,
+                                    Object nonUniqueSentinel) {
         this.name = name;
         this.countNull = countNulls;
-        this.nonUniqueKey = nonUniqueKey;
-        this.noValueKey = noValueKey;
+        this.nonUniqueSentinel = nonUniqueSentinel;
+        this.onlyNullsSentinel = onlyNullsSentinel;
         // region SsmCreation
         this.ssms = new ObjectSsmBackedSource(type);
         // endregion SsmCreation
@@ -547,11 +547,11 @@ public class ObjectRollupUniqueOperator implements IterativeChunkedAggregationOp
     //region Private Helpers
     private void updateResult(ObjectSegmentedSortedMultiset ssm, long destination) {
         if(ssm.isEmpty()) {
-            internalResult.set(destination, noValueKey);
+            internalResult.set(destination, onlyNullsSentinel);
         } else if(ssm.size() == 1) {
             internalResult.set(destination, ssm.get(0));
         } else {
-            internalResult.set(destination, nonUniqueKey);
+            internalResult.set(destination, nonUniqueSentinel);
         }
     }
 

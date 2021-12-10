@@ -1296,7 +1296,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
 
     public void testRollupUnique() {
         testSimpleRollup(List.of(AggUnique("IntCol", "DoubleCol", "FloatNullCol", "StringCol", "BoolCol")));
-        testSimpleRollup(List.of(AggUnique(true, "IntCol", "DoubleCol", "FloatNullCol", "StringCol", "BoolCol")));
+        testSimpleRollup(List.of(AggUnique(true, null, "IntCol", "DoubleCol", "FloatNullCol", "StringCol", "BoolCol")));
     }
 
     private void testSimpleRollup(Collection<? extends Aggregation> comboAgg) {
@@ -1548,7 +1548,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
 
     public void testRollupUniqueIncremental() {
         testIncrementalSimple(AggUnique("IntCol"));
-        testIncrementalSimple(AggUnique(true, "IntCol"));
+        testIncrementalSimple(AggUnique(true, null, "IntCol"));
         // TODO (https://github.com/deephaven/deephaven-core/issues/991): Re-enable these sub-tests
         // testIncrementalSimple(AggUnique(false, -1, -2, "IntCol"));
         // testIncrementalSimple(AggUnique(true, -1, -2, "IntCol"));
@@ -1679,7 +1679,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
                 AggDistinct(true, "SDistinctN=StringNulls", "DistinctBoolColN=BoolCol",
                         "DNIntCol=IntSet", "DNLongCol=LongSet", "DNDoubleCol=DoubleSet",
                         "DNFloatCol=FloatSet", "DNCharCol=CharSet", "DNShortCol=ShortSet", "DNByteCol=ByteSet"),
-                AggUnique(true, "SUniqueN=StringNulls", "UniqueBoolColN=BoolCol",
+                AggUnique(true, null, "SUniqueN=StringNulls", "UniqueBoolColN=BoolCol",
                         "UNIntCol=IntSet", "UNLongCol=LongSet", "UNDoubleCol=DoubleSet",
                         "UNFloatCol=FloatSet", "UNCharCol=CharSet", "UNShortCol=ShortSet", "UNByteCol=ByteSet"));
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {

@@ -50,8 +50,8 @@ public class IntRollupUniqueOperator implements IterativeChunkedAggregationOpera
     private final ColumnSource<?> externalResult;
     private final Supplier<SegmentedSortedMultiSet.RemoveContext> removeContextFactory;
     private final boolean countNull;
-    private final int noValueKey;
-    private final int nonUniqueKey;
+    private final int onlyNullsSentinel;
+    private final int nonUniqueSentinel;
 
     private UpdateCommitter<IntRollupUniqueOperator> prevFlusher = null;
     private WritableRowSet touchedStates;
@@ -61,12 +61,12 @@ public class IntRollupUniqueOperator implements IterativeChunkedAggregationOpera
                                     // endregion Constructor
                                     String name,
                                     boolean countNulls,
-                                    int noValueKey,
-                                    int nonUniqueKey) {
+                                    int onlyNullsSentinel,
+                                    int nonUniqueSentinel) {
         this.name = name;
         this.countNull = countNulls;
-        this.nonUniqueKey = nonUniqueKey;
-        this.noValueKey = noValueKey;
+        this.nonUniqueSentinel = nonUniqueSentinel;
+        this.onlyNullsSentinel = onlyNullsSentinel;
         // region SsmCreation
         this.ssms = new IntSsmBackedSource();
         // endregion SsmCreation
@@ -546,11 +546,11 @@ public class IntRollupUniqueOperator implements IterativeChunkedAggregationOpera
     //region Private Helpers
     private void updateResult(IntSegmentedSortedMultiset ssm, long destination) {
         if(ssm.isEmpty()) {
-            internalResult.set(destination, noValueKey);
+            internalResult.set(destination, onlyNullsSentinel);
         } else if(ssm.size() == 1) {
             internalResult.set(destination, ssm.get(0));
         } else {
-            internalResult.set(destination, nonUniqueKey);
+            internalResult.set(destination, nonUniqueSentinel);
         }
     }
 

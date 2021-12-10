@@ -53,19 +53,19 @@ public class ObjectChunkedUniqueOperator implements IterativeChunkedAggregationO
     private final ObjectSsmBackedSource ssms;
     private final ObjectArraySource internalResult;
     private final ColumnSource<?> externalResult;
-    private final Object noValueKey;
-    private final Object nonUniqueKey;
+    private final Object onlyNullsSentinel;
+    private final Object nonUniqueSentinel;
 
     public ObjectChunkedUniqueOperator(
             // region Constructor
             Class<?> type,
             // endregion Constructor
-            String name, boolean countNulls, boolean exposeInternal, Object noValueKey, Object nonUniqueKey) {
+            String name, boolean countNulls, boolean exposeInternal, Object onlyNullsSentinel, Object nonUniqueSentinel) {
         this.name = name;
         this.countNull = countNulls;
         this.exposeInternal = exposeInternal;
-        this.noValueKey = noValueKey;
-        this.nonUniqueKey = nonUniqueKey;
+        this.onlyNullsSentinel = onlyNullsSentinel;
+        this.nonUniqueSentinel = nonUniqueSentinel;
 
         // region SsmCreation
         this.ssms = new ObjectSsmBackedSource(type);
@@ -320,12 +320,12 @@ public class ObjectChunkedUniqueOperator implements IterativeChunkedAggregationO
     private boolean setResult(ObjectSegmentedSortedMultiset ssm, long destination) {
         final boolean resultChanged;
         if(ssm.isEmpty()) {
-            resultChanged = internalResult.getAndSetUnsafe(destination, noValueKey) != noValueKey;
+            resultChanged = internalResult.getAndSetUnsafe(destination, onlyNullsSentinel) != onlyNullsSentinel;
         } else if(ssm.size() == 1) {
             final Object newValue = ssm.get(0);
             resultChanged = internalResult.getAndSetUnsafe(destination, newValue) != newValue;
         } else {
-            resultChanged = internalResult.getAndSetUnsafe(destination, nonUniqueKey) != nonUniqueKey;
+            resultChanged = internalResult.getAndSetUnsafe(destination, nonUniqueSentinel) != nonUniqueSentinel;
         }
 
         return resultChanged || (exposeInternal && (ssm.getAddedSize() > 0 || ssm.getRemovedSize() > 0));

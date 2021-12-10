@@ -237,7 +237,7 @@ public class AggregationProcessor implements AggregationContextFactory {
         @Override
         public void visit(@NotNull final AggSpecUnique unique) {
             visitBasicAgg((t, n) -> getUniqueChunked(t, n,
-                    unique.includeNulls(), unique.onlyNullsValue(), unique.nonUniqueValue(), false, false));
+                    unique.includeNulls(), null, unique.nonUniqueSentinel(), false, false));
         }
 
         @Override

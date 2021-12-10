@@ -50,8 +50,8 @@ public class ShortRollupUniqueOperator implements IterativeChunkedAggregationOpe
     private final ColumnSource<?> externalResult;
     private final Supplier<SegmentedSortedMultiSet.RemoveContext> removeContextFactory;
     private final boolean countNull;
-    private final short noValueKey;
-    private final short nonUniqueKey;
+    private final short onlyNullsSentinel;
+    private final short nonUniqueSentinel;
 
     private UpdateCommitter<ShortRollupUniqueOperator> prevFlusher = null;
     private WritableRowSet touchedStates;
@@ -61,12 +61,12 @@ public class ShortRollupUniqueOperator implements IterativeChunkedAggregationOpe
                                     // endregion Constructor
                                     String name,
                                     boolean countNulls,
-                                    short noValueKey,
-                                    short nonUniqueKey) {
+                                    short onlyNullsSentinel,
+                                    short nonUniqueSentinel) {
         this.name = name;
         this.countNull = countNulls;
-        this.nonUniqueKey = nonUniqueKey;
-        this.noValueKey = noValueKey;
+        this.nonUniqueSentinel = nonUniqueSentinel;
+        this.onlyNullsSentinel = onlyNullsSentinel;
         // region SsmCreation
         this.ssms = new ShortSsmBackedSource();
         // endregion SsmCreation
@@ -546,11 +546,11 @@ public class ShortRollupUniqueOperator implements IterativeChunkedAggregationOpe
     //region Private Helpers
     private void updateResult(ShortSegmentedSortedMultiset ssm, long destination) {
         if(ssm.isEmpty()) {
-            internalResult.set(destination, noValueKey);
+            internalResult.set(destination, onlyNullsSentinel);
         } else if(ssm.size() == 1) {
             internalResult.set(destination, ssm.get(0));
         } else {
-            internalResult.set(destination, nonUniqueKey);
+            internalResult.set(destination, nonUniqueSentinel);
         }
     }
 

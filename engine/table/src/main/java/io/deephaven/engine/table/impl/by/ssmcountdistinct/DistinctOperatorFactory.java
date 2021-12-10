@@ -120,61 +120,61 @@ public interface DistinctOperatorFactory {
      * @return an appropriate operator.
      */
     static IterativeChunkedAggregationOperator createUnique(Class<?> type, String resultName, boolean countNulls,
-                                                            Object onlyNullsValue, Object nonUniqueValue,
+                                                            Object onlyNullsSentinel, Object nonUniqueSentinel,
                                                             boolean exposeInternal, boolean isRollup) {
-        checkType(resultName, "Only Nulls Value", type, onlyNullsValue);
-        checkType(resultName, "Non Unique Value", type, nonUniqueValue);
+        checkType(resultName, "Only Nulls Sentinel", type, onlyNullsSentinel);
+        checkType(resultName, "Non Unique Sentinel", type, nonUniqueSentinel);
 
         if (type == Byte.class || type == byte.class) {
-            final byte onvAsType = (onlyNullsValue == null) ? NULL_BYTE : ((Number) onlyNullsValue).byteValue();
-            final byte nuvAsType = (nonUniqueValue == null) ? NULL_BYTE : ((Number) nonUniqueValue).byteValue();
-            return isRollup ? new ByteRollupUniqueOperator(resultName, countNulls, onvAsType, nuvAsType)
-                    : new ByteChunkedUniqueOperator(resultName, countNulls, exposeInternal, onvAsType, nuvAsType);
+            final byte onsAsType = (onlyNullsSentinel == null) ? NULL_BYTE : ((Number) onlyNullsSentinel).byteValue();
+            final byte nusAsType = (nonUniqueSentinel == null) ? NULL_BYTE : ((Number) nonUniqueSentinel).byteValue();
+            return isRollup ? new ByteRollupUniqueOperator(resultName, countNulls, onsAsType, nusAsType)
+                    : new ByteChunkedUniqueOperator(resultName, countNulls, exposeInternal, onsAsType, nusAsType);
         } else if (type == Character.class || type == char.class) {
             return isRollup
                     ? new CharRollupUniqueOperator(resultName, countNulls,
-                            io.deephaven.util.type.TypeUtils.unbox((Character) onlyNullsValue),
-                            io.deephaven.util.type.TypeUtils.unbox((Character) nonUniqueValue))
+                            io.deephaven.util.type.TypeUtils.unbox((Character) onlyNullsSentinel),
+                            io.deephaven.util.type.TypeUtils.unbox((Character) nonUniqueSentinel))
                     : new CharChunkedUniqueOperator(resultName, countNulls, exposeInternal,
-                            io.deephaven.util.type.TypeUtils.unbox((Character) onlyNullsValue),
-                            io.deephaven.util.type.TypeUtils.unbox((Character) nonUniqueValue));
+                            io.deephaven.util.type.TypeUtils.unbox((Character) onlyNullsSentinel),
+                            io.deephaven.util.type.TypeUtils.unbox((Character) nonUniqueSentinel));
         } else if (type == Double.class || type == double.class) {
-            final double onvAsType = (onlyNullsValue == null) ? NULL_DOUBLE : ((Number) onlyNullsValue).doubleValue();
-            final double nuvAsType = (nonUniqueValue == null) ? NULL_DOUBLE : ((Number) nonUniqueValue).doubleValue();
-            return isRollup ? new DoubleRollupUniqueOperator(resultName, countNulls, onvAsType, nuvAsType)
-                    : new DoubleChunkedUniqueOperator(resultName, countNulls, exposeInternal, onvAsType, nuvAsType);
+            final double onsAsType = (onlyNullsSentinel == null) ? NULL_DOUBLE : ((Number) onlyNullsSentinel).doubleValue();
+            final double nusAsType = (nonUniqueSentinel == null) ? NULL_DOUBLE : ((Number) nonUniqueSentinel).doubleValue();
+            return isRollup ? new DoubleRollupUniqueOperator(resultName, countNulls, onsAsType, nusAsType)
+                    : new DoubleChunkedUniqueOperator(resultName, countNulls, exposeInternal, onsAsType, nusAsType);
         } else if (type == Float.class || type == float.class) {
-            final float onvAsType = (onlyNullsValue == null) ? NULL_FLOAT : ((Number) onlyNullsValue).floatValue();
-            final float nuvAsType = (nonUniqueValue == null) ? NULL_FLOAT : ((Number) nonUniqueValue).floatValue();
-            return isRollup ? new FloatRollupUniqueOperator(resultName, countNulls, onvAsType, nuvAsType)
-                    : new FloatChunkedUniqueOperator(resultName, countNulls, exposeInternal, onvAsType, nuvAsType);
+            final float onsAsType = (onlyNullsSentinel == null) ? NULL_FLOAT : ((Number) onlyNullsSentinel).floatValue();
+            final float nusAsType = (nonUniqueSentinel == null) ? NULL_FLOAT : ((Number) nonUniqueSentinel).floatValue();
+            return isRollup ? new FloatRollupUniqueOperator(resultName, countNulls, onsAsType, nusAsType)
+                    : new FloatChunkedUniqueOperator(resultName, countNulls, exposeInternal, onsAsType, nusAsType);
         } else if (type == Integer.class || type == int.class) {
-            final int onvAsType = (onlyNullsValue == null) ? NULL_INT : ((Number) onlyNullsValue).intValue();
-            final int nuvAsType = (nonUniqueValue == null) ? NULL_INT : ((Number) nonUniqueValue).intValue();
-            return isRollup ? new IntRollupUniqueOperator(resultName, countNulls, onvAsType, nuvAsType)
-                    : new IntChunkedUniqueOperator(resultName, countNulls, exposeInternal, onvAsType, nuvAsType);
+            final int onsAsType = (onlyNullsSentinel == null) ? NULL_INT : ((Number) onlyNullsSentinel).intValue();
+            final int nusAsType = (nonUniqueSentinel == null) ? NULL_INT : ((Number) nonUniqueSentinel).intValue();
+            return isRollup ? new IntRollupUniqueOperator(resultName, countNulls, onsAsType, nusAsType)
+                    : new IntChunkedUniqueOperator(resultName, countNulls, exposeInternal, onsAsType, nusAsType);
         } else if (type == Long.class || type == long.class || type == DateTime.class) {
-            final long onvAsType;
-            final long nuvAsType;
+            final long onsAsType;
+            final long nusAsType;
             if (type == DateTime.class) {
-                onvAsType = (onlyNullsValue == null) ? NULL_LONG : ((DateTime) onlyNullsValue).getNanos();
-                nuvAsType = (nonUniqueValue == null) ? NULL_LONG : ((DateTime) nonUniqueValue).getNanos();
+                onsAsType = (onlyNullsSentinel == null) ? NULL_LONG : ((DateTime) onlyNullsSentinel).getNanos();
+                nusAsType = (nonUniqueSentinel == null) ? NULL_LONG : ((DateTime) nonUniqueSentinel).getNanos();
             } else {
-                onvAsType = (onlyNullsValue == null) ? NULL_LONG : ((Number) onlyNullsValue).longValue();
-                nuvAsType = (nonUniqueValue == null) ? NULL_LONG : ((Number) nonUniqueValue).longValue();
+                onsAsType = (onlyNullsSentinel == null) ? NULL_LONG : ((Number) onlyNullsSentinel).longValue();
+                nusAsType = (nonUniqueSentinel == null) ? NULL_LONG : ((Number) nonUniqueSentinel).longValue();
             }
 
-            return isRollup ? new LongRollupUniqueOperator(type, resultName, countNulls, onvAsType, nuvAsType)
-                    : new LongChunkedUniqueOperator(type, resultName, countNulls, exposeInternal, onvAsType, nuvAsType);
+            return isRollup ? new LongRollupUniqueOperator(type, resultName, countNulls, onsAsType, nusAsType)
+                    : new LongChunkedUniqueOperator(type, resultName, countNulls, exposeInternal, onsAsType, nusAsType);
         } else if (type == Short.class || type == short.class) {
-            final short onvAsType = (onlyNullsValue == null) ? NULL_SHORT : ((Number) onlyNullsValue).shortValue();
-            final short nuvAsType = (nonUniqueValue == null) ? NULL_SHORT : ((Number) nonUniqueValue).shortValue();
-            return isRollup ? new ShortRollupUniqueOperator(resultName, countNulls, onvAsType, nuvAsType)
-                    : new ShortChunkedUniqueOperator(resultName, countNulls, exposeInternal, onvAsType, nuvAsType);
+            final short onsAsType = (onlyNullsSentinel == null) ? NULL_SHORT : ((Number) onlyNullsSentinel).shortValue();
+            final short nusAsType = (nonUniqueSentinel == null) ? NULL_SHORT : ((Number) nonUniqueSentinel).shortValue();
+            return isRollup ? new ShortRollupUniqueOperator(resultName, countNulls, onsAsType, nusAsType)
+                    : new ShortChunkedUniqueOperator(resultName, countNulls, exposeInternal, onsAsType, nusAsType);
         } else {
-            return isRollup ? new ObjectRollupUniqueOperator(type, resultName, countNulls, onlyNullsValue, nonUniqueValue)
-                    : new ObjectChunkedUniqueOperator(type, resultName, countNulls, exposeInternal, onlyNullsValue,
-                            nonUniqueValue);
+            return isRollup ? new ObjectRollupUniqueOperator(type, resultName, countNulls, onlyNullsSentinel, nonUniqueSentinel)
+                    : new ObjectChunkedUniqueOperator(type, resultName, countNulls, exposeInternal, onlyNullsSentinel,
+                            nonUniqueSentinel);
         }
     }
 

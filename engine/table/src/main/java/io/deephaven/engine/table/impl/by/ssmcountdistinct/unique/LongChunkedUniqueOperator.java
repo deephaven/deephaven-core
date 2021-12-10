@@ -57,19 +57,19 @@ public class LongChunkedUniqueOperator implements IterativeChunkedAggregationOpe
     private final LongSsmBackedSource ssms;
     private final LongArraySource internalResult;
     private final ColumnSource<?> externalResult;
-    private final long noValueKey;
-    private final long nonUniqueKey;
+    private final long onlyNullsSentinel;
+    private final long nonUniqueSentinel;
 
     public LongChunkedUniqueOperator(
             // region Constructor
             Class<?> type,
             // endregion Constructor
-            String name, boolean countNulls, boolean exposeInternal, long noValueKey, long nonUniqueKey) {
+            String name, boolean countNulls, boolean exposeInternal, long onlyNullsSentinel, long nonUniqueSentinel) {
         this.name = name;
         this.countNull = countNulls;
         this.exposeInternal = exposeInternal;
-        this.noValueKey = noValueKey;
-        this.nonUniqueKey = nonUniqueKey;
+        this.onlyNullsSentinel = onlyNullsSentinel;
+        this.nonUniqueSentinel = nonUniqueSentinel;
 
         // region SsmCreation
         this.ssms = new LongSsmBackedSource();
@@ -328,12 +328,12 @@ public class LongChunkedUniqueOperator implements IterativeChunkedAggregationOpe
     private boolean setResult(LongSegmentedSortedMultiset ssm, long destination) {
         final boolean resultChanged;
         if(ssm.isEmpty()) {
-            resultChanged = internalResult.getAndSetUnsafe(destination, noValueKey) != noValueKey;
+            resultChanged = internalResult.getAndSetUnsafe(destination, onlyNullsSentinel) != onlyNullsSentinel;
         } else if(ssm.size() == 1) {
             final long newValue = ssm.get(0);
             resultChanged = internalResult.getAndSetUnsafe(destination, newValue) != newValue;
         } else {
-            resultChanged = internalResult.getAndSetUnsafe(destination, nonUniqueKey) != nonUniqueKey;
+            resultChanged = internalResult.getAndSetUnsafe(destination, nonUniqueSentinel) != nonUniqueSentinel;
         }
 
         return resultChanged || (exposeInternal && (ssm.getAddedSize() > 0 || ssm.getRemovedSize() > 0));

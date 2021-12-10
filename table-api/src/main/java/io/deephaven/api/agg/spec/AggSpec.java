@@ -118,12 +118,8 @@ public interface AggSpec {
         return AggSpecUnique.of();
     }
 
-    static AggSpecUnique unique(boolean includeNulls) {
-        return AggSpecUnique.of(includeNulls);
-    }
-
-    static AggSpecUnique unique(boolean includeNulls, Object onlyNullsValue, Object nonUniqueValue) {
-        return AggSpecUnique.of(includeNulls, onlyNullsValue, nonUniqueValue);
+    static AggSpecUnique unique(boolean includeNulls, Object nonUniqueSentinel) {
+        return AggSpecUnique.of(includeNulls, nonUniqueSentinel);
     }
 
     static AggSpecVar var() {

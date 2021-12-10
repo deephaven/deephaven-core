@@ -58,7 +58,7 @@ public class BarrageTable extends QueryTable implements BarrageMessage.Listener,
 
     /** the capacity that the destSources been set to */
     private int capacity = 0;
-    /** the reinterpretted destination writable sources */
+    /** the reinterpreted destination writable sources */
     private final WritableColumnSource<?>[] destSources;
     /** we compact the parent table's key-space and instead redirect; ideal for viewport */
     private final WritableRowRedirection rowRedirection;

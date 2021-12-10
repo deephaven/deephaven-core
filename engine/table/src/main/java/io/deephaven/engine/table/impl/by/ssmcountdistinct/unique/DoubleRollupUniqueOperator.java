@@ -50,8 +50,8 @@ public class DoubleRollupUniqueOperator implements IterativeChunkedAggregationOp
     private final ColumnSource<?> externalResult;
     private final Supplier<SegmentedSortedMultiSet.RemoveContext> removeContextFactory;
     private final boolean countNull;
-    private final double noValueKey;
-    private final double nonUniqueKey;
+    private final double onlyNullsSentinel;
+    private final double nonUniqueSentinel;
 
     private UpdateCommitter<DoubleRollupUniqueOperator> prevFlusher = null;
     private WritableRowSet touchedStates;
@@ -61,12 +61,12 @@ public class DoubleRollupUniqueOperator implements IterativeChunkedAggregationOp
                                     // endregion Constructor
                                     String name,
                                     boolean countNulls,
-                                    double noValueKey,
-                                    double nonUniqueKey) {
+                                    double onlyNullsSentinel,
+                                    double nonUniqueSentinel) {
         this.name = name;
         this.countNull = countNulls;
-        this.nonUniqueKey = nonUniqueKey;
-        this.noValueKey = noValueKey;
+        this.nonUniqueSentinel = nonUniqueSentinel;
+        this.onlyNullsSentinel = onlyNullsSentinel;
         // region SsmCreation
         this.ssms = new DoubleSsmBackedSource();
         // endregion SsmCreation
@@ -546,11 +546,11 @@ public class DoubleRollupUniqueOperator implements IterativeChunkedAggregationOp
     //region Private Helpers
     private void updateResult(DoubleSegmentedSortedMultiset ssm, long destination) {
         if(ssm.isEmpty()) {
-            internalResult.set(destination, noValueKey);
+            internalResult.set(destination, onlyNullsSentinel);
         } else if(ssm.size() == 1) {
             internalResult.set(destination, ssm.get(0));
         } else {
-            internalResult.set(destination, nonUniqueKey);
+            internalResult.set(destination, nonUniqueSentinel);
         }
     }
 
