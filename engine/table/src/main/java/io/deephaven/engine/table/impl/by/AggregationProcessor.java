@@ -1,5 +1,6 @@
 package io.deephaven.engine.table.impl.by;
 
+import io.deephaven.api.ColumnName;
 import io.deephaven.api.SortColumn;
 import io.deephaven.api.agg.*;
 import io.deephaven.api.agg.spec.*;
@@ -16,11 +17,9 @@ import io.deephaven.engine.table.impl.sources.ReinterpretUtils;
 import io.deephaven.time.DateTime;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 import java.util.function.BiFunction;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static io.deephaven.datastructures.util.CollectionUtil.ZERO_LENGTH_STRING_ARRAY;
@@ -46,6 +45,14 @@ public class AggregationProcessor implements AggregationContextFactory {
 
     private AggregationProcessor(@NotNull final Collection<? extends Aggregation> aggregations) {
         this.aggregations = aggregations;
+        final String duplicationErrorMessage = AggregationOutputs.of(aggregations).
+                collect(Collectors.groupingBy(ColumnName::name, Collectors.counting())).
+                entrySet().stream().filter(kv -> kv.getValue() > 1).
+                map(kv -> kv.getKey() + " used " + kv.getValue() + " times").
+                collect(Collectors.joining(", "));
+        if (!duplicationErrorMessage.isBlank()) {
+            throw new IllegalArgumentException("Duplicate output columns found: " + duplicationErrorMessage);
+        }
     }
 
     // -----------------------------------------------------------------------------------------------------------------
