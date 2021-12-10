@@ -41,9 +41,9 @@ public final class AggregationOptimizer implements Aggregation.Visitor {
                     out.add(Count.of((ColumnName) pair));
                 }
             } else if (e.getValue().size() == 1) {
-                out.add(NormalAggregation.of((AggSpec) e.getKey(), e.getValue().get(0)));
+                out.add(ColumnAggregation.of((AggSpec) e.getKey(), e.getValue().get(0)));
             } else {
-                out.add(NormalAggregations.builder().spec((AggSpec) e.getKey()).addAllPairs(e.getValue()).build());
+                out.add(ColumnAggregations.builder().spec((AggSpec) e.getKey()).addAllPairs(e.getValue()).build());
             }
         }
         return out;
@@ -55,13 +55,13 @@ public final class AggregationOptimizer implements Aggregation.Visitor {
     }
 
     @Override
-    public void visit(NormalAggregation normalAgg) {
-        visitOrder.computeIfAbsent(normalAgg.spec(), k -> new ArrayList<>()).add(normalAgg.pair());
+    public void visit(ColumnAggregation columnAgg) {
+        visitOrder.computeIfAbsent(columnAgg.spec(), k -> new ArrayList<>()).add(columnAgg.pair());
     }
 
     @Override
-    public void visit(NormalAggregations normalAggs) {
-        visitOrder.computeIfAbsent(normalAggs.spec(), k -> new ArrayList<>())
-                .addAll(normalAggs.pairs());
+    public void visit(ColumnAggregations columnAggs) {
+        visitOrder.computeIfAbsent(columnAggs.spec(), k -> new ArrayList<>())
+                .addAll(columnAggs.pairs());
     }
 }

@@ -74,7 +74,7 @@ public class AggregationProcessor implements AggregationContextFactory {
         private final List<ChunkSource.WithPrev<Values>> inputSources = new ArrayList<>();
         private final List<AggregationContextTransformer> transformers = new ArrayList<>();
 
-        private List<Pair> resultPairs;
+        private List<Pair> resultPairs = List.of();
         private int trackedFirstOrLastIndex = -1;
         private boolean partitionFound = false; // TODO-RWC: Add rollup support
 
@@ -109,17 +109,17 @@ public class AggregationProcessor implements AggregationContextFactory {
         }
 
         @Override
-        public void visit(@NotNull final NormalAggregation normalAgg) {
-            resultPairs = List.of(normalAgg.pair());
-            normalAgg.spec().walk(this);
-            resultPairs = null;
+        public void visit(@NotNull final ColumnAggregation columnAgg) {
+            resultPairs = List.of(columnAgg.pair());
+            columnAgg.spec().walk(this);
+            resultPairs = List.of();
         }
 
         @Override
-        public void visit(@NotNull final NormalAggregations normalAggs) {
-            resultPairs = normalAggs.pairs();
-            normalAggs.spec().walk(this);
-            resultPairs = null;
+        public void visit(@NotNull final ColumnAggregations columnAggs) {
+            resultPairs = columnAggs.pairs();
+            columnAggs.spec().walk(this);
+            resultPairs = List.of();
         }
 
         // -------------------------------------------------------------------------------------------------------------

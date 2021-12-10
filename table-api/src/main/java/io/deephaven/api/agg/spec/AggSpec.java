@@ -3,14 +3,14 @@ package io.deephaven.api.agg.spec;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.SortColumn;
 import io.deephaven.api.agg.Aggregation;
-import io.deephaven.api.agg.NormalAggregation;
+import io.deephaven.api.agg.ColumnAggregation;
 import io.deephaven.api.agg.Pair;
 
 import java.util.Arrays;
 import java.util.Collection;
 
 /**
- * An aggregation specification represents the configurable options for aggregations.
+ * An aggregation specification represents the configurable options for column aggregations.
  */
 public interface AggSpec {
 
@@ -138,7 +138,7 @@ public interface AggSpec {
         return AggSpecWSum.of(ColumnName.of(weightColumn));
     }
 
-    NormalAggregation aggregation(Pair pair);
+    ColumnAggregation aggregation(Pair pair);
 
     Aggregation aggregation(Pair... pairs);
 

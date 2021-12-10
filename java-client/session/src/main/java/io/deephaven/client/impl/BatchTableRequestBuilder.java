@@ -12,9 +12,9 @@ import io.deephaven.api.SortColumn;
 import io.deephaven.api.SortColumn.Order;
 import io.deephaven.api.Strings;
 import io.deephaven.api.agg.Aggregation;
+import io.deephaven.api.agg.ColumnAggregation;
+import io.deephaven.api.agg.ColumnAggregations;
 import io.deephaven.api.agg.Count;
-import io.deephaven.api.agg.NormalAggregation;
-import io.deephaven.api.agg.NormalAggregations;
 import io.deephaven.api.agg.Pair;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.agg.spec.AggSpecAbsSum;
@@ -537,14 +537,14 @@ class BatchTableRequestBuilder {
         }
 
         @Override
-        public void visit(NormalAggregation normalAgg) {
-            out = normalAgg.spec()
-                    .walk(new AggregateAdapter(Collections.singletonList(normalAgg.pair()))).out();
+        public void visit(ColumnAggregation columnAgg) {
+            out = columnAgg.spec()
+                    .walk(new AggregateAdapter(Collections.singletonList(columnAgg.pair()))).out();
         }
 
         @Override
-        public void visit(NormalAggregations normalAggs) {
-            out = normalAggs.spec().walk(new AggregateAdapter(normalAggs.pairs())).out();
+        public void visit(ColumnAggregations columnAggs) {
+            out = columnAggs.spec().walk(new AggregateAdapter(columnAggs.pairs())).out();
         }
     }
 

@@ -8,15 +8,15 @@ import org.immutables.value.Value.Immutable;
 import java.util.List;
 
 /**
- * Normal aggregations is an {@link Aggregation} that is composed of a {@link #spec() spec} and multiple {@link #pairs()
- * pairs}.
+ * ColumnAggregations is an {@link Aggregation} that is composed of a {@link #spec() spec} and multiple input/output
+ * column {@link #pairs() pairs}.
  */
 @Immutable
 @BuildableStyle
-public abstract class NormalAggregations implements Aggregation {
+public abstract class ColumnAggregations implements Aggregation {
 
     public static Builder builder() {
-        return ImmutableNormalAggregations.builder();
+        return ImmutableColumnAggregations.builder();
     }
 
     public abstract AggSpec spec();
@@ -33,7 +33,7 @@ public abstract class NormalAggregations implements Aggregation {
     final void checkSize() {
         if (pairs().size() < 2) {
             throw new IllegalArgumentException(
-                    String.format("%s should have at least two pairs", NormalAggregations.class));
+                    String.format("%s should have at least two pairs", ColumnAggregations.class));
         }
     }
 
@@ -46,6 +46,6 @@ public abstract class NormalAggregations implements Aggregation {
 
         Builder addAllPairs(Iterable<? extends Pair> elements);
 
-        NormalAggregations build();
+        ColumnAggregations build();
     }
 }

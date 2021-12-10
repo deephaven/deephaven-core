@@ -31,12 +31,12 @@ public class AggregationOutputs implements Aggregation.Visitor {
     }
 
     @Override
-    public void visit(NormalAggregation normalAgg) {
-        out = Stream.of(normalAgg.pair().output());
+    public void visit(ColumnAggregation columnAgg) {
+        out = Stream.of(columnAgg.pair().output());
     }
 
     @Override
-    public void visit(NormalAggregations normalAggs) {
-        out = normalAggs.pairs().stream().map(Pair::output);
+    public void visit(ColumnAggregations columnAggs) {
+        out = columnAggs.pairs().stream().map(Pair::output);
     }
 }

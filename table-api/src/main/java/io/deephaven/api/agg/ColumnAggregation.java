@@ -6,14 +6,15 @@ import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Parameter;
 
 /**
- * A normal aggregation is an {@link Aggregation} that is composed of a {@link #spec() spec} and a {@link #pair() pair}.
+ * A ColumnAggregation is an {@link Aggregation} that is composed of a {@link #spec() spec} and a single input/output
+ * column {@link #pair() pair}.
  */
 @Immutable
 @SimpleStyle
-public abstract class NormalAggregation implements Aggregation {
+public abstract class ColumnAggregation implements Aggregation {
 
-    public static NormalAggregation of(AggSpec spec, Pair pair) {
-        return ImmutableNormalAggregation.of(spec, pair);
+    public static ColumnAggregation of(AggSpec spec, Pair pair) {
+        return ImmutableColumnAggregation.of(spec, pair);
     }
 
     @Parameter

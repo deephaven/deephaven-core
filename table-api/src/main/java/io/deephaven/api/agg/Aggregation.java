@@ -1,6 +1,6 @@
 package io.deephaven.api.agg;
 
-import io.deephaven.api.agg.NormalAggregations.Builder;
+import io.deephaven.api.agg.ColumnAggregations.Builder;
 import io.deephaven.api.agg.spec.AggSpec;
 import io.deephaven.api.agg.spec.AggSpecFormula;
 
@@ -12,20 +12,20 @@ import java.util.Collection;
  *
  * @see io.deephaven.api.TableOperations#aggBy(Collection, Collection)
  * @see Count
- * @see NormalAggregation
- * @see NormalAggregations
+ * @see ColumnAggregation
+ * @see ColumnAggregations
  */
 public interface Aggregation extends Serializable {
 
-    static NormalAggregation of(AggSpec spec, String pair) {
-        return NormalAggregation.of(spec, Pair.parse(pair));
+    static ColumnAggregation of(AggSpec spec, String pair) {
+        return ColumnAggregation.of(spec, Pair.parse(pair));
     }
 
     static Aggregation of(AggSpec spec, String... pairs) {
         if (pairs.length == 1) {
             return of(spec, pairs[0]);
         }
-        final Builder builder = NormalAggregations.builder().spec(spec);
+        final Builder builder = ColumnAggregations.builder().spec(spec);
         for (String pair : pairs) {
             builder.addPairs(Pair.parse(pair));
         }
@@ -153,8 +153,8 @@ public interface Aggregation extends Serializable {
     interface Visitor {
         void visit(Count count);
 
-        void visit(NormalAggregation normalAgg);
+        void visit(ColumnAggregation columnAgg);
 
-        void visit(NormalAggregations normalAggs);
+        void visit(ColumnAggregations columnAggs);
     }
 }
