@@ -39,7 +39,7 @@ class TableTestCase(BaseTestCase):
     def test_drop_columns(self):
         column_names = [f.name for f in self.test_table.columns]
         result_table = self.test_table.drop_columns(cols=column_names[:-1])
-        self.assertEquals(1, len(result_table.columns))
+        self.assertEqual(1, len(result_table.columns))
 
     def test_move_columns(self):
         column_names = [f.name for f in self.test_table.columns]

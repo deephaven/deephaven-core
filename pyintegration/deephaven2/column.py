@@ -6,9 +6,9 @@ from enum import Enum
 from typing import Sequence
 
 import jpy
-from deephaven2 import DHError
 
 import deephaven2.dtypes as dtypes
+from deephaven2 import DHError
 from deephaven2.dtypes import DType
 
 _JColumnHeader = jpy.get_type("io.deephaven.qst.column.header.ColumnHeader")

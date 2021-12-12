@@ -5,6 +5,9 @@
 from enum import Enum, auto
 import jpy
 
+_JQueryConstants = jpy.get_type("io.deephaven.util.QueryConstants")
+_JTimeZone = jpy.get_type("io.deephaven.time.TimeZone")
+
 
 class SortDirection(Enum):
     """An enum defining the sorting orders."""
@@ -15,8 +18,6 @@ class SortDirection(Enum):
 
 
 # Deephaven Special Null values for primitive types
-_JQueryConstants = jpy.get_type("io.deephaven.util.QueryConstants")
-
 NULL_BOOLEAN = _JQueryConstants.NULL_BOOLEAN
 """ Null boolean value. """
 NULL_CHAR = _JQueryConstants.NULL_CHAR
@@ -92,3 +93,56 @@ MAX_FINITE_DOUBLE = _JQueryConstants.MAX_FINITE_DOUBLE
 MIN_POS_DOUBLE = _JQueryConstants.MIN_POS_DOUBLE
 """ Minimum positive value of type double. """
 
+
+class TimeZone(Enum):
+    """ A Enum for known time zones. """
+    NY = _JTimeZone.TZ_NY
+    """ America/New_York """
+    ET = _JTimeZone.TZ_ET
+    """ America/New_York """
+    MN = _JTimeZone.TZ_MN
+    """ America/Chicago """
+    CT = _JTimeZone.TZ_CT
+    """ America/Chicago """
+    MT = _JTimeZone.TZ_MT
+    """ America/Denver """
+    PT = _JTimeZone.TZ_PT
+    """ America/Los_Angeles """
+    HI = _JTimeZone.TZ_HI
+    """ Pacific/Honolulu """
+    BT = _JTimeZone.TZ_BT
+    """ America/Sao_Paulo """
+    KR = _JTimeZone.TZ_KR
+    """ Asia/Seoul """
+    HK = _JTimeZone.TZ_HK
+    """ Asia/Hong_Kong """
+    JP = _JTimeZone.TZ_JP
+    """ Asia/Tokyo """
+    AT = _JTimeZone.TZ_AT
+    """ Canada/Atlantic """
+    NF = _JTimeZone.TZ_NF
+    """ Canada/Newfoundland """
+    AL = _JTimeZone.TZ_AL
+    """ America/Anchorage """
+    IN = _JTimeZone.TZ_IN
+    """ Asia/Kolkata """
+    CE = _JTimeZone.TZ_CE
+    """ Europe/Berlin """
+    SG = _JTimeZone.TZ_SG
+    """ Asia/Singapore """
+    LON = _JTimeZone.TZ_LON
+    """ Europe/London """
+    MOS = _JTimeZone.TZ_MOS
+    """ Europe/Moscow """
+    SHG = _JTimeZone.TZ_SHG
+    """ Asia/Shanghai """
+    CH = _JTimeZone.TZ_CH
+    """ Europe/Zurich """
+    NL = _JTimeZone.TZ_NL
+    """ Europe/Amsterdam """
+    TW = _JTimeZone.TZ_TW
+    """ Asia/Taipei """
+    SYD = _JTimeZone.TZ_SYD
+    """ Australia/Sydney """
+    UTC = _JTimeZone.TZ_UTC
+    """ UTC """

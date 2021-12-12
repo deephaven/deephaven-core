@@ -6,13 +6,13 @@ import math
 import time
 import unittest
 
-import jpy
 import numpy
 import numpy as np
 import pandas as pd
 
 from deephaven2 import dtypes
 from deephaven2.constants import *
+from deephaven2.dtypes import DateTime
 from tests.testbase import BaseTestCase
 
 
@@ -171,11 +171,12 @@ class DTypesTestCase(BaseTestCase):
         self.assertEqual(expected, py_array)
 
     def test_datetime(self):
-        dt1 = dtypes.DateTime(round(time.time()))
-        dt2 = dtypes.DateTime.j_type.now()
+        dt1 = DateTime(round(time.time()))
+        dt2 = DateTime.now()
         values = [dt1, dt2, None]
-        j_array = dtypes.DateTime.array_from(values)
-        self.assertEqual(values, [dt for dt in j_array])
+        j_array = DateTime.array_from(values)
+        p_list = [DateTime(dt) for dt in j_array]
+        self.assertTrue(all(x == y for x, y in zip(p_list, values)))
 
 
 if __name__ == '__main__':

@@ -1,20 +1,12 @@
 #
 #   Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
 #
-""" This module defines the data types supported by the Deephaven engine.
-
-Each data type is represented by a DType class which supports creating arrays of the same type and more.
-"""
 from __future__ import annotations
+from typing import Any, Sequence, Callable
 
-from typing import Iterable, Any, Tuple, Sequence, Callable
-
-import numpy as np
-import pandas as pd
 import jpy
 
 from deephaven2 import DHError
-from deephaven2.constants import *
 
 _JQstType = jpy.get_type("io.deephaven.qst.type.Type")
 _JTableTools = jpy.get_type("io.deephaven.engine.util.TableTools")
@@ -52,7 +44,10 @@ class DType:
         return self.j_name
 
     def __call__(self, *args, **kwargs):
-        return self.j_type(*args, **kwargs)
+        try:
+            return self.j_type(*args, **kwargs)
+        except Exception as e:
+            raise DHError(e, f"failed to create an instance of {self.j_name}") from e
 
     def array(self, size: int):
         """ Creates a Java array of the same data type of the specified size.
@@ -111,7 +106,6 @@ class CharDType(DType):
         return super().array_from(seq, remap)
 
 
-# region predefined types and aliases
 bool_ = DType(j_name="java.lang.Boolean", qst_type=_JQstType.booleanType())
 byte = DType(j_name="byte", qst_type=_JQstType.byteType(), is_primitive=True)
 int8 = byte
@@ -130,19 +124,5 @@ float64 = double
 string = DType(j_name="java.lang.String", qst_type=_JQstType.stringType())
 BigDecimal = DType(j_name="java.math.BigDecimal")
 StringSet = DType(j_name="io.deephaven.stringset.StringSet")
-DateTime = DType(j_name="io.deephaven.time.DateTime")
-Period = DType(j_name="io.deephaven.time.Period")
 PyObject = DType(j_name="org.jpy.PyObject")
 JObject = DType(j_name="java.lang.Object")
-
-
-# endregion
-
-def j_array_list(values: Iterable):
-    j_list = jpy.get_type("java.util.ArrayList")(len(values))
-    try:
-        for v in values:
-            j_list.add(v)
-        return j_list
-    except Exception as e:
-        raise DHError(e, "failed to create a Java ArrayList from the Python collection.") from e
