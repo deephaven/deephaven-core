@@ -44,7 +44,7 @@ static_table = newTable(
 ```python
 from deephaven.TableTools import timeTable
 import random
-updating_table = timeTable('00:00:00.400').updateView("Row = i", "Some_Int =  random.randint(0,100)").reverse()
+updating_table = timeTable('00:00:00.400').updateView("Row = i", "Some_Int = (int)random.randint(0,100)").reverse()
 ```
 
 

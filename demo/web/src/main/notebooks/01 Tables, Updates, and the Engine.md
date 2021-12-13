@@ -9,16 +9,16 @@ You can quickly see streaming data in a UI and do table operations, interactivel
 For example, you can listen to a Kafka stream of cryptocurrency trades sourced from their native exchanges (like the ones below, built using the [XChange library](https://github.com/knowm/XChange)).
 
 ```python
-from deephaven import KafkaTools as kt
+from deephaven import ConsumeKafka as ck
 
 def get_trades_stream():
-    return kt.consumeToTable(
+    return ck.consumeToTable(
         { 'bootstrap.servers' : 'demo-kafka.c.deephaven-oss.internal:9092',
           'schema.registry.url' : 'http://demo-kafka.c.deephaven-oss.internal:8081' },
         'io.deephaven.crypto.kafka.TradesTopic',
-        key = kt.IGNORE,
-        value = kt.avro('io.deephaven.crypto.kafka.TradesTopic-io.deephaven.crypto.Trade'),
-        offsets=kt.ALL_PARTITIONS_SEEK_TO_END,
+        key = ck.IGNORE,
+        value = ck.avro('io.deephaven.crypto.kafka.TradesTopic-io.deephaven.crypto.Trade'),
+        offsets=ck.ALL_PARTITIONS_SEEK_TO_END,
         table_type='append')
 
 trades_stream = get_trades_stream()
@@ -29,9 +29,6 @@ trades_stream = get_trades_stream()
 To keep the most recent ticks within view, you could sort the table descending by timestamp. Alternatively, you can reverse the table.
 
 ```python
-# Not doing this:
-# t = t.sortDescending("Timestamp")
-
 trades_stream = trades_stream.reverse()
 ```
 \
@@ -83,14 +80,18 @@ row_count_by_instrument = trades_stream_cleaner.countBy("Tot_Rows", "Instrument"
 Counts are informative, but often you'll be interested in other aggregations. The script below shows both how to [bin data by time](https://deephaven.io/core/docs/reference/cheat-sheets/datetime-cheat-sheet/#downsampling-temporal-data-via-time-binning) and to [do multiple aggregations](https://deephaven.io/core/docs/how-to-guides/combined-aggregations/).
 
 ```python
-from deephaven import ComboAggregateFactory as caf
+from deephaven import Aggregation as agg, as_list
+
+agg_list = as_list([
+    agg.AggCount("Trade_Count"),
+    agg.AggSum("Total_Size = Size"),
+    agg.AggAvg("Avg_Size = Size", "Avg_Price = Price"),
+    agg.AggMin("Low_Price = Price"),
+    agg.AggMax("High_Price = Price")
+])
+
 multi_agg = trades_stream_cleaner.updateView("TimeBin = upperBin(KafkaTimestamp, MINUTE)")\
-    .by(caf.AggCombo(
-        caf.AggCount("Trade_Count"),
-        caf.AggSum("Total_Size = Size"),
-        caf.AggAvg("Avg_Size = Size", "Avg_Price = Price"),
-        caf.AggMin("Low_Price = Price"),
-        caf.AggMax("High_Price = Price")),"TimeBin", "Instrument")\
+    .aggBy(agg_list, "TimeBin", "Instrument")\
     .sortDescending("TimeBin", "Trade_Count")\
     .formatColumnWhere("Instrument", "Instrument = `BTC/USD`", "CYAN")
 ```

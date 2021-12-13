@@ -12,16 +12,16 @@ Below you’ll do calculations and aggregations on stream and batch data using i
 First, hook up a Kafka stream. (This is the same script from the first notebook.) Our [how-to guide](https://deephaven.io/core/docs/how-to-guides/kafka-stream/) provides detail on the integration.
 
 ```python
-from deephaven import KafkaTools as kt
+from deephaven import ConsumeKafka as ck
 
 def get_trades_stream():
-    return kt.consumeToTable(
+    return ck.consumeToTable(
         { 'bootstrap.servers' : 'demo-kafka.c.deephaven-oss.internal:9092',
           'schema.registry.url' : 'http://demo-kafka.c.deephaven-oss.internal:8081' },
         'io.deephaven.crypto.kafka.TradesTopic',
-        key = kt.IGNORE,
-        value = kt.avro('io.deephaven.crypto.kafka.TradesTopic-io.deephaven.crypto.Trade'),
-        offsets=kt.ALL_PARTITIONS_SEEK_TO_END,
+        key = ck.IGNORE,
+        value = ck.avro('io.deephaven.crypto.kafka.TradesTopic-io.deephaven.crypto.Trade'),
+        offsets=ck.ALL_PARTITIONS_SEEK_TO_END,
         table_type='append')
 
 trades_stream = get_trades_stream()
@@ -64,8 +64,8 @@ Let's return to our crypto data.
 Read in a CSV of batch crypto data sourced on 09/22/2021.
 
 ```python
-from deephaven.TableTools import readCsv
-trades_batch_view = readCsv("/data/large/crypto/CryptoTrades_20210922.csv")
+from deephaven import read_csv
+trades_batch_view = read_csv("/data/large/crypto/CryptoTrades_20210922.csv")
 ```
 
 \
@@ -93,15 +93,26 @@ The following scripts will demonstrate much the same with two examples:
 
 ```python
 # the table decoration
-from deephaven.DBTimeUtils import formatDate
+from deephaven.DateTimeUtils import formatDate
 
 add_column_streaming = trades_stream_view.updateView("Date = formatDate(KafkaTimestamp, TZ_NY)")
 add_column_batch     = trades_batch_view .updateView("Date = formatDate(Timestamp, TZ_NY)")
 
 # the table aggregation
-from deephaven import ComboAggregateFactory as caf
-agg_streaming = add_column_streaming.by(caf.AggCombo(caf.AggFirst("Price"), caf.AggAvg("Avg_Price = Price")), "Date", "Exchange", "Instrument")
-agg_batch     = add_column_batch    .by(caf.AggCombo(caf.AggFirst("Price"), caf.AggAvg("Avg_Price = Price")), "Date", "Exchange", "Instrument")
+from deephaven import Aggregation as agg, as_list
+
+agg_list = as_list([
+    agg.AggFirst("Price"),
+    agg.AggAvg("Avg_Price = Price"),
+])
+
+agg_streaming = add_column_streaming.aggBy(
+    agg_list, "Date", "Exchange", "Instrument"
+)
+
+agg_batch = add_column_batch.aggBy(
+    agg_list, "Date", "Exchange", "Instrument"
+)
 ```
 
 \
