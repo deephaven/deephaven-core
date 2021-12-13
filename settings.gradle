@@ -249,8 +249,8 @@ project(':docker-server').projectDir = file('docker/server')
 include(':docker-server-slim')
 project(':docker-server-slim').projectDir = file('docker/server-slim')
 
-file("${rootDir}/docker/registry").list().each {name ->
-    if(file("${rootDir}/docker/registry/${name}/gradle.properties").exists()) {
+file("${rootDir}/docker/registry").list().each { name ->
+    if (file("${rootDir}/docker/registry/${name}/gradle.properties").exists()) {
         include(":docker-${name}")
         project(":docker-${name}").projectDir = file("${rootDir}/docker/registry/${name}")
     }
