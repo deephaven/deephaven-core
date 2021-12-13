@@ -495,7 +495,7 @@ tasks.register('smoke') {
     }
     it.dependsOn project(':grpc-api').tasks.findByName(LifecycleBasePlugin.CHECK_TASK_NAME)
     it.dependsOn project(':docker-server-slim').tasks.findByName('prepareDocker')
-    it.dependsOn project(':docker-server').tasks.findByName('prepareDocker-server')
+    it.dependsOn project(':docker-server').tasks.findByName('prepareDocker')
     it.dependsOn project(':web-client-ide').tasks.findByName('prepareDocker')
     it.dependsOn project(':Generators').tasks.findByName(LifecycleBasePlugin.CHECK_TASK_NAME)
 }
