@@ -57,7 +57,6 @@ include 'DHProcess'
 include 'proto:proto-backplane-grpc'
 include 'proto:proto-backplane-grpc-flight'
 include 'proto:raw-js-openapi'
-include 'protoc'
 
 // logger
 include 'log-factory'

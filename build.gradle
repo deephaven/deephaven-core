@@ -89,22 +89,22 @@ idea {
     }
 }
 
-project.version = '0.7.0'
+project.version = '0.8.0'
 ext.versionSource = versionSource
 ext.globalVersion = project.version
 
 Set<Project> modsAreBasic = subprojects.findAll {it.name in [
-        'deephaven-wheel',
-        'deephaven2-wheel',
-        'envoy',
-        'grpc-proxy',
-        'web-client-ui',
-        'protoc',
-        'pyclient',
-        'sphinx',
-        'docker-runtime-base',
-        'docker-server',
-        'docker-server-slim',
+    'deephaven-wheel',
+    'deephaven2-wheel',
+    'envoy',
+    'grpc-proxy',
+    'web-client-ui',
+    'pyclient',
+    'sphinx',
+    'docker-java-and-python',
+    'docker-runtime-base',
+    'docker-server',
+    'docker-server-slim',
 ] }
 
 Set<Project> modsAreBin = subprojects.findAll {it.name in ['bin', 'configs', 'test-configs'] }
