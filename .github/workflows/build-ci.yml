@@ -176,11 +176,12 @@ jobs:
         with:
           build-args: |
             BASE=deephaven/server-base:local-build
+            SERVER=server
             DEEPHAVEN_VERSION=${{ steps.deephaven_version.outputs.deephaven_version }}
           tags: ${{ steps.docker_meta_server.outputs.tags }}
           labels: ${{ steps.docker_meta_server.outputs.labels }}
           builder: ${{ steps.buildx.outputs.name }}
-          context: ./docker/server/build/server/context/
+          context: ./docker/server/build/context/
           push: ${{ github.event_name != 'pull_request' }}
 
       - name: Docker build server nltk
@@ -188,11 +189,12 @@ jobs:
         with:
           build-args: |
             BASE=deephaven/nltk-base:local-build
+            SERVER=server-nltk
             DEEPHAVEN_VERSION=${{ steps.deephaven_version.outputs.deephaven_version }}
           tags: ${{ steps.docker_meta_server_nltk.outputs.tags }}
           labels: ${{ steps.docker_meta_server_nltk.outputs.labels }}
           builder: ${{ steps.buildx.outputs.name }}
-          context: ./docker/server/build/server-nltk/context/
+          context: ./docker/server/build/context/
           push: ${{ github.event_name != 'pull_request' }}
 
       - name: Docker build server pytorch
@@ -200,11 +202,12 @@ jobs:
         with:
           build-args: |
             BASE=deephaven/pytorch-base:local-build
+            SERVER=server-pytorch
             DEEPHAVEN_VERSION=${{ steps.deephaven_version.outputs.deephaven_version }}
           tags: ${{ steps.docker_meta_server_pytorch.outputs.tags }}
           labels: ${{ steps.docker_meta_server_pytorch.outputs.labels }}
           builder: ${{ steps.buildx.outputs.name }}
-          context: ./docker/server/build/server-pytorch/context/
+          context: ./docker/server/build/context/
           push: ${{ github.event_name != 'pull_request' }}
 
       - name: Docker build server sklearn
@@ -212,11 +215,12 @@ jobs:
         with:
           build-args: |
             BASE=deephaven/sklearn-base:local-build
+            SERVER=server-sklearn
             DEEPHAVEN_VERSION=${{ steps.deephaven_version.outputs.deephaven_version }}
           tags: ${{ steps.docker_meta_server_sklearn.outputs.tags }}
           labels: ${{ steps.docker_meta_server_sklearn.outputs.labels }}
           builder: ${{ steps.buildx.outputs.name }}
-          context: ./docker/server/build/server-sklearn/context/
+          context: ./docker/server/build/context/
           push: ${{ github.event_name != 'pull_request' }}
 
       - name: Docker build server tensorflow
@@ -224,11 +228,12 @@ jobs:
         with:
           build-args: |
             BASE=deephaven/tensorflow-base:local-build
+            SERVER=server-tensorflow
             DEEPHAVEN_VERSION=${{ steps.deephaven_version.outputs.deephaven_version }}
           tags: ${{ steps.docker_meta_server_tensorflow.outputs.tags }}
           labels: ${{ steps.docker_meta_server_tensorflow.outputs.labels }}
           builder: ${{ steps.buildx.outputs.name }}
-          context: ./docker/server/build/server-tensorflow/context/
+          context: ./docker/server/build/context/
           push: ${{ github.event_name != 'pull_request' }}
 
       - name: Tag upstream images
