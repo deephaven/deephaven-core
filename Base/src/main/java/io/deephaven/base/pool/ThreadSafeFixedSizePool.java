@@ -38,12 +38,17 @@ public class ThreadSafeFixedSizePool<T> implements Pool<T> {
     protected final LockFreeArrayQueue<T> pool; // TODO: a stack would be nice here
     private final Procedure.Unary<T> clearingProcedure;
 
-    protected ThreadSafeFixedSizePool(int size, Procedure.Unary<T> clearingProcedure) {
-        this(size, null, clearingProcedure);
+    public ThreadSafeFixedSizePool(int size, Function.Nullary<T> factory,
+            Procedure.Unary<T> clearingProcedure) {
+        this(size, Require.neqNull(factory, "factory"), clearingProcedure, false);
     }
 
-    public ThreadSafeFixedSizePool(int size, @Nullable Function.Nullary<T> factory,
-            Procedure.Unary<T> clearingProcedure) {
+    protected ThreadSafeFixedSizePool(int size, Procedure.Unary<T> clearingProcedure) {
+        this(size, null, clearingProcedure, false);
+    }
+
+    private ThreadSafeFixedSizePool(int size, @Nullable Function.Nullary<T> factory,
+            Procedure.Unary<T> clearingProcedure, boolean dummy) {
         Require.geq(size, "size", MIN_SIZE, "MIN_SIZE");
         this.clearingProcedure = clearingProcedure;
         this.pool = new LockFreeArrayQueue<T>(MathUtil.ceilLog2(size + 2));
