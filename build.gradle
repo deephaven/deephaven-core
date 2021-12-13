@@ -92,12 +92,17 @@ idea {
 ext.versionSource = versionSource
 ext.globalVersion = "0.7.0"
 
-// To set fishlibVersion, go to project-local gradle.properties file
-// (or, use the gradle.properties in $USER_HOME/.gradle for a global override)
-// If you have fishlib open in IDE, also set includeFish=true to get the
-// intellij projects wired up across repositories.
-
-Set<Project> modsAreBasic = subprojects.findAll {it.name in ['deephaven-wheel', 'deephaven2-wheel', 'envoy', 'grpc-proxy', 'web-client-ui', 'pyclient', 'sphinx', 'docker-java-and-python', 'docker-runtime-base'] }
+Set<Project> modsAreBasic = subprojects.findAll {it.name in [
+    'deephaven-wheel',
+    'deephaven2-wheel',
+    'envoy',
+    'grpc-proxy',
+    'web-client-ui',
+    'pyclient',
+    'sphinx',
+    'docker-java-and-python',
+    'docker-runtime-base',
+] }
 
 Set<Project> modsAreBin = subprojects.findAll {it.name in ['bin', 'configs', 'test-configs'] }
 
