@@ -7,7 +7,8 @@ COPY licenses/ /
 # already satisfied via the base image. If that is not the case, we want the install to error out, and we'll need to
 # update the base image with the extra requirements before proceeding here.
 
-COPY requirements.txt requirements.txt
+ARG SERVER
+COPY $SERVER/requirements.txt requirements.txt
 RUN set -eux; \
     python3 -m pip install -q --no-index --no-cache-dir -r requirements.txt; \
     rm requirements.txt
