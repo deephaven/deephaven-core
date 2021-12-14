@@ -1,16 +1,24 @@
+import io.deephaven.tools.docker.Architecture
 import io.deephaven.tools.License
 
 plugins {
     id 'com.bmuschko.docker-remote-api'
 }
 
-def baseMap = [
-    'server-base': 'server',
-    'nltk-base': 'server-nltk',
-    'pytorch-base': 'server-pytorch',
-    'sklearn-base': 'server-sklearn',
-    'tensorflow-base': 'server-tensorflow',
+def hostArch = Architecture.fromHost()
+
+def baseMapAmd64 = [
+        'server-base': 'server',
+        'nltk-base': 'server-nltk',
+        'pytorch-base': 'server-pytorch',
+        'sklearn-base': 'server-sklearn',
+        'tensorflow-base': 'server-tensorflow',
 ]
+
+// Only the server image is supported on arm64
+def baseMapArm64 = baseMapAmd64.findAll { key, value -> value == 'server' }
+
+def baseMap = hostArch == Architecture.AMD64 ? baseMapAmd64 : baseMapArm64
 
 baseMap.keySet().each {base ->
     evaluationDependsOn Docker.registryProject(base)
@@ -49,11 +57,14 @@ def prepareDocker = project.tasks.register('prepareDocker', Sync) {
     // deephaven2.whl
     def deephaven2Wheel = project(':deephaven2-wheel').tasks.getByName('buildWheel')
 
-    from 'src/main/common'
+    from 'src/main/docker'
     baseMap.values().each { server ->
         from("src/main/${server}") {
             into server
         }
+    }
+    from ('src/main/arch') {
+        into 'arch'
     }
     from (deephavenJpyWheel.outputs.files) {
         into 'deephaven-jpy-wheel'
@@ -81,9 +92,9 @@ def buildDockerClosure = { String base, String server ->
         buildArgs.put('BASE', "deephaven/${base}:local-build")
         buildArgs.put('SERVER', server)
         buildArgs.put('DEEPHAVEN_VERSION', project.version)
+        buildArgs.put('TARGETARCH', hostArch.toString())
         images.add("deephaven/${server}:local-build")
     }
 }
 
 assemble.dependsOn baseMap.collect { base, server -> buildDockerClosure(base, server) }
-

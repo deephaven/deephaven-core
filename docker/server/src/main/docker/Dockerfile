@@ -29,13 +29,13 @@ RUN set -eux; \
     rm -r /deephaven2-wheel
 
 ARG DEEPHAVEN_VERSION
-
 ADD serverApplicationDist/server-${DEEPHAVEN_VERSION}.tar /opt/deephaven
 
 RUN set -eux; \
     ln -s /opt/deephaven/server-${DEEPHAVEN_VERSION} /opt/deephaven/server
 
-COPY image-bootstrap.properties image-bootstrap.properties
+ARG TARGETARCH
+COPY arch/${TARGETARCH}/image-bootstrap.properties image-bootstrap.properties
 
 FROM $BASE
 COPY --from=install / /
