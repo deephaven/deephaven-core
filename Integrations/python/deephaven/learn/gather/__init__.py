@@ -76,6 +76,8 @@ def convert_to_numpy_dtype(dtype):
         dtype = np.double
     elif dtype == int:
         dtype = np.intc
+    elif dtype == str:
+        dtype = np.str_
     else:
         raise ValueError(f"{dtype} is not a data type that can be converted to a NumPy dtype.")
     return dtype
@@ -109,6 +111,8 @@ def table_to_numpy_2d(row_set, col_set, order:MemoryLayout = MemoryLayout.ROW_MA
         buffer = _gatherer.tensorBuffer2DFloat(row_set, col_set, order.is_row_major)
     elif dtype == np.double:
         buffer = _gatherer.tensorBuffer2DDouble(row_set, col_set, order.is_row_major)
+    elif dtype == np.str_:
+        buffer = _gatherer.tensorBuffer2DString(row_set, col_set, order.is_row_major)
     else:
         raise ValueError(f"Data type {dtype} is not supported.")
 

@@ -667,4 +667,76 @@ public class NumPy {
         return tensor;
     }
 
+    public static String[] tensorBuffer2DString(final RowSequence rowSeq, final ColumnSource<?>[] columnSources,
+                                                boolean columnMajorOrder) {
+        if (columnMajorOrder) {
+            String[] tensor = tensorBuffer2DStringColumnMajor(rowSeq, columnSources);
+            return tensor;
+        } else {
+            String[] tensor = tensorBuffer2DStringRowMajor(rowSeq, columnSources);
+            return tensor;
+        }
+    }
+
+    private static String[] tensorBuffer2DStringColumnMajor(final RowSequence rowSeq, final ColumnSource<?>[] columnSources) {
+
+        final int nRows = rowSeq.intSize();
+        final int nCols = columnSources.length;
+        final String[] tensor = new String[nRows * nCols];
+
+        try (final ResettableWritableObjectChunk<String, ? extends Values> valueChunk =
+                     ResettableWritableObjectChunk.makeResettableChunk();
+             final SharedContext sharedContext = SharedContext.makeSharedContext()) {
+
+            for (int ci = 0; ci < nCols; ++ci) {
+                valueChunk.resetFromArray(tensor, ci * nRows, nRows);
+                final ColumnSource<?> colSrc = columnSources[ci];
+
+                try (final ChunkSource.FillContext fillContext = colSrc.makeFillContext(nRows, sharedContext)) {
+                    // noinspection unchecked
+                    colSrc.fillChunk(fillContext, valueChunk, rowSeq);
+                }
+            }
+        }
+
+        return tensor;
+
+    }
+
+    private static String[] tensorBuffer2DStringRowMajor(final RowSequence rowSeq,
+                                                         final ColumnSource<?>[] columnSources) {
+        final int nRows = rowSeq.intSize();
+        final int nCols = columnSources.length;
+        final String[] tensor = new String[nRows * nCols];
+
+        try (final SafeCloseableList toClose = new SafeCloseableList()) {
+            final RowSequence.Iterator rowKeys = toClose.add(rowSeq.getRowSequenceIterator());
+            final SharedContext inputSharedContext = toClose.add(SharedContext.makeSharedContext());
+            final ChunkSource.GetContext[] inputContexts = toClose.addArray(new ChunkSource.GetContext[nCols]);
+            for (int ci = 0; ci < nCols; ++ci) {
+                inputContexts[ci] = columnSources[ci].makeGetContext(COPY_CHUNK_SIZE, inputSharedContext);
+            }
+
+            // noinspection unchecked
+            final ObjectChunk<String, ? extends Values>[] inputColumnValues = new ObjectChunk[nCols];
+            int ti = 0;
+            while (rowKeys.hasMore()) {
+                final RowSequence sliceRowKeys = rowKeys.getNextRowSequenceWithLength(COPY_CHUNK_SIZE);
+                for (int ci = 0; ci < nCols; ++ci) {
+                    inputColumnValues[ci] = columnSources[ci].getChunk(inputContexts[ci], sliceRowKeys).asObjectChunk();
+                }
+
+                final int sliceChunkSize = sliceRowKeys.intSize();
+                for (int ri = 0; ri < sliceChunkSize; ++ri) {
+                    for (int ci = 0; ci < nCols; ++ci) {
+                        tensor[ti++] = inputColumnValues[ci].get(ri);
+                    }
+                }
+                inputSharedContext.reset();
+            }
+        }
+
+        return tensor;
+    }
+
 }
