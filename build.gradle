@@ -510,7 +510,6 @@ ext {
     depCommonsEmail = 'org.apache.commons:commons-email:1.4'
     depCommonsIo = 'commons-io:commons-io:2.5'
     depJdom2 = 'org.jdom:jdom2:2.0.6'
-    depLog4j = 'log4j:log4j:1.2.16'
     depTrove3 = 'net.sf.trove4j:trove4j:3.0.3'
 }
 

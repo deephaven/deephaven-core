@@ -19,7 +19,6 @@ def jvm_init(devroot=None,
              userHome=None,
              keyfile=None,
              librarypath=None,
-             log4jconffile=None,
              workerHeapGB=12,
              jvmHeapGB=2,
              jvmOptions=None,
@@ -33,7 +32,6 @@ def jvm_init(devroot=None,
     :param userHome: User's home directory
     :param keyfile: path to private key file for Deephaven user authentication
     :param librarypath: Java library path
-    :param log4jconffile: Log4j config file
     :param workerHeapGB: desired worker heap in GB
     :param jvmHeapGB: Desired jvm heap in GB
     :param jvmOptions: optional jvm options
@@ -85,9 +83,6 @@ def jvm_init(devroot=None,
     if not os.path.isfile(keyfile):
         raise Exception("dh.init: keyfile={} does not exist.".format(keyfile))
 
-    if log4jconffile is None and userHome is not None:
-        log4jconffile = os.path.join(userHome, "log4j.xml")
-
     # setup environment
     jProperties = {
         'workspace': workspace,
@@ -101,9 +96,6 @@ def jvm_init(devroot=None,
 
     if librarypath is not None:
         jProperties['java.library.path'] = librarypath
-
-    if os.path.isfile(log4jconffile):
-        jProperties['log4j.configuration'] = 'file:{}'.format(log4jconffile)
 
     if verbose:
         print("JVM properties...\n{}".format(jProperties))
