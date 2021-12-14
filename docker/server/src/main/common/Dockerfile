@@ -43,3 +43,13 @@ VOLUME /data
 VOLUME /cache
 HEALTHCHECK --interval=3s --retries=3 --timeout=11s CMD /bin/grpc_health_probe -addr=localhost:8080 -connect-timeout=10s || exit 1
 ENTRYPOINT [ "/opt/deephaven/server/bin/start", "image-bootstrap.properties" ]
+ARG DEEPHAVEN_VERSION
+ARG SERVER
+LABEL \
+    io.deephaven.image.type="server" \
+    io.deephaven.server.flavor="${SERVER}" \
+    io.deephaven.version="${DEEPHAVEN_VERSION}" \
+    org.opencontainers.image.vendor="Deephaven Data Labs" \
+    org.opencontainers.image.title="Deephaven Server - ${SERVER}" \
+    org.opencontainers.image.description="Deephaven Community Core Server - ${SERVER}" \
+    org.opencontainers.image.licenses="Deephaven Community License Agreement 1.0"

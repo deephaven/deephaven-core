@@ -13,3 +13,11 @@ COPY nginx.conf /etc/nginx/
 COPY 99-init-notebooks.sh /docker-entrypoint.d
 
 VOLUME /tmp
+ARG DEEPHAVEN_VERSION
+LABEL \
+    io.deephaven.image.type="web" \
+    io.deephaven.version="${DEEPHAVEN_VERSION}" \
+    org.opencontainers.image.vendor="Deephaven Data Labs" \
+    org.opencontainers.image.title="Deephaven Web" \
+    org.opencontainers.image.description="Deephaven web" \
+    org.opencontainers.image.licenses="Deephaven Community License Agreement 1.0"

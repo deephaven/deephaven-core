@@ -52,6 +52,6 @@ def prepareDocker = project.tasks.register('prepareDocker', Sync) {
 Docker.registerDockerImage(project, 'buildDocker') {
     inputs.files([prepareDocker.get(), dhide, jsOut].each { t -> t.outputs.files })
     inputs.files Docker.registryFiles(project, 'nginx-base')
-    //buildArgs.put('DEEPHAVEN_VERSION', "${project.version}")
+    buildArgs.put('DEEPHAVEN_VERSION', project.version)
     images.add('deephaven/web:local-build')
 }
