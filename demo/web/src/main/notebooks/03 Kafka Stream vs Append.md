@@ -14,10 +14,10 @@ That decision can impact memory usage. The code below illustrates the difference
 \
 \
 Start by importing some requisite packages. There is documentation on [installing Python packages](https://deephaven.io/core/docs/how-to-guides/install-python-packages/),
-[ComboAggregateFactory](https://deephaven.io/core/docs/reference/table-operations/group-and-aggregate/AggCombo/), [emptyTable](https://deephaven.io/core/docs/how-to-guides/empty-table/#related-documentation), and [merge](https://deephaven.io/core/docs/how-to-guides/merge-tables/#merge-tables).
+[aggBy](https://deephaven.io/core/docs/reference/table-operations/group-and-aggregate/aggBy/), [emptyTable](https://deephaven.io/core/docs/how-to-guides/empty-table/#related-documentation), and [merge](https://deephaven.io/core/docs/how-to-guides/merge-tables/#merge-tables).
 
 ```python
-from deephaven import ConsumeKafka as ck, Aggregation as agg, combo_agg
+from deephaven import ConsumeKafka as ck, Aggregation as agg, as_list
 from deephaven.TableTools import emptyTable, merge
 ```
 
@@ -96,11 +96,11 @@ print(offset_variable)
 \
 \
 The goal is to show that **_aggregations will be identical_** whether the Kafka-sourced table is an appending or streaming one.
-Define a [table aggregation function](https://deephaven.io/core/docs/reference/table-operations/group-and-aggregate/AggCombo/).
+Define a [table aggregation function](https://deephaven.io/core/docs/reference/table-operations/group-and-aggregate/aggBy/).
 
 ```python
 def trades_agg(table):
-    agg_list = combo_agg([
+    agg_list = as_list([
         agg.AggCount("Trade_Count"),
         agg.AggSum("Total_Size = Size"),
     ])
