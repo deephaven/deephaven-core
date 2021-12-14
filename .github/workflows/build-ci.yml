@@ -48,7 +48,7 @@ jobs:
         id: docker_meta_server
         uses: docker/metadata-action@v3
         with:
-          # grpc-api deprecated
+          # TODO(deephaven-core#1691): Remove deephaven/grpc-api image name
           images: |
             ghcr.io/${{ github.repository_owner }}/server
             ghcr.io/${{ github.repository_owner }}/grpc-api
@@ -139,6 +139,25 @@ jobs:
             org.opencontainers.image.vendor=Deephaven Data Labs
             org.opencontainers.image.title=Deephaven Core - TensorFlow
             org.opencontainers.image.description=Deephaven Core - TensorFlow extension
+            org.opencontainers.image.licenses=Deephaven Community License Agreement 1.0
+
+      - name: Docker meta server slim
+        id: docker_meta_server_slim
+        uses: docker/metadata-action@v3
+        with:
+          images: |
+            ghcr.io/${{ github.repository_owner }}/server-slim
+          flavor: |
+            latest=false
+          tags: |
+            type=edge,branch=main
+            type=raw,priority=950,enable=${{ startsWith(github.ref, 'refs/heads/release/v') }},value=${{ steps.semver.outputs.semver }}
+            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.8') }},value=latest
+            type=ref,event=branch
+          labels: |
+            org.opencontainers.image.vendor=Deephaven Data Labs
+            org.opencontainers.image.title=Deephaven Core - slim
+            org.opencontainers.image.description=Deephaven Core - slim
             org.opencontainers.image.licenses=Deephaven Community License Agreement 1.0
 
       - name: Set up Docker Buildx
@@ -234,6 +253,18 @@ jobs:
           labels: ${{ steps.docker_meta_server_tensorflow.outputs.labels }}
           builder: ${{ steps.buildx.outputs.name }}
           context: ./docker/server/build/context/
+          push: ${{ github.event_name != 'pull_request' }}
+
+      # Note: server-slim does not need BASE/SERVER build-args like the other server images
+      - name: Docker build server slim
+        uses: docker/build-push-action@v2
+        with:
+          build-args: |
+            DEEPHAVEN_VERSION=${{ steps.deephaven_version.outputs.deephaven_version }}
+          tags: ${{ steps.docker_meta_server_slim.outputs.tags }}
+          labels: ${{ steps.docker_meta_server_slim.outputs.labels }}
+          builder: ${{ steps.buildx.outputs.name }}
+          context: ./docker/server-slim/build/context/
           push: ${{ github.event_name != 'pull_request' }}
 
       - name: Tag upstream images
