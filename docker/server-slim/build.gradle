@@ -1,0 +1,41 @@
+import io.deephaven.tools.License
+
+plugins {
+    id 'com.bmuschko.docker-remote-api'
+    id 'base'
+}
+
+evaluationDependsOn Docker.registryProject('slim-base')
+
+configurations {
+    serverApplicationDist
+}
+
+dependencies {
+    serverApplicationDist project(path: ':grpc-api-server-native', configuration: 'applicationDist')
+}
+
+def dockerContext = project.layout.buildDirectory.dir('context')
+
+def dockerLicenses = License.createFrom(project).syncDockerLicense().get()
+
+def prepareDocker = project.tasks.register('prepareDocker', Sync) {
+    from 'src/main/docker'
+    from(configurations.serverApplicationDist) {
+        into 'serverApplicationDist'
+    }
+    from(dockerLicenses.outputs) {
+        into 'licenses'
+    }
+    into dockerContext
+}
+
+def buildDocker = Docker.registerDockerImage(project, 'buildDocker') {
+    dependsOn prepareDocker
+    inputDir.set dockerContext
+    inputs.files Docker.registryFiles(project, 'slim-base')
+    buildArgs.put('DEEPHAVEN_VERSION', project.version)
+    images.add('deephaven/server-slim:local-build')
+}
+
+assemble.dependsOn buildDocker

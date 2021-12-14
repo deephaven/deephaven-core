@@ -572,6 +572,16 @@ class Docker {
             dockerfile.from(imageId)
         }
 
+        project.tasks.register('createCraneTagScript', Sync) {
+            it.description = "Release task: Creates a crane tag script for '${imageName}'"
+            it.from("${project.rootDir}/buildSrc/src/crane/retag.sh")
+            it.into('build/crane')
+            it.expand([
+                imageId: imageId,
+                version: project.version
+            ])
+        }
+
         // Note: even though this is a "build" task, it's really a pull-if-absent + tag task.
         registerDockerImage(project, 'tagLocalBuild') { DockerBuildImage build ->
             def dockerFileTask = dockerfile.get()
