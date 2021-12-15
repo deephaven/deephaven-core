@@ -1,14 +1,20 @@
 package io.deephaven.jpy;
 
 import io.deephaven.jpy.JpyConfig.Flag;
+
+import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.Properties;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
 
 /**
@@ -130,42 +136,67 @@ public interface JpyConfigSource {
     /**
      * A system property based implementation of {@link JpyConfigSource}, using the suggested property names.
      */
-    enum SysProps implements JpyConfigSource {
-        INSTANCE;
+    static JpyConfigSource sysProps() {
+        return new FromProperties(System.getProperties());
+    }
+
+    /**
+     * Create the configuration based off of a python subprocess that introspects itself. The process will be executed
+     * based off of {@code pythonName}, which may be an absolute path, or will otherwise be sourced from the environment
+     * PATH.
+     *
+     * @param pythonName the python command
+     * @param timeout the timeout
+     * @return the jpy configuration, based on a python execution in the current environment
+     * @throws IOException if an IO exception occurs
+     * @throws InterruptedException if the current thread is interrupted while waiting for the command to execute
+     * @throws TimeoutException if the command times out
+     */
+    static JpyConfigSource fromSubprocess(String pythonName, Duration timeout)
+            throws IOException, InterruptedException, TimeoutException {
+        return new FromProperties(PropertiesFromSubprocess.properties(pythonName, timeout));
+    }
+
+    final class FromProperties implements JpyConfigSource {
+        private final Properties properties;
+
+        public FromProperties(Properties properties) {
+            this.properties = Objects.requireNonNull(properties);
+        }
 
         @Override
         public Optional<String> getFlags() {
-            return Optional.ofNullable(System.getProperty(JPY_FLAGS_PROP));
+            return Optional.ofNullable(properties.getProperty(JPY_FLAGS_PROP));
         }
 
         @Override
         public Optional<String> getExtraPaths() {
-            return Optional.ofNullable(System.getProperty(JPY_EXTRA_PATHS_PROP));
+            return Optional.ofNullable(properties.getProperty(JPY_EXTRA_PATHS_PROP));
         }
 
         @Override
         public Optional<String> getPythonHome() {
-            return Optional.ofNullable(System.getProperty(JPY_PY_HOME_PROP));
+            return Optional.ofNullable(properties.getProperty(JPY_PY_HOME_PROP));
         }
 
         @Override
         public Optional<String> getProgramName() {
-            return Optional.ofNullable(System.getProperty(JPY_PROGRAM_NAME_PROP));
+            return Optional.ofNullable(properties.getProperty(JPY_PROGRAM_NAME_PROP));
         }
 
         @Override
         public Optional<String> getPythonLib() {
-            return Optional.ofNullable(System.getProperty(JPY_PY_LIB_PROP));
+            return Optional.ofNullable(properties.getProperty(JPY_PY_LIB_PROP));
         }
 
         @Override
         public Optional<String> getJpyLib() {
-            return Optional.ofNullable(System.getProperty(JPY_JPY_LIB_PROP));
+            return Optional.ofNullable(properties.getProperty(JPY_JPY_LIB_PROP));
         }
 
         @Override
         public Optional<String> getJdlLib() {
-            return Optional.ofNullable(System.getProperty(JPY_JDL_LIB_PROP));
+            return Optional.ofNullable(properties.getProperty(JPY_JDL_LIB_PROP));
         }
     }
 }

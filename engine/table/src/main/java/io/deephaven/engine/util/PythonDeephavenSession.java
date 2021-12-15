@@ -32,6 +32,7 @@ import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -77,8 +78,14 @@ public class PythonDeephavenSession extends AbstractScriptSession implements Scr
             @Nullable final Listener listener, boolean runInitScripts, boolean isDefaultScriptSession)
             throws IOException {
         super(listener, isDefaultScriptSession);
-
-        JpyInit.init(log);
+        try {
+            JpyInit.init(log);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException(e);
+        } catch (TimeoutException e) {
+            throw new RuntimeException(e);
+        }
         PythonEvaluatorJpy jpy = PythonEvaluatorJpy.withGlobalCopy();
         evaluator = jpy;
         scope = jpy.getScope();

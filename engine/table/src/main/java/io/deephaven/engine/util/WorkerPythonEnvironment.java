@@ -12,6 +12,7 @@ import org.jpy.PyObject;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.concurrent.TimeoutException;
 
 /**
  * This class is the support infrastructure for running Python remote queries.
@@ -37,8 +38,16 @@ public enum WorkerPythonEnvironment {
      */
     WorkerPythonEnvironment() {
         log = ProcessEnvironment.getGlobalLog();
-
-        JpyInit.init(log);
+        try {
+            JpyInit.init(log);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException(e);
+        } catch (TimeoutException e) {
+            throw new RuntimeException(e);
+        }
         PythonEvaluatorJpy jpy = PythonEvaluatorJpy.withGlobalCopy();
         evaluator = jpy;
         scope = jpy.getScope();
