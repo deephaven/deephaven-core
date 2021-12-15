@@ -17,6 +17,7 @@ String[] mods = [ 'Util', 'Numerics', 'TableLogger', 'Plot',
         // new web projects; these modules are intended to form a complete, modular web application,
         // with heavy dependency isolation that should enable very fast rebuilds.
 String[] webMods = [
+        'web',
         'web-client-api', // compiled javascript api client
         'web-client-ide', // IDE-only additions to open-api javascript client
         'web-client-ui', // React IDE client app
@@ -244,6 +245,9 @@ project(':docker-runtime-base').projectDir = file('docker/runtime-base')
 
 include(':docker-server')
 project(':docker-server').projectDir = file('docker/server')
+
+include(':docker-web')
+project(':docker-web').projectDir = file('docker/web')
 
 include(':docker-server-slim')
 project(':docker-server-slim').projectDir = file('docker/server-slim')

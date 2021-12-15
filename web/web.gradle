@@ -1,0 +1,25 @@
+configurations {
+    js
+    jsJar {
+        transitive = false
+    }
+}
+
+archivesBaseName = "deephaven-web"
+
+dependencies {
+    js project(path: ':web-client-ui', configuration: 'js')
+    js project(path: ':web-client-ide', configuration: 'js')
+}
+
+/**
+ * Provides a jar full of static js/html/css that can be served from jetty
+ */
+def ideClientJsJar = tasks.register('ideClientJsJar', Jar) {
+    from configurations.js
+}
+
+artifacts {
+    jsJar ideClientJsJar
+    js layout.buildDirectory.dir('empty')
+}
