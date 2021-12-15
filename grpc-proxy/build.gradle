@@ -1,4 +1,5 @@
 import com.bmuschko.gradle.docker.tasks.image.DockerBuildImage
+import io.deephaven.tools.docker.Architecture
 import io.deephaven.tools.License
 
 plugins {
@@ -9,21 +10,27 @@ evaluationDependsOn Docker.registryProject('alpine')
 
 def dockerLicenses = License.createFrom(project).syncDockerLicense()
 
+def context = project.layout.buildDirectory.dir('docker')
+
 def prepareDocker = project.tasks.register('prepareDocker', Sync) {
     // TODO(deephaven-core#1596): Remove extra dependencies for build-ci.yml
     inputs.files Docker.registryFiles(project, 'alpine')
 
-    from 'Dockerfile'
-    from ('contents') {
+    from 'src/main/docker'
+    from('src/main/arch/') {
+        into 'arch'
+    }
+    from('src/main/common') {
         into 'contents'
     }
     from (dockerLicenses.get().outputs) {
         into 'contents'
     }
-    into 'build/docker'
+    into context
 }
 
 def buildDocker = Docker.registerDockerImage(project, 'buildDocker') {
+    inputDir.set context
     inputs.files prepareDocker.get().outputs.files
     inputs.files Docker.registryFiles(project, 'alpine')
     images.add('deephaven/grpc-proxy:local-build')
