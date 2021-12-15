@@ -22,7 +22,6 @@ String[] mods = [
         'python-engine-test',
         'Parquet',
         'server',
-        'grpc-web-socket',
         'table-api',
         'qst'
 ]
