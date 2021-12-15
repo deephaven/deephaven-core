@@ -168,7 +168,6 @@ jobs:
             SERVER=server
             DEEPHAVEN_VERSION=${{ steps.deephaven_version.outputs.deephaven_version }}
           tags: ${{ steps.docker_meta_server.outputs.tags }}
-          labels: ${{ steps.docker_meta_server.outputs.labels }}
           builder: ${{ steps.buildx.outputs.name }}
           context: ./docker/server/build/context/
           push: ${{ github.event_name != 'pull_request' }}
@@ -181,7 +180,6 @@ jobs:
             SERVER=server-nltk
             DEEPHAVEN_VERSION=${{ steps.deephaven_version.outputs.deephaven_version }}
           tags: ${{ steps.docker_meta_server_nltk.outputs.tags }}
-          labels: ${{ steps.docker_meta_server_nltk.outputs.labels }}
           builder: ${{ steps.buildx.outputs.name }}
           context: ./docker/server/build/context/
           push: ${{ github.event_name != 'pull_request' }}
@@ -194,7 +192,6 @@ jobs:
             SERVER=server-pytorch
             DEEPHAVEN_VERSION=${{ steps.deephaven_version.outputs.deephaven_version }}
           tags: ${{ steps.docker_meta_server_pytorch.outputs.tags }}
-          labels: ${{ steps.docker_meta_server_pytorch.outputs.labels }}
           builder: ${{ steps.buildx.outputs.name }}
           context: ./docker/server/build/context/
           push: ${{ github.event_name != 'pull_request' }}
@@ -207,7 +204,6 @@ jobs:
             SERVER=server-sklearn
             DEEPHAVEN_VERSION=${{ steps.deephaven_version.outputs.deephaven_version }}
           tags: ${{ steps.docker_meta_server_sklearn.outputs.tags }}
-          labels: ${{ steps.docker_meta_server_sklearn.outputs.labels }}
           builder: ${{ steps.buildx.outputs.name }}
           context: ./docker/server/build/context/
           push: ${{ github.event_name != 'pull_request' }}
@@ -220,7 +216,6 @@ jobs:
             SERVER=server-tensorflow
             DEEPHAVEN_VERSION=${{ steps.deephaven_version.outputs.deephaven_version }}
           tags: ${{ steps.docker_meta_server_tensorflow.outputs.tags }}
-          labels: ${{ steps.docker_meta_server_tensorflow.outputs.labels }}
           builder: ${{ steps.buildx.outputs.name }}
           context: ./docker/server/build/context/
           push: ${{ github.event_name != 'pull_request' }}
@@ -232,7 +227,6 @@ jobs:
           build-args: |
             DEEPHAVEN_VERSION=${{ steps.deephaven_version.outputs.deephaven_version }}
           tags: ${{ steps.docker_meta_server_slim.outputs.tags }}
-          labels: ${{ steps.docker_meta_server_slim.outputs.labels }}
           builder: ${{ steps.buildx.outputs.name }}
           context: ./docker/server-slim/build/context/
           push: ${{ github.event_name != 'pull_request' }}
@@ -329,7 +323,6 @@ jobs:
           build-args: |
             DEEPHAVEN_VERSION=${{ steps.deephaven_version.outputs.deephaven_version }}
           tags: ${{ steps.docker_meta.outputs.tags }}
-          labels: ${{ steps.docker_meta.outputs.labels }}
           builder: ${{ steps.buildx.outputs.name }}
           context: ./grpc-proxy/build/docker/
           push: ${{ github.event_name != 'pull_request' }}
@@ -415,7 +408,6 @@ jobs:
           build-args: |
             DEEPHAVEN_VERSION=${{ steps.deephaven_version.outputs.deephaven_version }}
           tags: ${{ steps.docker_meta.outputs.tags }}
-          labels: ${{ steps.docker_meta.outputs.labels }}
           builder: ${{ steps.buildx.outputs.name }}
           context: ./envoy/build/docker/
           push: ${{ github.event_name != 'pull_request' }}
@@ -505,7 +497,6 @@ jobs:
           build-args: |
             DEEPHAVEN_VERSION=${{ steps.deephaven_version.outputs.deephaven_version }}
           tags: ${{ steps.docker_meta.outputs.tags }}
-          labels: ${{ steps.docker_meta.outputs.labels }}
           builder: ${{ steps.buildx.outputs.name }}
           context: ./web/client-ide/build/docker/
           push: ${{ github.event_name != 'pull_request' }}
