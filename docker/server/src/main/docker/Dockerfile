@@ -35,6 +35,8 @@ RUN set -eux; \
     ln -s /opt/deephaven/server-${DEEPHAVEN_VERSION} /opt/deephaven/server
 
 COPY configure/ /configure
+
+# TODO(deephaven-core#1703): Native-compatible python startup improvements
 RUN set -eux; \
     cp /configure/image-bootstrap.properties image-bootstrap.properties; \
     python3 /configure/properties.py >> image-bootstrap.properties; \
