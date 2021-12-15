@@ -66,6 +66,9 @@ def prepareDocker = project.tasks.register('prepareDocker', Sync) {
     from ('src/main/arch') {
         into 'arch'
     }
+    from ('src/main/configure') {
+        into 'configure'
+    }
     from (deephavenJpyWheel.outputs.files) {
         into 'deephaven-jpy-wheel'
     }
