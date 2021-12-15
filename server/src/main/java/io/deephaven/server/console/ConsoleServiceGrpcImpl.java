@@ -471,7 +471,7 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                         .setMessage(record.getDataString())
                         .build();
                 synchronized (responseObserver) {
-                    // responseObserver.onNext(payload);
+                    responseObserver.onNext(payload);
                 }
             } catch (Throwable ignored) {
                 // we are ignoring exceptions here deliberately, and just shutting down
