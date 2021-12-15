@@ -33,7 +33,6 @@ def buildDocker = Docker.registerDockerImage(project, 'buildDocker') {
     inputDir.set context
     inputs.files prepareDocker.get().outputs.files
     inputs.files Docker.registryFiles(project, 'alpine')
-    buildArgs.put('TARGETARCH', Architecture.fromHost().toString())
     images.add('deephaven/grpc-proxy:local-build')
 }
 

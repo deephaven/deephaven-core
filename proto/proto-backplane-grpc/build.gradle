@@ -33,7 +33,11 @@ TaskProvider<Task> generateProtobuf = Docker.registerDockerTask(project, 'genera
       }
     }
   }
+
+  // protoc-base is only provided via linux/amd64
   parentContainers = [ Docker.registryTask(project, 'protoc-base') ]
+  platform = 'linux/amd64'
+
   containerOutPath = '/generated'
   imageName = 'deephaven/proto-backplane-grpc:local-build'
   copyOut {

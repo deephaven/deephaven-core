@@ -5,7 +5,7 @@ plugins {
     id 'com.bmuschko.docker-remote-api'
 }
 
-def hostArch = Architecture.fromHost()
+def targetArch = Architecture.targetArchitecture(project)
 
 def baseMapAmd64 = [
         'server-base': 'server',
@@ -18,7 +18,7 @@ def baseMapAmd64 = [
 // Only the server image is supported on arm64
 def baseMapArm64 = baseMapAmd64.findAll { key, value -> value == 'server' }
 
-def baseMap = hostArch == Architecture.AMD64 ? baseMapAmd64 : baseMapArm64
+def baseMap = targetArch == Architecture.AMD64 ? baseMapAmd64 : baseMapArm64
 
 baseMap.keySet().each {base ->
     evaluationDependsOn Docker.registryProject(base)
@@ -92,7 +92,6 @@ def buildDockerClosure = { String base, String server ->
         buildArgs.put('BASE', "deephaven/${base}:local-build")
         buildArgs.put('SERVER', server)
         buildArgs.put('DEEPHAVEN_VERSION', project.version)
-        buildArgs.put('TARGETARCH', hostArch.toString())
         images.add("deephaven/${server}:local-build")
     }
 }
