@@ -106,5 +106,5 @@ jar {
 }
 
 configurations {
-  testOutput.extendsFrom testRuntime
+  testOutput.extendsFrom testRuntimeClasspath
 }

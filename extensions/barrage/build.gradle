@@ -7,20 +7,20 @@ configurations {
     testCompile.extendsFrom irisDbTest
 }
 
-description = 'An extension integrating Barrage with Deephavens Table Model'
+description = 'An extension integrating Barrage with Deephaven\'s Table Model'
 
 dependencies {
-    api project(':Base')
-    api project(':Util')
+    implementation project(':Base')
+    implementation project(':Util')
     api project(':engine-table')
-    api project(':proto:proto-backplane-grpc-flight')
-    api project(':log-factory')
+    implementation project(':proto:proto-backplane-grpc-flight')
+    implementation project(':log-factory')
     api "io.deephaven.barrage:barrage-format:0.3.0"
 
-    Classpaths.inheritFlatbuffer(project, 'api')
+    Classpaths.inheritFlatbuffer(project, 'implementation')
 
-    Classpaths.inheritArrow(project, 'arrow-vector', 'api')
-    Classpaths.inheritArrow(project, 'arrow-format', 'api')
+    Classpaths.inheritArrow(project, 'arrow-vector', 'implementation')
+    Classpaths.inheritArrow(project, 'arrow-format', 'implementation')
 
     Classpaths.inheritImmutables(project)
 
