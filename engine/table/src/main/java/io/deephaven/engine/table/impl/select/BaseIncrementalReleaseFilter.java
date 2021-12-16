@@ -10,6 +10,8 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.time.DateTimeUtils;
+import io.deephaven.util.QueryConstants;
 
 import java.util.Collections;
 import java.util.List;
@@ -30,8 +32,24 @@ public abstract class BaseIncrementalReleaseFilter extends WhereFilterLivenessAr
 
     transient private boolean addedToUpdateGraphProcessor = false;
 
-    BaseIncrementalReleaseFilter(long initialSize) {
+    transient private volatile long firstReleaseNanos = QueryConstants.NULL_LONG;
+    transient private volatile long releaseAllNanos = QueryConstants.NULL_LONG;
+
+    /**
+     * Should we release entries during the UpdateGraphProcessor cycle?
+     */
+    transient private volatile boolean started;
+    transient private volatile boolean initialized = false;
+
+    /**
+     * Construct an incremental release filter.
+     *
+     * @param initialSize how many rows should be released in the initialized table before any updates
+     * @param started should updates proceed immediately
+     */
+    BaseIncrementalReleaseFilter(long initialSize, boolean started) {
         releasedSize = this.initialSize = initialSize;
+        this.started = started;
     }
 
     @Override
@@ -46,6 +64,14 @@ public abstract class BaseIncrementalReleaseFilter extends WhereFilterLivenessAr
 
     @Override
     public void init(TableDefinition tableDefinition) {
+        initialized = true;
+        if (!started) {
+            return;
+        }
+        addToUpdateGraphProcessor();
+    }
+
+    private void addToUpdateGraphProcessor() {
         if (!addedToUpdateGraphProcessor) {
             UpdateGraphProcessor.DEFAULT.addSource(this);
             addedToUpdateGraphProcessor = true;
@@ -69,12 +95,77 @@ public abstract class BaseIncrementalReleaseFilter extends WhereFilterLivenessAr
         if (fullSet.size() <= releasedSize) {
             onReleaseAll();
             releasedSize = fullSet.size();
+            UpdateGraphProcessor.DEFAULT.removeSource(this);
         }
 
         return fullSet.subSetByPositionRange(0, releasedSize).intersect(selection);
     }
 
-    void onReleaseAll() {}
+    /**
+     * Callback that is executed when all of our expected rows have been released.
+     */
+    void onReleaseAll() {
+        releaseAllNanos = DateTimeUtils.currentTime().getNanos();
+        if (firstReleaseNanos == QueryConstants.NULL_LONG) {
+            // there was no processing to do
+            firstReleaseNanos = releaseAllNanos;
+        }
+    }
+
+    /**
+     * Wait for all rows to be released.
+     */
+    public void waitForCompletion() throws InterruptedException {
+        if (UpdateGraphProcessor.DEFAULT.isRefreshThread()) {
+            throw new IllegalStateException("Can not wait for completion while on UpdateGraphProcessor refresh thread, updates would block.");
+        }
+        UpdateGraphProcessor.DEFAULT.exclusiveLock().doLocked(() -> {
+            while (releaseAllNanos == QueryConstants.NULL_LONG) {
+                // this only works because we will never actually filter out a row from the result; in the general
+                // WhereFilter case, the result table may not update.  We could await on the source table, but
+                listener.getTable().awaitUpdate();
+            }
+        });
+    }
+
+    /**
+     * Wait for all rows to be released.
+     */
+    public void waitForCompletion(long timeoutMillis) throws InterruptedException {
+        if (UpdateGraphProcessor.DEFAULT.isRefreshThread()) {
+            throw new IllegalStateException("Can not wait for completion while on UpdateGraphProcessor refresh thread, updates would block.");
+        }
+        final long end = System.currentTimeMillis() + timeoutMillis;
+        UpdateGraphProcessor.DEFAULT.exclusiveLock().doLocked(() -> {
+            while (releaseAllNanos == QueryConstants.NULL_LONG) {
+                // this only works because we will never actually filter out a row from the result; in the general
+                // WhereFilter case, the result table may not update.  We could await on the source table, but
+                final long remainingTimeout = Math.max(0, end - System.currentTimeMillis());
+                listener.getTable().awaitUpdate(remainingTimeout);
+            }
+        });
+    }
+
+    /**
+     * How many nanos between the first release event and the final release event?
+     * @return nano duration of this filter, or NULL_LONG if the filter is not completed
+     */
+    public long durationNanos() {
+        if (releaseAllNanos == QueryConstants.NULL_LONG || firstReleaseNanos == QueryConstants.NULL_LONG) {
+            return QueryConstants.NULL_LONG;
+        }
+        return releaseAllNanos - firstReleaseNanos;
+    }
+
+    /**
+     * Begin releasing rows during update propagation.
+     */
+    public void start() {
+        started = true;
+        if (initialized) {
+            addToUpdateGraphProcessor();
+        }
+    }
 
     public long getInitialSize() {
         return initialSize;
@@ -112,6 +203,12 @@ public abstract class BaseIncrementalReleaseFilter extends WhereFilterLivenessAr
 
     @Override
     public void run() {
+        if (!started) {
+            throw new IllegalStateException();
+        }
+        if (firstReleaseNanos == QueryConstants.NULL_LONG) {
+            firstReleaseNanos = DateTimeUtils.currentTime().getNanos();
+        }
         releaseMoreEntries = true;
         listener.requestRecompute();
     }

@@ -17,7 +17,7 @@ public class IncrementalReleaseFilter extends BaseIncrementalReleaseFilter {
      * @param sizeIncrement how many rows to release at the beginning of each UGP cycle.
      */
     public IncrementalReleaseFilter(long initialSize, long sizeIncrement) {
-        super(initialSize);
+        super(initialSize, true);
         this.sizeIncrement = sizeIncrement;
     }
 

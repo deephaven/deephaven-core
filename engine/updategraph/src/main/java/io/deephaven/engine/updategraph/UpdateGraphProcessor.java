@@ -617,13 +617,22 @@ public enum UpdateGraphProcessor implements UpdateSourceRegistrar, NotificationQ
     }
 
     /**
-     * Remove a collection of tables from the list of refreshing tables.
+     * Remove a collection of sources from the list of refreshing sources.
      *
-     * @implNote This will <i>not</i> set the tables as {@link DynamicNode#setRefreshing(boolean) non-refreshing}.
-     * @param tablesToRemove The tables to remove from the list of refreshing tables
+     * @implNote This will <i>not</i> set the sources as {@link DynamicNode#setRefreshing(boolean) non-refreshing}.
+     * @param sourcesToRemove The sources to remove from the list of refreshing sources
      */
-    public void removeTables(final Collection<Runnable> tablesToRemove) {
-        sources.removeAll(tablesToRemove);
+    public void removeSources(final Collection<Runnable> sourcesToRemove) {
+        sources.removeAll(sourcesToRemove);
+    }
+
+    /**
+     * Return the number of valid sources.
+     *
+     * @return the number of valid sources
+     */
+    public int sourceCount() {
+        return sources.size();
     }
 
     /**
