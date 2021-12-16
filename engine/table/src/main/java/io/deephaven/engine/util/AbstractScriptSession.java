@@ -32,7 +32,8 @@ import java.util.*;
  */
 public abstract class AbstractScriptSession extends LivenessScope implements ScriptSession, VariableProvider {
 
-    public static final String CLASS_CACHE_LOCATION = System.getProperty("deephaven.cache.dir", System.getProperty("java.io.tmpdir")) + "/dh_class_cache";
+    public static final String CLASS_CACHE_LOCATION =
+            System.getProperty("deephaven.cache.dir", System.getProperty("java.io.tmpdir")) + "/dh_class_cache";
 
     public static void createScriptCache() {
         final File classCacheDirectory = new File(CLASS_CACHE_LOCATION);

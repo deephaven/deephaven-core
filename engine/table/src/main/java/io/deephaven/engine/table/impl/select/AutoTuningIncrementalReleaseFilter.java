@@ -190,7 +190,8 @@ public class AutoTuningIncrementalReleaseFilter extends BaseIncrementalReleaseFi
     @ScriptApi
     public AutoTuningIncrementalReleaseFilter(long initialSize, long initialRelease, double targetFactor,
             boolean verbose, TimeProvider timeProvider) {
-        this(LoggerFactory.getLogger(AutoTuningIncrementalReleaseFilter.class), initialSize, initialRelease, targetFactor, verbose, timeProvider);
+        this(LoggerFactory.getLogger(AutoTuningIncrementalReleaseFilter.class), initialSize, initialRelease,
+                targetFactor, verbose, timeProvider);
     }
 
     /**
