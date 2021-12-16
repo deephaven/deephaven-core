@@ -9,7 +9,7 @@ import jpy
 
 from deephaven2 import DHError, dtypes
 from deephaven2.column import byte_col, char_col, short_col, bool_col, int_col, long_col, float_col, double_col, \
-    string_col, datetime_col, jobj_col
+    string_col, datetime_col, jobj_col, ColumnType
 from tests.testbase import BaseTestCase
 
 JArrayList = jpy.get_type("java.util.ArrayList")
@@ -17,42 +17,48 @@ JArrayList = jpy.get_type("java.util.ArrayList")
 
 class ColumnTestCase(BaseTestCase):
 
+    def test_column_type(self):
+        normal_type = ColumnType.NORMAL.value
+        self.assertEqual(ColumnType.NORMAL, ColumnType(normal_type))
+
     def test_column_error(self):
         jobj = JArrayList()
         jobj.add(1)
         jobj.add(-1)
         with self.assertRaises(DHError) as cm:
-            _ = bool_col(name="Boolean", data=[True, 'abc']).j_column
+            bool_input_col = bool_col(name="Boolean", data=[True, 'abc'])
+
+        self.assertNotIn("bool_input_col", dir())
 
         with self.assertRaises(DHError) as cm:
-            _ = byte_col(name="Byte", data=[1, 'abc']).j_column
+            _ = byte_col(name="Byte", data=[1, 'abc'])
 
         with self.assertRaises(DHError) as cm:
-            _ = char_col(name="Char", data=[jobj]).j_column
+            _ = char_col(name="Char", data=[jobj])
 
         with self.assertRaises(DHError) as cm:
-            _ = short_col(name="Short", data=[1, 'abc']).j_column
+            _ = short_col(name="Short", data=[1, 'abc'])
 
         with self.assertRaises(DHError) as cm:
-            _ = int_col(name="Int", data=[1, [1, 2]]).j_column
+            _ = int_col(name="Int", data=[1, [1, 2]])
 
         with self.assertRaises(DHError) as cm:
-            _ = long_col(name="Long", data=[1, float('inf')]).j_column
+            _ = long_col(name="Long", data=[1, float('inf')])
 
         with self.assertRaises(DHError) as cm:
-            _ = float_col(name="Float", data=[1.01, 'NaN']).j_column
+            _ = float_col(name="Float", data=[1.01, 'NaN'])
 
         with self.assertRaises(DHError) as cm:
-            _ = double_col(name="Double", data=[1.01, jobj]).j_column
+            _ = double_col(name="Double", data=[1.01, jobj])
 
         with self.assertRaises(DHError) as cm:
-            _ = string_col(name="String", data=[1, -1.01]).j_column
+            _ = string_col(name="String", data=[1, -1.01])
 
         with self.assertRaises(DHError) as cm:
-            _ = datetime_col(name="Datetime", data=[dtypes.DateTime(round(time.time())), False]).j_column
+            _ = datetime_col(name="Datetime", data=[dtypes.DateTime(round(time.time())), False])
 
         with self.assertRaises(DHError) as cm:
-            _ = jobj_col(name="JObj", data=[jobj, CustomClass(-1, "-1")]).j_column
+            _ = jobj_col(name="JObj", data=[jobj, CustomClass(-1, "-1")])
 
 
 @dataclass

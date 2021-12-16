@@ -6,6 +6,7 @@ from enum import Enum
 from typing import Sequence
 
 import jpy
+from deephaven2 import DHError
 
 import deephaven2.dtypes as dtypes
 from deephaven2.dtypes import DType
@@ -16,9 +17,13 @@ _JColumn = jpy.get_type("io.deephaven.qst.column.Column")
 
 class ColumnType(Enum):
     NORMAL = 1
+    """ A regular column. """
     GROUPING = 2
+    """ A grouping column. """
     PARTITIONING = 4
+    """ A partitioning column. """
     VIRTUAL = 8
+    """ A virtual column. """
 
     def __repr__(self):
         return self.name
@@ -39,25 +44,28 @@ class Column:
 
 @dataclass
 class InputColumn(Column):
+    """ An InputColumn represents a user defined column with some input data. """
     input_data: any = field(default=None)
 
-    @property
-    def j_column(self):
-        if self.input_data is None:
-            return _JColumn.empty(self.j_column_header)
-        else:
-            if self.data_type.is_primitive:
-                return _JColumn.ofUnsafe(self.name, self.data_type.array_of(self.input_data))
+    def __post_init__(self):
+        try:
+            if self.input_data is None:
+                self.j_column = _JColumn.empty(self.j_column_header)
             else:
-                return _JColumn.of(self.j_column_header, self.data_type.array_of(self.input_data))
+                if self.data_type.is_primitive:
+                    self.j_column = _JColumn.ofUnsafe(self.name, self.data_type.array_of(self.input_data))
+                else:
+                    self.j_column = _JColumn.of(self.j_column_header, self.data_type.array_of(self.input_data))
+        except Exception as e:
+            raise DHError(e, "failed to create an InputColumn.") from e
 
 
 def bool_col(name: str, data: Sequence) -> InputColumn:
-    """ Creates an input column containing Java Boolean data.
+    """ Creates an input column containing Boolean data.
 
     Args:
         name (str): the column name
-        data (Any): a python sequence of compatible data, could be numpy array or Pandas series
+        data (Any): a sequence of compatible data, e.g. list, tuple, numpy array, Pandas series, etc.
 
     Returns:
         a new input column
@@ -66,11 +74,11 @@ def bool_col(name: str, data: Sequence) -> InputColumn:
 
 
 def byte_col(name: str, data: Sequence) -> InputColumn:
-    """ Creates an input column containing Java primitive byte data.
+    """ Creates an input column containing primitive byte data.
 
     Args:
         name (str): the column name
-        data (Any): a python sequence of compatible data, could be numpy array or Pandas series
+        data (Any): a sequence of compatible data, e.g. list, tuple, numpy array, Pandas series, etc.
 
     Returns:
         a new input column
@@ -79,11 +87,11 @@ def byte_col(name: str, data: Sequence) -> InputColumn:
 
 
 def char_col(name: str, data: Sequence) -> InputColumn:
-    """ Creates an input column containing Java primitive char data.
+    """ Creates an input column containing primitive char data.
 
     Args:
         name (str): the column name
-        data (Any): a python sequence of compatible data, could be numpy array or Pandas series
+        data (Any): a sequence of compatible data, e.g. list, tuple, numpy array, Pandas series, etc.
 
     Returns:
         a new input column
@@ -92,11 +100,11 @@ def char_col(name: str, data: Sequence) -> InputColumn:
 
 
 def short_col(name: str, data: Sequence) -> InputColumn:
-    """ Creates an input column containing Java primitive short data.
+    """ Creates an input column containing primitive short data.
 
     Args:
         name (str): the column name
-        data (Any): a python sequence of compatible data, could be numpy array or Pandas series
+        data (Any): a sequence of compatible data, e.g. list, tuple, numpy array, Pandas series, etc.
 
     Returns:
         a new input column
@@ -105,11 +113,11 @@ def short_col(name: str, data: Sequence) -> InputColumn:
 
 
 def int_col(name: str, data: Sequence) -> InputColumn:
-    """ Creates an input column containing Java primitive int data.
+    """ Creates an input column containing primitive int data.
 
     Args:
         name (str): the column name
-        data (Any): a python sequence of compatible data, could be numpy array or Pandas series
+        data (Any): a sequence of compatible data, e.g. list, tuple, numpy array, Pandas series, etc.
 
     Returns:
         a new input column
@@ -118,7 +126,7 @@ def int_col(name: str, data: Sequence) -> InputColumn:
 
 
 def long_col(name: str, data: Sequence) -> InputColumn:
-    """ Creates an input column containing Java primitive long data.
+    """ Creates an input column containing primitive long data.
 
     Args:
         name (str): the column name
@@ -131,11 +139,11 @@ def long_col(name: str, data: Sequence) -> InputColumn:
 
 
 def float_col(name: str, data: Sequence) -> InputColumn:
-    """ Creates an input column containing Java primitive float data.
+    """ Creates an input column containing primitive float data.
 
     Args:
         name (str): the column name
-        data (Any): a python sequence of compatible data, could be numpy array or Pandas series
+        data (Any): a sequence of compatible data, e.g. list, tuple, numpy array, Pandas series, etc.
 
     Returns:
         a new input column
@@ -144,11 +152,11 @@ def float_col(name: str, data: Sequence) -> InputColumn:
 
 
 def double_col(name: str, data: Sequence) -> InputColumn:
-    """ Creates an input column containing Java primitive double data.
+    """ Creates an input column containing primitive double data.
 
     Args:
         name (str): the column name
-        data (Any): a python sequence of compatible data, could be numpy array or Pandas series
+        data (Any): a sequence of compatible data, e.g. list, tuple, numpy array, Pandas series, etc.
 
     Returns:
         a new input column
@@ -157,11 +165,11 @@ def double_col(name: str, data: Sequence) -> InputColumn:
 
 
 def string_col(name: str, data: Sequence) -> InputColumn:
-    """ Creates an input column containing Java String data.
+    """ Creates an input column containing string data.
 
     Args:
         name (str): the column name
-        data (Any): a python sequence of compatible data, could be numpy array or Pandas series
+        data (Any): a sequence of compatible data, e.g. list, tuple, numpy array, Pandas series, etc.
 
     Returns:
         a new input column
@@ -174,7 +182,7 @@ def datetime_col(name: str, data: Sequence) -> InputColumn:
 
     Args:
         name (str): the column name
-        data (Any): a python sequence of Datetime instances
+        data (Any): a sequence of Datetime instances
 
     Returns:
         a new input column
@@ -183,11 +191,11 @@ def datetime_col(name: str, data: Sequence) -> InputColumn:
 
 
 def pyobj_col(name: str, data: Sequence) -> InputColumn:
-    """ Creates an input column containing Java Pyobject instances.
+    """ Creates an input column containing complex, non-primitive-like Python objects.
 
     Args:
         name (str): the column name
-        data (Any): a python sequence of PyObject instances
+        data (Any): a sequence of Python objects
 
     Returns:
         a new input column
@@ -200,7 +208,7 @@ def jobj_col(name: str, data: Sequence) -> InputColumn:
 
     Args:
         name (str): the column name
-        data (Any): a python sequence of Java objects
+        data (Any): a sequence of Java objects
 
     Returns:
         a new input column

@@ -2,9 +2,8 @@
 #   Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
 #
 import unittest
-from time import sleep
 
-from deephaven2 import DHError, read_csv, time_table, empty_table, SortDirection
+from deephaven2 import DHError, read_csv, empty_table, SortDirection
 from deephaven2.agg import sum_, weighted_avg, avg, pct, group, count_, first, last, max_, median, min_, std, abs_sum, \
     var
 from deephaven2.table import Table
@@ -31,6 +30,11 @@ class TableTestCase(BaseTestCase):
 
         t = self.test_table.where(["a > 500"])
         self.assertNotEqual(t, self.test_table)
+
+    def test_coalesce(self):
+        t = self.test_table.update_view(["A = a * b"])
+        ct = t.coalesce()
+        self.assertEqual(self.test_table.size, ct.size)
 
     def test_drop_columns(self):
         column_names = [f.name for f in self.test_table.columns]
@@ -286,12 +290,12 @@ class TableTestCase(BaseTestCase):
     def test_snapshot(self):
         with self.subTest("do_init is False"):
             t = empty_table(0).update(formulas=["Timestamp=io.deephaven.time.DateTime.now()"])
-            snapshot = t.snapshot(base_table=self.test_table)
+            snapshot = t.snapshot(source_table=self.test_table)
             self.assertEqual(1 + len(self.test_table.columns), len(snapshot.columns))
             self.assertEqual(0, snapshot.size)
 
         with self.subTest("do_init is True"):
-            snapshot = t.snapshot(base_table=self.test_table, do_init=True)
+            snapshot = t.snapshot(source_table=self.test_table, do_init=True)
             self.assertEqual(self.test_table.size, snapshot.size)
 
 

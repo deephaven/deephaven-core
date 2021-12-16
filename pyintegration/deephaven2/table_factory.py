@@ -15,7 +15,7 @@ _JTableTools = jpy.get_type("io.deephaven.engine.util.TableTools")
 
 
 def empty_table(size: int) -> Table:
-    """ Create an empty table.
+    """ Creates a table with rows but no columns.
 
     Args:
         size (int): the number of rows
@@ -65,7 +65,7 @@ def new_table(cols: List[Column]) -> Table:
 
 
 def merge(tables: List[Table]):
-    """ combines two or more tables into one aggregate table. This essentially appends the tables one on top of the
+    """ Combines two or more tables into one aggregate table. This essentially appends the tables one on top of the
     other. Null tables are ignored.
 
     Args:
@@ -83,14 +83,14 @@ def merge(tables: List[Table]):
         raise DHError(e, "merge tables operation failed.") from e
 
 
-def merge_sorted(order_by: str, tables: List[Table]):
-    """ combines two or more tables into one sorted, aggregate table. This essentially stacks the tables one on top
+def merge_sorted(tables: List[Table], order_by: str):
+    """ Combines two or more tables into one sorted, aggregate table. This essentially stacks the tables one on top
     of the other and sorts the result. Null tables are ignored. mergeSorted is more efficient than using merge
     followed by sort.
 
     Args:
-        order_by (str): the name of the key column
         tables (List[Table]): the source tables
+        order_by (str): the name of the key column
 
     Returns:
          a new table

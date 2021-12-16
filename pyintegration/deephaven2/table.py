@@ -107,18 +107,18 @@ class Table:
 
         return _JTableTools.html(self.j_table)
 
-    def coalesce(self) -> None:
-        """ Brings the entire table into memory. """
-        self.j_table.coalesce()
+    def coalesce(self) -> Table:
+        """ Returns a coalesced child table. """
+        return Table(j_table=self.j_table.coalesce())
 
-    def snapshot(self, base_table: Table, do_init: bool = False) -> Table:
+    def snapshot(self, source_table: Table, do_init: bool = False) -> Table:
         """ Produces an in-memory copy of a source table that refreshes when this table changes.
 
         Note, this table is often a time table that adds new rows at a regular, user-defined interval.
 
         Args:
             do_init (bool): whether to snapshot when this method is initially called, default is False
-            base_table (Table): the table to be snapshot
+            source_table (Table): the table to be snapshot
 
         Returns:
             a new table
@@ -127,7 +127,7 @@ class Table:
             DHError
         """
         try:
-            return Table(j_table=self.j_table.snapshot(base_table.j_table, do_init))
+            return Table(j_table=self.j_table.snapshot(source_table.j_table, do_init))
         except Exception as e:
             raise DHError("failed to take a table snapshot") from e
 

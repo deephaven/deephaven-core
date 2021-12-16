@@ -94,6 +94,15 @@ class TableFactoryTestCase(BaseTestCase):
         t = new_table(cols=cols)
         self.assertEqual(t.size, 2)
 
+    def test_input_column_error(self):
+        j_al = JArrayList()
+
+        self.assertIsNotNone(bool_col(name="Boolean", data=[True, -1]))
+
+        with self.assertRaises(DHError):
+            bool_col(name="Boolean", data=[True, j_al])
+
+
 
 @dataclass
 class CustomClass:

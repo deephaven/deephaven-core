@@ -12,29 +12,62 @@ import numpy as np
 import pandas as pd
 import jpy
 from deephaven2 import DHError
+from deephaven2.constants import *
 
 _JQstType = jpy.get_type("io.deephaven.qst.type.Type")
 _JTableTools = jpy.get_type("io.deephaven.engine.util.TableTools")
-
-# region Deephaven Special Null values for primitive types
-# contains appropriate seq for bidirectional conversion of null seq
-NULL_CHAR = 65535  #: Null value for char.
-NULL_FLOAT = float.fromhex('-0x1.fffffep127')  #: Null value for float.
-NULL_DOUBLE = float.fromhex('-0x1.fffffffffffffP+1023')  #: Null value for double.
-NULL_SHORT = -32768  #: Null value for short.
-NULL_INT = -0x80000000  #: Null value for int.
-NULL_LONG = -0x8000000000000000  #: Null value for long.
-NULL_BYTE = -128  #: Null value for byte.
 
 
 def _qst_custom_type(cls_name: str):
     return _JQstType.find(_JTableTools.typeFromName(cls_name))
 
 
+def _handle_nan_and_null(seq, dtype, nan_to_value, null_to_value):
+    if nan_to_value is None and null_to_value is None:
+        return seq
+
+    lst = list(seq)
+    for i, v in enumerate(seq):
+        if nan_to_value is not None:
+            if v != v:
+                lst[i] = nan_to_value
+
+        if null_to_value is not None:
+            if v == dtype.null_value:
+                lst[i] = null_to_value
+    return lst
+
+
+def _handle_nan(seq, nan_to_value):
+    if nan_to_value is None:
+        return seq
+
+    if isinstance(seq, np.ndarray):
+        seq[np.isnan(seq)] = nan_to_value
+        return seq
+
+    lst = list(seq)
+    for i, v in enumerate(seq):
+        if v != v:
+            lst[i] = nan_to_value
+    return lst
+
+
+def _handle_null(seq, null_value, null_to_value):
+    if null_to_value is None:
+        return seq
+
+    lst = list(seq)
+    for i, v in enumerate(seq):
+        if v == null_value:
+            lst[i] = null_to_value
+    return lst
+
+
 class DType:
     """ A class represents a data type in Deephaven."""
 
-    def __init__(self, j_name, qst_type=None, is_primitive=False):
+    def __init__(self, j_name: str, qst_type: Any = None, is_primitive: bool = False):
         self.qst_type = qst_type
         self.j_name = j_name
         self.j_type = jpy.get_type(j_name)
@@ -63,10 +96,10 @@ class DType:
             raise DHError("failed to create a Java array.") from e
 
     def array_of(self, seq: Sequence):
-        """ Creates a Java array of the same data type populated with values from a Python sequence.
+        """ Creates a Java array of the same data type populated with values from a sequence.
 
         Args:
-            seq: a Python sequence of compatible data type
+            seq: a sequence of compatible data type
 
         Returns:
             a Java array
@@ -81,16 +114,23 @@ class DType:
 
 
 class IntegerDType(DType):
-    def __init__(self, qst_type, j_name, np_dtypes: Tuple = (), null_value=None):
-        super().__init__(qst_type=qst_type, j_name=j_name, is_primitive=True)
+    """ The class for all integer types. """
+
+    def __init__(self, j_name: str, qst_type: Any, np_dtypes: Tuple, null_value: int):
+        super().__init__(j_name=j_name, qst_type=qst_type, is_primitive=True)
         self.np_types = np_dtypes
         self.null_value = null_value
 
-    def array_of(self, seq: Sequence):
-        """ Creates a Java array of the same integer type populated with values from a Python sequence.
+    def array_of(self, seq: Sequence, nan_to_value: int = None, null_to_value: int = None):
+        """ Creates a Java array of the same integer type populated with values from a sequence.
+
+        Note:
+            this method does unsafe casting, meaning precision and values might be lost with down cast
 
         Args:
-            seq: a Python sequence of compatible data type, can be a np array or Pandas series
+            seq: a sequence of compatible data, e.g. list, tuple, numpy array, Pandas series, etc.
+            nan_to_value (float): if not None, convert NaN to the specified value
+            null_to_value (float): if not None, convert NULL values in the casted input sequence to the specified value
 
         Returns:
             a Java array
@@ -101,35 +141,42 @@ class IntegerDType(DType):
         try:
             if isinstance(seq, np.ndarray):
                 if seq.dtype in self.np_types:
-                    return super().array_of(seq)
+                    seq = seq
                 elif np.issubdtype(seq.dtype, np.integer):
-                    return super().array_of(seq.astype(self.np_types[0]))
+                    seq = seq.astype(self.np_types[0])
                 elif np.issubdtype(seq.dtype, np.floating):
-                    nan_arr = np.isnan(seq)
-                    arr = seq.astype(self.np_types[0])
-                    arr[nan_arr] = self.null_value
-                    return super().array_of(arr)
+                    seq = _handle_nan(seq.copy(), nan_to_value)
+                    seq = seq.astype(self.np_types[0])
                 else:
                     raise ValueError(f"Incompatible np dtype ({seq.dtype}) for {self.j_name} array")
             elif isinstance(seq, pd.Series):
-                return self.array_of(seq.values)
-            else:
-                return super().array_of(seq)
+                return self.array_of(seq.values, nan_to_value, null_to_value)
+
+            seq = _handle_null(seq, self.null_value, null_to_value)
+            return super().array_of(seq)
         except Exception as e:
             raise DHError(e, f"failed to create a Java {self.j_name} array.") from e
 
 
 class FloatingDType(DType):
-    def __init__(self, qst_type, j_name, np_dtypes: Tuple = (), null_value=None):
+    """ The class for all floating types. """
+
+    def __init__(self, j_name: str, qst_type: Any, np_dtypes: tuple, null_value: float):
         super().__init__(qst_type=qst_type, j_name=j_name, is_primitive=True)
         self.np_types = np_dtypes
         self.null_value = null_value
 
-    def array_of(self, seq: Sequence):
-        """ Creates a Java array of the same floating type populated with values from a Python sequence.
+    def array_of(self, seq: Sequence, nan_to_value: float = None, null_to_value: float = None):
+        """ Creates a Java array of the same floating type populated with values from a sequence.
+
+        Note:
+            this method does unsafe casting, meaning precision and values might be lost with down cast
 
         Args:
-            seq: a Python sequence of compatible data type, can be a np array or Pandas series
+            seq (Sequence): a sequence of compatible data, e.g. list, tuple, numpy array, Pandas series, etc.
+            nan_to_value (float): if not None, convert NaN to the specified value
+            null_to_value (float): if not None, convert NULL values in the casted input sequence after cast to the
+                specified value
 
         Returns:
             a Java array
@@ -139,39 +186,35 @@ class FloatingDType(DType):
         """
         try:
             if isinstance(seq, np.ndarray):
-                if seq.dtype in self.np_types:
-                    nan_arr = np.isnan(seq)
-                    arr = seq.copy()
-                    arr[nan_arr] = self.null_value
-                    return super().array_of(arr)
-                elif np.issubdtype(seq.dtype, np.floating):
-                    nan_arr = np.isnan(seq)
-                    arr = seq.astype(self.np_types[0])
-                    arr[nan_arr] = self.null_value
-                    return super().array_of(arr)
-                elif np.issubdtype(seq.dtype, np.integer):
-                    return super().array_of(seq.astype(self.np_types[0]))
-                else:
-                    raise ValueError(f"Incompatible np dtype ({seq.dtype}) for {self.j_name} array")
+                if seq.dtype not in self.np_types:
+                    if np.issubdtype(seq.dtype, np.floating):
+                        seq = seq.astype(self.np_types[0])
+                    elif np.issubdtype(seq.dtype, np.integer):
+                        seq = seq.astype(self.np_types[0])
+                    else:
+                        raise ValueError(f"Incompatible np dtype ({seq.dtype}) for {self.j_name} array")
             elif isinstance(seq, pd.Series):
-                return self.array_of(seq.values)
-            else:
-                return super().array_of(seq)
+                return self.array_of(seq.values, nan_to_value, null_to_value)
+
+            seq = _handle_nan_and_null(seq, self, nan_to_value, null_to_value)
+            return super().array_of(seq)
         except Exception as e:
             raise DHError(e, f"failed to create a Java {self.j_name} array.") from e
 
 
 class CharDType(DType):
-    def __init__(self, qst_type, j_name, np_dtypes: Tuple = (), null_value=None):
-        super().__init__(qst_type=qst_type, j_name=j_name, is_primitive=True)
+    """ The class for char type. """
+
+    def __init__(self, j_name: str, qst_type: Any, np_dtypes: Tuple, null_value: Any):
+        super().__init__(j_name=j_name, qst_type=qst_type, is_primitive=True)
         self.np_types = np_dtypes
         self.null_value = null_value
 
     def array_of(self, seq):
-        """ Creates a Java char array populated with values from a Python sequence.
+        """ Creates a Java char array populated with values from a sequence.
 
         Args:
-            seq: a Python sequence of compatible data type, can be a np array or Pandas series
+            seq: a sequence of compatible data, e.g. list, tuple, numpy array, Pandas series, etc.
 
         Returns:
             a Java array
@@ -229,28 +272,28 @@ class CharDType(DType):
 class DTypes(Enum):
     """ An enum that defines a predefined set of supported data types in Deephaven. """
 
-    bool_ = DType(qst_type=_JQstType.booleanType(), j_name="java.lang.Boolean")
-    byte = IntegerDType(qst_type=_JQstType.byteType(), j_name="byte", np_dtypes=(np.int8, np.uint8),
+    bool_ = DType(j_name="java.lang.Boolean", qst_type=_JQstType.booleanType(), )
+    byte = IntegerDType(j_name="byte", qst_type=_JQstType.byteType(), np_dtypes=(np.int8, np.uint8),
                         null_value=NULL_BYTE)
     int8 = byte
-    short = IntegerDType(qst_type=_JQstType.shortType(), j_name="short", np_dtypes=(np.int16, np.uint16),
+    short = IntegerDType(j_name="short", qst_type=_JQstType.shortType(), np_dtypes=(np.int16, np.uint16),
                          null_value=NULL_SHORT)
     int16 = short
-    char = CharDType(qst_type=_JQstType.charType(), j_name="char", null_value=NULL_CHAR)
-    int_ = IntegerDType(qst_type=_JQstType.intType(), j_name="int", np_dtypes=(np.int32, np.uint32),
+    char = CharDType(j_name="char", qst_type=_JQstType.charType(), np_dtypes=(), null_value=NULL_CHAR)
+    int_ = IntegerDType(j_name="int", qst_type=_JQstType.intType(), np_dtypes=(np.int32, np.uint32),
                         null_value=NULL_INT)
     int32 = int_
-    long = IntegerDType(qst_type=_JQstType.longType(), j_name="long", np_dtypes=(np.int64, np.uint64),
+    long = IntegerDType(j_name="long", qst_type=_JQstType.longType(), np_dtypes=(np.int64, np.uint64),
                         null_value=NULL_LONG)
     int64 = long
-    float_ = FloatingDType(qst_type=_JQstType.floatType(), j_name="float", np_dtypes=(np.float32,),
+    float_ = FloatingDType(j_name="float", qst_type=_JQstType.floatType(), np_dtypes=(np.float32,),
                            null_value=NULL_FLOAT)
     single = float_
     float32 = float_
-    double = FloatingDType(qst_type=_JQstType.doubleType(), j_name="double", np_dtypes=(np.float64,),
+    double = FloatingDType(j_name="double", qst_type=_JQstType.doubleType(), np_dtypes=(np.float64,),
                            null_value=NULL_DOUBLE)
     float64 = double
-    string = DType(qst_type=_JQstType.stringType(), j_name="java.lang.String")
+    string = DType(j_name="java.lang.String", qst_type=_JQstType.stringType())
     BigDecimal = DType(j_name="java.math.BigDecimal")
     StringSet = DType(j_name="io.deephaven.stringset.StringSet")
     DateTime = DType(j_name="io.deephaven.time.DateTime")
