@@ -31,6 +31,9 @@ class PropertiesFromSubprocess {
             // We need to also close the stream to let python know it can start processing script
             try (OutputStream out = process.getOutputStream()) {
                 in.transferTo(out);
+            } catch (Throwable t) {
+                process.destroy();
+                throw t;
             }
         }
         try {
