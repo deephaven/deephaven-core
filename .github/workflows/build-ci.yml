@@ -522,7 +522,7 @@ jobs:
         uses: burrunan/gradle-cache-action@v1
         with:
           job-id: build-web
-          arguments: --scan createCraneTagScript web-client-ide:prepareDocker
+          arguments: --scan createCraneTagScript docker-web:prepareDocker
           gradle-version: wrapper
 
       - name: Docker build
@@ -531,7 +531,7 @@ jobs:
           tags: ${{ steps.docker_meta.outputs.tags }}
           labels: ${{ steps.docker_meta.outputs.labels }}
           builder: ${{ steps.buildx.outputs.name }}
-          context: ./web/client-ide/build/docker/
+          context: ./docker/web/build/docker/
           push: ${{ github.event_name != 'pull_request' }}
 
       - name: Tag upstream images
