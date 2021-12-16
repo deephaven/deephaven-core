@@ -48,9 +48,11 @@ class PropertiesFromSubprocess {
         if (exitValue != 0) {
             final String error = new String(process.getErrorStream().readAllBytes(), StandardCharsets.UTF_8);
             if (error.contains("ModuleNotFoundError: No module named 'jpyutil'")) {
-                throw new IllegalStateException("A Deephaven python environment has not been configured");
+                throw new IllegalStateException(
+                        String.format("A Deephaven python environment has not been configured for '%s'", pythonName));
             }
-            throw new IllegalStateException(error);
+            throw new IllegalStateException(
+                    String.format("Unexpected error while starting python '%s': %s", pythonName, error));
         }
         final Properties properties = new Properties();
         properties.load(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8));
