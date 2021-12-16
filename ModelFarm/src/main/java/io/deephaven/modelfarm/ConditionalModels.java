@@ -6,7 +6,7 @@ package io.deephaven.modelfarm;
 
 import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
-import io.deephaven.util.process.ProcessEnvironment;
+import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.modelfarm.ModelMultiExec.Models;
 
 import java.util.ArrayList;
@@ -26,7 +26,7 @@ import java.util.function.Function;
  */
 public class ConditionalModels<DATA_TYPE, STATE_TYPE, KEY_TYPE> implements Models<DATA_TYPE> {
 
-    private static final io.deephaven.io.logger.Logger log = ProcessEnvironment.getDefaultLog(ConditionalModels.class);
+    private static final io.deephaven.io.logger.Logger log = LoggerFactory.getLogger(ConditionalModels.class);
     private static final boolean LOG_PERF =
             Configuration.getInstance().getBooleanWithDefault("ModelFarm.logConditionalModelsPerformance", false);
 

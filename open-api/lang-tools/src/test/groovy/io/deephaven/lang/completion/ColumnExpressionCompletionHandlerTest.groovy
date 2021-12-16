@@ -1,9 +1,9 @@
 package io.deephaven.lang.completion
 
 import io.deephaven.engine.util.VariableProvider
+import io.deephaven.internal.log.LoggerFactory
 import io.deephaven.io.logger.Logger
 import io.deephaven.proto.backplane.script.grpc.CompletionItem
-import io.deephaven.util.process.ProcessEnvironment
 import io.deephaven.engine.table.Table
 import io.deephaven.engine.table.TableDefinition
 import io.deephaven.time.DateTime
@@ -26,7 +26,7 @@ class ColumnExpressionCompletionHandlerTest extends Specification implements Chu
             CompletionParser p = new CompletionParser()
             doc = p.parse(src)
 
-            Logger log = ProcessEnvironment.getDefaultLog(CompletionHandler)
+            Logger log = LoggerFactory.getLogger(CompletionHandler)
         VariableProvider variables = Mock(VariableProvider) {
                 (0..1) * getVariableNames() >> ['t']
                 (0..1) * getVariableType('t') >> Table
@@ -74,7 +74,7 @@ t = t.updateView ( 'D
 """
         doc = p.parse(src)
 
-        Logger log = ProcessEnvironment.getDefaultLog(CompletionHandler)
+        Logger log = LoggerFactory.getLogger(CompletionHandler)
         VariableProvider variables = Mock() {
             (0..1) * getTableDefinition('t') >> new TableDefinition([String, Long, Integer], ['Date', 'Delta', 'NotMeThough'])
             (0..1) * getVariableType('t') >> Table
@@ -113,7 +113,7 @@ t = t.update('A=') .update( 'B=')
 """
         doc = p.parse(src)
 
-        Logger log = ProcessEnvironment.getDefaultLog(CompletionHandler)
+        Logger log = LoggerFactory.getLogger(CompletionHandler)
         VariableProvider variables = Mock(VariableProvider) {
             _ * getTableDefinition('t') >> new TableDefinition([Long, Integer], ['A1', 'A2'])
             0 * _
@@ -170,7 +170,7 @@ t = newTable(
 t.where('"""
         doc = p.parse(src)
 
-        Logger log = ProcessEnvironment.getDefaultLog(CompletionHandler)
+        Logger log = LoggerFactory.getLogger(CompletionHandler)
         VariableProvider variables = Mock(VariableProvider) {
             _ * getTableDefinition('t') >> null
             0 * _

@@ -3,8 +3,8 @@ package io.deephaven.engine.util;
 import io.deephaven.base.FileUtils;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.engine.table.lang.QueryScope;
 import io.deephaven.engine.util.jpy.JpyInit;
 import org.jpy.PyObject;
@@ -36,7 +36,7 @@ public enum WorkerPythonEnvironment {
      * Runs the init script specified by WorkerPythonEnvironment.initScript.
      */
     WorkerPythonEnvironment() {
-        log = ProcessEnvironment.getGlobalLog();
+        log = LoggerFactory.getLogger(WorkerPythonEnvironment.class);
 
         JpyInit.init(log);
         PythonEvaluatorJpy jpy = PythonEvaluatorJpy.withGlobalCopy();
