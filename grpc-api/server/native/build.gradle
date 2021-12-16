@@ -47,6 +47,10 @@ def createStartScript = project.tasks.register('createStartScript', CreateStartS
           '-XX:+UseStringDeduplication',
           '-XshowSettings:vm',
 
+          '-DConfiguration.rootFile=grpc-api-native.prop',
+          '-Dworkspace=.',
+          '-Ddevroot=.',
+
           // Settings based on the cgroup limits:
           // https://www.oracle.com/java/technologies/javase/8u191-relnotes.html
           // the initial memory reservation, expressed as a percentage of (todo - is this as a percentage against the JVMs computed maximum, or the system memory?)
@@ -58,9 +62,7 @@ def createStartScript = project.tasks.register('createStartScript', CreateStartS
           '-XX:MinRAMPercentage=70.0',
           // the percentage of system memory that the JVM will use as maximum
           '-XX:MaxRAMPercentage=80.0',
-
-          // TODO(deephaven-core#1493): add-opens Docker application based on plugin conventions
-          '--add-opens', 'java.base/java.nio=ALL-UNNAMED']
+  ]
 }
 
 applicationDistribution.into('bin') {

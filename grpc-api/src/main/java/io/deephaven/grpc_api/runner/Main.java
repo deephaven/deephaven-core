@@ -8,37 +8,12 @@ import io.deephaven.io.logger.LogBufferInterceptor;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.process.ProcessEnvironment;
 
-import java.io.FileReader;
 import java.io.IOException;
-import java.io.InputStream;
 
 public class Main {
-    private static void bootstrapSystemProperties(String[] args) throws IOException {
-        if (args.length > 1) {
-            throw new IllegalArgumentException("Expected 0 or 1 argument");
-        }
-        if (args.length == 0) {
-            try (final InputStream in = Main.class.getResourceAsStream("/bootstrap.properties")) {
-                if (in != null) {
-                    System.out.println("# Bootstrapping from resource '/bootstrap.properties'%n");
-                    System.getProperties().load(in);
-                } else {
-                    System.out.println("# No resource '/bootstrap.properties' found, skipping bootstrapping%n");
-                }
-            }
-        } else {
-            System.out.printf("# Bootstrapping from file '%s'%n", args[0]);
-            try (final FileReader reader = new FileReader(args[0])) {
-                System.getProperties().load(reader);
-            }
-        }
-    }
 
     public static void main(String[] args) throws IOException, InterruptedException, ClassNotFoundException {
         System.out.printf("# Starting %s%n", Main.class.getName());
-
-        // No classes should be loaded before we bootstrap additional system properties
-        bootstrapSystemProperties(args);
 
         // Capture the original System.out and System.err early
         PrintStreamGlobals.init();
