@@ -5,7 +5,7 @@
 package io.deephaven.engine.updategraph;
 
 import io.deephaven.base.verify.Assert;
-import io.deephaven.util.process.ProcessEnvironment;
+import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.util.annotations.TestUseOnly;
 
 import java.util.concurrent.atomic.AtomicLong;
@@ -142,7 +142,7 @@ public enum LogicalClock {
             return;
         }
         if (value == updatingCycleValue) {
-            ProcessEnvironment.getDefaultLog(LogicalClock.class).warn()
+            LoggerFactory.getLogger(LogicalClock.class).warn()
                     .append("LogicalClock cycle was not completed in normal operation, value=").append(value).endl();
             completeUpdateCycle();
             return;
