@@ -31,7 +31,7 @@ import java.util.*;
  */
 public abstract class AbstractScriptSession extends LivenessScope implements ScriptSession, VariableProvider {
 
-    private static final Path CLASS_CACHE_LOCATION = CacheDir.get().resolve("dh_class_cache");
+    private static final Path CLASS_CACHE_LOCATION = CacheDir.get().resolve("script-session-classes");
 
     public static void createScriptCache() {
         final File classCacheDirectory = CLASS_CACHE_LOCATION.toFile();
@@ -59,6 +59,7 @@ public abstract class AbstractScriptSession extends LivenessScope implements Scr
     protected AbstractScriptSession(@Nullable Listener changeListener, boolean isDefaultScriptSession) {
         this.changeListener = changeListener;
 
+        // TODO(deephaven-core#1713): Introduce instance-id concept
         final UUID scriptCacheId = UuidCreator.getRandomBased();
         classCacheDirectory = CLASS_CACHE_LOCATION.resolve(UuidCreator.toString(scriptCacheId)).toFile();
         createOrClearDirectory(classCacheDirectory);
