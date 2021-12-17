@@ -29,12 +29,11 @@ def prepareDocker = project.tasks.register('prepareDocker', Sync) {
     into context
 }
 
-def buildDocker = Docker.registerDockerImage(project, 'buildDocker') {
+def buildDocker = Docker.registerDockerTwoPhaseImage(project, 'grpc-proxy', 'install') {
     inputDir.set context
     inputs.files prepareDocker.get().outputs.files
     inputs.files Docker.registryFiles(project, 'alpine')
     buildArgs.put('DEEPHAVEN_VERSION', project.version)
-    images.add('deephaven/grpc-proxy:local-build')
 }
 
 assemble.dependsOn buildDocker

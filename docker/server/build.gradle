@@ -89,14 +89,13 @@ def prepareDocker = project.tasks.register('prepareDocker', Sync) {
 }
 
 def buildDockerClosure = { String base, String server ->
-    Docker.registerDockerImage(project, "buildDocker-${server}") {
+    Docker.registerDockerTwoPhaseImage(project, server, 'install') {
         dependsOn prepareDocker
         inputDir.set context
         inputs.files Docker.registryFiles(project, base)
         buildArgs.put('BASE', "deephaven/${base}:local-build")
         buildArgs.put('SERVER', server)
         buildArgs.put('DEEPHAVEN_VERSION', project.version)
-        images.add("deephaven/${server}:local-build")
     }
 }
 

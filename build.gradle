@@ -479,11 +479,11 @@ tasks.register('quick') {
 tasks.register('prepareCompose') {
     it.group 'Deephaven lifecycle'
     it.description 'A lifecycle task that prepares prerequisites for local docker-compose builds'
-    it.dependsOn project(':docker-server-slim').tasks.findByName('buildDocker'),
+    it.dependsOn project(':docker-server-slim').tasks.findByName('buildDocker-server-slim'),
             project(':docker-server').tasks.findByName('buildDocker-server'),
             project(':docker-web').tasks.findByName('buildDocker'),
             project(':envoy').tasks.findByName('buildDocker'),
-            project(':grpc-proxy').tasks.findByName('buildDocker')
+            project(':grpc-proxy').tasks.findByName('buildDocker-grpc-proxy')
 }
 
 tasks.register('smoke') {

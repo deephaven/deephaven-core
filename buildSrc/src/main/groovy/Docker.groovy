@@ -430,9 +430,41 @@ class Docker {
         }
     }
 
+    static void checkValidTwoPhase(DockerBuildImage buildImage) {
+        if (buildImage.target.isPresent()) {
+            throw new IllegalArgumentException("Two phase build should not be setting target, is '${buildImage.target.get()}'")
+        }
+        if (buildImage.images.isPresent() && !buildImage.images.get().isEmpty()) {
+            throw new IllegalArgumentException("Two phase build should not be setting images, is '${buildImage.images.get()}'")
+        }
+    }
+
+    static TaskProvider<? extends DockerBuildImage> registerDockerTwoPhaseImage(Project project, String baseName, String intermediate, Closure closure) {
+        return registerDockerTwoPhaseImage(project, baseName, intermediate, ConfigureUtil.configureUsing(closure))
+    }
+
+    static TaskProvider<? extends DockerBuildImage> registerDockerTwoPhaseImage(Project project, String baseName, String intermediate, Action<? super DockerBuildImage> action) {
+        // Explicitly target and tag the intermediate task; otherwise, docker will leave it unnamed, and we won't be
+        // able to clean it up.
+        def intermediateTask = registerDockerImage(project, "buildDocker-${baseName}-${intermediate}") { DockerBuildImage buildImage ->
+            action.execute(buildImage)
+            checkValidTwoPhase(buildImage)
+            buildImage.target.set(intermediate)
+            buildImage.images.add("deephaven/${baseName}-${intermediate}:local-build".toString())
+        }
+
+        return registerDockerImage(project, "buildDocker-${baseName}") { DockerBuildImage buildImage ->
+            action.execute(buildImage)
+            checkValidTwoPhase(buildImage)
+            buildImage.dependsOn(intermediateTask)
+            buildImage.images.add("deephaven/${baseName}:local-build".toString())
+        }
+    }
+
     static TaskProvider<? extends DockerBuildImage> registerDockerImage(Project project, String taskName, Closure closure) {
         return registerDockerImage(project, taskName, ConfigureUtil.configureUsing(closure))
     }
+
     static TaskProvider<? extends DockerBuildImage> registerDockerImage(Project project, String taskName, Action<? super DockerBuildImage> action) {
         // Produce a docker image from the copied inputs and provided dockerfile, and tag it
         TaskProvider<DockerBuildImage> makeImage = project.tasks.register(taskName, DockerBuildImage) { buildImage ->
