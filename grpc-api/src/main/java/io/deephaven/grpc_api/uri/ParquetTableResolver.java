@@ -3,6 +3,8 @@ package io.deephaven.grpc_api.uri;
 import io.deephaven.engine.table.Table;
 import io.deephaven.parquet.table.ParquetTools;
 import io.deephaven.uri.UriHelper;
+import io.deephaven.uri.resolver.UriResolver;
+import io.deephaven.uri.resolver.UriResolversInstance;
 
 import javax.inject.Inject;
 import java.net.URI;

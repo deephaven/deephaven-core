@@ -1,7 +1,7 @@
 package io.deephaven.uri;
 
-import io.deephaven.grpc_api.uri.UriResolver;
-import io.deephaven.grpc_api.uri.UriResolversInstance;
+import io.deephaven.uri.resolver.UriResolver;
+import io.deephaven.uri.resolver.UriResolversInstance;
 
 import java.net.URI;
 

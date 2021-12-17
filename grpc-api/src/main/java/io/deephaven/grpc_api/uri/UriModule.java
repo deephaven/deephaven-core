@@ -2,8 +2,14 @@ package io.deephaven.grpc_api.uri;
 
 import dagger.Binds;
 import dagger.Module;
+import dagger.Provides;
 import dagger.multibindings.IntoSet;
 import io.deephaven.grpc_api.barrage.BarrageClientModule;
+import io.deephaven.uri.resolver.UriResolver;
+import io.deephaven.uri.resolver.UriResolvers;
+
+import javax.inject.Singleton;
+import java.util.Set;
 
 /**
  * Installs the {@link UriResolver URI resolvers}. See each specific resolver for more information.
@@ -36,4 +42,10 @@ public interface UriModule {
     @Binds
     @IntoSet
     UriResolver bindParquetResolver(ParquetTableResolver resolver);
+
+    @Provides
+    @Singleton
+    static UriResolvers bindResolvers(Set<UriResolver> resolvers) {
+        return new UriResolvers(resolvers);
+    }
 }
