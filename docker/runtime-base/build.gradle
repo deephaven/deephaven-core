@@ -33,7 +33,7 @@ def prepareDocker = project.tasks.register('prepareDocker', Sync) {
     into dockerContext
 }
 
-Docker.registerDockerImage(project, 'buildDocker') {
+def buildDocker = Docker.registerDockerImage(project, 'buildDocker') {
     dependsOn prepareDocker
 
     inputs.files Docker.registryFiles(project, 'server-base')

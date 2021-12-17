@@ -1,7 +1,6 @@
-FROM deephaven/node:local-build AS node
+FROM deephaven/node:local-build
 WORKDIR /usr/src/app
 
-FROM node as build
 ARG WEB_VERSION=0.7.2
 
 # Pull in the published package from npmjs and extract is
