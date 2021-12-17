@@ -4,6 +4,7 @@
 
 package io.deephaven.engine.util;
 
+import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.FileUtils;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
@@ -32,6 +33,7 @@ import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -77,8 +79,6 @@ public class PythonDeephavenSession extends AbstractScriptSession implements Scr
             @Nullable final Listener listener, boolean runInitScripts, boolean isDefaultScriptSession)
             throws IOException {
         super(listener, isDefaultScriptSession);
-
-        JpyInit.init(log);
         PythonEvaluatorJpy jpy = PythonEvaluatorJpy.withGlobalCopy();
         evaluator = jpy;
         scope = jpy.getScope();

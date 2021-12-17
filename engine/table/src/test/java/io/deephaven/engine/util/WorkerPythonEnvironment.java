@@ -1,5 +1,6 @@
 package io.deephaven.engine.util;
 
+import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.FileUtils;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
@@ -12,6 +13,7 @@ import org.jpy.PyObject;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.concurrent.TimeoutException;
 
 /**
  * This class is the support infrastructure for running Python remote queries.
@@ -37,8 +39,16 @@ public enum WorkerPythonEnvironment {
      */
     WorkerPythonEnvironment() {
         log = LoggerFactory.getLogger(WorkerPythonEnvironment.class);
-
-        JpyInit.init(log);
+        try {
+            JpyInit.init(log);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new UncheckedDeephavenException(e);
+        } catch (TimeoutException e) {
+            throw new UncheckedDeephavenException(e);
+        }
         PythonEvaluatorJpy jpy = PythonEvaluatorJpy.withGlobalCopy();
         evaluator = jpy;
         scope = jpy.getScope();

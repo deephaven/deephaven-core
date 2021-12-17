@@ -11,6 +11,7 @@ import io.deephaven.util.process.ProcessEnvironment;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.concurrent.TimeoutException;
 
 public class Main {
     private static void bootstrapSystemProperties(String[] args) throws IOException {
@@ -34,7 +35,8 @@ public class Main {
         }
     }
 
-    public static void main(String[] args) throws IOException, InterruptedException, ClassNotFoundException {
+    public static void main(String[] args)
+            throws IOException, InterruptedException, ClassNotFoundException, TimeoutException {
         System.out.printf("# Starting %s%n", Main.class.getName());
 
         // No classes should be loaded before we bootstrap additional system properties

@@ -22,6 +22,7 @@ import java.util.function.Supplier;
  * Interface for interactive console script sessions.
  */
 public interface ScriptSession extends ReleasableLivenessManager, LivenessNode {
+
     /**
      * Retrieve a variable from the script session's bindings.
      * <p/>

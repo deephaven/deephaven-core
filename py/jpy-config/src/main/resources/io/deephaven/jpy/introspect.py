@@ -1,9 +1,7 @@
-#!/usr/bin/env python3
-
 import sys
 import jpyutil
 
-properties = {
+jpy_properties = {
     'jpy.pythonPrefix': sys.prefix,
     'jpy.programName': sys.executable,
     'jpy.pythonLib': jpyutil._find_python_dll_file(fail=True),
@@ -11,5 +9,6 @@ properties = {
     'jpy.jdlLib': jpyutil._get_module_path('jdl', fail=True)
 }
 
-for key, value in properties.items():
-    print(f'{key}={value}')
+jpy_properties_format = '\n'.join([ '{}={}'.format(key, value) for key, value in jpy_properties.items() ])
+
+print(jpy_properties_format)
