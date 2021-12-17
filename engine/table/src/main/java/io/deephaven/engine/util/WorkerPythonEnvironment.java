@@ -1,5 +1,6 @@
 package io.deephaven.engine.util;
 
+import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.base.FileUtils;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
@@ -44,9 +45,9 @@ public enum WorkerPythonEnvironment {
             throw new UncheckedIOException(e);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new RuntimeException(e);
+            throw new UncheckedDeephavenException(e);
         } catch (TimeoutException e) {
-            throw new RuntimeException(e);
+            throw new UncheckedDeephavenException(e);
         }
         PythonEvaluatorJpy jpy = PythonEvaluatorJpy.withGlobalCopy();
         evaluator = jpy;

@@ -23,10 +23,7 @@ class PropertiesFromSubprocess {
             try {
                 process = new ProcessBuilder(pythonName, "-").start();
             } catch (IOException e) {
-                if (e.getMessage().contains("error=2, No such file or directory")) {
-                    throw new IOException(String.format("Python '%s' not found.", pythonName), e);
-                }
-                throw e;
+                throw new IOException(String.format("Error starting python command '%s'", pythonName), e);
             }
             // We need to also close the stream to let python know it can start processing script
             try (OutputStream out = process.getOutputStream()) {
@@ -49,7 +46,9 @@ class PropertiesFromSubprocess {
             final String error = new String(process.getErrorStream().readAllBytes(), StandardCharsets.UTF_8);
             if (error.contains("ModuleNotFoundError: No module named 'jpyutil'")) {
                 throw new IllegalStateException(
-                        String.format("A Deephaven python environment has not been configured for '%s'", pythonName));
+                        String.format("A Deephaven python environment has not been configured for '%s'. " +
+                                "Please ensure that the appropriate Deephaven wheels have been installed.",
+                                pythonName));
             }
             throw new IllegalStateException(
                     String.format("Unexpected error while starting python '%s': %s", pythonName, error));
