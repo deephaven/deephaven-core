@@ -6,10 +6,10 @@ package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.base.Pair;
 import io.deephaven.engine.table.lang.QueryScope;
+import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.util.AbstractExpressionFactory;
 import io.deephaven.engine.util.ExpressionParser;
@@ -37,7 +37,7 @@ import static io.deephaven.engine.table.impl.select.SelectFactoryConstants.*;
  */
 public class WhereFilterFactory {
 
-    private static final Logger log = ProcessEnvironment.getDefaultLog(WhereFilterFactory.class);
+    private static final Logger log = LoggerFactory.getLogger(WhereFilterFactory.class);
 
     private static final ExpressionParser<WhereFilter> parser = new ExpressionParser<>();
 

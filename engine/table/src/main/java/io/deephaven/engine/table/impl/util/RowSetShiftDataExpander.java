@@ -10,10 +10,10 @@ import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.BaseTable;
 import io.deephaven.engine.table.TableUpdateListener;
 import io.deephaven.engine.table.ModifiedColumnSet;
+import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.SafeCloseable;
-import io.deephaven.util.process.ProcessEnvironment;
 
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectOutputStream;
@@ -26,6 +26,8 @@ import java.util.function.BiConsumer;
  * Using this is almost always less efficient than using the Update directly.
  */
 public class RowSetShiftDataExpander implements SafeCloseable {
+
+    private static final Logger log = LoggerFactory.getLogger(RowSetShiftDataExpander.class);
 
     private final RowSet added;
     private final RowSet removed;
@@ -224,7 +226,6 @@ public class RowSetShiftDataExpander implements SafeCloseable {
                 .append(LogOutput::nl).append("\tremovedIntersectCurrent=").append(removedIntersectCurrent)
                 .append(LogOutput::nl).append("\t    modifiedMinusCurrent=").append(modifiedMinusCurrent).toString();
 
-        final Logger log = ProcessEnvironment.getDefaultLog();
         log.error().append(indexUpdateErrorMessage).endl();
 
         if (serializedIndices != null) {
