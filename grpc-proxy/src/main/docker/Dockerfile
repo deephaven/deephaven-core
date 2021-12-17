@@ -14,3 +14,12 @@ FROM deephaven/alpine:local-build
 COPY --from=install / /
 EXPOSE 8080 8443
 ENTRYPOINT ["/sbin/tini", "--", "/docker-entrypoint.sh"]
+
+ARG DEEPHAVEN_VERSION
+LABEL \
+    io.deephaven.image.type="grpc-proxy" \
+    io.deephaven.version="${DEEPHAVEN_VERSION}" \
+    org.opencontainers.image.vendor="Deephaven Data Labs" \
+    org.opencontainers.image.title="Deephaven gRPC Web Proxy" \
+    org.opencontainers.image.description="Deephaven gRPC web proxy, for the improbable-eng grpc to grpc-web/websocket proxy" \
+    org.opencontainers.image.licenses="Apache-2.0"

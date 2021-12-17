@@ -2,6 +2,8 @@ package io.deephaven.grpc_api.uri;
 
 import io.deephaven.csv.CsvTools;
 import io.deephaven.engine.table.Table;
+import io.deephaven.uri.resolver.UriResolver;
+import io.deephaven.uri.resolver.UriResolversInstance;
 
 import javax.inject.Inject;
 import java.io.IOException;

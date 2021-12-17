@@ -33,6 +33,7 @@ def buildDocker = Docker.registerDockerTwoPhaseImage(project, 'grpc-proxy', 'ins
     inputDir.set context
     inputs.files prepareDocker.get().outputs.files
     inputs.files Docker.registryFiles(project, 'alpine')
+    buildArgs.put('DEEPHAVEN_VERSION', project.version)
 }
 
 assemble.dependsOn buildDocker
