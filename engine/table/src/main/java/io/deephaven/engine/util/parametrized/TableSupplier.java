@@ -75,7 +75,7 @@ public class TableSupplier extends LivenessArtifact implements InvocationHandler
         return method.getName().startsWith(FILTER_OPERATION_PREFIX);
     }
 
-    private final Logger log = LoggerFactory.getLogger(TableSupplier.class);
+    private static final Logger log = LoggerFactory.getLogger(TableSupplier.class);
 
     /**
      * The source table used to generate the supplied table

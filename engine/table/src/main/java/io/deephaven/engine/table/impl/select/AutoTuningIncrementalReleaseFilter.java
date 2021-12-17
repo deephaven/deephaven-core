@@ -96,6 +96,8 @@ import java.text.DecimalFormat;
  * </pre>
  */
 public class AutoTuningIncrementalReleaseFilter extends BaseIncrementalReleaseFilter {
+    private static final Logger log = LoggerFactory.getLogger(AutoTuningIncrementalReleaseFilter.class);
+
     @NotNull
     private final TimeProvider timeProvider;
     private final long initialRelease;
@@ -190,8 +192,7 @@ public class AutoTuningIncrementalReleaseFilter extends BaseIncrementalReleaseFi
     @ScriptApi
     public AutoTuningIncrementalReleaseFilter(long initialSize, long initialRelease, double targetFactor,
             boolean verbose, TimeProvider timeProvider) {
-        this(LoggerFactory.getLogger(AutoTuningIncrementalReleaseFilter.class), initialSize, initialRelease,
-                targetFactor, verbose, timeProvider);
+        this(log, initialSize, initialRelease, targetFactor, verbose, timeProvider);
     }
 
     /**

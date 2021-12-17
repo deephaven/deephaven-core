@@ -27,6 +27,8 @@ import java.util.function.BiConsumer;
  */
 public class RowSetShiftDataExpander implements SafeCloseable {
 
+    private static final Logger log = LoggerFactory.getLogger(RowSetShiftDataExpander.class);
+
     private final RowSet added;
     private final RowSet removed;
     private final WritableRowSet modified;
@@ -224,7 +226,6 @@ public class RowSetShiftDataExpander implements SafeCloseable {
                 .append(LogOutput::nl).append("\tremovedIntersectCurrent=").append(removedIntersectCurrent)
                 .append(LogOutput::nl).append("\t    modifiedMinusCurrent=").append(modifiedMinusCurrent).toString();
 
-        final Logger log = LoggerFactory.getLogger(RowSetShiftDataExpander.class);
         log.error().append(indexUpdateErrorMessage).endl();
 
         if (serializedIndices != null) {

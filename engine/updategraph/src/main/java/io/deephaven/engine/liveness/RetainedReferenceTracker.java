@@ -5,6 +5,7 @@ import io.deephaven.base.reference.WeakCleanupReference;
 import io.deephaven.engine.util.reference.CleanupReferenceProcessorInstance;
 import io.deephaven.hash.KeyedObjectHashSet;
 import io.deephaven.internal.log.LoggerFactory;
+import io.deephaven.io.logger.Logger;
 import io.deephaven.util.Utils;
 import io.deephaven.util.datastructures.hash.IdentityKeyedObjectKey;
 import org.jetbrains.annotations.NotNull;
@@ -44,6 +45,8 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
     private static final ThreadLocal<SoftReference<Queue<WeakReference<? extends LivenessReferent>>>> tlSavedQueueReference =
             new ThreadLocal<>();
 
+    private static final Logger log = LoggerFactory.getLogger(RetainedReferenceTracker.class);
+
     private final Impl impl;
 
     @SuppressWarnings("FieldMayBeFinal") // We are using an AtomicIntegerFieldUpdater (via reflection) to change this
@@ -60,7 +63,7 @@ final class RetainedReferenceTracker<TYPE extends LivenessManager> extends WeakC
         impl = enforceStrongReachability ? new StrongImpl() : new WeakImpl();
         outstandingCount.getAndIncrement();
         if (Liveness.DEBUG_MODE_ENABLED) {
-            LoggerFactory.getLogger(RetainedReferenceTracker.class).info()
+            log.info()
                     .append("Creating ").append(Utils.REFERENT_FORMATTER, this)
                     .append(" at ").append(new LivenessDebugException())
                     .endl();
