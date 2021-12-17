@@ -1,7 +1,7 @@
 package io.deephaven.engine.util.config;
 
+import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.util.process.ProcessEnvironment;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -13,7 +13,7 @@ public interface InputTableStatusListener {
      * A Simple implementation that does nothing on success, and logs an error on failure
      */
     InputTableStatusListener DEFAULT = new InputTableStatusListener() {
-        final Logger log = ProcessEnvironment.getDefaultLog(InputTableStatusListener.class);
+        final Logger log = LoggerFactory.getLogger(InputTableStatusListener.class);
 
         @Override
         public void onError(Throwable t) {

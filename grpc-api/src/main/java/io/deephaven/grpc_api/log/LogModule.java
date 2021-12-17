@@ -48,8 +48,8 @@ public interface LogModule {
     @Provides
     @Singleton // StreamToLogBuffer maintains state
     static StreamToLogBuffer providesStreamToLogBuffer(LogBuffer logBuffer) {
-        final boolean toStdout = Boolean.getBoolean("stdout.toLogBuffer");
-        final boolean toStderr = Boolean.getBoolean("stderr.toLogBuffer");
+        final boolean toStdout = Boolean.parseBoolean(System.getProperty("stdout.toLogBuffer", "true"));
+        final boolean toStderr = Boolean.parseBoolean(System.getProperty("stderr.toLogBuffer", "true"));
         // TODO (core#90): Add configuration and documentation for LogBufferOutputStream
         return new StreamToLogBuffer(logBuffer, toStdout, toStderr, 256, 1 << 19); // 512 KiB
     }

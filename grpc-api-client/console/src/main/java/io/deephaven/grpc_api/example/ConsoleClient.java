@@ -47,8 +47,6 @@ public class ConsoleClient {
     public static void main(final String[] args) throws Exception {
         // Assign properties that need to be set to even turn on
         System.setProperty("Configuration.rootFile", "grpc-api.prop");
-        System.setProperty("io.deephaven.configuration.PropertyInputStreamLoader.override",
-                "io.deephaven.configuration.PropertyInputStreamLoaderTraditional");
 
         final String sessionType = System.getProperty("console.sessionType", "groovy");
         log.info().append("Session type ").append(sessionType).endl();

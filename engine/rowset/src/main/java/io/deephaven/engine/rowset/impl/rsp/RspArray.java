@@ -141,8 +141,9 @@ import static io.deephaven.engine.rowset.impl.RowSetUtils.Comparator;
  * <li>Our version of RB Container supports a "shared" boolean flag that is used to implement copy-on-write (COW)
  * semantics and allow operation results to share containers in COW fashion.</li>
  * <li>We extended the Container class hierarchy to include specializations for empty, single value, single range, and
- * two values containers. These are immutable; empty is used only as a way to return empty results, and are never actual
- * stored in the spans array. For details, please see the Container class definition and derived class hierarchy.</li>
+ * two values containers. These are immutable; empty and singleton are used only as a way to return empty and singleton
+ * results, and are never actually stored in the spans array. For details, please see the Container class definition and
+ * derived class hierarchy.</li>
  * </ul>
  */
 public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
