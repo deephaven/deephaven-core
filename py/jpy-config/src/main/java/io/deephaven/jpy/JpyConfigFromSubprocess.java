@@ -57,8 +57,7 @@ public final class JpyConfigFromSubprocess {
 
     /**
      * Create the configuration based off of a python subprocess that introspects itself. The process will be executed
-     * based off of {@code pythonName}, which may be an absolute path, or will otherwise be sourced from the environment
-     * PATH.
+     * based off of {@code pythonName}, which may be a path, or will otherwise be sourced from the environment PATH.
      *
      * @param pythonName the python command
      * @param timeout the timeout
