@@ -4,6 +4,7 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.jpy.JpyConfig;
 import io.deephaven.jpy.JpyConfigExt;
+import io.deephaven.jpy.JpyConfigFromSubprocess;
 import io.deephaven.jpy.JpyConfigSource;
 import org.jpy.PyLibInitializer;
 
@@ -18,15 +19,9 @@ import java.util.concurrent.TimeoutException;
  */
 public class JpyInit {
 
-    private static final String PYTHON_NAME = "python3";
-
-    private static final String VIRTUAL_ENV = "VIRTUAL_ENV";
-
     /**
      * First, checks {@link Configuration#getInstance()} for any explicit jpy properties. If none are set, it will
-     * source the configuration from {@link JpyConfigSource#fromSubprocess(String, Duration)}, with {@code pythonName}
-     * as {@code "%s/bin/python"} if the environment variable {@value VIRTUAL_ENV} is set, otherwise {@code pythonName}
-     * {@value PYTHON_NAME} will be used.
+     * source the configuration from {@link JpyConfigFromSubprocess#fromSubprocess(Duration)}.
      *
      * @param log the log
      * @throws IOException if an IO exception occurs
@@ -39,10 +34,8 @@ public class JpyInit {
             init(log, new JpyConfigExt(explicitConfig));
             return;
         }
-        final String virtualEnv = System.getenv(VIRTUAL_ENV);
-        final String pythonName = virtualEnv == null ? PYTHON_NAME : virtualEnv + "/bin/python";
-        final JpyConfigSource implicitFromPath = JpyConfigSource.fromSubprocess(pythonName, Duration.ofSeconds(10));
-        init(log, new JpyConfigExt(implicitFromPath.asJpyConfig()));
+        final JpyConfigSource fromSubprocess = JpyConfigFromSubprocess.fromSubprocess(Duration.ofSeconds(10));
+        init(log, new JpyConfigExt(fromSubprocess.asJpyConfig()));
     }
 
     public static synchronized void init(Logger log, JpyConfigExt jpyConfig) {

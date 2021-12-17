@@ -2,10 +2,8 @@ package io.deephaven.jpy;
 
 import io.deephaven.jpy.JpyConfig.Flag;
 
-import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.LinkedHashMap;
@@ -14,7 +12,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
-import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
 
 /**
@@ -138,23 +135,6 @@ public interface JpyConfigSource {
      */
     static JpyConfigSource sysProps() {
         return new FromProperties(System.getProperties());
-    }
-
-    /**
-     * Create the configuration based off of a python subprocess that introspects itself. The process will be executed
-     * based off of {@code pythonName}, which may be an absolute path, or will otherwise be sourced from the environment
-     * PATH.
-     *
-     * @param pythonName the python command
-     * @param timeout the timeout
-     * @return the jpy configuration, based on a python execution in the current environment
-     * @throws IOException if an IO exception occurs
-     * @throws InterruptedException if the current thread is interrupted while waiting for the command to execute
-     * @throws TimeoutException if the command times out
-     */
-    static JpyConfigSource fromSubprocess(String pythonName, Duration timeout)
-            throws IOException, InterruptedException, TimeoutException {
-        return new FromProperties(PropertiesFromSubprocess.properties(pythonName, timeout));
     }
 
     final class FromProperties implements JpyConfigSource {
