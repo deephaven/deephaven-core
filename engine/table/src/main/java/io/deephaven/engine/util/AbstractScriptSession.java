@@ -9,7 +9,6 @@ import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.api.util.NameValidator;
 import io.deephaven.base.FileUtils;
 import io.deephaven.compilertools.CompilerTools;
-import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableDefinition;
 import io.deephaven.engine.table.lang.QueryLibrary;
@@ -31,11 +30,11 @@ import java.util.*;
  * evaluateScript which handles liveness and diffs in a consistent way.
  */
 public abstract class AbstractScriptSession extends LivenessScope implements ScriptSession, VariableProvider {
-    public static final String CLASS_CACHE_LOCATION = Configuration.getInstance()
-            .getStringWithDefault("ScriptSession.classCacheDirectory", "/tmp/dh_class_cache");
+
+    private static final Path CLASS_CACHE_LOCATION = CacheDir.get().resolve("script-session-classes");
 
     public static void createScriptCache() {
-        final File classCacheDirectory = new File(CLASS_CACHE_LOCATION);
+        final File classCacheDirectory = CLASS_CACHE_LOCATION.toFile();
         createOrClearDirectory(classCacheDirectory);
     }
 
@@ -60,8 +59,9 @@ public abstract class AbstractScriptSession extends LivenessScope implements Scr
     protected AbstractScriptSession(@Nullable Listener changeListener, boolean isDefaultScriptSession) {
         this.changeListener = changeListener;
 
+        // TODO(deephaven-core#1713): Introduce instance-id concept
         final UUID scriptCacheId = UuidCreator.getRandomBased();
-        classCacheDirectory = new File(CLASS_CACHE_LOCATION, UuidCreator.toString(scriptCacheId));
+        classCacheDirectory = CLASS_CACHE_LOCATION.resolve(UuidCreator.toString(scriptCacheId)).toFile();
         createOrClearDirectory(classCacheDirectory);
 
         queryScope = newQueryScope();

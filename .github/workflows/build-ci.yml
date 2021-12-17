@@ -483,7 +483,7 @@ jobs:
         uses: burrunan/gradle-cache-action@v1
         with:
           job-id: build-web
-          arguments: --scan outputVersion createCraneTagScript web-client-ide:prepareDocker
+          arguments: --scan outputVersion createCraneTagScript docker-web:prepareDocker
           gradle-version: wrapper
 
       - name: Get Deephaven Version
@@ -498,7 +498,7 @@ jobs:
             DEEPHAVEN_VERSION=${{ steps.deephaven_version.outputs.deephaven_version }}
           tags: ${{ steps.docker_meta.outputs.tags }}
           builder: ${{ steps.buildx.outputs.name }}
-          context: ./web/client-ide/build/docker/
+          context: ./docker/web/build/docker/
           push: ${{ github.event_name != 'pull_request' }}
 
       - name: Tag upstream images

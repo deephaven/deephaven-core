@@ -29,13 +29,19 @@ RUN set -eux; \
     rm -r /deephaven2-wheel
 
 ARG DEEPHAVEN_VERSION
-
 ADD serverApplicationDist/server-${DEEPHAVEN_VERSION}.tar /opt/deephaven
 
 RUN set -eux; \
     ln -s /opt/deephaven/server-${DEEPHAVEN_VERSION} /opt/deephaven/server
 
-COPY image-bootstrap.properties image-bootstrap.properties
+COPY configure/ /configure
+
+# TODO(deephaven-core#1703): Native-compatible python startup improvements
+RUN set -eux; \
+    cp /configure/image-bootstrap.properties image-bootstrap.properties; \
+    python3 /configure/properties.py >> image-bootstrap.properties; \
+    cat image-bootstrap.properties; \
+    rm -r /configure
 
 FROM $BASE
 COPY --from=install / /

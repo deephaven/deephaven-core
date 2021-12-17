@@ -98,6 +98,7 @@ Set<Project> modsAreBasic = subprojects.findAll {it.name in [
     'deephaven2-wheel',
     'envoy',
     'grpc-proxy',
+    'web',
     'web-client-ui',
     'pyclient',
     'sphinx',
@@ -480,7 +481,7 @@ tasks.register('prepareCompose') {
     it.description 'A lifecycle task that prepares prerequisites for local docker-compose builds'
     it.dependsOn project(':docker-server-slim').tasks.findByName('buildDocker'),
             project(':docker-server').tasks.findByName('buildDocker-server'),
-            project(':web-client-ide').tasks.findByName('buildDocker'),
+            project(':docker-web').tasks.findByName('buildDocker'),
             project(':envoy').tasks.findByName('buildDocker'),
             project(':grpc-proxy').tasks.findByName('buildDocker')
 }
@@ -496,7 +497,7 @@ tasks.register('smoke') {
     it.dependsOn project(':grpc-api').tasks.findByName(LifecycleBasePlugin.CHECK_TASK_NAME)
     it.dependsOn project(':docker-server-slim').tasks.findByName('prepareDocker')
     it.dependsOn project(':docker-server').tasks.findByName('prepareDocker')
-    it.dependsOn project(':web-client-ide').tasks.findByName('prepareDocker')
+    it.dependsOn project(':web').tasks.findByName(LifecycleBasePlugin.ASSEMBLE_TASK_NAME)
     it.dependsOn project(':Generators').tasks.findByName(LifecycleBasePlugin.CHECK_TASK_NAME)
 }
 

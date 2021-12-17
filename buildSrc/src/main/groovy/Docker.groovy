@@ -12,6 +12,7 @@ import com.bmuschko.gradle.docker.tasks.image.Dockerfile
 import com.github.dockerjava.api.command.InspectImageResponse
 import com.github.dockerjava.api.exception.DockerException
 import groovy.transform.CompileStatic
+import io.deephaven.tools.docker.Architecture
 import org.gradle.api.Action
 import org.gradle.api.GradleException
 import org.gradle.api.Project
@@ -159,6 +160,11 @@ class Docker {
         Map<String, String> buildArgs;
 
         /**
+         * Optional platform
+         */
+        String platform;
+
+        /**
          * Logs are always printed from the build task when it runs, but entrypoint logs are only printed
          * when it fails. Set this flag to always show logs, even when entrypoint is successful.
          */
@@ -269,6 +275,11 @@ class Docker {
                 // add build arguments, if provided
                 if (cfg.buildArgs) {
                     buildArgs.putAll(cfg.buildArgs)
+                }
+
+                // the platform, if provided
+                if (cfg.platform) {
+                    platform.set(cfg.platform)
                 }
             }
         }
@@ -426,6 +437,12 @@ class Docker {
         // Produce a docker image from the copied inputs and provided dockerfile, and tag it
         TaskProvider<DockerBuildImage> makeImage = project.tasks.register(taskName, DockerBuildImage) { buildImage ->
             action.execute(buildImage)
+            if (!buildImage.platform.isPresent()) {
+                def targetArch = Architecture.targetArchitecture(project).toString()
+                buildImage.platform.set "linux/${targetArch}".toString()
+                // Use the same environment variable that buildkit uses
+                buildImage.buildArgs.put('TARGETARCH', targetArch)
+            }
             if (buildImage.images) {
                 buildImage.images.get().forEach { String imageName -> validateImageName(imageName) }
 
