@@ -6,6 +6,8 @@ package io.deephaven.grpc_api.console;
 
 import com.google.rpc.Code;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.util.jpy.JpyInit;
+import io.deephaven.jpy.JpyConfig;
 import io.deephaven.plot.FigureWidget;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.util.DelegatingScriptSession;
@@ -39,9 +41,11 @@ import io.grpc.stub.StreamObserver;
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
+import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
 import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyExecute;
@@ -51,8 +55,10 @@ import static io.deephaven.extensions.barrage.util.GrpcUtil.safelyExecuteLocked;
 public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImplBase {
     private static final Logger log = LoggerFactory.getLogger(ConsoleServiceGrpcImpl.class);
 
+    private static final String PYTHON_TYPE = "python";
+
     public static final String WORKER_CONSOLE_TYPE =
-            Configuration.getInstance().getStringWithDefault("deephaven.console.type", "python");
+            Configuration.getInstance().getStringWithDefault("deephaven.console.type", PYTHON_TYPE);
     public static final boolean REMOTE_CONSOLE_DISABLED =
             Configuration.getInstance().getBooleanWithDefault("deephaven.console.disable", false);
 
@@ -82,7 +88,10 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
         }
     }
 
-    public void initializeGlobalScriptSession() {
+    public void initializeGlobalScriptSession() throws IOException, InterruptedException, TimeoutException {
+        if (PYTHON_TYPE.equals(WORKER_CONSOLE_TYPE)) {
+            JpyInit.init(log);
+        }
         globalSessionProvider.initializeGlobalScriptSession(scriptTypes.get(WORKER_CONSOLE_TYPE).get());
     }
 

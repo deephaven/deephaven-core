@@ -79,14 +79,6 @@ public class PythonDeephavenSession extends AbstractScriptSession implements Scr
             @Nullable final Listener listener, boolean runInitScripts, boolean isDefaultScriptSession)
             throws IOException {
         super(listener, isDefaultScriptSession);
-        try {
-            JpyInit.init(log);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new UncheckedDeephavenException(e);
-        } catch (TimeoutException e) {
-            throw new UncheckedDeephavenException(e);
-        }
         PythonEvaluatorJpy jpy = PythonEvaluatorJpy.withGlobalCopy();
         evaluator = jpy;
         scope = jpy.getScope();
