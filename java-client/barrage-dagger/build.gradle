@@ -6,8 +6,10 @@ description = 'The Deephaven engine library plus client'
 
 dependencies {
     api project(':java-client-barrage')
-    api project(':java-client-flight-dagger')
     api project(':uri')
+
+    implementation project(':java-client-flight-dagger')
+    implementation project(':java-client-session-dagger')
 
     Classpaths.inheritDagger(project)
 

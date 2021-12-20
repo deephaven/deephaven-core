@@ -6,7 +6,8 @@ description = 'The Deephaven client flight dagger library'
 
 dependencies {
     api project(':java-client-flight')
-    api project(':java-client-session-dagger')
+
+    implementation project(':java-client-session-dagger')
 
     Classpaths.inheritDagger(project)
 
