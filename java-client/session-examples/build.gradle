@@ -8,6 +8,9 @@ dependencies {
 
     implementation 'info.picocli:picocli:4.6.1'
 
+    Classpaths.inheritGrpcPlatform(project, 'implementation')
+    implementation 'io.grpc:grpc-core'
+
     Classpaths.inheritJUnitPlatform(project)
     Classpaths.inheritAssertJ(project)
     testImplementation 'org.junit.jupiter:junit-jupiter'
