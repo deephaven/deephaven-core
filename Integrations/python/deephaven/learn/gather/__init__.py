@@ -116,7 +116,13 @@ def table_to_numpy_2d(row_set, col_set, order:MemoryLayout = MemoryLayout.ROW_MA
     else:
         raise ValueError(f"Data type {dtype} is not supported.")
 
-    tensor = np.frombuffer(buffer, dtype = dtype)
+    if not(dtype == np.str_):
+        tensor = np.frombuffer(buffer, dtype = dtype)
+    else:
+        tensor = [''] * len(buffer)
+        for i, item in enumerate(buffer):
+            tensor[i] = item
+        tensor = np.array(tensor, dtype = np.str_)
 
     if order.is_row_major:
         tensor.shape = (len(col_set), row_set.intSize())
