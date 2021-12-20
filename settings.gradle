@@ -101,9 +101,6 @@ project(':log-example-file').projectDir = file('log-factory/examples/example-fil
 include(':grpc-api-server-native')
 project(':grpc-api-server-native').projectDir = file('grpc-api/server/native')
 
-include(':grpc-api-client-console')
-project(':grpc-api-client-console').projectDir = file('grpc-api-client/console')
-
 include(':Base')
 
 include(':SevenZip')
