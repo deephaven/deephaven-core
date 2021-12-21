@@ -16,8 +16,8 @@ dependencies {
     implementation 'org.eclipse.jetty.http2:http2-server:11.0.7'
 
 //    implementation 'io.grpc:grpc-servlet-jakarta'
-    implementation project(':grpc:grpc-servlet')
-    implementation project(':grpc:grpc-web-socket')
+    implementation project(':grpc-java:grpc-servlet-jakarta')
+    implementation project(':grpc-java:grpc-servlet-websocket-jakarta')
     implementation 'org.eclipse.jetty.websocket:websocket-jakarta-server:11.0.7'
 
     runtimeOnly project(':log-to-slf4j')

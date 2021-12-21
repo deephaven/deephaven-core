@@ -1,10 +1,8 @@
 package io.deephaven.server.jetty;
 
 import io.deephaven.server.runner.GrpcServer;
-import io.grpc.servlet.web.websocket.WebSocketAdapter;
 import io.grpc.servlet.web.websocket.WebSocketServerStream;
 import jakarta.servlet.DispatcherType;
-import jakarta.websocket.DeploymentException;
 import jakarta.websocket.server.ServerEndpointConfig;
 import org.eclipse.jetty.http2.parser.RateControl;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
@@ -17,7 +15,6 @@ import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.websocket.jakarta.server.config.JakartaWebSocketServletContainerInitializer;
-import org.eclipse.jetty.websocket.jakarta.server.internal.JakartaWebSocketServerContainer;
 
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -75,13 +72,12 @@ public class JettyBackedGrpcServer implements GrpcServer {
 
         // set up websocket for grpc-web
         JakartaWebSocketServletContainerInitializer.configure(context, (servletContext, container) -> {
-            WebSocketAdapter adapter = filter.create(WebSocketAdapter::new);
             container.addEndpoint(
                     ServerEndpointConfig.Builder.create(WebSocketServerStream.class, "/{service}/{method}")
                             .configurator(new ServerEndpointConfig.Configurator() {
                                 @Override
                                 public <T> T getEndpointInstance(Class<T> endpointClass) throws InstantiationException {
-                                    return (T) new WebSocketServerStream(adapter);
+                                    return (T) filter.create(WebSocketServerStream::new);
                                 }
                             })
                             .build());
