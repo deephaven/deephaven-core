@@ -8,16 +8,18 @@ dependencies {
     implementation project(':extensions-parquet-table')
     implementation project(':Util');
 
-    //TODO don't import like this, we don't want to reexpose this
-    api(project(':java-client-barrage-dagger'));
-    implementation(project(':proto:proto-backplane-grpc-flight'));
+    //TODO(1722) This isn't actually an api dependency, but downstream dagger compiles will need it
+    api(project(':java-client-barrage-dagger'))
+
+    implementation project(':proto:proto-backplane-grpc-flight')
     implementation project(':open-api-lang-tools')
     implementation project(':log-factory')
     implementation project(':application-mode')
     implementation 'com.github.f4b6a3:uuid-creator:3.6.0'
 
-    // Expose Configuration to be accessible to server implementations for their main()
-    api project(':Configuration')
+    api(project(':Configuration')) {
+        because 'jetty/netty implementations will access the configuration in their main()s'
+    }
 
     Classpaths.inheritFlatbuffer(project, 'implementation')
 
@@ -35,10 +37,12 @@ dependencies {
         runtimeOnly project(':extensions-suanshu')
     }
 
-    Classpaths.inheritGrpcPlatform(project, 'implementation')
-    implementation "io.grpc:grpc-services"
+    Classpaths.inheritGrpcPlatform(project, 'api')
 
-    testImplementation "io.grpc:grpc-testing"
+    //TODO(1722) This isn't actually an api dependency, but downstream dagger compiles will need it
+    api('io.grpc:grpc-services')
+
+    testImplementation 'io.grpc:grpc-testing'
 
     testImplementation project(':proto:proto-backplane-grpc')
 

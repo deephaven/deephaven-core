@@ -2,39 +2,28 @@ package io.deephaven.server.runner;
 
 import dagger.BindsInstance;
 import dagger.Component;
-import io.deephaven.server.healthcheck.HealthCheckModule;
 
 import javax.inject.Named;
-import javax.inject.Singleton;
 import java.io.PrintStream;
 
-// @Singleton
-// @Component(modules = {
-// DeephavenApiServerModule.class,
-// HealthCheckModule.class,
-// NettyServerBuilderModule.class
-// })
 public interface DeephavenApiServerComponent {
 
     DeephavenApiServer getServer();
 
-    // @Component.Builder
-    interface Builder {
+    interface Builder<B extends Builder<B>> {
         @BindsInstance
-        Builder withPort(@Named("http.port") int port);
+        B withPort(@Named("http.port") int port);
 
         @BindsInstance
-        Builder withSchedulerPoolSize(@Named("scheduler.poolSize") int numThreads);
+        B withSchedulerPoolSize(@Named("scheduler.poolSize") int numThreads);
 
         @BindsInstance
-        Builder withSessionTokenExpireTmMs(@Named("session.tokenExpireMs") long tokenExpireMs);
+        B withSessionTokenExpireTmMs(@Named("session.tokenExpireMs") long tokenExpireMs);
 
         @BindsInstance
-        Builder withOut(@Named("out") PrintStream out);
+        B withOut(@Named("out") PrintStream out);
 
         @BindsInstance
-        Builder withErr(@Named("err") PrintStream err);
-
-        DeephavenApiServerComponent build();
+        B withErr(@Named("err") PrintStream err);
     }
 }

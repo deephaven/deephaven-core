@@ -5,9 +5,11 @@ import io.deephaven.configuration.Configuration;
 import io.deephaven.server.runner.Main;
 
 import java.io.IOException;
+import java.util.concurrent.TimeoutException;
 
 public class JettyMain extends Main {
-    public static void main(String[] args) throws Exception, InterruptedException, ClassNotFoundException {
+    public static void main(String[] args)
+            throws IOException, InterruptedException, ClassNotFoundException, TimeoutException {
         final Configuration config = init(args, Main.class);
 
         // defaults to 5 minutes
