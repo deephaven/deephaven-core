@@ -928,10 +928,9 @@ public class QueryTableTreeTest extends QueryTableTestBase {
             expectedValue = expectedValue.sort(sortColumns);
         }
 
-        final String diff = diff(maybePrev(actualValue.dropColumns(hierarchicalColumnName), actualPrev),
-                maybePrev(expectedValue.dropColumns(hierarchicalColumnName), expectedPrev), 10,
-                EnumSet.of(TableDiff.DiffItems.DoublesExact));
-        Assert.assertEquals(msg, "", diff);
+        assertTableEquals(maybePrev(expectedValue.dropColumns(hierarchicalColumnName), expectedPrev),
+                maybePrev(actualValue.dropColumns(hierarchicalColumnName), actualPrev),
+                TableDiff.DiffItems.DoublesExact);
 
         final ColumnSource actualChildren = columnOrPrev(actualValue, hierarchicalColumnName, actualPrev);
         final ColumnSource expectedChildren = columnOrPrev(expectedValue, hierarchicalColumnName, expectedPrev);
@@ -1622,7 +1621,14 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     }
 
     public void testRollupIncremental() {
-        final Random random = new Random(0);
+        for (int seed = 0; seed < 1; ++seed) {
+            System.out.println("Seed = " + seed);
+            testRollupIncremental(seed);
+        }
+    }
+
+    private void testRollupIncremental(int seed) {
+        final Random random = new Random(seed);
         final TstUtils.ColumnInfo[] columnInfo;
 
         final int size = 100;
@@ -1683,6 +1689,7 @@ public class QueryTableTreeTest extends QueryTableTestBase {
 
                     @Override
                     public void show() {
+                        System.out.println("Table:");
                         TableTools.showWithRowSet(table);
                     }
                 },

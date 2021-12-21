@@ -281,6 +281,11 @@ public class FloatChunkedCountDistinctOperator implements IterativeChunkedAggreg
         }
     }
 
+    @Override
+    public boolean requiresRunFinds() {
+        return true;
+    }
+
     //endregion
 
     //region Private Helpers

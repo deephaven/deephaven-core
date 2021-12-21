@@ -14,6 +14,7 @@ import io.deephaven.engine.table.ChunkSink;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
+import io.deephaven.engine.table.impl.sort.timsort.IntIntTimsortKernel;
 import io.deephaven.util.SafeCloseableList;
 import org.jetbrains.annotations.NotNull;
 
@@ -66,16 +67,39 @@ public class StreamFirstChunkedOperator extends BaseStreamFirstOrLastChunkedOper
     }
 
     @Override
-    public void addChunk(final BucketedContext context, // Unused
+    public void addChunk(final BucketedContext bucketedContext,
             final Chunk<? extends Values> values, // Unused
             @NotNull final LongChunk<? extends RowKeys> inputRowKeys,
             @NotNull final IntChunk<RowKeys> destinations,
             @NotNull final IntChunk<ChunkPositions> startPositions,
             final IntChunk<ChunkLengths> length, // Unused
             @NotNull final WritableBooleanChunk<Values> stateModified) {
+
+        final StreamFirstBucketedContext context = (StreamFirstBucketedContext) bucketedContext;
+
+        context.destinationsToSort.setSize(startPositions.size());
+        context.startPositionsToSort.setSize(startPositions.size());
+
+        long maxDestination = nextDestination - 1;
+
+        // we can essentially do a radix sort; anything less than nextDestination is not of interest; everything else
+        // must fall between nextDestination and our chunk size
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
-            final long destination = destinations.get(startPosition);
+            final int destination = destinations.get(startPosition);
+            if (destination >= nextDestination) {
+                Assert.lt(destination, "destination", nextDestination + startPositions.size(), "nextDestination + startPositions.size()");
+                maxDestination = Math.max(destination, nextDestination);
+                context.destinationsToSort.set((int)(destination - nextDestination), destination);
+                context.startPositionsToSort.set((int)(destination - nextDestination), startPosition);
+            }
+        }
+        context.destinationsToSort.setSize((int)(maxDestination - nextDestination + 1));
+        context.startPositionsToSort.setSize((int)(maxDestination - nextDestination + 1));
+
+        for (int ii = 0; ii < context.destinationsToSort.size(); ++ii) {
+            final int destination = context.destinationsToSort.get(ii);
+            final int startPosition = context.startPositionsToSort.get(ii);
             if (maybeAssignFirst(destination, inputRowKeys.get(startPosition))) {
                 stateModified.set(ii, true);
             }
@@ -194,5 +218,26 @@ public class StreamFirstChunkedOperator extends BaseStreamFirstOrLastChunkedOper
                 }
             }
         }
+    }
+
+    private static class StreamFirstBucketedContext implements BucketedContext {
+        final WritableIntChunk<RowKeys> destinationsToSort;
+        final WritableIntChunk<ChunkPositions> startPositionsToSort;
+
+        public StreamFirstBucketedContext(int size) {
+            destinationsToSort = WritableIntChunk.makeWritableChunk(size);
+            startPositionsToSort = WritableIntChunk.makeWritableChunk(size);
+        }
+
+        @Override
+        public void close() {
+            destinationsToSort.close();
+            startPositionsToSort.close();
+        }
+    }
+
+    @Override
+    public BucketedContext makeBucketedContext(int size) {
+        return new StreamFirstBucketedContext(size);
     }
 }

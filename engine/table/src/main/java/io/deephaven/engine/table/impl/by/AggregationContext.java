@@ -47,6 +47,11 @@ class AggregationContext {
     private final boolean requiresIndices;
 
     /**
+     * Does any operator require runs to be found? See {@link IterativeChunkedAggregationOperator#requiresRunFinds()}.
+     */
+    private final boolean requiresRunFinds;
+
+    /**
      * True if slots that are removed and then reincarnated should be modified.
      */
     private final boolean addedBackModified;
@@ -94,6 +99,8 @@ class AggregationContext {
         this.transformers = transformers;
         this.addedBackModified = addedBackModified;
         requiresIndices = Arrays.stream(this.operators).anyMatch(IterativeChunkedAggregationOperator::requiresRowKeys);
+        requiresRunFinds =
+                Arrays.stream(this.operators).anyMatch(IterativeChunkedAggregationOperator::requiresRunFinds);
         requiresInputs = Arrays.stream(this.inputColumns).anyMatch(Objects::nonNull);
         unchunkedIndices = Arrays.stream(this.operators).allMatch(IterativeChunkedAggregationOperator::unchunkedRowSet);
         // noinspection unchecked
@@ -138,6 +145,10 @@ class AggregationContext {
 
     boolean requiresIndices() {
         return requiresIndices;
+    }
+
+    boolean requiresRunFinds(boolean skip) {
+        return requiresRunFinds || !skip;
     }
 
     boolean unchunkedIndices() {

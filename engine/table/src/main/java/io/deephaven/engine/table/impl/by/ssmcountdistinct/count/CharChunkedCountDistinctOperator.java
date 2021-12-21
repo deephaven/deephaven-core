@@ -278,6 +278,11 @@ public class CharChunkedCountDistinctOperator implements IterativeChunkedAggrega
         }
     }
 
+    @Override
+    public boolean requiresRunFinds() {
+        return true;
+    }
+
     //endregion
 
     //region Private Helpers

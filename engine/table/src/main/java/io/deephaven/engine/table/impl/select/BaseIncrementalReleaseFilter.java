@@ -117,12 +117,13 @@ public abstract class BaseIncrementalReleaseFilter extends WhereFilterLivenessAr
      */
     public void waitForCompletion() throws InterruptedException {
         if (UpdateGraphProcessor.DEFAULT.isRefreshThread()) {
-            throw new IllegalStateException("Can not wait for completion while on UpdateGraphProcessor refresh thread, updates would block.");
+            throw new IllegalStateException(
+                    "Can not wait for completion while on UpdateGraphProcessor refresh thread, updates would block.");
         }
         UpdateGraphProcessor.DEFAULT.exclusiveLock().doLocked(() -> {
             while (releaseAllNanos == QueryConstants.NULL_LONG) {
                 // this only works because we will never actually filter out a row from the result; in the general
-                // WhereFilter case, the result table may not update.  We could await on the source table, but
+                // WhereFilter case, the result table may not update. We could await on the source table, but
                 listener.getTable().awaitUpdate();
             }
         });
@@ -133,13 +134,14 @@ public abstract class BaseIncrementalReleaseFilter extends WhereFilterLivenessAr
      */
     public void waitForCompletion(long timeoutMillis) throws InterruptedException {
         if (UpdateGraphProcessor.DEFAULT.isRefreshThread()) {
-            throw new IllegalStateException("Can not wait for completion while on UpdateGraphProcessor refresh thread, updates would block.");
+            throw new IllegalStateException(
+                    "Can not wait for completion while on UpdateGraphProcessor refresh thread, updates would block.");
         }
         final long end = System.currentTimeMillis() + timeoutMillis;
         UpdateGraphProcessor.DEFAULT.exclusiveLock().doLocked(() -> {
             while (releaseAllNanos == QueryConstants.NULL_LONG) {
                 // this only works because we will never actually filter out a row from the result; in the general
-                // WhereFilter case, the result table may not update.  We could await on the source table, but
+                // WhereFilter case, the result table may not update. We could await on the source table, but
                 final long remainingTimeout = Math.max(0, end - System.currentTimeMillis());
                 listener.getTable().awaitUpdate(remainingTimeout);
             }
@@ -148,6 +150,7 @@ public abstract class BaseIncrementalReleaseFilter extends WhereFilterLivenessAr
 
     /**
      * How many nanos between the first release event and the final release event?
+     * 
      * @return nano duration of this filter, or NULL_LONG if the filter is not completed
      */
     public long durationNanos() {
