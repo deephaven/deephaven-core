@@ -82,7 +82,7 @@ class Classpaths {
     static final String GROOVY_VERSION = '3.0.9'
 
     static final String GRPC_GROUP = 'io.grpc'
-    static final String GRPC_VERSION = '1.42.0'
+    static final String GRPC_VERSION = '1.42.1'
 
     static boolean addDependency(Configuration conf, String group, String name, String version, Action<? super DefaultExternalModuleDependency> configure = Actions.doNothing()) {
         if (!conf.dependencies.find { it.name == name && it.group == group}) {
