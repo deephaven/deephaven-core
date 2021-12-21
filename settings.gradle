@@ -53,6 +53,9 @@ pyMods.each {
         project(":$name").projectDir = file(dir)
 }
 
+include 'grpc-java:grpc-servlet-jakarta'
+include 'grpc-java:grpc-servlet-websocket-jakarta'
+
 include 'fishconfig-local'
 include 'DHProcess'
 include 'proto:proto-backplane-grpc'
