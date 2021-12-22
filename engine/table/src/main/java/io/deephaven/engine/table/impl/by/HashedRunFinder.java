@@ -22,6 +22,13 @@ public class HashedRunFinder {
         final WritableIntChunk<?> overflow;
 
         public HashedRunContext(int size) {
+            if (size == 0) {
+                tableSize = 0;
+                tableMask = 0;
+                table = null;
+                overflow = null;
+                return;
+            }
             tableSize = Integer.highestOneBit(size * 2);
             tableMask = tableSize - 1;
             table = WritableIntChunk.makeWritableChunk(tableSize * 3);
@@ -31,6 +38,9 @@ public class HashedRunFinder {
 
         @Override
         public void close() {
+            if (table == null) {
+                return;
+            }
             table.close();
             overflow.close();
         }
