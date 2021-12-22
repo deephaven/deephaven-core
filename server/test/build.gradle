@@ -8,6 +8,7 @@ dependencies {
     implementation project(':server')
     implementation project(':proto:proto-backplane-grpc-flight')
     implementation project(':extensions-barrage')
+    implementation project(':test-configs')
 
     Classpaths.inheritArrow(project, 'flight-core', 'implementation')
 
@@ -15,6 +16,5 @@ dependencies {
 
 //    Classpaths.inheritJUnitPlatform(project, 'api')
     implementation 'junit:junit:4.13.2'
-
 
 }
