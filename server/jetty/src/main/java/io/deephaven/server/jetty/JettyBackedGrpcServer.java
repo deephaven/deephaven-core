@@ -64,10 +64,6 @@ public class JettyBackedGrpcServer implements GrpcServer {
 
         context.setContextPath("/");
         context.addFilter(new FilterHolder(filter), "/*", EnumSet.noneOf(DispatcherType.class));
-
-
-        // FilterHolder filter = WebSocketUpgradeFilter.ensureFilter(context.getServletContext());
-        // context.addFilter()
         jetty.setHandler(context);
 
         // set up websocket for grpc-web
@@ -82,7 +78,6 @@ public class JettyBackedGrpcServer implements GrpcServer {
                             })
                             .build());
         });
-
     }
 
     @Override

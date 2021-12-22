@@ -9,7 +9,6 @@ import org.apache.arrow.flight.impl.Flight;
 
 import java.nio.ByteOrder;
 
-// TODO move me to a better package
 public class FlightExportTicketHelper {
     /**
      * Convenience method to convert from export id to {@link Flight.Ticket}.
