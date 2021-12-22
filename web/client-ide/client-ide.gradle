@@ -6,7 +6,7 @@ plugins {
 
 evaluationDependsOn ':web-client-ui'
 evaluationDependsOn ':proto:raw-js-openapi'
-evaluationDependsOn Docker.registryProject('nginx')
+evaluationDependsOn Docker.registryProject('nginx-base')
 
 apply from: "$rootDir/gradle/web-client.gradle"
 
@@ -34,7 +34,7 @@ def prepareDocker = project.tasks.register('prepareDocker', Sync) {
     // necessarily build pre-reqs. If GH actions eventually calls buildDocker instead, we
     // can remove these dependencies.
     inputs.files([dhide, jsOut].each { t -> t.outputs.files })
-    inputs.files Docker.registryFiles(project, 'nginx')
+    inputs.files Docker.registryFiles(project, 'nginx-base')
 
     into "${buildDir}/docker"
     from(gwtc.outputs.files) {
@@ -51,7 +51,7 @@ def prepareDocker = project.tasks.register('prepareDocker', Sync) {
 
 Docker.registerDockerImage(project, 'buildDocker') {
     inputs.files([prepareDocker.get(), dhide, jsOut].each { t -> t.outputs.files })
-    inputs.files Docker.registryFiles(project, 'nginx')
+    inputs.files Docker.registryFiles(project, 'nginx-base')
     //buildArgs.put('DEEPHAVEN_VERSION', "${project.version}")
     images.add('deephaven/web:local-build')
 }
