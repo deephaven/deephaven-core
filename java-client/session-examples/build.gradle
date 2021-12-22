@@ -10,6 +10,7 @@ dependencies {
 
     Classpaths.inheritGrpcPlatform(project, 'implementation')
     implementation 'io.grpc:grpc-core'
+    runtimeOnly 'io.grpc:grpc-netty'
 
     Classpaths.inheritJUnitPlatform(project)
     Classpaths.inheritAssertJ(project)
