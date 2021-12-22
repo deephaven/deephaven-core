@@ -31,10 +31,6 @@ public class IntStreamSortedFirstOrLastChunkedOperator extends CopyingPermutedSt
     private final boolean isCombo;
     private final IntegerArraySource sortColumnValues;
 
-    /**
-     * <p>The next destination slot that we expect to be used.
-     * <p>Any destination at or after this one has an undefined value in {@link #sortColumnValues}.
-     */
     private RowSetBuilderRandom changedDestinationsBuilder;
 
     IntStreamSortedFirstOrLastChunkedOperator(

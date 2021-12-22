@@ -609,11 +609,9 @@ public class ChunkedOperatorAggregationHelper {
         private void propagateRemovesToOperators(@NotNull final RowSequence keyIndicesToRemoveChunk,
                 @NotNull final WritableIntChunk<RowKeys> slotsToRemoveFrom) {
             final boolean findRuns = ac.requiresRunFinds(SKIP_RUN_FIND);
-
             findSlotRuns(sortKernelContext, hashedRunContext, runStarts, runLengths, chunkPositions, slotsToRemoveFrom,
                     findRuns);
 
-            final Chunk<? extends Values>[] valueChunks = findRuns ? workingChunks : new Chunk[ac.size()];
 
             if (ac.requiresIndices()) {
                 if (findRuns) {
@@ -628,6 +626,7 @@ public class ChunkedOperatorAggregationHelper {
             boolean firstOperator = true;
             setFalse(modifiedSlots, runStarts.size());
 
+            final Chunk<? extends Values>[] valueChunks = findRuns ? workingChunks : new Chunk[ac.size()];
             sharedContext.reset();
             for (int oi = 0; oi < ac.size(); ++oi) {
                 if (!firstOperator) {
@@ -688,9 +687,6 @@ public class ChunkedOperatorAggregationHelper {
             ac.ensureCapacity(outputPosition.intValue());
 
             final boolean findRuns = ac.requiresRunFinds(SKIP_RUN_FIND);
-
-            final Chunk<? extends Values>[] valueChunks = findRuns ? workingChunks : new Chunk[ac.size()];
-
             findSlotRuns(sortKernelContext, hashedRunContext, runStarts, runLengths, chunkPositions, slotsToAddTo,
                     findRuns);
 
@@ -707,6 +703,8 @@ public class ChunkedOperatorAggregationHelper {
             boolean anyOperatorModified = false;
             boolean firstOperator = true;
             setFalse(modifiedSlots, runStarts.size());
+
+            final Chunk<? extends Values>[] valueChunks = findRuns ? workingChunks : new Chunk[ac.size()];
 
             sharedContext.reset();
             for (int oi = 0; oi < ac.size(); ++oi) {
@@ -934,7 +932,6 @@ public class ChunkedOperatorAggregationHelper {
                         permutedKeyIndices.setSize(postKeyIndices.size());
                         LongPermuteKernel.permuteInput(postKeyIndices, chunkPositions, permutedKeyIndices);
                     } else {
-                        permutedKeyIndices.setSize(postShiftKeyIndicesChunk.intSize());
                         postShiftKeyIndicesChunk.fillRowKeyChunk(permutedKeyIndices);
                     }
 
@@ -1573,7 +1570,6 @@ public class ChunkedOperatorAggregationHelper {
         }
 
         final int chunkSize = chunkSize(rowSet.size());
-
 
         try (final SafeCloseable bc = stateManager.makeAggregationStateBuildContext(buildSources, chunkSize);
                 final SafeCloseable ignored1 = usePrev ? rowSet : null;

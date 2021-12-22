@@ -31,10 +31,6 @@ public class ObjectStreamSortedFirstOrLastChunkedOperator extends CopyingPermute
     private final boolean isCombo;
     private final ObjectArraySource sortColumnValues;
 
-    /**
-     * <p>The next destination slot that we expect to be used.
-     * <p>Any destination at or after this one has an undefined value in {@link #sortColumnValues}.
-     */
     private RowSetBuilderRandom changedDestinationsBuilder;
 
     ObjectStreamSortedFirstOrLastChunkedOperator(

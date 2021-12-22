@@ -80,7 +80,7 @@ public class StreamFirstChunkedOperator extends BaseStreamFirstOrLastChunkedOper
 
         // we can essentially do a radix sort; anything less than nextDestination is not of interest; everything else
         // must fall between nextDestination and our chunk size
-        context.rowKeyToInsert.fillWithValue(0, startPositions.size(), 0);
+        context.rowKeyToInsert.fillWithValue(0, startPositions.size(), Long.MAX_VALUE);
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
             final int destination = destinations.get(startPosition);
