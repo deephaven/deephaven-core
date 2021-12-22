@@ -19,7 +19,7 @@ import wrapt
 
 
 _java_type_ = None  # None until the first define_symbols() call
-DBTimeZone = None  #: Deephaven timezone class (io.deephaven.time.TimeZone).
+TimeZone = None  #: Deephaven timezone class (io.deephaven.time.TimeZone).
 DateTime = None  #: Deephaven date-time class (io.deephaven.time.DateTime).
 Period = None    #: Deephaven time period class (io.deephaven.time.Period).
 
@@ -41,12 +41,12 @@ def _defineSymbols():
     if not jpy.has_jvm():
         raise SystemError("No java functionality can be used until the JVM has been initialized through the jpy module")
 
-    global _java_type_, DBTimeZone, DateTime, Period
+    global _java_type_, TimeZone, DateTime, Period
     if _java_type_ is not None:
         return
     # This will raise an exception if the desired object is not the classpath
     _java_type_ = jpy.get_type("io.deephaven.time.DateTimeUtils")
-    DBTimeZone = jpy.get_type("io.deephaven.time.TimeZone")
+    TimeZone = jpy.get_type("io.deephaven.time.TimeZone")
     DateTime = jpy.get_type("io.deephaven.time.DateTime")
     Period = jpy.get_type("io.deephaven.time.Period")
 

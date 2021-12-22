@@ -27,11 +27,6 @@ public class GroupByAggregationFactory implements AggregationContextFactory {
     private GroupByAggregationFactory() {}
 
     @Override
-    public boolean allowKeyOnlySubstitution() {
-        return true;
-    }
-
-    @Override
     public AggregationContext makeAggregationContext(@NotNull final Table inputTable,
             @NotNull final String... groupByColumnNames) {
         final Set<String> groupByColumnNameSet = Arrays.stream(groupByColumnNames).collect(Collectors.toSet());

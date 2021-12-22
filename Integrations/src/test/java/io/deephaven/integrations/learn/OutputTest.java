@@ -21,6 +21,7 @@ public class OutputTest {
         Assert.assertEquals(type, output.getType());
     }
 
+    @SuppressWarnings("ConstantConditions")
     @Test
     public void verifyCorrectFieldsNullTypeTest() {
         final String colName = "Outcol";
@@ -40,25 +41,27 @@ public class OutputTest {
         final Function<Object[], Object> func = args -> args;
         final String type = "int";
 
-        Output output = new Output(colName, func, type);
+        new Output(colName, func, type);
     }
 
+    @SuppressWarnings("ConstantConditions")
     @Test(expected = io.deephaven.base.verify.RequirementFailure.class)
     public void nullColumnNameTest() {
         final String colName = null;
         final Function<Object[], Object> func = args -> args;
         final String type = "int";
 
-        Output output = new Output(colName, func, type);
+        new Output(colName, func, type);
     }
 
+    @SuppressWarnings("ConstantConditions")
     @Test(expected = io.deephaven.base.verify.RequirementFailure.class)
     public void nullFunctionTest() {
         final String colName = "Outcol";
         final Function<Object[], Object> func = null;
         final String type = "int";
 
-        Output output = new Output(colName, func, type);
+        new Output(colName, func, type);
     }
 
     @Test

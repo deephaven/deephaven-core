@@ -1,5 +1,6 @@
 dependencies {
-    compile depLog4j, depTrove3, depAnnotations, depCommonsCompress
+
+    compile depTrove3, depAnnotations, depCommonsCompress
 
     compile depCommonsLang3
 

@@ -4,8 +4,7 @@ import io.deephaven.UncheckedDeephavenException;
 import io.deephaven.api.ColumnName;
 import io.deephaven.api.RawString;
 import io.deephaven.api.Selectable;
-import io.deephaven.api.agg.First;
-import io.deephaven.api.agg.Last;
+import io.deephaven.api.agg.Aggregation;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.table.impl.CodecLookup;
 import io.deephaven.vector.Vector;
@@ -45,6 +44,7 @@ import org.jetbrains.annotations.NotNull;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.math.BigDecimal;
 import java.nio.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -241,21 +241,27 @@ public class ParquetTableWriter {
 
         final CompressionCodecName compressionCodecName =
                 CompressionCodecName.valueOf(writeInstructions.getCompressionCodecName());
-        ParquetFileWriter parquetFileWriter = getParquetFileWriter(definition, path, writeInstructions, tableMeta,
-                tableInfoBuilder, compressionCodecName);
-
         final Table t = pretransformTable(table, definition);
+        final TrackingRowSet tableRowSet = t.getRowSet();
+        final Map<String, ? extends ColumnSource<?>> columnSourceMap = t.getColumnSourceMap();
+        // When we need to perform some computation depending on column data to make a decision impacting both
+        // schema and written data, we store results in computedCache to avoid having to calculate twice.
+        // An example is the necessary precision and scale for a BigDecimal column writen as decimal logical type.
+        final Map<String, Map<CacheTags, Object>> computedCache = new HashMap<>();
+        final ParquetFileWriter parquetFileWriter = getParquetFileWriter(computedCache, definition, tableRowSet,
+                columnSourceMap, path, writeInstructions, tableMeta,
+                tableInfoBuilder, compressionCodecName);
         final long nrows = t.size();
         if (nrows > 0) {
             RowGroupWriter rowGroupWriter = parquetFileWriter.addRowGroup(nrows);
             // noinspection rawtypes
-            for (Map.Entry<String, ? extends ColumnSource> nameToSource : t.getColumnSourceMap().entrySet()) {
+            for (Map.Entry<String, ? extends ColumnSource> nameToSource : columnSourceMap.entrySet()) {
                 String name = nameToSource.getKey();
                 // noinspection rawtypes
                 ColumnSource columnSource = nameToSource.getValue();
                 try {
                     // noinspection unchecked
-                    writeColumnSource(t.getRowSet(), rowGroupWriter, name, columnSource,
+                    writeColumnSource(computedCache, tableRowSet, rowGroupWriter, name, columnSource,
                             definition.getColumn(name), writeInstructions);
                 } catch (IllegalAccessException e) {
                     throw new RuntimeException("Failed to write column " + name, e);
@@ -292,15 +298,23 @@ public class ParquetTableWriter {
         return t;
     }
 
+    enum CacheTags {
+        DECIMAL_ARGS
+    }
+
     @NotNull
     private static ParquetFileWriter getParquetFileWriter(
+            final Map<String, Map<CacheTags, Object>> computedCache,
             final TableDefinition definition,
+            final TrackingRowSet tableRowSet,
+            final Map<String, ? extends ColumnSource<?>> columnSourceMap,
             final String path,
             final ParquetInstructions writeInstructions,
             final Map<String, String> tableMeta,
             final TableInfo.Builder tableInfoBuilder,
             final CompressionCodecName codecName) throws IOException {
-        final MappedSchema mappedSchema = MappedSchema.create(definition, writeInstructions);
+        final MappedSchema mappedSchema =
+                MappedSchema.create(computedCache, definition, tableRowSet, columnSourceMap, writeInstructions);
         final Map<String, String> extraMetaData = new HashMap<>(tableMeta);
         for (final ColumnDefinition<?> column : definition.getColumns()) {
             final String colName = column.getName();
@@ -340,6 +354,7 @@ public class ParquetTableWriter {
     }
 
     private static <DATA_TYPE> void writeColumnSource(
+            final Map<String, Map<CacheTags, Object>> computedCache,
             final TrackingRowSet tableRowSet,
             final RowGroupWriter rowGroupWriter,
             final String name,
@@ -397,7 +412,7 @@ public class ParquetTableWriter {
                 valueChunkSize.add(runningSize);
                 originalChunkSize.add(originalRowsCount);
             }
-            rowStepGetter = new Supplier<Integer>() {
+            rowStepGetter = new Supplier<>() {
                 int step;
 
                 @Override
@@ -405,7 +420,7 @@ public class ParquetTableWriter {
                     return originalChunkSize.get(step++);
                 }
             };
-            valuesStepGetter = new Supplier<Integer>() {
+            valuesStepGetter = new Supplier<>() {
                 int step;
 
                 @Override
@@ -427,11 +442,11 @@ public class ParquetTableWriter {
             // noinspection unchecked
             columnSource = (ColumnSource<DATA_TYPE>) ReinterpretUtils.dateTimeToLongSource(columnSource);
             columnType = columnSource.getType();
-        }
-        if (columnType == Boolean.class) {
+        } else if (columnType == Boolean.class) {
             // noinspection unchecked
             columnSource = (ColumnSource<DATA_TYPE>) ReinterpretUtils.booleanToByteSource(columnSource);
         }
+
         ColumnWriter columnWriter = rowGroupWriter.addColumn(name);
 
         boolean usedDictionary = false;
@@ -515,7 +530,8 @@ public class ParquetTableWriter {
         }
         if (!usedDictionary) {
             try (final TransferObject<?> transferObject =
-                    getDestinationBuffer(columnSource, columnDefinition, targetSize, columnType, writeInstructions)) {
+                    getDestinationBuffer(computedCache, tableRowSet, columnSource, columnDefinition, targetSize,
+                            columnType, writeInstructions)) {
                 final boolean supportNulls = supportNulls(columnType);
                 final Object bufferToWrite = transferObject.getBuffer();
                 final Object nullValue = getNullValue(columnType);
@@ -615,6 +631,8 @@ public class ParquetTableWriter {
     }
 
     private static <DATA_TYPE> TransferObject<?> getDestinationBuffer(
+            final Map<String, Map<CacheTags, Object>> computedCache,
+            final TrackingRowSet tableRowSet,
             final ColumnSource<DATA_TYPE> columnSource,
             final ColumnDefinition<DATA_TYPE> columnDefinition,
             final int targetSize,
@@ -648,6 +666,14 @@ public class ParquetTableWriter {
             return new ByteTransfer(columnSource, targetSize);
         } else if (String.class.equals(columnType)) {
             return new StringTransfer(columnSource, targetSize);
+        } else if (BigDecimal.class.equals(columnType)) {
+            // noinspection unchecked
+            final ColumnSource<BigDecimal> bigDecimalColumnSource = (ColumnSource<BigDecimal>) columnSource;
+            final TypeInfos.PrecisionAndScale precisionAndScale = TypeInfos.getPrecisionAndScale(
+                    computedCache, columnDefinition.getName(), tableRowSet, () -> bigDecimalColumnSource);
+            final ObjectCodec<BigDecimal> codec = new BigDecimalParquetBytesCodec(
+                    precisionAndScale.precision, precisionAndScale.scale, -1);
+            return new CodecTransfer<>(bigDecimalColumnSource, codec, targetSize);
         }
         final ObjectCodec<? super DATA_TYPE> codec = CodecLookup.lookup(columnDefinition, instructions);
         return new CodecTransfer<>(columnSource, codec, targetSize);
@@ -939,7 +965,7 @@ public class ParquetTableWriter {
                 .view(List.of(Selectable.of(ColumnName.of(GROUPING_KEY), ColumnName.of(columnName)),
                         Selectable.of(ColumnName.of(BEGIN_POS), RawString.of("ii")), // Range start, inclusive
                         Selectable.of(ColumnName.of(END_POS), RawString.of("ii+1")))) // Range end, exclusive
-                .aggBy(List.of(First.of(ColumnName.of(BEGIN_POS)), Last.of(ColumnName.of(END_POS))),
+                .aggBy(List.of(Aggregation.AggFirst(BEGIN_POS), Aggregation.AggLast(END_POS)),
                         List.of(ColumnName.of(GROUPING_KEY)));
         final Table invalid = grouped.where(BEGIN_POS + " != 0 && " + BEGIN_POS + " != " + END_POS + "_[ii-1]");
         if (!invalid.isEmpty()) {

@@ -18,7 +18,6 @@ import io.deephaven.io.logger.Logger;
 import io.deephaven.io.sched.Scheduler;
 import io.deephaven.io.sched.TimedJob;
 import io.deephaven.io.sched.YASchedulerImpl;
-import io.deephaven.util.process.ProcessEnvironment;
 
 public class NIODriver implements Runnable {
     private static Logger log;
@@ -94,14 +93,7 @@ public class NIODriver implements Runnable {
      */
     public static void init() {
         if (!initialized) {
-            final Logger log;
-            final ProcessEnvironment processEnvironment = ProcessEnvironment.tryGet();
-            if (processEnvironment == null) {
-                log = LoggerFactory.getLogger(NIODriver.class);
-            } else {
-                log = processEnvironment.getLog();
-            }
-            init(log);
+            init(LoggerFactory.getLogger(NIODriver.class));
         }
     }
 

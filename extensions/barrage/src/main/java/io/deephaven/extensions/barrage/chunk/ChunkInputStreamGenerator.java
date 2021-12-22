@@ -5,6 +5,8 @@
 package io.deephaven.extensions.barrage.chunk;
 
 import com.google.common.base.Charsets;
+import com.google.common.io.LittleEndianDataOutputStream;
+import com.google.common.primitives.Ints;
 import gnu.trove.iterator.TLongIterator;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSet;
@@ -18,6 +20,9 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.DataInput;
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.nio.ByteBuffer;
 import java.util.Iterator;
 
 public interface ChunkInputStreamGenerator extends SafeCloseable {
@@ -44,12 +49,29 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
             case Object:
                 if (type.isArray()) {
                     return new VarListChunkInputStreamGenerator<>(type, chunk.asObjectChunk());
-                } else if (type == String.class) {
+                }
+                if (type == String.class) {
                     return new VarBinaryChunkInputStreamGenerator<>(String.class, chunk.asObjectChunk(), (out, str) -> {
                         out.write(str.getBytes(Charsets.UTF_8));
                     });
                 }
-                // TODO (core#513): BigDecimal, BigInteger
+                if (type == BigInteger.class) {
+                    return new VarBinaryChunkInputStreamGenerator<>(BigInteger.class, chunk.asObjectChunk(), (out, item) -> {
+                        out.write(item.toByteArray());
+                    });
+                }
+                if (type == BigDecimal.class) {
+                    return new VarBinaryChunkInputStreamGenerator<>(BigDecimal.class, chunk.asObjectChunk(), (out, item) -> {
+                        final BigDecimal normal = item.stripTrailingZeros();
+                        final int v = normal.scale();
+                        // Write as little endian, arrow endianness.
+                        out.write(0xFF & v);
+                        out.write(0xFF & (v >> 8));
+                        out.write(0xFF & (v >> 16));
+                        out.write(0xFF & (v >> 24));
+                        out.write(normal.unscaledValue().toByteArray());
+                    });
+                }
                 // TODO (core#936): support column conversion modes
 
                 return new VarBinaryChunkInputStreamGenerator<>(type, chunk.asObjectChunk(), (out, item) -> {
@@ -109,15 +131,39 @@ public interface ChunkInputStreamGenerator extends SafeCloseable {
                         Double.BYTES, options,fieldNodeIter, bufferInfoIter, is);
             case Object:
                 if (type.isArray()) {
-                   return VarListChunkInputStreamGenerator.extractChunkFromInputStream(options, type, fieldNodeIter, bufferInfoIter, is) ;
+                   return VarListChunkInputStreamGenerator.extractChunkFromInputStream(
+                           options, type, fieldNodeIter, bufferInfoIter, is);
                 }
-
-                if (options.columnConversionMode().equals(BarrageSubscriptionOptions.ColumnConversionMode.Stringify)) {
+                if (type == BigInteger.class) {
+                    return VarBinaryChunkInputStreamGenerator.extractChunkFromInputStream(
+                            is,
+                            fieldNodeIter,
+                            bufferInfoIter,
+                            BigInteger::new
+                    );
+                }
+                if (type == BigDecimal.class) {
+                    return VarBinaryChunkInputStreamGenerator.extractChunkFromInputStream(
+                            is,
+                            fieldNodeIter,
+                            bufferInfoIter,
+                            (final byte[] buf, final int offset, final int length) -> {
+                                // read the int scale value as little endian, arrow's endianness.
+                                final byte b1 = buf[offset];
+                                final byte b2 = buf[offset + 1];
+                                final byte b3 = buf[offset + 2];
+                                final byte b4 = buf[offset + 3];
+                                final int scale = b4 << 24 | (b3 & 0xFF) << 16 | (b2 & 0xFF) << 8 | (b1 & 0xFF);
+                                return new BigDecimal(new BigInteger(buf, offset + 4, length - 4), scale);
+                            }
+                    );
+                }
+                if (type == String.class ||
+                        options.columnConversionMode().equals(BarrageSubscriptionOptions.ColumnConversionMode.Stringify)) {
                     return VarBinaryChunkInputStreamGenerator.extractChunkFromInputStream(is, fieldNodeIter, bufferInfoIter,
                             (buf, off, len) -> new String(buf, off, len, Charsets.UTF_8));
-                } else {
-                    throw new UnsupportedOperationException("Do not yet support column conversion mode: " + options.columnConversionMode());
                 }
+                throw new UnsupportedOperationException("Do not yet support column conversion mode: " + options.columnConversionMode());
             default:
                 throw new UnsupportedOperationException();
         }

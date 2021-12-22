@@ -4,7 +4,6 @@ import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.grpc_api.DeephavenChannel;
-import io.deephaven.grpc_api.appmode.AppMode;
 import io.deephaven.io.logger.LogBuffer;
 import io.deephaven.io.logger.LogBufferGlobal;
 import io.deephaven.util.SafeCloseable;

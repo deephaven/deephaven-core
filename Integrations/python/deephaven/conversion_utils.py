@@ -30,13 +30,12 @@ _jprops_ = None
 _jmap_ = None
 _jset_ = None
 _python_tools_ = None
-IDENTITY = None
 
 def _defineSymbols():
     if not jpy.has_jvm():
         raise SystemError("No java functionality can be used until the JVM has been initialized through the jpy module")
 
-    global _table_tools_, _col_def_, _jprops_, _jmap_, _jset_, _python_tools_, IDENTITY
+    global _table_tools_, _col_def_, _jprops_, _jmap_, _jset_, _python_tools_
     if _table_tools_ is None:
         # This will raise an exception if the desired object is not the classpath
         _table_tools_ = jpy.get_type("io.deephaven.engine.util.TableTools")
@@ -45,7 +44,6 @@ def _defineSymbols():
         _jmap_ = jpy.get_type("java.util.HashMap")
         _jset_ = jpy.get_type("java.util.HashSet")
         _python_tools_ = jpy.get_type("io.deephaven.integrations.python.PythonTools")
-        IDENTITY = object()  # Ensure IDENTITY is unique.
 
 
 # every method that depends on symbols defined via _defineSymbols() should be decorated with @_passThrough
@@ -1107,9 +1105,11 @@ def _seqToSet(s):
     return r
 
 @_passThrough
-def _dictToFun(mapping, default_value):
-    mapping = _dictToMap(d)
-    if default_value is IDENTITY:
-        return _python_tools_.functionFromMapWithIdentityDefaults(m)
-    else:
-        return _python_tools_.functionfromMapWithDefault(m, default_value)
+def _dictToFunWithIdentity(dict_mapping):
+    java_map = _dictToMap(dict_mapping)
+    return _python_tools_.functionFromMapWithIdentityDefaults(java_map)
+
+@_passThrough
+def _dictToFunWithDefault(dict_mapping, default_value):
+    java_map = _dictToMap(dict_mapping)
+    return _python_tools_.functionFromMapWithDefault(java_map, default_value)

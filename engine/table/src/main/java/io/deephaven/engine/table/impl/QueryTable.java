@@ -8,8 +8,11 @@ import io.deephaven.api.ColumnName;
 import io.deephaven.api.JoinMatch;
 import io.deephaven.api.Selectable;
 import io.deephaven.api.SortColumn;
+import io.deephaven.api.Strings;
 import io.deephaven.api.agg.Aggregation;
 import io.deephaven.api.agg.AggregationOutputs;
+import io.deephaven.api.agg.spec.AggSpec;
+import io.deephaven.api.agg.spec.AggSpecColumnReferences;
 import io.deephaven.api.filter.Filter;
 import io.deephaven.base.StringUtils;
 import io.deephaven.base.verify.Assert;
@@ -26,6 +29,7 @@ import io.deephaven.engine.table.impl.select.SelectColumnFactory;
 import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.util.ColumnFormattingValues;
 import io.deephaven.engine.util.systemicmarking.SystemicObject;
+import io.deephaven.qst.table.AggregateAllByTable;
 import io.deephaven.vector.Vector;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.updategraph.NotificationQueue;
@@ -569,16 +573,42 @@ public class QueryTable extends BaseTable {
                 () -> naturalJoinInternal(table, columnsToMatch, columnsToAdd, true));
     }
 
+    private static String toString(Collection<? extends Selectable> groupByList) {
+        return groupByList.stream().map(Strings::of).collect(Collectors.joining(",", "[", "]"));
+    }
+
     @Override
-    public Table groupBy(Collection<? extends Selectable> groupByColumns) {
-        return QueryPerformanceRecorder.withNugget("groupBy(" + groupByColumns + ")",
-                sizeForInstrumentation(),
-                () -> by(new AggregationGroupSpec(), SelectColumn.from(groupByColumns)));
+    public Table aggAllBy(AggSpec spec, Selectable... groupByColumns) {
+        for (ColumnName name : AggSpecColumnReferences.of(spec)) {
+            if (!hasColumns(name.name())) {
+                throw new IllegalArgumentException(
+                        "aggAllBy spec references column that does not exist: spec=" + spec + ", groupByColumns="
+                                + toString(Arrays.asList(groupByColumns)));
+            }
+        }
+        final List<Selectable> groupByList = Arrays.asList(groupByColumns);
+        final List<ColumnName> tableColumns =
+                definition.getColumnNames().stream().map(ColumnName::of).collect(Collectors.toList());
+        final Optional<Aggregation> agg = AggregateAllByTable.singleAggregation(spec, groupByList, tableColumns);
+        if (agg.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "aggAllBy has no columns to aggregate: spec=" + spec + ", groupByColumns=" + toString(groupByList));
+        }
+        final Table tableToUse = AggAllByUseTable.of(this, spec);
+        final Table result = tableToUse.aggBy(agg.get(), groupByList);
+        spec.walk(new AggAllByCopyAttributes(this, result));
+        return result;
     }
 
     @Override
     public Table aggBy(final Collection<? extends Aggregation> aggregations,
             final Collection<? extends Selectable> groupByColumns) {
+        if (aggregations.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "aggBy must have at least one aggregation, none specified. groupByColumns="
+                            + toString(groupByColumns));
+        }
+
         final List<AggregationFactory.AggregationElement> optimized =
                 AggregationFactory.AggregationElement.optimizeAndConvert(aggregations);
 
@@ -601,63 +631,6 @@ public class QueryTable extends BaseTable {
                 Stream.concat(groupByColumns.stream().map(Selectable::newColumn), userOrder.stream())
                         .collect(Collectors.toList());
         return aggregationTable.view(resultOrder);
-    }
-
-    @Override
-    public Table lastBy(Selectable... groupByColumns) {
-        return QueryPerformanceRecorder.withNugget("lastBy(" + Arrays.toString(groupByColumns) + ")",
-                sizeForInstrumentation(),
-                () -> {
-                    final Table result =
-                            by(TRACKED_LAST_BY ? new TrackingLastBySpecImpl() : new LastBySpecImpl(),
-                                    SelectColumn.from(groupByColumns));
-                    copyAttributes(result, CopyAttributeOperation.LastBy);
-                    return result;
-                });
-    }
-
-    @Override
-    public Table firstBy(Selectable... groupByColumns) {
-        return QueryPerformanceRecorder.withNugget("firstBy(" + Arrays.toString(groupByColumns) + ")",
-                sizeForInstrumentation(),
-                () -> {
-                    final Table result =
-                            by(TRACKED_FIRST_BY ? new TrackingFirstBySpecImpl() : new FirstBySpecImpl(),
-                                    SelectColumn.from(groupByColumns));
-                    copyAttributes(result, CopyAttributeOperation.FirstBy);
-                    return result;
-                });
-    }
-
-    @Override
-    public Table minBy(Selectable... groupByColumns) {
-        return QueryPerformanceRecorder.withNugget("minBy(" + Arrays.toString(groupByColumns) + ")",
-                sizeForInstrumentation(), () -> {
-                    if (isRefreshing()) {
-                        return by(new MinMaxBySpecImpl(true), SelectColumn.from(groupByColumns));
-                    } else {
-                        return by(new AddOnlyMinMaxBySpecImpl(true), SelectColumn.from(groupByColumns));
-                    }
-                });
-    }
-
-    @Override
-    public Table maxBy(Selectable... groupByColumns) {
-        return QueryPerformanceRecorder.withNugget("maxBy(" + Arrays.toString(groupByColumns) + ")",
-                sizeForInstrumentation(), () -> {
-                    if (isRefreshing()) {
-                        return by(new MinMaxBySpecImpl(false), SelectColumn.from(groupByColumns));
-                    } else {
-                        return by(new AddOnlyMinMaxBySpecImpl(false), SelectColumn.from(groupByColumns));
-                    }
-                });
-    }
-
-    @Override
-    public Table medianBy(Selectable... groupByColumns) {
-        return QueryPerformanceRecorder.withNugget("medianBy(" + Arrays.toString(groupByColumns) + ")",
-                sizeForInstrumentation(),
-                () -> by(new PercentileBySpecImpl(0.50, true), SelectColumn.from(groupByColumns)));
     }
 
     @Override
@@ -946,73 +919,6 @@ public class QueryTable extends BaseTable {
     public Table dateTimeColumnAsNanos(String dateTimeColumnName, String nanosColumnName) {
         return viewOrUpdateView(Flavor.UpdateView,
                 new ReinterpretedColumn<>(dateTimeColumnName, DateTime.class, nanosColumnName, long.class));
-    }
-
-    @Override
-    public Table applyToAllBy(String formulaColumn, String columnParamName,
-            Collection<? extends Selectable> groupByColumns) {
-        final QueryTable tableToUse = (QueryTable) dropColumnFormats();
-        return QueryPerformanceRecorder.withNugget(
-                "applyToAllBy(" + formulaColumn + ',' + columnParamName + ',' + groupByColumns + ")",
-                sizeForInstrumentation(),
-                () -> tableToUse.by(new AggregationFormulaSpec(formulaColumn, columnParamName),
-                        SelectColumn.from(groupByColumns)));
-    }
-
-    @Override
-    public Table sumBy(Selectable... groupByColumns) {
-        final QueryTable tableToUse = (QueryTable) dropColumnFormats();
-        return QueryPerformanceRecorder.withNugget("sumBy(" + Arrays.toString(groupByColumns) + ")",
-                sizeForInstrumentation(),
-                () -> tableToUse.by(new SumSpec(), SelectColumn.from(groupByColumns)));
-    }
-
-    @Override
-    public Table absSumBy(Selectable... groupByColumns) {
-        final QueryTable tableToUse = (QueryTable) dropColumnFormats();
-        return QueryPerformanceRecorder.withNugget("absSumBy(" + Arrays.toString(groupByColumns) + ")",
-                sizeForInstrumentation(),
-                () -> tableToUse.by(new AbsSumSpec(), SelectColumn.from(groupByColumns)));
-    }
-
-    @Override
-    public Table avgBy(Selectable... groupByColumns) {
-        final QueryTable tableToUse = (QueryTable) dropColumnFormats();
-        return QueryPerformanceRecorder.withNugget("avgBy(" + Arrays.toString(groupByColumns) + ")",
-                sizeForInstrumentation(),
-                () -> tableToUse.by(new AvgSpec(), SelectColumn.from(groupByColumns)));
-    }
-
-    @Override
-    public Table wavgBy(String weightColumn, Selectable... groupByColumns) {
-        final QueryTable tableToUse = (QueryTable) dropColumnFormats();
-        return QueryPerformanceRecorder.withNugget(
-                "wavgBy(" + weightColumn + ", " + Arrays.toString(groupByColumns) + ")", sizeForInstrumentation(),
-                () -> tableToUse.by(new WeightedAverageSpecImpl(weightColumn), SelectColumn.from(groupByColumns)));
-    }
-
-    @Override
-    public Table wsumBy(String weightColumn, Selectable... groupByColumns) {
-        final QueryTable tableToUse = (QueryTable) dropColumnFormats();
-        return QueryPerformanceRecorder.withNugget(
-                "wsumBy(" + weightColumn + ", " + Arrays.toString(groupByColumns) + ")", sizeForInstrumentation(),
-                () -> tableToUse.by(new WeightedSumSpecImpl(weightColumn), SelectColumn.from(groupByColumns)));
-    }
-
-    @Override
-    public Table stdBy(Selectable... groupByColumns) {
-        final QueryTable tableToUse = (QueryTable) dropColumnFormats();
-        return QueryPerformanceRecorder.withNugget("stdBy(" + Arrays.toString(groupByColumns) + ")",
-                sizeForInstrumentation(),
-                () -> tableToUse.by(new StdSpec(), SelectColumn.from(groupByColumns)));
-    }
-
-    @Override
-    public Table varBy(Selectable... groupByColumns) {
-        final QueryTable tableToUse = (QueryTable) dropColumnFormats();
-        return QueryPerformanceRecorder.withNugget("varBy(" + Arrays.toString(groupByColumns) + ")",
-                sizeForInstrumentation(),
-                () -> tableToUse.by(new VarSpec(), SelectColumn.from(groupByColumns)));
     }
 
     public static class FilteredTable extends QueryTable implements WhereFilter.RecomputeListener {
@@ -2402,7 +2308,7 @@ public class QueryTable extends BaseTable {
             } else {
                 // noinspection unchecked
                 final ColumnSource<DateTime> columnSourceAsDateTime = (ColumnSource<DateTime>) columnSource;
-                return new DatetimeAsLongColumnSource(columnSourceAsDateTime);
+                return new DateTimeAsLongColumnSource(columnSourceAsDateTime);
             }
         }
 
@@ -3438,4 +3344,5 @@ public class QueryTable extends BaseTable {
     public Table wouldMatch(WouldMatchPair... matchers) {
         return getResult(new WouldMatchOperation(this, matchers));
     }
+
 }

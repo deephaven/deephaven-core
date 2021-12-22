@@ -394,41 +394,61 @@ public class BarrageUtils {
                     Buffer payload = buffers.next();
 
                     switch (columnType) {
-                        case "java.lang.String":
+                        case "java.lang.String": {
                             String[] stringArray = new String[size];
+                            byte[] buf = new byte[32];
                             for (int i = 0; i < size; i++) {
                                 if (hasNulls && !valid.get(i)) {
                                     continue;
                                 }
-                                byte[] stringBytes = new byte[offsets.get(i + 1) - offsets.get(i)];
-                                data.position((int) (payload.offset().toFloat64()) + offsets.get(i));
-                                data.get(stringBytes);
-                                stringArray[i] = new String(stringBytes, StandardCharsets.UTF_8);// new
-                                                                                                 // String(Js.<char[]>uncheckedCast(stringBytes));
+                                int ioff = offsets.get(i);
+                                int len = offsets.get(i + 1) - ioff;
+                                data.position((int) (payload.offset().toFloat64()) + ioff);
+                                if (buf.length < len) {
+                                    buf = new byte[len];
+                                }
+                                data.get(buf, 0, len);
+                                stringArray[i] = new String(buf, 0, len, StandardCharsets.UTF_8);// new
+                                // String(Js.<char[]>uncheckedCast(stringBytes));
                             }
                             return new StringArrayColumnData(stringArray);
-                        case "java.math.BigDecimal":
+                        }
+                        case "java.math.BigDecimal": {
                             BigDecimal[] bigDecArray = new BigDecimal[size];
+                            byte[] buf = null;
                             for (int i = 0; i < size; i++) {
                                 if (hasNulls && !valid.get(i)) {
                                     continue;
                                 }
-                                data.position((int) (payload.offset().toFloat64()) + offsets.get(i));
+                                int ioff = offsets.get(i);
+                                int len = offsets.get(i + 1) - ioff;
+                                data.position((int) (payload.offset().toFloat64()) + ioff);
                                 int scale = data.getInt();
-                                bigDecArray[i] = new BigDecimal(readBigInt(data), scale);
+                                len -= 4;
+                                if (buf == null || buf.length != len) {
+                                    buf = new byte[len];
+                                }
+                                bigDecArray[i] = new BigDecimal(readBigInt(data, buf), scale);
                             }
                             return new BigDecimalArrayColumnData(bigDecArray);
-                        case "java.math.BigInteger":
+                        }
+                        case "java.math.BigInteger": {
                             BigInteger[] bigIntArray = new BigInteger[size];
+                            byte[] buf = null;
                             for (int i = 0; i < size; i++) {
                                 if (hasNulls && !valid.get(i)) {
                                     continue;
                                 }
-                                data.position((int) (payload.offset().toFloat64()) + offsets.get(i));
-                                bigIntArray[i] = readBigInt(data);
+                                int ioff = offsets.get(i);
+                                int len = offsets.get(i + 1) - ioff;
+                                if (buf == null || buf.length != len) {
+                                    buf = new byte[len];
+                                }
+                                data.position((int) (payload.offset().toFloat64()) + ioff);
+                                bigIntArray[i] = readBigInt(data, buf);
                             }
-
                             return new BigIntegerArrayColumnData(bigIntArray);
+                        }
                         default:
                             throw new IllegalStateException("Can't decode column of type " + columnType);
                     }
@@ -436,11 +456,16 @@ public class BarrageUtils {
         }
     }
 
-    private static BigInteger readBigInt(ByteBuffer data) {
-        int length = data.getInt();
-        byte[] bytes = new byte[length];
-        data.get(bytes);
-        return new BigInteger(bytes);
+    private static BigInteger readBigInt(ByteBuffer data, byte[] buf) {
+        // TODO: Change to the code below when the Java 9 BigInteger(byte[], int, int) constructor is available.
+        // https://github.com/deephaven/deephaven-core/issues/1626
+        // Make the call take an additional len parameter, and make the calling logic reallocate only when
+        // there is a need to grow, instead of the current need for an exact match.
+        //
+        // data.get(buf, 0, len);
+        // return new BigInteger(buf, 0, len);
+        data.get(buf);
+        return new BigInteger(buf);
     }
 
     private static BitSet readValidityBufferAsBitset(ByteBuffer data, int size, Buffer buffer) {

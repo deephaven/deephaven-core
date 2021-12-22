@@ -9,18 +9,6 @@ import org.jetbrains.annotations.NotNull;
 public interface AggregationContextFactory {
 
     /**
-     * Should we allow substitution with a {@link KeyOnlyAggregationFactory} (e.g. selectDistinct) when there are only
-     * key columns? Instances whose operators could have side effects or are already {@link KeyOnlyAggregationFactory}
-     * should return false.
-     *
-     * @return Whether to allow a {@link KeyOnlyAggregationFactory} to be substituted for this when there are only key
-     *         columns
-     */
-    default boolean allowKeyOnlySubstitution() {
-        return false;
-    }
-
-    /**
      * Make an {@link AggregationContext} for this aggregation.
      *
      * @param table The source {@link Table} to aggregate

@@ -5,7 +5,7 @@
 package io.deephaven.engine.table.impl.by;
 
 import io.deephaven.api.agg.Aggregation;
-import io.deephaven.api.agg.Multi;
+import io.deephaven.api.agg.AggregationOptimizer;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.datastructures.util.SmartKey;
@@ -599,16 +599,13 @@ public class AggregationFactory implements AggregationSpec {
     public interface AggregationElement {
 
         /**
-         * Equivalent to {@code convertOrdered(Collections.singleton(aggregation))} or
-         * {@code optimizeAndConvert(Collections.singleton(aggregation))}.
+         * Converts an {@link Aggregation} to an {@link AggregationElement}.
          *
          * @param aggregation The {@link Aggregation aggregation}
-         * @return A list of {@link AggregationElement aggregation elements}
-         * @see #optimizeAndConvert(Collection)
-         * @see #convert(Collection)
+         * @return The {@link AggregationElement aggregation element}
          */
-        static List<AggregationElement> convert(Aggregation aggregation) {
-            return optimizeAndConvert(Collections.singleton(aggregation));
+        static AggregationElement of(Aggregation aggregation) {
+            return AggregationElementAdapter.of(aggregation);
         }
 
         /**
@@ -621,31 +618,31 @@ public class AggregationFactory implements AggregationSpec {
          *
          * @param aggregations The {@link Aggregation aggregation}
          * @return A list of {@link AggregationElement aggregation elements}
-         * @see #convert(Aggregation)
+         * @see AggregationOptimizer#of(Collection)
+         * @see #of(Aggregation)
          * @see #convert(Collection)
          */
         static List<AggregationElement> optimizeAndConvert(Collection<? extends Aggregation> aggregations) {
-            AggregationAdapterOptimized builder = new AggregationAdapterOptimized();
-            aggregations.forEach(a -> a.walk(builder));
-            return builder.build();
+            return convert(AggregationOptimizer.of(aggregations));
         }
 
         /**
-         * Converts and the aggregations, only collapsing {@link Multi multi} aggregations into single
-         * {@link AggregationElement elements}, leaving singular aggregations as they are.
+         * Converts the aggregations leaving singular aggregations as they are.
          *
          * <p>
          * Note: The results will preserve the intended order of the inputs.
          *
          * @param aggregations The {@link Aggregation aggregation}
          * @return A list of {@link AggregationElement aggregation elements}
-         * @see #convert(Aggregation)
+         * @see #of(Aggregation)
          * @see #optimizeAndConvert(Collection)
          */
         static List<AggregationElement> convert(Collection<? extends Aggregation> aggregations) {
-            AggregationAdapterOrdered builder = new AggregationAdapterOrdered();
-            aggregations.forEach(a -> a.walk(builder));
-            return builder.build();
+            final List<AggregationElement> out = new ArrayList<>(aggregations.size());
+            for (Aggregation aggregation : aggregations) {
+                out.add(of(aggregation));
+            }
+            return out;
         }
 
         AggregationSpec getSpec();
@@ -1389,39 +1386,11 @@ public class AggregationFactory implements AggregationSpec {
                             operators.add(formulaChunkedOperator);
                             inputNames.add(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
                         } else if (isWeightedAverage || isWeightedSum) {
-                            final String weightName;
-
-                            if (isWeightedAverage) {
-                                weightName = ((WeightedAverageSpecImpl) inputAggregationSpec)
-                                        .getWeightName();
-                            } else {
-                                weightName =
-                                        ((WeightedSumSpecImpl) inputAggregationSpec).getWeightName();
-                            }
-
-                            final ColumnSource<?> weightSource = table.getColumnSource(weightName);
-                            final DoubleWeightRecordingInternalOperator weightOperator =
-                                    new DoubleWeightRecordingInternalOperator(weightSource.getChunkType());
-                            inputColumns.add(weightSource);
-                            operators.add(weightOperator);
-
-                            inputNames.add(Stream
-                                    .concat(Stream.of(weightName),
-                                            Arrays.stream(comboMatchPairs).map(MatchPair::rightColumn))
-                                    .toArray(String[]::new));
-
-                            Arrays.stream(comboMatchPairs).forEach(mp -> {
-                                final ColumnSource<?> columnSource = table.getColumnSource(mp.rightColumn());
-                                inputColumns.add(columnSource);
-                                inputNames.add(new String[] {weightName, mp.rightColumn()});
-                                if (isWeightedAverage) {
-                                    operators.add(new ChunkedWeightedAverageOperator(columnSource.getChunkType(),
-                                            weightOperator, mp.leftColumn()));
-                                } else {
-                                    operators.add(new DoubleChunkedWeightedSumOperator(columnSource.getChunkType(),
-                                            weightOperator, mp.leftColumn()));
-                                }
-                            });
+                            final String weightName = isWeightedAverage
+                                    ? ((WeightedAverageSpecImpl) inputAggregationSpec).getWeightName()
+                                    : ((WeightedSumSpecImpl) inputAggregationSpec).getWeightName();
+                            WeightedAverageSumAggregationFactory.getOperatorsAndInputs(table,
+                                    weightName, isWeightedSum, comboMatchPairs, operators, inputNames, inputColumns);
                         } else {
                             throw new UnsupportedOperationException(
                                     "Unknown AggregationElementImpl: " + inputAggregationSpec.getClass());

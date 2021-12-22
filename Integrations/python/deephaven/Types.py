@@ -48,6 +48,7 @@ double = None
 float64 = None
 string = None
 bigdecimal = None
+biginteger = None
 stringset = None
 datetime = None
 timeperiod = None
@@ -79,7 +80,7 @@ def _defineSymbols():
         _qst_column_, _qst_newtable_, _qst_type_, _table_, \
         DataType, bool_, byte, short, int16, char, int_, int32, long_, int64, \
         float_, single, float32, double, float64, \
-        string, bigdecimal, stringset, datetime, timeperiod, \
+        string, bigdecimal, biginteger, stringset, datetime, timeperiod, \
         byte_array, short_array, int16_array, int_array, int32_array, long_array, int64_array, \
         float_array, single_array, float32_array, double_array, float64_array, string_array, \
         _type2jtype
@@ -114,6 +115,7 @@ def _defineSymbols():
         float64 = double  # make life simple for people who are used to pyarrow
         string = DataType(_qst_type_.stringType())
         bigdecimal = _typeFromJavaClassName('java.math.BigDecimal')
+        biginteger = _typeFromJavaClassName('java.math.BigInteger')
         stringset =  _typeFromJavaClassName('io.deephaven.stringset.StringSet')
         datetime = _typeFromJavaClassName('io.deephaven.time.DateTime')
         timeperiod = _typeFromJavaClassName('io.deephaven.time.Period')
@@ -143,6 +145,7 @@ def _defineSymbols():
             double : jpy.get_type('double'),
             string : jpy.get_type('java.lang.String'),
             bigdecimal : jpy.get_type('java.math.BigDecimal'),
+            biginteger : jpy.get_type('java.math.BigInteger'),
             stringset : jpy.get_type('io.deephaven.stringset.StringSet'),
             datetime : jpy.get_type('io.deephaven.time.DateTime'),
             timeperiod : jpy.get_type('io.deephaven.time.Period'),

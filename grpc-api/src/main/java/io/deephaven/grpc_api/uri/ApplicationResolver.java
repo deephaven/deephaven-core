@@ -5,6 +5,8 @@ import io.deephaven.appmode.Field;
 import io.deephaven.grpc_api.appmode.ApplicationStates;
 import io.deephaven.uri.ApplicationUri;
 import io.deephaven.uri.DeephavenUri;
+import io.deephaven.uri.resolver.UriResolver;
+import io.deephaven.uri.resolver.UriResolversInstance;
 
 import javax.inject.Inject;
 import java.net.URI;

@@ -1,7 +1,7 @@
 package io.deephaven.jpy.integration;
 
 import io.deephaven.jpy.JpyConfigExt;
-import io.deephaven.jpy.JpyConfigSource.SysProps;
+import io.deephaven.jpy.JpyConfigSource;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.jpy.PyLib;
@@ -10,7 +10,7 @@ import org.jpy.PyObject;
 
 public class PySysPath {
     public static void main(String[] args) {
-        JpyConfigExt jpyConfig = new JpyConfigExt(SysProps.INSTANCE.asJpyConfig());
+        JpyConfigExt jpyConfig = new JpyConfigExt(JpyConfigSource.sysProps().asJpyConfig());
 
         System.out.println(jpyConfig);
 

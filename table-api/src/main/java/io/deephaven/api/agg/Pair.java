@@ -5,9 +5,10 @@ import io.deephaven.api.ColumnName;
 import java.io.Serializable;
 
 /**
- * An aggregation pair represents a {@link #input() input} and {@link #output() output} column for some
- * {@link Aggregation aggregations}. Aggregations that don't have a one-to-one input/output mapping will not need an agg
- * pair.
+ * A column pair represents an {@link #input() input} and an {@link #output() output} column.
+ *
+ * @see NormalAggregation
+ * @see NormalAggregations
  */
 public interface Pair extends Serializable {
 

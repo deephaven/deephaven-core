@@ -163,7 +163,7 @@ public class KafkaTools {
         }
         final Schema.Type fieldType = fieldSchema.getType();
         pushColumnTypesFromAvroField(
-                columnsOut, mappedOut, prefix, field, fieldName, fieldSchema, mappedName, fieldType,
+                columnsOut, mappedOut, prefix, fieldName, fieldSchema, mappedName, fieldType,
                 fieldNameToColumnName);
 
     }
@@ -172,7 +172,6 @@ public class KafkaTools {
             final List<ColumnDefinition<?>> columnsOut,
             final Map<String, String> mappedOut,
             final String prefix,
-            final Schema.Field field,
             final String fieldName,
             final Schema fieldSchema,
             final String mappedName,
@@ -207,13 +206,13 @@ public class KafkaTools {
             case UNION:
                 final Schema effectiveSchema = Utils.getEffectiveSchema(fieldName, fieldSchema);
                 pushColumnTypesFromAvroField(
-                        columnsOut, mappedOut, prefix, field, fieldName, effectiveSchema, mappedName,
+                        columnsOut, mappedOut, prefix, fieldName, effectiveSchema, mappedName,
                         effectiveSchema.getType(),
                         fieldNameToColumnName);
                 return;
             case RECORD:
                 // Linearize any nesting.
-                for (final Schema.Field nestedField : field.schema().getFields()) {
+                for (final Schema.Field nestedField : fieldSchema.getFields()) {
                     pushColumnTypesFromAvroField(
                             columnsOut, mappedOut,
                             prefix + fieldName + NESTED_FIELD_NAME_SEPARATOR,

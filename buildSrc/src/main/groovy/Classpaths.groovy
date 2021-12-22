@@ -81,6 +81,9 @@ class Classpaths {
     static final String GROOVY_GROUP = 'org.codehaus.groovy'
     static final String GROOVY_VERSION = '3.0.9'
 
+    static final String GRPC_GROUP = 'io.grpc'
+    static final String GRPC_VERSION = '1.42.1'
+
     static boolean addDependency(Configuration conf, String group, String name, String version, Action<? super DefaultExternalModuleDependency> configure = Actions.doNothing()) {
         if (!conf.dependencies.find { it.name == name && it.group == group}) {
             DefaultExternalModuleDependency dep = dependency group, name, version
@@ -194,5 +197,10 @@ class Classpaths {
     static void inheritGroovy(Project p, String name, String configName) {
         Configuration config = p.configurations.getByName(configName)
         addDependency(config, GROOVY_GROUP, name, GROOVY_VERSION)
+    }
+
+    static void inheritGrpcPlatform(Project p, String configName = JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME) {
+        Configuration config = p.configurations.getByName(configName)
+        addDependency(config, p.getDependencies().platform(GRPC_GROUP + ":" + 'grpc-bom' + ":" + GRPC_VERSION))
     }
 }

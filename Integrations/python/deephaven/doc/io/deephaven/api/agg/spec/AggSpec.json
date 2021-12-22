@@ -1,0 +1,30 @@
+{
+ "className": "io.deephaven.api.agg.spec.AggSpec",
+ "methods": {
+  "absSum": ":return: io.deephaven.api.agg.spec.AggSpecAbsSum",
+  "aggregation": "*Overload 1*  \n  :param pair: io.deephaven.api.agg.Pair\n  :return: io.deephaven.api.agg.NormalAggregation\n  \n*Overload 2*  \n  :param pairs: io.deephaven.api.agg.Pair...\n  :return: io.deephaven.api.agg.Aggregation\n  \n*Overload 3*  \n  :param pairs: java.util.Collection<? extendsio.deephaven.api.agg.Pair>\n  :return: io.deephaven.api.agg.Aggregation",
+  "avg": ":return: io.deephaven.api.agg.spec.AggSpecAvg",
+  "countDistinct": "*Overload 1*  \n  :return: io.deephaven.api.agg.spec.AggSpecCountDistinct\n  \n*Overload 2*  \n  :param countNulls: boolean\n  :return: io.deephaven.api.agg.spec.AggSpecCountDistinct",
+  "distinct": "*Overload 1*  \n  :return: io.deephaven.api.agg.spec.AggSpecDistinct\n  \n*Overload 2*  \n  :param includeNulls: boolean\n  :return: io.deephaven.api.agg.spec.AggSpecDistinct",
+  "first": ":return: io.deephaven.api.agg.spec.AggSpecFirst",
+  "formula": "*Overload 1*  \n  :param formula: java.lang.String\n  :return: io.deephaven.api.agg.spec.AggSpecFormula\n  \n*Overload 2*  \n  :param formula: java.lang.String\n  :param formulaParam: java.lang.String\n  :return: io.deephaven.api.agg.spec.AggSpecFormula",
+  "group": ":return: io.deephaven.api.agg.spec.AggSpecGroup",
+  "last": ":return: io.deephaven.api.agg.spec.AggSpecLast",
+  "max": ":return: io.deephaven.api.agg.spec.AggSpecMax",
+  "median": "*Overload 1*  \n  :return: io.deephaven.api.agg.spec.AggSpecMedian\n  \n*Overload 2*  \n  :param averageMedian: boolean\n  :return: io.deephaven.api.agg.spec.AggSpecMedian",
+  "min": ":return: io.deephaven.api.agg.spec.AggSpecMin",
+  "percentile": "*Overload 1*  \n  :param percentile: double\n  :return: io.deephaven.api.agg.spec.AggSpecPercentile\n  \n*Overload 2*  \n  :param percentile: double\n  :param averageMedian: boolean\n  :return: io.deephaven.api.agg.spec.AggSpecPercentile",
+  "sortedFirst": "*Overload 1*  \n  :param columns: java.lang.String...\n  :return: io.deephaven.api.agg.spec.AggSpecSortedFirst\n  \n*Overload 2*  \n  :param columns: java.util.Collection<? extendsjava.lang.String>\n  :return: io.deephaven.api.agg.spec.AggSpecSortedFirst",
+  "sortedLast": "*Overload 1*  \n  :param columns: java.lang.String...\n  :return: io.deephaven.api.agg.spec.AggSpecSortedLast\n  \n*Overload 2*  \n  :param columns: java.util.Collection<? extendsjava.lang.String>\n  :return: io.deephaven.api.agg.spec.AggSpecSortedLast",
+  "std": ":return: io.deephaven.api.agg.spec.AggSpecStd",
+  "sum": ":return: io.deephaven.api.agg.spec.AggSpecSum",
+  "unique": "*Overload 1*  \n  :return: io.deephaven.api.agg.spec.AggSpecUnique\n  \n*Overload 2*  \n  :param includeNulls: boolean\n  :return: io.deephaven.api.agg.spec.AggSpecUnique",
+  "var": ":return: io.deephaven.api.agg.spec.AggSpecVar",
+  "walk": "Note: Java generics information - <V extends io.deephaven.api.agg.spec.AggSpec.Visitor>\n\n:param visitor: V\n:return: V",
+  "wavg": ":param weightColumn: java.lang.String\n:return: io.deephaven.api.agg.spec.AggSpecWAvg",
+  "wsum": ":param weightColumn: java.lang.String\n:return: io.deephaven.api.agg.spec.AggSpecWSum"
+ },
+ "path": "io.deephaven.api.agg.spec.AggSpec",
+ "text": "An aggregation specification represents the configurable options for aggregations.",
+ "typeName": "interface"
+}

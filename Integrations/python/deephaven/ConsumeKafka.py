@@ -10,8 +10,8 @@ import wrapt
 
 import deephaven.Types as dh
 
-from deephaven.conversion_utils import _isStr, \
-    _dictToProperties, _dictToMap, IDENTITY
+from deephaven.conversion_utils import \
+    _dictToFunWithIdentity, _dictToFunWithDefault, _dictToMap, _dictToProperties, _isStr
 
 from deephaven.Types import _jclassFromType
 
@@ -223,12 +223,12 @@ def avro(schema, schema_version:str = None, mapping:dict = None, mapping_only:di
             "'mapping_only' expected, instead got both")
     if mapping is not None:
         have_mapping = True
-        # when providing 'mapping_only', fields names not given are mapped as identity
-        mapping = _dictToFun(mapping, default_value=IDENTITY)
+        # when providing 'mapping', fields names not given are mapped as identity
+        mapping = _dictToFunWithIdentity(mapping)
     elif mapping_only is not None:
         have_mapping = True
         # when providing 'mapping_only', fields not given are ignored.
-        mapping = _dictToFun(mapping, default_value=None)
+        mapping = _dictToFunWithDefault(mapping_only, None)
     else:
         have_mapping = False
     if _isStr(schema):

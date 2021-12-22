@@ -4,7 +4,6 @@
 
 package io.deephaven.extensions.barrage.chunk;
 
-import com.google.common.base.Charsets;
 import com.google.common.io.LittleEndianDataOutputStream;
 import gnu.trove.iterator.TLongIterator;
 import io.deephaven.UncheckedDeephavenException;
@@ -37,15 +36,13 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
 
     private byte[] bytes;
     private WritableIntChunk<ChunkPositions> offsets;
-    private byte[] stringBytes;
-    private WritableIntChunk<ChunkPositions> stringOffsets;
 
     public interface Appender<T> {
         void append(OutputStream out, T item) throws IOException;
     }
 
     public interface Mapper<T> {
-        T constructFrom(final byte[] buf, int offset, int length) throws IOException;
+        T constructFrom(byte[] buf, int offset, int length) throws IOException;
     }
 
     VarBinaryChunkInputStreamGenerator(final Class<T> type, final ObjectChunk<T, Values> chunk,
@@ -76,25 +73,6 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
         }
     }
 
-    private synchronized void computeStringPayload() throws IOException {
-        if (stringBytes != null) {
-            return;
-        }
-
-        stringOffsets = WritableIntChunk.makeWritableChunk(chunk.size() + 1);
-
-        try (final BarrageProtoUtil.ExposedByteArrayOutputStream baos = new BarrageProtoUtil.ExposedByteArrayOutputStream()) {
-            stringOffsets.set(0, 0);
-            for (int i = 0; i < chunk.size(); ++i) {
-                if (chunk.get(i) != null) {
-                    baos.write(chunk.get(i).toString().getBytes(Charsets.UTF_8));
-                }
-                stringOffsets.set(i + 1, baos.size());
-            }
-            stringBytes = baos.peekBuffer();
-        }
-    }
-
     @Override
     public void close() {
         if (REFERENCE_COUNT_UPDATER.decrementAndGet(this) == 0) {
@@ -104,21 +82,13 @@ public class VarBinaryChunkInputStreamGenerator<T> extends BaseChunkInputStreamG
             if (offsets != null) {
                 offsets.close();
             }
-            if (stringOffsets != null) {
-                stringOffsets.close();
-            }
         }
     }
 
     @Override
     public DrainableColumn getInputStream(final BarrageSubscriptionOptions options, final @Nullable RowSet subset) throws IOException {
-        if (type == String.class) {
-            computePayload();
-            return new ObjectChunkInputStream(options, offsets, bytes, subset);
-        }
-
-        computeStringPayload();
-        return new ObjectChunkInputStream(options, stringOffsets, stringBytes, subset);
+        computePayload();
+        return new ObjectChunkInputStream(options, offsets, bytes, subset);
     }
 
     private class ObjectChunkInputStream extends BaseChunkInputStream {
