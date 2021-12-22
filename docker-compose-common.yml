@@ -10,7 +10,7 @@ services:
       # with max memory.
       #
       # To turn on debug logging, add: -Dlogback.configurationFile=logback-debug.xml
-      - JAVA_TOOL_OPTIONS=-Xmx4g -Ddeephaven.console.type=${DEEPHAVEN_CONSOLE_TYPE} -Ddeephaven.application.dir=${DEEPHAVEN_APPLICATION_DIR}
+      - JAVA_TOOL_OPTIONS=-Xmx12g -Ddeephaven.console.type=${DEEPHAVEN_CONSOLE_TYPE} -Ddeephaven.application.dir=${DEEPHAVEN_APPLICATION_DIR}
 
     expose:
       - '8080'
@@ -26,7 +26,7 @@ services:
       resources:
         limits:
           cpus: '4.0'
-          memory: 24000M
+          memory: 12000M
         reservations:
           memory: 1000M
 

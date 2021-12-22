@@ -51,7 +51,7 @@ public class ChunkedOperatorAggregationHelper {
     static final int CHUNK_SIZE =
             Configuration.getInstance().getIntegerWithDefault("ChunkedOperatorAggregationHelper.chunkSize", 1 << 12);
     public static final boolean SKIP_RUN_FIND =
-            Configuration.getInstance().getBooleanWithDefault("ChunkedOperatorAggregationHelper.skipRunFind", true);
+            Configuration.getInstance().getBooleanWithDefault("ChunkedOperatorAggregationHelper.skipRunFind", false);
     static final boolean HASHED_RUN_FIND =
             Configuration.getInstance().getBooleanWithDefault("ChunkedOperatorAggregationHelper.hashedRunFind", true);
 
