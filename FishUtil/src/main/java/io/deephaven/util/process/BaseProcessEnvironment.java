@@ -63,14 +63,4 @@ public abstract class BaseProcessEnvironment implements ProcessEnvironment {
     public final String getMainClassName() {
         return mainClassName;
     }
-
-    @Override
-    public final Logger getLog() {
-        if (!Boolean.getBoolean("LoggerFactory.silenceOnProcessEnvironment")) {
-            log.warn(new RuntimeException("Trace"))
-                    .append("Logger being fetched via ProcessEnvironment instead of io.deephaven.internal.log.LoggerFactory")
-                    .endl();
-        }
-        return log;
-    }
 }

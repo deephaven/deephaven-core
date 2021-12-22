@@ -1,10 +1,10 @@
 plugins {
-    id 'java'
+    id 'java-library'
 }
 
 configurations {
     // custom configuration, sourceset, test task to keep flight-core off the main/test classpath
-    flightTestCompile.extendsFrom(testCompile)
+    flightTestCompile.extendsFrom(testImplementation)
 }
 
 sourceSets {
@@ -20,25 +20,25 @@ sourceSets {
 }
 
 dependencies {
-    compile project(':engine-table'),
-            project(':extensions-csv'),
-            project(':extensions-parquet-table'),
-            project(':Util'),
-            project(':java-client-barrage-dagger'),
-            project(':proto:proto-backplane-grpc-flight'),
-            project(':open-api-lang-tools'),
-            project(':log-factory'),
-            project(':application-mode'),
-            'com.github.f4b6a3:uuid-creator:3.6.0'
+    implementation project(':engine-table')
+    implementation project(':extensions-csv')
+    implementation project(':extensions-parquet-table')
+    implementation project(':Util')
+    api project(':java-client-barrage-dagger')
+    implementation project(':proto:proto-backplane-grpc-flight')
+    implementation project(':open-api-lang-tools')
+    implementation project(':log-factory')
+    implementation project(':application-mode')
+    implementation 'com.github.f4b6a3:uuid-creator:3.6.0'
 
-    Classpaths.inheritFlatbuffer(project, 'compile')
+    Classpaths.inheritFlatbuffer(project, 'implementation')
 
     Classpaths.inheritDagger(project)
     Classpaths.inheritDagger(project, /* test */ true)
 
-    compile project(':Plot')
+    implementation project(':Plot')
 
-    compile project(':ClientSupport')
+    implementation project(':ClientSupport')
 
     if ('true' == project.findProperty('extensions.classgraph.enabled')) {
         runtimeOnly project(':extensions-classgraph')
@@ -47,7 +47,12 @@ dependencies {
         runtimeOnly project(':extensions-suanshu')
     }
 
-    testCompile TestTools.projectDependency(project, 'engine-table'),
+    Classpaths.inheritGrpcPlatform(project, 'implementation')
+    implementation "io.grpc:grpc-services"
+
+    testImplementation "io.grpc:grpc-testing"
+
+    testImplementation TestTools.projectDependency(project, 'engine-table'),
                 TestTools.projectDependency(project, 'Util')
 
     runtimeOnly project(':Numerics'),
@@ -59,7 +64,7 @@ dependencies {
     Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
 
     // it is essential that this is only added to the classpath for flightTestCompile
-    Classpaths.inheritArrow(project, 'flight-grpc', 'flightTestCompile')
+    Classpaths.inheritArrow(project, 'flight-core', 'flightTestCompile')
 }
 
 // testOutOfBand: non-parallel, not a engine test, not isolated

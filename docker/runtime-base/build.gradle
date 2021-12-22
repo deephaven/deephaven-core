@@ -2,7 +2,7 @@ plugins {
     id 'com.bmuschko.docker-remote-api'
 }
 
-evaluationDependsOn ':docker-java-and-python'
+evaluationDependsOn Docker.registryProject('server-base')
 evaluationDependsOn ':deephaven-jpy'
 evaluationDependsOn ':deephaven-wheel'
 evaluationDependsOn ':deephaven2-wheel'
@@ -33,13 +33,10 @@ def prepareDocker = project.tasks.register('prepareDocker', Sync) {
     into dockerContext
 }
 
-Docker.registerDockerImage(project, 'buildDocker') {
-    // deephaven/java-and-python:local-build
-    def javaAndPython = project(':docker-java-and-python').tasks.getByName('buildDocker')
-
+def buildDocker = Docker.registerDockerImage(project, 'buildDocker') {
     dependsOn prepareDocker
 
-    inputs.files javaAndPython.outputs.files
+    inputs.files Docker.registryFiles(project, 'server-base')
 
     inputDir.set dockerContext
 

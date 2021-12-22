@@ -1,8 +1,7 @@
-FROM deephaven/node:local-build AS node
+FROM deephaven/node:local-build
 WORKDIR /usr/src/app
 
-FROM node as build
-ARG WEB_VERSION=0.7.2
+ARG WEB_VERSION=0.8.0
 
 # Pull in the published package from npmjs and extract is
 RUN set -eux; \

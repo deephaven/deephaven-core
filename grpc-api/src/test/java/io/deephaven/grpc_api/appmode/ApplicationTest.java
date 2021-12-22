@@ -13,6 +13,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.concurrent.TimeoutException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -54,7 +55,7 @@ public class ApplicationTest {
 
     @Test
     @Ignore("python test needs to run in a container")
-    public void app02() throws IOException {
+    public void app02() throws IOException, InterruptedException, TimeoutException {
         session = new PythonDeephavenSession(null, false, false);
         ApplicationState app = ApplicationFactory.create(ApplicationConfigs.testAppDir(), ApplicationConfigs.app02(),
                 session, new NoopStateListener());

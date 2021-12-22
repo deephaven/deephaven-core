@@ -5,10 +5,10 @@
 package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.time.DateTime;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.clock.RealTimeClock;
-import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.time.ClockTimeProvider;
 import io.deephaven.engine.updategraph.TerminalNotification;
 import io.deephaven.time.TimeProvider;
@@ -104,6 +104,8 @@ import java.text.DecimalFormat;
  * </pre>
  */
 public class AutoTuningIncrementalReleaseFilter extends BaseIncrementalReleaseFilter {
+    private static final Logger log = LoggerFactory.getLogger(AutoTuningIncrementalReleaseFilter.class);
+
     @NotNull
     private final TimeProvider timeProvider;
     private final long initialRelease;
@@ -198,7 +200,7 @@ public class AutoTuningIncrementalReleaseFilter extends BaseIncrementalReleaseFi
     @ScriptApi
     public AutoTuningIncrementalReleaseFilter(long initialSize, long initialRelease, double targetFactor,
             boolean verbose, TimeProvider timeProvider) {
-        this(ProcessEnvironment.getDefaultLog(), initialSize, initialRelease, targetFactor, verbose, timeProvider);
+        this(log, initialSize, initialRelease, targetFactor, verbose, timeProvider);
     }
 
     /**
