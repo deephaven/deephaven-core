@@ -770,7 +770,7 @@ public class ChunkedOperatorAggregationHelper {
                 // We must accumulate shifts into runs for the same slot, if we bounce from slot 1 to 2 and back to 1,
                 // then the polarity checking logic can have us overwrite things because we wouldn't remove all the
                 // values from a slot at the same time. Suppose you had
-                // Slot Index
+                // Slot RowKey
                 // 1 1
                 // 2 2
                 // 1 3
@@ -1407,7 +1407,6 @@ public class ChunkedOperatorAggregationHelper {
         if (!findRuns) {
             chunkPosition.setSize(slots.size());
             ChunkUtils.fillInOrder(chunkPosition);
-            runStarts.setSize(slots.size());
             IntFindRunsKernel.findRunsSingles(slots, runStarts, runLengths);
         } else if (HASHED_RUN_FIND) {
             HashedRunFinder.findRunsHashed(hashedRunContext, runStarts, runLengths, chunkPosition, slots);

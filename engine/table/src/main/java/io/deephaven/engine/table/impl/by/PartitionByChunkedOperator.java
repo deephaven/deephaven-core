@@ -10,7 +10,6 @@ import io.deephaven.engine.rowset.impl.WritableRowSetImpl;
 import io.deephaven.engine.table.*;
 import io.deephaven.engine.rowset.*;
 import io.deephaven.engine.rowset.impl.OrderedLongSet;
-import io.deephaven.engine.rowset.impl.OrderedLongSetBuilderSequential;
 import io.deephaven.engine.table.impl.TableUpdateImpl;
 import io.deephaven.engine.table.impl.chunkboxer.ChunkBoxer;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
@@ -211,7 +210,7 @@ public final class PartitionByChunkedOperator implements IterativeChunkedAggrega
             final long destination = destinations.get(startPosition);
 
             if (appendShifts(preShiftRowKeys, postShiftRowKeys, startPosition, runLength, destination)) {
-                chunkDestinationBuilder.appendKey(destination);
+                chunkDestinationBuilder.addKey(destination);
             }
         }
         try (final RowSet chunkDestinationsShifted =

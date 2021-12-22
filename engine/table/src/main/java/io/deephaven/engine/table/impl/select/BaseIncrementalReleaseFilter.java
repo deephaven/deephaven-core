@@ -12,6 +12,7 @@ import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.util.QueryConstants;
+import io.deephaven.util.annotations.ScriptApi;
 
 import java.util.Collections;
 import java.util.List;
@@ -32,14 +33,14 @@ public abstract class BaseIncrementalReleaseFilter extends WhereFilterLivenessAr
 
     transient private boolean addedToUpdateGraphProcessor = false;
 
-    transient private volatile long firstReleaseNanos = QueryConstants.NULL_LONG;
-    transient private volatile long releaseAllNanos = QueryConstants.NULL_LONG;
+    private transient volatile long firstReleaseNanos = QueryConstants.NULL_LONG;
+    private transient volatile long releaseAllNanos = QueryConstants.NULL_LONG;
 
     /**
      * Should we release entries during the UpdateGraphProcessor cycle?
      */
-    transient private volatile boolean started;
-    transient private volatile boolean initialized = false;
+    private transient volatile boolean started;
+    private transient volatile boolean initialized = false;
 
     /**
      * Construct an incremental release filter.
@@ -115,10 +116,14 @@ public abstract class BaseIncrementalReleaseFilter extends WhereFilterLivenessAr
     /**
      * Wait for all rows to be released.
      */
+    @ScriptApi
     public void waitForCompletion() throws InterruptedException {
         if (UpdateGraphProcessor.DEFAULT.isRefreshThread()) {
             throw new IllegalStateException(
                     "Can not wait for completion while on UpdateGraphProcessor refresh thread, updates would block.");
+        }
+        if (releaseAllNanos != QueryConstants.NULL_LONG) {
+            return;
         }
         UpdateGraphProcessor.DEFAULT.exclusiveLock().doLocked(() -> {
             while (releaseAllNanos == QueryConstants.NULL_LONG) {
@@ -132,10 +137,14 @@ public abstract class BaseIncrementalReleaseFilter extends WhereFilterLivenessAr
     /**
      * Wait for all rows to be released.
      */
+    @ScriptApi
     public void waitForCompletion(long timeoutMillis) throws InterruptedException {
         if (UpdateGraphProcessor.DEFAULT.isRefreshThread()) {
             throw new IllegalStateException(
                     "Can not wait for completion while on UpdateGraphProcessor refresh thread, updates would block.");
+        }
+        if (releaseAllNanos != QueryConstants.NULL_LONG) {
+            return;
         }
         final long end = System.currentTimeMillis() + timeoutMillis;
         UpdateGraphProcessor.DEFAULT.exclusiveLock().doLocked(() -> {
@@ -143,6 +152,9 @@ public abstract class BaseIncrementalReleaseFilter extends WhereFilterLivenessAr
                 // this only works because we will never actually filter out a row from the result; in the general
                 // WhereFilter case, the result table may not update. We could await on the source table, but
                 final long remainingTimeout = Math.max(0, end - System.currentTimeMillis());
+                if (remainingTimeout == 0) {
+                    return;
+                }
                 listener.getTable().awaitUpdate(remainingTimeout);
             }
         });
@@ -153,6 +165,7 @@ public abstract class BaseIncrementalReleaseFilter extends WhereFilterLivenessAr
      * 
      * @return nano duration of this filter, or NULL_LONG if the filter is not completed
      */
+    @ScriptApi
     public long durationNanos() {
         if (releaseAllNanos == QueryConstants.NULL_LONG || firstReleaseNanos == QueryConstants.NULL_LONG) {
             return QueryConstants.NULL_LONG;

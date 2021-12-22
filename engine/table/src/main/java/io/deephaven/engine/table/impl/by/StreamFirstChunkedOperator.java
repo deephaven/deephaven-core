@@ -14,7 +14,6 @@ import io.deephaven.engine.table.ChunkSink;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
-import io.deephaven.engine.table.impl.sort.timsort.IntIntTimsortKernel;
 import io.deephaven.util.SafeCloseableList;
 import org.jetbrains.annotations.NotNull;
 
@@ -77,13 +76,11 @@ public class StreamFirstChunkedOperator extends BaseStreamFirstOrLastChunkedOper
 
         final StreamFirstBucketedContext context = (StreamFirstBucketedContext) bucketedContext;
 
-        context.destinationsToSort.setSize(startPositions.size());
-        context.startPositionsToSort.setSize(startPositions.size());
-
         long maxDestination = nextDestination - 1;
 
         // we can essentially do a radix sort; anything less than nextDestination is not of interest; everything else
         // must fall between nextDestination and our chunk size
+        context.rowKeyToInsert.fillWithValue(0, startPositions.size(), 0);
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
             final int destination = destinations.get(startPosition);
@@ -91,20 +88,24 @@ public class StreamFirstChunkedOperator extends BaseStreamFirstOrLastChunkedOper
                 Assert.lt(destination, "destination", nextDestination + startPositions.size(),
                         "nextDestination + startPositions.size()");
                 maxDestination = Math.max(destination, maxDestination);
-                context.destinationsToSort.set((int) (destination - nextDestination), destination);
-                context.startPositionsToSort.set((int) (destination - nextDestination), startPosition);
-            }
-        }
-        context.destinationsToSort.setSize((int) (maxDestination - nextDestination + 1));
-        context.startPositionsToSort.setSize((int) (maxDestination - nextDestination + 1));
 
-        for (int ii = 0; ii < context.destinationsToSort.size(); ++ii) {
-            final int destination = context.destinationsToSort.get(ii);
-            final int startPosition = context.startPositionsToSort.get(ii);
-            if (maybeAssignFirst(destination, inputRowKeys.get(startPosition))) {
-                stateModified.set(ii, true);
+                final long inputRowKey = context.rowKeyToInsert.get(startPosition);
+                final int index = (int) (destination - nextDestination);
+
+                context.destinationsToInsert.set(index, destination);
+                context.rowKeyToInsert.set(index, Math.min(context.rowKeyToInsert.get(index), inputRowKey));
             }
         }
+        context.destinationsToInsert.setSize((int) (maxDestination - nextDestination + 1));
+        context.rowKeyToInsert.setSize((int) (maxDestination - nextDestination + 1));
+
+        for (int ii = 0; ii < context.destinationsToInsert.size(); ++ii) {
+            final int destination = context.destinationsToInsert.get(ii);
+            final long rowKey = context.rowKeyToInsert.get(ii);
+            redirections.set(destination - firstDestinationThisStep, rowKey);
+        }
+
+        nextDestination = maxDestination + 1;
     }
 
     @Override
@@ -222,18 +223,18 @@ public class StreamFirstChunkedOperator extends BaseStreamFirstOrLastChunkedOper
     }
 
     private static class StreamFirstBucketedContext implements BucketedContext {
-        final WritableIntChunk<RowKeys> destinationsToSort;
-        final WritableIntChunk<ChunkPositions> startPositionsToSort;
+        final WritableIntChunk<RowKeys> destinationsToInsert;
+        final WritableLongChunk<RowKeys> rowKeyToInsert;
 
         public StreamFirstBucketedContext(int size) {
-            destinationsToSort = WritableIntChunk.makeWritableChunk(size);
-            startPositionsToSort = WritableIntChunk.makeWritableChunk(size);
+            destinationsToInsert = WritableIntChunk.makeWritableChunk(size);
+            rowKeyToInsert = WritableLongChunk.makeWritableChunk(size);
         }
 
         @Override
         public void close() {
-            destinationsToSort.close();
-            startPositionsToSort.close();
+            destinationsToInsert.close();
+            rowKeyToInsert.close();
         }
     }
 
