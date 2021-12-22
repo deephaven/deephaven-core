@@ -88,14 +88,15 @@ public class StreamFirstChunkedOperator extends BaseStreamFirstOrLastChunkedOper
             final int startPosition = startPositions.get(ii);
             final int destination = destinations.get(startPosition);
             if (destination >= nextDestination) {
-                Assert.lt(destination, "destination", nextDestination + startPositions.size(), "nextDestination + startPositions.size()");
+                Assert.lt(destination, "destination", nextDestination + startPositions.size(),
+                        "nextDestination + startPositions.size()");
                 maxDestination = Math.max(destination, nextDestination);
-                context.destinationsToSort.set((int)(destination - nextDestination), destination);
-                context.startPositionsToSort.set((int)(destination - nextDestination), startPosition);
+                context.destinationsToSort.set((int) (destination - nextDestination), destination);
+                context.startPositionsToSort.set((int) (destination - nextDestination), startPosition);
             }
         }
-        context.destinationsToSort.setSize((int)(maxDestination - nextDestination + 1));
-        context.startPositionsToSort.setSize((int)(maxDestination - nextDestination + 1));
+        context.destinationsToSort.setSize((int) (maxDestination - nextDestination + 1));
+        context.startPositionsToSort.setSize((int) (maxDestination - nextDestination + 1));
 
         for (int ii = 0; ii < context.destinationsToSort.size(); ++ii) {
             final int destination = context.destinationsToSort.get(ii);
