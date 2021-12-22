@@ -90,7 +90,7 @@ public class StreamFirstChunkedOperator extends BaseStreamFirstOrLastChunkedOper
             if (destination >= nextDestination) {
                 Assert.lt(destination, "destination", nextDestination + startPositions.size(),
                         "nextDestination + startPositions.size()");
-                maxDestination = Math.max(destination, nextDestination);
+                maxDestination = Math.max(destination, maxDestination);
                 context.destinationsToSort.set((int) (destination - nextDestination), destination);
                 context.startPositionsToSort.set((int) (destination - nextDestination), startPosition);
             }
