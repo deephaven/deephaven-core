@@ -1,4 +1,4 @@
-package io.deephaven.grpc_api;
+package io.deephaven.proto;
 
 import io.deephaven.proto.backplane.grpc.ApplicationServiceGrpc;
 import io.deephaven.proto.backplane.grpc.ApplicationServiceGrpc.ApplicationServiceBlockingStub;

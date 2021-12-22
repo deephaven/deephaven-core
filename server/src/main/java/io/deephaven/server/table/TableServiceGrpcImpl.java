@@ -41,12 +41,12 @@ import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.proto.backplane.grpc.TimeTableRequest;
 import io.deephaven.proto.backplane.grpc.UngroupRequest;
 import io.deephaven.proto.backplane.grpc.UnstructuredFilterTableRequest;
+import io.deephaven.proto.util.ExportTicketHelper;
 import io.deephaven.server.session.SessionService;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.server.session.SessionState.ExportBuilder;
 import io.deephaven.server.session.TicketRouter;
 import io.deephaven.server.table.ops.GrpcTableOperation;
-import io.deephaven.grpc_api.util.ExportTicketHelper;
 import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 

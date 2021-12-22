@@ -1,8 +1,10 @@
-package io.deephaven.grpc_api.util;
+package io.deephaven.proto.flight.util;
 
 import com.google.protobuf.ByteStringAccess;
 import com.google.rpc.Code;
 import io.deephaven.proto.backplane.grpc.Ticket;
+import io.deephaven.proto.util.Exceptions;
+import io.deephaven.proto.util.ExportTicketHelper;
 import org.apache.arrow.flight.impl.Flight;
 
 import java.nio.ByteOrder;

@@ -1,6 +1,6 @@
 package io.deephaven.server.runner;
 
-import io.deephaven.grpc_api.DeephavenChannel;
+import io.deephaven.proto.DeephavenChannel;
 import io.deephaven.proto.backplane.grpc.HandshakeRequest;
 import io.deephaven.proto.backplane.grpc.HandshakeResponse;
 import io.grpc.CallOptions;

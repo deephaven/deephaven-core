@@ -7,8 +7,8 @@ package io.deephaven.server.session;
 import com.google.rpc.Code;
 import io.deephaven.engine.table.Table;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
-import io.deephaven.grpc_api.util.ExportTicketHelper;
-import io.deephaven.grpc_api.util.FlightExportTicketHelper;
+import io.deephaven.proto.flight.util.FlightExportTicketHelper;
+import io.deephaven.proto.util.ExportTicketHelper;
 import org.apache.arrow.flight.impl.Flight;
 import org.jetbrains.annotations.Nullable;
 

@@ -1,12 +1,12 @@
 package io.deephaven.server.runner;
 
-import io.deephaven.grpc_api.util.ExportTicketHelper;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation;
 import io.deephaven.proto.backplane.grpc.EmptyTableRequest;
 import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.proto.backplane.grpc.TimeTableRequest;
+import io.deephaven.proto.util.ExportTicketHelper;
 import io.grpc.Status.Code;
 import io.grpc.StatusRuntimeException;
 import org.junit.Test;

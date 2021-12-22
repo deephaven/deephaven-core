@@ -6,13 +6,13 @@ package io.deephaven.server.session;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.AssertionFailure;
+import io.deephaven.proto.util.ExportTicketHelper;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.liveness.LivenessReferent;
 import io.deephaven.engine.liveness.LivenessScope;
 import io.deephaven.engine.liveness.LivenessScopeStack;
 import io.deephaven.engine.liveness.LivenessStateException;
-import io.deephaven.grpc_api.util.ExportTicketHelper;
 import io.deephaven.server.util.TestControlledScheduler;
 import io.deephaven.proto.backplane.grpc.ExportNotification;
 import io.deephaven.proto.backplane.grpc.Ticket;
@@ -34,7 +34,6 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import static io.deephaven.grpc_api.util.ExportTicketHelper.ticketToExportId;
 import static io.deephaven.proto.backplane.grpc.ExportNotification.State.CANCELLED;
 import static io.deephaven.proto.backplane.grpc.ExportNotification.State.DEPENDENCY_FAILED;
 import static io.deephaven.proto.backplane.grpc.ExportNotification.State.EXPORTED;
@@ -44,6 +43,7 @@ import static io.deephaven.proto.backplane.grpc.ExportNotification.State.QUEUED;
 import static io.deephaven.proto.backplane.grpc.ExportNotification.State.RELEASED;
 import static io.deephaven.proto.backplane.grpc.ExportNotification.State.RUNNING;
 import static io.deephaven.proto.backplane.grpc.ExportNotification.State.UNKNOWN;
+import static io.deephaven.proto.util.ExportTicketHelper.ticketToExportId;
 
 public class SessionStateTest {
 

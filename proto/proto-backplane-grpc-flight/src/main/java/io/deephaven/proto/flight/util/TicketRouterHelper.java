@@ -2,9 +2,10 @@
  * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
  */
 
-package io.deephaven.grpc_api.util;
+package io.deephaven.proto.flight.util;
 
 import com.google.rpc.Code;
+import io.deephaven.proto.util.Exceptions;
 import org.apache.arrow.flight.impl.Flight;
 
 public class TicketRouterHelper {

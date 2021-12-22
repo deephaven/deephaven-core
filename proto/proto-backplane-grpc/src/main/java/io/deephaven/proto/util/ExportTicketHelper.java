@@ -2,7 +2,7 @@
  * Copyright (c) 2016-2021 Deephaven Data Labs and Patent Pending
  */
 
-package io.deephaven.grpc_api.util;
+package io.deephaven.proto.util;
 
 import com.google.protobuf.ByteStringAccess;
 import com.google.rpc.Code;
@@ -183,7 +183,7 @@ public class ExportTicketHelper {
         return dest;
     }
 
-    static int ticketToExportIdInternal(final ByteBuffer ticket, final String logId) {
+    public static int ticketToExportIdInternal(final ByteBuffer ticket, final String logId) {
         if (ticket.order() != ByteOrder.LITTLE_ENDIAN) {
             throw Exceptions.statusRuntimeException(Code.FAILED_PRECONDITION,
                     "Could not resolve ticket '" + logId + "': ticket is not in LITTLE_ENDIAN order");

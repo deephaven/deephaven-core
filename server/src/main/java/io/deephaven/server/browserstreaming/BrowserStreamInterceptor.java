@@ -2,8 +2,8 @@ package io.deephaven.server.browserstreaming;
 
 import com.google.rpc.Code;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
-import io.deephaven.grpc_api.util.ExportTicketHelper;
 import io.deephaven.proto.backplane.grpc.Ticket;
+import io.deephaven.proto.util.ExportTicketHelper;
 import io.grpc.Context;
 import io.grpc.Contexts;
 import io.grpc.Metadata;

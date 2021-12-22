@@ -1,4 +1,4 @@
-package io.deephaven.grpc_api.util;
+package io.deephaven.proto.flight.util;
 
 import org.apache.arrow.flight.FlightDescriptor;
 import org.apache.arrow.flight.Ticket;

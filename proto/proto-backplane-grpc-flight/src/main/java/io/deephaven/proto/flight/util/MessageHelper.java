@@ -1,4 +1,4 @@
-package io.deephaven.grpc_api.util;
+package io.deephaven.proto.flight.util;
 
 import com.google.flatbuffers.FlatBufferBuilder;
 import com.google.protobuf.ByteStringAccess;

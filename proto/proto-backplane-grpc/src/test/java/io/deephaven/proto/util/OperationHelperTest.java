@@ -1,4 +1,4 @@
-package io.deephaven.grpc_api.util;
+package io.deephaven.proto.util;
 
 import com.google.protobuf.UnknownFieldSet;
 import io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation;

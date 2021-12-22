@@ -1,4 +1,4 @@
-package io.deephaven.grpc_api.util;
+package io.deephaven.proto.flight.util;
 
 import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
 import org.apache.arrow.flatbuf.Message;

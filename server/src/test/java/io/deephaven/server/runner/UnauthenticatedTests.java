@@ -1,9 +1,9 @@
 package io.deephaven.server.runner;
 
-import io.deephaven.grpc_api.util.ExportTicketHelper;
 import io.deephaven.proto.backplane.grpc.EmptyTableRequest;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.proto.backplane.grpc.TimeTableRequest;
+import io.deephaven.proto.util.ExportTicketHelper;
 import io.grpc.Status;
 import org.assertj.core.api.Assertions;
 import org.junit.Test;

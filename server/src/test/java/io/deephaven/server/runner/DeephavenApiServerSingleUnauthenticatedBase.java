@@ -1,6 +1,6 @@
 package io.deephaven.server.runner;
 
-import io.deephaven.grpc_api.DeephavenChannel;
+import io.deephaven.proto.DeephavenChannel;
 import org.junit.Before;
 
 public abstract class DeephavenApiServerSingleUnauthenticatedBase extends DeephavenApiServerTestBase {

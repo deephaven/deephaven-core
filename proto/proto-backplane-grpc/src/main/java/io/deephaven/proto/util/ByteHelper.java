@@ -1,4 +1,4 @@
-package io.deephaven.grpc_api.util;
+package io.deephaven.proto.util;
 
 import java.nio.ByteBuffer;
 

@@ -11,9 +11,9 @@ import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
-import io.deephaven.grpc_api.util.ScopeTicketHelper;
-import io.deephaven.grpc_api.util.TicketRouterHelper;
 import io.deephaven.proto.backplane.grpc.Ticket;
+import io.deephaven.proto.flight.util.TicketRouterHelper;
+import io.deephaven.proto.util.ScopeTicketHelper;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.server.session.TicketResolverBase;
 import io.deephaven.server.session.TicketRouter;
@@ -27,8 +27,8 @@ import java.nio.charset.CharacterCodingException;
 import java.nio.charset.CharsetDecoder;
 import java.util.function.Consumer;
 
-import static io.deephaven.grpc_api.util.ScopeTicketHelper.FLIGHT_DESCRIPTOR_ROUTE;
-import static io.deephaven.grpc_api.util.ScopeTicketHelper.TICKET_PREFIX;
+import static io.deephaven.proto.util.ScopeTicketHelper.FLIGHT_DESCRIPTOR_ROUTE;
+import static io.deephaven.proto.util.ScopeTicketHelper.TICKET_PREFIX;
 
 @Singleton
 public class ScopeTicketResolver extends TicketResolverBase {
