@@ -89,7 +89,7 @@ public class StreamFirstChunkedOperator extends BaseStreamFirstOrLastChunkedOper
                         "nextDestination + startPositions.size()");
                 maxDestination = Math.max(destination, maxDestination);
 
-                final long inputRowKey = context.rowKeyToInsert.get(startPosition);
+                final long inputRowKey = inputRowKeys.get(startPosition);
                 final int index = (int) (destination - nextDestination);
 
                 context.destinationsToInsert.set(index, destination);
