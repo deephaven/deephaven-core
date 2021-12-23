@@ -75,13 +75,7 @@ public class DeephavenApiServer {
     public void run() throws IOException, ClassNotFoundException, InterruptedException, TimeoutException {
         // Stop accepting new gRPC requests.
         ProcessEnvironment.getGlobalShutdownManager().registerTask(ShutdownManager.OrderingCategory.FIRST,
-                () -> {
-                    try {
-                        server.shutdown();
-                    } catch (Exception ignored) {
-                        // ignore, we're shutting down anyway
-                    }
-                });
+                () -> server.stopWithTimeout(10, TimeUnit.SECONDS));
 
         // Close outstanding sessions to give any gRPCs closure.
         ProcessEnvironment.getGlobalShutdownManager().registerTask(ShutdownManager.OrderingCategory.MIDDLE,
@@ -90,12 +84,7 @@ public class DeephavenApiServer {
         // Finally wait for gRPC to exit now.
         ProcessEnvironment.getGlobalShutdownManager().registerTask(ShutdownManager.OrderingCategory.LAST, () -> {
             try {
-                if (!server.awaitTermination(10, TimeUnit.SECONDS)) {
-                    log.error().append(
-                            "The gRPC server did not terminate in a reasonable amount of time. Invoking shutdownNow().")
-                            .endl();
-                    server.shutdownNow();
-                }
+                server.join();
             } catch (final InterruptedException ignored) {
             }
         });
@@ -130,7 +119,7 @@ public class DeephavenApiServer {
 
         log.info().append("Starting server...").endl();
         server.start();
-        server.awaitTermination();
+        server.join();
     }
 
     void startForUnitTests() throws Exception {

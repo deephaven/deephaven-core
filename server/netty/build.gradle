@@ -12,6 +12,7 @@ dependencies {
     implementation project(':application-mode')
 
     Classpaths.inheritDagger(project)
+    Classpaths.inheritDagger(project, /* test */ true)
 
     Classpaths.inheritGrpcPlatform(project)
     implementation 'io.grpc:grpc-netty'
@@ -23,6 +24,8 @@ dependencies {
 
     testImplementation project(':server-test')
 }
+
+test.systemProperty "UpdateGraphProcessor.allowUnitTestMode", false
 
 distributions {
     main {

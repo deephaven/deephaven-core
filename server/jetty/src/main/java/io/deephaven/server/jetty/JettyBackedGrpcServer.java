@@ -92,23 +92,25 @@ public class JettyBackedGrpcServer implements GrpcServer {
     }
 
     @Override
-    public void shutdown() throws Exception {
-        jetty.stop();
-    }
-
-    @Override
-    public void shutdownNow() {
-        // jetty.stop();
-    }
-
-    @Override
-    public void awaitTermination() throws InterruptedException {
+    public void join() throws InterruptedException {
         jetty.join();
     }
 
     @Override
-    public boolean awaitTermination(long timeout, TimeUnit unit) throws InterruptedException {
-        jetty.join();
-        return true;
+    public void stopWithTimeout(long timeout, TimeUnit unit) {
+        jetty.setStopTimeout(unit.toMillis(timeout));
+        Thread shutdownThread = new Thread(() -> {
+            try {
+                jetty.stop();
+            } catch (Exception exception) {
+                throw new IllegalStateException("Failure while stopping", exception);
+            }
+        });
+        shutdownThread.start();
+    }
+
+    @Override
+    public int getPort() {
+        return ((ServerConnector) jetty.getConnectors()[0]).getLocalPort();
     }
 }

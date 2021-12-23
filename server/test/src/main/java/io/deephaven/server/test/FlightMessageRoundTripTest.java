@@ -24,6 +24,7 @@ import io.deephaven.server.arrow.FlightServiceGrpcBinding;
 import io.deephaven.server.auth.AuthContextModule;
 import io.deephaven.server.console.GlobalSessionProvider;
 import io.deephaven.server.console.ScopeTicketResolver;
+import io.deephaven.server.runner.GrpcServer;
 import io.deephaven.server.session.SessionModule;
 import io.deephaven.server.session.SessionService;
 import io.deephaven.server.session.SessionServiceGrpcImpl;
@@ -33,9 +34,7 @@ import io.deephaven.server.util.Scheduler;
 import io.deephaven.util.SafeCloseable;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
-import io.grpc.Server;
 import io.grpc.ServerInterceptor;
-import io.grpc.netty.NettyServerBuilder;
 import org.apache.arrow.flight.AsyncPutListener;
 import org.apache.arrow.flight.CallHeaders;
 import org.apache.arrow.flight.CallStatus;
@@ -95,15 +94,23 @@ public abstract class FlightMessageRoundTripTest {
             sessionProvider.initializeGlobalScriptSession(scriptSession);
             return scriptSession;
         }
+        @Provides
+        Scheduler provideScheduler() {
+            return new Scheduler.DelegatingImpl(Executors.newSingleThreadExecutor(),
+                    Executors.newScheduledThreadPool(1));
+        }
+        @Provides
+        @Named("session.tokenExpireMs")
+        long provideTokenExpireMs() {
+            return 60_000_000;
+        }
+        @Provides
+        @Named("http.port")
+        int provideHttpPort() {
+            return 0;//'select first available'
+        }
     }
 
-    @Singleton
-    @Component(modules = {
-            FlightTestModule.class,
-            ArrowModule.class,
-            SessionModule.class,
-            AuthContextModule.class
-    })
     public interface TestComponent {
         Set<ServerInterceptor> interceptors();
 
@@ -115,19 +122,10 @@ public abstract class FlightMessageRoundTripTest {
 
         AbstractScriptSession scriptSession();
 
-        @Component.Builder
-        interface Builder {
-            @BindsInstance
-            Builder withScheduler(final Scheduler scheduler);
-
-            @BindsInstance
-            Builder withSessionTokenExpireTmMs(@Named("session.tokenExpireMs") long tokenExpireMs);
-
-            TestComponent build();
-        }
+        GrpcServer server();
     }
 
-    private Server server;
+    private GrpcServer server;
 
     private ManagedChannel channel;
     private FlightClient client;
@@ -138,14 +136,11 @@ public abstract class FlightMessageRoundTripTest {
 
     @Before
     public void setup() throws IOException {
-        TestComponent component = DaggerFlightMessageRoundTripTest_TestComponent
-                .builder()
-                .withScheduler(new Scheduler.DelegatingImpl(Executors.newSingleThreadExecutor(),
-                        Executors.newScheduledThreadPool(1)))
-                .withSessionTokenExpireTmMs(60_000_000)
-                .build();
+        TestComponent component = component();
 
-        int actualPort = startServer(component);
+        server = component.server();
+        server.start();
+        int actualPort = server.getPort();
 
         scriptSession = component.scriptSession();
 
@@ -179,19 +174,18 @@ public abstract class FlightMessageRoundTripTest {
         currentSession = component.sessionService().getSessionForToken(sessionToken);
     }
 
-    protected abstract int startServer(
-            io.deephaven.server.test.FlightMessageRoundTripTest.TestComponent component) throws IOException;
+    protected abstract TestComponent component();
 
     @After
     public void teardown() {
         scriptSession.release();
 
         channel.shutdown();
-        server.shutdown();
+        server.stopWithTimeout(1, TimeUnit.MINUTES);
 
         try {
             channel.awaitTermination(1, TimeUnit.MINUTES);
-            server.awaitTermination(1, TimeUnit.MINUTES);
+            server.join();
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new RuntimeException(e);
@@ -199,8 +193,7 @@ public abstract class FlightMessageRoundTripTest {
             channel.shutdownNow();
             channel = null;
 
-//            server.shutdownNow();
-//            server = null;
+            server = null;
         }
     }
 
