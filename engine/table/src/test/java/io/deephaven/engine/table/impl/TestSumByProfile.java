@@ -43,19 +43,19 @@ public class TestSumByProfile {
         System.out.println("Reading: " + filename);
         final Table relation = ParquetTools.readTable(filename);
         final long startTimeSelect = System.nanoTime();
-        final String [] columns;
+        final String[] columns;
         switch (mode) {
             case "sum":
-                columns = new String[]{"animal_id", "Values"};
+                columns = new String[] {"animal_id", "Values"};
                 break;
             case "count":
-                columns = new String[]{"animal_id"};
+                columns = new String[] {"animal_id"};
                 break;
             case "count2":
-                columns = new String[]{"animal_id", "adjective_id"};
+                columns = new String[] {"animal_id", "adjective_id"};
                 break;
             case "countplant":
-                columns = new String[]{"plant_id"};
+                columns = new String[] {"plant_id"};
                 break;
             default:
                 throw new IllegalArgumentException("Invalid mode " + mode);
