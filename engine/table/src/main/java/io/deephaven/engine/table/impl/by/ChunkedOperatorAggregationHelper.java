@@ -615,6 +615,7 @@ public class ChunkedOperatorAggregationHelper {
             if (ac.requiresIndices()) {
                 if (permute) {
                     final LongChunk<OrderedRowKeys> keyIndices = keyIndicesToRemoveChunk.asRowKeyChunk();
+                    permutedKeyIndices.setSize(keyIndices.size());
                     LongPermuteKernel.permuteInput(keyIndices, chunkPositions, permutedKeyIndices);
                 } else {
                     keyIndicesToRemoveChunk.fillRowKeyChunk(permutedKeyIndices);
@@ -635,9 +636,8 @@ public class ChunkedOperatorAggregationHelper {
                 final int inputSlot = ac.inputSlot(oi);
                 if (oi == inputSlot) {
                     if (permute) {
-                        getAndPermuteChunk(ac.inputColumns[oi], getContexts[oi], keyIndicesToRemoveChunk, true,
+                        valueChunks[oi] = getAndPermuteChunk(ac.inputColumns[oi], getContexts[oi], keyIndicesToRemoveChunk, true,
                                 permuteKernels[oi], chunkPositions, workingChunks[oi]);
-                        valueChunks[oi] = workingChunks[oi];
                     } else {
                         valueChunks[inputSlot] =
                                 getChunk(ac.inputColumns[oi], getContexts[oi], keyIndicesToRemoveChunk, true);
@@ -758,8 +758,8 @@ public class ChunkedOperatorAggregationHelper {
 
             final LongChunk<RowKeys> usePreKeys;
             final LongChunk<RowKeys> usePostKeys;
-            final Chunk<? extends Values>[] valuesChunk = new Chunk[ac.size()];
-            final Chunk<? extends Values>[] postValuesChunk = new Chunk[ac.size()];
+            final Chunk<? extends Values>[] valueChunks = new Chunk[ac.size()];
+            final Chunk<? extends Values>[] postValueChunks = new Chunk[ac.size()];
 
             try (final RowSequence preShiftChunkKeys =
                     RowSequenceFactory.wrapRowKeysChunkAsRowSequence(WritableLongChunk.downcast(preKeyIndices));
@@ -812,22 +812,22 @@ public class ChunkedOperatorAggregationHelper {
                     final int inputSlot = ac.inputSlot(oi);
                     if (inputSlot >= 0 && !chunkInitialized[inputSlot]) {
                         if (permute) {
-                            valuesChunk[inputSlot] = getAndPermuteChunk(ac.inputColumns[inputSlot],
+                            valueChunks[inputSlot] = getAndPermuteChunk(ac.inputColumns[inputSlot],
                                     getContexts[inputSlot], preShiftChunkKeys, true,
                                     permuteKernels[inputSlot], chunkPositions, workingChunks[inputSlot]);
-                            postValuesChunk[inputSlot] = getAndPermuteChunk(ac.inputColumns[inputSlot],
+                            postValueChunks[inputSlot] = getAndPermuteChunk(ac.inputColumns[inputSlot],
                                     postGetContexts[inputSlot], postShiftChunkKeys,
                                     false, permuteKernels[inputSlot], chunkPositions, postWorkingChunks[inputSlot]);
                         } else {
-                            valuesChunk[inputSlot] = getChunk(ac.inputColumns[inputSlot], getContexts[inputSlot],
+                            valueChunks[inputSlot] = getChunk(ac.inputColumns[inputSlot], getContexts[inputSlot],
                                     preShiftChunkKeys, true);
-                            postValuesChunk[inputSlot] = getChunk(ac.inputColumns[inputSlot],
+                            postValueChunks[inputSlot] = getChunk(ac.inputColumns[inputSlot],
                                     postGetContexts[inputSlot], postShiftChunkKeys, false);
                         }
                         chunkInitialized[inputSlot] = true;
                     }
-                    ac.operators[oi].shiftChunk(bucketedContexts[oi], inputSlot >= 0 ? valuesChunk[inputSlot] : null,
-                            inputSlot >= 0 ? postValuesChunk[inputSlot] : null, usePreKeys,
+                    ac.operators[oi].shiftChunk(bucketedContexts[oi], inputSlot >= 0 ? valueChunks[inputSlot] : null,
+                            inputSlot >= 0 ? postValueChunks[inputSlot] : null, usePreKeys,
                             usePostKeys, slots, runStarts, runLengths,
                             firstOperator ? modifiedSlots : slotsModifiedByOperator);
                     anyOperatorModified = updateModificationState(modifiedOperators, modifiedSlots,
@@ -1657,9 +1657,8 @@ public class ChunkedOperatorAggregationHelper {
                             valueChunks[inputSlot] = getChunk(ac.inputColumns[ii], getContexts[ii], chunkOk, usePrev);
                         } else {
                             assert workingChunks != null;
-                            getAndPermuteChunk(ac.inputColumns[ii], getContexts[ii], chunkOk, usePrev,
+                            valueChunks[inputSlot] = getAndPermuteChunk(ac.inputColumns[ii], getContexts[ii], chunkOk, usePrev,
                                     permuteKernels[ii], chunkPosition, workingChunks[ii]);
-                            valueChunks[inputSlot] = workingChunks[ii];
                         }
                     }
                     ac.operators[ii].addChunk(bucketedContexts[ii],

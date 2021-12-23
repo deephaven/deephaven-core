@@ -97,25 +97,35 @@ public class HashedRunFinder {
 
         // if we have only one slot or there is only one value per slot, there is no need to permute things
         if (count == 1 || count == size) {
-            ChunkUtils.fillInOrder(chunkPositions);
-            if (count == 1) {
-                runStarts.setSize(1);
-                runLengths.setSize(1);
-                runStarts.set(0, 0);
-                runLengths.set(0, size);
-            } else {
-                runStarts.setSize(size);
-                runLengths.setSize(size);
-                ChunkUtils.fillInOrder(runStarts);
-                runLengths.fillWithValue(0, runLengths.size(), 1);
-            }
-            for (int hashSlot = minSlot; hashSlot <= maxSlot; ++hashSlot) {
-                final int baseSlot = hashSlot * 3;
-                context.table.set(baseSlot, UNUSED_HASH_TABLE_VALUE);
-            }
-            return false;
+            return handleNonPermutedCases(context, runStarts, runLengths, chunkPositions, size, minSlot, maxSlot, count);
         }
 
+        iterateConstructedTable(context, runStarts, runLengths, chunkPositions, outputPositions, minSlot, maxSlot);
+
+        return true;
+    }
+
+    private static boolean handleNonPermutedCases(HashedRunContext context, WritableIntChunk<ChunkPositions> runStarts, WritableIntChunk<ChunkLengths> runLengths, WritableIntChunk<ChunkPositions> chunkPositions, int size, int minSlot, int maxSlot, int count) {
+        ChunkUtils.fillInOrder(chunkPositions);
+        if (count == 1) {
+            runStarts.setSize(1);
+            runLengths.setSize(1);
+            runStarts.set(0, 0);
+            runLengths.set(0, size);
+        } else {
+            runStarts.setSize(size);
+            runLengths.setSize(size);
+            ChunkUtils.fillInOrder(runStarts);
+            runLengths.fillWithValue(0, runLengths.size(), 1);
+        }
+        for (int hashSlot = minSlot; hashSlot <= maxSlot; ++hashSlot) {
+            final int baseSlot = hashSlot * 3;
+            context.table.set(baseSlot, UNUSED_HASH_TABLE_VALUE);
+        }
+        return false;
+    }
+
+    private static void iterateConstructedTable(HashedRunContext context, WritableIntChunk<ChunkPositions> runStarts, WritableIntChunk<ChunkLengths> runLengths, WritableIntChunk<ChunkPositions> chunkPositions, WritableIntChunk<RowKeys> outputPositions, int minSlot, int maxSlot) {
         // now iterate the table into the outputPositions/chunkPositions chunks
         int chunkPointer = 0;
         chunkPositions.setSize(outputPositions.size());
@@ -156,7 +166,5 @@ public class HashedRunFinder {
             }
         }
         Assert.eq(chunkPointer, "chunkPointer", outputPositions.size(), "outputPositions.size()");
-
-        return true;
     }
 }

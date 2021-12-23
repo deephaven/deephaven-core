@@ -34,6 +34,7 @@ public class TestSumByProfile {
             case "count":
             case "count2":
             case "countplant":
+            case "noop":
                 mode = args[1];
                 break;
             default:
@@ -57,6 +58,9 @@ public class TestSumByProfile {
             case "countplant":
                 columns = new String[] {"plant_id"};
                 break;
+            case "noop":
+                columns = new String[] {"animal_id", "adjective_id", "plant_id"};
+                break;
             default:
                 throw new IllegalArgumentException("Invalid mode " + mode);
         }
@@ -77,6 +81,9 @@ public class TestSumByProfile {
                 break;
             case "countplant":
                 result = viewed.countBy("N", "plant_id");
+                break;
+            case "noop":
+                result = TableTools.emptyTable(0);
                 break;
             default:
                 throw new IllegalArgumentException("Invalid mode " + mode);
