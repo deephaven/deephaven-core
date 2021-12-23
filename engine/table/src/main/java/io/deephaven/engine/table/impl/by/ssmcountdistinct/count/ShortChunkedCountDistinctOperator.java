@@ -281,6 +281,11 @@ public class ShortChunkedCountDistinctOperator implements IterativeChunkedAggreg
         }
     }
 
+    @Override
+    public boolean requiresRunFinds() {
+        return true;
+    }
+
     //endregion
 
     //region Private Helpers

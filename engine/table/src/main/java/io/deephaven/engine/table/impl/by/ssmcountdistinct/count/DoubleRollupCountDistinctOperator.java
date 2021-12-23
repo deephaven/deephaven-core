@@ -516,6 +516,11 @@ public class DoubleRollupCountDistinctOperator implements IterativeChunkedAggreg
     }
 
     @Override
+    public boolean requiresRunFinds() {
+        return true;
+    }
+
+    @Override
     public void startTrackingPrevValues() {
         if(prevFlusher != null) {
             throw new IllegalStateException("startTrackingPrevValues must only be called once");

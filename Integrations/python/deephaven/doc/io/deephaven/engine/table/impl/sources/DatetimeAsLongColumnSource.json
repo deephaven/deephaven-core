@@ -1,5 +1,5 @@
 {
- "className": "io.deephaven.engine.table.impl.sources.DatetimeAsLongColumnSource",
+ "className": "io.deephaven.engine.table.impl.sources.DateTimeAsLongColumnSource",
  "methods": {
   "allowsReinterpret": "Test if a reinterpret call will succeed.\n\nNote: Java generics information - <ALTERNATE_DATA_TYPE>\n\n:param alternateDataType: (java.lang.Class<ALTERNATE_DATA_TYPE>) - The alternative type to consider\n:return: (boolean) If a reinterpret on this column source with the supplied alternateDataType will succeed.",
   "doReinterpret": "Supply allowed reinterpret results. The default implementation handles the most common case to avoid code\n duplication.\n\nNote: Java generics information - <ALTERNATE_DATA_TYPE>\n\n:param alternateDataType: (java.lang.Class<ALTERNATE_DATA_TYPE>) - The alternate data type\n:return: (io.deephaven.engine.table.ColumnSource<ALTERNATE_DATA_TYPE>) The resulting ColumnSource",
@@ -10,7 +10,7 @@
   "isImmutable": "Determine if this column source is immutable, meaning that the values at a given row key never change.\n\n:return: (boolean) true if the values at a given row key of the column source never change, false otherwise",
   "makeFillContext": "Allocate a new ChunkSource.FillContext for filling chunks from this FillContextMaker, typically a\n ChunkSource.\n\n:param chunkCapacity: (int) - The maximum size of any WritableChunk that will be filled with this context\n:param sharedContext: (io.deephaven.engine.table.SharedContext) - Shared store of intermediate results.\n:return: (io.deephaven.engine.table.ChunkSource.FillContext) A context for use with fill operations"
  },
- "path": "io.deephaven.engine.table.impl.sources.DatetimeAsLongColumnSource",
- "text": "Reinterpret result ColumnSource implementations that translates Boolean to byte values.",
+ "path": "io.deephaven.engine.table.impl.sources.DateTimeAsLongColumnSource",
+ "text": "Reinterpret result ColumnSource implementations that translates DateTime to long values.",
  "typeName": "class"
 }
