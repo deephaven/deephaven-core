@@ -6,16 +6,18 @@ import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 /**
- * This interface handles the lifecycle of Netty and Jetty servers in a unified way, while still supporting the
- * use cases that Deephaven expects:
+ * This interface handles the lifecycle of Netty and Jetty servers in a unified way, while still supporting the use
+ * cases that Deephaven expects:
  * <ul>
- *     <li>Deephaven wants to initiate stop early in the shutdown process, and block on it after all services have begun to stop.</li>
- *     <li>gRPC+Netty supports a non-blocking stop, a "stop now", and a pair of await methods, one of which takes a timeout.</li>
- *     <li>gRPC+Jetty supports a blocking stop with a timeout, and a join() method.</li>
+ * <li>Deephaven wants to initiate stop early in the shutdown process, and block on it after all services have begun to
+ * stop.</li>
+ * <li>gRPC+Netty supports a non-blocking stop, a "stop now", and a pair of await methods, one of which takes a
+ * timeout.</li>
+ * <li>gRPC+Jetty supports a blocking stop with a timeout, and a join() method.</li>
  * </ul>
- * In order to not block on the initial stop call, the Jetty implementation will run stop() in another thread. Since Jetty doesn't have
- * an extra "shutdownNow" method, the Netty implementation will use the timeout in another thread to decide if it needs to invoke shutdownNow
- * when normal shutdown is taking too long.
+ * In order to not block on the initial stop call, the Jetty implementation will run stop() in another thread. Since
+ * Jetty doesn't have an extra "shutdownNow" method, the Netty implementation will use the timeout in another thread to
+ * decide if it needs to invoke shutdownNow when normal shutdown is taking too long.
  *
  */
 public interface GrpcServer {
@@ -34,8 +36,8 @@ public interface GrpcServer {
     void join() throws InterruptedException;
 
     /**
-     * Stops the server, using the specified timeout as a deadline. Returns immediately. Call {@link #join()} to block until this is
-     * completed.
+     * Stops the server, using the specified timeout as a deadline. Returns immediately. Call {@link #join()} to block
+     * until this is completed.
      * 
      * @param timeout time to allow for a graceful shutdown before giving up and halting
      * @param unit unit to apply to the timeout
@@ -44,6 +46,7 @@ public interface GrpcServer {
 
     /**
      * After the server is started, this will return the port it is using.
+     * 
      * @return the tcp port that the server is listening on after it has started
      */
     int getPort();

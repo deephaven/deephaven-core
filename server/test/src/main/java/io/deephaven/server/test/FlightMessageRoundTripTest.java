@@ -94,20 +94,23 @@ public abstract class FlightMessageRoundTripTest {
             sessionProvider.initializeGlobalScriptSession(scriptSession);
             return scriptSession;
         }
+
         @Provides
         Scheduler provideScheduler() {
             return new Scheduler.DelegatingImpl(Executors.newSingleThreadExecutor(),
                     Executors.newScheduledThreadPool(1));
         }
+
         @Provides
         @Named("session.tokenExpireMs")
         long provideTokenExpireMs() {
             return 60_000_000;
         }
+
         @Provides
         @Named("http.port")
         int provideHttpPort() {
-            return 0;//'select first available'
+            return 0;// 'select first available'
         }
     }
 

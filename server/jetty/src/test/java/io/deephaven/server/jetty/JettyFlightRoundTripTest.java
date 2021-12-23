@@ -20,6 +20,7 @@ public class JettyFlightRoundTripTest extends FlightMessageRoundTripTest {
     })
     public interface JettyTestComponent extends TestComponent {
     }
+
     @Override
     protected TestComponent component() {
         return DaggerJettyFlightRoundTripTest_JettyTestComponent.create();

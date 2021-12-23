@@ -19,6 +19,7 @@ import org.eclipse.jetty.websocket.jakarta.server.config.JakartaWebSocketServlet
 import javax.inject.Inject;
 import javax.inject.Named;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.URL;
 import java.util.EnumSet;
 import java.util.concurrent.TimeUnit;
@@ -47,7 +48,7 @@ public class JettyBackedGrpcServer implements GrpcServer {
             URL ide = JettyBackedGrpcServer.class.getResource(knownFile);
             context.setBaseResource(Resource.newResource(ide.toExternalForm().replace("!" + knownFile, "!/")));
         } catch (IOException ioException) {
-            ioException.printStackTrace();
+            throw new UncheckedIOException(ioException);
         }
 
         // context.addFilter(NoCacheFilter.class, "*.nocache.js", EnumSet.noneOf(DispatcherType.class));
