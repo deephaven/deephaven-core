@@ -9,12 +9,13 @@ import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.impl.sort.timsort.LongIntTimsortKernel;
 import io.deephaven.engine.table.impl.sources.ObjectArraySource;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSequenceFactory;
-import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
+import io.deephaven.engine.table.impl.util.ChunkUtils;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -53,14 +54,32 @@ class BigIntegerChunkedReAvgOperator implements IterativeChunkedAggregationOpera
     }
 
     private void doBucketedUpdate(ReAvgContext context, IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, WritableBooleanChunk<Values> stateModified) {
+        try (final RowSequence destinationSeq = context.destinationSequenceFromChunks(destinations, startPositions)) {
+            updateResult(context, destinationSeq, stateModified);
+        }
+    }
+
+    private static RowSequence destinationSequenceFromChunks(IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, ReAvgContext context) {
         context.keyIndices.setSize(startPositions.size());
+        long lastDestination = -1L;
+        boolean ordered = true;
         for (int ii = 0; ii < startPositions.size(); ++ii) {
             final int startPosition = startPositions.get(ii);
-            context.keyIndices.set(ii, destinations.get(startPosition));
+            final int destination = destinations.get(startPosition);
+            if (destination < lastDestination) {
+                ordered = false;
+            }
+            context.keyIndices.set(ii, destination);
+            lastDestination = destination;
         }
-        try (final RowSequence destinationOk = RowSequenceFactory.wrapRowKeysChunkAsRowSequence(context.keyIndices)) {
-            updateResult(context, destinationOk, stateModified);
+        context.ordered = ordered;
+        if (!ordered) {
+            context.ensureUnordered();
+            context.statePositions.setSize(context.keyIndices.size());
+            ChunkUtils.fillInOrder(context.statePositions);
+            LongIntTimsortKernel.sort(context.sortKernelContext, context.statePositions, context.keyIndices);
         }
+        return RowSequenceFactory.wrapRowKeysChunkAsRowSequence(LongChunk.downcast(context.keyIndices));
     }
 
     @Override
@@ -89,8 +108,14 @@ class BigIntegerChunkedReAvgOperator implements IterativeChunkedAggregationOpera
         final ObjectChunk<BigInteger, ? extends Values> sumSumChunk = sumSum.getChunk(reAvgContext.sumSumContext, destinationOk).asObjectChunk();
         final LongChunk<? extends Values> nncSumChunk = nncSum.getChunk(reAvgContext.nncSumContext, destinationOk).asLongChunk();
         final int size = reAvgContext.keyIndices.size();
-        for (int ii = 0; ii < size; ++ii) {
-            stateModified.set(ii, updateResult(reAvgContext.keyIndices.get(ii), sumSumChunk.get(ii), nncSumChunk.get(ii)));
+        if (reAvgContext.ordered) {
+            for (int ii = 0; ii < size; ++ii) {
+                stateModified.set(ii, updateResult(reAvgContext.keyIndices.get(ii), sumSumChunk.get(ii), nncSumChunk.get(ii)));
+            }
+        } else {
+            for (int ii = 0; ii < size; ++ii) {
+                stateModified.set(reAvgContext.statePositions.get(ii), updateResult(reAvgContext.keyIndices.get(ii), sumSumChunk.get(ii), nncSumChunk.get(ii)));
+            }
         }
     }
 
@@ -103,20 +128,18 @@ class BigIntegerChunkedReAvgOperator implements IterativeChunkedAggregationOpera
         }
     }
 
-    private class ReAvgContext implements BucketedContext {
-        final WritableLongChunk<OrderedRowKeys> keyIndices;
+    private class ReAvgContext extends ReAvgVarOrderingContext implements BucketedContext {
         final ChunkSource.GetContext sumSumContext;
         final ChunkSource.GetContext nncSumContext;
 
         private ReAvgContext(int size) {
-            keyIndices = WritableLongChunk.makeWritableChunk(size);
+            super(size);
             nncSumContext = nncSum.makeGetContext(size);
             sumSumContext = sumSum.makeGetContext(size);
         }
 
         @Override
         public void close() {
-            keyIndices.close();
             nncSumContext.close();
             sumSumContext.close();
         }

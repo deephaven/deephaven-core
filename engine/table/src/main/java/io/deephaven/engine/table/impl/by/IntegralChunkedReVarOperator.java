@@ -10,11 +10,9 @@ import io.deephaven.engine.table.impl.sources.DoubleArraySource;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
-import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.rowset.RowSequenceFactory;
 
 import java.util.Collections;
 import java.util.Map;
@@ -70,13 +68,8 @@ class IntegralChunkedReVarOperator implements IterativeChunkedAggregationOperato
     }
 
     private void doBucketedUpdate(ReVarContext context, IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, WritableBooleanChunk<Values> stateModified) {
-        context.keyIndices.setSize(startPositions.size());
-        for (int ii = 0; ii < startPositions.size(); ++ii) {
-            final int startPosition = startPositions.get(ii);
-            context.keyIndices.set(ii, destinations.get(startPosition));
-        }
-        try (final RowSequence destinationOk = RowSequenceFactory.wrapRowKeysChunkAsRowSequence(context.keyIndices)) {
-            updateResult(context, destinationOk, stateModified);
+        try (final RowSequence destinationSeq = context.destinationSequenceFromChunks(destinations, startPositions)) {
+            updateResult(context, destinationSeq, stateModified);
         }
     }
 
@@ -85,8 +78,14 @@ class IntegralChunkedReVarOperator implements IterativeChunkedAggregationOperato
         final DoubleChunk<Values> sum2SumChunk = sum2Sum.getChunk(reVarContext.sum2SumContext, destinationOk).asDoubleChunk();
         final LongChunk<? extends Values> nncSumChunk = nncSum.getChunk(reVarContext.nncSumContext, destinationOk).asLongChunk();
         final int size = reVarContext.keyIndices.size();
-        for (int ii = 0; ii < size; ++ii) {
-            stateModified.set(ii, updateResult(reVarContext.keyIndices.get(ii), sumSumChunk.get(ii), sum2SumChunk.get(ii), nncSumChunk.get(ii)));
+        if (reVarContext.ordered) {
+            for (int ii = 0; ii < size; ++ii) {
+                stateModified.set(ii, updateResult(reVarContext.keyIndices.get(ii), sumSumChunk.get(ii), sum2SumChunk.get(ii), nncSumChunk.get(ii)));
+            }
+        } else {
+            for (int ii = 0; ii < size; ++ii) {
+                stateModified.set(reVarContext.statePositions.get(ii), updateResult(reVarContext.keyIndices.get(ii), sumSumChunk.get(ii), sum2SumChunk.get(ii), nncSumChunk.get(ii)));
+            }
         }
     }
 
@@ -108,14 +107,13 @@ class IntegralChunkedReVarOperator implements IterativeChunkedAggregationOperato
         }
     }
 
-    private class ReVarContext implements BucketedContext {
-        final WritableLongChunk<OrderedRowKeys> keyIndices;
+    private class ReVarContext extends ReAvgVarOrderingContext implements BucketedContext {
         final ChunkSource.GetContext sumSumContext;
         final ChunkSource.GetContext sum2SumContext;
         final ChunkSource.GetContext nncSumContext;
 
         private ReVarContext(int size) {
-            keyIndices = WritableLongChunk.makeWritableChunk(size);
+            super(size);
             sumSumContext = sumSum.makeGetContext(size);
             sum2SumContext = sum2Sum.makeGetContext(size);
             nncSumContext = nncSum.makeGetContext(size);
@@ -123,7 +121,6 @@ class IntegralChunkedReVarOperator implements IterativeChunkedAggregationOperato
 
         @Override
         public void close() {
-            keyIndices.close();
             sumSumContext.close();
             sum2SumContext.close();
             nncSumContext.close();

@@ -53,7 +53,7 @@ public class ChunkedOperatorAggregationHelper {
     public static final boolean SKIP_RUN_FIND =
             Configuration.getInstance().getBooleanWithDefault("ChunkedOperatorAggregationHelper.skipRunFind", false);
     static final boolean HASHED_RUN_FIND =
-            Configuration.getInstance().getBooleanWithDefault("ChunkedOperatorAggregationHelper.hashedRunFind", true);
+            Configuration.getInstance().getBooleanWithDefault("ChunkedOperatorAggregationHelper.hashedRunFind", false);
 
     public static QueryTable aggregation(AggregationContextFactory aggregationContextFactory, QueryTable queryTable,
             SelectColumn[] groupByColumns) {
@@ -780,6 +780,7 @@ public class ChunkedOperatorAggregationHelper {
                 permutedKeyIndices.setSize(preKeyIndices.size());
                 postPermutedKeyIndices.setSize(postKeyIndices.size());
 
+                // TODO: THESE COULD BE UNORDERED AND MESS US UP
                 LongPermuteKernel.permuteInput(preKeyIndices, chunkPositions, permutedKeyIndices);
                 LongPermuteKernel.permuteInput(postKeyIndices, chunkPositions, postPermutedKeyIndices);
 
@@ -1040,6 +1041,7 @@ public class ChunkedOperatorAggregationHelper {
                             shifted ? upstream.modified().getRowSequenceIterator() : null;
                     final WritableIntChunk<RowKeys> postSlots = WritableIntChunk.makeWritableChunk(bc.chunkSize)) {
 
+                // TODO: IS THIS OK WITHOUT HAVING THINGS IN ORDER?
                 // Hijacking postPermutedKeyIndices because it's not used in this loop; the rename hopefully makes the
                 // code much clearer!
                 final WritableLongChunk<OrderedRowKeys> removedKeyIndices =

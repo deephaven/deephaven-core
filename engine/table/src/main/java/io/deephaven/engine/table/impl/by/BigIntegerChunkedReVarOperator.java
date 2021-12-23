@@ -80,6 +80,7 @@ class BigIntegerChunkedReVarOperator implements IterativeChunkedAggregationOpera
             final int startPosition = startPositions.get(ii);
             context.keyIndices.set(ii, destinations.get(startPosition));
         }
+        // TODO: FIX THE ORDERING
         try (final RowSequence destinationOk = RowSequenceFactory.wrapRowKeysChunkAsRowSequence(context.keyIndices)) {
             updateResult(context, destinationOk, stateModified);
         }
