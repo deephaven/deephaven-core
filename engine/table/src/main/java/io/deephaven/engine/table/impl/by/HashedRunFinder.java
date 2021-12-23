@@ -6,6 +6,7 @@ import io.deephaven.chunk.WritableIntChunk;
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
+import io.deephaven.engine.table.impl.util.ChunkUtils;
 import io.deephaven.util.SafeCloseable;
 
 /**
@@ -50,7 +51,7 @@ public class HashedRunFinder {
         }
     }
 
-    public static void findRunsHashed(
+    public static boolean findRunsHashed(
             HashedRunContext context,
             WritableIntChunk<ChunkPositions> runStarts,
             WritableIntChunk<ChunkLengths> runLengths,
@@ -64,6 +65,7 @@ public class HashedRunFinder {
 
         int minSlot = context.tableSize;
         int maxSlot = 0;
+        int count = 0;
 
         for (int chunkPosition = 0; chunkPosition < size; ++chunkPosition) {
             final int outputPosition = outputPositions.get(chunkPosition);
@@ -78,6 +80,7 @@ public class HashedRunFinder {
                     context.table.set(baseSlot + 2, UNUSED_HASH_TABLE_VALUE);
                     minSlot = Math.min(hashSlot, minSlot);
                     maxSlot = Math.max(hashSlot, maxSlot);
+                    count++;
                     break;
                 } else if (context.table.get(baseSlot) == outputPosition) {
                     context.overflow.set(overflowPointer, chunkPosition);
@@ -90,6 +93,27 @@ public class HashedRunFinder {
                     hashSlot = (hashSlot + 1) & context.tableMask;
                 }
             } while (true);
+        }
+
+        // if we have only one slot or there is only one value per slot, there is no need to permute things
+        if (count == 1 || count == size) {
+            ChunkUtils.fillInOrder(chunkPositions);
+            if (count == 1) {
+                runStarts.setSize(1);
+                runLengths.setSize(1);
+                runStarts.set(0, 0);
+                runLengths.set(0, size);
+            } else {
+                runStarts.setSize(size);
+                runLengths.setSize(size);
+                ChunkUtils.fillInOrder(runStarts);
+                runLengths.fillWithValue(0, runLengths.size(), 1);
+            }
+            for (int hashSlot = minSlot; hashSlot <= maxSlot; ++hashSlot) {
+                final int baseSlot = hashSlot * 3;
+                context.table.set(baseSlot, UNUSED_HASH_TABLE_VALUE);
+            }
+            return false;
         }
 
         // now iterate the table into the outputPositions/chunkPositions chunks
@@ -132,5 +156,7 @@ public class HashedRunFinder {
             }
         }
         Assert.eq(chunkPointer, "chunkPointer", outputPositions.size(), "outputPositions.size()");
+
+        return true;
     }
 }

@@ -1,17 +1,20 @@
 package io.deephaven.engine.table.impl;
 
+import io.deephaven.api.Selectable;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.parquet.table.ParquetTools;
 
 import java.text.DecimalFormat;
+import java.util.Arrays;
+import java.util.List;
 
 public class TestSumByProfile {
     public static void main(String[] args) {
-        if (args.length != 2) {
+        if (args.length != 3) {
             usage();
         }
-        final String filename = args[1];
+        final String filename = args[2];
 
         final boolean view;
         switch (args[0]) {
@@ -25,22 +28,67 @@ public class TestSumByProfile {
                 view = true;
                 usage();
         }
+        final String mode;
+        switch (args[1]) {
+            case "sum":
+            case "count":
+            case "count2":
+            case "countplant":
+                mode = args[1];
+                break;
+            default:
+                mode = "";
+                usage();
+        }
         System.out.println("Reading: " + filename);
         final Table relation = ParquetTools.readTable(filename);
         final long startTimeSelect = System.nanoTime();
-        final Table viewed = view ? relation.view("animal_id", "Values") : relation.select("animal_id", "Values");
+        final String [] columns;
+        switch (mode) {
+            case "sum":
+                columns = new String[]{"animal_id", "Values"};
+                break;
+            case "count":
+                columns = new String[]{"animal_id"};
+                break;
+            case "count2":
+                columns = new String[]{"animal_id", "adjective_id"};
+                break;
+            case "countplant":
+                columns = new String[]{"plant_id"};
+                break;
+            default:
+                throw new IllegalArgumentException("Invalid mode " + mode);
+        }
+        final Table viewed = view ? relation.view(columns) : relation.select(columns);
         final long endTimeSelect = System.nanoTime();
         System.out.println("Select Elapsed Time: " + new DecimalFormat("###,###.000")
                 .format(((double) (endTimeSelect - startTimeSelect) / 1_000_000_000.0)));
-        final Table sumBy = viewed.sumBy("animal_id");
+        final Table result;
+        switch (mode) {
+            case "sum":
+                result = viewed.sumBy("animal_id");
+                break;
+            case "count":
+                result = viewed.countBy("N", "animal_id");
+                break;
+            case "count2":
+                result = viewed.countBy("N", "animal_id", "adjective_id");
+                break;
+            case "countplant":
+                result = viewed.countBy("N", "plant_id");
+                break;
+            default:
+                throw new IllegalArgumentException("Invalid mode " + mode);
+        }
         final long endTimeSum = System.nanoTime();
-        System.out.println("Sum Elapsed Time: "
+        System.out.println("Operation Elapsed Time: "
                 + new DecimalFormat("###,###.000").format(((double) (endTimeSum - endTimeSelect) / 1_000_000_000.0)));
-        TableTools.show(sumBy);
+        TableTools.show(result);
     }
 
     private static void usage() {
-        System.err.println("TestSumByProfile select|view filename");
+        System.err.println("TestSumByProfile select|view sum|count filename");
         System.exit(1);
     }
 }

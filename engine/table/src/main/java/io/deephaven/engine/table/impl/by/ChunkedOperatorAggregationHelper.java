@@ -608,13 +608,11 @@ public class ChunkedOperatorAggregationHelper {
 
         private void propagateRemovesToOperators(@NotNull final RowSequence keyIndicesToRemoveChunk,
                 @NotNull final WritableIntChunk<RowKeys> slotsToRemoveFrom) {
-            final boolean findRuns = ac.requiresRunFinds(SKIP_RUN_FIND);
-            findSlotRuns(sortKernelContext, hashedRunContext, runStarts, runLengths, chunkPositions, slotsToRemoveFrom,
-                    findRuns);
-
+            final boolean permute = findSlotRuns(sortKernelContext, hashedRunContext, runStarts, runLengths, chunkPositions, slotsToRemoveFrom,
+                    ac.requiresRunFinds(SKIP_RUN_FIND));
 
             if (ac.requiresIndices()) {
-                if (findRuns) {
+                if (permute) {
                     final LongChunk<OrderedRowKeys> keyIndices = keyIndicesToRemoveChunk.asRowKeyChunk();
                     LongPermuteKernel.permuteInput(keyIndices, chunkPositions, permutedKeyIndices);
                 } else {
@@ -626,7 +624,7 @@ public class ChunkedOperatorAggregationHelper {
             boolean firstOperator = true;
             setFalse(modifiedSlots, runStarts.size());
 
-            final Chunk<? extends Values>[] valueChunks = findRuns ? workingChunks : new Chunk[ac.size()];
+            final Chunk<? extends Values>[] valueChunks = new Chunk[ac.size()];
             sharedContext.reset();
             for (int oi = 0; oi < ac.size(); ++oi) {
                 if (!firstOperator) {
@@ -635,9 +633,10 @@ public class ChunkedOperatorAggregationHelper {
 
                 final int inputSlot = ac.inputSlot(oi);
                 if (oi == inputSlot) {
-                    if (findRuns) {
+                    if (permute) {
                         getAndPermuteChunk(ac.inputColumns[oi], getContexts[oi], keyIndicesToRemoveChunk, true,
                                 permuteKernels[oi], chunkPositions, workingChunks[oi]);
+                        valueChunks[oi] = workingChunks[oi];
                     } else {
                         valueChunks[inputSlot] =
                                 getChunk(ac.inputColumns[oi], getContexts[oi], keyIndicesToRemoveChunk, true);
@@ -686,12 +685,11 @@ public class ChunkedOperatorAggregationHelper {
                 @NotNull final WritableIntChunk<RowKeys> slotsToAddTo) {
             ac.ensureCapacity(outputPosition.intValue());
 
-            final boolean findRuns = ac.requiresRunFinds(SKIP_RUN_FIND);
-            findSlotRuns(sortKernelContext, hashedRunContext, runStarts, runLengths, chunkPositions, slotsToAddTo,
-                    findRuns);
+            final boolean permute = findSlotRuns(sortKernelContext, hashedRunContext, runStarts, runLengths, chunkPositions, slotsToAddTo,
+                    ac.requiresRunFinds(SKIP_RUN_FIND));
 
             if (ac.requiresIndices()) {
-                if (findRuns) {
+                if (permute) {
                     final LongChunk<OrderedRowKeys> keyIndices = keyIndicesToInsertChunk.asRowKeyChunk();
                     permutedKeyIndices.setSize(keyIndices.size());
                     LongPermuteKernel.permuteInput(keyIndices, chunkPositions, permutedKeyIndices);
@@ -704,7 +702,7 @@ public class ChunkedOperatorAggregationHelper {
             boolean firstOperator = true;
             setFalse(modifiedSlots, runStarts.size());
 
-            final Chunk<? extends Values>[] valueChunks = findRuns ? workingChunks : new Chunk[ac.size()];
+            final Chunk<? extends Values>[] valueChunks = new Chunk[ac.size()];
 
             sharedContext.reset();
             for (int oi = 0; oi < ac.size(); ++oi) {
@@ -714,12 +712,11 @@ public class ChunkedOperatorAggregationHelper {
 
                 final int inputSlot = ac.inputSlot(oi);
                 if (inputSlot == oi) {
-                    if (findRuns) {
-                        getAndPermuteChunk(ac.inputColumns[oi], getContexts[oi], keyIndicesToInsertChunk, false,
+                    if (permute) {
+                        valueChunks[oi] = getAndPermuteChunk(ac.inputColumns[oi], getContexts[oi], keyIndicesToInsertChunk, false,
                                 permuteKernels[oi], chunkPositions, workingChunks[oi]);
                     } else {
-                        valueChunks[oi] =
-                                getChunk(ac.inputColumns[oi], getContexts[oi], keyIndicesToInsertChunk, false);
+                        valueChunks[oi] = getChunk(ac.inputColumns[oi], getContexts[oi], keyIndicesToInsertChunk, false);
                     }
                 }
                 ac.operators[oi].addChunk(bucketedContexts[oi], inputSlot >= 0 ? valueChunks[inputSlot] : null,
@@ -755,6 +752,11 @@ public class ChunkedOperatorAggregationHelper {
 
             final boolean[] chunkInitialized = new boolean[ac.size()];
 
+            final LongChunk<RowKeys> usePreKeys;
+            final LongChunk<RowKeys> usePostKeys;
+            final Chunk<? extends Values> [] valuesChunk = new Chunk[ac.size()];
+            final Chunk<? extends Values> [] postValuesChunk = new Chunk[ac.size()];
+
             try (final RowSequence preShiftChunkKeys =
                     RowSequenceFactory.wrapRowKeysChunkAsRowSequence(WritableLongChunk.downcast(preKeyIndices));
                     final RowSequence postShiftChunkKeys =
@@ -775,13 +777,21 @@ public class ChunkedOperatorAggregationHelper {
                 // And a shift of {1-3} + 2. We do not want to allow the 1 to shift over the three by removing 1, adding
                 // 3; then the 3 would shift to 5 by removing 3 and adding 5. When runs are found you would have the
                 // 1,3 removed and then 3,5 inserted without conflict.
-                findSlotRuns(sortKernelContext, hashedRunContext, runStarts, runLengths, chunkPositions, slots, true);
+                final boolean permute = findSlotRuns(sortKernelContext, hashedRunContext, runStarts, runLengths, chunkPositions, slots, true);
 
-                permutedKeyIndices.setSize(preKeyIndices.size());
-                postPermutedKeyIndices.setSize(postKeyIndices.size());
+                if (permute) {
+                    permutedKeyIndices.setSize(preKeyIndices.size());
+                    postPermutedKeyIndices.setSize(postKeyIndices.size());
 
-                LongPermuteKernel.permuteInput(preKeyIndices, chunkPositions, permutedKeyIndices);
-                LongPermuteKernel.permuteInput(postKeyIndices, chunkPositions, postPermutedKeyIndices);
+                    LongPermuteKernel.permuteInput(preKeyIndices, chunkPositions, permutedKeyIndices);
+                    LongPermuteKernel.permuteInput(postKeyIndices, chunkPositions, postPermutedKeyIndices);
+
+                    usePreKeys = permutedKeyIndices;
+                    usePostKeys = postPermutedKeyIndices;
+                } else {
+                    usePreKeys = (LongChunk)preKeyIndices;
+                    usePostKeys = (LongChunk)postKeyIndices;
+                }
 
                 boolean anyOperatorModified = false;
                 boolean firstOperator = true;
@@ -796,15 +806,20 @@ public class ChunkedOperatorAggregationHelper {
                     }
                     final int inputSlot = ac.inputSlot(oi);
                     if (inputSlot >= 0 && !chunkInitialized[inputSlot]) {
-                        getAndPermuteChunk(ac.inputColumns[inputSlot], getContexts[inputSlot], preShiftChunkKeys, true,
-                                permuteKernels[inputSlot], chunkPositions, workingChunks[inputSlot]);
-                        getAndPermuteChunk(ac.inputColumns[inputSlot], postGetContexts[inputSlot], postShiftChunkKeys,
-                                false, permuteKernels[inputSlot], chunkPositions, postWorkingChunks[inputSlot]);
+                        if (permute) {
+                            valuesChunk[inputSlot] = getAndPermuteChunk(ac.inputColumns[inputSlot], getContexts[inputSlot], preShiftChunkKeys, true,
+                                    permuteKernels[inputSlot], chunkPositions, workingChunks[inputSlot]);
+                            postValuesChunk[inputSlot] = getAndPermuteChunk(ac.inputColumns[inputSlot], postGetContexts[inputSlot], postShiftChunkKeys,
+                                    false, permuteKernels[inputSlot], chunkPositions, postWorkingChunks[inputSlot]);
+                        } else {
+                            valuesChunk[inputSlot] = getChunk(ac.inputColumns[inputSlot], getContexts[inputSlot], preShiftChunkKeys, true);
+                            postValuesChunk[inputSlot] = getChunk(ac.inputColumns[inputSlot], postGetContexts[inputSlot], postShiftChunkKeys, false);
+                        }
                         chunkInitialized[inputSlot] = true;
                     }
-                    ac.operators[oi].shiftChunk(bucketedContexts[oi], inputSlot >= 0 ? workingChunks[inputSlot] : null,
-                            inputSlot >= 0 ? postWorkingChunks[inputSlot] : null, permutedKeyIndices,
-                            postPermutedKeyIndices, slots, runStarts, runLengths,
+                    ac.operators[oi].shiftChunk(bucketedContexts[oi], inputSlot >= 0 ? valuesChunk[inputSlot] : null,
+                            inputSlot >= 0 ? postValuesChunk[inputSlot] : null, usePreKeys,
+                            usePostKeys, slots, runStarts, runLengths,
                             firstOperator ? modifiedSlots : slotsModifiedByOperator);
                     anyOperatorModified = updateModificationState(modifiedOperators, modifiedSlots,
                             slotsModifiedByOperator, anyOperatorModified, firstOperator, oi);
@@ -821,12 +836,10 @@ public class ChunkedOperatorAggregationHelper {
                 @NotNull final RowSequence postShiftKeyIndicesToModify,
                 final boolean supplyPostIndices, @NotNull final boolean[] operatorsToProcess,
                 @NotNull final boolean[] operatorsToProcessIndicesOnly) {
-            final boolean findRuns = ac.requiresRunFinds(SKIP_RUN_FIND);
-
             final boolean shifted = preShiftKeyIndicesToModify != postShiftKeyIndicesToModify;
 
-            final Chunk<? extends Values>[] valueChunks = findRuns ? workingChunks : new Chunk[ac.size()];
-            final Chunk<? extends Values>[] postValueChunks = findRuns ? postWorkingChunks : new Chunk[ac.size()];
+            final Chunk<? extends Values>[] valueChunks = new Chunk[ac.size()];
+            final Chunk<? extends Values>[] postValueChunks = new Chunk[ac.size()];
 
             try (final RowSequence.Iterator preShiftIterator = preShiftKeyIndicesToModify.getRowSequenceIterator();
                     final RowSequence.Iterator postShiftIterator =
@@ -844,11 +857,11 @@ public class ChunkedOperatorAggregationHelper {
 
                     incrementalStateManager.findModifications(pc, postShiftKeyIndicesChunk, reinterpretedKeySources,
                             slots);
-                    findSlotRuns(sortKernelContext, hashedRunContext, runStarts, runLengths, chunkPositions, slots,
-                            findRuns);
+                    final boolean permute = findSlotRuns(sortKernelContext, hashedRunContext, runStarts, runLengths, chunkPositions, slots,
+                            ac.requiresRunFinds(SKIP_RUN_FIND));
 
                     if (supplyPostIndices) {
-                        if (findRuns) {
+                        if (permute) {
                             final LongChunk<OrderedRowKeys> postKeyIndices =
                                     postShiftKeyIndicesChunk.asRowKeyChunk();
                             permutedKeyIndices.setSize(postKeyIndices.size());
@@ -877,11 +890,12 @@ public class ChunkedOperatorAggregationHelper {
                         } else /* operatorsToProcess[oi] */ {
                             final int inputSlot = ac.inputSlot(oi);
                             if (inputSlot >= 0 && !chunkInitialized[inputSlot]) {
-                                if (findRuns) {
-                                    getAndPermuteChunk(ac.inputColumns[inputSlot], getContexts[inputSlot],
+                                if (permute) {
+                                    valueChunks[inputSlot] = getAndPermuteChunk(ac.inputColumns[inputSlot], getContexts[inputSlot],
                                             preShiftKeyIndicesChunk, true, permuteKernels[inputSlot], chunkPositions,
                                             workingChunks[inputSlot]);
-                                    getAndPermuteChunk(ac.inputColumns[inputSlot], postGetContexts[inputSlot],
+                                    postValueChunks[inputSlot] =
+                                            getAndPermuteChunk(ac.inputColumns[inputSlot], postGetContexts[inputSlot],
                                             postShiftKeyIndicesChunk, false, permuteKernels[inputSlot], chunkPositions,
                                             postWorkingChunks[inputSlot]);
                                 } else {
@@ -915,8 +929,6 @@ public class ChunkedOperatorAggregationHelper {
 
         private void doSameSlotModifyIndicesOnly(@NotNull final RowSequence postShiftKeyIndicesToModify,
                 @NotNull final boolean[] operatorsToProcessIndicesOnly) {
-            final boolean findRuns = ac.requiresRunFinds(SKIP_RUN_FIND);
-
             try (final RowSequence.Iterator postShiftIterator = postShiftKeyIndicesToModify.getRowSequenceIterator()) {
                 while (postShiftIterator.hasMore()) {
                     final RowSequence postShiftKeyIndicesChunk =
@@ -924,10 +936,10 @@ public class ChunkedOperatorAggregationHelper {
 
                     incrementalStateManager.findModifications(pc, postShiftKeyIndicesChunk, reinterpretedKeySources,
                             slots);
-                    findSlotRuns(sortKernelContext, hashedRunContext, runStarts, runLengths, chunkPositions, slots,
-                            findRuns);
+                    final boolean permute = findSlotRuns(sortKernelContext, hashedRunContext, runStarts, runLengths, chunkPositions, slots,
+                            ac.requiresRunFinds(SKIP_RUN_FIND));
 
-                    if (findRuns) {
+                    if (permute) {
                         final LongChunk<OrderedRowKeys> postKeyIndices = postShiftKeyIndicesChunk.asRowKeyChunk();
                         permutedKeyIndices.setSize(postKeyIndices.size());
                         LongPermuteKernel.permuteInput(postKeyIndices, chunkPositions, permutedKeyIndices);
@@ -1395,7 +1407,10 @@ public class ChunkedOperatorAggregationHelper {
         return false;
     }
 
-    private static void findSlotRuns(
+    /**
+     * @return true if we must permute the inputs
+     */
+    private static boolean findSlotRuns(
             IntIntTimsortKernel.IntIntSortKernelContext<RowKeys, ChunkPositions> sortKernelContext,
             HashedRunFinder.HashedRunContext hashedRunContext,
             WritableIntChunk<ChunkPositions> runStarts, WritableIntChunk<ChunkLengths> runLengths,
@@ -1405,20 +1420,22 @@ public class ChunkedOperatorAggregationHelper {
             chunkPosition.setSize(slots.size());
             ChunkUtils.fillInOrder(chunkPosition);
             IntFindRunsKernel.findRunsSingles(slots, runStarts, runLengths);
+            return false;
         } else if (HASHED_RUN_FIND) {
-            HashedRunFinder.findRunsHashed(hashedRunContext, runStarts, runLengths, chunkPosition, slots);
+            return HashedRunFinder.findRunsHashed(hashedRunContext, runStarts, runLengths, chunkPosition, slots);
         } else {
             chunkPosition.setSize(slots.size());
             ChunkUtils.fillInOrder(chunkPosition);
             IntIntTimsortKernel.sort(sortKernelContext, chunkPosition, slots);
             IntFindRunsKernel.findRunsSingles(slots, runStarts, runLengths);
+            return true;
         }
     }
 
     /**
      * Get values from the inputColumn, and permute them into workingChunk.
      */
-    private static void getAndPermuteChunk(ChunkSource.WithPrev<Values> inputColumn, ChunkSource.GetContext getContext,
+    private static Chunk<? extends Values> getAndPermuteChunk(ChunkSource.WithPrev<Values> inputColumn, ChunkSource.GetContext getContext,
             RowSequence chunkOk, boolean usePrev, PermuteKernel permuteKernel, IntChunk<ChunkPositions> chunkPosition,
             WritableChunk<Values> workingChunk) {
         final Chunk<? extends Values> values = getChunk(inputColumn, getContext, chunkOk, usePrev);
@@ -1428,6 +1445,8 @@ public class ChunkedOperatorAggregationHelper {
             workingChunk.setSize(values.size());
             permuteKernel.permuteInput(values, chunkPosition, workingChunk);
         }
+
+        return workingChunk;
     }
 
     @Nullable
@@ -1551,7 +1570,7 @@ public class ChunkedOperatorAggregationHelper {
         final ChunkSource.GetContext[] getContexts = new ChunkSource.GetContext[ac.size()];
         // noinspection unchecked
         final WritableChunk<Values>[] workingChunks = findRuns ? new WritableChunk[ac.size()] : null;
-        final Chunk<? extends Values>[] valueChunks = findRuns ? workingChunks : new Chunk[ac.size()];
+        final Chunk<? extends Values>[] valueChunks = new Chunk[ac.size()];
         final IterativeChunkedAggregationOperator.BucketedContext[] bucketedContexts =
                 new IterativeChunkedAggregationOperator.BucketedContext[ac.size()];
 
@@ -1604,11 +1623,11 @@ public class ChunkedOperatorAggregationHelper {
 
                 ac.ensureCapacity(outputPosition.intValue());
 
-                findSlotRuns(sortKernelContext, hashedRunContext, runStarts, runLengths, chunkPosition, outputPositions,
+                final boolean permute = findSlotRuns(sortKernelContext, hashedRunContext, runStarts, runLengths, chunkPosition, outputPositions,
                         findRuns);
 
                 if (permutedKeyIndices != null) {
-                    if (findRuns) {
+                    if (permute) {
                         final LongChunk<OrderedRowKeys> keyIndices = chunkOk.asRowKeyChunk();
                         LongPermuteKernel.permuteInput(keyIndices, chunkPosition, permutedKeyIndices);
                     } else {
@@ -1619,12 +1638,13 @@ public class ChunkedOperatorAggregationHelper {
                 for (int ii = 0; ii < ac.size(); ++ii) {
                     final int inputSlot = ac.inputSlot(ii);
                     if (ii == inputSlot) {
-                        if (!findRuns) {
+                        if (!permute) {
                             valueChunks[inputSlot] = getChunk(ac.inputColumns[ii], getContexts[ii], chunkOk, usePrev);
                         } else {
+                            assert workingChunks != null;
                             getAndPermuteChunk(ac.inputColumns[ii], getContexts[ii], chunkOk, usePrev,
-                                    permuteKernels[ii],
-                                    chunkPosition, workingChunks[ii]);
+                                    permuteKernels[ii], chunkPosition, workingChunks[ii]);
+                            valueChunks[inputSlot] = workingChunks[ii];
                         }
                     }
                     ac.operators[ii].addChunk(bucketedContexts[ii],
