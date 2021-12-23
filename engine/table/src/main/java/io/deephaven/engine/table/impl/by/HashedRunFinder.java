@@ -97,7 +97,8 @@ public class HashedRunFinder {
 
         // if we have only one slot or there is only one value per slot, there is no need to permute things
         if (count == 1 || count == size) {
-            return handleNonPermutedCases(context, runStarts, runLengths, chunkPositions, size, minSlot, maxSlot, count);
+            return handleNonPermutedCases(context, runStarts, runLengths, chunkPositions, size, minSlot, maxSlot,
+                    count);
         }
 
         iterateConstructedTable(context, runStarts, runLengths, chunkPositions, outputPositions, minSlot, maxSlot);
@@ -105,7 +106,9 @@ public class HashedRunFinder {
         return true;
     }
 
-    private static boolean handleNonPermutedCases(HashedRunContext context, WritableIntChunk<ChunkPositions> runStarts, WritableIntChunk<ChunkLengths> runLengths, WritableIntChunk<ChunkPositions> chunkPositions, int size, int minSlot, int maxSlot, int count) {
+    private static boolean handleNonPermutedCases(HashedRunContext context, WritableIntChunk<ChunkPositions> runStarts,
+            WritableIntChunk<ChunkLengths> runLengths, WritableIntChunk<ChunkPositions> chunkPositions, int size,
+            int minSlot, int maxSlot, int count) {
         ChunkUtils.fillInOrder(chunkPositions);
         if (count == 1) {
             runStarts.setSize(1);
@@ -125,7 +128,9 @@ public class HashedRunFinder {
         return false;
     }
 
-    private static void iterateConstructedTable(HashedRunContext context, WritableIntChunk<ChunkPositions> runStarts, WritableIntChunk<ChunkLengths> runLengths, WritableIntChunk<ChunkPositions> chunkPositions, WritableIntChunk<RowKeys> outputPositions, int minSlot, int maxSlot) {
+    private static void iterateConstructedTable(HashedRunContext context, WritableIntChunk<ChunkPositions> runStarts,
+            WritableIntChunk<ChunkLengths> runLengths, WritableIntChunk<ChunkPositions> chunkPositions,
+            WritableIntChunk<RowKeys> outputPositions, int minSlot, int maxSlot) {
         // now iterate the table into the outputPositions/chunkPositions chunks
         int chunkPointer = 0;
         chunkPositions.setSize(outputPositions.size());

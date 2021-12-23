@@ -636,8 +636,9 @@ public class ChunkedOperatorAggregationHelper {
                 final int inputSlot = ac.inputSlot(oi);
                 if (oi == inputSlot) {
                     if (permute) {
-                        valueChunks[oi] = getAndPermuteChunk(ac.inputColumns[oi], getContexts[oi], keyIndicesToRemoveChunk, true,
-                                permuteKernels[oi], chunkPositions, workingChunks[oi]);
+                        valueChunks[oi] =
+                                getAndPermuteChunk(ac.inputColumns[oi], getContexts[oi], keyIndicesToRemoveChunk, true,
+                                        permuteKernels[oi], chunkPositions, workingChunks[oi]);
                     } else {
                         valueChunks[inputSlot] =
                                 getChunk(ac.inputColumns[oi], getContexts[oi], keyIndicesToRemoveChunk, true);
@@ -1657,8 +1658,9 @@ public class ChunkedOperatorAggregationHelper {
                             valueChunks[inputSlot] = getChunk(ac.inputColumns[ii], getContexts[ii], chunkOk, usePrev);
                         } else {
                             assert workingChunks != null;
-                            valueChunks[inputSlot] = getAndPermuteChunk(ac.inputColumns[ii], getContexts[ii], chunkOk, usePrev,
-                                    permuteKernels[ii], chunkPosition, workingChunks[ii]);
+                            valueChunks[inputSlot] =
+                                    getAndPermuteChunk(ac.inputColumns[ii], getContexts[ii], chunkOk, usePrev,
+                                            permuteKernels[ii], chunkPosition, workingChunks[ii]);
                         }
                     }
                     ac.operators[ii].addChunk(bucketedContexts[ii],
