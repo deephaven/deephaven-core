@@ -780,7 +780,7 @@ public class ChunkedOperatorAggregationHelper {
                 permutedKeyIndices.setSize(preKeyIndices.size());
                 postPermutedKeyIndices.setSize(postKeyIndices.size());
 
-                LongPermuteKernel.permuteInput(preKeyIndices, chunkPositions, permutedKeyInfdices);
+                LongPermuteKernel.permuteInput(preKeyIndices, chunkPositions, permutedKeyIndices);
                 LongPermuteKernel.permuteInput(postKeyIndices, chunkPositions, postPermutedKeyIndices);
 
                 boolean anyOperatorModified = false;
