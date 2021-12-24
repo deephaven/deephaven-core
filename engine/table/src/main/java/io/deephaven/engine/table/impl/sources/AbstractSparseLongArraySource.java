@@ -116,9 +116,6 @@ abstract public class AbstractSparseLongArraySource<T> extends SparseArrayColumn
     // region boxed methods
     // endregion boxed methods
 
-    // region copy method
-    // endregion copy method
-
     // region primitive get
     @Override
     public final long getLong(long index) {

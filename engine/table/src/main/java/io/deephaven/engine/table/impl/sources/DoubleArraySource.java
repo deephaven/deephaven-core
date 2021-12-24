@@ -126,11 +126,6 @@ public class DoubleArraySource extends ArraySourceHelper<Double, double[]> imple
     }
 
     @Override
-    public void copy(ColumnSource<? extends Double> sourceColumn, long sourceKey, long destKey) {
-        set(destKey, sourceColumn.getDouble(sourceKey));
-    }
-
-    @Override
     public void shift(long start, long end, long offset) {
         if (offset > 0) {
             for (long i = (int) end; i >= start; i--) {

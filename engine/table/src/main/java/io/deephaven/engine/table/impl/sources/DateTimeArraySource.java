@@ -48,11 +48,6 @@ public class DateTimeArraySource extends AbstractLongArraySource<DateTime> {
 
 
     @Override
-    public void copy(ColumnSource<? extends DateTime> sourceColumn, long sourceKey, long destKey) {
-        set(destKey, sourceColumn.get(sourceKey));
-    }
-
-    @Override
     public <ALTERNATE_DATA_TYPE> boolean allowsReinterpret(
             @NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) {
         return alternateDataType == long.class;
@@ -222,10 +217,6 @@ public class DateTimeArraySource extends AbstractLongArraySource<DateTime> {
         @Override
         public void set(long key, long value) {
             DateTimeArraySource.super.set(key, value);
-        }
-
-        public void copy(ColumnSource<? extends Long> sourceColumn, long sourceKey, long destKey) {
-            DateTimeArraySource.super.set(destKey, sourceColumn.getLong(sourceKey));
         }
 
         @Override

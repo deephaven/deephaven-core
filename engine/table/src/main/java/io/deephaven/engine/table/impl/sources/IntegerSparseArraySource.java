@@ -131,13 +131,6 @@ public class IntegerSparseArraySource extends SparseArrayColumnSource<Integer> i
     }
     // endregion boxed methods
 
-    // region copy method
-    @Override
-    public void copy(ColumnSource<? extends Integer> sourceColumn, long sourceKey, long destKey) {
-        set(destKey, sourceColumn.getInt(sourceKey));
-    }
-    // endregion copy method
-
     // region primitive get
     @Override
     public final int getInt(long index) {

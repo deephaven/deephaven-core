@@ -51,11 +51,6 @@ public class FlatCharArraySource extends AbstractColumnSource<Character> impleme
     }
 
     @Override
-    public void copy(ColumnSource<? extends Character> sourceColumn, long sourceKey, long destKey) {
-        set(destKey, sourceColumn.getChar(sourceKey));
-    }
-
-    @Override
     public void ensureCapacity(long capacity, boolean nullFilled) {
         if (capacity > data.length) {
             throw new UnsupportedOperationException();

@@ -126,11 +126,6 @@ public class IntegerArraySource extends ArraySourceHelper<Integer, int[]> implem
     }
 
     @Override
-    public void copy(ColumnSource<? extends Integer> sourceColumn, long sourceKey, long destKey) {
-        set(destKey, sourceColumn.getInt(sourceKey));
-    }
-
-    @Override
     public void shift(long start, long end, long offset) {
         if (offset > 0) {
             for (long i = (int) end; i >= start; i--) {

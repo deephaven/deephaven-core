@@ -54,11 +54,6 @@ public class FlatFloatArraySource extends AbstractColumnSource<Float> implements
     }
 
     @Override
-    public void copy(ColumnSource<? extends Float> sourceColumn, long sourceKey, long destKey) {
-        set(destKey, sourceColumn.getFloat(sourceKey));
-    }
-
-    @Override
     public void ensureCapacity(long capacity, boolean nullFilled) {
         if (capacity > data.length) {
             throw new UnsupportedOperationException();

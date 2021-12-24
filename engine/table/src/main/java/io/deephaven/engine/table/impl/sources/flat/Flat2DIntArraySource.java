@@ -82,11 +82,6 @@ public class Flat2DIntArraySource extends AbstractColumnSource<Integer> implemen
     }
 
     @Override
-    public void copy(ColumnSource<? extends Integer> sourceColumn, long sourceKey, long destKey) {
-        set(destKey, sourceColumn.getInt(sourceKey));
-    }
-
-    @Override
     public void ensureCapacity(long capacity, boolean nullFilled) {
         if (capacity > size) {
             throw new UnsupportedOperationException();

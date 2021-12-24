@@ -32,10 +32,6 @@ public class WritableLongAsDateTimeColumnSource extends LongAsDateTimeColumnSour
         alternateColumnSource.set(key, BooleanUtils.booleanAsByte(value));
     }
 
-    public void copy(ColumnSource<? extends DateTime> sourceColumn, long sourceKey, long destKey) {
-        alternateColumnSource.set(destKey, DateTimeUtils.nanos(sourceColumn.get(sourceKey)));
-    }
-
     @Override
     public void ensureCapacity(long capacity, boolean nullFilled) {
         alternateColumnSource.ensureCapacity(capacity, nullFilled);

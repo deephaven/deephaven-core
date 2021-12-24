@@ -54,11 +54,6 @@ public class FlatShortArraySource extends AbstractColumnSource<Short> implements
     }
 
     @Override
-    public void copy(ColumnSource<? extends Short> sourceColumn, long sourceKey, long destKey) {
-        set(destKey, sourceColumn.getShort(sourceKey));
-    }
-
-    @Override
     public void ensureCapacity(long capacity, boolean nullFilled) {
         if (capacity > data.length) {
             throw new UnsupportedOperationException();

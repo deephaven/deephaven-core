@@ -82,11 +82,6 @@ public class Flat2DDoubleArraySource extends AbstractColumnSource<Double> implem
     }
 
     @Override
-    public void copy(ColumnSource<? extends Double> sourceColumn, long sourceKey, long destKey) {
-        set(destKey, sourceColumn.getDouble(sourceKey));
-    }
-
-    @Override
     public void ensureCapacity(long capacity, boolean nullFilled) {
         if (capacity > size) {
             throw new UnsupportedOperationException();

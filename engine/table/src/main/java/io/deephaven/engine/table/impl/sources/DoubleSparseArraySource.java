@@ -131,13 +131,6 @@ public class DoubleSparseArraySource extends SparseArrayColumnSource<Double> imp
     }
     // endregion boxed methods
 
-    // region copy method
-    @Override
-    public void copy(ColumnSource<? extends Double> sourceColumn, long sourceKey, long destKey) {
-        set(destKey, sourceColumn.getDouble(sourceKey));
-    }
-    // endregion copy method
-
     // region primitive get
     @Override
     public final double getDouble(long index) {

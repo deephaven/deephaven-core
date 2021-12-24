@@ -82,11 +82,6 @@ public class Flat2DLongArraySource extends AbstractColumnSource<Long> implements
     }
 
     @Override
-    public void copy(ColumnSource<? extends Long> sourceColumn, long sourceKey, long destKey) {
-        set(destKey, sourceColumn.getLong(sourceKey));
-    }
-
-    @Override
     public void ensureCapacity(long capacity, boolean nullFilled) {
         if (capacity > size) {
             throw new UnsupportedOperationException();

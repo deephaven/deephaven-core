@@ -98,19 +98,6 @@ public class ObjectArraySource<T> extends ArraySourceHelper<T, T[]> implements M
     }
 
     @Override
-    public void copy(ColumnSource<? extends T> sourceColumn, long sourceKey, long destKey) {
-        final T value = sourceColumn.get(sourceKey);
-
-        if (isArrayType && value instanceof Vector) {
-            final Vector<?> vector = (Vector<?>) value;
-            //noinspection unchecked
-            set(destKey, (T) vector.getDirect());
-        } else {
-            set(destKey, value);
-        }
-    }
-
-    @Override
     public T getPrev(long index) {
         if (index < 0 || index > maxIndex) {
             return null;

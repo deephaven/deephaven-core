@@ -136,13 +136,6 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
     }
     // endregion boxed methods
 
-    // region copy method
-    @Override
-    public void copy(ColumnSource<? extends Boolean> sourceColumn, long sourceKey, long destKey) {
-        set(destKey, sourceColumn.getBoolean(sourceKey));
-    }
-    // endregion copy method
-
     // region primitive get
     @Override
     public final byte getByte(long index) {
@@ -807,11 +800,6 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
         @Override
         public void ensureCapacity(long capacity, boolean nullFilled) {
             wrapped.ensureCapacity(capacity, nullFilled);
-        }
-
-        @Override
-        public void copy(ColumnSource<? extends Byte> sourceColumn, long sourceKey, long destKey) {
-            set(destKey, sourceColumn.getByte(sourceKey));
         }
 
         @Override

@@ -56,7 +56,7 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
  */
 public abstract class ArrayBackedColumnSource<T>
         extends AbstractDeferredGroupingColumnSource<T>
-        implements FillUnordered, ShiftData.ShiftCallback, WritableColumnSource<T>, InMemoryColumnSource {
+        implements FillUnordered, ShiftData.ShiftCallback, WritableColumnSource<T>, InMemoryColumnSource, ChunkedBackingStoreExposedWritableSource {
 
     static final int DEFAULT_RECYCLER_CAPACITY = 1024;
     /**
@@ -708,18 +708,6 @@ public abstract class ArrayBackedColumnSource<T>
             @NotNull final LongChunk<? extends RowKeys> keyIndices) {
         fillSparsePrevChunkUnordered(destination, keyIndices);
     }
-
-    /**
-     * Resets the given chunk to provide a write-through reference to our backing array.
-     * <p>
-     * Note: This is unsafe to use if previous tracking has been enabled!
-     *
-     * @param chunk the writable chunk to reset to our backing array.
-     * @param position position that we require
-     * @return the first position addressable by the chunk
-     */
-    public abstract long resetWritableChunkToBackingStore(@NotNull final ResettableWritableChunk<?> chunk,
-            long position);
 
     protected abstract void fillSparseChunk(@NotNull WritableChunk<? super Values> destination,
             @NotNull RowSequence indices);

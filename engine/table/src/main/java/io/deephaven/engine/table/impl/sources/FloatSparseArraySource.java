@@ -131,13 +131,6 @@ public class FloatSparseArraySource extends SparseArrayColumnSource<Float> imple
     }
     // endregion boxed methods
 
-    // region copy method
-    @Override
-    public void copy(ColumnSource<? extends Float> sourceColumn, long sourceKey, long destKey) {
-        set(destKey, sourceColumn.getFloat(sourceKey));
-    }
-    // endregion copy method
-
     // region primitive get
     @Override
     public final float getFloat(long index) {

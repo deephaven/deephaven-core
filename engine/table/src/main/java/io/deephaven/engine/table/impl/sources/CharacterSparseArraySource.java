@@ -128,13 +128,6 @@ public class CharacterSparseArraySource extends SparseArrayColumnSource<Characte
     }
     // endregion boxed methods
 
-    // region copy method
-    @Override
-    public void copy(ColumnSource<? extends Character> sourceColumn, long sourceKey, long destKey) {
-        set(destKey, sourceColumn.getChar(sourceKey));
-    }
-    // endregion copy method
-
     // region primitive get
     @Override
     public final char getChar(long index) {

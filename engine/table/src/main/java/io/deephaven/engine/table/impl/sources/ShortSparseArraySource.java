@@ -131,13 +131,6 @@ public class ShortSparseArraySource extends SparseArrayColumnSource<Short> imple
     }
     // endregion boxed methods
 
-    // region copy method
-    @Override
-    public void copy(ColumnSource<? extends Short> sourceColumn, long sourceKey, long destKey) {
-        set(destKey, sourceColumn.getShort(sourceKey));
-    }
-    // endregion copy method
-
     // region primitive get
     @Override
     public final short getShort(long index) {

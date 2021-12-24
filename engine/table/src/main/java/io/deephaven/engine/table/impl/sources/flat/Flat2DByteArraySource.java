@@ -82,11 +82,6 @@ public class Flat2DByteArraySource extends AbstractColumnSource<Byte> implements
     }
 
     @Override
-    public void copy(ColumnSource<? extends Byte> sourceColumn, long sourceKey, long destKey) {
-        set(destKey, sourceColumn.getByte(sourceKey));
-    }
-
-    @Override
     public void ensureCapacity(long capacity, boolean nullFilled) {
         if (capacity > size) {
             throw new UnsupportedOperationException();

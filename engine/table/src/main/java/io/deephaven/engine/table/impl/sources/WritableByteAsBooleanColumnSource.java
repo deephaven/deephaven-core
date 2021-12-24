@@ -30,10 +30,6 @@ public class WritableByteAsBooleanColumnSource extends ByteAsBooleanColumnSource
         alternateColumnSource.set(key, BooleanUtils.booleanAsByte(value));
     }
 
-    public void copy(ColumnSource<? extends Boolean> sourceColumn, long sourceKey, long destKey) {
-        alternateColumnSource.set(destKey, BooleanUtils.booleanAsByte(sourceColumn.get(sourceKey)));
-    }
-
     @Override
     public void ensureCapacity(long capacity, boolean nullFilled) {
         alternateColumnSource.ensureCapacity(capacity, nullFilled);

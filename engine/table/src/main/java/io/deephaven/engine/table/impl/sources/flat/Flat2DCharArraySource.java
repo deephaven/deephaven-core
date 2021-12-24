@@ -79,11 +79,6 @@ public class Flat2DCharArraySource extends AbstractColumnSource<Character> imple
     }
 
     @Override
-    public void copy(ColumnSource<? extends Character> sourceColumn, long sourceKey, long destKey) {
-        set(destKey, sourceColumn.getChar(sourceKey));
-    }
-
-    @Override
     public void ensureCapacity(long capacity, boolean nullFilled) {
         if (capacity > size) {
             throw new UnsupportedOperationException();

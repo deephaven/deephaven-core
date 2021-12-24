@@ -8,7 +8,6 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.*;
-import io.deephaven.engine.table.impl.sources.immutable.ImmutableLongArraySource;
 import io.deephaven.engine.table.lang.QueryScopeParam;
 import io.deephaven.vector.Vector;
 import io.deephaven.engine.table.lang.QueryScope;
@@ -161,13 +160,6 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
                     ColumnDefinition.fromGenericType(name, type, entry.getValue().getComponentType());
             result.put(name, definition);
         }
-        return result;
-    }
-
-    @Override
-    public ColumnSource<?> updateData(WritableColumnSource<?> result, long destPos, long sourcePos) {
-        // noinspection unchecked,rawtypes
-        result.copy((ColumnSource) getDataView(), sourcePos, destPos);
         return result;
     }
 

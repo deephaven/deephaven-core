@@ -131,13 +131,6 @@ public class ByteSparseArraySource extends SparseArrayColumnSource<Byte> impleme
     }
     // endregion boxed methods
 
-    // region copy method
-    @Override
-    public void copy(ColumnSource<? extends Byte> sourceColumn, long sourceKey, long destKey) {
-        set(destKey, sourceColumn.getByte(sourceKey));
-    }
-    // endregion copy method
-
     // region primitive get
     @Override
     public final byte getByte(long index) {

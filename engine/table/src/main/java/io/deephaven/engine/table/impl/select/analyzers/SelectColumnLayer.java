@@ -1,9 +1,11 @@
 package io.deephaven.engine.table.impl.select.analyzers;
 
 import io.deephaven.base.verify.Assert;
+import io.deephaven.chunk.ResettableWritableChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.TableUpdate;
+import io.deephaven.engine.table.impl.sources.ChunkedBackingStoreExposedWritableSource;
 import io.deephaven.time.DateTime;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.impl.select.VectorChunkAdapter;
@@ -92,11 +94,13 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
         final int chunkSourceContextSize =
                 contextSize.applyAsInt(Math.max(upstream.added().size(), upstream.modified().size()));
         final int destContextSize = contextSize.applyAsInt(Math.max(preMoveKeys.size(), chunkSourceContextSize));
+        final boolean isBackingChunkExposed = writableSource instanceof ChunkedBackingStoreExposedWritableSource;
 
         try (final ChunkSink.FillFromContext destContext =
                 needDestContext ? writableSource.makeFillFromContext(destContextSize) : null;
                 final ChunkSource.GetContext chunkSourceContext =
-                        needGetContext ? chunkSource.makeGetContext(chunkSourceContextSize) : null) {
+                        needGetContext ? chunkSource.makeGetContext(chunkSourceContextSize) : null;
+                final ChunkSource.FillContext chunkSourceFillContext = needGetContext && isBackingChunkExposed ? chunkSource.makeFillContext(chunkSourceContextSize) : null) {
 
             // apply shifts!
             if (!isRedirected && preMoveKeys.isNonempty()) {
@@ -134,10 +138,38 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                         }
                     }
                 } else {
-                    try (final RowSequence.Iterator keyIter = upstream.added().getRowSequenceIterator()) {
-                        while (keyIter.hasMore()) {
-                            final RowSequence keys = keyIter.getNextRowSequenceWithLength(PAGE_SIZE);
-                            writableSource.fillFromChunk(destContext, chunkSource.getChunk(chunkSourceContext, keys), keys);
+                    if (isBackingChunkExposed) {
+                        final ChunkedBackingStoreExposedWritableSource exposedWritableSource = (ChunkedBackingStoreExposedWritableSource) this.writableSource;
+                        try (final RowSequence.Iterator keyIter = upstream.added().getRowSequenceIterator();
+                             final ResettableWritableChunk backingChunk = writableSource.getChunkType().makeResettableWritableChunk()) {
+                            while (keyIter.hasMore()) {
+                                final RowSequence keys = keyIter.getNextRowSequenceWithLength(PAGE_SIZE);
+                                if (keys.isContiguous()) {
+                                    long desiredStart = keys.firstRowKey();
+                                    long end = keys.lastRowKey();
+                                    while (desiredStart < end) {
+                                        final long start = exposedWritableSource.resetWritableChunkToBackingStore(backingChunk, desiredStart);
+                                        final long last = start + backingChunk.size();
+                                        if (last <= end) {
+                                            chunkSource.fillChunk(chunkSourceFillContext, backingChunk, keys);
+                                        } else {
+                                            try (RowSequence rowSequenceByKeyRange = keys.getRowSequenceByKeyRange(start, last)) {
+                                                chunkSource.fillChunk(chunkSourceFillContext, backingChunk, rowSequenceByKeyRange);
+                                            }
+                                        }
+                                        desiredStart = start + backingChunk.size();
+                                    }
+                                } else {
+                                    writableSource.fillFromChunk(destContext, chunkSource.getChunk(chunkSourceContext, keys), keys);
+                                }
+                            }
+                        }
+                    } else {
+                        try (final RowSequence.Iterator keyIter = upstream.added().getRowSequenceIterator()) {
+                            while (keyIter.hasMore()) {
+                                final RowSequence keys = keyIter.getNextRowSequenceWithLength(PAGE_SIZE);
+                                writableSource.fillFromChunk(destContext, chunkSource.getChunk(chunkSourceContext, keys), keys);
+                            }
                         }
                     }
                 }

@@ -127,11 +127,6 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]> imple
     }
 
     @Override
-    public void copy(ColumnSource<? extends Boolean> sourceColumn, long sourceKey, long destKey) {
-        set(destKey,sourceColumn.get(sourceKey));
-    }
-
-    @Override
     public void shift(long start, long end, long offset) {
         if (offset > 0) {
             for (long i = (int) end; i >= start; i--) {
@@ -607,11 +602,6 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]> imple
         @Override
         public void set(long key, byte value) {
             BooleanArraySource.this.set(key, value);
-        }
-
-        @Override
-        public void copy(ColumnSource<? extends Byte> sourceColumn, long sourceKey, long destKey) {
-            BooleanArraySource.this.set(destKey, sourceColumn.getByte(sourceKey));
         }
 
         @Override

@@ -81,11 +81,6 @@ public class Flat2DObjectArraySource<T> extends AbstractColumnSource<T> implemen
     }
 
     @Override
-    public void copy(ColumnSource<? extends T> sourceColumn, long sourceKey, long destKey) {
-        set(destKey, sourceColumn.get(sourceKey));
-    }
-
-    @Override
     public void ensureCapacity(long capacity, boolean nullFilled) {
         if (capacity > size) {
             throw new UnsupportedOperationException();

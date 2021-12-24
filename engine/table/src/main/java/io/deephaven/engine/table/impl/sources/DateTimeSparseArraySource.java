@@ -37,11 +37,6 @@ public class DateTimeSparseArraySource extends AbstractSparseLongArraySource<Dat
     }
 
     @Override
-    public void copy(ColumnSource<? extends DateTime> sourceColumn, long sourceKey, long destKey) {
-        set(destKey, sourceColumn.get(sourceKey));
-    }
-
-    @Override
     public <ALTERNATE_DATA_TYPE> boolean allowsReinterpret(
             @NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) {
         return alternateDataType == long.class;

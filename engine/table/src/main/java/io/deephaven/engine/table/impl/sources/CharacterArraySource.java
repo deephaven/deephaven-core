@@ -123,11 +123,6 @@ public class CharacterArraySource extends ArraySourceHelper<Character, char[]> i
     }
 
     @Override
-    public void copy(ColumnSource<? extends Character> sourceColumn, long sourceKey, long destKey) {
-        set(destKey, sourceColumn.getChar(sourceKey));
-    }
-
-    @Override
     public void shift(long start, long end, long offset) {
         if (offset > 0) {
             for (long i = (int) end; i >= start; i--) {

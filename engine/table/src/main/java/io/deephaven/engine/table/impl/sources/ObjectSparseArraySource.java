@@ -125,21 +125,6 @@ public class ObjectSparseArraySource<T> extends SparseArrayColumnSource<T> imple
     // region boxed methods
     // endregion boxed methods
 
-    // region copy method
-    @Override
-    public void copy(ColumnSource<? extends T> sourceColumn, long sourceKey, long destKey) {
-        final T value = sourceColumn.get(sourceKey);
-
-        if (isArrayType && value instanceof Vector) {
-            final Vector<?> vector = (Vector<?>) value;
-            // noinspection unchecked
-            set(destKey, (T) vector.getDirect());
-        } else {
-            set(destKey, value);
-        }
-    }
-    // endregion copy method
-
     // region primitive get
     @Override
     public final T get(long index) {

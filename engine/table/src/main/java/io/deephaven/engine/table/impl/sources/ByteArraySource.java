@@ -126,11 +126,6 @@ public class ByteArraySource extends ArraySourceHelper<Byte, byte[]> implements 
     }
 
     @Override
-    public void copy(ColumnSource<? extends Byte> sourceColumn, long sourceKey, long destKey) {
-        set(destKey, sourceColumn.getByte(sourceKey));
-    }
-
-    @Override
     public void shift(long start, long end, long offset) {
         if (offset > 0) {
             for (long i = (int) end; i >= start; i--) {
