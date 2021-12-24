@@ -131,6 +131,15 @@ public interface SelectColumn extends Selectable {
     WritableColumnSource<?> newDestInstance(long size);
 
     /**
+     * Create a new {@link WritableColumnSource} with sufficient capacity for the rows in the row set.
+     *
+     * @param size The number of rows to allocate
+     *
+     * @return a new {@link WritableColumnSource} with sufficient capacity for 'dataSubset'
+     */
+    WritableColumnSource<?> newFlatDestInstance(long size);
+
+    /**
      *
      * @return
      */

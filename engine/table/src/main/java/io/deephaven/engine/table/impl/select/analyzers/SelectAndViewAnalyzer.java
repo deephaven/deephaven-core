@@ -51,8 +51,7 @@ public abstract class SelectAndViewAnalyzer {
             if (sc instanceof SourceColumn
                     || (sc instanceof SwitchColumn && ((SwitchColumn) sc).getRealColumn() instanceof SourceColumn)) {
                 final ColumnSource<?> sccs = sc.getDataView();
-                if ((sccs instanceof SparseArrayColumnSource || sccs instanceof ArrayBackedColumnSource)
-                        && !Vector.class.isAssignableFrom(sc.getReturnedType())) {
+                if ((sccs instanceof InMemoryColumnSource) && !Vector.class.isAssignableFrom(sc.getReturnedType())) {
                     analyzer = analyzer.createLayerForPreserve(sc.getName(), sc, sc.getDataView(), distinctDeps,
                             mcsBuilder);
                     continue;
@@ -74,9 +73,8 @@ public abstract class SelectAndViewAnalyzer {
                 case SELECT_STATIC: {
                     // We need to call newDestInstance because only newDestInstance has the knowledge to endow our
                     // created array with the proper componentType (in the case of Vectors).
-                    final WritableColumnSource<?> scs = sc.newDestInstance(targetSize);
-                    analyzer =
-                            analyzer.createLayerForSelect(sc.getName(), sc, scs, null, distinctDeps, mcsBuilder, false);
+                    final WritableColumnSource<?> scs = rowSet.isFlat() ? sc.newFlatDestInstance(targetSize) : sc.newDestInstance(targetSize);
+                    analyzer = analyzer.createLayerForSelect(sc.getName(), sc, scs, null, distinctDeps, mcsBuilder, false);
                     break;
                 }
                 case SELECT_REDIRECTED_REFRESHING:

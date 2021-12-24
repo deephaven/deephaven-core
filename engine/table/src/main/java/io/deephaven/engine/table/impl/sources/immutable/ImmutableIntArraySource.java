@@ -5,6 +5,7 @@ package io.deephaven.engine.table.impl.sources.immutable;
 
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.ImmutableColumnSourceGetDefaults;
+import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.util.type.TypeUtils;
 
 import static io.deephaven.util.QueryConstants.NULL_INT;
@@ -17,7 +18,7 @@ import static io.deephaven.util.QueryConstants.NULL_INT;
  *
  * (C-har is deliberately spelled that way in order to prevent Replicate from altering this very comment).
  */
-public class ImmutableIntArraySource extends AbstractColumnSource<Integer> implements ImmutableColumnSourceGetDefaults.ForInt {
+public class ImmutableIntArraySource extends AbstractColumnSource<Integer> implements ImmutableColumnSourceGetDefaults.ForInt, InMemoryColumnSource {
     private final int[] data;
 
     public ImmutableIntArraySource(int[] source) {

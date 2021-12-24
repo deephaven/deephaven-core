@@ -1373,7 +1373,9 @@ public class QueryTable extends BaseTable {
                     } else {
                         propagateGrouping(selectColumns, resultTable);
                         for (final ColumnSource<?> columnSource : analyzer.getNewColumnSources().values()) {
-                            ((SparseArrayColumnSource<?>) columnSource).setImmutable();
+                            if (columnSource instanceof SparseArrayColumnSource){
+                                ((SparseArrayColumnSource<?>) columnSource).setImmutable();
+                            }
                         }
                     }
                     propagateFlatness(resultTable);

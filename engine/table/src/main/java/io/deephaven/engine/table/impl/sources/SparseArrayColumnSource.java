@@ -73,7 +73,7 @@ import java.util.Collection;
 @AbstractColumnSource.IsSerializable(value = true)
 public abstract class SparseArrayColumnSource<T>
         extends AbstractDeferredGroupingColumnSource<T>
-        implements FillUnordered, WritableColumnSource<T> {
+        implements FillUnordered, WritableColumnSource<T>, InMemoryColumnSource {
     public static final SparseArrayColumnSource<?>[] ZERO_LENGTH_SPARSE_ARRAY_COLUMN_SOURCE_ARRAY =
             new SparseArrayColumnSource[0];
 

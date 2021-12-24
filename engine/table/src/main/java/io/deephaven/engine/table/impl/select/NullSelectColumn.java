@@ -80,6 +80,11 @@ public class NullSelectColumn<T> implements SelectColumn {
     }
 
     @Override
+    public WritableColumnSource<?> newFlatDestInstance(final long size) {
+        return ArrayBackedColumnSource.getFlatMemoryColumnSource(size, nvcs.getType(), nvcs.getComponentType());
+    }
+
+    @Override
     public boolean isRetain() {
         return false;
     }

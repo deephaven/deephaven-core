@@ -1,12 +1,13 @@
 package io.deephaven.engine.table.impl.sources.immutable;
 
+import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.time.DateTime;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.ImmutableColumnSourceGetDefaults;
 
 public class ImmutableDateTimeArraySource extends AbstractColumnSource<DateTime>
-        implements ImmutableColumnSourceGetDefaults.ForObject<DateTime> {
+        implements ImmutableColumnSourceGetDefaults.ForObject<DateTime>, InMemoryColumnSource {
     private final long[] data;
 
     public ImmutableDateTimeArraySource(long[] source) {

@@ -38,6 +38,9 @@ public class ReplicateSourcesAndChunks {
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/UngroupedBoxedCharArrayColumnSource.java");
         charToAllButBoolean(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/immutable/ImmutableCharArraySource.java");
+        charToAllButBoolean(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/flat/FlatCharArraySource.java");
+        replicateObjectFlatColumnSource();
         charToAll("engine/chunk/src/main/java/io/deephaven/chunk/sized/SizedCharChunk.java");
 
         replicateChunks();
@@ -107,14 +110,7 @@ public class ReplicateSourcesAndChunks {
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/chunkcolumnsource/CharChunkColumnSource.java");
         final File resultClassJavaFile = new File(resultClassJavaPath);
         List<String> lines = FileUtils.readLines(resultClassJavaFile, Charset.defaultCharset());
-        lines = globalReplacements(lines,
-                "class ObjectChunkColumnSource", "class ObjectChunkColumnSource<T>",
-                "<Object>", "<T>",
-                "ForObject", "ForObject<T>",
-                "Object getObject", "T get",
-                "Object current", "T current",
-                "ObjectChunk<\\? extends Values>", "ObjectChunk<T, ? extends Values>",
-                "QueryConstants.NULL_OBJECT", "null");
+        lines = genericObjectColumnSourceReplacements(lines);
 
         lines = ReplicationUtils.replaceRegion(lines, "constructor", Arrays.asList(
                 "    protected ObjectChunkColumnSource(Class<T> type, Class<?> componentType) {",
@@ -129,6 +125,36 @@ public class ReplicateSourcesAndChunks {
         ));
 
         FileUtils.writeLines(resultClassJavaFile, lines);
+    }
+
+    private static void replicateObjectFlatColumnSource() throws IOException {
+        final String resultClassJavaPath = charToObject(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/chunkcolumnsource/FlatCharColumnSource.java");
+        final File resultClassJavaFile = new File(resultClassJavaPath);
+        List<String> lines = FileUtils.readLines(resultClassJavaFile, Charset.defaultCharset());
+        lines = globalReplacements(lines,
+                "class FlatObjectColumnSource", "class FlatObjectColumnSource<T>");
+
+        lines = genericObjectColumnSourceReplacements(lines);
+
+        lines = ReplicationUtils.replaceRegion(lines, "constructor", Arrays.asList(
+                "    protected ObjectChunkColumnSource(Object<T> type, Class<?> componentType) {",
+                "        super(type, componentType);",
+                "    }"
+        ));
+
+        FileUtils.writeLines(resultClassJavaFile, lines);
+    }
+
+    private static List<String> genericObjectColumnSourceReplacements(List<String> lines) {
+        lines = globalReplacements(lines,
+                "<Object>", "<T>",
+                "ForObject", "ForObject<T>",
+                "Object getObject", "T get",
+                "Object current", "T current",
+                "ObjectChunk<\\? extends Values>", "ObjectChunk<T, ? extends Values>",
+                "QueryConstants.NULL_OBJECT", "null");
+        return lines;
     }
 
     private static void replicateSparseArraySources() throws IOException {

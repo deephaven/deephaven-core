@@ -9,22 +9,14 @@ import io.deephaven.engine.table.impl.DefaultGetContext;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
+import io.deephaven.engine.table.impl.sources.flat.*;
+import io.deephaven.engine.table.impl.sources.immutable.*;
 import io.deephaven.util.type.ArrayTypeUtils;
 import io.deephaven.time.DateTime;
 import io.deephaven.util.datastructures.LongSizedDataStructure;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges;
 import io.deephaven.chunk.attributes.Values;
-import io.deephaven.engine.table.impl.sources.immutable.ImmutableBooleanArraySource;
-import io.deephaven.engine.table.impl.sources.immutable.ImmutableByteArraySource;
-import io.deephaven.engine.table.impl.sources.immutable.ImmutableCharArraySource;
-import io.deephaven.engine.table.impl.sources.immutable.ImmutableDateTimeArraySource;
-import io.deephaven.engine.table.impl.sources.immutable.ImmutableDoubleArraySource;
-import io.deephaven.engine.table.impl.sources.immutable.ImmutableFloatArraySource;
-import io.deephaven.engine.table.impl.sources.immutable.ImmutableIntArraySource;
-import io.deephaven.engine.table.impl.sources.immutable.ImmutableLongArraySource;
-import io.deephaven.engine.table.impl.sources.immutable.ImmutableObjectArraySource;
-import io.deephaven.engine.table.impl.sources.immutable.ImmutableShortArraySource;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.table.impl.util.ShiftData;
@@ -67,7 +59,7 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
 @AbstractColumnSource.IsSerializable(value = true)
 public abstract class ArrayBackedColumnSource<T>
         extends AbstractDeferredGroupingColumnSource<T>
-        implements FillUnordered, ShiftData.ShiftCallback, WritableColumnSource<T>, Serializable {
+        implements FillUnordered, ShiftData.ShiftCallback, WritableColumnSource<T>, Serializable, InMemoryColumnSource {
     private static final long serialVersionUID = -7823391894248382929L;
 
     static final int DEFAULT_RECYCLER_CAPACITY = 1024;
@@ -538,7 +530,7 @@ public abstract class ArrayBackedColumnSource<T>
      * @param componentType the component type for column sources of arrays or Vectors
      * @return An Immutable ColumnSource that directly wraps the input array.
      */
-    public static <T> ColumnSource<T> getImmutableMemoryColumnSource(@NotNull final Object dataArray,
+    public static <T> WritableColumnSource<T> getImmutableMemoryColumnSource(@NotNull final Object dataArray,
             @NotNull final Class<T> dataType,
             @Nullable final Class<?> componentType) {
         final ColumnSource<?> result;
@@ -585,7 +577,48 @@ public abstract class ArrayBackedColumnSource<T>
             result = new ImmutableObjectArraySource<>((T[]) dataArray, dataType, componentType);
         }
         // noinspection unchecked
-        return (ColumnSource<T>) result;
+        return (WritableColumnSource<T>) result;
+    }
+
+    /**
+     * Create an immutable in-memory column source of the provided size with an array allocated of the appropriate size
+     *
+     * @param longSize the size of the array to allocate
+     * @param dataType the data type of the resultant column source
+     * @param componentType the component type for column sources of arrays or Vectors
+     * @return An Immutable ColumnSource that directly wraps the input array.
+     */
+    public static <T> WritableColumnSource<T> getFlatMemoryColumnSource(long longSize,
+                                                                @NotNull final Class<T> dataType,
+                                                                @Nullable final Class<?> componentType) {
+        final int size = Math.toIntExact(longSize);
+        final ColumnSource<?> result;
+        if (dataType == boolean.class || dataType == Boolean.class) {
+            // TODO:
+            result = new ImmutableBooleanArraySource(new byte[size]);
+        } else if (dataType == char.class || dataType == Character.class) {
+            result = new FlatCharArraySource(new char[size]);
+        } else if (dataType == byte.class || dataType == Byte.class) {
+            result = new FlatByteArraySource(new byte[size]);
+        } else if (dataType == double.class || dataType == Double.class) {
+            result = new FlatDoubleArraySource(new double[size]);
+        } else if (dataType == float.class || dataType == Float.class) {
+            result = new FlatFloatArraySource(new float[size]);
+        } else if (dataType == int.class || dataType == Integer.class) {
+            result = new FlatIntArraySource(new int[size]);
+        } else if (dataType == long.class || dataType == Long.class) {
+            result = new FlatLongArraySource(new long[size]);
+        } else if (dataType == short.class || dataType == Short.class) {
+            result = new FlatShortArraySource(new short[size]);
+        } else if (dataType == DateTime.class) {
+            // TODO:
+            result = new ImmutableDateTimeArraySource(new long[size]);
+        } else {
+            // TODO:
+            result = new ImmutableObjectArraySource<>(new Object[size], dataType, componentType);
+        }
+        // noinspection unchecked
+        return (WritableColumnSource<T>) result;
     }
 
     @Override

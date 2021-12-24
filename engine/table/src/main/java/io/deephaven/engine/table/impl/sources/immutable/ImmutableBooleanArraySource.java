@@ -1,10 +1,11 @@
 package io.deephaven.engine.table.impl.sources.immutable;
 
+import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import io.deephaven.util.BooleanUtils;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.ImmutableColumnSourceGetDefaults;
 
-public class ImmutableBooleanArraySource extends AbstractColumnSource<Boolean> implements ImmutableColumnSourceGetDefaults.ForBoolean {
+public class ImmutableBooleanArraySource extends AbstractColumnSource<Boolean> implements ImmutableColumnSourceGetDefaults.ForBoolean, InMemoryColumnSource {
     private final byte[] data;
 
     public ImmutableBooleanArraySource(boolean[] source) {

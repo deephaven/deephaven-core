@@ -8,6 +8,7 @@ import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.*;
+import io.deephaven.engine.table.impl.sources.immutable.ImmutableLongArraySource;
 import io.deephaven.engine.table.lang.QueryScopeParam;
 import io.deephaven.vector.Vector;
 import io.deephaven.engine.table.lang.QueryScope;
@@ -315,8 +316,18 @@ public abstract class AbstractFormulaColumn implements FormulaColumn {
         return formulaString;
     }
 
+    @Override
     public WritableColumnSource<?> newDestInstance(long size) {
         return SparseArrayColumnSource.getSparseMemoryColumnSource(rowSet.size(), returnedType);
+    }
+
+    @Override
+    public WritableColumnSource<?> newFlatDestInstance(long size) {
+        if (size < Integer.MAX_VALUE) {
+            return ArrayBackedColumnSource.getFlatMemoryColumnSource(size, returnedType, null);
+        } else {
+            return newDestInstance(size);
+        }
     }
 
     @Override
