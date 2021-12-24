@@ -17,6 +17,7 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.util.BigDecimalUtils;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.Collections;
 import java.util.Map;
 
@@ -85,7 +86,8 @@ class BigDecimalChunkedReVarOperator implements IterativeChunkedAggregationOpera
         return updateResult(destination);
     }
 
-    private void doBucketedUpdate(ReVarContext context, IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, WritableBooleanChunk<Values> stateModified) {
+    private void doBucketedUpdate(ReVarContext context, IntChunk<RowKeys> destinations,
+            IntChunk<ChunkPositions> startPositions, WritableBooleanChunk<Values> stateModified) {
         try (final RowSequence destinationSeq = context.destinationSequenceFromChunks(destinations, startPositions)) {
             updateResult(context, destinationSeq, stateModified);
         }
@@ -100,16 +102,12 @@ class BigDecimalChunkedReVarOperator implements IterativeChunkedAggregationOpera
         final LongChunk<? extends Values> nncSumChunk =
                 nncSum.getChunk(reVarContext.nncSumContext, destinationOk).asLongChunk();
         final int size = reVarContext.keyIndices.size();
-        if (reVarContext.ordered) {
-            for (int ii = 0; ii < size; ++ii) {
-                stateModified.set(ii, updateResult(reVarContext.keyIndices.get(ii), sumSumChunk.get(ii),
-                        sum2SumChunk.get(ii), nncSumChunk.get(ii)));
-            }
-        } else {
-            for (int ii = 0; ii < size; ++ii) {
-                stateModified.set(reVarContext.statePositions.get(ii), updateResult(reVarContext.keyIndices.get(ii), sumSumChunk.get(ii),
-                        sum2SumChunk.get(ii), nncSumChunk.get(ii)));
-            }
+
+        final boolean ordered = reVarContext.ordered;
+        for (int ii = 0; ii < size; ++ii) {
+            final boolean changed = updateResult(reVarContext.keyIndices.get(ii), sumSumChunk.get(ii),
+                    sum2SumChunk.get(ii), nncSumChunk.get(ii));
+            stateModified.set(ordered ? ii : reVarContext.statePositions.get(ii), changed);
         }
     }
 
@@ -133,8 +131,8 @@ class BigDecimalChunkedReVarOperator implements IterativeChunkedAggregationOpera
             }
             final BigDecimal countMinus1 = BigDecimal.valueOf(nonNullCount - 1);
             final BigDecimal variance =
-                    newSum2.subtract(newSum.pow(2).divide(BigDecimal.valueOf(nonNullCount), BigDecimal.ROUND_HALF_UP))
-                            .divide(countMinus1, BigDecimal.ROUND_HALF_UP);
+                    newSum2.subtract(newSum.pow(2).divide(BigDecimal.valueOf(nonNullCount), RoundingMode.HALF_UP))
+                            .divide(countMinus1, RoundingMode.HALF_UP);
             final BigDecimal result = std ? BigDecimalUtils.sqrt(variance, SCALE) : variance;
             return !result.equals(resultColumn.getAndSetUnsafe(destination, result));
         }

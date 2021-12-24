@@ -77,14 +77,10 @@ class FloatChunkedReVarOperator implements IterativeChunkedAggregationOperator {
         final LongChunk<? extends Values> nicSumChunk = nicSum.getChunk(reVarContext.nicContext, destinationOk).asLongChunk();
 
         final int size = reVarContext.keyIndices.size();
-        if (reVarContext.ordered) {
-            for (int ii = 0; ii < size; ++ii) {
-                stateModified.set(ii, updateResult(reVarContext.keyIndices.get(ii), nncSumChunk.get(ii), nanSumChunk.get(ii), picSumChunk.get(ii), nicSumChunk.get(ii), sumSumChunk.get(ii), sum2SumChunk.get(ii)));
-            }
-        } else {
-            for (int ii = 0; ii < size; ++ii) {
-                stateModified.set(reVarContext.statePositions.get(ii), updateResult(reVarContext.keyIndices.get(ii), nncSumChunk.get(ii), nanSumChunk.get(ii), picSumChunk.get(ii), nicSumChunk.get(ii), sumSumChunk.get(ii), sum2SumChunk.get(ii)));
-            }
+        final boolean ordered = reVarContext.ordered;;
+        for (int ii = 0; ii < size; ++ii) {
+            final boolean changed = updateResult(reVarContext.keyIndices.get(ii), nncSumChunk.get(ii), nanSumChunk.get(ii), picSumChunk.get(ii), nicSumChunk.get(ii), sumSumChunk.get(ii), sum2SumChunk.get(ii));
+            stateModified.set(ordered ? ii : reVarContext.statePositions.get(ii), changed);
         }
     }
 

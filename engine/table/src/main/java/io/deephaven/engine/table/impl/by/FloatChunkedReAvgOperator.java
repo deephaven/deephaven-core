@@ -74,16 +74,11 @@ class FloatChunkedReAvgOperator implements IterativeChunkedAggregationOperator {
         final LongChunk<? extends Values> nicSumChunk = nicSum.getChunk(reAvgContext.nicContext, destinationOk).asLongChunk();
 
         final int size = reAvgContext.keyIndices.size();
-        if (reAvgContext.ordered) {
-            for (int ii = 0; ii < size; ++ii) {
-                stateModified.set(ii, updateResult(reAvgContext.keyIndices.get(ii), nncSumChunk.get(ii), nanSumChunk.get(ii), picSumChunk.get(ii), nicSumChunk.get(ii), sumSumChunk.get(ii)));
-            }
-        } else {
-            for (int ii = 0; ii < size; ++ii) {
-                stateModified.set(reAvgContext.statePositions.get(ii), updateResult(reAvgContext.keyIndices.get(ii), nncSumChunk.get(ii), nanSumChunk.get(ii), picSumChunk.get(ii), nicSumChunk.get(ii), sumSumChunk.get(ii)));
-            }
+        final boolean ordered = reAvgContext.ordered;
+        for (int ii = 0; ii < size; ++ii) {
+            final boolean changed = updateResult(reAvgContext.keyIndices.get(ii), nncSumChunk.get(ii), nanSumChunk.get(ii), picSumChunk.get(ii), nicSumChunk.get(ii), sumSumChunk.get(ii));
+            stateModified.set(ordered ? ii : reAvgContext.statePositions.get(ii), changed);
         }
-
     }
 
     @Override

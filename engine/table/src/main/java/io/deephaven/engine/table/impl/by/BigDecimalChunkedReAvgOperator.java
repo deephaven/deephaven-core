@@ -15,6 +15,7 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.Collections;
 import java.util.Map;
 
@@ -58,7 +59,8 @@ class BigDecimalChunkedReAvgOperator implements IterativeChunkedAggregationOpera
         doBucketedUpdate((ReAvgContext) context, destinations, startPositions, stateModified);
     }
 
-    private void doBucketedUpdate(ReAvgContext context, IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, WritableBooleanChunk<Values> stateModified) {
+    private void doBucketedUpdate(ReAvgContext context, IntChunk<RowKeys> destinations,
+            IntChunk<ChunkPositions> startPositions, WritableBooleanChunk<Values> stateModified) {
         try (final RowSequence destinationSeq = context.destinationSequenceFromChunks(destinations, startPositions)) {
             updateResult(context, destinationSeq, stateModified);
         }
@@ -96,22 +98,18 @@ class BigDecimalChunkedReAvgOperator implements IterativeChunkedAggregationOpera
         final LongChunk<? extends Values> nncSumChunk =
                 nncSum.getChunk(reAvgContext.nncSumContext, destinationOk).asLongChunk();
         final int size = reAvgContext.keyIndices.size();
-        if (reAvgContext.ordered) {
-            for (int ii = 0; ii < size; ++ii) {
-                stateModified.set(ii,
-                        updateResult(reAvgContext.keyIndices.get(ii), sumSumChunk.get(ii), nncSumChunk.get(ii)));
-            }
-        } else {
-            for (int ii = 0; ii < size; ++ii) {
-                stateModified.set(reAvgContext.statePositions.get(ii),
-                        updateResult(reAvgContext.keyIndices.get(ii), sumSumChunk.get(ii), nncSumChunk.get(ii)));
-            }
+        final boolean ordered = reAvgContext.ordered;
+
+        for (int ii = 0; ii < size; ++ii) {
+            final boolean changed =
+                    updateResult(reAvgContext.keyIndices.get(ii), sumSumChunk.get(ii), nncSumChunk.get(ii));
+            stateModified.set(ordered ? ii : reAvgContext.statePositions.get(ii), changed);
         }
     }
 
     private boolean updateResult(long destination, BigDecimal sumSumValue, long nncValue) {
         if (nncValue > 0) {
-            final BigDecimal newValue = sumSumValue.divide(BigDecimal.valueOf(nncValue), BigDecimal.ROUND_HALF_UP);
+            final BigDecimal newValue = sumSumValue.divide(BigDecimal.valueOf(nncValue), RoundingMode.HALF_UP);
             return !newValue.equals(resultColumn.getAndSetUnsafe(destination, newValue));
         } else {
             return null != resultColumn.getAndSetUnsafe(destination, null);

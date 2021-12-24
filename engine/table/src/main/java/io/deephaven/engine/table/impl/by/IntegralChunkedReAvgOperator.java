@@ -9,10 +9,7 @@ import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
-import io.deephaven.engine.table.impl.sort.timsort.LongIntTimsortKernel;
-import io.deephaven.engine.table.impl.util.ChunkUtils;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.impl.sources.DoubleArraySource;
@@ -88,14 +85,10 @@ class IntegralChunkedReAvgOperator implements IterativeChunkedAggregationOperato
             stateModified.set(ii, updateResult(reAvgContext.keyIndices.get(ii), sumSumChunk.get(ii), nncSumChunk.get(ii)));
         }
 
-        if (reAvgContext.ordered) {
-            for (int ii = 0; ii < size; ++ii) {
-                stateModified.set(ii, updateResult(reAvgContext.keyIndices.get(ii), sumSumChunk.get(ii), nncSumChunk.get(ii)));
-            }
-        } else {
-            for (int ii = 0; ii < size; ++ii) {
-                stateModified.set(reAvgContext.statePositions.get(ii), updateResult(reAvgContext.keyIndices.get(ii), sumSumChunk.get(ii), nncSumChunk.get(ii)));
-            }
+        final boolean ordered = reAvgContext.ordered;
+        for (int ii = 0; ii < size; ++ii) {
+            final boolean changed = updateResult(reAvgContext.keyIndices.get(ii), sumSumChunk.get(ii), nncSumChunk.get(ii));
+            stateModified.set(ordered ? ii : reAvgContext.statePositions.get(ii), changed);
         }
     }
 

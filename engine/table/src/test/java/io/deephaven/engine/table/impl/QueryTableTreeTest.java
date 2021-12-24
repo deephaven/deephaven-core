@@ -1167,7 +1167,8 @@ public class QueryTableTreeTest extends QueryTableTestBase {
                 continue;
             }
 
-            System.out.println("Label: " + labelSource.stream().map(x -> (String) x.get(key)).collect(Collectors.joining(", ")));
+            System.out.println(
+                    "Label: " + labelSource.stream().map(x -> (String) x.get(key)).collect(Collectors.joining(", ")));
             dumpRollup(childTable, childMap, usePrev, hierarchicalColumnName, labelColumns);
         }
     }
@@ -2036,13 +2037,17 @@ public class QueryTableTreeTest extends QueryTableTestBase {
     }
 
     public void testRollupStdSlotOutOfOrder() {
-        final QueryTable source = TstUtils.testRefreshingTable(col("G1", "a", "b", "c", "d", "e", "f", "g", "A", "A", "B", "B", "A"), col("G2", "a", "a", "a", "a", "a", "a", "a", "a", "a", "a", "a", "a"), intCol("Val", 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 5));
+        final QueryTable source =
+                TstUtils.testRefreshingTable(col("G1", "a", "b", "c", "d", "e", "f", "g", "A", "A", "B", "B", "A"),
+                        col("G2", "a", "a", "a", "a", "a", "a", "a", "a", "a", "a", "a", "a"),
+                        intCol("Val", 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4, 5));
         final Table rollup = source.rollup(List.of(AggVar("Val")), "G1", "G2");
         checkVar(source, rollup);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             TstUtils.addToTable(source, i(9, 11), col("G1", "B", "A"), col("G2", "a", "a"), intCol("Val", 6, 7));
-            final TableUpdate update = new TableUpdateImpl(i(), i(), i(9, 11), RowSetShiftData.EMPTY, source.newModifiedColumnSet("Val"));
+            final TableUpdate update =
+                    new TableUpdateImpl(i(), i(), i(9, 11), RowSetShiftData.EMPTY, source.newModifiedColumnSet("Val"));
             source.notifyListeners(update);
         });
         checkVar(source, rollup);
@@ -2066,10 +2071,11 @@ public class QueryTableTreeTest extends QueryTableTestBase {
 
         assertTableEquals(totalExpect, getDiffableTable(rollup).view("Val"));
 
-        final Table rootTable = ((TableMap) rollup.getAttribute(Table.HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE)).get(new SmartKey());
+        final Table rootTable =
+                ((TableMap) rollup.getAttribute(Table.HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE)).get(new SmartKey());
 
-        final Table a = ((TableMap)rootTable.getAttribute(Table.HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE)).get("A");
-        final Table b = ((TableMap)rootTable.getAttribute(Table.HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE)).get("B");
+        final Table a = ((TableMap) rootTable.getAttribute(Table.HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE)).get("A");
+        final Table b = ((TableMap) rootTable.getAttribute(Table.HIERARCHICAL_CHILDREN_TABLE_MAP_ATTRIBUTE)).get("B");
 
         assertTableEquals(aExpect, a.view("G1", "Val"));
         assertTableEquals(bExpect, b.view("G1", "Val"));

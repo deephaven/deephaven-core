@@ -78,14 +78,10 @@ class IntegralChunkedReVarOperator implements IterativeChunkedAggregationOperato
         final DoubleChunk<Values> sum2SumChunk = sum2Sum.getChunk(reVarContext.sum2SumContext, destinationOk).asDoubleChunk();
         final LongChunk<? extends Values> nncSumChunk = nncSum.getChunk(reVarContext.nncSumContext, destinationOk).asLongChunk();
         final int size = reVarContext.keyIndices.size();
-        if (reVarContext.ordered) {
-            for (int ii = 0; ii < size; ++ii) {
-                stateModified.set(ii, updateResult(reVarContext.keyIndices.get(ii), sumSumChunk.get(ii), sum2SumChunk.get(ii), nncSumChunk.get(ii)));
-            }
-        } else {
-            for (int ii = 0; ii < size; ++ii) {
-                stateModified.set(reVarContext.statePositions.get(ii), updateResult(reVarContext.keyIndices.get(ii), sumSumChunk.get(ii), sum2SumChunk.get(ii), nncSumChunk.get(ii)));
-            }
+        final boolean ordered = reVarContext.ordered;
+        for (int ii = 0; ii < size; ++ii) {
+            final boolean changed = updateResult(reVarContext.keyIndices.get(ii), sumSumChunk.get(ii), sum2SumChunk.get(ii), nncSumChunk.get(ii));
+            stateModified.set(ordered ? ii : reVarContext.statePositions.get(ii), changed);
         }
     }
 
