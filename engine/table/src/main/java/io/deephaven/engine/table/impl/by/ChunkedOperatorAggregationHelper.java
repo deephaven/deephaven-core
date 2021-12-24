@@ -1040,7 +1040,6 @@ public class ChunkedOperatorAggregationHelper {
                             shifted ? upstream.modified().getRowSequenceIterator() : null;
                     final WritableIntChunk<RowKeys> postSlots = WritableIntChunk.makeWritableChunk(bc.chunkSize)) {
 
-                // TODO: IS THIS OK WITHOUT HAVING THINGS IN ORDER?
                 // Hijacking postPermutedKeyIndices because it's not used in this loop; the rename hopefully makes the
                 // code much clearer!
                 final WritableLongChunk<OrderedRowKeys> removedKeyIndices =
