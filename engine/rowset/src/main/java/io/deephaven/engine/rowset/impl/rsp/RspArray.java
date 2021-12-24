@@ -1356,8 +1356,8 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
     }
 
     /**
-     * @param compactFactor if k == 0, compact if count < capacity. k > 0, compact if (capacity - count > (capacity >>
-     *        k).
+     * @param compactFactor if k == 0, compact if count &lt; capacity. k &gt; 0, compact if (capacity - count &gt;
+     *        (capacity &gt;&gt; k).
      */
     public void tryCompactUnsafe(final int compactFactor) {
         if (compactFactor == 0) {

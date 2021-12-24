@@ -157,6 +157,7 @@ class FloatChunkedReVarOperator implements IterativeChunkedAggregationOperator {
 
         @Override
         public void close() {
+            super.close();
             sumContext.close();
             sum2Context.close();
             nncContext.close();

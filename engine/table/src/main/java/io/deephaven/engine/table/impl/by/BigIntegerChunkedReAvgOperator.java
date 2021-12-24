@@ -59,29 +59,6 @@ class BigIntegerChunkedReAvgOperator implements IterativeChunkedAggregationOpera
         }
     }
 
-    private static RowSequence destinationSequenceFromChunks(IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, ReAvgContext context) {
-        context.keyIndices.setSize(startPositions.size());
-        long lastDestination = -1L;
-        boolean ordered = true;
-        for (int ii = 0; ii < startPositions.size(); ++ii) {
-            final int startPosition = startPositions.get(ii);
-            final int destination = destinations.get(startPosition);
-            if (destination < lastDestination) {
-                ordered = false;
-            }
-            context.keyIndices.set(ii, destination);
-            lastDestination = destination;
-        }
-        context.ordered = ordered;
-        if (!ordered) {
-            context.ensureUnordered();
-            context.statePositions.setSize(context.keyIndices.size());
-            ChunkUtils.fillInOrder(context.statePositions);
-            LongIntTimsortKernel.sort(context.sortKernelContext, context.statePositions, context.keyIndices);
-        }
-        return RowSequenceFactory.wrapRowKeysChunkAsRowSequence(LongChunk.downcast(context.keyIndices));
-    }
-
     @Override
     public boolean addChunk(SingletonContext context, int chunkSize, Chunk<? extends Values> values, LongChunk<? extends RowKeys> inputRowKeys, long destination) {
         return updateResult(destination);
@@ -108,14 +85,10 @@ class BigIntegerChunkedReAvgOperator implements IterativeChunkedAggregationOpera
         final ObjectChunk<BigInteger, ? extends Values> sumSumChunk = sumSum.getChunk(reAvgContext.sumSumContext, destinationOk).asObjectChunk();
         final LongChunk<? extends Values> nncSumChunk = nncSum.getChunk(reAvgContext.nncSumContext, destinationOk).asLongChunk();
         final int size = reAvgContext.keyIndices.size();
-        if (reAvgContext.ordered) {
-            for (int ii = 0; ii < size; ++ii) {
-                stateModified.set(ii, updateResult(reAvgContext.keyIndices.get(ii), sumSumChunk.get(ii), nncSumChunk.get(ii)));
-            }
-        } else {
-            for (int ii = 0; ii < size; ++ii) {
-                stateModified.set(reAvgContext.statePositions.get(ii), updateResult(reAvgContext.keyIndices.get(ii), sumSumChunk.get(ii), nncSumChunk.get(ii)));
-            }
+        final boolean ordered = reAvgContext.ordered;
+        for (int ii = 0; ii < size; ++ii) {
+            final boolean changed = updateResult(reAvgContext.keyIndices.get(ii), sumSumChunk.get(ii), nncSumChunk.get(ii));
+            stateModified.set(ordered ? ii : reAvgContext.statePositions.get(ii), changed);
         }
     }
 

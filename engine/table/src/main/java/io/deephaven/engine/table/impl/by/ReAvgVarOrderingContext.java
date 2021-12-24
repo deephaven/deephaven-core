@@ -12,6 +12,12 @@ import io.deephaven.engine.table.impl.sort.timsort.LongIntTimsortKernel;
 import io.deephaven.engine.table.impl.util.ChunkUtils;
 import io.deephaven.util.SafeCloseable;
 
+/**
+ * For rollups the ReAvg* and ReVar* operators create an ordered keys to read from the result columns from sum
+ * operators. If the slots that we are processing are out-of-order, then we must sort them into order and ensure that
+ * our modified states results properly correspond to the original slot location. In the case that our slots are already
+ * in order, we avoid allocating the sort kernel and statePositions chunk.
+ */
 public class ReAvgVarOrderingContext implements SafeCloseable {
     public final WritableLongChunk<RowKeys> keyIndices;
     final int size;

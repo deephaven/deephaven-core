@@ -155,6 +155,7 @@ class DoubleChunkedReAvgOperator implements IterativeChunkedAggregationOperator 
 
         @Override
         public void close() {
+            super.close();
             sumContext.close();
             nncContext.close();
             nanContext.close();
