@@ -6,6 +6,7 @@ package io.deephaven.replicators;
 
 import io.deephaven.replication.ReplicationUtils;
 import org.apache.commons.io.FileUtils;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.io.IOException;
@@ -41,6 +42,9 @@ public class ReplicateSourcesAndChunks {
         charToAllButBoolean(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/flat/FlatCharArraySource.java");
         replicateObjectFlatArraySource();
+        charToAllButBoolean(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/flat/Flat2DCharArraySource.java");
+        replicateObjectFlat2DArraySource();
         charToAll("engine/chunk/src/main/java/io/deephaven/chunk/sized/SizedCharChunk.java");
 
         replicateChunks();
@@ -130,13 +134,21 @@ public class ReplicateSourcesAndChunks {
     }
 
     private static void replicateObjectFlatArraySource() throws IOException {
+        replicateObjectFlatArraySource("engine/table/src/main/java/io/deephaven/engine/table/impl/sources/flat/FlatCharArraySource.java");
+    }
+    private static void replicateObjectFlat2DArraySource() throws IOException {
+        replicateObjectFlatArraySource("engine/table/src/main/java/io/deephaven/engine/table/impl/sources/flat/Flat2DCharArraySource.java");
+    }
+
+    private static void replicateObjectFlatArraySource(String flatSourcePath) throws IOException {
         final String resultClassJavaPath = charToObject(
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/flat/FlatCharArraySource.java");
+                flatSourcePath);
         final File resultClassJavaFile = new File(resultClassJavaPath);
         List<String> lines = FileUtils.readLines(resultClassJavaFile, Charset.defaultCharset());
         lines = removeRegion(lines, "boxing imports");
         lines = globalReplacements(lines,
                 "class FlatObjectArraySource", "class FlatObjectArraySource<T>",
+                "class Flat2DObjectArraySource", "class Flat2DObjectArraySource<T>",
                 "\\? extends Object", "\\? extends T",
                 "copyFromTypedArray\\(data", "copyFromTypedArray\\(\\(T[]\\)data",
                 "resetFromTypedArray\\(data", "resetFromTypedArray\\(\\(T[]\\)data",
@@ -147,14 +159,38 @@ public class ReplicateSourcesAndChunks {
 
         lines = genericObjectColumnSourceReplacements(lines);
 
+        if (flatSourcePath.contains("2D")) {
+            lines = flat2DConstructor(lines);
+            // we really only want this in the allocateArray region
+            lines = globalReplacements(lines, "return \\(T\\)data;", "return data;");
+        } else {
+            lines = flatConstructor(lines);
+        }
+
+        FileUtils.writeLines(resultClassJavaFile, lines);
+    }
+
+    @NotNull
+    private static List<String> flatConstructor(List<String> lines) {
         lines = ReplicationUtils.replaceRegion(lines, "constructor", Arrays.asList(
                 "    public FlatObjectArraySource(Class<T> type, Class<?> componentType, long size) {",
                 "        super(type, componentType);",
                 "        this.data = new Object[Math.toIntExact(size)];",
                 "    }"
         ));
+        return lines;
+    }
 
-        FileUtils.writeLines(resultClassJavaFile, lines);
+    @NotNull
+    private static List<String> flat2DConstructor(List<String> lines) {
+        lines = ReplicationUtils.replaceRegion(lines, "constructor", Arrays.asList(
+                "    public Flat2DObjectArraySource(Class<T> type, Class<?> componentType, long size) {",
+                "        super(type, componentType);",
+                "        this.size = size;",
+                "        this.data = allocateArray(size);",
+                "    }"
+        ));
+        return lines;
     }
 
     private static List<String> genericObjectColumnSourceReplacements(List<String> lines) {
