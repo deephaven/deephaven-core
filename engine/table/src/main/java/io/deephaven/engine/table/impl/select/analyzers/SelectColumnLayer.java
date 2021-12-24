@@ -2,6 +2,7 @@ package io.deephaven.engine.table.impl.select.analyzers;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.time.DateTime;
 import io.deephaven.engine.table.ModifiedColumnSet;
@@ -23,6 +24,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
      */
     private final WritableColumnSource writableSource;
     private final boolean isRedirected;
+    private final boolean flattenedResult;
 
     /**
      * A memoized copy of selectColumn's data view. Use {@link SelectColumnLayer#getChunkSource()} to access.
@@ -31,15 +33,16 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
 
     SelectColumnLayer(SelectAndViewAnalyzer inner, String name, SelectColumn sc,
             WritableColumnSource ws, WritableColumnSource underlying,
-            String[] deps, ModifiedColumnSet mcsBuilder, boolean isRedirected) {
+            String[] deps, ModifiedColumnSet mcsBuilder, boolean isRedirected,
+                      boolean flattenedResult) {
         super(inner, name, sc, ws, underlying, deps, mcsBuilder);
         this.writableSource = ws;
         this.isRedirected = isRedirected;
+        this.flattenedResult = flattenedResult;
     }
 
     private ChunkSource<Values> getChunkSource() {
         if (chunkSource == null) {
-            // noinspection unchecked
             chunkSource = selectColumn.getDataView();
             if (selectColumnHoldsVector) {
                 chunkSource = new VectorChunkAdapter<>(chunkSource);
@@ -71,7 +74,12 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
         final long lastKey = Math.max(postMoveKeys.isEmpty() ? -1 : postMoveKeys.lastRowKey(),
                 upstream.added().isEmpty() ? -1 : upstream.added().lastRowKey());
         if (lastKey != -1) {
-            writableSource.ensureCapacity(lastKey + 1);
+            if (flattenedResult) {
+                // we know this only happens exactly one time, and we're going to flatten this
+                writableSource.ensureCapacity(upstream.added().size());
+            } else {
+                writableSource.ensureCapacity(lastKey + 1);
+            }
         }
 
         // Note that applyUpdate is called during initialization. If the table begins empty, we still want to force that
@@ -92,6 +100,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
 
             // apply shifts!
             if (!isRedirected && preMoveKeys.isNonempty()) {
+                assert !flattenedResult;
                 assert destContext != null;
                 // note: we cannot use a get context here as destination is identical to source
                 final int shiftContextSize = contextSize.applyAsInt(preMoveKeys.size());
@@ -115,16 +124,28 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
             if (upstream.added().isNonempty()) {
                 assert destContext != null;
                 assert chunkSourceContext != null;
-                try (final RowSequence.Iterator keyIter = upstream.added().getRowSequenceIterator()) {
-                    while (keyIter.hasMore()) {
-                        final RowSequence keys = keyIter.getNextRowSequenceWithLength(PAGE_SIZE);
-                        writableSource.fillFromChunk(destContext, chunkSource.getChunk(chunkSourceContext, keys), keys);
+                if (flattenedResult) {
+                    try (final RowSequence.Iterator keyIter = upstream.added().getRowSequenceIterator();
+                         final RowSequence.Iterator destIter = RowSetFactory.flat(upstream.added().size()).getRowSequenceIterator()) {
+                        while (keyIter.hasMore()) {
+                            final RowSequence keys = keyIter.getNextRowSequenceWithLength(PAGE_SIZE);
+                            final RowSequence destKeys = destIter.getNextRowSequenceWithLength(PAGE_SIZE);
+                            writableSource.fillFromChunk(destContext, chunkSource.getChunk(chunkSourceContext, keys), destKeys);
+                        }
+                    }
+                } else {
+                    try (final RowSequence.Iterator keyIter = upstream.added().getRowSequenceIterator()) {
+                        while (keyIter.hasMore()) {
+                            final RowSequence keys = keyIter.getNextRowSequenceWithLength(PAGE_SIZE);
+                            writableSource.fillFromChunk(destContext, chunkSource.getChunk(chunkSourceContext, keys), keys);
+                        }
                     }
                 }
             }
 
             // apply modifies!
             if (modifiesAffectUs) {
+                assert !flattenedResult;
                 assert chunkSourceContext != null;
                 try (final RowSequence.Iterator keyIter = upstream.modified().getRowSequenceIterator()) {
                     while (keyIter.hasMore()) {
@@ -145,5 +166,10 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
         if (!writableSource.getType().isPrimitive() && (writableSource.getType() != DateTime.class)) {
             ChunkUtils.fillWithNullValue(writableSource, keys);
         }
+    }
+
+    @Override
+    public boolean flattenedResult() {
+        return flattenedResult;
     }
 }

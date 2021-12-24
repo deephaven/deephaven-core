@@ -17,7 +17,6 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Reinterpret result {@link ColumnSource} implementations that translates {@link byte} to {@code Boolean} values.
  */
-@AbstractColumnSource.IsSerializable(value = true)
 public class ByteAsBooleanColumnSource extends AbstractColumnSource<Boolean> implements MutableColumnSourceGetDefaults.ForBoolean {
 
     private final ColumnSource<Byte> alternateColumnSource;

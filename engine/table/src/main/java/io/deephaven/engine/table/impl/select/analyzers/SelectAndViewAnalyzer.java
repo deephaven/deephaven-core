@@ -28,6 +28,12 @@ public abstract class SelectAndViewAnalyzer {
     public static SelectAndViewAnalyzer create(Mode mode, Map<String, ColumnSource<?>> columnSources,
             TrackingRowSet rowSet, ModifiedColumnSet parentMcs, boolean publishTheseSources,
             SelectColumn... selectColumns) {
+        return create(mode, columnSources, rowSet, parentMcs, publishTheseSources, true, selectColumns);
+    }
+
+    private static SelectAndViewAnalyzer create(Mode mode, Map<String, ColumnSource<?>> columnSources,
+            TrackingRowSet rowSet, ModifiedColumnSet parentMcs, boolean publishTheseSources, boolean allowFlattening,
+            SelectColumn... selectColumns) {
         SelectAndViewAnalyzer analyzer = createBaseLayer(columnSources, publishTheseSources);
         final Map<String, ColumnDefinition<?>> columnDefinitions = new LinkedHashMap<>();
         final WritableRowRedirection rowRedirection;
@@ -37,6 +43,10 @@ public abstract class SelectAndViewAnalyzer {
         } else {
             rowRedirection = null;
         }
+
+        boolean flattenedResult = !rowSet.isFlat() && allowFlattening && mode == Mode.SELECT_STATIC;
+        final boolean flatResult = rowSet.isFlat();
+        int didFlattenedSourceCount = 0;
 
         for (final SelectColumn sc : selectColumns) {
             final Map<String, ColumnSource<?>> columnsOfInterest = analyzer.getAllColumnSources();
@@ -48,17 +58,16 @@ public abstract class SelectAndViewAnalyzer {
             final String[] distinctDeps = allDependencies.distinct().toArray(String[]::new);
             final ModifiedColumnSet mcsBuilder = new ModifiedColumnSet(parentMcs);
 
-            if (sc instanceof SourceColumn
-                    || (sc instanceof SwitchColumn && ((SwitchColumn) sc).getRealColumn() instanceof SourceColumn)) {
-                final ColumnSource<?> sccs = sc.getDataView();
-                if ((sccs instanceof InMemoryColumnSource) && !Vector.class.isAssignableFrom(sc.getReturnedType())) {
-                    analyzer = analyzer.createLayerForPreserve(sc.getName(), sc, sc.getDataView(), distinctDeps,
-                            mcsBuilder);
-                    continue;
+            if (shouldPreserve(sc)) {
+                if (didFlattenedSourceCount > 0) {
+                    return create(mode, columnSources, rowSet, parentMcs, publishTheseSources, false, selectColumns);
                 }
+                analyzer = analyzer.createLayerForPreserve(sc.getName(), sc, sc.getDataView(), distinctDeps, mcsBuilder);
+                flattenedResult = false;
+                continue;
             }
 
-            final long targetSize = rowSet.isEmpty() ? 0 : rowSet.lastRowKey() + 1;
+            final long targetSize = rowSet.isEmpty() ? 0 : (flattenedResult ? rowSet.size() : rowSet.lastRowKey() + 1);
             switch (mode) {
                 case VIEW_LAZY: {
                     final ColumnSource<?> viewCs = sc.getLazyView();
@@ -73,8 +82,11 @@ public abstract class SelectAndViewAnalyzer {
                 case SELECT_STATIC: {
                     // We need to call newDestInstance because only newDestInstance has the knowledge to endow our
                     // created array with the proper componentType (in the case of Vectors).
-                    final WritableColumnSource<?> scs = rowSet.isFlat() ? sc.newFlatDestInstance(targetSize) : sc.newDestInstance(targetSize);
-                    analyzer = analyzer.createLayerForSelect(sc.getName(), sc, scs, null, distinctDeps, mcsBuilder, false);
+                    final WritableColumnSource<?> scs = flatResult || flattenedResult ? sc.newFlatDestInstance(targetSize) : sc.newDestInstance(targetSize);
+                    analyzer = analyzer.createLayerForSelect(sc.getName(), sc, scs, null, distinctDeps, mcsBuilder, false, flattenedResult);
+                    if (flattenedResult) {
+                        didFlattenedSourceCount++;
+                    }
                     break;
                 }
                 case SELECT_REDIRECTED_REFRESHING:
@@ -89,7 +101,7 @@ public abstract class SelectAndViewAnalyzer {
                         scs = new WritableRedirectedColumnSource<>(rowRedirection, underlyingSource, rowSet.intSize());
                     }
                     analyzer = analyzer.createLayerForSelect(sc.getName(), sc, scs, underlyingSource, distinctDeps,
-                            mcsBuilder, rowRedirection != null);
+                            mcsBuilder, rowRedirection != null, false);
                     break;
                 }
                 default:
@@ -97,6 +109,17 @@ public abstract class SelectAndViewAnalyzer {
             }
         }
         return analyzer;
+    }
+
+    private static boolean shouldPreserve(final SelectColumn sc) {
+        if (!(sc instanceof SourceColumn) && (!(sc instanceof SwitchColumn) || !(((SwitchColumn) sc).getRealColumn() instanceof SourceColumn))) {
+            return false;
+        }
+        final ColumnSource<?> sccs = sc.getDataView();
+        if ((sccs instanceof InMemoryColumnSource) && !Vector.class.isAssignableFrom(sc.getReturnedType())) {
+            return true;
+        }
+        return false;
     }
 
     private static SelectAndViewAnalyzer createBaseLayer(Map<String, ColumnSource<?>> sources,
@@ -111,9 +134,9 @@ public abstract class SelectAndViewAnalyzer {
 
     private SelectAndViewAnalyzer createLayerForSelect(String name, SelectColumn sc,
             WritableColumnSource<?> cs, WritableColumnSource<?> underlyingSource,
-            String[] parentColumnDependencies, ModifiedColumnSet mcsBuilder, boolean isRedirected) {
+            String[] parentColumnDependencies, ModifiedColumnSet mcsBuilder, boolean isRedirected, boolean flatten) {
         return new SelectColumnLayer(this, name, sc, cs, underlyingSource, parentColumnDependencies, mcsBuilder,
-                isRedirected);
+                isRedirected, flatten);
     }
 
     private SelectAndViewAnalyzer createLayerForView(String name, SelectColumn sc, ColumnSource<?> cs,
@@ -253,4 +276,8 @@ public abstract class SelectAndViewAnalyzer {
     public abstract void updateColumnDefinitionsFromTopLayer(Map<String, ColumnDefinition<?>> columnDefinitions);
 
     public abstract void startTrackingPrev();
+
+    public boolean flattenedResult() {
+        return false;
+    }
 }

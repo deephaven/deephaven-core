@@ -64,7 +64,7 @@ public class TestSumByProfile {
             default:
                 throw new IllegalArgumentException("Invalid mode " + mode);
         }
-        final Table viewed = view ? relation.view(columns) : relation.flatten().select(columns);
+        final Table viewed = view ? relation.view(columns) : relation.select(columns);
         final long endTimeSelect = System.nanoTime();
         System.out.println("Select Elapsed Time: " + new DecimalFormat("###,###.000")
                 .format(((double) (endTimeSelect - startTimeSelect) / 1_000_000_000.0)));

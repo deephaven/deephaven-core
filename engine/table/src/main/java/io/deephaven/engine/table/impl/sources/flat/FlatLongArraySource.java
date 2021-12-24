@@ -1,3 +1,6 @@
+/* ---------------------------------------------------------------------------------------------------------------------
+ * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit FlatCharArraySource and regenerate
+ * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.table.impl.sources.flat;
 
 import io.deephaven.chunk.*;
@@ -16,43 +19,43 @@ import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 
 // region boxing imports
-import static io.deephaven.util.QueryConstants.NULL_CHAR;
+import static io.deephaven.util.QueryConstants.NULL_LONG;
 // endregion boxing imports
 
 /**
  * Simple flat array source that supports filling for initial creation.
  */
-public class FlatCharArraySource extends AbstractColumnSource<Character> implements ImmutableColumnSourceGetDefaults.ForChar, WritableColumnSource<Character>, FillUnordered, InMemoryColumnSource {
-    private final char[] data;
+public class FlatLongArraySource extends AbstractColumnSource<Long> implements ImmutableColumnSourceGetDefaults.ForLong, WritableColumnSource<Long>, FillUnordered, InMemoryColumnSource {
+    private final long[] data;
 
     // region constructor
-    public FlatCharArraySource(long size) {
-        super(char.class);
-        this.data = new char[Math.toIntExact(size)];
+    public FlatLongArraySource(long size) {
+        super(long.class);
+        this.data = new long[Math.toIntExact(size)];
     }
     // endregion constructor
 
     @Override
-    public final char getChar(long index) {
+    public final long getLong(long index) {
         if (index < 0 || index >= data.length) {
-            return NULL_CHAR;
+            return NULL_LONG;
         }
 
         return getUnsafe(index);
     }
 
-    public final char getUnsafe(long index) {
+    public final long getUnsafe(long index) {
         return data[(int)index];
     }
 
     @Override
-    public final void set(long key, char value) {
+    public final void set(long key, long value) {
         data[Math.toIntExact(key)] = value;
     }
 
     @Override
-    public void copy(ColumnSource<? extends Character> sourceColumn, long sourceKey, long destKey) {
-        set(destKey, sourceColumn.getChar(sourceKey));
+    public void copy(ColumnSource<? extends Long> sourceColumn, long sourceKey, long destKey) {
+        set(destKey, sourceColumn.getLong(sourceKey));
     }
 
     @Override
@@ -72,18 +75,18 @@ public class FlatCharArraySource extends AbstractColumnSource<Character> impleme
     }
 
     private void fillChunkByRanges(WritableChunk<? super Values> destination, RowSequence rowSequence) {
-        final WritableCharChunk<? super Values> asCharChunk = destination.asWritableCharChunk();
+        final WritableLongChunk<? super Values> asLongChunk = destination.asWritableLongChunk();
         final MutableInt srcPos = new MutableInt(0);
         rowSequence.forAllRowKeyRanges((long start, long end) -> {
             final int rangeLength = Math.toIntExact(end - start + 1);
-            asCharChunk.copyFromTypedArray(data, Math.toIntExact(start), srcPos.getAndAdd(rangeLength), rangeLength);
+            asLongChunk.copyFromTypedArray(data, Math.toIntExact(start), srcPos.getAndAdd(rangeLength), rangeLength);
         });
     }
 
     private void fillChunkByKeys(WritableChunk<? super Values> destination, RowSequence rowSequence) {
-        final WritableCharChunk<? super Values> asCharChunk = destination.asWritableCharChunk();
+        final WritableLongChunk<? super Values> asLongChunk = destination.asWritableLongChunk();
         final MutableInt srcPos = new MutableInt(0);
-        rowSequence.forAllRowKeys((long key) -> asCharChunk.set(srcPos.getAndIncrement(), getUnsafe(key)));
+        rowSequence.forAllRowKeys((long key) -> asLongChunk.set(srcPos.getAndIncrement(), getUnsafe(key)));
     }
 
     @Override
@@ -96,7 +99,7 @@ public class FlatCharArraySource extends AbstractColumnSource<Character> impleme
     }
 
     private class GetContextWithResettable implements GetContext {
-        final ResettableCharChunk<? extends Values> resettableCharChunk = ResettableCharChunk.makeResettableChunk();
+        final ResettableLongChunk<? extends Values> resettableLongChunk = ResettableLongChunk.makeResettableChunk();
         final GetContext inner;
 
         private GetContextWithResettable(GetContext inner) {
@@ -105,7 +108,7 @@ public class FlatCharArraySource extends AbstractColumnSource<Character> impleme
 
         @Override
         public void close() {
-            resettableCharChunk.close();
+            resettableLongChunk.close();
             inner.close();
         }
     }
@@ -119,7 +122,7 @@ public class FlatCharArraySource extends AbstractColumnSource<Character> impleme
     public Chunk<? extends Values> getChunk(@NotNull GetContext context, long firstKey, long lastKey) {
         final int len = Math.toIntExact(lastKey - firstKey + 1);
         final GetContextWithResettable contextWithResettable = (GetContextWithResettable) context;
-        return contextWithResettable.resettableCharChunk.resetFromTypedArray(data, Math.toIntExact(firstKey), len);
+        return contextWithResettable.resettableLongChunk.resetFromTypedArray(data, Math.toIntExact(firstKey), len);
     }
 
     @Override
@@ -132,34 +135,34 @@ public class FlatCharArraySource extends AbstractColumnSource<Character> impleme
     }
 
     private void fillFromChunkByKeys(Chunk<? extends Values> src, RowSequence rowSequence) {
-        final CharChunk<? extends Values> asCharChunk = src.asCharChunk();
+        final LongChunk<? extends Values> asLongChunk = src.asLongChunk();
         final MutableInt srcPos = new MutableInt(0);
-        rowSequence.forAllRowKeys((long key) -> set(key, asCharChunk.get(srcPos.getAndIncrement())));
+        rowSequence.forAllRowKeys((long key) -> set(key, asLongChunk.get(srcPos.getAndIncrement())));
     }
 
     private void fillFromChunkByRanges(Chunk<? extends Values> src, RowSequence rowSequence) {
-        final CharChunk<? extends Values> asCharChunk = src.asCharChunk();
+        final LongChunk<? extends Values> asLongChunk = src.asLongChunk();
         final MutableInt srcPos = new MutableInt(0);
         rowSequence.forAllRowKeyRanges((long start, long end) -> {
             final int rangeLength = Math.toIntExact(end - start + 1);
-            asCharChunk.copyToTypedArray(srcPos.getAndAdd(rangeLength), data, Math.toIntExact(start), rangeLength);
+            asLongChunk.copyToTypedArray(srcPos.getAndAdd(rangeLength), data, Math.toIntExact(start), rangeLength);
         });
     }
 
     @Override
     public void fillFromChunkUnordered(@NotNull FillFromContext context, @NotNull Chunk<? extends Values> src, @NotNull LongChunk<RowKeys> keys) {
-        final CharChunk<? extends Values> asCharChunk = src.asCharChunk();
+        final LongChunk<? extends Values> asLongChunk = src.asLongChunk();
         for (int ii = 0; ii < keys.size(); ++ii) {
-            set(keys.get(ii), asCharChunk.get(ii));
+            set(keys.get(ii), asLongChunk.get(ii));
         }
     }
 
     @Override
     public void fillChunkUnordered(@NotNull FillContext context, @NotNull WritableChunk<? super Values> dest, @NotNull LongChunk<? extends RowKeys> keys) {
-        final WritableCharChunk<? super Values> charDest = dest.asWritableCharChunk();
+        final WritableLongChunk<? super Values> longDest = dest.asWritableLongChunk();
         for (int ii = 0; ii < keys.size(); ++ii) {
             final int key = Math.toIntExact(keys.get(ii));
-            charDest.set(ii, getUnsafe(key));
+            longDest.set(ii, getUnsafe(key));
         }
     }
 

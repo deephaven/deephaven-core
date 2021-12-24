@@ -4,7 +4,6 @@
 
 package io.deephaven.engine.table.impl.sources;
 
-import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.DefaultGetContext;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.WritableColumnSource;
@@ -41,7 +40,6 @@ import org.apache.commons.lang3.mutable.MutableInt;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.Serializable;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collection;
@@ -56,11 +54,9 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
  * The column source is dense with keys from 0 to capacity, there can be no holes. Arrays are divided into blocks so
  * that the column source can be incrementally expanded without copying data from one array to another.
  */
-@AbstractColumnSource.IsSerializable(value = true)
 public abstract class ArrayBackedColumnSource<T>
         extends AbstractDeferredGroupingColumnSource<T>
-        implements FillUnordered, ShiftData.ShiftCallback, WritableColumnSource<T>, Serializable, InMemoryColumnSource {
-    private static final long serialVersionUID = -7823391894248382929L;
+        implements FillUnordered, ShiftData.ShiftCallback, WritableColumnSource<T>, InMemoryColumnSource {
 
     static final int DEFAULT_RECYCLER_CAPACITY = 1024;
     /**
@@ -127,7 +123,7 @@ public abstract class ArrayBackedColumnSource<T>
     /**
      * A bitset with the same two-level structure as the array-backed data, except that the inner array is interpreted
      * as a bitset (and is thus not very big... its length is blockSize / 64, and because blockSize is currently 256,
-     * the size of the inner array is 4.
+     * the size of the inner array is 4).
      */
     transient long[][] prevInUse;
 
@@ -530,7 +526,7 @@ public abstract class ArrayBackedColumnSource<T>
      * @param componentType the component type for column sources of arrays or Vectors
      * @return An Immutable ColumnSource that directly wraps the input array.
      */
-    public static <T> WritableColumnSource<T> getImmutableMemoryColumnSource(@NotNull final Object dataArray,
+    public static <T> ColumnSource<T> getImmutableMemoryColumnSource(@NotNull final Object dataArray,
             @NotNull final Class<T> dataType,
             @Nullable final Class<?> componentType) {
         final ColumnSource<?> result;
@@ -577,7 +573,7 @@ public abstract class ArrayBackedColumnSource<T>
             result = new ImmutableObjectArraySource<>((T[]) dataArray, dataType, componentType);
         }
         // noinspection unchecked
-        return (WritableColumnSource<T>) result;
+        return (ColumnSource<T>) result;
     }
 
     /**
@@ -592,30 +588,27 @@ public abstract class ArrayBackedColumnSource<T>
                                                                 @NotNull final Class<T> dataType,
                                                                 @Nullable final Class<?> componentType) {
         final int size = Math.toIntExact(longSize);
-        final ColumnSource<?> result;
+        final WritableColumnSource<?> result;
         if (dataType == boolean.class || dataType == Boolean.class) {
-            // TODO:
-            result = new ImmutableBooleanArraySource(new byte[size]);
+            result = new WritableByteAsBooleanColumnSource(new FlatByteArraySource(size));
         } else if (dataType == char.class || dataType == Character.class) {
-            result = new FlatCharArraySource(new char[size]);
+            result = new FlatCharArraySource(size);
         } else if (dataType == byte.class || dataType == Byte.class) {
-            result = new FlatByteArraySource(new byte[size]);
+            result = new FlatByteArraySource(size);
         } else if (dataType == double.class || dataType == Double.class) {
-            result = new FlatDoubleArraySource(new double[size]);
+            result = new FlatDoubleArraySource(size);
         } else if (dataType == float.class || dataType == Float.class) {
-            result = new FlatFloatArraySource(new float[size]);
+            result = new FlatFloatArraySource(size);
         } else if (dataType == int.class || dataType == Integer.class) {
-            result = new FlatIntArraySource(new int[size]);
+            result = new FlatIntArraySource(size);
         } else if (dataType == long.class || dataType == Long.class) {
-            result = new FlatLongArraySource(new long[size]);
+            result = new FlatLongArraySource(size);
         } else if (dataType == short.class || dataType == Short.class) {
-            result = new FlatShortArraySource(new short[size]);
+            result = new FlatShortArraySource(size);
         } else if (dataType == DateTime.class) {
-            // TODO:
-            result = new ImmutableDateTimeArraySource(new long[size]);
+            result = new WritableLongAsDateTimeColumnSource(new FlatLongArraySource(size));
         } else {
-            // TODO:
-            result = new ImmutableObjectArraySource<>(new Object[size], dataType, componentType);
+            result = new FlatObjectArraySource<>(dataType, componentType, size);
         }
         // noinspection unchecked
         return (WritableColumnSource<T>) result;

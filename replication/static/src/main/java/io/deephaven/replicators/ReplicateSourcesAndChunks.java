@@ -40,7 +40,7 @@ public class ReplicateSourcesAndChunks {
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/immutable/ImmutableCharArraySource.java");
         charToAllButBoolean(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/flat/FlatCharArraySource.java");
-        replicateObjectFlatColumnSource();
+        replicateObjectFlatArraySource();
         charToAll("engine/chunk/src/main/java/io/deephaven/chunk/sized/SizedCharChunk.java");
 
         replicateChunks();
@@ -110,6 +110,8 @@ public class ReplicateSourcesAndChunks {
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/chunkcolumnsource/CharChunkColumnSource.java");
         final File resultClassJavaFile = new File(resultClassJavaPath);
         List<String> lines = FileUtils.readLines(resultClassJavaFile, Charset.defaultCharset());
+        lines = globalReplacements(lines,
+                "class ObjectChunkColumnSource", "class ObjectChunkColumnSource<T>");
         lines = genericObjectColumnSourceReplacements(lines);
 
         lines = ReplicationUtils.replaceRegion(lines, "constructor", Arrays.asList(
@@ -127,19 +129,28 @@ public class ReplicateSourcesAndChunks {
         FileUtils.writeLines(resultClassJavaFile, lines);
     }
 
-    private static void replicateObjectFlatColumnSource() throws IOException {
+    private static void replicateObjectFlatArraySource() throws IOException {
         final String resultClassJavaPath = charToObject(
-                "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/chunkcolumnsource/FlatCharColumnSource.java");
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/flat/FlatCharArraySource.java");
         final File resultClassJavaFile = new File(resultClassJavaPath);
         List<String> lines = FileUtils.readLines(resultClassJavaFile, Charset.defaultCharset());
+        lines = removeRegion(lines, "boxing imports");
         lines = globalReplacements(lines,
-                "class FlatObjectColumnSource", "class FlatObjectColumnSource<T>");
+                "class FlatObjectArraySource", "class FlatObjectArraySource<T>",
+                "\\? extends Object", "\\? extends T",
+                "copyFromTypedArray\\(data", "copyFromTypedArray\\(\\(T[]\\)data",
+                "resetFromTypedArray\\(data", "resetFromTypedArray\\(\\(T[]\\)data",
+                "copyToTypedArray\\((.*), data", "copyToTypedArray\\($1, \\(T[]\\)data",
+                "ObjectDest.set(ii, data\\[key\\])", " ObjectDest.set(ii, (T)data[key])",
+                "Object getUnsafe", "T getUnsafe",
+                "return data", "return (T)data");
 
         lines = genericObjectColumnSourceReplacements(lines);
 
         lines = ReplicationUtils.replaceRegion(lines, "constructor", Arrays.asList(
-                "    protected ObjectChunkColumnSource(Object<T> type, Class<?> componentType) {",
+                "    public FlatObjectArraySource(Class<T> type, Class<?> componentType, long size) {",
                 "        super(type, componentType);",
+                "        this.data = new Object[Math.toIntExact(size)];",
                 "    }"
         ));
 
@@ -151,9 +162,13 @@ public class ReplicateSourcesAndChunks {
                 "<Object>", "<T>",
                 "ForObject", "ForObject<T>",
                 "Object getObject", "T get",
+                "getObject\\(", "get\\(",
                 "Object current", "T current",
                 "ObjectChunk<\\? extends Values>", "ObjectChunk<T, ? extends Values>",
-                "QueryConstants.NULL_OBJECT", "null");
+                "WritableObjectChunk<\\? extends Values>", "WritableObjectChunk<T, ? extends Values>",
+                "WritableObjectChunk<\\? super Values>", "WritableObjectChunk<T, ? super Values>",
+                "QueryConstants.NULL_OBJECT", "null",
+                "NULL_OBJECT", "null");
         return lines;
     }
 
@@ -534,6 +549,7 @@ public class ReplicateSourcesAndChunks {
 
         lines = addImport(lines,
                 "import io.deephaven.engine.table.impl.AbstractColumnSource;",
+                "import io.deephaven.engine.table.WritableColumnSource;",
                 "import io.deephaven.util.BooleanUtils;",
                 "import static io.deephaven.util.BooleanUtils.NULL_BOOLEAN_AS_BYTE;");
         lines = globalReplacements(lines, "BooleanOneOrN", "ByteOneOrN");
@@ -591,22 +607,6 @@ public class ReplicateSourcesAndChunks {
         lines = simpleFixup(lines, "fillByUnRowSequence",
                 "BooleanUtils\\.byteAsBoolean\\(blockToUse == null \\? NULL_BOOLEAN : blockToUse\\[indexWithinBlock\\]\\)",
                 "blockToUse == null ? NULL_BOOLEAN : BooleanUtils.byteAsBoolean(blockToUse[indexWithinBlock])");
-
-        lines = simpleFixup(lines, "serialization",
-                "NULL_BOOLEAN", "NULL_BOOLEAN_AS_BYTE",
-                "ObjectChunk", "ByteChunk",
-                "BooleanChunk", "ByteChunk",
-                "<Boolean>", "<Byte>",
-                "<Boolean, Values>", "<Values>");
-
-        lines = insertRegion(lines, "serialization", Arrays.asList(
-                "    WritableColumnSource reinterpretForSerialization() {",
-                "        return (WritableColumnSource)reinterpret(byte.class);",
-                "    }",
-                ""));
-
-        lines = simpleFixup(lines, "reinterpretForSerialization",
-                "return this;", "return (WritableColumnSource)reinterpret(byte.class);");
 
         // AND SO IT BEGINS
         lines = replaceRegion(lines, "reinterpretation", Arrays.asList(

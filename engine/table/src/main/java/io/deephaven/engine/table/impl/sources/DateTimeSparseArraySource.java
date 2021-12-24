@@ -6,7 +6,6 @@ package io.deephaven.engine.table.impl.sources;
 
 import io.deephaven.engine.table.impl.DefaultChunkSource;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.MutableColumnSourceGetDefaults;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeyRanges;
 import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
@@ -30,11 +29,6 @@ public class DateTimeSparseArraySource extends AbstractSparseLongArraySource<Dat
 
     public DateTimeSparseArraySource() {
         super(DateTime.class);
-    }
-
-    @Override
-    WritableColumnSource<Long> reinterpretForSerialization() {
-        return (WritableColumnSource<Long>) reinterpret(long.class);
     }
 
     @Override

@@ -75,14 +75,6 @@ public class CharacterArraySource extends ArraySourceHelper<Character, char[]> i
     }
 
     @Override
-    public Character get(long index) {
-        if (index < 0 || index > maxIndex) {
-            return null;
-        }
-        return box(blocks[((int) (index >> LOG_BLOCK_SIZE))][((int) (index & INDEX_MASK))]);
-    }
-
-    @Override
     public final char getChar(long index) {
         if (index < 0 || index > maxIndex) {
             return NULL_CHAR;

@@ -18,7 +18,6 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Reinterpret result {@link ColumnSource} implementations that translates {@link long} to {@code DateTime} values.
  */
-@AbstractColumnSource.IsSerializable(value = true)
 public class LongAsDateTimeColumnSource extends AbstractColumnSource<DateTime> implements MutableColumnSourceGetDefaults.ForObject<DateTime> {
 
     private final ColumnSource<Long> alternateColumnSource;

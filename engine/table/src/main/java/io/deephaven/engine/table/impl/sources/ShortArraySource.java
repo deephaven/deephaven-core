@@ -78,14 +78,6 @@ public class ShortArraySource extends ArraySourceHelper<Short, short[]> implemen
     }
 
     @Override
-    public Short get(long index) {
-        if (index < 0 || index > maxIndex) {
-            return null;
-        }
-        return box(blocks[((int) (index >> LOG_BLOCK_SIZE))][((int) (index & INDEX_MASK))]);
-    }
-
-    @Override
     public final short getShort(long index) {
         if (index < 0 || index > maxIndex) {
             return NULL_SHORT;

@@ -78,14 +78,6 @@ public class DoubleArraySource extends ArraySourceHelper<Double, double[]> imple
     }
 
     @Override
-    public Double get(long index) {
-        if (index < 0 || index > maxIndex) {
-            return null;
-        }
-        return box(blocks[((int) (index >> LOG_BLOCK_SIZE))][((int) (index & INDEX_MASK))]);
-    }
-
-    @Override
     public final double getDouble(long index) {
         if (index < 0 || index > maxIndex) {
             return NULL_DOUBLE;
