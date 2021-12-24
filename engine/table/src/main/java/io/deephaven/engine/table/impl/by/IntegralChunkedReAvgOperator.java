@@ -115,6 +115,7 @@ class IntegralChunkedReAvgOperator implements IterativeChunkedAggregationOperato
 
         @Override
         public void close() {
+            super.close();
             sumSumContext.close();
             nncSumContext.close();
         }

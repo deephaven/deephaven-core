@@ -192,12 +192,12 @@ public interface RowSet extends RowSequence, LongSizedDataStructure, SafeCloseab
          *     if (!it.advance(100)) {
          *         return; // iteration done… no ranges at 100 or greater
          *     }
-         *     assert (it.currentRangeStart() &gt;= 100 && it.currentRangeEnd() &gt;= 100);
+         *     assert (it.currentRangeStart() &gt;= 100 &amp;&amp; it.currentRangeEnd() &gt;= 100);
          *     // do something with range
          *     if (!it.advance(500)) {
          *         return; // iteration done… no ranges at 500 or greater
          *     }
-         *     assert (it.currentRangeStart() &gt;= 500 && it.currentRangeEnd() &gt;= 500);
+         *     assert (it.currentRangeStart() &gt;= 500 &amp;&amp; it.currentRangeEnd() &gt;= 500);
          *     // do something with range
          * }
          * </pre>

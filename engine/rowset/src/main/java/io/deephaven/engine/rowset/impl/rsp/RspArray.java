@@ -1641,7 +1641,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
 
     /**
      *
-     * blockKeyEnd is exclusive. Assumption on entry: blockKeyStart <= blockKeyEnd
+     * blockKeyEnd is exclusive. Assumption on entry: blockKeyStart &lt;= blockKeyEnd
      *
      * @param blockKeyStart inclusive start block key (only high 48 bits set).
      * @param blockKeyEnd exclusive end block key (only high 48 bits set).

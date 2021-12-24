@@ -113,6 +113,7 @@ class BigIntegerChunkedReAvgOperator implements IterativeChunkedAggregationOpera
 
         @Override
         public void close() {
+            super.close();
             nncSumContext.close();
             sumSumContext.close();
         }
