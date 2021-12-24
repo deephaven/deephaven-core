@@ -7,12 +7,12 @@ import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
-import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.ImmutableColumnSourceGetDefaults;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
+import io.deephaven.engine.table.impl.sources.ChunkedBackingStoreExposedWritableSource;
 import io.deephaven.engine.table.impl.sources.FillUnordered;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -24,7 +24,7 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Simple flat array source that supports filling for initial creation.
  */
-public class Flat2DObjectArraySource<T> extends AbstractColumnSource<T> implements ImmutableColumnSourceGetDefaults.ForObject<T>, WritableColumnSource<T>, FillUnordered, InMemoryColumnSource {
+public class Flat2DObjectArraySource<T> extends AbstractColumnSource<T> implements ImmutableColumnSourceGetDefaults.ForObject<T>, WritableColumnSource<T>, FillUnordered, InMemoryColumnSource, ChunkedBackingStoreExposedWritableSource {
     private static final long SEGMENT_SHIFT = 30;
     private static final int SEGMENT_SIZE = 1<<SEGMENT_SHIFT;
     private static final int SEGMENT_MASK = SEGMENT_SIZE - 1;
@@ -85,6 +85,23 @@ public class Flat2DObjectArraySource<T> extends AbstractColumnSource<T> implemen
         if (capacity > size) {
             throw new UnsupportedOperationException();
         }
+    }
+
+    @Override
+    public long resetWritableChunkToBackingStore(@NotNull ResettableWritableChunk<?> chunk, long position) {
+        final int segment = keyToSegment(position);
+        chunk.asResettableWritableObjectChunk().resetFromTypedArray((Object[])data[segment], 0, data[segment].length);
+        return (long)segment << SEGMENT_SHIFT;
+    }
+    @Override
+    public long resetWritableChunkToBackingStoreSlice(@NotNull ResettableWritableChunk<?> chunk, long position) {
+        final int segment = keyToSegment(position);
+        final int segmentLength = data[segment].length;
+        final long firstPositionInSegment = (long)segment << SEGMENT_SHIFT;
+        final int offset = (int)(position - firstPositionInSegment);
+        final int capacity = segmentLength - offset;
+        chunk.asResettableWritableObjectChunk().resetFromTypedArray((Object[])data[segment], offset, capacity);
+        return capacity;
     }
 
     @Override

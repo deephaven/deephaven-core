@@ -413,6 +413,18 @@ public abstract class AbstractLongArraySource<T> extends ArraySourceHelper<T, lo
     }
 
     @Override
+    public long resetWritableChunkToBackingStoreSlice(@NotNull ResettableWritableChunk<?> chunk, long position) {
+        Assert.eqNull(prevInUse, "prevInUse");
+        final int blockNo = getBlockNo(position);
+        final long [] backingArray = blocks[blockNo];
+        final long firstPosition = ((long) blockNo) << LOG_BLOCK_SIZE;
+        final int offset = (int)(position - firstPosition);
+        final int capacity = BLOCK_SIZE - offset;
+        chunk.asResettableWritableLongChunk().resetFromTypedArray(backingArray, offset, capacity);
+        return capacity;
+    }
+
+    @Override
     void fillFromChunkByRanges(@NotNull RowSequence rowSequence, Chunk<? extends Values> src) {
         final LongChunk<? extends Values> chunk = src.asLongChunk();
         final LongChunk<OrderedRowKeyRanges> ranges = rowSequence.asRowKeyRangesChunk();

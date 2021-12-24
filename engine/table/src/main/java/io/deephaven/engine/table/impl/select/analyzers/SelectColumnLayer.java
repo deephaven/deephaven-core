@@ -128,48 +128,46 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
             if (upstream.added().isNonempty()) {
                 assert destContext != null;
                 assert chunkSourceContext != null;
-                if (flattenedResult) {
+                if (isBackingChunkExposed) {
+                    final ChunkedBackingStoreExposedWritableSource exposedWritableSource = (ChunkedBackingStoreExposedWritableSource) this.writableSource;
                     try (final RowSequence.Iterator keyIter = upstream.added().getRowSequenceIterator();
-                         final RowSequence.Iterator destIter = RowSetFactory.flat(upstream.added().size()).getRowSequenceIterator()) {
+                         final RowSequence.Iterator destIter = flattenedResult ? RowSetFactory.flat(upstream.added().size()).getRowSequenceIterator() : null;
+                         final ResettableWritableChunk<?> backingChunk = writableSource.getChunkType().makeResettableWritableChunk()) {
                         while (keyIter.hasMore()) {
                             final RowSequence keys = keyIter.getNextRowSequenceWithLength(PAGE_SIZE);
-                            final RowSequence destKeys = destIter.getNextRowSequenceWithLength(PAGE_SIZE);
-                            writableSource.fillFromChunk(destContext, chunkSource.getChunk(chunkSourceContext, keys), destKeys);
+                            final RowSequence destKeys;
+                            if (destIter != null) {
+                                destKeys = destIter.getNextRowSequenceWithLength(PAGE_SIZE);
+                            } else {
+                                destKeys = keys;
+                            }
+                            if (keys.isContiguous() || flattenedResult) {
+                                long rangeOffset = 0;
+                                long firstDest = destKeys.firstRowKey();
+                                final long lastDest = destKeys.lastRowKey();
+                                while (firstDest < lastDest) {
+                                    final long destCapacity = exposedWritableSource.resetWritableChunkToBackingStoreSlice(backingChunk, firstDest);
+                                    if (destCapacity >= (lastDest - firstDest + 1)) {
+                                        chunkSource.fillChunk(chunkSourceFillContext, backingChunk, keys);
+                                    } else {
+                                        try (RowSequence chunkSourceKeys = keys.getRowSequenceByPosition(rangeOffset, rangeOffset + destCapacity)) {
+                                            chunkSource.fillChunk(chunkSourceFillContext, backingChunk, chunkSourceKeys);
+                                        }
+                                    }
+                                    firstDest += destCapacity;
+                                    rangeOffset += destCapacity;
+                                }
+                            } else {
+                                writableSource.fillFromChunk(destContext, chunkSource.getChunk(chunkSourceContext, keys), destKeys);
+                            }
                         }
                     }
                 } else {
-                    if (isBackingChunkExposed) {
-                        final ChunkedBackingStoreExposedWritableSource exposedWritableSource = (ChunkedBackingStoreExposedWritableSource) this.writableSource;
-                        try (final RowSequence.Iterator keyIter = upstream.added().getRowSequenceIterator();
-                             final ResettableWritableChunk backingChunk = writableSource.getChunkType().makeResettableWritableChunk()) {
-                            while (keyIter.hasMore()) {
-                                final RowSequence keys = keyIter.getNextRowSequenceWithLength(PAGE_SIZE);
-                                if (keys.isContiguous()) {
-                                    long desiredStart = keys.firstRowKey();
-                                    long end = keys.lastRowKey();
-                                    while (desiredStart < end) {
-                                        final long start = exposedWritableSource.resetWritableChunkToBackingStore(backingChunk, desiredStart);
-                                        final long last = start + backingChunk.size();
-                                        if (last <= end) {
-                                            chunkSource.fillChunk(chunkSourceFillContext, backingChunk, keys);
-                                        } else {
-                                            try (RowSequence rowSequenceByKeyRange = keys.getRowSequenceByKeyRange(start, last)) {
-                                                chunkSource.fillChunk(chunkSourceFillContext, backingChunk, rowSequenceByKeyRange);
-                                            }
-                                        }
-                                        desiredStart = start + backingChunk.size();
-                                    }
-                                } else {
-                                    writableSource.fillFromChunk(destContext, chunkSource.getChunk(chunkSourceContext, keys), keys);
-                                }
-                            }
-                        }
-                    } else {
-                        try (final RowSequence.Iterator keyIter = upstream.added().getRowSequenceIterator()) {
-                            while (keyIter.hasMore()) {
-                                final RowSequence keys = keyIter.getNextRowSequenceWithLength(PAGE_SIZE);
-                                writableSource.fillFromChunk(destContext, chunkSource.getChunk(chunkSourceContext, keys), keys);
-                            }
+                    Assert.eqFalse(flattenedResult, "flattenedResult");
+                    try (final RowSequence.Iterator keyIter = upstream.added().getRowSequenceIterator()) {
+                        while (keyIter.hasMore()) {
+                            final RowSequence keys = keyIter.getNextRowSequenceWithLength(PAGE_SIZE);
+                            writableSource.fillFromChunk(destContext, chunkSource.getChunk(chunkSourceContext, keys), keys);
                         }
                     }
                 }

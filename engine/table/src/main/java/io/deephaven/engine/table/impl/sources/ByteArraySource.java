@@ -231,6 +231,18 @@ public class ByteArraySource extends ArraySourceHelper<Byte, byte[]> implements 
     }
 
     @Override
+    public long resetWritableChunkToBackingStoreSlice(@NotNull ResettableWritableChunk<?> chunk, long position) {
+        Assert.eqNull(prevInUse, "prevInUse");
+        final int blockNo = getBlockNo(position);
+        final byte [] backingArray = blocks[blockNo];
+        final long firstPosition = ((long) blockNo) << LOG_BLOCK_SIZE;
+        final int offset = (int)(position - firstPosition);
+        final int capacity = BLOCK_SIZE - offset;
+        chunk.asResettableWritableByteChunk().resetFromTypedArray(backingArray, offset, capacity);
+        return capacity;
+    }
+
+    @Override
     protected void fillSparseChunk(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final RowSequence indices) {
         if (indices.size() == 0) {
             destGeneric.setSize(0);

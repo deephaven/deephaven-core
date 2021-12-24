@@ -228,6 +228,18 @@ public class CharacterArraySource extends ArraySourceHelper<Character, char[]> i
     }
 
     @Override
+    public long resetWritableChunkToBackingStoreSlice(@NotNull ResettableWritableChunk<?> chunk, long position) {
+        Assert.eqNull(prevInUse, "prevInUse");
+        final int blockNo = getBlockNo(position);
+        final char [] backingArray = blocks[blockNo];
+        final long firstPosition = ((long) blockNo) << LOG_BLOCK_SIZE;
+        final int offset = (int)(position - firstPosition);
+        final int capacity = BLOCK_SIZE - offset;
+        chunk.asResettableWritableCharChunk().resetFromTypedArray(backingArray, offset, capacity);
+        return capacity;
+    }
+
+    @Override
     protected void fillSparseChunk(@NotNull final WritableChunk<? super Values> destGeneric, @NotNull final RowSequence indices) {
         if (indices.size() == 0) {
             destGeneric.setSize(0);

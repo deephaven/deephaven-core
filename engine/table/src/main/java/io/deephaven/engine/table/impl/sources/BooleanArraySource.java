@@ -285,6 +285,12 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]> imple
     }
 
     @Override
+    public long resetWritableChunkToBackingStoreSlice(@NotNull ResettableWritableChunk<?> chunk, long position) {
+        // we can not support this operation, because the backing array is a byte and not the type of the column
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public void fillPrevChunk(@NotNull final ColumnSource.FillContext context, @NotNull final WritableChunk<? super Values> destination, @NotNull final RowSequence rowSequence) {
         fillSparsePrevChunk(destination, rowSequence);
     }

@@ -4,12 +4,12 @@ import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
-import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.WritableColumnSource;
 import io.deephaven.engine.table.impl.AbstractColumnSource;
 import io.deephaven.engine.table.impl.ImmutableColumnSourceGetDefaults;
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
+import io.deephaven.engine.table.impl.sources.ChunkedBackingStoreExposedWritableSource;
 import io.deephaven.engine.table.impl.sources.FillUnordered;
 import io.deephaven.engine.table.impl.sources.InMemoryColumnSource;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -22,7 +22,7 @@ import static io.deephaven.util.QueryConstants.NULL_CHAR;
 /**
  * Simple flat array source that supports filling for initial creation.
  */
-public class FlatCharArraySource extends AbstractColumnSource<Character> implements ImmutableColumnSourceGetDefaults.ForChar, WritableColumnSource<Character>, FillUnordered, InMemoryColumnSource {
+public class FlatCharArraySource extends AbstractColumnSource<Character> implements ImmutableColumnSourceGetDefaults.ForChar, WritableColumnSource<Character>, FillUnordered, InMemoryColumnSource, ChunkedBackingStoreExposedWritableSource {
     private final char[] data;
 
     // region constructor
@@ -88,6 +88,20 @@ public class FlatCharArraySource extends AbstractColumnSource<Character> impleme
         }
         final GetContextWithResettable contextWithResettable = (GetContextWithResettable) context;
         return super.getChunk(contextWithResettable.inner, rowSequence);
+    }
+
+    @Override
+    public long resetWritableChunkToBackingStore(@NotNull ResettableWritableChunk<?> chunk, long position) {
+        chunk.asResettableWritableCharChunk().resetFromTypedArray(data, 0, data.length);
+        return 0;
+    }
+
+    @Override
+    public long resetWritableChunkToBackingStoreSlice(@NotNull ResettableWritableChunk<?> chunk, long position) {
+        final int capacity = Math.toIntExact(data.length - position);
+        ResettableWritableCharChunk resettableWritableCharChunk = chunk.asResettableWritableCharChunk();
+        resettableWritableCharChunk.resetFromTypedArray(data, Math.toIntExact(position), capacity);
+        return capacity;
     }
 
     private class GetContextWithResettable implements GetContext {
