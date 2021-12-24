@@ -130,35 +130,49 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                 assert chunkSourceContext != null;
                 if (isBackingChunkExposed) {
                     final ChunkedBackingStoreExposedWritableSource exposedWritableSource = (ChunkedBackingStoreExposedWritableSource) this.writableSource;
-                    try (final RowSequence.Iterator keyIter = upstream.added().getRowSequenceIterator();
-                         final RowSequence.Iterator destIter = flattenedResult ? RowSetFactory.flat(upstream.added().size()).getRowSequenceIterator() : null;
-                         final ResettableWritableChunk<?> backingChunk = writableSource.getChunkType().makeResettableWritableChunk()) {
-                        while (keyIter.hasMore()) {
-                            final RowSequence keys = keyIter.getNextRowSequenceWithLength(PAGE_SIZE);
-                            final RowSequence destKeys;
-                            if (destIter != null) {
-                                destKeys = destIter.getNextRowSequenceWithLength(PAGE_SIZE);
-                            } else {
-                                destKeys = keys;
+                    if (flattenedResult && !chunkSourceFillContext.hasLimitedCapacity()) {
+                        // drive the fill operation off of the destination rather than the source, because we want to fill as much as possible as quickly as possible
+                        long destinationOffset = 0;
+                        try (final RowSequence.Iterator keyIter = upstream.added().getRowSequenceIterator();
+                             final ResettableWritableChunk<?> backingChunk = writableSource.getChunkType().makeResettableWritableChunk()) {
+                            while (keyIter.hasMore()) {
+                                final long destCapacity = exposedWritableSource.resetWritableChunkToBackingStoreSlice(backingChunk, destinationOffset);
+                                final RowSequence sourceKeys = keyIter.getNextRowSequenceWithLength(destCapacity);
+                                chunkSource.fillChunk(chunkSourceFillContext, backingChunk, sourceKeys);
+                                destinationOffset += destCapacity;
                             }
-                            if (keys.isContiguous() || flattenedResult) {
-                                long rangeOffset = 0;
-                                long firstDest = destKeys.firstRowKey();
-                                final long lastDest = destKeys.lastRowKey();
-                                while (firstDest < lastDest) {
-                                    final long destCapacity = exposedWritableSource.resetWritableChunkToBackingStoreSlice(backingChunk, firstDest);
-                                    if (destCapacity >= (lastDest - firstDest + 1)) {
-                                        chunkSource.fillChunk(chunkSourceFillContext, backingChunk, keys);
-                                    } else {
-                                        try (RowSequence chunkSourceKeys = keys.getRowSequenceByPosition(rangeOffset, rangeOffset + destCapacity)) {
-                                            chunkSource.fillChunk(chunkSourceFillContext, backingChunk, chunkSourceKeys);
-                                        }
-                                    }
-                                    firstDest += destCapacity;
-                                    rangeOffset += destCapacity;
+                        }
+                    } else {
+                        try (final RowSequence.Iterator keyIter = upstream.added().getRowSequenceIterator();
+                             final RowSequence.Iterator destIter = flattenedResult ? RowSetFactory.flat(upstream.added().size()).getRowSequenceIterator() : null;
+                             final ResettableWritableChunk<?> backingChunk = writableSource.getChunkType().makeResettableWritableChunk()) {
+                            while (keyIter.hasMore()) {
+                                final RowSequence keys = keyIter.getNextRowSequenceWithLength(PAGE_SIZE);
+                                final RowSequence destKeys;
+                                if (destIter != null) {
+                                    destKeys = destIter.getNextRowSequenceWithLength(PAGE_SIZE);
+                                } else {
+                                    destKeys = keys;
                                 }
-                            } else {
-                                writableSource.fillFromChunk(destContext, chunkSource.getChunk(chunkSourceContext, keys), destKeys);
+                                if (keys.isContiguous() || flattenedResult) {
+                                    long rangeOffset = 0;
+                                    long firstDest = destKeys.firstRowKey();
+                                    final long lastDest = destKeys.lastRowKey();
+                                    while (firstDest < lastDest) {
+                                        final long destCapacity = exposedWritableSource.resetWritableChunkToBackingStoreSlice(backingChunk, firstDest);
+                                        if (destCapacity >= (lastDest - firstDest + 1)) {
+                                            chunkSource.fillChunk(chunkSourceFillContext, backingChunk, keys);
+                                        } else {
+                                            try (RowSequence chunkSourceKeys = keys.getRowSequenceByPosition(rangeOffset, rangeOffset + destCapacity)) {
+                                                chunkSource.fillChunk(chunkSourceFillContext, backingChunk, chunkSourceKeys);
+                                            }
+                                        }
+                                        firstDest += destCapacity;
+                                        rangeOffset += destCapacity;
+                                    }
+                                } else {
+                                    writableSource.fillFromChunk(destContext, chunkSource.getChunk(chunkSourceContext, keys), destKeys);
+                                }
                             }
                         }
                     }
