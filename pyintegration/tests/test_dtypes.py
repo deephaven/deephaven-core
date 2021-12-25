@@ -5,26 +5,24 @@ import math
 import time
 import unittest
 
-import jpy
 import numpy
 import numpy as np
 import pandas as pd
 
 from deephaven2 import dtypes
-from deephaven2.dtypes import DTypes
 from deephaven2.constants import *
 from tests.testbase import BaseTestCase
 
 
 class DTypesTestCase(BaseTestCase):
     def test_type_alias(self):
-        self.assertEqual(DTypes.byte, DTypes.int8)
-        self.assertEqual(DTypes.short, DTypes.int16)
-        self.assertEqual(DTypes.int_, DTypes.int32)
-        self.assertEqual(DTypes.long, DTypes.int64)
-        self.assertEqual(DTypes.float_, DTypes.single)
-        self.assertEqual(DTypes.float_, DTypes.float32)
-        self.assertEqual(DTypes.double, DTypes.float64)
+        self.assertEqual(dtypes.byte, dtypes.int8)
+        self.assertEqual(dtypes.short, dtypes.int16)
+        self.assertEqual(dtypes.int_, dtypes.int32)
+        self.assertEqual(dtypes.long, dtypes.int64)
+        self.assertEqual(dtypes.float_, dtypes.single)
+        self.assertEqual(dtypes.float_, dtypes.float32)
+        self.assertEqual(dtypes.double, dtypes.float64)
 
     def test_j_type(self):
         self.assertEqual(dtypes.bool_.j_type, jpy.get_type("java.lang.Boolean"))

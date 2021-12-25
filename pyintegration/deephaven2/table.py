@@ -12,6 +12,7 @@ from deephaven2 import DHError, dtypes
 from deephaven2.agg import Aggregation
 from deephaven2.column import Column, ColumnType
 from deephaven2.constants import SortDirection
+from deephaven2.dtypes import DType
 
 _JTableTools = jpy.get_type("io.deephaven.engine.util.TableTools")
 _JColumnName = jpy.get_type("io.deephaven.api.ColumnName")
@@ -74,8 +75,8 @@ class Table:
         for i in range(j_col_list.size()):
             j_col = j_col_list.get(i)
             self._schema.append(Column(name=j_col.getName(),
-                                       data_type=j_col.getDataType().getName(),
-                                       component_type=j_col.getComponentType(),
+                                       data_type=DType.from_jtype(j_col.getDataType()),
+                                       component_type=DType.from_jtype(j_col.getComponentType()),
                                        column_type=ColumnType(j_col.getColumnType())))
         return self._schema
 

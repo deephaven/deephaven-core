@@ -103,7 +103,6 @@ class TableFactoryTestCase(BaseTestCase):
             bool_col(name="Boolean", data=[True, j_al])
 
 
-
 @dataclass
 class CustomClass:
     f1: int

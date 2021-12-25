@@ -5,12 +5,14 @@
 
 Each data type is represented by a DType class which supports creating arrays of the same type and more.
 """
-from enum import Enum
-from typing import Iterable, Any, List, Tuple, Sequence
+from __future__ import annotations
+
+from typing import Iterable, Any, Tuple, Sequence
 
 import numpy as np
 import pandas as pd
 import jpy
+
 from deephaven2 import DHError
 from deephaven2.constants import *
 
@@ -66,14 +68,30 @@ def _handle_null(seq, null_value, null_to_value):
 
 class DType:
     """ A class represents a data type in Deephaven."""
+    _NAME_DTYPE_MAP = {}
 
-    def __init__(self, j_name: str, qst_type: Any = None, is_primitive: bool = False):
-        self.qst_type = qst_type
+    @classmethod
+    def from_jtype(cls, j_class: Any) -> DType:
+        if not j_class:
+            return None
+
+        j_name = j_class.getName()
+        dtype = DType._NAME_DTYPE_MAP.get(j_name)
+        if not dtype:
+            return cls(j_name=j_name, j_type=j_class)
+        else:
+            return dtype
+
+    def __init__(self, j_name: str, j_type: Any = None, qst_type: Any = None, is_primitive: bool = False):
         self.j_name = j_name
-        self.j_type = jpy.get_type(j_name)
-        if not qst_type:
-            self.qst_type = _qst_custom_type(j_name)
+        self.j_type = j_type if j_type else jpy.get_type(j_name)
+        self.qst_type = qst_type if qst_type else _qst_custom_type(j_name)
         self.is_primitive = is_primitive
+
+        DType._NAME_DTYPE_MAP[j_name] = self
+
+    def __repr__(self):
+        return self.j_name
 
     def __call__(self, *args, **kwargs):
         return self.j_type(*args, **kwargs)
@@ -268,77 +286,38 @@ class CharDType(DType):
             raise DHError(e, f"failed to create a Java {self.j_name} array.") from e
 
 
-# region convenience enum and module level type aliases
-class DTypes(Enum):
-    """ An enum that defines a predefined set of supported data types in Deephaven. """
-
-    bool_ = DType(j_name="java.lang.Boolean", qst_type=_JQstType.booleanType(), )
-    byte = IntegerDType(j_name="byte", qst_type=_JQstType.byteType(), np_dtypes=(np.int8, np.uint8),
-                        null_value=NULL_BYTE)
-    int8 = byte
-    short = IntegerDType(j_name="short", qst_type=_JQstType.shortType(), np_dtypes=(np.int16, np.uint16),
-                         null_value=NULL_SHORT)
-    int16 = short
-    char = CharDType(j_name="char", qst_type=_JQstType.charType(), np_dtypes=(), null_value=NULL_CHAR)
-    int_ = IntegerDType(j_name="int", qst_type=_JQstType.intType(), np_dtypes=(np.int32, np.uint32),
-                        null_value=NULL_INT)
-    int32 = int_
-    long = IntegerDType(j_name="long", qst_type=_JQstType.longType(), np_dtypes=(np.int64, np.uint64),
-                        null_value=NULL_LONG)
-    int64 = long
-    float_ = FloatingDType(j_name="float", qst_type=_JQstType.floatType(), np_dtypes=(np.float32,),
-                           null_value=NULL_FLOAT)
-    single = float_
-    float32 = float_
-    double = FloatingDType(j_name="double", qst_type=_JQstType.doubleType(), np_dtypes=(np.float64,),
-                           null_value=NULL_DOUBLE)
-    float64 = double
-    string = DType(j_name="java.lang.String", qst_type=_JQstType.stringType())
-    BigDecimal = DType(j_name="java.math.BigDecimal")
-    StringSet = DType(j_name="io.deephaven.stringset.StringSet")
-    DateTime = DType(j_name="io.deephaven.time.DateTime")
-    Period = DType(j_name="io.deephaven.time.Period")
-    PyObject = DType(j_name="org.jpy.PyObject")
-    JObject = DType(j_name="java.lang.Object")
-
-
-bool_ = DTypes.bool_.value
-byte = DTypes.byte.value
-int8 = DTypes.int8.value
-short = DTypes.short.value
-int16 = DTypes.int16.value
-char = DTypes.char.value
-int_ = DTypes.int_.value
-int32 = DTypes.int32.value
-long = DTypes.long.value
-int64 = DTypes.int64.value
-float_ = DTypes.float_.value
-single = DTypes.single.value
-float32 = DTypes.float32.value
-double = DTypes.double.value
-float64 = DTypes.float64.value
-string = DTypes.string.value
-BigDecimal = DTypes.BigDecimal.value
-StringSet = DTypes.StringSet.value
-DateTime = DTypes.DateTime.value
-Period = DTypes.Period.value
-PyObject = DTypes.PyObject.value
-JObject = DTypes.JObject.value
+# region predefined types and aliases
+bool_ = DType(j_name="java.lang.Boolean", qst_type=_JQstType.booleanType(), )
+byte = IntegerDType(j_name="byte", qst_type=_JQstType.byteType(), np_dtypes=(np.int8, np.uint8),
+                    null_value=NULL_BYTE)
+int8 = byte
+short = IntegerDType(j_name="short", qst_type=_JQstType.shortType(), np_dtypes=(np.int16, np.uint16),
+                     null_value=NULL_SHORT)
+int16 = short
+char = CharDType(j_name="char", qst_type=_JQstType.charType(), np_dtypes=(), null_value=NULL_CHAR)
+int_ = IntegerDType(j_name="int", qst_type=_JQstType.intType(), np_dtypes=(np.int32, np.uint32),
+                    null_value=NULL_INT)
+int32 = int_
+long = IntegerDType(j_name="long", qst_type=_JQstType.longType(), np_dtypes=(np.int64, np.uint64),
+                    null_value=NULL_LONG)
+int64 = long
+float_ = FloatingDType(j_name="float", qst_type=_JQstType.floatType(), np_dtypes=(np.float32,),
+                       null_value=NULL_FLOAT)
+single = float_
+float32 = float_
+double = FloatingDType(j_name="double", qst_type=_JQstType.doubleType(), np_dtypes=(np.float64,),
+                       null_value=NULL_DOUBLE)
+float64 = double
+string = DType(j_name="java.lang.String", qst_type=_JQstType.stringType())
+BigDecimal = DType(j_name="java.math.BigDecimal")
+StringSet = DType(j_name="io.deephaven.stringset.StringSet")
+DateTime = DType(j_name="io.deephaven.time.DateTime")
+Period = DType(j_name="io.deephaven.time.Period")
+PyObject = DType(j_name="org.jpy.PyObject")
+JObject = DType(j_name="java.lang.Object")
 
 
 # endregion
-
-# region helper functions
-
-def j_class_lookup(j_class: Any) -> DType:
-    if not j_class:
-        return None
-
-    j_type = jpy.get_type(j_class.getName())
-    for t in DTypes:
-        if t.value.j_type == j_type:
-            return t.value
-
 
 def j_array_list(values: Iterable):
     j_list = jpy.get_type("java.util.ArrayList")(len(values))
@@ -348,5 +327,3 @@ def j_array_list(values: Iterable):
         return j_list
     except Exception as e:
         raise DHError(e, "failed to create a Java ArrayList from the Python collection.") from e
-
-# endregion
