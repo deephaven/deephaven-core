@@ -15,8 +15,8 @@ import java.util.regex.Pattern;
 public class GenericRecordDoubleFieldCopier implements FieldCopier {
     private final String[] fieldPath;
 
-    public GenericRecordDoubleFieldCopier(final String fieldName, final Pattern separator) {
-        this.fieldPath = GenericRecordUtil.getFieldPath(fieldName, separator);
+    public GenericRecordDoubleFieldCopier(final String fieldPathStr, final Pattern separator) {
+        this.fieldPath = GenericRecordUtil.getFieldPath(fieldPathStr, separator);
     }
 
     @Override

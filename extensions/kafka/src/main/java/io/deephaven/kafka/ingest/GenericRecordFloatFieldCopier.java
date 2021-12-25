@@ -15,8 +15,8 @@ import java.util.regex.Pattern;
 public class GenericRecordFloatFieldCopier implements FieldCopier {
     private final String[] fieldPath;
 
-    public GenericRecordFloatFieldCopier(final String fieldName, final Pattern separator) {
-        this.fieldPath = GenericRecordUtil.getFieldPath(fieldName, separator);
+    public GenericRecordFloatFieldCopier(final String fieldPathStr, final Pattern separator) {
+        this.fieldPath = GenericRecordUtil.getFieldPath(fieldPathStr, separator);
     }
 
     @Override

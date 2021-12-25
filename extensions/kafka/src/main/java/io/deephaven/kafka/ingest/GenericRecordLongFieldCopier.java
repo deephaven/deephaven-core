@@ -15,8 +15,8 @@ import java.util.regex.Pattern;
 public class GenericRecordLongFieldCopier implements FieldCopier {
     private final String[] fieldPath;
 
-    public GenericRecordLongFieldCopier(final String fieldName, final Pattern separator) {
-        this.fieldPath = GenericRecordUtil.getFieldPath(fieldName, separator);
+    public GenericRecordLongFieldCopier(final String fieldPathStr, final Pattern separator) {
+        this.fieldPath = GenericRecordUtil.getFieldPath(fieldPathStr, separator);
     }
 
     @Override
