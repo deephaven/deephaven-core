@@ -13,14 +13,14 @@ public class GenericRecordUtil {
      * a {@code String[]} path with the individual field names.
      * 
      * @param fieldName A composite (by nesting) field name.
-     * @param separator The separator used for composing {@code fieldName}
+     * @param separator The separator pattern used for composing {@code fieldName}
      * @return A {@code String[]} path with the individual field names for {@code fieldName}
      */
-    public static String[] getFieldPath(final String fieldName, final String separator) {
+    public static String[] getFieldPath(final String fieldName, final Pattern separator) {
         if (fieldName == null) {
             return null;
         }
-        return fieldName.split(Pattern.quote(separator));
+        return separator.split(fieldName);
     }
 
     /**

@@ -8,6 +8,7 @@ import org.apache.avro.generic.GenericRecord;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.regex.Pattern;
 
 public class GenericRecordBigDecimalFieldCopier implements FieldCopier {
     private final String[] fieldPath;
@@ -15,7 +16,7 @@ public class GenericRecordBigDecimalFieldCopier implements FieldCopier {
 
     public GenericRecordBigDecimalFieldCopier(
             final String fieldPathStr,
-            final String separator,
+            final Pattern separator,
             final int precisionUnused,
             final int scale) {
         this.fieldPath = GenericRecordUtil.getFieldPath(fieldPathStr, separator);

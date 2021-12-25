@@ -12,12 +12,13 @@ import org.apache.avro.generic.GenericRecord;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.regex.Pattern;
 
 public class GenericRecordObjectFieldCopier implements FieldCopier {
     private final String[] fieldPath;
 
-    public GenericRecordObjectFieldCopier(final String fieldName, final String separator) {
-        this.fieldPath = GenericRecordUtil.getFieldPath(fieldName, separator);
+    public GenericRecordObjectFieldCopier(final String fieldPathStr, final Pattern separator) {
+        this.fieldPath = GenericRecordUtil.getFieldPath(fieldPathStr, separator);
     }
 
     @Override

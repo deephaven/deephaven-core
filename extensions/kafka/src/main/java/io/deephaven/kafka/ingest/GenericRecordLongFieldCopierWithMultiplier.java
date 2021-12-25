@@ -8,13 +8,15 @@ import io.deephaven.util.QueryConstants;
 import io.deephaven.util.type.TypeUtils;
 import org.apache.avro.generic.GenericRecord;
 
+import java.util.regex.Pattern;
+
 public class GenericRecordLongFieldCopierWithMultiplier implements FieldCopier {
     private final String[] fieldPath;
     private final long multiplier;
 
-    public GenericRecordLongFieldCopierWithMultiplier(final String fieldName, final String separator,
+    public GenericRecordLongFieldCopierWithMultiplier(final String fieldPathStr, final Pattern separator,
             final long multiplier) {
-        this.fieldPath = GenericRecordUtil.getFieldPath(fieldName, separator);
+        this.fieldPath = GenericRecordUtil.getFieldPath(fieldPathStr, separator);
         this.multiplier = multiplier;
     }
 

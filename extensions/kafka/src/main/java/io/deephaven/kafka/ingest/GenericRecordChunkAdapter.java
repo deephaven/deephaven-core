@@ -15,6 +15,7 @@ import org.apache.avro.generic.GenericRecord;
 
 import java.util.*;
 import java.util.function.IntFunction;
+import java.util.regex.Pattern;
 
 /**
  * Convert an Avro {@link GenericRecord} to Deephaven rows.
@@ -27,7 +28,7 @@ public class GenericRecordChunkAdapter extends MultiFieldChunkAdapter {
             final TableDefinition definition,
             final IntFunction<ChunkType> chunkTypeForIndex,
             final Map<String, String> fieldNamesToColumnNames,
-            final String separator,
+            final Pattern separator,
             final Schema schema,
             final boolean allowNulls) {
         super(definition, chunkTypeForIndex, fieldNamesToColumnNames, allowNulls, (fieldPathStr, chunkType,
@@ -50,7 +51,7 @@ public class GenericRecordChunkAdapter extends MultiFieldChunkAdapter {
             final TableDefinition definition,
             final IntFunction<ChunkType> chunkTypeForIndex,
             final Map<String, String> columns,
-            final String separator,
+            final Pattern separator,
             final Schema schema,
             final boolean allowNulls) {
         return new GenericRecordChunkAdapter(
@@ -60,7 +61,7 @@ public class GenericRecordChunkAdapter extends MultiFieldChunkAdapter {
     private static FieldCopier makeFieldCopier(
             final Schema schema,
             final String fieldPathStr,
-            final String separator,
+            final Pattern separator,
             final ChunkType chunkType,
             final Class<?> dataType) {
         switch (chunkType) {

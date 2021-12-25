@@ -59,6 +59,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.*;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class KafkaTools {
@@ -97,6 +98,8 @@ public class KafkaTools {
     public static final String AVRO_SERIALIZER = KafkaAvroSerializer.class.getName();
     public static final String SERIALIZER_FOR_IGNORE = BYTE_BUFFER_SERIALIZER;
     public static final String NESTED_FIELD_NAME_SEPARATOR = ".";
+    private static final Pattern NESTED_FIELD_NAME_SEPARATOR_PATTERN =
+            Pattern.compile(Pattern.quote(NESTED_FIELD_NAME_SEPARATOR));
     public static final String AVRO_LATEST_VERSION = "latest";
 
     private static final Logger log = LoggerFactory.getLogger(KafkaTools.class);
@@ -1285,7 +1288,7 @@ public class KafkaTools {
                         tableDef,
                         streamToTableAdapter::chunkTypeForIndex,
                         data.fieldPathToColumnName,
-                        NESTED_FIELD_NAME_SEPARATOR,
+                        NESTED_FIELD_NAME_SEPARATOR_PATTERN,
                         (Schema) data.extra,
                         true);
             case JSON:

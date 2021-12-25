@@ -7,12 +7,13 @@ import io.deephaven.chunk.attributes.Values;
 import org.apache.avro.generic.GenericRecord;
 
 import java.util.Objects;
+import java.util.regex.Pattern;
 
 public class GenericRecordStringFieldCopier implements FieldCopier {
     private final String[] fieldPath;
 
-    public GenericRecordStringFieldCopier(final String fieldName, final String separator) {
-        this.fieldPath = GenericRecordUtil.getFieldPath(fieldName, separator);
+    public GenericRecordStringFieldCopier(final String fieldPathStr, final Pattern separator) {
+        this.fieldPath = GenericRecordUtil.getFieldPath(fieldPathStr, separator);
     }
 
     @Override
