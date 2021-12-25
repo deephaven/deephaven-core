@@ -1,6 +1,6 @@
 package io.deephaven.kafka.ingest;
 
-import io.deephaven.kafka.Utils;
+import io.deephaven.kafka.KafkaSchemaUtils;
 
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
@@ -73,7 +73,7 @@ public class GenericRecordUtil {
             if (field == null) {
                 throw new IllegalArgumentException("Can't find field for path " + buildPartialFieldName(fieldPath, i));
             }
-            s = Utils.getEffectiveSchema(fieldName, field.schema());
+            s = KafkaSchemaUtils.getEffectiveSchema(fieldName, field.schema());
             ++i;
         }
         return s;

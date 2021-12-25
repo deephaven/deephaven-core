@@ -4,7 +4,7 @@ import org.apache.avro.Schema;
 
 import java.util.List;
 
-public class Utils {
+public class KafkaSchemaUtils {
     public static Schema getEffectiveSchema(final String fieldName, final Schema fieldSchema) {
         if (fieldSchema.getType() != Schema.Type.UNION) {
             return fieldSchema;

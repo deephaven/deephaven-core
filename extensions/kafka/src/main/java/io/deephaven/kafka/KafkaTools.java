@@ -209,7 +209,7 @@ public class KafkaTools {
                 columnsOut.add(ColumnDefinition.ofString(mappedName));
                 break;
             case UNION:
-                final Schema effectiveSchema = Utils.getEffectiveSchema(fieldName, fieldSchema);
+                final Schema effectiveSchema = KafkaSchemaUtils.getEffectiveSchema(fieldName, fieldSchema);
                 pushColumnTypesFromAvroField(
                         columnsOut, fieldPathToColumnNameOut,
                         prefix, fieldName,
