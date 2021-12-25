@@ -26,6 +26,7 @@ def prepareDocker = project.tasks.register('prepareDocker', Sync) {
 def buildDocker = Docker.registerDockerImage(project, 'buildDocker') {
     inputs.files prepareDocker.get().outputs.files
     inputs.files Docker.registryFiles(project, 'envoyproxy')
+    buildArgs.put('DEEPHAVEN_VERSION', project.version)
     images.add('deephaven/envoy:local-build')
 }
 

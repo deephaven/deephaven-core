@@ -4,14 +4,12 @@
 
 package io.deephaven.io.streams;
 
-import org.apache.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.InputStream;
 import java.io.IOException;
 
 public class MultiFileInputStream extends InputStream {
-    private static final Logger log = Logger.getLogger(MultiFileInputStream.class);
 
     // Just used for logging
     public static class DecoratedInputStream {
@@ -40,13 +38,11 @@ public class MultiFileInputStream extends InputStream {
             return -1;
         } else if (currentStream < 0) {
             currentStream++;
-            logCurrentFile();
         }
 
         int result = inputStreams[currentStream].inputStream.read();
         while (result == -1) {
             currentStream++;
-            logCurrentFile();
             if (currentStream < inputStreams.length) {
                 result = read();
             } else {
@@ -62,7 +58,6 @@ public class MultiFileInputStream extends InputStream {
             return -1;
         } else if (currentStream < 0) {
             currentStream++;
-            logCurrentFile();
         }
 
         int result = 0;
@@ -75,7 +70,6 @@ public class MultiFileInputStream extends InputStream {
             }
             if (len > 0) {
                 currentStream++;
-                logCurrentFile();
                 if (currentStream >= inputStreams.length) {
                     if (result == 0) {
                         return -1;
@@ -104,13 +98,6 @@ public class MultiFileInputStream extends InputStream {
         }
         if (caughtException != null) {
             throw caughtException;
-        }
-    }
-
-    // Mainly for importers to know what file they are on
-    private void logCurrentFile() {
-        if (currentStream < inputStreams.length) {
-            log.info("MultiFileInputStream now reading " + inputStreams[currentStream].filename);
         }
     }
 

@@ -1386,39 +1386,11 @@ public class AggregationFactory implements AggregationSpec {
                             operators.add(formulaChunkedOperator);
                             inputNames.add(CollectionUtil.ZERO_LENGTH_STRING_ARRAY);
                         } else if (isWeightedAverage || isWeightedSum) {
-                            final String weightName;
-
-                            if (isWeightedAverage) {
-                                weightName = ((WeightedAverageSpecImpl) inputAggregationSpec)
-                                        .getWeightName();
-                            } else {
-                                weightName =
-                                        ((WeightedSumSpecImpl) inputAggregationSpec).getWeightName();
-                            }
-
-                            final ColumnSource<?> weightSource = table.getColumnSource(weightName);
-                            final DoubleWeightRecordingInternalOperator weightOperator =
-                                    new DoubleWeightRecordingInternalOperator(weightSource.getChunkType());
-                            inputColumns.add(weightSource);
-                            operators.add(weightOperator);
-
-                            inputNames.add(Stream
-                                    .concat(Stream.of(weightName),
-                                            Arrays.stream(comboMatchPairs).map(MatchPair::rightColumn))
-                                    .toArray(String[]::new));
-
-                            Arrays.stream(comboMatchPairs).forEach(mp -> {
-                                final ColumnSource<?> columnSource = table.getColumnSource(mp.rightColumn());
-                                inputColumns.add(columnSource);
-                                inputNames.add(new String[] {weightName, mp.rightColumn()});
-                                if (isWeightedAverage) {
-                                    operators.add(new ChunkedWeightedAverageOperator(columnSource.getChunkType(),
-                                            weightOperator, mp.leftColumn()));
-                                } else {
-                                    operators.add(new DoubleChunkedWeightedSumOperator(columnSource.getChunkType(),
-                                            weightOperator, mp.leftColumn()));
-                                }
-                            });
+                            final String weightName = isWeightedAverage
+                                    ? ((WeightedAverageSpecImpl) inputAggregationSpec).getWeightName()
+                                    : ((WeightedSumSpecImpl) inputAggregationSpec).getWeightName();
+                            WeightedAverageSumAggregationFactory.getOperatorsAndInputs(table,
+                                    weightName, isWeightedSum, comboMatchPairs, operators, inputNames, inputColumns);
                         } else {
                             throw new UnsupportedOperationException(
                                     "Unknown AggregationElementImpl: " + inputAggregationSpec.getClass());

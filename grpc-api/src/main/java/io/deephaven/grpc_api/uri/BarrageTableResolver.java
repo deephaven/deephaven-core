@@ -16,6 +16,8 @@ import io.deephaven.uri.FieldUri;
 import io.deephaven.uri.QueryScopeUri;
 import io.deephaven.uri.RemoteUri;
 import io.deephaven.uri.StructuredUri.Visitor;
+import io.deephaven.uri.resolver.UriResolver;
+import io.deephaven.uri.resolver.UriResolversInstance;
 import io.grpc.ManagedChannel;
 import org.apache.arrow.memory.BufferAllocator;
 

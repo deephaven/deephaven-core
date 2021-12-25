@@ -1,13 +1,14 @@
 package io.deephaven.engine.table.impl.by;
 
-import io.deephaven.engine.table.ChunkSource;
-import io.deephaven.engine.table.Table;
-import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.chunk.*;
+import io.deephaven.chunk.ChunkType;
 import io.deephaven.chunk.attributes.Values;
+import io.deephaven.engine.table.*;
+import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class WeightedAverageSumAggregationFactory implements AggregationContextFactory {
     private final String weightName;
@@ -16,11 +17,6 @@ public class WeightedAverageSumAggregationFactory implements AggregationContextF
     public WeightedAverageSumAggregationFactory(final String weightName, boolean isSum) {
         this.weightName = weightName;
         this.isSum = isSum;
-    }
-
-    @Override
-    public boolean allowKeyOnlySubstitution() {
-        return true;
     }
 
     @Override
@@ -34,135 +30,147 @@ public class WeightedAverageSumAggregationFactory implements AggregationContextF
         final int operatorColumnCount = withView.getColumnSourceMap().size() - groupByNames.size() - 1;
 
         final List<IterativeChunkedAggregationOperator> operators = new ArrayList<>(operatorColumnCount + 1);
+        final List<String[]> inputNames = new ArrayList<>(operatorColumnCount);
         final List<ChunkSource.WithPrev<Values>> inputColumns = new ArrayList<>(operatorColumnCount + 1);
-        final List<String> inputNames = new ArrayList<>(operatorColumnCount);
-        final List<Boolean> isIntegerResult = new ArrayList<>(operatorColumnCount);
-        final List<String> floatColumnNames = new ArrayList<>(operatorColumnCount);
-        final List<String> integerColumnNames = new ArrayList<>(operatorColumnCount);
 
+        final MatchPair[] resultPairs = withView.getDefinition().getColumnStream()
+                .map(ColumnDefinition::getName)
+                .filter(cn -> !cn.equals(weightName) && !groupByNames.contains(cn))
+                .map(cn -> new MatchPair(cn, cn))
+                .toArray(MatchPair[]::new);
+        getOperatorsAndInputs(withView, weightName, isSum, resultPairs, operators, inputNames, inputColumns);
+
+        // noinspection unchecked
+        return new AggregationContext(
+                operators.toArray(IterativeChunkedAggregationOperator[]::new),
+                inputNames.toArray(String[][]::new),
+                inputColumns.toArray(ChunkSource.WithPrev[]::new));
+    }
+
+    private static boolean isFloatingPoint(@NotNull final ChunkType chunkType) {
+        return chunkType == ChunkType.Float
+                || chunkType == ChunkType.Double;
+    }
+
+    private static boolean isInteger(@NotNull final ChunkType chunkType) {
+        return chunkType == ChunkType.Char
+                || chunkType == ChunkType.Byte
+                || chunkType == ChunkType.Short
+                || chunkType == ChunkType.Int
+                || chunkType == ChunkType.Long;
+    }
+
+    private enum ResultType {
+        INTEGER, FLOATING_POINT
+    }
+
+    private static class Result {
+        private final MatchPair pair;
+        private final ResultType type;
+        private final ColumnSource<?> source;
+
+        private Result(MatchPair pair, ResultType type, ColumnSource<?> source) {
+            this.pair = pair;
+            this.type = type;
+            this.source = source;
+        }
+    }
+
+    static void getOperatorsAndInputs(Table withView,
+            String weightName,
+            boolean isSum,
+            MatchPair[] resultPairs,
+            List<IterativeChunkedAggregationOperator> resultOperators,
+            List<String[]> resultInputNames,
+            List<ChunkSource.WithPrev<Values>> resultInputColumns) {
         final ColumnSource weightSource = withView.getColumnSource(weightName);
-        boolean weightSourceIsFloatingPoint =
-                weightSource.getChunkType() == ChunkType.Double || weightSource.getChunkType() == ChunkType.Float;
-        boolean anyIntegerResults = !weightSourceIsFloatingPoint && isSum
-                && withView.getColumnSourceMap().values().stream()
-                        .anyMatch(cs -> cs.getChunkType() == ChunkType.Long || cs.getChunkType() == ChunkType.Int
-                                || cs.getChunkType() == ChunkType.Short || cs.getChunkType() == ChunkType.Byte
-                                || cs.getChunkType() == ChunkType.Char);
-        boolean anyFloatResults = weightSourceIsFloatingPoint || !isSum || withView.getColumnSourceMap().values()
-                .stream().anyMatch(cs -> cs.getChunkType() == ChunkType.Float || cs.getChunkType() == ChunkType.Double);
-
-        final DoubleWeightRecordingInternalOperator doubleWeightOperator;
-        if (anyFloatResults) {
-            doubleWeightOperator = new DoubleWeightRecordingInternalOperator(weightSource.getChunkType());
-            // noinspection unchecked
-            inputColumns.add(weightSource);
-            operators.add(doubleWeightOperator);
+        final boolean weightSourceIsFloatingPoint;
+        if (isInteger(weightSource.getChunkType())) {
+            weightSourceIsFloatingPoint = false;
+        } else if (isFloatingPoint(weightSource.getChunkType())) {
+            weightSourceIsFloatingPoint = true;
         } else {
-            doubleWeightOperator = null;
+            throw new UnsupportedOperationException(String.format("Invalid type %s in weight column %s for %s",
+                    weightSource.getType(), weightName, toString(isSum, weightName)));
         }
 
+        final MutableBoolean anyIntegerResults = new MutableBoolean();
+        final MutableBoolean anyFloatingPointResults = new MutableBoolean();
+        final List<Result> results = Arrays.stream(resultPairs).map(pair -> {
+            final ColumnSource<?> inputSource = withView.getColumnSource(pair.rightColumn);
+            final ResultType resultType;
+            if (isInteger(inputSource.getChunkType())) {
+                if (!weightSourceIsFloatingPoint && isSum) {
+                    anyIntegerResults.setTrue();
+                    resultType = ResultType.INTEGER;
+                } else {
+                    anyFloatingPointResults.setTrue();
+                    resultType = ResultType.FLOATING_POINT;
+                }
+            } else if (isFloatingPoint(inputSource.getChunkType())) {
+                anyFloatingPointResults.setTrue();
+                resultType = ResultType.FLOATING_POINT;
+            } else {
+                throw new UnsupportedOperationException(String.format("Invalid type %s in column %s for %s",
+                        inputSource.getType(), pair.rightColumn, toString(isSum, weightName)));
+            }
+            return new Result(pair, resultType, inputSource);
+        }).collect(Collectors.toList());
+
         final LongWeightRecordingInternalOperator longWeightOperator;
-        if (anyIntegerResults) {
+        if (anyIntegerResults.booleanValue()) {
             longWeightOperator = new LongWeightRecordingInternalOperator(weightSource.getChunkType());
+            resultOperators.add(longWeightOperator);
+            resultInputNames.add(Stream.concat(
+                    Stream.of(weightName),
+                    results.stream()
+                            .filter(r -> r.type == ResultType.INTEGER).map(r -> r.pair.rightColumn))
+                    .toArray(String[]::new));
             // noinspection unchecked
-            inputColumns.add(weightSource);
-            operators.add(longWeightOperator);
+            resultInputColumns.add(weightSource);
         } else {
             longWeightOperator = null;
         }
 
-        withView.getColumnSourceMap().forEach((name, columnSource) -> {
-            if (groupByNames.contains(name)) {
-                return;
-            }
-            if (name.equals(weightName)) {
-                return;
-            }
-
+        final DoubleWeightRecordingInternalOperator doubleWeightOperator;
+        if (anyFloatingPointResults.booleanValue()) {
+            doubleWeightOperator = new DoubleWeightRecordingInternalOperator(weightSource.getChunkType());
+            resultOperators.add(doubleWeightOperator);
+            resultInputNames.add(Stream.concat(
+                    Stream.of(weightName),
+                    results.stream()
+                            .filter(r -> r.type == ResultType.FLOATING_POINT).map(r -> r.pair.rightColumn))
+                    .toArray(String[]::new));
             // noinspection unchecked
-            inputColumns.add(columnSource);
-            inputNames.add(name);
+            resultInputColumns.add(weightSource);
+        } else {
+            doubleWeightOperator = null;
+        }
+
+        results.forEach(r -> {
             if (isSum) {
-                final boolean isInteger;
-
-                if (weightSourceIsFloatingPoint) {
-                    isInteger = false;
+                if (r.type == ResultType.INTEGER) {
+                    resultOperators.add(new LongChunkedWeightedSumOperator(
+                            r.source.getChunkType(), longWeightOperator, r.pair.leftColumn));
                 } else {
-                    switch (columnSource.getChunkType()) {
-                        case Char:
-                        case Byte:
-                        case Short:
-                        case Int:
-                        case Long:
-                            isInteger = true;
-                            break;
-                        case Double:
-                        case Float:
-                            isInteger = false;
-                            break;
-                        default:
-                            throw new UnsupportedOperationException(
-                                    "Invalid chunk type for weightedSum: " + columnSource.getChunkType());
-                    }
-                }
-
-                isIntegerResult.add(isInteger);
-                if (isInteger) {
-                    integerColumnNames.add(name);
-                    operators.add(
-                            new LongChunkedWeightedSumOperator(columnSource.getChunkType(), longWeightOperator, name));
-                } else {
-                    floatColumnNames.add(name);
-                    operators.add(new DoubleChunkedWeightedSumOperator(columnSource.getChunkType(),
-                            doubleWeightOperator, name));
+                    resultOperators.add(new DoubleChunkedWeightedSumOperator(
+                            r.source.getChunkType(), doubleWeightOperator, r.pair.leftColumn));
                 }
             } else {
-                isIntegerResult.add(false);
-                floatColumnNames.add(name);
-                operators.add(
-                        new ChunkedWeightedAverageOperator(columnSource.getChunkType(), doubleWeightOperator, name));
+                resultOperators.add(new ChunkedWeightedAverageOperator(
+                        r.source.getChunkType(), doubleWeightOperator, r.pair.leftColumn));
             }
+            resultInputNames.add(new String[] {r.pair.rightColumn, weightName});
+            resultInputColumns.add(r.source);
         });
-
-        final int inputColumnCount = inputNames.size();
-        final int weightOperators = (anyFloatResults ? 1 : 0) + (anyIntegerResults ? 1 : 0);
-        final String[][] inputNameArray = new String[inputColumnCount + weightOperators][];
-        int idx = 0;
-        if (doubleWeightOperator != null) {
-            inputNameArray[idx] = new String[floatColumnNames.size() + 1];
-            inputNameArray[idx][0] = weightName;
-            for (int ii = 0; ii < floatColumnNames.size(); ++ii) {
-                inputNameArray[idx][1 + ii] = floatColumnNames.get(ii);
-            }
-            idx++;
-        }
-        if (longWeightOperator != null) {
-            inputNameArray[idx] = new String[integerColumnNames.size() + 1];
-            inputNameArray[idx][0] = weightName;
-            for (int ii = 0; ii < integerColumnNames.size(); ++ii) {
-                inputNameArray[idx][1 + ii] = integerColumnNames.get(ii);
-            }
-            idx++;
-        }
-
-        for (final String columnName : inputNames) {
-            inputNameArray[idx] = new String[2];
-            inputNameArray[idx][0] = columnName;
-            inputNameArray[idx][1] = weightName;
-            idx++;
-        }
-
-        // noinspection unchecked
-        return new AggregationContext(
-                operators.toArray(
-                        IterativeChunkedAggregationOperator.ZERO_LENGTH_ITERATIVE_CHUNKED_AGGREGATION_OPERATOR_ARRAY),
-                inputNameArray,
-                inputColumns.toArray(ChunkSource.WithPrev.ZERO_LENGTH_CHUNK_SOURCE_WITH_PREV_ARRAY));
     }
 
     @Override
     public String toString() {
-        return "Weighted" + (isSum ? "Sum" : "Avg") + "(" + weightName + ")";
+        return toString(isSum, weightName);
     }
 
+    private static String toString(final boolean isSum, final String weightName) {
+        return "Weighted" + (isSum ? "Sum" : "Avg") + "(" + weightName + ")";
+    }
 }

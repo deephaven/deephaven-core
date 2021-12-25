@@ -25,6 +25,10 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
+      - name: Setup Crane
+        if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
+        uses: imjasonh/setup-crane@v0.1
+
       - name: Set JAVA_HOME
         run: echo "JAVA_HOME=${{ steps.setup-java-11.outputs.path }}" >> $GITHUB_ENV
 
@@ -40,11 +44,28 @@ jobs:
           semver=$(echo ${{ github.ref }} | tail -c +21)
           echo "::set-output name=semver::$semver"
 
-      - name: Docker meta
-        id: docker_meta
+      - name: Docker meta server
+        id: docker_meta_server
         uses: docker/metadata-action@v3
         with:
-          images: ghcr.io/${{ github.repository_owner }}/grpc-api
+          # TODO(deephaven-core#1691): Remove deephaven/grpc-api image name
+          images: |
+            ghcr.io/${{ github.repository_owner }}/server
+            ghcr.io/${{ github.repository_owner }}/grpc-api
+          flavor: |
+            latest=false
+          tags: |
+            type=edge,branch=main
+            type=raw,priority=950,enable=${{ startsWith(github.ref, 'refs/heads/release/v') }},value=${{ steps.semver.outputs.semver }}
+            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.8') }},value=latest
+            type=ref,event=branch
+
+      - name: Docker meta server nltk
+        id: docker_meta_server_nltk
+        uses: docker/metadata-action@v3
+        with:
+          images: |
+            ghcr.io/${{ github.repository_owner }}/server-nltk
           flavor: |
             latest=false
           tags: |
@@ -52,11 +73,62 @@ jobs:
             type=raw,priority=950,enable=${{ startsWith(github.ref, 'refs/heads/release/v') }},value=${{ steps.semver.outputs.semver }}
             type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.7') }},value=latest
             type=ref,event=branch
-          labels: |
-            org.opencontainers.image.vendor=Deephaven Data Labs
-            org.opencontainers.image.title=Deephaven Core
-            org.opencontainers.image.description=Deephaven Core
-            org.opencontainers.image.licenses=Deephaven Community License Agreement 1.0
+
+      - name: Docker meta server pytorch
+        id: docker_meta_server_pytorch
+        uses: docker/metadata-action@v3
+        with:
+          images: |
+            ghcr.io/${{ github.repository_owner }}/server-pytorch
+          flavor: |
+            latest=false
+          tags: |
+            type=edge,branch=main
+            type=raw,priority=950,enable=${{ startsWith(github.ref, 'refs/heads/release/v') }},value=${{ steps.semver.outputs.semver }}
+            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.7') }},value=latest
+            type=ref,event=branch
+
+      - name: Docker meta server sklearn
+        id: docker_meta_server_sklearn
+        uses: docker/metadata-action@v3
+        with:
+          images: |
+            ghcr.io/${{ github.repository_owner }}/server-sklearn
+          flavor: |
+            latest=false
+          tags: |
+            type=edge,branch=main
+            type=raw,priority=950,enable=${{ startsWith(github.ref, 'refs/heads/release/v') }},value=${{ steps.semver.outputs.semver }}
+            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.7') }},value=latest
+            type=ref,event=branch
+
+      - name: Docker meta server tensorflow
+        id: docker_meta_server_tensorflow
+        uses: docker/metadata-action@v3
+        with:
+          images: |
+            ghcr.io/${{ github.repository_owner }}/server-tensorflow
+          flavor: |
+            latest=false
+          tags: |
+            type=edge,branch=main
+            type=raw,priority=950,enable=${{ startsWith(github.ref, 'refs/heads/release/v') }},value=${{ steps.semver.outputs.semver }}
+            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.7') }},value=latest
+            type=ref,event=branch
+
+      - name: Docker meta server slim
+        id: docker_meta_server_slim
+        uses: docker/metadata-action@v3
+        with:
+          images: |
+            ghcr.io/${{ github.repository_owner }}/server-slim
+          flavor: |
+            latest=false
+          tags: |
+            type=edge,branch=main
+            type=raw,priority=950,enable=${{ startsWith(github.ref, 'refs/heads/release/v') }},value=${{ steps.semver.outputs.semver }}
+            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.8') }},value=latest
+            type=ref,event=branch
 
       - name: Set up Docker Buildx
         id: buildx
@@ -77,20 +149,98 @@ jobs:
         uses: burrunan/gradle-cache-action@v1
         with:
           job-id: build-grpc-api
-          arguments: --scan grpc-api-server-docker:dockerCreateDockerfile
+          arguments: --scan outputVersion createCraneTagScript docker-server-slim:prepareDocker docker-server:prepareDocker
           gradle-version: wrapper
+
+      - name: Get Deephaven Version
+        id: deephaven_version
+        run: |
+          echo "::set-output name=deephaven_version::$(cat build/version)"
 
       # TODO: switch to new GitHub cache backend when available
       # https://github.com/docker/build-push-action/blob/master/docs/advanced/cache.md#github-cache
       # https://github.com/docker/buildx/pull/535
-      - name: Docker build
+      - name: Docker build server
         uses: docker/build-push-action@v2
         with:
-          tags: ${{ steps.docker_meta.outputs.tags }}
-          labels: ${{ steps.docker_meta.outputs.labels }}
+          build-args: |
+            BASE=deephaven/server-base:local-build
+            SERVER=server
+            DEEPHAVEN_VERSION=${{ steps.deephaven_version.outputs.deephaven_version }}
+          tags: ${{ steps.docker_meta_server.outputs.tags }}
           builder: ${{ steps.buildx.outputs.name }}
-          context: ./grpc-api/server/docker/build/docker/
+          context: ./docker/server/build/context/
           push: ${{ github.event_name != 'pull_request' }}
+
+      - name: Docker build server nltk
+        uses: docker/build-push-action@v2
+        with:
+          build-args: |
+            BASE=deephaven/nltk-base:local-build
+            SERVER=server-nltk
+            DEEPHAVEN_VERSION=${{ steps.deephaven_version.outputs.deephaven_version }}
+          tags: ${{ steps.docker_meta_server_nltk.outputs.tags }}
+          builder: ${{ steps.buildx.outputs.name }}
+          context: ./docker/server/build/context/
+          push: ${{ github.event_name != 'pull_request' }}
+
+      - name: Docker build server pytorch
+        uses: docker/build-push-action@v2
+        with:
+          build-args: |
+            BASE=deephaven/pytorch-base:local-build
+            SERVER=server-pytorch
+            DEEPHAVEN_VERSION=${{ steps.deephaven_version.outputs.deephaven_version }}
+          tags: ${{ steps.docker_meta_server_pytorch.outputs.tags }}
+          builder: ${{ steps.buildx.outputs.name }}
+          context: ./docker/server/build/context/
+          push: ${{ github.event_name != 'pull_request' }}
+
+      - name: Docker build server sklearn
+        uses: docker/build-push-action@v2
+        with:
+          build-args: |
+            BASE=deephaven/sklearn-base:local-build
+            SERVER=server-sklearn
+            DEEPHAVEN_VERSION=${{ steps.deephaven_version.outputs.deephaven_version }}
+          tags: ${{ steps.docker_meta_server_sklearn.outputs.tags }}
+          builder: ${{ steps.buildx.outputs.name }}
+          context: ./docker/server/build/context/
+          push: ${{ github.event_name != 'pull_request' }}
+
+      - name: Docker build server tensorflow
+        uses: docker/build-push-action@v2
+        with:
+          build-args: |
+            BASE=deephaven/tensorflow-base:local-build
+            SERVER=server-tensorflow
+            DEEPHAVEN_VERSION=${{ steps.deephaven_version.outputs.deephaven_version }}
+          tags: ${{ steps.docker_meta_server_tensorflow.outputs.tags }}
+          builder: ${{ steps.buildx.outputs.name }}
+          context: ./docker/server/build/context/
+          push: ${{ github.event_name != 'pull_request' }}
+
+      # Note: server-slim does not need BASE/SERVER build-args like the other server images
+      - name: Docker build server slim
+        uses: docker/build-push-action@v2
+        with:
+          build-args: |
+            DEEPHAVEN_VERSION=${{ steps.deephaven_version.outputs.deephaven_version }}
+          tags: ${{ steps.docker_meta_server_slim.outputs.tags }}
+          builder: ${{ steps.buildx.outputs.name }}
+          context: ./docker/server-slim/build/context/
+          push: ${{ github.event_name != 'pull_request' }}
+
+      - name: Tag upstream images
+        if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
+        run: |
+          ./docker/registry/python-dev-base/build/crane/retag.sh
+          ./docker/registry/slim-base/build/crane/retag.sh
+          ./docker/registry/server-base/build/crane/retag.sh
+          ./docker/registry/nltk-base/build/crane/retag.sh
+          ./docker/registry/pytorch-base/build/crane/retag.sh
+          ./docker/registry/sklearn-base/build/crane/retag.sh
+          ./docker/registry/tensorflow-base/build/crane/retag.sh
 
   grpc-proxy:
     runs-on: ubuntu-20.04
@@ -137,13 +287,8 @@ jobs:
           tags: |
             type=edge,branch=main
             type=raw,priority=950,enable=${{ startsWith(github.ref, 'refs/heads/release/v') }},value=${{ steps.semver.outputs.semver }}
-            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.7') }},value=latest
+            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.8') }},value=latest
             type=ref,event=branch
-          labels: |
-            org.opencontainers.image.vendor=Deephaven Data Labs
-            org.opencontainers.image.title=Deephaven gRPC Web Proxy
-            org.opencontainers.image.description=Deephaven gRPC web proxy, for the improbable-eng grpc to grpc-web/websocket proxy
-            org.opencontainers.image.licenses=Apache-2.0
 
       - name: Set up Docker Buildx
         id: buildx
@@ -164,14 +309,20 @@ jobs:
         uses: burrunan/gradle-cache-action@v1
         with:
           job-id: build-grpc-proxy
-          arguments: --scan grpc-proxy:prepareDocker
+          arguments: --scan outputVersion grpc-proxy:prepareDocker
           gradle-version: wrapper
+
+      - name: Get Deephaven Version
+        id: deephaven_version
+        run: |
+          echo "::set-output name=deephaven_version::$(cat build/version)"
 
       - name: Docker build
         uses: docker/build-push-action@v2
         with:
+          build-args: |
+            DEEPHAVEN_VERSION=${{ steps.deephaven_version.outputs.deephaven_version }}
           tags: ${{ steps.docker_meta.outputs.tags }}
-          labels: ${{ steps.docker_meta.outputs.labels }}
           builder: ${{ steps.buildx.outputs.name }}
           context: ./grpc-proxy/build/docker/
           push: ${{ github.event_name != 'pull_request' }}
@@ -221,13 +372,8 @@ jobs:
           tags: |
             type=edge,branch=main
             type=raw,priority=950,enable=${{ startsWith(github.ref, 'refs/heads/release/v') }},value=${{ steps.semver.outputs.semver }}
-            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.7') }},value=latest
+            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.8') }},value=latest
             type=ref,event=branch
-          labels: |
-            org.opencontainers.image.vendor=Deephaven Data Labs
-            org.opencontainers.image.title=Deephaven Envoy
-            org.opencontainers.image.description=Deephaven envoy proxy
-            org.opencontainers.image.licenses=Apache-2.0
 
       - name: Set up Docker Buildx
         id: buildx
@@ -248,14 +394,20 @@ jobs:
         uses: burrunan/gradle-cache-action@v1
         with:
           job-id: build-envoy
-          arguments: --scan envoy:prepareDocker
+          arguments: --scan outputVersion envoy:prepareDocker
           gradle-version: wrapper
+
+      - name: Get Deephaven Version
+        id: deephaven_version
+        run: |
+          echo "::set-output name=deephaven_version::$(cat build/version)"
 
       - name: Build
         uses: docker/build-push-action@v2
         with:
+          build-args: |
+            DEEPHAVEN_VERSION=${{ steps.deephaven_version.outputs.deephaven_version }}
           tags: ${{ steps.docker_meta.outputs.tags }}
-          labels: ${{ steps.docker_meta.outputs.labels }}
           builder: ${{ steps.buildx.outputs.name }}
           context: ./envoy/build/docker/
           push: ${{ github.event_name != 'pull_request' }}
@@ -283,13 +435,8 @@ jobs:
           tags: |
             type=edge,branch=main
             type=raw,priority=950,enable=${{ startsWith(github.ref, 'refs/heads/release/v') }},value=${{ steps.semver.outputs.semver }}
-            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.7') }},value=latest
+            type=raw,enable=${{ startsWith(github.ref, 'refs/heads/release/v0.8') }},value=latest
             type=ref,event=branch
-          labels: |
-            org.opencontainers.image.vendor=Deephaven Data Labs
-            org.opencontainers.image.title=Deephaven Web
-            org.opencontainers.image.description=Deephaven web
-            org.opencontainers.image.licenses=Deephaven Community License Agreement 1.0
 
       - name: Setup JDK 11
         id: setup-java-11
@@ -304,6 +451,10 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
+
+      - name: Setup Crane
+        if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
+        uses: imjasonh/setup-crane@v0.1
 
       - name: Set JAVA_HOME
         run: echo "JAVA_HOME=${{ steps.setup-java-11.outputs.path }}" >> $GITHUB_ENV
@@ -332,18 +483,28 @@ jobs:
         uses: burrunan/gradle-cache-action@v1
         with:
           job-id: build-web
-          arguments: --scan web-client-ide:prepareDocker
+          arguments: --scan outputVersion createCraneTagScript docker-web:prepareDocker
           gradle-version: wrapper
+
+      - name: Get Deephaven Version
+        id: deephaven_version
+        run: |
+          echo "::set-output name=deephaven_version::$(cat build/version)"
 
       - name: Docker build
         uses: docker/build-push-action@v2
         with:
+          build-args: |
+            DEEPHAVEN_VERSION=${{ steps.deephaven_version.outputs.deephaven_version }}
           tags: ${{ steps.docker_meta.outputs.tags }}
-          labels: ${{ steps.docker_meta.outputs.labels }}
           builder: ${{ steps.buildx.outputs.name }}
-          context: ./web/client-ide/build/docker/
+          context: ./docker/web/build/docker/
           push: ${{ github.event_name != 'pull_request' }}
 
+      - name: Tag upstream images
+        if: ${{ startsWith(github.ref, 'refs/heads/release/v') }}
+        run: |
+          ./docker/registry/nginx-base/build/crane/retag.sh
 
 ### Notes about `driver: docker`
 ###

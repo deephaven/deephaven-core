@@ -18,10 +18,6 @@ import org.jetbrains.annotations.NotNull;
 import java.util.*;
 
 public class FreezeByAggregationFactory implements AggregationContextFactory {
-    @Override
-    public boolean allowKeyOnlySubstitution() {
-        return true;
-    }
 
     @Override
     public AggregationContext makeAggregationContext(@NotNull final Table table,

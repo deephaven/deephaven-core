@@ -281,6 +281,11 @@ public class ByteChunkedCountDistinctOperator implements IterativeChunkedAggrega
         }
     }
 
+    @Override
+    public boolean requiresRunFinds() {
+        return true;
+    }
+
     //endregion
 
     //region Private Helpers

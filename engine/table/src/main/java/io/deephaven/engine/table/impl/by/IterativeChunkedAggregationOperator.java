@@ -235,6 +235,15 @@ public interface IterativeChunkedAggregationOperator {
         return false;
     }
 
+    /**
+     * Some operators require that all values for a destination within a given chunk are adjacent. These operators must
+     * return true.
+     *
+     * @return true if the operator requires runs of the same destination to be adjacent
+     */
+    default boolean requiresRunFinds() {
+        return false;
+    }
 
     /**
      * Whether the operator can deal with an unchunked RowSet more efficiently than a chunked RowSet.

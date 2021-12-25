@@ -5,10 +5,10 @@
 package io.deephaven.engine.table.impl.select;
 
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.time.DateTime;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.clock.RealTimeClock;
-import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.time.ClockTimeProvider;
 import io.deephaven.engine.updategraph.TerminalNotification;
 import io.deephaven.time.TimeProvider;
@@ -22,6 +22,9 @@ import java.text.DecimalFormat;
  * <p>
  * The table has an initial size, which can be thought of as the size during query initialization. There is an initial
  * number of rows that are released, which is then used to tune the number of rows to release on the subsequent cycle.
+ * <p>
+ * You must invoke the {@link #start()} method to begin producing rows.
+ * </p>
  * <p>
  * The targetFactor parameter is multiplied by the UGP's targetCycle. This allows you to determine how busy you want the
  * UGP to be. For example a factor of 1, will attempt to hit the target cycle exactly. A target of 0.5 should result an
@@ -69,6 +72,7 @@ import java.text.DecimalFormat;
  * filterQuotes=new AutoTuningIncrementalReleaseFilter(logger, 10000, 10000, 1.0d, true)
  * quotesFiltered = quotes.where(filterQuotes)
  * currentQuote = quotesFiltered.lastBy("LocalCodeStr").update("Mid=(Bid + Ask)/2")
+ * filterQuotes.start()
  * </pre>
  * <p>
  * The verbose information and the final report are easily visible on your console.
@@ -93,9 +97,15 @@ import java.text.DecimalFormat;
  * tradesFiltered = trades.where(filterTrades)
  *
  * decorated = tradesFiltered.aj(quotesFiltered, "LocalCodeStr,MarketTimestamp", "QuoteTime=MarketTimestamp,Bid,BidSize,Ask,AskSize")
+ *
+ * filterTrades.start()
+ * filterQuotes.start()
+ *
  * </pre>
  */
 public class AutoTuningIncrementalReleaseFilter extends BaseIncrementalReleaseFilter {
+    private static final Logger log = LoggerFactory.getLogger(AutoTuningIncrementalReleaseFilter.class);
+
     @NotNull
     private final TimeProvider timeProvider;
     private final long initialRelease;
@@ -190,7 +200,7 @@ public class AutoTuningIncrementalReleaseFilter extends BaseIncrementalReleaseFi
     @ScriptApi
     public AutoTuningIncrementalReleaseFilter(long initialSize, long initialRelease, double targetFactor,
             boolean verbose, TimeProvider timeProvider) {
-        this(ProcessEnvironment.getDefaultLog(), initialSize, initialRelease, targetFactor, verbose, timeProvider);
+        this(log, initialSize, initialRelease, targetFactor, verbose, timeProvider);
     }
 
     /**
@@ -208,7 +218,7 @@ public class AutoTuningIncrementalReleaseFilter extends BaseIncrementalReleaseFi
     @ScriptApi
     public AutoTuningIncrementalReleaseFilter(Logger logger, long initialSize, long initialRelease, double targetFactor,
             boolean verbose, TimeProvider timeProvider) {
-        super(initialSize);
+        super(initialSize, false);
         this.logger = logger;
         this.targetFactor = targetFactor;
         this.verbose = verbose;
@@ -224,13 +234,17 @@ public class AutoTuningIncrementalReleaseFilter extends BaseIncrementalReleaseFi
 
     @Override
     public void run() {
+        super.run();
         if (releasedAll) {
-            return;
+            throw new IllegalStateException();
         }
         final DateTime now = timeProvider.currentTime();
         if (nextSize == 0) {
             firstCycle = now;
             nextSize = initialRelease;
+            if (verbose) {
+                logger.info().append("Releasing: ").append(nextSize).append(" rows, first release").endl();
+            }
         } else {
             final long cycleDuration = (cycleEnd.getNanos() - lastRefresh.getNanos());
             final long targetCycle = UpdateGraphProcessor.DEFAULT.getTargetCycleDurationMillis() * 1000 * 1000;
@@ -246,7 +260,7 @@ public class AutoTuningIncrementalReleaseFilter extends BaseIncrementalReleaseFi
                 final double eta = (remaining / totalRowsPerSecond);
                 logger.info().append("Releasing: ").append(nextSize).append(" rows, last rows/second: ")
                         .append(decimalFormat.format(rowsPerNanoSecond * 1_000_000_000L)).append(", duration=")
-                        .append(cycleDuration / 1000000L).append(" ms, total rows/second=")
+                        .append(decimalFormat.format(cycleDuration / 1000000.0)).append(" ms, total rows/second=")
                         .append(decimalFormat.format(totalRowsPerSecond)).append(", ETA ")
                         .append(decimalFormat.format(eta)).append(" sec").endl();
             }
@@ -270,12 +284,12 @@ public class AutoTuningIncrementalReleaseFilter extends BaseIncrementalReleaseFi
             }
         });
         lastRefresh = now;
-        super.run();
     }
 
     @Override
     void onReleaseAll() {
         releasedAll = true;
+        super.onReleaseAll();
     }
 
     @Override

@@ -56,7 +56,6 @@ dependencies {
     // the actual dependencies used in fishlib... if we were strongly coupled, we could skip
     // having to maintain this...
     fishBase project(':Base'),
-            'log4j:log4j:1.2.16',
             'net.sf.trove4j:trove4j:3.0.3',
             'com.intellij:annotations:5.1',
             'commons-codec:commons-codec:1.11',

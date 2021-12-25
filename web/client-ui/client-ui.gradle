@@ -4,7 +4,8 @@ plugins {
 
 evaluationDependsOn Docker.registryProject('node')
 
-Docker.registerDockerTask(project, 'ideClient') {
+def dhUi = layout.buildDirectory.dir('dhide')
+def ui = Docker.registerDockerTask(project, 'ui') {
     copyIn {
         from file('Dockerfile')
     }
@@ -12,6 +13,16 @@ Docker.registerDockerTask(project, 'ideClient') {
     containerOutPath = '/usr/src/app/package/build'
     imageName = 'deephaven/dhide:local-build'
     copyOut {
-        into "${buildDir}/dhide"
+        into dhUi.get().dir('ide')
+    }
+}
+
+configurations {
+    js
+}
+
+artifacts {
+    js(dhUi) {
+        builtBy ui
     }
 }

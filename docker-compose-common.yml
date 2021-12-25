@@ -2,7 +2,7 @@ version: "3.4"
 
 services:
   grpc-api:
-    image: deephaven/grpc-api:local-build
+    image: ${DEEPHAVEN_SERVER_IMAGE}
 
     environment:
       # https://bugs.openjdk.java.net/browse/JDK-8230305

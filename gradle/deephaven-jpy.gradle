@@ -1,6 +1,6 @@
 project(':deephaven-jpy') {
 
-  evaluationDependsOn ':docker-java-and-python'
+  evaluationDependsOn Docker.registryProject('python-dev-base')
 
   apply plugin: 'com.bmuschko.docker-remote-api'
 
@@ -32,7 +32,7 @@ project(':deephaven-jpy') {
         exclude 'build'
       }
     }
-    parentContainers = [ project(':docker-java-and-python').tasks.findByName('buildDocker') ]
+    parentContainers = [ Docker.registryTask(project, 'python-dev-base') ]
     buildArgs = [ DEEPHAVEN_VERSION: project.version.toString() ]
     imageName = 'deephaven/deephaven-jpy-wheel:local-build'
     containerOutPath = '/usr/src/app/dist'

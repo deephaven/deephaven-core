@@ -10,11 +10,11 @@ import io.deephaven.grpc_api.appmode.ApplicationInjector;
 import io.deephaven.grpc_api.console.ConsoleServiceGrpcImpl;
 import io.deephaven.grpc_api.log.LogInit;
 import io.deephaven.grpc_api.session.SessionService;
-import io.deephaven.grpc_api.uri.UriResolver;
-import io.deephaven.grpc_api.uri.UriResolvers;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.grpc_api.uri.UriResolversInstance;
+import io.deephaven.uri.resolver.UriResolver;
+import io.deephaven.uri.resolver.UriResolvers;
+import io.deephaven.uri.resolver.UriResolversInstance;
 import io.deephaven.util.annotations.VisibleForTesting;
 import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.util.process.ShutdownManager;
@@ -23,6 +23,7 @@ import io.grpc.Server;
 import javax.inject.Inject;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
  * Entrypoint for the Deephaven gRPC server, starting the various engine and script components, running any specified
@@ -72,7 +73,7 @@ public class DeephavenApiServer {
      * @throws ClassNotFoundException thrown if a class can't be found while finding and running an application.
      * @throws InterruptedException thrown if this thread is interrupted while blocking for the server to halt.
      */
-    public void run() throws IOException, ClassNotFoundException, InterruptedException {
+    public void run() throws IOException, ClassNotFoundException, InterruptedException, TimeoutException {
         // Stop accepting new gRPC requests.
         ProcessEnvironment.getGlobalShutdownManager().registerTask(ShutdownManager.OrderingCategory.FIRST,
                 server::shutdown);
