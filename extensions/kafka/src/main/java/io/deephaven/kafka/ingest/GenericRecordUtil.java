@@ -59,7 +59,7 @@ public class GenericRecordUtil {
     /**
      * Get the schema for a particular field path (including nesting).
      * 
-     * @param schema A {@code Schema}, for the root where to start nested field navigation.
+     * @param schema A {@link org.apache.avro.Schema} to start nested field navigation from
      * @param fieldPath An array of individual field names, in order according to nesting from the root representing a
      *        path to an individual desired field
      * @return The schema for the given {@code fieldPath}
