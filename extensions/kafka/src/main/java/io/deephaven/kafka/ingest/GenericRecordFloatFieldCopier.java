@@ -8,15 +8,14 @@ import io.deephaven.chunk.WritableFloatChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.util.type.TypeUtils;
+import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
 
 import java.util.regex.Pattern;
 
-public class GenericRecordFloatFieldCopier implements FieldCopier {
-    private final String[] fieldPath;
-
-    public GenericRecordFloatFieldCopier(final String fieldPathStr, final Pattern separator) {
-        this.fieldPath = GenericRecordUtil.getFieldPath(fieldPathStr, separator);
+public class GenericRecordFloatFieldCopier extends GenericRecordFieldCopier {
+    public GenericRecordFloatFieldCopier(final String fieldPathStr, final Pattern separator, final Schema schema) {
+        super(fieldPathStr, separator, schema);
     }
 
     @Override

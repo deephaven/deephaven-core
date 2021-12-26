@@ -66,16 +66,16 @@ public class GenericRecordChunkAdapter extends MultiFieldChunkAdapter {
             final Class<?> dataType) {
         switch (chunkType) {
             case Char:
-                return new GenericRecordCharFieldCopier(fieldPathStr, separator);
+                return new GenericRecordCharFieldCopier(fieldPathStr, separator, schema);
             case Byte:
                 if (dataType == Boolean.class || dataType == boolean.class) {
-                    return new GenericRecordBooleanFieldCopier(fieldPathStr, separator);
+                    return new GenericRecordBooleanFieldCopier(fieldPathStr, separator, schema);
                 }
-                return new GenericRecordByteFieldCopier(fieldPathStr, separator);
+                return new GenericRecordByteFieldCopier(fieldPathStr, separator, schema);
             case Short:
-                return new GenericRecordShortFieldCopier(fieldPathStr, separator);
+                return new GenericRecordShortFieldCopier(fieldPathStr, separator, schema);
             case Int:
-                return new GenericRecordIntFieldCopier(fieldPathStr, separator);
+                return new GenericRecordIntFieldCopier(fieldPathStr, separator, schema);
             case Long:
                 if (dataType == DateTime.class) {
                     final String[] fieldPath = GenericRecordUtil.getFieldPath(fieldPathStr, separator);
@@ -86,24 +86,25 @@ public class GenericRecordChunkAdapter extends MultiFieldChunkAdapter {
                                 "Can not map field without a logical type to DateTime: field=" + fieldPathStr);
                     }
                     if (logicalType instanceof LogicalTypes.TimestampMillis) {
-                        return new GenericRecordLongFieldCopierWithMultiplier(fieldPathStr, separator, 1000_000L);
+                        return new GenericRecordLongFieldCopierWithMultiplier(fieldPathStr, separator, schema,
+                                1000_000L);
                     }
                     if (logicalType instanceof LogicalTypes.TimestampMicros) {
-                        return new GenericRecordLongFieldCopierWithMultiplier(fieldPathStr, separator, 1000L);
+                        return new GenericRecordLongFieldCopierWithMultiplier(fieldPathStr, separator, schema, 1000L);
                     }
                     throw new IllegalArgumentException(
                             "Can not map field with unknown logical type to DateTime: field=" + fieldPathStr
                                     + ", type=" + logicalType);
 
                 }
-                return new GenericRecordLongFieldCopier(fieldPathStr, separator);
+                return new GenericRecordLongFieldCopier(fieldPathStr, separator, schema);
             case Float:
-                return new GenericRecordFloatFieldCopier(fieldPathStr, separator);
+                return new GenericRecordFloatFieldCopier(fieldPathStr, separator, schema);
             case Double:
-                return new GenericRecordDoubleFieldCopier(fieldPathStr, separator);
+                return new GenericRecordDoubleFieldCopier(fieldPathStr, separator, schema);
             case Object:
                 if (dataType == String.class) {
-                    return new GenericRecordStringFieldCopier(fieldPathStr, separator);
+                    return new GenericRecordStringFieldCopier(fieldPathStr, separator, schema);
                 }
                 if (dataType == BigDecimal.class) {
                     final String[] fieldPath = GenericRecordUtil.getFieldPath(fieldPathStr, separator);
@@ -112,14 +113,14 @@ public class GenericRecordChunkAdapter extends MultiFieldChunkAdapter {
                     if (logicalType instanceof LogicalTypes.Decimal) {
                         final LogicalTypes.Decimal decimalType = (LogicalTypes.Decimal) logicalType;
                         return new GenericRecordBigDecimalFieldCopier(
-                                fieldPathStr, separator,
+                                fieldPathStr, separator, schema,
                                 decimalType.getPrecision(), decimalType.getScale());
                     }
                     throw new IllegalArgumentException(
                             "Can not map field with non matching logical type to BigDecimal: " +
                                     "field=" + fieldPathStr + ", logical type=" + logicalType);
                 }
-                return new GenericRecordObjectFieldCopier(fieldPathStr, separator);
+                return new GenericRecordObjectFieldCopier(fieldPathStr, separator, schema);
         }
         throw new IllegalArgumentException("Can not convert field of type " + dataType);
     }

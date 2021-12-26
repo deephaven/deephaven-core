@@ -6,17 +6,20 @@ import io.deephaven.chunk.WritableLongChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.util.QueryConstants;
 import io.deephaven.util.type.TypeUtils;
+import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
 
 import java.util.regex.Pattern;
 
-public class GenericRecordLongFieldCopierWithMultiplier implements FieldCopier {
-    private final String[] fieldPath;
+public class GenericRecordLongFieldCopierWithMultiplier extends GenericRecordFieldCopier {
     private final long multiplier;
 
-    public GenericRecordLongFieldCopierWithMultiplier(final String fieldPathStr, final Pattern separator,
+    public GenericRecordLongFieldCopierWithMultiplier(
+            final String fieldPathStr,
+            final Pattern separator,
+            final Schema schema,
             final long multiplier) {
-        this.fieldPath = GenericRecordUtil.getFieldPath(fieldPathStr, separator);
+        super(fieldPathStr, separator, schema);
         this.multiplier = multiplier;
     }
 

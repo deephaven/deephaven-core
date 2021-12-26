@@ -5,15 +5,14 @@ import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableByteChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.util.BooleanUtils;
+import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
 
 import java.util.regex.Pattern;
 
-public class GenericRecordBooleanFieldCopier implements FieldCopier {
-    private final String[] fieldPath;
-
-    public GenericRecordBooleanFieldCopier(final String fieldPathStr, final Pattern separator) {
-        this.fieldPath = GenericRecordUtil.getFieldPath(fieldPathStr, separator);
+public class GenericRecordBooleanFieldCopier extends GenericRecordFieldCopier {
+    public GenericRecordBooleanFieldCopier(final String fieldPathStr, final Pattern separator, final Schema schema) {
+        super(fieldPathStr, separator, schema);
     }
 
     @Override

@@ -4,22 +4,23 @@ import io.deephaven.chunk.ObjectChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.WritableObjectChunk;
 import io.deephaven.chunk.attributes.Values;
+import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.regex.Pattern;
 
-public class GenericRecordBigDecimalFieldCopier implements FieldCopier {
-    private final String[] fieldPath;
+public class GenericRecordBigDecimalFieldCopier extends GenericRecordFieldCopier {
     private final int scale;
 
     public GenericRecordBigDecimalFieldCopier(
             final String fieldPathStr,
             final Pattern separator,
+            final Schema schema,
             final int precisionUnused,
             final int scale) {
-        this.fieldPath = GenericRecordUtil.getFieldPath(fieldPathStr, separator);
+        super(fieldPathStr, separator, schema);
         this.scale = scale;
     }
 
