@@ -12,6 +12,7 @@ import org.apache.avro.LogicalTypes;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
 
+import java.math.BigDecimal;
 import java.util.*;
 import java.util.function.IntFunction;
 import java.util.regex.Pattern;
@@ -104,8 +105,7 @@ public class GenericRecordChunkAdapter extends MultiFieldChunkAdapter {
                 if (dataType == String.class) {
                     return new GenericRecordStringFieldCopier(fieldPathStr, separator);
                 }
-                final Schema.Field field = schema.getField(fieldPathStr);
-                if (field != null) {
+                if (dataType == BigDecimal.class) {
                     final String[] fieldPath = GenericRecordUtil.getFieldPath(fieldPathStr, separator);
                     final Schema fieldSchema = GenericRecordUtil.getFieldSchema(schema, fieldPath);
                     final LogicalType logicalType = fieldSchema.getLogicalType();
@@ -115,6 +115,9 @@ public class GenericRecordChunkAdapter extends MultiFieldChunkAdapter {
                                 fieldPathStr, separator,
                                 decimalType.getPrecision(), decimalType.getScale());
                     }
+                    throw new IllegalArgumentException(
+                            "Can not map field with non matching logical type to BigDecimal: " +
+                                    "field=" + fieldPathStr + ", logical type=" + logicalType);
                 }
                 return new GenericRecordObjectFieldCopier(fieldPathStr, separator);
         }
