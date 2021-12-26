@@ -10,8 +10,6 @@ import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
 import org.apache.avro.generic.GenericRecord;
 
-import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.util.regex.Pattern;
 
 public class GenericRecordObjectFieldCopier implements FieldCopier {

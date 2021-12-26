@@ -5,6 +5,7 @@ import io.deephaven.kafka.KafkaSchemaUtils;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
 
+import java.util.Arrays;
 import java.util.regex.Pattern;
 
 public class GenericRecordUtil {
@@ -44,18 +45,6 @@ public class GenericRecordUtil {
         return parentRecord.get(fieldPath[i]);
     }
 
-    private static String buildPartialFieldName(final String[] fieldPath, final int k) {
-        final StringBuilder sb = new StringBuilder("(");
-        for (int i = 0; i < k; ++i) {
-            if (i > 0) {
-                sb.append(", ");
-            }
-            sb.append(fieldPath[i]);
-        }
-        sb.append(")");
-        return sb.toString();
-    }
-
     /**
      * Get the schema for a particular field path (including nesting).
      * 
@@ -71,7 +60,8 @@ public class GenericRecordUtil {
             final String fieldName = fieldPath[i];
             final Schema.Field field = s.getField(fieldName);
             if (field == null) {
-                throw new IllegalArgumentException("Can't find field for path " + buildPartialFieldName(fieldPath, i));
+                final String partialFieldName = Arrays.toString(Arrays.copyOf(fieldPath, i+1))
+                throw new IllegalArgumentException("Can't find field for path " + partialFieldName);
             }
             s = KafkaSchemaUtils.getEffectiveSchema(fieldName, field.schema());
             ++i;
