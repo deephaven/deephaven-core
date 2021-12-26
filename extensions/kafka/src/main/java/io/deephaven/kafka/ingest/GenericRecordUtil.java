@@ -60,7 +60,7 @@ public class GenericRecordUtil {
             final String fieldName = fieldPath[i];
             final Schema.Field field = s.getField(fieldName);
             if (field == null) {
-                final String partialFieldName = Arrays.toString(Arrays.copyOf(fieldPath, i+1))
+                final String partialFieldName = Arrays.toString(Arrays.copyOf(fieldPath, i+1));
                 throw new IllegalArgumentException("Can't find field for path " + partialFieldName);
             }
             s = KafkaSchemaUtils.getEffectiveSchema(fieldName, field.schema());
