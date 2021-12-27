@@ -55,31 +55,10 @@ public class GenericRecordUtil {
 
     /**
      * Get the value out of a Generic Record for a given field path (including nesting).
-     * 
-     * @param record A {@code GenericRecord} from which to extract a value.
-     * @param fieldPath An array of individual field names, in order according to nesting from the root representing a
-     *        path to an individual desired field
-     * @return The value in {@code record} for the given {@code fieldPath}
-     */
-    public static Object getPath(final GenericRecord record, final String[] fieldPath) {
-        if (record == null) {
-            return null;
-        }
-        GenericRecord parentRecord = record;
-        int i = 0;
-        while (i < fieldPath.length - 1) {
-            parentRecord = (GenericRecord) parentRecord.get(fieldPath[i]);
-            ++i;
-        }
-        return parentRecord.get(fieldPath[i]);
-    }
-
-    /**
-     * Get the value out of a Generic Record for a given field path (including nesting).
      *
      * @param record A {@code GenericRecord} from which to extract a value.
      * @param fieldPath An array of individual field position indices, in order according to nesting from the root
-     *        representing repath to an individual desired field
+     *        representing a path to an individual desired field
      * @return The value in {@code record} for the given {@code fieldPath}
      */
     public static Object getPath(final GenericRecord record, final int[] fieldPath) {
