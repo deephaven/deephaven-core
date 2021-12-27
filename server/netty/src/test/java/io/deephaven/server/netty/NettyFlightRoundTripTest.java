@@ -26,6 +26,6 @@ public class NettyFlightRoundTripTest extends FlightMessageRoundTripTest {
 
     @Override
     protected TestComponent component() {
-        return DaggerFlightRoundTripTest_NettyTestComponent.create();
+        return DaggerNettyFlightRoundTripTest_NettyTestComponent.create();
     }
 }
