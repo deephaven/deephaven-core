@@ -51,23 +51,26 @@ public class JettyBackedGrpcServer implements GrpcServer {
             throw new UncheckedIOException(ioException);
         }
 
-        // context.addFilter(NoCacheFilter.class, "*.nocache.js", EnumSet.noneOf(DispatcherType.class));
-        // context.addFilter(CacheFilter.class, "*.cache.js", EnumSet.noneOf(DispatcherType.class));
-        //
-        // // For the Web UI, cache everything in the static folder
-        // // https://create-react-app.dev/docs/production-build/#static-file-caching
-        // context.addFilter(NoCacheFilter.class, "/iriside/*", EnumSet.noneOf(DispatcherType.class));
-        // context.addFilter(CacheFilter.class, "/iriside/static/*", EnumSet.noneOf(DispatcherType.class));
+
+        // For the Web UI, cache everything in the static folder
+        // https://create-react-app.dev/docs/production-build/#static-file-caching
+        context.addFilter(NoCacheFilter.class, "/iriside/*", EnumSet.noneOf(DispatcherType.class));
+        context.addFilter(CacheFilter.class, "/iriside/static/*", EnumSet.noneOf(DispatcherType.class));
 
         // Always add eTags
         context.setInitParameter("org.eclipse.jetty.servlet.Default.etags", "true");
         context.setSecurityHandler(new ConstraintSecurityHandler());
 
-        context.setContextPath("/");
-        context.addFilter(new FilterHolder(filter), "/*", EnumSet.noneOf(DispatcherType.class));
-        jetty.setHandler(context);
+        // Add an extra filter to redirect from / to /ide/
+        context.addFilter(HomeFilter.class, "/", EnumSet.noneOf(DispatcherType.class));
 
-        // set up websocket for grpc-web
+        // Direct jetty all use this configuration as the root application
+        context.setContextPath("/");
+
+        // Wire up the provided grpc filter
+        context.addFilter(new FilterHolder(filter), "/*", EnumSet.noneOf(DispatcherType.class));
+
+        // Set up websocket for grpc-web
         JakartaWebSocketServletContainerInitializer.configure(context, (servletContext, container) -> {
             container.addEndpoint(
                     ServerEndpointConfig.Builder.create(WebSocketServerStream.class, "/{service}/{method}")
@@ -79,6 +82,9 @@ public class JettyBackedGrpcServer implements GrpcServer {
                             })
                             .build());
         });
+
+        jetty.setHandler(context);
+
     }
 
     @Override

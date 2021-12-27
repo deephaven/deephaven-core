@@ -56,10 +56,8 @@ public abstract class DeephavenApiServerTestBase {
         scopeCloseable.close();
 
         try {
-            server.server().shutdown();
-            if (!server.server().awaitTermination(5, TimeUnit.SECONDS)) {
-                throw new RuntimeException("Server not shutdown within 5 seconds");
-            }
+            server.server().stopWithTimeout(5, TimeUnit.SECONDS);
+            server.server().join();
         } finally {
             LogBufferGlobal.clear(logBuffer);
             UpdateGraphProcessor.DEFAULT.resetForUnitTests(true);
