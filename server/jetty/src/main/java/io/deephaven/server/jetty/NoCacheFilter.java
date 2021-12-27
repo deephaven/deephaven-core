@@ -12,8 +12,8 @@ import java.io.IOException;
 public class NoCacheFilter implements Filter {
     @Override
     public void doFilter(final ServletRequest request,
-                         final ServletResponse response,
-                         final FilterChain filterChain)
+            final ServletResponse response,
+            final FilterChain filterChain)
             throws IOException, ServletException {
         final HttpServletResponse httpResponse = (HttpServletResponse) response;
 
@@ -23,7 +23,7 @@ public class NoCacheFilter implements Filter {
         httpResponse.setHeader("Pragma", "no-cache");
         // HTTP 1.1 (disable caching of any kind)
         // HTTP 1.1 'pre-check=0, post-check=0' => (Internet Explorer should always check)
-        //Note: no-store is not included here as it will disable offline application storage on Firefox
+        // Note: no-store is not included here as it will disable offline application storage on Firefox
         httpResponse.setHeader("Cache-control", "no-cache, must-revalidate, pre-check=0, post-check=0");
 
         filterChain.doFilter(request, response);

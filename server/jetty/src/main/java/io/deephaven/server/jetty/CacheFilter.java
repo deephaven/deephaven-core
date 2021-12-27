@@ -16,8 +16,8 @@ public class CacheFilter implements Filter {
 
     @Override
     public void doFilter(final ServletRequest request,
-                         final ServletResponse response,
-                         final FilterChain filterChain)
+            final ServletResponse response,
+            final FilterChain filterChain)
             throws IOException, ServletException {
         final HttpServletResponse httpResponse = (HttpServletResponse) response;
 
@@ -26,7 +26,7 @@ public class CacheFilter implements Filter {
         calendar.setTime(new Date());
         calendar.add(Calendar.YEAR, 1);
         httpResponse.setDateHeader("Expires", calendar.getTime().getTime());
-        //Note: immutable tells firefox to never revalidate as data will never change
+        // Note: immutable tells firefox to never revalidate as data will never change
         httpResponse.setHeader("Cache-control", "max-age=" + YEAR_IN_SECONDS + ", public, immutable");
         httpResponse.setHeader("Pragma", "");
 
