@@ -51,7 +51,7 @@ class Classpaths {
     static final String ARROW_VERSION = '5.0.0'
 
     static final String SLF4J_GROUP = 'org.slf4j'
-    static final String SLF4J_VERSION = '1.7.32'
+    static final String SLF4J_VERSION = '2.0.0-alpha4'
 
     static final String FLATBUFFER_GROUP = 'com.google.flatbuffers'
     static final String FLATBUFFER_NAME = 'flatbuffers-java'
