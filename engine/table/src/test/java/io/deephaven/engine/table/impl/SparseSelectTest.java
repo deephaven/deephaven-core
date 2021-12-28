@@ -157,7 +157,7 @@ public class SparseSelectTest {
     public void testSparseSelectSkipMemoryColumns() {
         final int[] intVals = {1, 2, 3, 4, 5};
         final Table table = TstUtils.testRefreshingTable(RowSetFactory.flat(5).toTracking(),
-                        TableTools.intCol("Value", intVals))
+                TableTools.intCol("Value", intVals))
                 .update("V2=Value*2");
         final Table selected = SparseSelect.sparseSelect(table);
         assertTableEquals(table, selected);
