@@ -21,7 +21,7 @@ import java.util.concurrent.TimeUnit;
 @Warmup(iterations = 3, time = 1)
 @Measurement(iterations = 10, time = 1)
 @Fork(value = 1)
-public class IndexBuilderChunkedBench {
+public class RowSetBuilderChunkedBench {
     private RowSet ix = null;
     private static final int chunkSz = 1024;
     private WritableLongChunk<OrderedRowKeys> indicesChunk = null;
@@ -149,6 +149,6 @@ public class IndexBuilderChunkedBench {
     }
 
     public static void main(String[] args) throws RunnerException {
-        BenchUtil.run(IndexBuilderChunkedBench.class);
+        BenchUtil.run(RowSetBuilderChunkedBench.class);
     }
 }

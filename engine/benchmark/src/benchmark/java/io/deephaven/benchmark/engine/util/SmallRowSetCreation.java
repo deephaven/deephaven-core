@@ -26,7 +26,7 @@ import java.util.concurrent.TimeUnit;
 @Warmup(timeUnit = TimeUnit.MILLISECONDS, iterations = 2, time = 2000)
 @Measurement(timeUnit = TimeUnit.MILLISECONDS, iterations = 5, time = 2000)
 @Fork(1)
-public class SmallIndexCreation {
+public class SmallRowSetCreation {
     // @Param({"12", "16", "20"})
     @Param("12")
     private int valuesPerBlock;
@@ -144,7 +144,7 @@ public class SmallIndexCreation {
 
     public static void main(String[] args) throws RunnerException {
         Options opt = new OptionsBuilder()
-                .include(SmallIndexCreation.class.getSimpleName())
+                .include(SmallRowSetCreation.class.getSimpleName())
                 .build();
 
         new Runner(opt).run();

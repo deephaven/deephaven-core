@@ -16,7 +16,7 @@ import java.util.concurrent.TimeUnit;
 @Warmup(timeUnit = TimeUnit.MILLISECONDS, iterations = 1, time = 500)
 @Measurement(timeUnit = TimeUnit.MILLISECONDS, iterations = 1, time = 500)
 @Fork(1)
-public class IndexCreation {
+public class RowSetCreation {
 
     @Param({"10000000"})
     private int indexCount;
@@ -172,6 +172,6 @@ public class IndexCreation {
     }
 
     public static void main(String[] args) throws RunnerException {
-        BenchUtil.run(IndexCreation.class);
+        BenchUtil.run(RowSetCreation.class);
     }
 }

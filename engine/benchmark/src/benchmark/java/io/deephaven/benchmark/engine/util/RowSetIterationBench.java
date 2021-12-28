@@ -21,7 +21,7 @@ import java.util.concurrent.TimeUnit;
 @Measurement(iterations = 3, time = 7)
 @Fork(value = 1)
 
-public class IndexIterationBench {
+public class RowSetIterationBench {
 
     @Param({"10000000"}) // "10000", "100000", "1000000"}) // , "10000000"})
     private static int sz;
@@ -109,6 +109,6 @@ public class IndexIterationBench {
     }
 
     public static void main(String[] args) throws RunnerException {
-        BenchUtil.run(IndexIterationBench.class);
+        BenchUtil.run(RowSetIterationBench.class);
     }
 }

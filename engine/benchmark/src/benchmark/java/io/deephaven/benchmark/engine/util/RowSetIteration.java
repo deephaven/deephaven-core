@@ -20,7 +20,7 @@ import java.util.concurrent.TimeUnit;
 @Warmup(iterations = 1, time = 1)
 @Measurement(iterations = 1, time = 1)
 @Fork(1)
-public class IndexIteration {
+public class RowSetIteration {
 
     // @Param({/*100", "10000",*/ "1000000"/*, "10000000"*/})
     private int indexCount = 1000000;
@@ -208,7 +208,7 @@ public class IndexIteration {
         return rangeStart + length;
     }
 
-    private int[] fillChunkDirectByRangeIndexIteration(int posInRange, int rangeStart, int size,
+    private int[] fillChunkDirectByRangeRowSetIteration(int posInRange, int rangeStart, int size,
             WritableDoubleChunk doubleChunk, int sourceId) {
         int pos = 0;
         int rangeEnd = (int) indexRanges[posInRange + 1];
@@ -309,7 +309,7 @@ public class IndexIteration {
             int[] posInRangeAndRangeStart = null;
             for (int i = 0; i < chunks.length; i++) {
                 posInRangeAndRangeStart =
-                        fillChunkDirectByRangeIndexIteration(lastPosInRange, rangeStart, chunkSize, chunks[i], i);
+                        fillChunkDirectByRangeRowSetIteration(lastPosInRange, rangeStart, chunkSize, chunks[i], i);
             }
             lastPosInRange = posInRangeAndRangeStart[0];
             rangeStart = posInRangeAndRangeStart[1];
@@ -319,7 +319,7 @@ public class IndexIteration {
         }
 
         for (int i = 0; i < chunks.length; i++) {
-            fillChunkDirectByRangeIndexIteration(lastPosInRange, rangeStart, indexCount % chunkSize, chunks[i], i);
+            fillChunkDirectByRangeRowSetIteration(lastPosInRange, rangeStart, indexCount % chunkSize, chunks[i], i);
         }
         evaluate(result, chunks);
         sum = sum(sum);
@@ -328,7 +328,7 @@ public class IndexIteration {
     }
 
     @Benchmark
-    public void directByIndexIteration(Blackhole bh) {
+    public void directByRowSetIteration(Blackhole bh) {
         int stepCount = indexCount / chunkSize;
         double sum = 0;
         for (int step = 0; step < stepCount; step++) {
@@ -412,7 +412,7 @@ public class IndexIteration {
     // doubleChunk, int sourceId) {
 
     public static void main(String[] args) throws RunnerException {
-        BenchUtil.run(IndexIteration.class);
+        BenchUtil.run(RowSetIteration.class);
     }
 
     double sum(double prevSum) {
