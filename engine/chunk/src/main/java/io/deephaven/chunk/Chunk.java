@@ -86,7 +86,7 @@ public interface Chunk<ATTR extends Any> {
      * rather than a relative offset from {@code destBuffer.position()}.
      *
      * <p>
-     * <It is required that {@code destBuffer.limit()} is at least {@code destOffset + length}.
+     * It is required that {@code destBuffer.limit()} is at least {@code destOffset + length}.
      *
      * <p>
      * {@code destBuffer}'s position may be modified, but will always be restored to its initial value upon successful

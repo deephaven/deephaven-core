@@ -7,7 +7,7 @@
   "currentRangeStart": ":return: long",
   "hasNext": ":return: boolean",
   "next": ":return: long",
-  "postpone": "Given an iterator state with a current range of [start, end], and a value v such that start <= v <= end,\n postpone(v) makes the iterator current range [v, end]. This call is useful to code that may need to process\n parts of ranges from different call sites from the site iterator. The results of this call are undefined if\n the value provided is not contained in the current range.\n\n:param v: (long) - A value contained in the current iterator range"
+  "postpone": "Given an iterator state with a current range of [start, end], and a value v such that start <= v <=\n end, postpone(v) makes the iterator current range [v, end]. This call is useful to code that may need to\n process parts of ranges from different call sites from the site iterator. The results of this call are\n undefined if the value provided is not contained in the current range.\n\n:param v: (long) - A value contained in the current iterator range"
  },
  "path": "io.deephaven.engine.rowset.impl.sortedranges.SortedRanges.RangeIterator",
  "typeName": "class"

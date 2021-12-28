@@ -8,13 +8,14 @@ import io.deephaven.chunk.WritableDoubleChunk;
 import io.deephaven.chunk.WritableChunk;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.util.type.TypeUtils;
+import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericRecord;
 
-public class GenericRecordDoubleFieldCopier implements FieldCopier {
-    private final String fieldName;
+import java.util.regex.Pattern;
 
-    public GenericRecordDoubleFieldCopier(final String fieldName) {
-        this.fieldName = fieldName;
+public class GenericRecordDoubleFieldCopier extends GenericRecordFieldCopier {
+    public GenericRecordDoubleFieldCopier(final String fieldPathStr, final Pattern separator, final Schema schema) {
+        super(fieldPathStr, separator, schema);
     }
 
     @Override
@@ -26,8 +27,8 @@ public class GenericRecordDoubleFieldCopier implements FieldCopier {
             final int length) {
         final WritableDoubleChunk<Values> output = publisherChunk.asWritableDoubleChunk();
         for (int ii = 0; ii < length; ++ii) {
-            final GenericRecord genericRecord = (GenericRecord) inputChunk.get(ii + sourceOffset);
-            final Double value = genericRecord == null ? null : (Double) genericRecord.get(fieldName);
+            final GenericRecord record = (GenericRecord) inputChunk.get(ii + sourceOffset);
+            final Double value = (Double) GenericRecordUtil.getPath(record, fieldPath);
             output.set(ii + destOffset, TypeUtils.unbox(value));
         }
     }

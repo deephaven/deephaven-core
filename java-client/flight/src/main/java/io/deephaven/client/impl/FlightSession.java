@@ -1,8 +1,8 @@
 package io.deephaven.client.impl;
 
 import io.deephaven.client.impl.TableHandle.TableHandleException;
-import io.deephaven.grpc_api.util.SchemaHelper;
 import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
+import io.deephaven.proto.flight.util.SchemaHelper;
 import io.deephaven.qst.table.NewTable;
 import io.grpc.ManagedChannel;
 import org.apache.arrow.flight.Criteria;

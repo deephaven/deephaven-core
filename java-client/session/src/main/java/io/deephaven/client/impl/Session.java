@@ -5,7 +5,7 @@ import java.util.concurrent.CompletableFuture;
 /**
  * A session represents a client-side connection to a Deephaven server.
  */
-public interface Session extends AutoCloseable, ConsoleService, InputTableService, TableService {
+public interface Session extends AutoCloseable, ApplicationService, ConsoleService, InputTableService, TableService {
 
     // ----------------------------------------------------------
 
