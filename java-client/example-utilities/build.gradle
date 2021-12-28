@@ -1,0 +1,12 @@
+plugins {
+    id 'java-library'
+}
+
+dependencies {
+    api 'info.picocli:picocli:4.6.1'
+    api project(':uri')
+    api project(':qst')
+
+    Classpaths.inheritGrpcPlatform(project, 'api')
+    api 'io.grpc:grpc-core'
+}

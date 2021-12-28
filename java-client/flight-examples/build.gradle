@@ -5,8 +5,7 @@ plugins {
 
 dependencies {
     implementation project(':java-client-flight-dagger')
-
-    implementation 'info.picocli:picocli:4.6.1'
+    implementation project(':java-client-example-utilities')
 
     Classpaths.inheritJUnitPlatform(project)
     Classpaths.inheritAssertJ(project)
