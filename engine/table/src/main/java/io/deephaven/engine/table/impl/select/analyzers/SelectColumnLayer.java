@@ -1,5 +1,6 @@
 package io.deephaven.engine.table.impl.select.analyzers;
 
+import io.deephaven.base.log.LogOutput;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.TableUpdate;
@@ -15,6 +16,8 @@ import io.deephaven.engine.table.impl.util.ChunkUtils;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 
+import java.util.Arrays;
+import java.util.BitSet;
 import java.util.function.LongToIntFunction;
 
 final public class SelectColumnLayer extends SelectOrViewColumnLayer {
@@ -23,6 +26,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
      */
     private final WritableColumnSource writableSource;
     private final boolean isRedirected;
+    private final BitSet dependencyBitSet;
 
     /**
      * A memoized copy of selectColumn's data view. Use {@link SelectColumnLayer#getChunkSource()} to access.
@@ -35,6 +39,8 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
         super(inner, name, sc, ws, underlying, deps, mcsBuilder);
         this.writableSource = ws;
         this.isRedirected = isRedirected;
+        this.dependencyBitSet = new BitSet();
+        Arrays.stream(deps).mapToInt(inner::getLayerIndexFor).forEach(dependencyBitSet::set);
     }
 
     private ChunkSource<Values> getChunkSource() {
@@ -50,16 +56,23 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
 
     @Override
     public void applyUpdate(final TableUpdate upstream, final RowSet toClear,
-            final UpdateHelper helper) {
-        final int PAGE_SIZE = 4096;
-        final LongToIntFunction contextSize = (long size) -> size > PAGE_SIZE ? PAGE_SIZE : (int) size;
-
+            final UpdateHelper helper, JobScheduler jobScheduler, SelectLayerCompletionHandler onCompletion) {
         if (isRedirected && upstream.removed().isNonempty()) {
             clearObjectsAtThisLevel(upstream.removed());
         }
 
         // recurse so that dependent intermediate columns are already updated
-        inner.applyUpdate(upstream, toClear, helper);
+        inner.applyUpdate(upstream, toClear, helper, jobScheduler, new SelectLayerCompletionHandler(dependencyBitSet, onCompletion) {
+            @Override
+            public void onAllRequiredColumnsCompleted() {
+                jobScheduler.submit(() -> doApplyUpdate(upstream, toClear, helper, onCompletion), SelectColumnLayer.this, this::onError);
+            }
+        });
+    }
+
+    private void doApplyUpdate(final TableUpdate upstream, final RowSet toClear, final UpdateHelper helper, SelectLayerCompletionHandler onCompletion) {
+        final int PAGE_SIZE = 4096;
+        final LongToIntFunction contextSize = (long size) -> size > PAGE_SIZE ? PAGE_SIZE : (int) size;
 
         final boolean modifiesAffectUs =
                 upstream.modified().isNonempty() && upstream.modifiedColumnSet().containsAny(myModifiedColumnSet);
@@ -138,6 +151,8 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
         if (!isRedirected) {
             clearObjectsAtThisLevel(toClear);
         }
+
+        onCompletion.onLayerCompleted(getLayerIndex());
     }
 
     private void clearObjectsAtThisLevel(RowSet keys) {
@@ -145,5 +160,11 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
         if (!writableSource.getType().isPrimitive() && (writableSource.getType() != DateTime.class)) {
             ChunkUtils.fillWithNullValue(writableSource, keys);
         }
+    }
+
+
+    @Override
+    public LogOutput append(LogOutput logOutput) {
+        return logOutput.append("{SelectColumnLayer: ").append(selectColumn.toString()).append("}");
     }
 }

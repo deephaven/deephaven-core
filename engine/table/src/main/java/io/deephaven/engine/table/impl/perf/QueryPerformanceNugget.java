@@ -60,6 +60,12 @@ public class QueryPerformanceNugget implements Serializable, AutoCloseable {
     private boolean shouldLogMeAndStackParents;
 
     /**
+     * For threaded operations we want to accumulate the CPU time, allocations, and read operations to the enclosing
+     * nugget of the main operation.  For the initialization we ignore the wall clock time taken in the thread pool.
+     */
+    private UpdatePerformanceTracker.SubEntry subEntry;
+
+    /**
      * Constructor for query-level nuggets.
      *
      * @param evaluationNumber A unique identifier for the query evaluation that triggered this nugget creation
@@ -134,6 +140,8 @@ public class QueryPerformanceNugget implements Serializable, AutoCloseable {
         startCpuNanos = NULL_LONG;
         startUserCpuNanos = NULL_LONG;
 
+        subEntry = null;
+
         state = null; // This turns close into a no-op.
         shouldLogMeAndStackParents = false;
     }
@@ -199,6 +207,14 @@ public class QueryPerformanceNugget implements Serializable, AutoCloseable {
             diffPoolAllocatedBytes =
                     minus(QueryPerformanceRecorder.getPoolAllocatedBytesForCurrentThread(), startPoolAllocatedBytes);
             diffAllocatedBytes = minus(ThreadProfiler.DEFAULT.getCurrentThreadAllocatedBytes(), startAllocatedBytes);
+
+            if (subEntry != null) {
+                diffUserCpuNanos += subEntry.getIntervalUserCpuNanos();
+                diffCpuNanos += subEntry.getIntervalCpuNanos();
+
+                diffAllocatedBytes += subEntry.getIntervalAllocatedBytes();
+                diffPoolAllocatedBytes += subEntry.getIntervalPoolAllocatedBytes();
+            }
 
             state = closingState;
             return recorderToNotify.releaseNugget(this);
@@ -357,6 +373,20 @@ public class QueryPerformanceNugget implements Serializable, AutoCloseable {
      */
     public boolean shouldLogMenAndStackParents() {
         return shouldLogMeAndStackParents;
+    }
+
+    /**
+     * When we track data from other threads that should be attributed to this operation, we tack extra SubEntry values
+     * onto this nugget when it is closed.
+     *
+     * The CPU time, reads, and allocations are counted against this nugget.  Wall clock time is ignored.
+     */
+    public void addSubEntry(UpdatePerformanceTracker.SubEntry subEntry) {
+        if (this.subEntry == null) {
+            this.subEntry = subEntry;
+        } else {
+            this.subEntry.accumulate(subEntry);
+        }
     }
 
     /**

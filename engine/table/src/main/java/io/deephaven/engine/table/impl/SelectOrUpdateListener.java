@@ -1,0 +1,133 @@
+package io.deephaven.engine.table.impl;
+
+import io.deephaven.engine.rowset.TrackingRowSet;
+import io.deephaven.engine.rowset.WritableRowSet;
+import io.deephaven.engine.table.ModifiedColumnSet;
+import io.deephaven.engine.table.TableUpdate;
+import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
+import io.deephaven.engine.table.impl.select.analyzers.SelectAndViewAnalyzer;
+import io.deephaven.engine.table.impl.util.AsyncClientErrorNotifier;
+import io.deephaven.engine.updategraph.LogicalClock;
+import io.deephaven.engine.updategraph.TerminalNotification;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.util.systemicmarking.SystemicObjectTracker;
+
+import java.io.IOException;
+import java.util.BitSet;
+import java.util.Map;
+
+/**
+ * A Shift-Aware listener for Select or Update. It uses the SelectAndViewAnalyzer to calculate how columns
+ * affect other columns, then creates a column set transformer which will be used by onUpdate to transform updates.
+ */
+class SelectOrUpdateListener extends BaseTable.ListenerImpl {
+    private final QueryTable dependent;
+    private final TrackingRowSet resultIndex;
+    private final ModifiedColumnSet.Transformer transformer;
+    private final SelectAndViewAnalyzer analyzer;
+
+    private long initialNotificationStep = NotificationStepReceiver.NULL_NOTIFICATION_STEP;
+    private long finalNotificationStep = NotificationStepReceiver.NULL_NOTIFICATION_STEP;
+    final BitSet completedColumns = new BitSet();
+    final BitSet allNewColumns = new BitSet();
+    final boolean enableParallelUpdate;
+
+    /**
+     * @param description Description of this listener
+     * @param parent      The parent table
+     * @param dependent   The dependent table
+     * @param effects     A map from a column name to the column names that it affects
+     */
+    SelectOrUpdateListener(String description, QueryTable parent, QueryTable dependent, Map<String, String[]> effects,
+                           SelectAndViewAnalyzer analyzer) {
+        super(description, parent, dependent);
+        this.dependent = dependent;
+        this.resultIndex = dependent.getRowSet();
+
+        // Now calculate the other dependencies and invert
+        final String[] parentNames = new String[effects.size()];
+        final ModifiedColumnSet[] mcss = new ModifiedColumnSet[effects.size()];
+        int nextIndex = 0;
+        for (Map.Entry<String, String[]> entry : effects.entrySet()) {
+            parentNames[nextIndex] = entry.getKey();
+            mcss[nextIndex] = dependent.newModifiedColumnSet(entry.getValue());
+            ++nextIndex;
+        }
+        transformer = parent.newModifiedColumnSetTransformer(parentNames, mcss);
+        this.analyzer = analyzer;
+        this.enableParallelUpdate = QueryTable.ENABLE_PARALLEL_SELECT_AND_UPDATE && UpdateGraphProcessor.DEFAULT.getUpdateThreads() > 1;
+        analyzer.setAllNewColumns(allNewColumns);
+    }
+
+    @Override
+    public void onUpdate(final TableUpdate upstream) {
+        // Attempt to minimize work by sharing computation across all columns:
+        // - clear only the keys that no longer exist
+        // - create parallel arrays of pre-shift-keys and post-shift-keys so we can move them in chunks
+
+        initialNotificationStep = LogicalClock.DEFAULT.currentStep();
+        completedColumns.clear();
+        final TableUpdate acquiredUpdate = upstream.acquire();
+
+        try (final WritableRowSet toClear = resultIndex.copyPrev();
+             final SelectAndViewAnalyzer.UpdateHelper updateHelper = new SelectAndViewAnalyzer.UpdateHelper(resultIndex, acquiredUpdate)) {
+            toClear.remove(resultIndex);
+            SelectAndViewAnalyzer.JobScheduler jobScheduler;
+
+            if (enableParallelUpdate) {
+                jobScheduler = new SelectAndViewAnalyzer.LiveTableMonitorJobScheduler();
+            } else {
+                jobScheduler = SelectAndViewAnalyzer.ImmediateJobScheduler.INSTANCE;
+            }
+
+            analyzer.applyUpdate(acquiredUpdate, toClear, updateHelper, jobScheduler, new SelectAndViewAnalyzer.SelectLayerCompletionHandler(completedColumns, allNewColumns) {
+                @Override
+                public void onAllRequiredColumnsCompleted() {
+                    completionRoutine(acquiredUpdate, jobScheduler);
+                }
+
+                @Override
+                protected void onError(Exception error) {
+                    handleException(error);
+                }
+            });
+        }
+    }
+
+    private void handleException(Exception e) {
+        dependent.notifyListenersOnError(e, getEntry());
+        try {
+            if (SystemicObjectTracker.isSystemic(dependent)) {
+                AsyncClientErrorNotifier.reportError(e);
+            }
+        } catch (IOException ioe) {
+            throw new RuntimeException("Exception in " + getEntry().toString(), e);
+        }
+        finalNotificationStep = LogicalClock.DEFAULT.currentStep();
+    }
+
+    private void completionRoutine(TableUpdate upstream, SelectAndViewAnalyzer.JobScheduler jobScheduler) {
+        final TableUpdateImpl downstream = new TableUpdateImpl(upstream.added().copy(), upstream.removed().copy(), upstream.modified().copy(), upstream.shifted(), dependent.modifiedColumnSet);
+        transformer.clearAndTransform(upstream.modifiedColumnSet(), downstream.modifiedColumnSet);
+        dependent.notifyListeners(downstream);
+        upstream.release();
+        final UpdatePerformanceTracker.SubEntry accumulated = jobScheduler.getAccumulatedPerformance();
+        // if the entry exists, then we install a terminal notification so that we don't lose the performance from this execution
+        if (accumulated != null) {
+            UpdateGraphProcessor.DEFAULT.addNotification(new TerminalNotification() {
+                @Override
+                public void run() {
+                    synchronized (accumulated) {
+                        getEntry().accumulate(accumulated);
+                    }
+                }
+            });
+        }
+        finalNotificationStep = LogicalClock.DEFAULT.currentStep();
+    }
+
+    @Override
+    public boolean satisfied(long step) {
+        return super.satisfied(step) && initialNotificationStep == finalNotificationStep;
+    }
+}

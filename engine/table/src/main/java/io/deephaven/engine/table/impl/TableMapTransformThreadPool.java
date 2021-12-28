@@ -10,7 +10,7 @@ public class TableMapTransformThreadPool {
     final static int TRANSFORM_THREADS =
             Configuration.getInstance().getIntegerWithDefault("TableMap.transformThreads", 1);
 
-    final static ExecutorService executorService;
+    public final static ExecutorService executorService;
     static {
         final ThreadGroup threadGroup = new ThreadGroup("TableMapTransformThreadPool");
         final NamingThreadFactory threadFactory =

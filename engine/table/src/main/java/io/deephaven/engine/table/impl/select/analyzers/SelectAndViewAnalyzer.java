@@ -1,11 +1,18 @@
 package io.deephaven.engine.table.impl.select.analyzers;
 
+import io.deephaven.base.log.LogOutput;
+import io.deephaven.base.log.LogOutputAppendable;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.engine.table.ColumnSource;
 import io.deephaven.engine.table.ColumnDefinition;
 import io.deephaven.engine.table.TableUpdate;
 import io.deephaven.engine.table.WritableColumnSource;
+import io.deephaven.engine.table.impl.TableMapTransformThreadPool;
+import io.deephaven.engine.table.impl.perf.UpdatePerformanceTracker;
 import io.deephaven.engine.table.impl.util.WritableRowRedirection;
+import io.deephaven.engine.updategraph.AbstractNotification;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.io.log.impl.LogOutputStringImpl;
 import io.deephaven.vector.Vector;
 import io.deephaven.engine.table.ModifiedColumnSet;
 import io.deephaven.engine.table.impl.select.SelectColumn;
@@ -18,9 +25,11 @@ import io.deephaven.util.SafeCloseable;
 import io.deephaven.util.SafeCloseablePair;
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
-public abstract class SelectAndViewAnalyzer {
+public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
     public enum Mode {
         VIEW_LAZY, VIEW_EAGER, SELECT_STATIC, SELECT_REFRESHING, SELECT_REDIRECTED_REFRESHING
     }
@@ -99,6 +108,41 @@ public abstract class SelectAndViewAnalyzer {
             }
         }
         return analyzer;
+    }
+
+    static final int BASE_LAYER_INDEX = 0;
+    static final int REDIRECTION_LAYER_INDEX = 1;
+
+    /**
+     * The layerIndex is used to identify each layer uniquely within the bitsets for completion.
+     */
+    private final int layerIndex;
+
+    public SelectAndViewAnalyzer(int layerIndex) {
+        this.layerIndex = layerIndex;
+    }
+
+    int getLayerIndex() {
+        return layerIndex;
+    }
+
+    /**
+     * Set the bits in bitset that represent the base layer and optional redirection layer.  No other jobs can be
+     * executed until all of these bits are set.
+     *
+     * @param bitset the bitset to manipulate.
+     */
+    abstract void setBaseBits(BitSet bitset);
+
+    /**
+     * Set the bits in bitset that represent all of the new columns, this is used to identify when the select or update
+     * operaiton is complete
+     *
+     * @param bitset the bitset to manipulate.
+     */
+    public void setAllNewColumns(BitSet bitset) {
+        getInner().setAllNewColumns(bitset);
+        bitset.set(getLayerIndex());
     }
 
     private static SelectAndViewAnalyzer createBaseLayer(Map<String, ColumnSource<?>> sources,
@@ -215,12 +259,14 @@ public abstract class SelectAndViewAnalyzer {
 
     /**
      * Apply this update to this SelectAndViewAnalyzer.
-     *
      * @param upstream the upstream update
      * @param toClear rows that used to exist and no longer exist
      * @param helper convenience class that memoizes reusable calculations for this update
+     * @param onCompletion called when an inner column is complete, the outer layer should pass the completion on to
+     *                     other layers and if it all of it's dependencies have been satisfied schedule execution of
+     *                     that column update
      */
-    public abstract void applyUpdate(TableUpdate upstream, RowSet toClear, UpdateHelper helper);
+    public abstract void applyUpdate(TableUpdate upstream, RowSet toClear, UpdateHelper helper, JobScheduler jobScheduler, SelectLayerCompletionHandler onCompletion);
 
     /**
      * Our job here is to calculate the effects: a map from incoming column to a list of columns that it effects. We do
@@ -255,4 +301,222 @@ public abstract class SelectAndViewAnalyzer {
     public abstract void updateColumnDefinitionsFromTopLayer(Map<String, ColumnDefinition<?>> columnDefinitions);
 
     public abstract void startTrackingPrev();
+
+    /**
+     * Return the layerIndex for a given string column.
+     *
+     * <p>This is executed recursively, because later columns in a select statement hide earlier columns.</p>
+     *
+     * @param column the name of the column
+     *
+     * @return the layerIndex
+     */
+    abstract int getLayerIndexFor(String column);
+
+    /**
+     * A class that handles the completion of one select column.  The handlers are chained together so that when a
+     * column completes all of the downstream dependencies may execute.
+     */
+    public static abstract class SelectLayerCompletionHandler {
+        /**
+         * Note that the completed columns are shared among the entire chain of completion handlers.
+         */
+        private final BitSet completedColumns;
+        private final SelectLayerCompletionHandler nextHandler;
+        private final BitSet requiredColumns;
+        private boolean fired = false;
+
+        SelectLayerCompletionHandler(BitSet requiredColumns, SelectLayerCompletionHandler nextHandler) {
+            this.completedColumns = nextHandler.completedColumns;
+            this.nextHandler = nextHandler;
+            this.requiredColumns = requiredColumns;
+        }
+
+        public SelectLayerCompletionHandler(BitSet completedColumns, BitSet requiredColumns) {
+            this.completedColumns = completedColumns;
+            this.nextHandler = null;
+            this.requiredColumns = requiredColumns;
+        }
+
+        /**
+         * Called when a single column is completed.
+         *
+         * If we are ready, then we call {@link #onAllRequiredColumnsCompleted()}.
+         *
+         * We may not be ready, but other columns downstream of us may be ready, so they are also notified (the nextHandler).
+         *
+         * @param completedColumn the layerIndex of the completedColumn
+         */
+        void onLayerCompleted(int completedColumn) {
+            final boolean allRequiredColumnsSet;
+            synchronized (completedColumns) {
+                completedColumns.set(completedColumn);
+                allRequiredColumnsSet = !fired && requiredColumns.stream().allMatch(completedColumns::get);
+                if (allRequiredColumnsSet) {
+                    fired = true;
+                }
+            }
+            if (allRequiredColumnsSet) {
+                onAllRequiredColumnsCompleted();
+            }
+            if (nextHandler != null) {
+                nextHandler.onLayerCompleted(completedColumn);
+            }
+        }
+
+        protected void onError(Exception error) {
+            if (nextHandler != null) {
+                nextHandler.onError(error);
+            }
+        }
+
+        /**
+         * Called when all of the required columns are completed.
+         */
+        protected abstract void onAllRequiredColumnsCompleted();
+    }
+
+    /**
+     * An interface for submitting jobs to be executed and accumulating their performance.
+     */
+    public interface JobScheduler {
+        /**
+         * Cause runnable to be executed.
+         *
+         * @param runnable the runnable to execute
+         * @param description a description for logging
+         * @param onError a routine to call if an exception occurs while running runnable
+         */
+        void submit(Runnable runnable, final LogOutputAppendable description, final Consumer<Exception> onError);
+
+        /**
+         * The performance statistics of runnable, or null if it was executed in the current thread.
+         */
+        UpdatePerformanceTracker.SubEntry getAccumulatedPerformance();
+    }
+
+    public static class LiveTableMonitorJobScheduler implements SelectAndViewAnalyzer.JobScheduler {
+        final UpdatePerformanceTracker.SubEntry accumulatedSubEntry = new UpdatePerformanceTracker.SubEntry();
+
+        @Override
+        public void submit(final Runnable runnable, final LogOutputAppendable description, final Consumer<Exception> onError) {
+            UpdateGraphProcessor.DEFAULT.addNotification(new AbstractNotification(false) {
+                @Override
+                public boolean canExecute(long step) {
+                    return true;
+                }
+
+                @Override
+                public void run() {
+                    final UpdatePerformanceTracker.SubEntry subEntry = new UpdatePerformanceTracker.SubEntry();
+                    subEntry.onSubEntryStart();
+                    try {
+                        runnable.run();
+                    } catch (Exception e) {
+                        onError.accept(e);
+                    } finally {
+                        subEntry.onSubEntryEnd();
+                        synchronized (accumulatedSubEntry) {
+                            accumulatedSubEntry.accumulate(subEntry);
+                        }
+                    }
+                }
+
+                @Override
+                public LogOutput append(LogOutput output) {
+                    return output.append("{Notification(").append(System.identityHashCode(this)).append(" for ").append(description).append("}");
+                }
+            });
+        }
+
+        @Override
+        public UpdatePerformanceTracker.SubEntry getAccumulatedPerformance() {
+            return accumulatedSubEntry;
+        }
+    }
+
+    public static class TableMapTransformJobScheduler implements SelectAndViewAnalyzer.JobScheduler {
+        final UpdatePerformanceTracker.SubEntry accumulatedSubEntry = new UpdatePerformanceTracker.SubEntry();
+
+        @Override
+        public void submit(final Runnable runnable, final LogOutputAppendable description, final Consumer<Exception> onError) {
+            TableMapTransformThreadPool.executorService.submit(() -> {
+                final UpdatePerformanceTracker.SubEntry subEntry = new UpdatePerformanceTracker.SubEntry();
+                subEntry.onSubEntryStart();
+                try {
+                    runnable.run();
+                } catch (Exception e) {
+                    onError.accept(e);
+                } finally {
+                    subEntry.onSubEntryEnd();
+                    synchronized (accumulatedSubEntry) {
+                        accumulatedSubEntry.accumulate(subEntry);
+                    }
+                }
+            });
+        }
+
+        @Override
+        public UpdatePerformanceTracker.SubEntry getAccumulatedPerformance() {
+            return accumulatedSubEntry;
+        }
+    }
+
+    public static class ImmediateJobScheduler implements SelectAndViewAnalyzer.JobScheduler {
+        public static final ImmediateJobScheduler INSTANCE = new ImmediateJobScheduler();
+
+        @Override
+        public void submit(final Runnable runnable, final LogOutputAppendable description, final Consumer<Exception> onError) {
+            try {
+                runnable.run();
+            } catch (Exception e) {
+                onError.accept(e);
+            }
+        }
+
+        @Override
+        public UpdatePerformanceTracker.SubEntry getAccumulatedPerformance() {
+            return null;
+        }
+    }
+
+    /**
+     * Create a completion handler that signals a future when the update is completed.
+     *
+     * @param waitForResult a void future indicating success or failure
+     *
+     * @return a completion handler that will signal the future
+     */
+    public SelectLayerCompletionHandler futureCompletionHandler(CompletableFuture<Void> waitForResult) {
+        final BitSet completedColumns = new BitSet();
+        final BitSet requiredColumns = new BitSet();
+
+        setAllNewColumns(requiredColumns);
+
+        return new SelectLayerCompletionHandler(completedColumns, requiredColumns) {
+            boolean errorOccurred = false;
+
+            @Override
+            public void onAllRequiredColumnsCompleted() {
+                if (errorOccurred) {
+                    return;
+                }
+                waitForResult.complete(null);
+            }
+
+            @Override
+            protected void onError(Exception error) {
+                if (errorOccurred) {
+                    return;
+                }
+                errorOccurred = true;
+                waitForResult.completeExceptionally(error);
+            }
+        };
+    }
+
+    @Override
+    public String toString() {
+        return new LogOutputStringImpl().append(this).toString();
+    }
 }
