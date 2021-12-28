@@ -81,9 +81,6 @@ class IntegralChunkedReAvgOperator implements IterativeChunkedAggregationOperato
         final LongChunk<? extends Values> sumSumChunk = sumSum.getChunk(reAvgContext.sumSumContext, destinationOk).asLongChunk();
         final LongChunk<? extends Values> nncSumChunk = nncSum.getChunk(reAvgContext.nncSumContext, destinationOk).asLongChunk();
         final int size = reAvgContext.keyIndices.size();
-        for (int ii = 0; ii < size; ++ii) {
-            stateModified.set(ii, updateResult(reAvgContext.keyIndices.get(ii), sumSumChunk.get(ii), nncSumChunk.get(ii)));
-        }
 
         final boolean ordered = reAvgContext.ordered;
         for (int ii = 0; ii < size; ++ii) {

@@ -9,16 +9,14 @@ import io.deephaven.chunk.attributes.ChunkPositions;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
-import io.deephaven.engine.table.impl.sort.timsort.LongIntTimsortKernel;
 import io.deephaven.engine.table.impl.sources.ObjectArraySource;
 import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
-import io.deephaven.engine.table.impl.util.ChunkUtils;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.math.RoundingMode;
 import java.util.Collections;
 import java.util.Map;
 
@@ -94,7 +92,7 @@ class BigIntegerChunkedReAvgOperator implements IterativeChunkedAggregationOpera
 
     private boolean updateResult(long destination, BigInteger sumSumValue, long nncValue) {
         if (nncValue > 0) {
-            final BigDecimal newValue = new BigDecimal(sumSumValue).divide(BigDecimal.valueOf(nncValue), BigDecimal.ROUND_HALF_UP);
+            final BigDecimal newValue = new BigDecimal(sumSumValue).divide(BigDecimal.valueOf(nncValue), RoundingMode.HALF_UP);
             return !newValue.equals(resultColumn.getAndSetUnsafe(destination, newValue));
         } else {
             return null != resultColumn.getAndSetUnsafe(destination, null);

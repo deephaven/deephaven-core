@@ -18,11 +18,11 @@ import io.deephaven.util.SafeCloseable;
  * our modified states results properly correspond to the original slot location. In the case that our slots are already
  * in order, we avoid allocating the sort kernel and statePositions chunk.
  */
-public class ReAvgVarOrderingContext implements SafeCloseable {
-    public final WritableLongChunk<RowKeys> keyIndices;
-    final int size;
+class ReAvgVarOrderingContext implements SafeCloseable {
+    final WritableLongChunk<RowKeys> keyIndices;
+    private final int size;
     WritableIntChunk<ChunkPositions> statePositions;
-    LongIntTimsortKernel.LongIntSortKernelContext<RowKeys, ChunkPositions> sortKernelContext;
+    private LongIntTimsortKernel.LongIntSortKernelContext<RowKeys, ChunkPositions> sortKernelContext;
     boolean ordered;
 
     public ReAvgVarOrderingContext(int size) {
