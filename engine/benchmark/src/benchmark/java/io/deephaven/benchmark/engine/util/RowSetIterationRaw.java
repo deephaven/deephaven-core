@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit;
 @Warmup(iterations = 1, time = 1)
 @Measurement(iterations = 1, time = 1)
 @Fork(1)
-public class IndexIterationRaw {
+public class RowSetIterationRaw {
 
     // Generate RowSet as ranges and as individual position
     // Build a RowSet for it
@@ -396,6 +396,6 @@ public class IndexIterationRaw {
     }
 
     public static void main(String[] args) throws RunnerException {
-        BenchUtil.run(IndexIterationRaw.class);
+        BenchUtil.run(RowSetIterationRaw.class);
     }
 }

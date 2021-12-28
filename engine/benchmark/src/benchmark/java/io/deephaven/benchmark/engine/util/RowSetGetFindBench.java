@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
 @Measurement(iterations = 5, time = 10)
 @Fork(value=1)
 
-public class IndexGetFindBench {
+public class RowSetGetFindBench {
 
     private static final long randomSeed = 1;
     private static final int containers = 10_000;
@@ -117,6 +117,6 @@ public class IndexGetFindBench {
     }
 
     public static void main(String[] args) throws RunnerException {
-        BenchUtil.run(IndexGetFindBench.class);
+        BenchUtil.run(RowSetGetFindBench.class);
     }
 }
