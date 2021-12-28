@@ -4824,11 +4824,15 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
             final LongConsumer singleRangeContainersCount,
             final LongConsumer singleRangeContainerCardinality,
             final LongConsumer singletonContainersCount,
-            final LongConsumer twoValuesContainerCount) {
+            final LongConsumer twoValuesContainerCount,
+            final LongConsumer fullBlockSpansCount,
+            final LongConsumer fullBlockSpansLen) {
         rspParallelArraysSizeUsed.accept(size);
         rspParallelArraysSizeUnused.accept(spanInfos.length - size);
         // TODO: It would be much more efficient to accumulate multiple samples (perhaps one array of them per Metric),
         // and then provide them to the metric in one call, to prevent multiple volatile assignments.
+        long fullBlockSpansCountAcc = 0;
+        long fullBlockSpansLenAcc = 0;
         for (int i = 0; i < size; ++i) {
             final Object o = spans[i];
             if (isSingletonSpan(o)) {
@@ -4844,7 +4848,9 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                 arrayContainersBytesUnused.accept(allocated - card);
                 continue;
             }
-            if (!(o instanceof Container)) {
+            if (!(o instanceof Container)) {  // full block span
+                ++fullBlockSpansCountAcc;
+                fullBlockSpansLenAcc += getFullBlockSpanLen(spanInfos[i], o);
                 continue;
             }
             final Container c = (Container) o;
@@ -4876,6 +4882,8 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                 throw new IllegalStateException("unknown Container subtype");
             }
         }
+        fullBlockSpansCount.accept(fullBlockSpansCountAcc);
+        fullBlockSpansLen.accept(fullBlockSpansLenAcc);
     }
 
     // Returns null if we can't compact.
