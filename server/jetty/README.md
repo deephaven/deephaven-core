@@ -27,8 +27,8 @@ be sure to first set `PYTHON_CONFIGURE_OPTS="--enabled-shared"`.
     $ export DEEPHAVEN_VERSION=0.8.0 # this should match the current version of your git repo
 
     $ cd py/jpy
-    $ JAVA_HOME=/path/to/your/java/home # Customize this to fit your computer
-   $ python setup.py bdist_wheel
+    $ export JAVA_HOME=/path/to/your/java/home # Customize this to fit your computer
+    $ python setup.py bdist_wheel
     $ pip install dist/deephaven_jpy-0.8.0-cp39-cp39-linux_x86_64.whl # This will vary by version/platform
     $ cd -
 

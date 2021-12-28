@@ -54,7 +54,7 @@ public class ApplicationTest {
     }
 
     @Test
-    @Ignore("python test needs to run in a container")
+    @Ignore("TODO: deephaven-core#1741 python test needs to run in a container")
     public void app02() throws IOException, InterruptedException, TimeoutException {
         session = new PythonDeephavenSession(null, false, false);
         ApplicationState app = ApplicationFactory.create(ApplicationConfigs.testAppDir(), ApplicationConfigs.app02(),
