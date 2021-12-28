@@ -31,7 +31,7 @@ public class RowSetGetFindBench {
     private static final double probRunContainer = 0.5;
     private static final int runsPerRunContainer = 1_000;
     private static final int runLen = 20;
-    // Index size = containers * runsPerContainer*runLen.
+    // RowSet size = containers * runsPerContainer*runLen.
     private static RowSet rowSet;
     private static RowSet opRowSet;
 
@@ -43,11 +43,11 @@ public class RowSetGetFindBench {
 
     @Setup(Level.Trial)
     public void setup() {
-        final String indexFilename = System.getProperty("index.filename");
-        if (indexFilename == null || indexFilename.equals("")) {
-            rowSet = generateRandomIndex();
+        final String rowSetFilename = System.getProperty("rowset.filename");
+        if (rowSetFilename == null || rowSetFilename.equals("")) {
+            rowSet = generateRandomRowSet();
         } else {
-            rowSet = loadRowSet(indexFilename);
+            rowSet = loadRowSet(rowSetFilename);
         }
         // To get this output we need JVM flag `-DMetricsManager.enabled=true`
         System.out.println(MetricsManager.getCounters());
@@ -55,11 +55,11 @@ public class RowSetGetFindBench {
         opRowSet = rowSet.subSetByPositionRange(0, ops);
     }
 
-    private static RowSet loadRowSet(final String indexFilename) {
+    private static RowSet loadRowSet(final String rowSetFilename) {
         final RowSet exported;
         long st = System.currentTimeMillis();
-        System.out.print("Loading index " + indexFilename + "... ");
-        try (final ObjectInputStream ois = new ObjectInputStream(new FileInputStream(indexFilename))) {
+        System.out.print("Loading rowset " + rowSetFilename + "... ");
+        try (final ObjectInputStream ois = new ObjectInputStream(new FileInputStream(rowSetFilename))) {
             exported = (RowSet) ois.readObject();
         } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
@@ -73,13 +73,13 @@ public class RowSetGetFindBench {
         System.out.print("Reconstructing it by sequential builder... ");
         final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
         exported.forAllRowKeys(builder::appendKey);
-        final RowSet index = builder.build();
+        final RowSet rowSet = builder.build();
         System.out.println("Builder done in " + (System.currentTimeMillis() - st) + " ms");
 
-        return index;
+        return rowSet;
     }
 
-    private static RowSet generateRandomIndex() {
+    private static RowSet generateRandomRowSet() {
         long st = System.currentTimeMillis();
         System.out.print("Generating pseudorandom RowSet... ");
         final RowSetBuilderSequential builder = RowSetFactory.builderSequential();
@@ -95,7 +95,7 @@ public class RowSetGetFindBench {
             }
         }
         final RowSet rowSet = builder.build();
-        System.out.println("Index generation done in " + (System.currentTimeMillis() - st) + " ms");
+        System.out.println("RowSet generation done in " + (System.currentTimeMillis() - st) + " ms");
         return rowSet;
     }
 
