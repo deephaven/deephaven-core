@@ -367,13 +367,21 @@ public class SessionState {
     }
 
     /**
-     * Attach an on-close callback bound to the life of the session.
+     * Attach an on-close callback bound to the life of the session. Note that {@link Closeable} does not require that
+     * the close() method be idempotent, but when combined with {@link #removeOnCloseCallback(Closeable)}, close() will
+     * only be called once from this class.
+     * <p>
+     * </p>
+     * If called after the session has expired, this will throw, and the close() method on the provided instance will
+     * not be called.
      *
      * @param onClose the callback to invoke at end-of-life
      */
     public void addOnCloseCallback(final Closeable onClose) {
         synchronized (onCloseCallbacks) {
             if (isExpired()) {
+                // After the session has expired, nothing new can be added to the collection, so throw an exception (and
+                // release the lock, allowing each item already in the collection to be released)
                 throw GrpcUtil.statusRuntimeException(Code.UNAUTHENTICATED, "session has expired");
             }
             onCloseCallbacks.add(onClose);
@@ -382,12 +390,23 @@ public class SessionState {
 
     /**
      * Remove an on-close callback bound to the life of the session.
+     * <p />
+     * A common pattern to use this will be for an object to try to remove itself, and if it succeeds, to call its own
+     * {@link Closeable#close()}. If it fails, it can expect to have close() be called automatically.
      *
      * @param onClose the callback to no longer invoke at end-of-life
      * @return true iff the callback was removed
+     * @apiNote If this SessionState has already begun expiration processing, {@code onClose} will not be removed by
+     *          this method. This means that if {@code onClose} was previously added and not removed, it either has
+     *          already been invoked or will be invoked by the SessionState.
      */
     public boolean removeOnCloseCallback(final Closeable onClose) {
         synchronized (onCloseCallbacks) {
+            if (isExpired()) {
+                // After the session has expired, nothing can be removed from the collection. We return false here,
+                // preventing a closeable from trying to remove itself during its own close()
+                return false;
+            }
             return onCloseCallbacks.remove(onClose) != null;
         }
     }
