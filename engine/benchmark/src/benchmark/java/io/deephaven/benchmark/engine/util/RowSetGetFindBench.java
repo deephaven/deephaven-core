@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit;
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 @Warmup(iterations = 1, time = 10)
 @Measurement(iterations = 5, time = 10)
-@Fork(value=1)
+@Fork(value = 1)
 
 public class RowSetGetFindBench {
 
@@ -90,7 +90,7 @@ public class RowSetGetFindBench {
                     final long start = base + (runLen + 2) * run;
                     builder.appendRange(start, start + runLen - 1);
                 }
-            } else {  // full block span
+            } else { // full block span
                 builder.appendRange(base, base + RspBitmap.BLOCK_LAST);
             }
         }
