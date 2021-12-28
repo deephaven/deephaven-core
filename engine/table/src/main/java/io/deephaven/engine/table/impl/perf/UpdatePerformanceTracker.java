@@ -380,10 +380,8 @@ public class UpdatePerformanceTracker {
                     .append(", collections=").append(collections)
                     .append(", collectionTimeNanos=").append(DateTimeUtils.millisToNanos(collectionTimeMs))
                     .append('}');
-            return appendStart(beginning).
-                    append(", totalMemory=").append(endSample.totalMemory).
-                    append(", totalFreeMemory=").append(endSample.freeMemory).
-                    append('}');
+            return appendStart(beginning).append(", totalMemory=").append(endSample.totalMemory)
+                    .append(", totalFreeMemory=").append(endSample.freeMemory).append('}');
         }
 
         public int getId() {
@@ -473,6 +471,7 @@ public class UpdatePerformanceTracker {
 
         private long startAllocatedBytes;
         private long startPoolAllocatedBytes;
+
         public void onSubEntryStart() {
             startAllocatedBytes = ThreadProfiler.DEFAULT.getCurrentThreadAllocatedBytes();
             startPoolAllocatedBytes = QueryPerformanceRecorder.getPoolAllocatedBytesForCurrentThread();
@@ -483,13 +482,17 @@ public class UpdatePerformanceTracker {
         }
 
         public void onSubEntryEnd() {
-            intervalUserCpuNanos = plus(intervalUserCpuNanos, minus(ThreadProfiler.DEFAULT.getCurrentThreadUserTime(), startUserCpuNanos));
-            intervalCpuNanos = plus(intervalCpuNanos, minus(ThreadProfiler.DEFAULT.getCurrentThreadCpuTime(), startCpuNanos));
+            intervalUserCpuNanos = plus(intervalUserCpuNanos,
+                    minus(ThreadProfiler.DEFAULT.getCurrentThreadUserTime(), startUserCpuNanos));
+            intervalCpuNanos =
+                    plus(intervalCpuNanos, minus(ThreadProfiler.DEFAULT.getCurrentThreadCpuTime(), startCpuNanos));
 
             intervalUsageNanos += System.nanoTime() - startTimeNanos;
 
-            intervalPoolAllocatedBytes = plus(intervalPoolAllocatedBytes, minus(QueryPerformanceRecorder.getPoolAllocatedBytesForCurrentThread(), startPoolAllocatedBytes));
-            intervalAllocatedBytes = plus(intervalAllocatedBytes, minus(ThreadProfiler.DEFAULT.getCurrentThreadAllocatedBytes(), startAllocatedBytes));
+            intervalPoolAllocatedBytes = plus(intervalPoolAllocatedBytes,
+                    minus(QueryPerformanceRecorder.getPoolAllocatedBytesForCurrentThread(), startPoolAllocatedBytes));
+            intervalAllocatedBytes = plus(intervalAllocatedBytes,
+                    minus(ThreadProfiler.DEFAULT.getCurrentThreadAllocatedBytes(), startAllocatedBytes));
 
             startAllocatedBytes = 0;
             startPoolAllocatedBytes = 0;
@@ -533,21 +536,19 @@ public class UpdatePerformanceTracker {
 
         @Override
         public LogOutput append(LogOutput logOutput) {
-            final LogOutput currentValues = logOutput.append("SubEntry{").
-                    append(", intervalUsageNanos=").append(getIntervalUsageNanos()).
-                    append(", intervalCpuNanos=").append(getIntervalCpuNanos()).
-                    append(", intervalUserCpuNanos=").append(getIntervalUserCpuNanos()).
-                    append(", intervalAllocatedBytes=").append(getIntervalAllocatedBytes()).
-                    append(", intervalPoolAllocatedBytes=").append(getIntervalPoolAllocatedBytes());
+            final LogOutput currentValues = logOutput.append("SubEntry{").append(", intervalUsageNanos=")
+                    .append(getIntervalUsageNanos()).append(", intervalCpuNanos=").append(getIntervalCpuNanos())
+                    .append(", intervalUserCpuNanos=").append(getIntervalUserCpuNanos())
+                    .append(", intervalAllocatedBytes=").append(getIntervalAllocatedBytes())
+                    .append(", intervalPoolAllocatedBytes=").append(getIntervalPoolAllocatedBytes());
             return appendStart(currentValues).append('}');
         }
 
         LogOutput appendStart(LogOutput logOutput) {
-            return logOutput.append(", startCpuNanos=").append(startCpuNanos).
-                    append(", startUserCpuNanos=").append(startUserCpuNanos).
-                    append(", startTimeNanos=").append(startTimeNanos).
-                    append(", startAllocatedBytes=").append(startAllocatedBytes).
-                    append(", startPoolAllocatedBytes=").append(startPoolAllocatedBytes);
+            return logOutput.append(", startCpuNanos=").append(startCpuNanos).append(", startUserCpuNanos=")
+                    .append(startUserCpuNanos).append(", startTimeNanos=").append(startTimeNanos)
+                    .append(", startAllocatedBytes=").append(startAllocatedBytes).append(", startPoolAllocatedBytes=")
+                    .append(startPoolAllocatedBytes);
         }
 
         public void accumulate(SubEntry entry) {

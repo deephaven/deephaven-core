@@ -190,12 +190,14 @@ public class QueryTable extends BaseTable {
     /**
      * You can chose to enable or disable the column parallel select and update.
      */
-    static boolean ENABLE_PARALLEL_SELECT_AND_UPDATE = Configuration.getInstance().getBooleanWithDefault("QueryTable.enableParallelSelectAndUpdate", true);
+    static boolean ENABLE_PARALLEL_SELECT_AND_UPDATE =
+            Configuration.getInstance().getBooleanWithDefault("QueryTable.enableParallelSelectAndUpdate", true);
 
     /**
      * For unit tests, we do want to force the column parallel select and update at times.
      */
-    static boolean FORCE_PARALLEL_SELECT_AND_UPDATE = Configuration.getInstance().getBooleanWithDefault("QueryTable.forceParallelSelectAndUpdate", false);
+    static boolean FORCE_PARALLEL_SELECT_AND_UPDATE =
+            Configuration.getInstance().getBooleanWithDefault("QueryTable.forceParallelSelectAndUpdate", false);
 
     // Whether we should track the entire RowSet of firstBy and lastBy operations
     @VisibleForTesting
@@ -1375,7 +1377,8 @@ public class QueryTable extends BaseTable {
 
                     final CompletableFuture<Void> waitForResult = new CompletableFuture<>();
                     final SelectAndViewAnalyzer.JobScheduler jobScheduler;
-                    if (QueryTable.ENABLE_PARALLEL_SELECT_AND_UPDATE && TableMapTransformThreadPool.TRANSFORM_THREADS > 1) {
+                    if (QueryTable.ENABLE_PARALLEL_SELECT_AND_UPDATE
+                            && TableMapTransformThreadPool.TRANSFORM_THREADS > 1) {
                         jobScheduler = new SelectAndViewAnalyzer.TableMapTransformJobScheduler();
                     } else {
                         jobScheduler = SelectAndViewAnalyzer.ImmediateJobScheduler.INSTANCE;
@@ -1384,7 +1387,8 @@ public class QueryTable extends BaseTable {
                     try (final RowSet emptyRowSet = RowSetFactory.empty();
                             final SelectAndViewAnalyzer.UpdateHelper updateHelper =
                                     new SelectAndViewAnalyzer.UpdateHelper(emptyRowSet, fakeUpdate)) {
-                        analyzer.applyUpdate(fakeUpdate, emptyRowSet, updateHelper, jobScheduler, analyzer.futureCompletionHandler(waitForResult));
+                        analyzer.applyUpdate(fakeUpdate, emptyRowSet, updateHelper, jobScheduler,
+                                analyzer.futureCompletionHandler(waitForResult));
                     } catch (Exception e) {
                         waitForResult.completeExceptionally(e);
                     }
@@ -1395,14 +1399,15 @@ public class QueryTable extends BaseTable {
                         throw new CancellationException("interrupted while computing select or update");
                     } catch (ExecutionException e) {
                         if (e.getCause() instanceof RuntimeException) {
-                            throw (RuntimeException)e.getCause();
+                            throw (RuntimeException) e.getCause();
                         } else {
                             throw new UncheckedDeephavenException("Failure computing select or update", e.getCause());
                         }
                     } finally {
                         final UpdatePerformanceTracker.SubEntry subEntry = jobScheduler.getAccumulatedPerformance();
                         if (subEntry != null) {
-                            final QueryPerformanceNugget outerNugget = QueryPerformanceRecorder.getInstance().getOuterNugget();
+                            final QueryPerformanceNugget outerNugget =
+                                    QueryPerformanceRecorder.getInstance().getOuterNugget();
                             if (outerNugget != null) {
                                 outerNugget.addSubEntry(subEntry);
                             }

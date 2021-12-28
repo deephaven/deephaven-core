@@ -127,7 +127,7 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
     }
 
     /**
-     * Set the bits in bitset that represent the base layer and optional redirection layer.  No other jobs can be
+     * Set the bits in bitset that represent the base layer and optional redirection layer. No other jobs can be
      * executed until all of these bits are set.
      *
      * @param bitset the bitset to manipulate.
@@ -259,14 +259,16 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
 
     /**
      * Apply this update to this SelectAndViewAnalyzer.
+     * 
      * @param upstream the upstream update
      * @param toClear rows that used to exist and no longer exist
      * @param helper convenience class that memoizes reusable calculations for this update
      * @param onCompletion called when an inner column is complete, the outer layer should pass the completion on to
-     *                     other layers and if it all of it's dependencies have been satisfied schedule execution of
-     *                     that column update
+     *        other layers and if it all of it's dependencies have been satisfied schedule execution of that column
+     *        update
      */
-    public abstract void applyUpdate(TableUpdate upstream, RowSet toClear, UpdateHelper helper, JobScheduler jobScheduler, SelectLayerCompletionHandler onCompletion);
+    public abstract void applyUpdate(TableUpdate upstream, RowSet toClear, UpdateHelper helper,
+            JobScheduler jobScheduler, SelectLayerCompletionHandler onCompletion);
 
     /**
      * Our job here is to calculate the effects: a map from incoming column to a list of columns that it effects. We do
@@ -305,7 +307,9 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
     /**
      * Return the layerIndex for a given string column.
      *
-     * <p>This is executed recursively, because later columns in a select statement hide earlier columns.</p>
+     * <p>
+     * This is executed recursively, because later columns in a select statement hide earlier columns.
+     * </p>
      *
      * @param column the name of the column
      *
@@ -314,8 +318,8 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
     abstract int getLayerIndexFor(String column);
 
     /**
-     * A class that handles the completion of one select column.  The handlers are chained together so that when a
-     * column completes all of the downstream dependencies may execute.
+     * A class that handles the completion of one select column. The handlers are chained together so that when a column
+     * completes all of the downstream dependencies may execute.
      */
     public static abstract class SelectLayerCompletionHandler {
         /**
@@ -343,7 +347,8 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
          *
          * If we are ready, then we call {@link #onAllRequiredColumnsCompleted()}.
          *
-         * We may not be ready, but other columns downstream of us may be ready, so they are also notified (the nextHandler).
+         * We may not be ready, but other columns downstream of us may be ready, so they are also notified (the
+         * nextHandler).
          *
          * @param completedColumn the layerIndex of the completedColumn
          */
@@ -399,7 +404,8 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
         final UpdatePerformanceTracker.SubEntry accumulatedSubEntry = new UpdatePerformanceTracker.SubEntry();
 
         @Override
-        public void submit(final Runnable runnable, final LogOutputAppendable description, final Consumer<Exception> onError) {
+        public void submit(final Runnable runnable, final LogOutputAppendable description,
+                final Consumer<Exception> onError) {
             UpdateGraphProcessor.DEFAULT.addNotification(new AbstractNotification(false) {
                 @Override
                 public boolean canExecute(long step) {
@@ -424,7 +430,8 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
 
                 @Override
                 public LogOutput append(LogOutput output) {
-                    return output.append("{Notification(").append(System.identityHashCode(this)).append(" for ").append(description).append("}");
+                    return output.append("{Notification(").append(System.identityHashCode(this)).append(" for ")
+                            .append(description).append("}");
                 }
             });
         }
@@ -439,7 +446,8 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
         final UpdatePerformanceTracker.SubEntry accumulatedSubEntry = new UpdatePerformanceTracker.SubEntry();
 
         @Override
-        public void submit(final Runnable runnable, final LogOutputAppendable description, final Consumer<Exception> onError) {
+        public void submit(final Runnable runnable, final LogOutputAppendable description,
+                final Consumer<Exception> onError) {
             TableMapTransformThreadPool.executorService.submit(() -> {
                 final UpdatePerformanceTracker.SubEntry subEntry = new UpdatePerformanceTracker.SubEntry();
                 subEntry.onSubEntryStart();
@@ -466,7 +474,8 @@ public abstract class SelectAndViewAnalyzer implements LogOutputAppendable {
         public static final ImmediateJobScheduler INSTANCE = new ImmediateJobScheduler();
 
         @Override
-        public void submit(final Runnable runnable, final LogOutputAppendable description, final Consumer<Exception> onError) {
+        public void submit(final Runnable runnable, final LogOutputAppendable description,
+                final Consumer<Exception> onError) {
             try {
                 runnable.run();
             } catch (Exception e) {

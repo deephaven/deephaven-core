@@ -27,16 +27,18 @@ final public class PreserveColumnLayer extends DependencyLayerBase {
     }
 
     @Override
-    public void applyUpdate(TableUpdate upstream, RowSet toClear, UpdateHelper helper, JobScheduler jobScheduler, SelectLayerCompletionHandler onCompletion) {
+    public void applyUpdate(TableUpdate upstream, RowSet toClear, UpdateHelper helper, JobScheduler jobScheduler,
+            SelectLayerCompletionHandler onCompletion) {
         // Nothing to do at this level, but need to recurse because my inner layers might need to be called (e.g.
         // because they are SelectColumnLayers)
-        inner.applyUpdate(upstream, toClear, helper, jobScheduler, new SelectLayerCompletionHandler(dependencyBitSet, onCompletion) {
-            @Override
-            public void onAllRequiredColumnsCompleted() {
-                // we don't need to do anything specific here
-                onCompletion.onLayerCompleted(getLayerIndex());
-            }
-        });
+        inner.applyUpdate(upstream, toClear, helper, jobScheduler,
+                new SelectLayerCompletionHandler(dependencyBitSet, onCompletion) {
+                    @Override
+                    public void onAllRequiredColumnsCompleted() {
+                        // we don't need to do anything specific here
+                        onCompletion.onLayerCompleted(getLayerIndex());
+                    }
+                });
     }
 
     @Override

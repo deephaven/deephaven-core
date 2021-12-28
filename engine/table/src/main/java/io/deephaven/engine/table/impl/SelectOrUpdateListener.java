@@ -17,8 +17,8 @@ import java.util.BitSet;
 import java.util.Map;
 
 /**
- * A Shift-Aware listener for Select or Update. It uses the SelectAndViewAnalyzer to calculate how columns
- * affect other columns, then creates a column set transformer which will be used by onUpdate to transform updates.
+ * A Shift-Aware listener for Select or Update. It uses the SelectAndViewAnalyzer to calculate how columns affect other
+ * columns, then creates a column set transformer which will be used by onUpdate to transform updates.
  */
 class SelectOrUpdateListener extends BaseTable.ListenerImpl {
     private final QueryTable dependent;
@@ -34,12 +34,12 @@ class SelectOrUpdateListener extends BaseTable.ListenerImpl {
 
     /**
      * @param description Description of this listener
-     * @param parent      The parent table
-     * @param dependent   The dependent table
-     * @param effects     A map from a column name to the column names that it affects
+     * @param parent The parent table
+     * @param dependent The dependent table
+     * @param effects A map from a column name to the column names that it affects
      */
     SelectOrUpdateListener(String description, QueryTable parent, QueryTable dependent, Map<String, String[]> effects,
-                           SelectAndViewAnalyzer analyzer) {
+            SelectAndViewAnalyzer analyzer) {
         super(description, parent, dependent);
         this.dependent = dependent;
         this.resultIndex = dependent.getRowSet();
@@ -55,7 +55,8 @@ class SelectOrUpdateListener extends BaseTable.ListenerImpl {
         }
         transformer = parent.newModifiedColumnSetTransformer(parentNames, mcss);
         this.analyzer = analyzer;
-        this.enableParallelUpdate = QueryTable.ENABLE_PARALLEL_SELECT_AND_UPDATE && UpdateGraphProcessor.DEFAULT.getUpdateThreads() > 1;
+        this.enableParallelUpdate =
+                QueryTable.ENABLE_PARALLEL_SELECT_AND_UPDATE && UpdateGraphProcessor.DEFAULT.getUpdateThreads() > 1;
         analyzer.setAllNewColumns(allNewColumns);
     }
 
@@ -70,7 +71,8 @@ class SelectOrUpdateListener extends BaseTable.ListenerImpl {
         final TableUpdate acquiredUpdate = upstream.acquire();
 
         try (final WritableRowSet toClear = resultIndex.copyPrev();
-             final SelectAndViewAnalyzer.UpdateHelper updateHelper = new SelectAndViewAnalyzer.UpdateHelper(resultIndex, acquiredUpdate)) {
+                final SelectAndViewAnalyzer.UpdateHelper updateHelper =
+                        new SelectAndViewAnalyzer.UpdateHelper(resultIndex, acquiredUpdate)) {
             toClear.remove(resultIndex);
             SelectAndViewAnalyzer.JobScheduler jobScheduler;
 
@@ -80,17 +82,18 @@ class SelectOrUpdateListener extends BaseTable.ListenerImpl {
                 jobScheduler = SelectAndViewAnalyzer.ImmediateJobScheduler.INSTANCE;
             }
 
-            analyzer.applyUpdate(acquiredUpdate, toClear, updateHelper, jobScheduler, new SelectAndViewAnalyzer.SelectLayerCompletionHandler(completedColumns, allNewColumns) {
-                @Override
-                public void onAllRequiredColumnsCompleted() {
-                    completionRoutine(acquiredUpdate, jobScheduler);
-                }
+            analyzer.applyUpdate(acquiredUpdate, toClear, updateHelper, jobScheduler,
+                    new SelectAndViewAnalyzer.SelectLayerCompletionHandler(completedColumns, allNewColumns) {
+                        @Override
+                        public void onAllRequiredColumnsCompleted() {
+                            completionRoutine(acquiredUpdate, jobScheduler);
+                        }
 
-                @Override
-                protected void onError(Exception error) {
-                    handleException(error);
-                }
-            });
+                        @Override
+                        protected void onError(Exception error) {
+                            handleException(error);
+                        }
+                    });
         }
     }
 
@@ -107,12 +110,14 @@ class SelectOrUpdateListener extends BaseTable.ListenerImpl {
     }
 
     private void completionRoutine(TableUpdate upstream, SelectAndViewAnalyzer.JobScheduler jobScheduler) {
-        final TableUpdateImpl downstream = new TableUpdateImpl(upstream.added().copy(), upstream.removed().copy(), upstream.modified().copy(), upstream.shifted(), dependent.modifiedColumnSet);
+        final TableUpdateImpl downstream = new TableUpdateImpl(upstream.added().copy(), upstream.removed().copy(),
+                upstream.modified().copy(), upstream.shifted(), dependent.modifiedColumnSet);
         transformer.clearAndTransform(upstream.modifiedColumnSet(), downstream.modifiedColumnSet);
         dependent.notifyListeners(downstream);
         upstream.release();
         final UpdatePerformanceTracker.SubEntry accumulated = jobScheduler.getAccumulatedPerformance();
-        // if the entry exists, then we install a terminal notification so that we don't lose the performance from this execution
+        // if the entry exists, then we install a terminal notification so that we don't lose the performance from this
+        // execution
         if (accumulated != null) {
             UpdateGraphProcessor.DEFAULT.addNotification(new TerminalNotification() {
                 @Override

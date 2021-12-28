@@ -15,7 +15,8 @@ final public class ViewColumnLayer extends SelectOrViewColumnLayer {
     }
 
     @Override
-    public void applyUpdate(TableUpdate upstream, RowSet toClear, UpdateHelper helper, JobScheduler jobScheduler, SelectLayerCompletionHandler completionHandler) {
+    public void applyUpdate(TableUpdate upstream, RowSet toClear, UpdateHelper helper, JobScheduler jobScheduler,
+            SelectLayerCompletionHandler completionHandler) {
         // To be parallel with SelectColumnLayer, we would recurse here, but since this is ViewColumnLayer
         // (and all my inner layers are ViewColumnLayer), there's nothing to do.
         Assert.eqNull(completionHandler, "completionHandler");

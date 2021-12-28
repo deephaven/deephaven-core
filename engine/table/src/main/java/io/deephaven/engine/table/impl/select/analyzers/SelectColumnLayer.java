@@ -62,15 +62,18 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
         }
 
         // recurse so that dependent intermediate columns are already updated
-        inner.applyUpdate(upstream, toClear, helper, jobScheduler, new SelectLayerCompletionHandler(dependencyBitSet, onCompletion) {
-            @Override
-            public void onAllRequiredColumnsCompleted() {
-                jobScheduler.submit(() -> doApplyUpdate(upstream, toClear, helper, onCompletion), SelectColumnLayer.this, this::onError);
-            }
-        });
+        inner.applyUpdate(upstream, toClear, helper, jobScheduler,
+                new SelectLayerCompletionHandler(dependencyBitSet, onCompletion) {
+                    @Override
+                    public void onAllRequiredColumnsCompleted() {
+                        jobScheduler.submit(() -> doApplyUpdate(upstream, toClear, helper, onCompletion),
+                                SelectColumnLayer.this, this::onError);
+                    }
+                });
     }
 
-    private void doApplyUpdate(final TableUpdate upstream, final RowSet toClear, final UpdateHelper helper, SelectLayerCompletionHandler onCompletion) {
+    private void doApplyUpdate(final TableUpdate upstream, final RowSet toClear, final UpdateHelper helper,
+            SelectLayerCompletionHandler onCompletion) {
         final int PAGE_SIZE = 4096;
         final LongToIntFunction contextSize = (long size) -> size > PAGE_SIZE ? PAGE_SIZE : (int) size;
 

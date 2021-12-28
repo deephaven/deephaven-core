@@ -64,7 +64,8 @@ public class BaseLayer extends SelectAndViewAnalyzer {
     }
 
     @Override
-    public void applyUpdate(TableUpdate upstream, RowSet toClear, UpdateHelper helper, JobScheduler jobScheduler, SelectLayerCompletionHandler onCompletion) {
+    public void applyUpdate(TableUpdate upstream, RowSet toClear, UpdateHelper helper, JobScheduler jobScheduler,
+            SelectLayerCompletionHandler onCompletion) {
         // nothing to do at the base layer
         onCompletion.onLayerCompleted(BASE_LAYER_INDEX);
     }

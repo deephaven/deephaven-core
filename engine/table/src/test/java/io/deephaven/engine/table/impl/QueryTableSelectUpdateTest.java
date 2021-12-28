@@ -85,7 +85,8 @@ public class QueryTableSelectUpdateTest {
 
         final Table table3 = table.update("q = i", "q = q + 1", "p = q+10");
 
-        assertTableEquals(TableTools.newTable(intCol("x", 1, 2, 3), charCol("y", 'a', 'b', 'c'), intCol("q", 1, 2, 3), intCol("p", 11, 12, 13)), table3);
+        assertTableEquals(TableTools.newTable(intCol("x", 1, 2, 3), charCol("y", 'a', 'b', 'c'), intCol("q", 1, 2, 3),
+                intCol("p", 11, 12, 13)), table3);
 
         final ShiftObliviousListener table2Listener = base.newListenerWithGlobals(table2);
         table2.listenForUpdates(table2Listener);
@@ -98,8 +99,10 @@ public class QueryTableSelectUpdateTest {
         TableTools.showWithRowSet(table2);
         TableTools.showWithRowSet(table3);
 
-        assertTableEquals(TableTools.newTable(intCol("x", 1, 2, 3, 4, 5), charCol("y", 'a', 'b', 'c', 'd', 'e'), intCol("q", 1, 2, 3, 4, 5), intCol("p", 11, 12, 13, 14, 15)), table3);
-        assertTableEquals(TableTools.newTable(intCol("x", 2, 4, 6, 8, 10), charCol("z", 'a', 'b', 'c', 'd', 'e')), table2);
+        assertTableEquals(TableTools.newTable(intCol("x", 1, 2, 3, 4, 5), charCol("y", 'a', 'b', 'c', 'd', 'e'),
+                intCol("q", 1, 2, 3, 4, 5), intCol("p", 11, 12, 13, 14, 15)), table3);
+        assertTableEquals(TableTools.newTable(intCol("x", 2, 4, 6, 8, 10), charCol("z", 'a', 'b', 'c', 'd', 'e')),
+                table2);
 
         TestCase.assertEquals(i(7, 9), base.added);
         TestCase.assertEquals(i(), base.removed);
@@ -110,8 +113,10 @@ public class QueryTableSelectUpdateTest {
             table.notifyListeners(i(), i(), i(7, 9));
         });
 
-        assertTableEquals(TableTools.newTable(intCol("x", 1, 2, 3, 3, 10), charCol("y", 'a', 'b', 'c', 'e', 'd'), intCol("q", 1, 2, 3, 4, 5), intCol("p", 11, 12, 13, 14, 15)), table3);
-        assertTableEquals(TableTools.newTable(intCol("x", 2, 4, 6, 6, 20), charCol("z", 'a', 'b', 'c', 'e', 'd')), table2);
+        assertTableEquals(TableTools.newTable(intCol("x", 1, 2, 3, 3, 10), charCol("y", 'a', 'b', 'c', 'e', 'd'),
+                intCol("q", 1, 2, 3, 4, 5), intCol("p", 11, 12, 13, 14, 15)), table3);
+        assertTableEquals(TableTools.newTable(intCol("x", 2, 4, 6, 6, 20), charCol("z", 'a', 'b', 'c', 'e', 'd')),
+                table2);
 
         TestCase.assertEquals(i(), base.added);
         TestCase.assertEquals(i(), base.removed);
@@ -122,7 +127,9 @@ public class QueryTableSelectUpdateTest {
             table.notifyListeners(i(), i(2, 6, 7), i());
         });
 
-        assertTableEquals(TableTools.newTable(intCol("x", 2, 10), charCol("y", 'b', 'd'), intCol("q", 2, 5), intCol("p", 12, 15)), table3);
+        assertTableEquals(
+                TableTools.newTable(intCol("x", 2, 10), charCol("y", 'b', 'd'), intCol("q", 2, 5), intCol("p", 12, 15)),
+                table3);
         assertTableEquals(TableTools.newTable(intCol("x", 4, 20), charCol("z", 'b', 'd')), table2);
 
         TestCase.assertEquals(i(), base.added);
@@ -136,7 +143,8 @@ public class QueryTableSelectUpdateTest {
         });
         TestCase.assertEquals(3, table2.size());
 
-        assertTableEquals(TableTools.newTable(intCol("x", 1, 22, 3), charCol("y", 'a', 'x', 'c'), intCol("q", 1, 2, 3), intCol("p", 11, 12, 13)), table3);
+        assertTableEquals(TableTools.newTable(intCol("x", 1, 22, 3), charCol("y", 'a', 'x', 'c'), intCol("q", 1, 2, 3),
+                intCol("p", 11, 12, 13)), table3);
         assertTableEquals(TableTools.newTable(intCol("x", 2, 44, 6), charCol("z", 'a', 'x', 'c')), table2);
 
         TestCase.assertEquals(i(2, 6), base.added);
@@ -147,13 +155,15 @@ public class QueryTableSelectUpdateTest {
         assertTableEquals(TableTools.newTable(intCol("x", 0, 2, 4), stringCol("y", "0", "2", "4")), table4);
 
         final QueryTable table5 = (QueryTable) table4.update("z = x", "x = z + 1", "t = x - 3");
-        assertTableEquals(TableTools.newTable(intCol("x", 1, 3, 5), stringCol("y", "0", "2", "4"), intCol("z", 0, 2, 4), intCol("t", -2, 0, 2)), table5);
+        assertTableEquals(TableTools.newTable(intCol("x", 1, 3, 5), stringCol("y", "0", "2", "4"), intCol("z", 0, 2, 4),
+                intCol("t", -2, 0, 2)), table5);
 
 
         final QueryTable table6 = TstUtils.testRefreshingTable(i(2, 4, 6).toTracking(),
                 c("x", 1, 2, 3), c("y", 'a', 'b', 'c'));
         final Table table7 = table6.update("z = x", "x = z + 1", "t = x - 3");
-        assertTableEquals(TableTools.newTable(intCol("x", 2, 3, 4), charCol("y", 'a', 'b', 'c'),  intCol("z", 1, 2, 3), intCol("t", -1, 0, 1)), table7);
+        assertTableEquals(TableTools.newTable(intCol("x", 2, 3, 4), charCol("y", 'a', 'b', 'c'), intCol("z", 1, 2, 3),
+                intCol("t", -1, 0, 1)), table7);
 
         final ShiftObliviousListener table7Listener2 = base.newListenerWithGlobals(table7);
         table7.listenForUpdates(table7Listener2);
@@ -163,14 +173,16 @@ public class QueryTableSelectUpdateTest {
             table6.notifyListeners(i(7, 9), i(), i());
         });
 
-        assertTableEquals(TableTools.newTable(intCol("x", 2, 3, 4, 5, 6), charCol("y", 'a', 'b', 'c', 'd', 'e'),  intCol("z", 1, 2, 3, 4, 5), intCol("t", -1, 0, 1, 2, 3)), table7);
+        assertTableEquals(TableTools.newTable(intCol("x", 2, 3, 4, 5, 6), charCol("y", 'a', 'b', 'c', 'd', 'e'),
+                intCol("z", 1, 2, 3, 4, 5), intCol("t", -1, 0, 1, 2, 3)), table7);
 
         UpdateGraphProcessor.DEFAULT.runWithinUnitTestCycle(() -> {
             addToTable(table6, i(7, 9), c("x", 3, 10), c("y", 'e', 'd'));
             table6.notifyListeners(i(), i(), i(7, 9));
         });
 
-        assertTableEquals(TableTools.newTable(intCol("x", 2, 3, 4, 4, 11), charCol("y", 'a', 'b', 'c', 'e', 'd'),  intCol("z", 1, 2, 3, 3, 10), intCol("t", -1, 0, 1, 1, 8)), table7);
+        assertTableEquals(TableTools.newTable(intCol("x", 2, 3, 4, 4, 11), charCol("y", 'a', 'b', 'c', 'e', 'd'),
+                intCol("z", 1, 2, 3, 3, 10), intCol("t", -1, 0, 1, 1, 8)), table7);
         TestCase.assertEquals(i(), base.added);
         TestCase.assertEquals(i(7, 9), base.modified);
         TestCase.assertEquals(i(), base.removed);
@@ -180,7 +192,9 @@ public class QueryTableSelectUpdateTest {
             table6.notifyListeners(i(), i(2, 6, 7), i());
         });
 
-        assertTableEquals(TableTools.newTable(intCol("x", 3, 11), charCol("y", 'b', 'd'),  intCol("z", 2, 10), intCol("t", 0, 8)), table7);
+        assertTableEquals(
+                TableTools.newTable(intCol("x", 3, 11), charCol("y", 'b', 'd'), intCol("z", 2, 10), intCol("t", 0, 8)),
+                table7);
         TestCase.assertEquals(i(), base.added);
         TestCase.assertEquals(i(2, 6, 7), base.removed);
         TestCase.assertEquals(i(), base.modified);
@@ -191,7 +205,8 @@ public class QueryTableSelectUpdateTest {
             table6.notifyListeners(i(2, 6), i(9), i(4));
         });
 
-        assertTableEquals(TableTools.newTable(intCol("x", 2, 23, 4), charCol("y", 'a', 'x', 'c'),  intCol("z", 1, 22, 3), intCol("t", -1, 20, 1)), table7);
+        assertTableEquals(TableTools.newTable(intCol("x", 2, 23, 4), charCol("y", 'a', 'x', 'c'), intCol("z", 1, 22, 3),
+                intCol("t", -1, 20, 1)), table7);
         TestCase.assertEquals(i(2, 6), base.added);
         TestCase.assertEquals(i(9), base.removed);
         TestCase.assertEquals(i(4), base.modified);
@@ -501,9 +516,9 @@ public class QueryTableSelectUpdateTest {
     @Test
     public void testUpdateIncremental() {
         for (int seed = 0; seed < 3; ++seed) {
-//            try (final SafeCloseable ignored = LivenessScopeStack.open()) {
-//                testUpdateIncremental(seed, false);
-//            }
+            // try (final SafeCloseable ignored = LivenessScopeStack.open()) {
+            // testUpdateIncremental(seed, false);
+            // }
             try (final SafeCloseable ignored = LivenessScopeStack.open()) {
                 testUpdateIncremental(seed, true);
             }
@@ -536,76 +551,76 @@ public class QueryTableSelectUpdateTest {
                         new IntGenerator(10, 100),
                         new SetGenerator<>(10.1, 20.1, 30.1)));
 
-//        final Table sortedTable = queryTable.sort("intCol");
+        final Table sortedTable = queryTable.sort("intCol");
 
         final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
                 EvalNugget.from(() -> queryTable.update("intCol=intCol * 2")),
-//                EvalNugget.from(() -> queryTable.update("newCol=intCol / 2", "newCol2=newCol * 4")),
-//                EvalNugget.from(() -> queryTable.update("newCol=intCol / 2").update("newCol2=newCol * 4")),
-//                EvalNugget.from(() -> queryTable.select("intCol=intCol + doubleCol")),
-//                EvalNugget.from(() -> queryTable.select("newCol=intCol / 2").update("newCol2=newCol * 4")),
-//                EvalNugget.from(() -> sortedTable.update("intCol=intCol + doubleCol")),
-//                EvalNugget.from(() -> sortedTable.update("newCol=intCol / 2", "newCol2=newCol * 4")),
-//                EvalNugget.from(() -> sortedTable.update("newCol=intCol / 2").update("newCol2=newCol * 4")),
-//                EvalNugget.from(() -> sortedTable.select("intCol=intCol * 2")),
-//                EvalNugget.from(() -> sortedTable.select("newCol=intCol / 2").update("newCol2=newCol * 4")),
-//                partialEvalNuggetFrom(queryTable, false,
-//                        () -> queryTable.update("newCol=intCol / 2", "newCol2=newCol_[i] * 4")),
-//                partialEvalNuggetFrom(queryTable, false,
-//                        () -> queryTable.update("newCol=intCol / 2", "newCol2=newCol_[i] * newCol")),
-//                partialEvalNuggetFrom(queryTable, false,
-//                        () -> queryTable.update("repeatedCol=doubleCol - 0.5", "newCol=intCol / 2",
-//                                "repeatedCol=newCol_[i] * repeatedCol")),
-//                partialEvalNuggetFrom(queryTable, false,
-//                        () -> queryTable.update("newCol2=intCol / 2", "newCol=newCol2_[i] + 7")),
-//                partialEvalNuggetFrom(queryTable, false, () -> queryTable.update("newCol=intCol_[i]")),
-//                partialEvalNuggetFrom(sortedTable, false,
-//                        () -> sortedTable.update("newCol=intCol / 2", "newCol2=newCol_[i] * 4")),
-//                partialEvalNuggetFrom(sortedTable, false,
-//                        () -> sortedTable.update("newCol=intCol / 2", "newCol2=newCol_[i] * newCol")),
-//                partialEvalNuggetFrom(sortedTable, false,
-//                        () -> sortedTable.update("repeatedCol=doubleCol - 0.5", "newCol=intCol / 2",
-//                                "repeatedCol=newCol_[i] * repeatedCol")),
-//                partialEvalNuggetFrom(sortedTable, false,
-//                        () -> sortedTable.update("newCol2=intCol / 2", "newCol=newCol2_[i] + 7")),
-//                partialEvalNuggetFrom(sortedTable, false, () -> sortedTable.update("newCol=intCol_[i]")),
-//                partialEvalNuggetFrom(queryTable, true, () -> queryTable.select("newCol=intCol_[i]")),
-//                partialEvalNuggetFrom(queryTable, true,
-//                        () -> queryTable.select("newCol=intCol / 2", "newCol2=newCol_[i] * 4")),
-//                partialEvalNuggetFrom(queryTable, true,
-//                        () -> queryTable.select("newCol=intCol / 2", "newCol2=newCol_[i] * newCol")),
-//                partialEvalNuggetFrom(queryTable, true,
-//                        () -> queryTable.select("repeatedCol=doubleCol - 0.5", "newCol=intCol / 2",
-//                                "repeatedCol=newCol_[i] * repeatedCol")),
-//                partialEvalNuggetFrom(queryTable, true,
-//                        () -> queryTable.select("newCol2=intCol / 2", "newCol=newCol2_[i] + 7")),
-//                partialEvalNuggetFrom(sortedTable, true, () -> sortedTable.select("newCol=intCol_[i]")),
-//                partialEvalNuggetFrom(sortedTable, true,
-//                        () -> sortedTable.select("newCol=intCol / 2", "newCol2=newCol_[i] * 4")),
-//                partialEvalNuggetFrom(sortedTable, true,
-//                        () -> sortedTable.select("newCol=intCol / 2", "newCol2=newCol_[i] * newCol")),
-//                partialEvalNuggetFrom(sortedTable, true,
-//                        () -> sortedTable.select("repeatedCol=doubleCol - 0.5", "newCol=intCol / 2",
-//                                "repeatedCol=newCol_[i] * repeatedCol")),
-//                partialEvalNuggetFrom(sortedTable, true,
-//                        () -> sortedTable.select("newCol2=intCol / 2", "newCol=newCol2_[i] + 7")),
-//                // This case is rather nasty, because we have an intermediate column to deal with.
-//                partialEvalNuggetFrom(queryTable, false,
-//                        () -> queryTable.update("newCol2=intCol / 2", "newCol=newCol2", "newCol=newCol_[i] + 7")),
-//                partialEvalNuggetFrom(queryTable, false,
-//                        () -> queryTable.update("newCol=intCol / 2", "newCol=newCol_[i] + 7")),
-//                new UpdateValidatorNugget(queryTable.select("newCol=intCol / 2", "newCol=newCol_[i] + 7")),
-//                // Let's change the type of a column.
-//                EvalNugget.from(() -> queryTable.select("intCol = intCol/2")),
-//                EvalNugget.from(() -> queryTable.update("newCol = `` + intCol/2")),
-//                EvalNugget.from(() -> queryTable.update("newCol = intCol > 50")),
-//                // Let's create a datetime and use it as an override
-//                partialEvalNuggetFrom(queryTable, false,
-//                        () -> queryTable.update("Time = new DateTime(0) + intCol * MINUTE")
-//                                .update("Diff = Time_[i]")),
-//                partialEvalNuggetFrom(queryTable, true,
-//                        () -> queryTable.select("Time = new DateTime(0) + intCol * MINUTE").select("Time",
-//                                "Diff = Time_[i]")),
+                EvalNugget.from(() -> queryTable.update("newCol=intCol / 2", "newCol2=newCol * 4")),
+                EvalNugget.from(() -> queryTable.update("newCol=intCol / 2").update("newCol2=newCol * 4")),
+                EvalNugget.from(() -> queryTable.select("intCol=intCol + doubleCol")),
+                EvalNugget.from(() -> queryTable.select("newCol=intCol / 2").update("newCol2=newCol * 4")),
+                EvalNugget.from(() -> sortedTable.update("intCol=intCol + doubleCol")),
+                EvalNugget.from(() -> sortedTable.update("newCol=intCol / 2", "newCol2=newCol * 4")),
+                EvalNugget.from(() -> sortedTable.update("newCol=intCol / 2").update("newCol2=newCol * 4")),
+                EvalNugget.from(() -> sortedTable.select("intCol=intCol * 2")),
+                EvalNugget.from(() -> sortedTable.select("newCol=intCol / 2").update("newCol2=newCol * 4")),
+                partialEvalNuggetFrom(queryTable, false,
+                        () -> queryTable.update("newCol=intCol / 2", "newCol2=newCol_[i] * 4")),
+                partialEvalNuggetFrom(queryTable, false,
+                        () -> queryTable.update("newCol=intCol / 2", "newCol2=newCol_[i] * newCol")),
+                partialEvalNuggetFrom(queryTable, false,
+                        () -> queryTable.update("repeatedCol=doubleCol - 0.5", "newCol=intCol / 2",
+                                "repeatedCol=newCol_[i] * repeatedCol")),
+                partialEvalNuggetFrom(queryTable, false,
+                        () -> queryTable.update("newCol2=intCol / 2", "newCol=newCol2_[i] + 7")),
+                partialEvalNuggetFrom(queryTable, false, () -> queryTable.update("newCol=intCol_[i]")),
+                partialEvalNuggetFrom(sortedTable, false,
+                        () -> sortedTable.update("newCol=intCol / 2", "newCol2=newCol_[i] * 4")),
+                partialEvalNuggetFrom(sortedTable, false,
+                        () -> sortedTable.update("newCol=intCol / 2", "newCol2=newCol_[i] * newCol")),
+                partialEvalNuggetFrom(sortedTable, false,
+                        () -> sortedTable.update("repeatedCol=doubleCol - 0.5", "newCol=intCol / 2",
+                                "repeatedCol=newCol_[i] * repeatedCol")),
+                partialEvalNuggetFrom(sortedTable, false,
+                        () -> sortedTable.update("newCol2=intCol / 2", "newCol=newCol2_[i] + 7")),
+                partialEvalNuggetFrom(sortedTable, false, () -> sortedTable.update("newCol=intCol_[i]")),
+                partialEvalNuggetFrom(queryTable, true, () -> queryTable.select("newCol=intCol_[i]")),
+                partialEvalNuggetFrom(queryTable, true,
+                        () -> queryTable.select("newCol=intCol / 2", "newCol2=newCol_[i] * 4")),
+                partialEvalNuggetFrom(queryTable, true,
+                        () -> queryTable.select("newCol=intCol / 2", "newCol2=newCol_[i] * newCol")),
+                partialEvalNuggetFrom(queryTable, true,
+                        () -> queryTable.select("repeatedCol=doubleCol - 0.5", "newCol=intCol / 2",
+                                "repeatedCol=newCol_[i] * repeatedCol")),
+                partialEvalNuggetFrom(queryTable, true,
+                        () -> queryTable.select("newCol2=intCol / 2", "newCol=newCol2_[i] + 7")),
+                partialEvalNuggetFrom(sortedTable, true, () -> sortedTable.select("newCol=intCol_[i]")),
+                partialEvalNuggetFrom(sortedTable, true,
+                        () -> sortedTable.select("newCol=intCol / 2", "newCol2=newCol_[i] * 4")),
+                partialEvalNuggetFrom(sortedTable, true,
+                        () -> sortedTable.select("newCol=intCol / 2", "newCol2=newCol_[i] * newCol")),
+                partialEvalNuggetFrom(sortedTable, true,
+                        () -> sortedTable.select("repeatedCol=doubleCol - 0.5", "newCol=intCol / 2",
+                                "repeatedCol=newCol_[i] * repeatedCol")),
+                partialEvalNuggetFrom(sortedTable, true,
+                        () -> sortedTable.select("newCol2=intCol / 2", "newCol=newCol2_[i] + 7")),
+                // This case is rather nasty, because we have an intermediate column to deal with.
+                partialEvalNuggetFrom(queryTable, false,
+                        () -> queryTable.update("newCol2=intCol / 2", "newCol=newCol2", "newCol=newCol_[i] + 7")),
+                partialEvalNuggetFrom(queryTable, false,
+                        () -> queryTable.update("newCol=intCol / 2", "newCol=newCol_[i] + 7")),
+                new UpdateValidatorNugget(queryTable.select("newCol=intCol / 2", "newCol=newCol_[i] + 7")),
+                // Let's change the type of a column.
+                EvalNugget.from(() -> queryTable.select("intCol = intCol/2")),
+                EvalNugget.from(() -> queryTable.update("newCol = `` + intCol/2")),
+                EvalNugget.from(() -> queryTable.update("newCol = intCol > 50")),
+                // Let's create a datetime and use it as an override
+                partialEvalNuggetFrom(queryTable, false,
+                        () -> queryTable.update("Time = new DateTime(0) + intCol * MINUTE")
+                                .update("Diff = Time_[i]")),
+                partialEvalNuggetFrom(queryTable, true,
+                        () -> queryTable.select("Time = new DateTime(0) + intCol * MINUTE").select("Time",
+                                "Diff = Time_[i]")),
         };
 
         final int maxSteps = numSteps.intValue();
@@ -654,15 +669,18 @@ public class QueryTableSelectUpdateTest {
 
     private void testUpdateIncrementalRandomized(final int seed, MutableInt numSteps) {
         final Random random = new Random(seed);
-        final TstUtils.ColumnInfo [] columnInfo;
+        final TstUtils.ColumnInfo[] columnInfo;
         final int size = 25;
-        final QueryTable queryTable = getTable(size, random, columnInfo = initColumnInfos(new String[]{"Sym", "intCol", "doubleCol"},
-                new SetGenerator<>("a", "b","c","d", "e"),
-                new IntGenerator(10, 100),
-                new SetGenerator<>(10.1, 20.1, 30.1)));
+        final QueryTable queryTable = getTable(size, random,
+                columnInfo = initColumnInfos(new String[] {"Sym", "intCol", "doubleCol"},
+                        new SetGenerator<>("a", "b", "c", "d", "e"),
+                        new IntGenerator(10, 100),
+                        new SetGenerator<>(10.1, 20.1, 30.1)));
 
-        final EvalNuggetInterface[] en = new EvalNuggetInterface[]{
-                EvalNugget.from(() -> queryTable.select("intCol=intCol * 2", "multiplication=intCol * doubleCol", "intQuad=intCol * 2", "Sym", "newCol=7", "FC=Sym.charAt(0)", "UC=Sym.toUpperCase()", "Concat=UC + FC")),
+        final EvalNuggetInterface[] en = new EvalNuggetInterface[] {
+                EvalNugget.from(() -> queryTable.select("intCol=intCol * 2", "multiplication=intCol * doubleCol",
+                        "intQuad=intCol * 2", "Sym", "newCol=7", "FC=Sym.charAt(0)", "UC=Sym.toUpperCase()",
+                        "Concat=UC + FC")),
         };
 
         final int maxSteps = numSteps.intValue();
