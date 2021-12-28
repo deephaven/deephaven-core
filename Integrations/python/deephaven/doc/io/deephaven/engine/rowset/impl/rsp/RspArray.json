@@ -68,7 +68,7 @@
   "subsetOf": ":param other: io.deephaven.engine.rowset.impl.rsp.RspArray\n:return: boolean",
   "toString": ":return: java.lang.String",
   "tryCompact": ":param compactFactor: int",
-  "tryCompactUnsafe": ":param compactFactor: (int) - if k == 0, compact if count < capacity. k > 0, compact if (capacity - count > (capacity >>\n        k).",
+  "tryCompactUnsafe": ":param compactFactor: (int) - if k == 0, compact if count < capacity. k > 0, compact if (capacity - count >\n        (capacity >> k).",
   "uGreater": ":param k1: long\n:param k2: long\n:return: boolean",
   "uGreaterOrEqual": ":param k1: long\n:param k2: long\n:return: boolean",
   "uLess": ":param k1: long\n:param k2: long\n:return: boolean",

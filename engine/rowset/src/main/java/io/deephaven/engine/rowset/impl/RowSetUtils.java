@@ -140,14 +140,14 @@ public class RowSetUtils {
     }
 
     /**
-     * Look for the biggest value of i that satisfies begin <= i <= end and comp.directionToTargetFrom(i) > 0, or some
-     * value that satisfies comp.directionToTargetFrom(i) == 0.
+     * Look for the biggest value of i that satisfies begin &lt;= i &lt;= end and comp.directionToTargetFrom(i) &gt; 0,
+     * or some value that satisfies comp.directionToTargetFrom(i) == 0.
      *
      * @param begin The beginning of the range (inclusive)
      * @param end The end of the range (inclusive)
      * @param comp a Comparator.
-     * @return the last position i inside the provided range that satisfies comp.directionToTargetFrom(i) > 0, or some
-     *         position that satisfies comp.directionToTargetFrom(i) == 0.
+     * @return the last position i inside the provided range that satisfies comp.directionToTargetFrom(i) &gt; 0, or
+     *         some position that satisfies comp.directionToTargetFrom(i) == 0.
      */
     public static long rangeSearch(final long begin, final long end, final Comparator comp) {
         long i = begin;
