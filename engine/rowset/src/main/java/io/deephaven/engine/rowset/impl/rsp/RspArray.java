@@ -4848,7 +4848,7 @@ public abstract class RspArray<T extends RspArray> extends RefCountedCow<T> {
                 arrayContainersBytesUnused.accept(allocated - card);
                 continue;
             }
-            if (!(o instanceof Container)) {  // full block span
+            if (!(o instanceof Container)) { // full block span
                 ++fullBlockSpansCountAcc;
                 fullBlockSpansLenAcc += getFullBlockSpanLen(spanInfos[i], o);
                 continue;
