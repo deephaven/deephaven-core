@@ -164,7 +164,7 @@ public class RspRangeIterator implements LongRangeIterator, SafeCloseable {
     }
 
     /**
-     * At call, start() <= v <= end()
+     * At call, start() &lt;= v &lt;= end()
      * 
      * @param v Next call to start will return this value.
      */

@@ -132,7 +132,7 @@ public interface RowSet extends RowSequence, LongSizedDataStructure, SafeCloseab
      *
      * @param start Start of range, inclusive.
      * @param end End of range, inclusive.
-     * @return true if any value x in start <= x <= end is contained in this RowSet.
+     * @return true if any value x in start &lt;= x &lt;= end is contained in this RowSet.
      */
     boolean overlapsRange(long start, long end);
 
@@ -192,12 +192,12 @@ public interface RowSet extends RowSequence, LongSizedDataStructure, SafeCloseab
          *     if (!it.advance(100)) {
          *         return; // iteration done… no ranges at 100 or greater
          *     }
-         *     assert (it.currentRangeStart() >= 100 && it.currentRangeEnd() >= 100);
+         *     assert (it.currentRangeStart() &gt;= 100 &amp;&amp; it.currentRangeEnd() &gt;= 100);
          *     // do something with range
          *     if (!it.advance(500)) {
          *         return; // iteration done… no ranges at 500 or greater
          *     }
-         *     assert (it.currentRangeStart() >= 500 && it.currentRangeEnd() >= 500);
+         *     assert (it.currentRangeStart() &gt;= 500 &amp;&amp; it.currentRangeEnd() &gt;= 500);
          *     // do something with range
          * }
          * </pre>
@@ -208,10 +208,10 @@ public interface RowSet extends RowSequence, LongSizedDataStructure, SafeCloseab
         boolean advance(long v);
 
         /**
-         * Given an iterator state with a current range of [start, end], and a value v such that start <= v <= end,
-         * postpone(v) makes the iterator current range [v, end]. This call is useful to code that may need to process
-         * parts of ranges from different call sites from the site iterator. The results of this call are undefined if
-         * the value provided is not contained in the current range.
+         * Given an iterator state with a current range of [start, end], and a value v such that start &lt;= v &lt;=
+         * end, postpone(v) makes the iterator current range [v, end]. This call is useful to code that may need to
+         * process parts of ranges from different call sites from the site iterator. The results of this call are
+         * undefined if the value provided is not contained in the current range.
          *
          * @param v A value contained in the current iterator range
          */
@@ -475,7 +475,7 @@ public interface RowSet extends RowSequence, LongSizedDataStructure, SafeCloseab
      *
      * @param start Start of the range, inclusive.
      * @param end End of the range, inclusive.
-     * @return true if this RowSet contains every element x in start <= x <= end.
+     * @return true if this RowSet contains every element x in start &lt;= x &lt;= end.
      */
     boolean containsRange(long start, long end);
 

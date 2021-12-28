@@ -40,7 +40,7 @@ tasks.getByName('build').dependsOn(Docker.registerDockerTask(project, 'buildPyCl
     }
 })
 
-// Start up a docker container for the grpc-api, then run pydeephaven test
+// Start up a docker container for the grpc server, then run pydeephaven test
 evaluationDependsOn(':docker-server')
 String randomSuffix = UUID.randomUUID().toString();
 String dockerContainerName = "pydeephaven-test-container-${randomSuffix}"
@@ -53,7 +53,7 @@ def removeDeephavenGrpcApiNetwork = tasks.register('removeDeephavenGrpcApiNetwor
 }
 
 def createDeephavenGrpcApi = tasks.register('createDeephavenGrpcApi', DockerCreateContainer) {
-    def grpcApiImage = project(':docker-server').tasks.findByName('buildDocker-server')
+    def grpcApiImage = project(':docker-server').tasks.findByName('buildDocker-server')//docker-server-netty
     dependsOn grpcApiImage, createDeephavenGrpcApiNetwork
     targetImageId grpcApiImage.getImageId()
     containerName.set dockerContainerName

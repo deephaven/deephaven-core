@@ -1,6 +1,6 @@
 package io.deephaven.client.impl;
 
-import io.deephaven.grpc_api.util.ScopeTicketHelper;
+import io.deephaven.proto.util.ScopeTicketHelper;
 
 import java.util.Objects;
 

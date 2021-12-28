@@ -10,6 +10,7 @@ dependencies {
 
     Classpaths.inheritArrow(project, 'flight-core', 'api')
     Classpaths.inheritArrow(project, 'flight-grpc', 'implementation')
+    Classpaths.inheritArrow(project, 'arrow-vector', 'api')
 
     Classpaths.inheritJUnitPlatform(project)
     Classpaths.inheritAssertJ(project)

@@ -1,12 +1,6 @@
 package io.deephaven.client.impl;
 
-import io.deephaven.grpc_api.util.ExportTicketHelper;
-import io.deephaven.proto.backplane.grpc.TableReference;
-import io.deephaven.proto.backplane.grpc.Ticket;
-import io.deephaven.qst.table.TicketTable;
-
-import java.util.Arrays;
-import java.util.List;
+import io.deephaven.proto.util.ExportTicketHelper;
 
 /**
  * An opaque holder for a session export ID.

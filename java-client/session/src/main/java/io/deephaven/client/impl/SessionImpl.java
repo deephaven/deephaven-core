@@ -5,12 +5,15 @@ import io.deephaven.client.impl.script.Changes;
 import io.deephaven.client.impl.script.VariableDefinition;
 import io.deephaven.proto.backplane.grpc.AddTableRequest;
 import io.deephaven.proto.backplane.grpc.AddTableResponse;
+import io.deephaven.proto.backplane.grpc.ApplicationServiceGrpc.ApplicationServiceStub;
 import io.deephaven.proto.backplane.grpc.CloseSessionResponse;
 import io.deephaven.proto.backplane.grpc.DeleteTableRequest;
 import io.deephaven.proto.backplane.grpc.DeleteTableResponse;
+import io.deephaven.proto.backplane.grpc.FieldsChangeUpdate;
 import io.deephaven.proto.backplane.grpc.HandshakeRequest;
 import io.deephaven.proto.backplane.grpc.HandshakeResponse;
 import io.deephaven.proto.backplane.grpc.InputTableServiceGrpc.InputTableServiceStub;
+import io.deephaven.proto.backplane.grpc.ListFieldsRequest;
 import io.deephaven.proto.backplane.grpc.ReleaseRequest;
 import io.deephaven.proto.backplane.grpc.ReleaseResponse;
 import io.deephaven.proto.backplane.grpc.SessionServiceGrpc.SessionServiceStub;
@@ -178,6 +181,7 @@ public final class SessionImpl extends SessionBase {
     private final SessionServiceStub sessionService;
     private final ConsoleServiceStub consoleService;
     private final InputTableServiceStub inputTableService;
+    private final ApplicationServiceStub applicationServiceStub;
     private final Handler handler;
     private final ExportTicketCreator exportTicketCreator;
     private final ExportStates states;
@@ -200,6 +204,7 @@ public final class SessionImpl extends SessionBase {
         this.sessionService = config.channel().session().withCallCredentials(credentials);
         this.consoleService = config.channel().console().withCallCredentials(credentials);
         this.inputTableService = config.channel().inputTable().withCallCredentials(credentials);
+        this.applicationServiceStub = config.channel().application().withCallCredentials(credentials);
         this.exportTicketCreator = new ExportTicketCreator();
         this.states = new ExportStates(this, sessionService, config.channel().table().withCallCredentials(credentials),
                 exportTicketCreator);
@@ -320,6 +325,14 @@ public final class SessionImpl extends SessionBase {
         final DeleteFromInputTableObserver observer = new DeleteFromInputTableObserver();
         inputTableService.deleteTableFromInputTable(request, observer);
         return observer.future;
+    }
+
+    @Override
+    public Cancel subscribeToFields(Listener listener) {
+        final ListFieldsRequest request = ListFieldsRequest.newBuilder().build();
+        final ListFieldsObserver observer = new ListFieldsObserver(listener);
+        applicationServiceStub.listFields(request, observer);
+        return observer;
     }
 
     public long batchCount() {
@@ -705,6 +718,42 @@ public final class SessionImpl extends SessionBase {
                 future.completeExceptionally(
                         new IllegalStateException("Observer completed without response"));
             }
+        }
+    }
+
+    private static class ListFieldsObserver
+            implements Cancel, ClientResponseObserver<ListFieldsRequest, FieldsChangeUpdate> {
+
+        private final Listener listener;
+        private ClientCallStreamObserver<?> stream;
+
+        public ListFieldsObserver(Listener listener) {
+            this.listener = Objects.requireNonNull(listener);
+        }
+
+        @Override
+        public void cancel() {
+            stream.cancel("User cancelled", null);
+        }
+
+        @Override
+        public void beforeStart(ClientCallStreamObserver<ListFieldsRequest> requestStream) {
+            stream = requestStream;
+        }
+
+        @Override
+        public void onNext(FieldsChangeUpdate value) {
+            listener.onNext(value);
+        }
+
+        @Override
+        public void onError(Throwable t) {
+            listener.onError(t);
+        }
+
+        @Override
+        public void onCompleted() {
+            listener.onCompleted();
         }
     }
 }
