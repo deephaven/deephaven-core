@@ -198,7 +198,7 @@ public class FuzzerTest {
 
     @Test
     public void testLargeSetOfFuzzerQueriesSimTime() throws IOException, InterruptedException {
-        final long seed1 = 1640239871884446004L; //DateTime.now().getNanos();
+        final long seed1 = DateTime.now().getNanos();
         for (long iteration = 0; iteration < 5; ++iteration) {
             for (int segment = 8; segment < 10; segment++) {
                 UpdateGraphProcessor.DEFAULT.resetForUnitTests(false);
