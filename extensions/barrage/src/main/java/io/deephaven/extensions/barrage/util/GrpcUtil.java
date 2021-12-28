@@ -4,10 +4,10 @@
 
 package io.deephaven.extensions.barrage.util;
 
-import io.deephaven.grpc_api.util.Exceptions;
 import io.deephaven.io.logger.Logger;
 import com.google.rpc.Code;
 import io.deephaven.engine.liveness.LivenessScopeStack;
+import io.deephaven.proto.util.Exceptions;
 import io.deephaven.util.FunctionalInterfaces;
 import io.deephaven.util.SafeCloseable;
 import io.deephaven.internal.log.LoggerFactory;
