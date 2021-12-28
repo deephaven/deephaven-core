@@ -53,9 +53,9 @@ class InputColumn(Column):
                 self.j_column = _JColumn.empty(self.j_column_header)
             else:
                 if self.data_type.is_primitive:
-                    self.j_column = _JColumn.ofUnsafe(self.name, self.data_type.array_of(self.input_data))
+                    self.j_column = _JColumn.ofUnsafe(self.name, self.data_type.array_from(self.input_data))
                 else:
-                    self.j_column = _JColumn.of(self.j_column_header, self.data_type.array_of(self.input_data))
+                    self.j_column = _JColumn.of(self.j_column_header, self.data_type.array_from(self.input_data))
         except Exception as e:
             raise DHError(e, "failed to create an InputColumn.") from e
 
