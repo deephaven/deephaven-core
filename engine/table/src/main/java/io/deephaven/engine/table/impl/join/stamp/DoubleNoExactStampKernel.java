@@ -1,6 +1,7 @@
 /* ---------------------------------------------------------------------------------------------------------------------
  * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharNoExactStampKernel and regenerate
- * ------------------------------------------------------------------------------------------------------------------ */
+ * ------------------------------------------------------------------------------------------------------------------
+ */
 package io.deephaven.engine.table.impl.join.stamp;
 
 import io.deephaven.util.compare.DoubleComparisons;

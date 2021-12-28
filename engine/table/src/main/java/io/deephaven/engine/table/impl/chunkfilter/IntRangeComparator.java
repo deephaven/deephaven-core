@@ -1,6 +1,7 @@
 /* ---------------------------------------------------------------------------------------------------------------------
  * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharRangeComparator and regenerate
- * ------------------------------------------------------------------------------------------------------------------ */
+ * ------------------------------------------------------------------------------------------------------------------
+ */
 package io.deephaven.engine.table.impl.chunkfilter;
 
 import io.deephaven.util.compare.IntComparisons;

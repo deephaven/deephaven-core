@@ -1,6 +1,7 @@
 /* ---------------------------------------------------------------------------------------------------------------------
  * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit RegionedColumnSourceChar and regenerate
- * ------------------------------------------------------------------------------------------------------------------ */
+ * ------------------------------------------------------------------------------------------------------------------
+ */
 package io.deephaven.engine.table.impl.sources.regioned;
 
 import io.deephaven.engine.rowset.RowSequence;

@@ -1,6 +1,7 @@
 /* ---------------------------------------------------------------------------------------------------------------------
  * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit BooleanLongRadixSortKernel and regenerate
- * ------------------------------------------------------------------------------------------------------------------ */
+ * ------------------------------------------------------------------------------------------------------------------
+ */
 package io.deephaven.engine.table.impl.sort.radix;
 
 import io.deephaven.chunk.attributes.Any;

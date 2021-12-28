@@ -1,6 +1,7 @@
 /* ---------------------------------------------------------------------------------------------------------------------
  * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit CharPercentileTypeMedianHelper and regenerate
- * ------------------------------------------------------------------------------------------------------------------ */
+ * ------------------------------------------------------------------------------------------------------------------
+ */
 package io.deephaven.engine.table.impl.by.ssmpercentile;
 
 import io.deephaven.engine.table.impl.sources.ArrayBackedColumnSource;
