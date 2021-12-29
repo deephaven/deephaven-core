@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.server.browserstreaming.BrowserStream",
+ "methods": {
+  "factory": "Builds a BrowserStream factory based on the given mode and bidirectional stream method.\n\nNote: Java generics information - <ReqT,\nRespT>\n\n:param mode: io.deephaven.server.browserstreaming.BrowserStream.Mode\n:param bidiDelegate: io.deephaven.server.util.GrpcServiceOverrideBuilder.BidiDelegate<ReqT,RespT>\n:return: io.deephaven.server.browserstreaming.BrowserStream.Factory<ReqT,RespT>",
+  "onError": ":param e: java.lang.RuntimeException",
+  "onMessageReceived": ":param message: BrowserStream.T\n:param streamData: io.deephaven.server.browserstreaming.StreamData"
+ },
+ "path": "io.deephaven.server.browserstreaming.BrowserStream",
+ "typeName": "class"
+}

@@ -2,7 +2,7 @@
  "className": "io.deephaven.client.impl.SessionImplConfig$Builder",
  "methods": {
   "build": ":return: io.deephaven.client.impl.SessionImplConfig",
-  "channel": ":param channel: io.deephaven.grpc_api.DeephavenChannel\n:return: io.deephaven.client.impl.SessionImplConfig.Builder",
+  "channel": ":param channel: io.deephaven.proto.DeephavenChannel\n:return: io.deephaven.client.impl.SessionImplConfig.Builder",
   "closeTimeout": ":param closeTimeout: java.time.Duration\n:return: io.deephaven.client.impl.SessionImplConfig.Builder",
   "delegateToBatch": ":param delegateToBatch: boolean\n:return: io.deephaven.client.impl.SessionImplConfig.Builder",
   "executeTimeout": ":param executeTimeout: java.time.Duration\n:return: io.deephaven.client.impl.SessionImplConfig.Builder",

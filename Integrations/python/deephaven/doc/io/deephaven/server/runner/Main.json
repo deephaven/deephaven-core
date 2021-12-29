@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.server.runner.Main",
+ "methods": {
+  "init": "Common init method to share between main() implementations.\n\n:param args: java.lang.String[]\n:param mainClass: (java.lang.Class<?>) - \n:return: (io.deephaven.configuration.Configuration) the current configuration instance to be used when configuring the rest of the server"
+ },
+ "path": "io.deephaven.server.runner.Main",
+ "typeName": "class"
+}

@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.server.barrage.BarrageMessageProducer$Adapter",
+ "methods": {
+  "adapt": ":param t: BarrageMessageProducer.Adapter.T\n:return: BarrageMessageProducer.Adapter.V"
+ },
+ "path": "io.deephaven.server.barrage.BarrageMessageProducer.Adapter",
+ "text": "Helper to convert from SubscriptionRequest to Options and from MessageView to InputStream.",
+ "typeName": "interface"
+}

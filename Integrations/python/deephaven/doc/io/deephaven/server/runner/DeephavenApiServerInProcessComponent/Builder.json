@@ -1,0 +1,12 @@
+{
+ "className": "io.deephaven.server.runner.DeephavenApiServerInProcessComponent$Builder",
+ "methods": {
+  "build": ":return: io.deephaven.server.runner.DeephavenApiServerInProcessComponent",
+  "withErr": ":param err: java.io.PrintStream\n:return: io.deephaven.server.runner.DeephavenApiServerInProcessComponent.Builder",
+  "withOut": ":param out: java.io.PrintStream\n:return: io.deephaven.server.runner.DeephavenApiServerInProcessComponent.Builder",
+  "withSchedulerPoolSize": ":param numThreads: int\n:return: io.deephaven.server.runner.DeephavenApiServerInProcessComponent.Builder",
+  "withSessionTokenExpireTmMs": ":param tokenExpireMs: long\n:return: io.deephaven.server.runner.DeephavenApiServerInProcessComponent.Builder"
+ },
+ "path": "io.deephaven.server.runner.DeephavenApiServerInProcessComponent.Builder",
+ "typeName": "interface"
+}

@@ -1,0 +1,6 @@
+{
+ "className": "io.deephaven.server.arrow.ArrowModule",
+ "methods": {},
+ "path": "io.deephaven.server.arrow.ArrowModule",
+ "typeName": "class"
+}
