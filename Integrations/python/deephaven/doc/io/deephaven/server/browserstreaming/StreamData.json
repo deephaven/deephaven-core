@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.server.browserstreaming.StreamData",
+ "methods": {
+  "getRpcTicket": ":return: io.deephaven.proto.backplane.grpc.Ticket",
+  "getSequence": ":return: int",
+  "isHalfClose": ":return: boolean"
+ },
+ "path": "io.deephaven.server.browserstreaming.StreamData",
+ "typeName": "class"
+}

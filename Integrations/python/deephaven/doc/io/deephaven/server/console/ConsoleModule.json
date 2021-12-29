@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.server.console.ConsoleModule",
+ "methods": {
+  "bindConsoleServiceImpl": ":param consoleService: io.deephaven.server.console.ConsoleServiceGrpcBinding\n:return: io.grpc.BindableService",
+  "bindConsoleTicketResolver": ":param resolver: io.deephaven.server.console.ScopeTicketResolver\n:return: io.deephaven.server.session.TicketResolver"
+ },
+ "path": "io.deephaven.server.console.ConsoleModule",
+ "typeName": "interface"
+}

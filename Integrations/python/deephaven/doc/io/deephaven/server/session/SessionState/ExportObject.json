@@ -1,0 +1,13 @@
+{
+ "className": "io.deephaven.server.session.SessionState$ExportObject",
+ "methods": {
+  "cancel": "Releases this export; it will cancel the work and dependent exports proactively when possible.",
+  "get": "WARNING! This method call is only safe to use in the following patterns:\n \n 1) If an export (or non-export) SessionState.ExportBuilder.require(io.deephaven.server.session.SessionState.ExportObject<?>...)'d this export then the method is valid from\n within the Callable/Runnable passed to SessionState.ExportBuilder.submit(java.util.concurrent.Callable<T>).\n \n 2) By first obtaining a reference to the SessionState.ExportObject, and then observing its state as\n ExportNotification.State.EXPORTED. The caller must abide by the Liveness API and dropReference.\n \n Example:\n\n \n \n  <T> T getFromExport(ExportObject<T> export) {\n      if (export.tryRetainReference()) {\n          try {\n              if (export.getState() == ExportNotification.State.EXPORTED) {\n                  return export.get();\n              }\n          } finally {\n              export.dropReference();\n          }\n      }\n      return null;\n  }\n  \n \n\n:return: (SessionState.ExportObject.T) the result of the computed export",
+  "getExportId": ":return: (io.deephaven.proto.backplane.grpc.Ticket) the ticket for this export; note if this is a non-export the returned ticket will not resolve to\n         anything and is considered an invalid ticket",
+  "getState": ":return: (io.deephaven.proto.backplane.grpc.ExportNotification.State) the current state of this export",
+  "release": "Releases this export; it will wait for the work to complete before releasing."
+ },
+ "path": "io.deephaven.server.session.SessionState.ExportObject",
+ "text": "This class represents one unit of content exported in the session.\n\n\n Note: we reuse ExportObject for non-exporting tasks that have export dependencies.",
+ "typeName": "class"
+}

@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.grpc_api.table.ops.GrpcTableOperation$MultiDependencyFunction",
- "methods": {
-  "apply": ":param request: GrpcTableOperation.MultiDependencyFunction.T\n:return: java.util.List<io.deephaven.proto.backplane.grpc.TableReference>"
- },
- "path": "io.deephaven.grpc_api.table.ops.GrpcTableOperation.MultiDependencyFunction",
- "typeName": "interface"
-}

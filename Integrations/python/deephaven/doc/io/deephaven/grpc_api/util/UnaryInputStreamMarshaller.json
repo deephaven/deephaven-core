@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.grpc_api.util.UnaryInputStreamMarshaller",
- "methods": {
-  "parse": ":param stream: java.io.InputStream\n:return: java.io.InputStream",
-  "stream": ":param value: java.io.InputStream\n:return: java.io.InputStream"
- },
- "path": "io.deephaven.grpc_api.util.UnaryInputStreamMarshaller",
- "typeName": "class"
-}

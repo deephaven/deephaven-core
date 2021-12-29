@@ -1,0 +1,14 @@
+{
+ "className": "io.deephaven.server.uri.UriModule",
+ "methods": {
+  "bindApplicationResolver": ":param resolver: io.deephaven.server.uri.ApplicationResolver\n:return: io.deephaven.uri.resolver.UriResolver",
+  "bindCsvResolver": ":param resolver: io.deephaven.server.uri.CsvTableResolver\n:return: io.deephaven.uri.resolver.UriResolver",
+  "bindParquetResolver": ":param resolver: io.deephaven.server.uri.ParquetTableResolver\n:return: io.deephaven.uri.resolver.UriResolver",
+  "bindQueryScopeResolver": ":param resolver: io.deephaven.server.uri.QueryScopeResolver\n:return: io.deephaven.uri.resolver.UriResolver",
+  "bindResolvers": ":param resolvers: java.util.Set<io.deephaven.uri.resolver.UriResolver>\n:return: io.deephaven.uri.resolver.UriResolvers",
+  "bindsBarrageTableResolver": ":param resolver: io.deephaven.server.uri.BarrageTableResolver\n:return: io.deephaven.uri.resolver.UriResolver"
+ },
+ "path": "io.deephaven.server.uri.UriModule",
+ "text": "Installs the URI resolvers. See each specific resolver for more information.",
+ "typeName": "interface"
+}

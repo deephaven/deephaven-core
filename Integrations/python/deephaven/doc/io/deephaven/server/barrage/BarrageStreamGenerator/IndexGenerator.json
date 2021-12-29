@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.server.barrage.BarrageStreamGenerator$IndexGenerator",
+ "methods": {
+  "getInputStream": ":return: io.deephaven.server.barrage.BarrageStreamGenerator.DrainableByteArrayInputStream"
+ },
+ "path": "io.deephaven.server.barrage.BarrageStreamGenerator.IndexGenerator",
+ "typeName": "class"
+}

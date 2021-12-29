@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.kafka.ingest.GenericRecordUtil",
+ "methods": {
+  "getFieldPath": "Given a composite (by nesting) field name, composed of individual names separate with the given separator, obtain\n a String[] path with the individual field names.\n\n*Overload 1*  \n  :param fieldName: (java.lang.String) - A composite (by nesting) field name.\n  :param separator: (java.util.regex.Pattern) - The separator pattern used for composing fieldName\n  :param schema: (org.apache.avro.Schema) - An avro schema.\n  :return: (int[]) A String[] path with the individual field names for fieldName\n  \n*Overload 2*  \n  :param fieldName: (java.lang.String) - A composite (by nesting) field name.\n  :param separator: (java.util.regex.Pattern) - The separator pattern used for composing fieldName\n  :return: (java.lang.String[]) A String[] path with the individual field names for fieldName",
+  "getFieldSchema": "Get the schema for a particular field path (including nesting).\n\n:param schema: (org.apache.avro.Schema) - A Schema to start nested field navigation from\n:param fieldPath: (java.lang.String[]) - An array of individual field names, in order according to nesting from the root representing a\n        path to an individual desired field\n:return: (org.apache.avro.Schema) The schema for the given fieldPath",
+  "getPath": "Get the value out of a Generic Record for a given field path (including nesting).\n\n:param record: (org.apache.avro.generic.GenericRecord) - A GenericRecord from which to extract a value.\n:param fieldPath: (int[]) - An array of individual field position indices, in order according to nesting from the root\n        representing a path to an individual desired field\n:return: (java.lang.Object) The value in record for the given fieldPath"
+ },
+ "path": "io.deephaven.kafka.ingest.GenericRecordUtil",
+ "typeName": "class"
+}
