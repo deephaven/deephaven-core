@@ -1,7 +1,8 @@
 package io.deephaven.client.examples.ui;
 
-import io.deephaven.db.v2.InstrumentedShiftAwareListenerAdapter;
-import io.deephaven.grpc_api_client.table.BarrageTable;
+import io.deephaven.engine.table.TableUpdate;
+import io.deephaven.engine.table.impl.InstrumentedTableUpdateListenerAdapter;
+import io.deephaven.extensions.barrage.table.BarrageTable;
 import io.deephaven.util.annotations.ReferentialIntegrity;
 import org.jetbrains.annotations.NotNull;
 
@@ -9,17 +10,17 @@ import javax.swing.table.AbstractTableModel;
 
 public class BarrageBackedTableModel extends AbstractTableModel {
     @ReferentialIntegrity
-    private final InstrumentedShiftAwareListenerAdapter listener;
+    private final InstrumentedTableUpdateListenerAdapter listener;
     @NotNull
     private final BarrageTable table;
 
     public BarrageBackedTableModel(final @NotNull BarrageTable table) {
         this.table = table;
 
-        table.listenForUpdates(listener = new InstrumentedShiftAwareListenerAdapter(table, false) {
+        table.listenForUpdates(listener = new InstrumentedTableUpdateListenerAdapter(table, false) {
             @Override
-            public void onUpdate(Update upstream) {
-                // We are not going to do anything fancy,  just tick the whole table.  More sophisticated implementations
+            public void onUpdate(TableUpdate upstream) {
+                // We are not going to do anything fancy, just tick the whole table. More sophisticated implementations
                 // could selectively update individual rows and cells based on the contents of the update.
                 fireTableDataChanged();
             }
@@ -53,11 +54,14 @@ public class BarrageBackedTableModel extends AbstractTableModel {
 
     @Override
     public Object getValueAt(int rowIndex, int columnIndex) {
-        // Typically you would access column data through a ColumnSource directly with get during iteration over an index
-        // Swing expects tables to be "flat" in index space, so we have to find the "key" for a particular flat "position"
-        // and look it up that way.
+        // This is inefficient, but an efficient implementation is out of scope for this example. Typically,
+        // we want read data from ColumnSources through the chunking API. Here we'll be expedient
+        // and settle for the O(n log n) experience.
+
+        // Swing thinks about data in row positions, but the ColumnSource#get API uses row keys. Note
+        // how we convert from row position to row key using `Index#get`.
         return table.getColumnSource(table.getDefinition().getColumnNames().get(columnIndex))
-                .get(table.getIndex().get(rowIndex));
+                .get(table.getRowSet().get(rowIndex));
     }
 
     @Override

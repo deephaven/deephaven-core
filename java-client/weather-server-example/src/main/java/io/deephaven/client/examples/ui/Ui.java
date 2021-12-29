@@ -4,13 +4,14 @@ import com.intellij.uiDesigner.core.GridConstraints;
 import com.intellij.uiDesigner.core.GridLayoutManager;
 import com.intellij.uiDesigner.core.Spacer;
 import io.deephaven.client.examples.BarrageSupport;
+import io.deephaven.client.impl.BarrageSession;
 import io.deephaven.client.impl.ConsoleSession;
-import io.deephaven.client.impl.DaggerDeephavenFlightRoot;
-import io.deephaven.client.impl.FlightSession;
-import io.deephaven.client.impl.FlightSessionFactory;
+import io.deephaven.client.impl.SessionImpl;
+import io.deephaven.client.impl.SessionImplConfig;
 import io.deephaven.client.impl.script.Changes;
-import io.deephaven.db.tables.live.LiveTableMonitor;
-import io.deephaven.grpc_api_client.table.BarrageTable;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.extensions.barrage.table.BarrageTable;
+import io.deephaven.proto.DeephavenChannel;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import org.apache.arrow.memory.BufferAllocator;
@@ -30,7 +31,7 @@ public class Ui {
     private JTextField hostField;
     private JButton connectButton;
     private JCheckBox plaintextCheckBox;
-    private FlightSession flightSession;
+    private SessionImpl session;
 
     // Connection related items both for GRPC and Flight.
     private final ScheduledExecutorService flightScheduler = Executors.newScheduledThreadPool(8);
@@ -41,9 +42,9 @@ public class Ui {
     private BarrageTable statsTable;
 
     public Ui() {
-        // Start the LTM.  This module is responsible for deterministically handling table updates
-        //  In other words,  it drives the 'ticking' of tables.
-        LiveTableMonitor.DEFAULT.start();
+        // Start the LTM. This module is responsible for deterministically handling table updates
+        // In other words, it drives the 'ticking' of tables.
+        UpdateGraphProcessor.DEFAULT.start();
 
         connectButton.addActionListener(this::doConnect);
         addButton.addActionListener(this::onAdd);
@@ -53,18 +54,19 @@ public class Ui {
 
     private void onAdd(final ActionEvent ev) {
         // First we'll just ship the request to the server and wait for the response.
-        // If we get an Ack (true) We'll stuff this thing in the list.  This is crude on purpose --
+        // If we get an Ack (true) We'll stuff this thing in the list. This is crude on purpose --
         // We don't actually care about having complex logic to track places, only that we can submit them.
         final String place = locationField.getText();
         if (place == null || place.isEmpty()) {
             return;
         }
 
-        try (final ConsoleSession console = flightSession.session().console("python").get()) {
+        try (final ConsoleSession console = session.console("python").get()) {
             SwingUtilities.invokeLater(() -> statusLabel.setText("Attempting to add " + place));
             final Changes c = console.executeCode("beginWatch(\"" + place + "\")");
             if (c.errorMessage().isPresent()) {
-                SwingUtilities.invokeLater(() -> statusLabel.setText("Error adding " + place + " -> " + c.errorMessage().get()));
+                SwingUtilities.invokeLater(
+                        () -> statusLabel.setText("Error adding " + place + " -> " + c.errorMessage().get()));
             } else {
                 SwingUtilities.invokeLater(() -> statusLabel.setText("Added " + place));
             }
@@ -86,20 +88,20 @@ public class Ui {
             return;
         }
 
-        // Do we have everything we need to know to connect?  Host / port?
+        // Do we have everything we need to know to connect? Host / port?
         final String host = hostField.getText();
         if (host == null || host.isEmpty()) {
             return;
         }
 
         // Close any pre-existing session and wait for it to terminate
-        if (flightSession != null) {
+        if (session != null) {
             try {
                 support.close();
-                flightSession.close();
+                session.close();
                 managedChannel.shutdownNow();
                 managedChannel.awaitTermination(5, TimeUnit.SECONDS);
-            } catch (InterruptedException e) {
+            } catch (Exception e) {
                 // No error handling for now.
                 e.printStackTrace();
                 return;
@@ -120,17 +122,14 @@ public class Ui {
         managedChannel = channelBuilder.build();
 
         final BufferAllocator bufferAllocator = new RootAllocator();
-        final FlightSessionFactory flightSessionFactory =
-                DaggerDeephavenFlightRoot.create().factoryBuilder()
-                        .managedChannel(managedChannel)
-                        .scheduler(flightScheduler)
-                        .allocator(bufferAllocator)
-                        .build();
+        session = SessionImplConfig.builder()
+                .executor(flightScheduler)
+                .channel(new DeephavenChannel(managedChannel))
+                .build()
+                .createSession();
 
         SwingUtilities.invokeLater(() -> statusLabel.setText("Connected!"));
-
-        flightSession = flightSessionFactory.newFlightSession();
-        support = new BarrageSupport(managedChannel, flightSession);
+        support = new BarrageSupport(BarrageSession.of(session, bufferAllocator, managedChannel));
         statsTable = support.fetchSubscribedTable("s/LastByCityState");
         configureDisplay();
     }
@@ -140,16 +139,19 @@ public class Ui {
     }
 
     /**
-     * When the application shuts down, ensure that we clean up our connections
-     * and shutdown any running threads.
+     * When the application shuts down, ensure that we clean up our connections and shutdown any running threads.
      */
     private void onShutdown() {
-        if (statsTable != null) {
-            support.releaseTable(statsTable);
-        }
+        try {
+            if (statsTable != null) {
+                support.releaseTable(statsTable);
+            }
 
-        if (support != null) {
-            support.close();
+            if (support != null) {
+                support.close();
+            }
+        } catch (Exception ex) {
+
         }
 
         flightScheduler.shutdown();
@@ -174,6 +176,7 @@ public class Ui {
         }
     }
 
+    // @formatter:off
     {
 // GUI initializer generated by IntelliJ IDEA GUI Designer
 // >>> IMPORTANT!! <<<
@@ -249,5 +252,5 @@ public class Ui {
     public JComponent $$$getRootComponent$$$() {
         return panel1;
     }
-
+    // @formatter:on
 }
