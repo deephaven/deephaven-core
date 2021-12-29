@@ -31,8 +31,7 @@ import java.util.Map;
 
 public abstract class AbstractColumnSource<T> implements
         ColumnSource<T>,
-        DefaultChunkSource.WithPrev<Values>
-        {
+        DefaultChunkSource.WithPrev<Values> {
 
     private static final long serialVersionUID = 8003280177657671273L;
 

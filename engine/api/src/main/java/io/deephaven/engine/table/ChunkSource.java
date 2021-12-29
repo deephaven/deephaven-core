@@ -108,11 +108,14 @@ public interface ChunkSource<ATTR extends Any> extends FillContextMaker, GetCont
      */
     interface FillContext extends Context {
         /**
-         *  Returns true if this Context contains internal state that limits it's capacity to the originally requested
-         *  capacity.  If false is returned, then fillChunk operations may be arbitrarily large.
+         * Returns true if this Context contains internal state that limits it's capacity to the originally requested
+         * capacity. If false is returned, then fillChunk operations may be arbitrarily large.
+         * 
          * @return if this context has a limited capacity
          */
-        default boolean hasLimitedCapacity() { return true; };
+        default boolean hasLimitedCapacity() {
+            return true;
+        };
     }
 
     /**

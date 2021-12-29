@@ -112,8 +112,8 @@ public class FunctionGeneratedTableFactory {
 
     private void copyTable(Table source) {
         final Map<String, ? extends ColumnSource<?>> sourceColumns = source.getColumnSourceMap();
-        final ChunkSource.WithPrev [] sourceColumnsArray = new ChunkSource.WithPrev[sourceColumns.size()];
-        final WritableColumnSource [] destColumnsArray = new WritableColumnSource[sourceColumns.size()];
+        final ChunkSource.WithPrev[] sourceColumnsArray = new ChunkSource.WithPrev[sourceColumns.size()];
+        final WritableColumnSource[] destColumnsArray = new WritableColumnSource[sourceColumns.size()];
 
         final RowSet sourceRowSet = source.getRowSet();
         int cc = 0;
@@ -124,8 +124,9 @@ public class FunctionGeneratedTableFactory {
             destColumnsArray[cc] = destColumn;
         }
 
-        //noinspection unchecked
-        ChunkUtils.copyData(sourceColumnsArray, sourceRowSet, destColumnsArray, RowSetFactory.flat(sourceRowSet.size()), false);
+        // noinspection unchecked
+        ChunkUtils.copyData(sourceColumnsArray, sourceRowSet, destColumnsArray, RowSetFactory.flat(sourceRowSet.size()),
+                false);
     }
 
     private class FunctionBackedTable extends QueryTable implements Runnable {

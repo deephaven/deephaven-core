@@ -36,7 +36,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
     SelectColumnLayer(SelectAndViewAnalyzer inner, String name, SelectColumn sc,
             WritableColumnSource ws, WritableColumnSource underlying,
             String[] deps, ModifiedColumnSet mcsBuilder, boolean isRedirected,
-                      boolean flattenedResult) {
+            boolean flattenedResult) {
         super(inner, name, sc, ws, underlying, deps, mcsBuilder);
         this.writableSource = ws;
         this.isRedirected = isRedirected;
@@ -100,7 +100,9 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                 needDestContext ? writableSource.makeFillFromContext(destContextSize) : null;
                 final ChunkSource.GetContext chunkSourceContext =
                         needGetContext ? chunkSource.makeGetContext(chunkSourceContextSize) : null;
-                final ChunkSource.FillContext chunkSourceFillContext = needGetContext && isBackingChunkExposed ? chunkSource.makeFillContext(chunkSourceContextSize) : null) {
+                final ChunkSource.FillContext chunkSourceFillContext =
+                        needGetContext && isBackingChunkExposed ? chunkSource.makeFillContext(chunkSourceContextSize)
+                                : null) {
 
             // apply shifts!
             if (!isRedirected && preMoveKeys.isNonempty()) {
@@ -129,14 +131,18 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                 assert destContext != null;
                 assert chunkSourceContext != null;
                 if (isBackingChunkExposed) {
-                    final ChunkedBackingStoreExposedWritableSource exposedWritableSource = (ChunkedBackingStoreExposedWritableSource) this.writableSource;
+                    final ChunkedBackingStoreExposedWritableSource exposedWritableSource =
+                            (ChunkedBackingStoreExposedWritableSource) this.writableSource;
                     if (flattenedResult && !chunkSourceFillContext.hasLimitedCapacity()) {
-                        // drive the fill operation off of the destination rather than the source, because we want to fill as much as possible as quickly as possible
+                        // drive the fill operation off of the destination rather than the source, because we want to
+                        // fill as much as possible as quickly as possible
                         long destinationOffset = 0;
                         try (final RowSequence.Iterator keyIter = upstream.added().getRowSequenceIterator();
-                             final ResettableWritableChunk<?> backingChunk = writableSource.getChunkType().makeResettableWritableChunk()) {
+                                final ResettableWritableChunk<?> backingChunk =
+                                        writableSource.getChunkType().makeResettableWritableChunk()) {
                             while (keyIter.hasMore()) {
-                                final long destCapacity = exposedWritableSource.resetWritableChunkToBackingStoreSlice(backingChunk, destinationOffset);
+                                final long destCapacity = exposedWritableSource
+                                        .resetWritableChunkToBackingStoreSlice(backingChunk, destinationOffset);
                                 final RowSequence sourceKeys = keyIter.getNextRowSequenceWithLength(destCapacity);
                                 chunkSource.fillChunk(chunkSourceFillContext, backingChunk, sourceKeys);
                                 destinationOffset += destCapacity;
@@ -144,8 +150,11 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                         }
                     } else {
                         try (final RowSequence.Iterator keyIter = upstream.added().getRowSequenceIterator();
-                             final RowSequence.Iterator destIter = flattenedResult ? RowSetFactory.flat(upstream.added().size()).getRowSequenceIterator() : null;
-                             final ResettableWritableChunk<?> backingChunk = writableSource.getChunkType().makeResettableWritableChunk()) {
+                                final RowSequence.Iterator destIter = flattenedResult
+                                        ? RowSetFactory.flat(upstream.added().size()).getRowSequenceIterator()
+                                        : null;
+                                final ResettableWritableChunk<?> backingChunk =
+                                        writableSource.getChunkType().makeResettableWritableChunk()) {
                             while (keyIter.hasMore()) {
                                 final RowSequence keys = keyIter.getNextRowSequenceWithLength(PAGE_SIZE);
                                 final RowSequence destKeys;
@@ -159,19 +168,23 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                                     long firstDest = destKeys.firstRowKey();
                                     final long lastDest = destKeys.lastRowKey();
                                     while (firstDest < lastDest) {
-                                        final long destCapacity = exposedWritableSource.resetWritableChunkToBackingStoreSlice(backingChunk, firstDest);
+                                        final long destCapacity = exposedWritableSource
+                                                .resetWritableChunkToBackingStoreSlice(backingChunk, firstDest);
                                         if (destCapacity >= (lastDest - firstDest + 1)) {
                                             chunkSource.fillChunk(chunkSourceFillContext, backingChunk, keys);
                                         } else {
-                                            try (RowSequence chunkSourceKeys = keys.getRowSequenceByPosition(rangeOffset, rangeOffset + destCapacity)) {
-                                                chunkSource.fillChunk(chunkSourceFillContext, backingChunk, chunkSourceKeys);
+                                            try (RowSequence chunkSourceKeys = keys.getRowSequenceByPosition(
+                                                    rangeOffset, rangeOffset + destCapacity)) {
+                                                chunkSource.fillChunk(chunkSourceFillContext, backingChunk,
+                                                        chunkSourceKeys);
                                             }
                                         }
                                         firstDest += destCapacity;
                                         rangeOffset += destCapacity;
                                     }
                                 } else {
-                                    writableSource.fillFromChunk(destContext, chunkSource.getChunk(chunkSourceContext, keys), destKeys);
+                                    writableSource.fillFromChunk(destContext,
+                                            chunkSource.getChunk(chunkSourceContext, keys), destKeys);
                                 }
                             }
                         }
@@ -181,7 +194,8 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                     try (final RowSequence.Iterator keyIter = upstream.added().getRowSequenceIterator()) {
                         while (keyIter.hasMore()) {
                             final RowSequence keys = keyIter.getNextRowSequenceWithLength(PAGE_SIZE);
-                            writableSource.fillFromChunk(destContext, chunkSource.getChunk(chunkSourceContext, keys), keys);
+                            writableSource.fillFromChunk(destContext, chunkSource.getChunk(chunkSourceContext, keys),
+                                    keys);
                         }
                     }
                 }

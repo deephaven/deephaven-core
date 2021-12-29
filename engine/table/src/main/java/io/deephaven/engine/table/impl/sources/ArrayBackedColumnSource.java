@@ -56,7 +56,8 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
  */
 public abstract class ArrayBackedColumnSource<T>
         extends AbstractDeferredGroupingColumnSource<T>
-        implements FillUnordered, ShiftData.ShiftCallback, WritableColumnSource<T>, InMemoryColumnSource, ChunkedBackingStoreExposedWritableSource {
+        implements FillUnordered, ShiftData.ShiftCallback, WritableColumnSource<T>, InMemoryColumnSource,
+        ChunkedBackingStoreExposedWritableSource {
 
     static final int DEFAULT_RECYCLER_CAPACITY = 1024;
     /**
@@ -585,8 +586,8 @@ public abstract class ArrayBackedColumnSource<T>
      * @return An Immutable ColumnSource that directly wraps the input array.
      */
     public static <T> WritableColumnSource<T> getFlatMemoryColumnSource(long longSize,
-                                                                @NotNull final Class<T> dataType,
-                                                                @Nullable final Class<?> componentType) {
+            @NotNull final Class<T> dataType,
+            @Nullable final Class<?> componentType) {
         if (longSize > Integer.MAX_VALUE) {
             return makeFlat2DSource(longSize, dataType, componentType);
         }
@@ -594,7 +595,8 @@ public abstract class ArrayBackedColumnSource<T>
     }
 
     @NotNull
-    private static <T> WritableColumnSource<T> makeFlatSource(long longSize, @NotNull Class<T> dataType, @Nullable Class<?> componentType) {
+    private static <T> WritableColumnSource<T> makeFlatSource(long longSize, @NotNull Class<T> dataType,
+            @Nullable Class<?> componentType) {
         final int size = Math.toIntExact(longSize);
         final WritableColumnSource<?> result;
         if (dataType == boolean.class || dataType == Boolean.class) {
@@ -623,7 +625,8 @@ public abstract class ArrayBackedColumnSource<T>
     }
 
     @NotNull
-    private static <T> WritableColumnSource<T> makeFlat2DSource(long size, @NotNull Class<T> dataType, @Nullable Class<?> componentType) {
+    private static <T> WritableColumnSource<T> makeFlat2DSource(long size, @NotNull Class<T> dataType,
+            @Nullable Class<?> componentType) {
         final WritableColumnSource<?> result;
         if (dataType == boolean.class || dataType == Boolean.class) {
             result = new WritableByteAsBooleanColumnSource(new Flat2DByteArraySource(size));

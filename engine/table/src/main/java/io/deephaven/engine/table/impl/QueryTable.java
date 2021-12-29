@@ -1362,7 +1362,8 @@ public class QueryTable extends BaseTable {
                         analyzer.applyUpdate(fakeUpdate, emptyRowSet, updateHelper);
                     }
 
-                    final TrackingRowSet resultRowSet = analyzer.flattenedResult() ? RowSetFactory.flat(rowSet.size()).toTracking() : rowSet;
+                    final TrackingRowSet resultRowSet =
+                            analyzer.flattenedResult() ? RowSetFactory.flat(rowSet.size()).toTracking() : rowSet;
                     final QueryTable resultTable = new QueryTable(resultRowSet, analyzer.getPublishedColumnSources());
                     if (isRefreshing()) {
                         analyzer.startTrackingPrev();
@@ -1376,7 +1377,7 @@ public class QueryTable extends BaseTable {
                             propagateGrouping(selectColumns, resultTable);
                         }
                         for (final ColumnSource<?> columnSource : analyzer.getNewColumnSources().values()) {
-                            if (columnSource instanceof SparseArrayColumnSource){
+                            if (columnSource instanceof SparseArrayColumnSource) {
                                 ((SparseArrayColumnSource<?>) columnSource).setImmutable();
                             }
                         }

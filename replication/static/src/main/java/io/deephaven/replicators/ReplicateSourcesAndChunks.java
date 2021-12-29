@@ -134,10 +134,13 @@ public class ReplicateSourcesAndChunks {
     }
 
     private static void replicateObjectFlatArraySource() throws IOException {
-        replicateObjectFlatArraySource("engine/table/src/main/java/io/deephaven/engine/table/impl/sources/flat/FlatCharArraySource.java");
+        replicateObjectFlatArraySource(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/flat/FlatCharArraySource.java");
     }
+
     private static void replicateObjectFlat2DArraySource() throws IOException {
-        replicateObjectFlatArraySource("engine/table/src/main/java/io/deephaven/engine/table/impl/sources/flat/Flat2DCharArraySource.java");
+        replicateObjectFlatArraySource(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/flat/Flat2DCharArraySource.java");
     }
 
     private static void replicateObjectFlatArraySource(String flatSourcePath) throws IOException {
@@ -176,8 +179,7 @@ public class ReplicateSourcesAndChunks {
                 "    public FlatObjectArraySource(Class<T> type, Class<?> componentType, long size) {",
                 "        super(type, componentType);",
                 "        this.data = new Object[Math.toIntExact(size)];",
-                "    }"
-        ));
+                "    }"));
         return lines;
     }
 
@@ -188,8 +190,7 @@ public class ReplicateSourcesAndChunks {
                 "        super(type, componentType);",
                 "        this.size = size;",
                 "        this.data = allocateArray(size);",
-                "    }"
-        ));
+                "    }"));
         return lines;
     }
 

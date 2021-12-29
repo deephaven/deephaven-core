@@ -62,7 +62,8 @@ public abstract class SelectAndViewAnalyzer {
                 if (didFlattenedSourceCount > 0) {
                     return create(mode, columnSources, rowSet, parentMcs, publishTheseSources, false, selectColumns);
                 }
-                analyzer = analyzer.createLayerForPreserve(sc.getName(), sc, sc.getDataView(), distinctDeps, mcsBuilder);
+                analyzer =
+                        analyzer.createLayerForPreserve(sc.getName(), sc, sc.getDataView(), distinctDeps, mcsBuilder);
                 flattenedResult = false;
                 continue;
             }
@@ -82,8 +83,11 @@ public abstract class SelectAndViewAnalyzer {
                 case SELECT_STATIC: {
                     // We need to call newDestInstance because only newDestInstance has the knowledge to endow our
                     // created array with the proper componentType (in the case of Vectors).
-                    final WritableColumnSource<?> scs = flatResult || flattenedResult ? sc.newFlatDestInstance(targetSize) : sc.newDestInstance(targetSize);
-                    analyzer = analyzer.createLayerForSelect(sc.getName(), sc, scs, null, distinctDeps, mcsBuilder, false, flattenedResult);
+                    final WritableColumnSource<?> scs =
+                            flatResult || flattenedResult ? sc.newFlatDestInstance(targetSize)
+                                    : sc.newDestInstance(targetSize);
+                    analyzer = analyzer.createLayerForSelect(sc.getName(), sc, scs, null, distinctDeps, mcsBuilder,
+                            false, flattenedResult);
                     if (flattenedResult) {
                         didFlattenedSourceCount++;
                     }
@@ -112,7 +116,8 @@ public abstract class SelectAndViewAnalyzer {
     }
 
     private static boolean shouldPreserve(final SelectColumn sc) {
-        if (!(sc instanceof SourceColumn) && (!(sc instanceof SwitchColumn) || !(((SwitchColumn) sc).getRealColumn() instanceof SourceColumn))) {
+        if (!(sc instanceof SourceColumn)
+                && (!(sc instanceof SwitchColumn) || !(((SwitchColumn) sc).getRealColumn() instanceof SourceColumn))) {
             return false;
         }
         final ColumnSource<?> sccs = sc.getDataView();
