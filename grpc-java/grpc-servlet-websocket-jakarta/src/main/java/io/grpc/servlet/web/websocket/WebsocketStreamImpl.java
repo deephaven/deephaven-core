@@ -127,10 +127,6 @@ public class WebsocketStreamImpl extends AbstractServerStream {
         transportState().transportReportStatus(status);
     }
 
-    public void complete() {
-        transportState().complete();
-    }
-
     @Override
     public TransportState transportState() {
         return transportState;
@@ -253,6 +249,9 @@ public class WebsocketStreamImpl extends AbstractServerStream {
             } catch (IOException e) {
                 throw Status.fromThrowable(e).asRuntimeException();
             }
+            transportState().runOnTransportThread(() -> {
+                transportState().complete();
+            });
         }
 
         @Override
