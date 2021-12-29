@@ -21,6 +21,9 @@ public class ReplicateSourceAndChunkTests {
 
         charToAllButBoolean(
                 "engine/table/src/test/java/io/deephaven/engine/table/impl/sources/TestCharacterArraySource.java");
+        charToAllButBoolean(
+                "engine/table/src/test/java/io/deephaven/engine/table/impl/sources/TestCharacterArraySource.java");
+
         fixupBooleanColumnSourceTest(charToBooleanAsByte(
                 "engine/table/src/test/java/io/deephaven/engine/table/impl/sources/TestCharacterArraySource.java",
                 Collections.emptyMap()));
@@ -28,12 +31,16 @@ public class ReplicateSourceAndChunkTests {
                 "engine/table/src/test/java/io/deephaven/engine/table/impl/sources/TestCharacterArraySource.java"));
 
         charToAllButBoolean(
-                "engine/table/src/test/java/io/deephaven/engine/table/impl/sources/TestCharacterSparseArraySource.java");
+                "engine/table/src/test/java/io/deephaven/engine/table/impl/sources/AbstractCharacterColumnSourceTest.java");
         fixupBooleanColumnSourceTest(charToBooleanAsByte(
-                "engine/table/src/test/java/io/deephaven/engine/table/impl/sources/TestCharacterSparseArraySource.java",
+                "engine/table/src/test/java/io/deephaven/engine/table/impl/sources/AbstractCharacterColumnSourceTest.java",
                 Collections.emptyMap()));
         fixupObjectColumnSourceTest(charToObject(
-                "engine/table/src/test/java/io/deephaven/engine/table/impl/sources/TestCharacterSparseArraySource.java"));
+                "engine/table/src/test/java/io/deephaven/engine/table/impl/sources/AbstractCharacterColumnSourceTest.java"));
+        charToAll(
+                "engine/table/src/test/java/io/deephaven/engine/table/impl/sources/TestCharacterSparseArraySource.java");
+        charToObject(
+                "engine/table/src/test/java/io/deephaven/engine/table/impl/sources/TestCharacterSparseArraySource.java");
 
         charToAll("engine/chunk/src/test/java/io/deephaven/chunk/TestCharChunk.java");
         fixupChunkTest(charToObject("engine/chunk/src/test/java/io/deephaven/chunk/TestCharChunk.java"));
