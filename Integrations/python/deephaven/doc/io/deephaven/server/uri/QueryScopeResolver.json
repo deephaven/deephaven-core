@@ -1,0 +1,12 @@
+{
+ "className": "io.deephaven.server.uri.QueryScopeResolver",
+ "methods": {
+  "get": ":return: io.deephaven.server.uri.QueryScopeResolver",
+  "isResolvable": "Returns true if the resolver can resolve the uri.\n\n:param uri: (java.net.URI) - the uri\n:return: (boolean) true if this resolver can resolve uri",
+  "resolve": "Resolve uri into an object.\n\n*Overload 1*  \n  :param uri: (java.net.URI) - the URI\n  :return: (java.lang.Object) the object\n  \n*Overload 2*  \n  :param uri: io.deephaven.uri.QueryScopeUri\n  :return: java.lang.Object\n  \n*Overload 3*  \n  :param variableName: java.lang.String\n  :return: java.lang.Object",
+  "schemes": "The supported schemes.\n\n:return: (java.util.Set<java.lang.String>) the schemes"
+ },
+ "path": "io.deephaven.server.uri.QueryScopeResolver",
+ "text": "The query scope table resolver is able to resolve query scope URIs.\n\n \n For example, dh:///scope/my_table.",
+ "typeName": "class"
+}

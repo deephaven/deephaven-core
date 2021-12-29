@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.server.auth.AuthContextModule",
+ "methods": {
+  "bindAuthContextProvider": ":param authContextProvider: io.deephaven.server.auth.TrivialAuthContextProvider\n:return: io.deephaven.server.auth.AuthContextProvider"
+ },
+ "path": "io.deephaven.server.auth.AuthContextModule",
+ "typeName": "interface"
+}

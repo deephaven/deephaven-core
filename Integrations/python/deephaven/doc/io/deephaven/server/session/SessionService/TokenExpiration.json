@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.server.session.SessionService$TokenExpiration",
+ "methods": {
+  "getTokenAsByteString": "Returns the UUID cookie in byte[] friendly format.\n\n:return: com.google.protobuf.ByteString"
+ },
+ "path": "io.deephaven.server.session.SessionService.TokenExpiration",
+ "typeName": "class"
+}

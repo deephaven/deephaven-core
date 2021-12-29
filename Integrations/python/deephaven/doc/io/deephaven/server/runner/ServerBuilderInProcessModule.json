@@ -1,0 +1,6 @@
+{
+ "className": "io.deephaven.server.runner.ServerBuilderInProcessModule",
+ "methods": {},
+ "path": "io.deephaven.server.runner.ServerBuilderInProcessModule",
+ "typeName": "class"
+}
