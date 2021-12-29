@@ -1,0 +1,7 @@
+{
+ "className": "io.deephaven.plot.colors.ColorMaps$SerializablePredicate",
+ "methods": {},
+ "path": "io.deephaven.plot.colors.ColorMaps.SerializablePredicate",
+ "text": "Serializable Predicate.",
+ "typeName": "interface"
+}

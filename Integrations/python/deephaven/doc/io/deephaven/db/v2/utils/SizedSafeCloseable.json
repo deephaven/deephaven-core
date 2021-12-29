@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.db.v2.utils.SizedSafeCloseable",
- "methods": {
-  "ensureCapacity": ":param capacity: int\n:return: SizedSafeCloseable.T",
-  "get": ":return: SizedSafeCloseable.T"
- },
- "path": "io.deephaven.db.v2.utils.SizedSafeCloseable",
- "typeName": "class"
-}

@@ -1,0 +1,17 @@
+{
+ "className": "io.deephaven.engine.table.impl.util.DynamicTableWriter",
+ "methods": {
+  "getColumnNames": ":return: java.lang.String[]",
+  "getColumnTypes": ":return: java.lang.Class[]",
+  "getRowWriter": "Returns a row writer, which allocates the row. You may get setters for the row, and then call addRowToTableIndex\n when you are finished. Because the row is allocated when you call this function, it is possible to get several\n Row objects before calling addRowToTableIndex.\n \n This contrasts with DynamicTableWriter.getSetter, which allocates a single row; and you must call\n DynamicTableWriter.addRowToTableIndex before advancing to the next row.\n\n:return: (io.deephaven.tablelogger.Row) a Row from which you can retrieve setters and call write row.",
+  "getSetter": "Returns a RowSetter for the given column. If required, a Row object is allocated. You can not mix calls with\n getSetter and getRowWriter. After setting each column, you must call addRowToTableIndex,\n before beginning to write the next row.\n\n:param name: (java.lang.String) - column name.\n:return: (io.deephaven.tablelogger.RowSetter) a RowSetter for the given column",
+  "getTable": "Gets the table created by this DynamicTableWriter.\n \n The returned table is registered with the UpdateGraphProcessor, and new rows become visible within the run loop.\n\n:return: (io.deephaven.engine.table.impl.UpdateSourceQueryTable) a live table with the output of this log",
+  "logRow": "**Incompatible overloads text - text from the first overload:**\n\nThis is a convenience function so that you can log an entire row at a time using a Map. You must specify all\n values in the setters map (and can't have any extras). The type of the value must be castable to the type of the\n setter.\n\n*Overload 1*  \n  :param values: (java.util.Map<java.lang.String,java.lang.Object>) - a map from column name to value for the row to be logged\n  \n*Overload 2*  \n  :param values: (java.lang.Object...) - an array containing values to be logged, in order of the fields specified by the constructor",
+  "setFlags": ":param flags: io.deephaven.tablelogger.Row.Flags",
+  "size": ":return: long",
+  "writeRow": "Writes the current row created with the getSetter call, and advances the current row by one.\n \n The row will be made visible in the table after the UpdateGraphProcessor run cycle completes."
+ },
+ "path": "io.deephaven.engine.table.impl.util.DynamicTableWriter",
+ "text": "The DynamicTableWriter creates an in-memory table using ArrayBackedColumnSources of the type specified in the\n constructor. You can retrieve the table using the getTable function.\n \n This class is not thread safe, you must synchronize externally.",
+ "typeName": "class"
+}

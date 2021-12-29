@@ -1,0 +1,7 @@
+{
+ "className": "io.deephaven.plot.datasets.xyerrorbar.XYErrorBarDataSeries",
+ "methods": {},
+ "path": "io.deephaven.plot.datasets.xyerrorbar.XYErrorBarDataSeries",
+ "text": "An XYDataSeries with error bars.",
+ "typeName": "interface"
+}

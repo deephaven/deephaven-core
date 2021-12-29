@@ -1,0 +1,46 @@
+plugins {
+    id 'java-library'
+}
+
+configurations {
+    compile.extendsFrom irisDb
+    testCompile.extendsFrom irisDbTest
+}
+
+description = 'An extension integrating Barrage with Deephaven\'s Table Model'
+
+dependencies {
+    implementation project(':Base')
+    implementation project(':Util')
+    api project(':engine-table')
+    implementation project(':proto:proto-backplane-grpc-flight')
+    implementation project(':log-factory')
+    api "io.deephaven.barrage:barrage-format:0.3.0"
+
+    Classpaths.inheritFlatbuffer(project, 'implementation')
+
+    Classpaths.inheritArrow(project, 'arrow-vector', 'implementation')
+    Classpaths.inheritArrow(project, 'arrow-format', 'implementation')
+
+    Classpaths.inheritImmutables(project)
+
+    testImplementation TestTools.projectDependency(project, 'engine-table'),
+            TestTools.projectDependency(project, 'Util')
+
+    Classpaths.inheritSlf4j(project, 'slf4j-api', 'implementation')
+    Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
+    testRuntimeOnly project(':log-to-slf4j')
+
+    Classpaths.inheritJUnitPlatform(project)
+    Classpaths.inheritAssertJ(project)
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+}
+
+spotless {
+    java {
+        targetExclude(
+                '**/*ChunkInputStreamGenerator.java',
+                '**/*ArrayExpansionKernel.java'
+        )
+    }
+}

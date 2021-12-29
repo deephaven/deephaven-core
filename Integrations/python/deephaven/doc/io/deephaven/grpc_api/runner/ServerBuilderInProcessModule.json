@@ -1,0 +1,6 @@
+{
+ "className": "io.deephaven.grpc_api.runner.ServerBuilderInProcessModule",
+ "methods": {},
+ "path": "io.deephaven.grpc_api.runner.ServerBuilderInProcessModule",
+ "typeName": "class"
+}

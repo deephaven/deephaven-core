@@ -32,29 +32,20 @@ import java.util.stream.IntStream;
 public class BarrageUtils {
     private static final int MAGIC = 0x6E687064;
 
-    // TODO #1049 another wrapper that makes something which looks like a stream and manages rpcTicket internally
-    public static Uint8Array barrageMessage(Builder innerBuilder, int messageType, Uint8Array rpcTicket, int sequence,
-            boolean halfCloseAfterMessage) {
+    public static Uint8Array wrapMessage(Builder innerBuilder, int messageType) {
         Builder outerBuilder = new Builder(1024);
-        // noinspection deprecation - this deprecation is incorrect, tsickle didn't understand that only one overload is
-        // deprecated
+        // This deprecation is incorrect, tsickle didn't understand that only one overload is deprecated
+        // noinspection deprecation
         double messageOffset = BarrageMessageWrapper.createMsgPayloadVector(outerBuilder, innerBuilder.asUint8Array());
-        // noinspection deprecation - this deprecation is incorrect, tsickle didn't understand that only one overload is
-        // deprecated
-        double rpcTicketOffset = BarrageMessageWrapper.createRpcTicketVector(outerBuilder, rpcTicket);
-        double offset = BarrageMessageWrapper.createBarrageMessageWrapper(outerBuilder, MAGIC, messageType,
-                messageOffset, rpcTicketOffset, Long.create(sequence, 0), halfCloseAfterMessage);
+        double offset =
+                BarrageMessageWrapper.createBarrageMessageWrapper(outerBuilder, MAGIC, messageType, messageOffset);
         outerBuilder.finish(offset);
         return outerBuilder.asUint8Array();
     }
 
-    public static Uint8Array barrageMessage(Uint8Array rpcTicket, int sequence, boolean halfCloseAfterMessage) {
+    public static Uint8Array emptyMessage() {
         Builder builder = new Builder(1024);
-        // noinspection deprecation - this deprecation is incorrect, tsickle didn't understand that only one overload is
-        // deprecated
-        double rpcTicketOffset = BarrageMessageWrapper.createRpcTicketVector(builder, rpcTicket);
-        double offset = BarrageMessageWrapper.createBarrageMessageWrapper(builder, MAGIC, BarrageMessageType.None, 0,
-                rpcTicketOffset, Long.create(sequence, 0), halfCloseAfterMessage);
+        double offset = BarrageMessageWrapper.createBarrageMessageWrapper(builder, MAGIC, BarrageMessageType.None, 0);
         builder.finish(offset);
         return builder.asUint8Array();
     }
@@ -251,7 +242,7 @@ public class BarrageUtils {
             for (int columnIndex = 0; columnIndex < columnTypes.length; ++columnIndex) {
                 assert nodes.hasNext() && buffers.hasNext();
 
-                BarrageModColumnMetadata columnMetadata = barrageUpdate.nodes(columnIndex);
+                BarrageModColumnMetadata columnMetadata = barrageUpdate.modColumnNodes(columnIndex);
                 RangeSet modifiedRows = new CompressedRangeSetReader()
                         .read(typedArrayToLittleEndianByteBuffer(columnMetadata.modifiedRowsArray()));
 
@@ -313,7 +304,7 @@ public class BarrageUtils {
                 return new CharArrayColumnData(Js.uncheckedCast(charArray));
             // longs are a special case despite being java primitives
             case "long":
-            case "io.deephaven.db.tables.utils.DBDateTime":
+            case "io.deephaven.time.DateTime":
                 assert positions.length().toFloat64() >= size * 8;
                 long[] longArray = new long[size];
 
@@ -353,10 +344,13 @@ public class BarrageUtils {
                 IntBuffer offsets = readOffsets(data, size, positions);
 
                 if (columnType.endsWith("[]")) {
-                    nodes.next();
+                    FieldNode arrayNode = nodes.next();
+                    int innerSize = (int) arrayNode.length().toFloat64();
+                    boolean innerHasNulls = arrayNode.nullCount().toFloat64() != 0;
+
                     // array type, also read the inner valid buffer and inner offset buffer
-                    BitSet innerValid = readValidityBufferAsBitset(data, size, buffers.next());
-                    IntBuffer innerOffsets = readOffsets(data, size, buffers.next());
+                    BitSet innerValid = readValidityBufferAsBitset(data, innerSize, buffers.next());
+                    IntBuffer innerOffsets = readOffsets(data, innerSize, buffers.next());
 
                     Buffer payload = buffers.next();
 
@@ -372,16 +366,18 @@ public class BarrageUtils {
                                 int instanceSize = offsets.get(i + 1) - arrayStart;
                                 String[] strArr = new String[instanceSize];
                                 for (int j = 0; j < instanceSize; j++) {
+                                    int inner = j + arrayStart;
                                     assert innerOffsets != null;
-                                    if (!innerValid.get(j)) {
-                                        assert innerOffsets.get(j) == innerOffsets.get(j + 1)
-                                                : innerOffsets.get(j) + " == " + innerOffsets.get(j + 1);
+                                    if (innerHasNulls && !innerValid.get(inner)) {
+                                        assert innerOffsets.get(inner) == innerOffsets.get(inner + 1)
+                                                : innerOffsets.get(inner) + " == " + innerOffsets.get(inner + 1);
                                         continue;
                                     }
                                     // might be cheaper to do views on the underlying bb (which will be copied anyway
                                     // into the String)
-                                    data.position((int) (payload.offset().toFloat64()) + offsets.get(i));
-                                    byte[] stringBytes = new byte[data.remaining()];
+                                    data.position((int) (payload.offset().toFloat64()) + innerOffsets.get(inner));
+                                    int stringSize = innerOffsets.get(inner + 1) - innerOffsets.get(inner);
+                                    byte[] stringBytes = new byte[stringSize];
                                     data.get(stringBytes);
                                     strArr[j] = new String(stringBytes, StandardCharsets.UTF_8);
                                 }
@@ -398,41 +394,61 @@ public class BarrageUtils {
                     Buffer payload = buffers.next();
 
                     switch (columnType) {
-                        case "java.lang.String":
+                        case "java.lang.String": {
                             String[] stringArray = new String[size];
+                            byte[] buf = new byte[32];
                             for (int i = 0; i < size; i++) {
                                 if (hasNulls && !valid.get(i)) {
                                     continue;
                                 }
-                                byte[] stringBytes = new byte[offsets.get(i + 1) - offsets.get(i)];
-                                data.position((int) (payload.offset().toFloat64()) + offsets.get(i));
-                                data.get(stringBytes);
-                                stringArray[i] = new String(stringBytes, StandardCharsets.UTF_8);// new
-                                                                                                 // String(Js.<char[]>uncheckedCast(stringBytes));
+                                int ioff = offsets.get(i);
+                                int len = offsets.get(i + 1) - ioff;
+                                data.position((int) (payload.offset().toFloat64()) + ioff);
+                                if (buf.length < len) {
+                                    buf = new byte[len];
+                                }
+                                data.get(buf, 0, len);
+                                stringArray[i] = new String(buf, 0, len, StandardCharsets.UTF_8);// new
+                                // String(Js.<char[]>uncheckedCast(stringBytes));
                             }
                             return new StringArrayColumnData(stringArray);
-                        case "java.math.BigDecimal":
+                        }
+                        case "java.math.BigDecimal": {
                             BigDecimal[] bigDecArray = new BigDecimal[size];
+                            byte[] buf = null;
                             for (int i = 0; i < size; i++) {
                                 if (hasNulls && !valid.get(i)) {
                                     continue;
                                 }
-                                data.position((int) (payload.offset().toFloat64()) + offsets.get(i));
+                                int ioff = offsets.get(i);
+                                int len = offsets.get(i + 1) - ioff;
+                                data.position((int) (payload.offset().toFloat64()) + ioff);
                                 int scale = data.getInt();
-                                bigDecArray[i] = new BigDecimal(readBigInt(data), scale);
+                                len -= 4;
+                                if (buf == null || buf.length != len) {
+                                    buf = new byte[len];
+                                }
+                                bigDecArray[i] = new BigDecimal(readBigInt(data, buf), scale);
                             }
                             return new BigDecimalArrayColumnData(bigDecArray);
-                        case "java.math.BigInteger":
+                        }
+                        case "java.math.BigInteger": {
                             BigInteger[] bigIntArray = new BigInteger[size];
+                            byte[] buf = null;
                             for (int i = 0; i < size; i++) {
                                 if (hasNulls && !valid.get(i)) {
                                     continue;
                                 }
-                                data.position((int) (payload.offset().toFloat64()) + offsets.get(i));
-                                bigIntArray[i] = readBigInt(data);
+                                int ioff = offsets.get(i);
+                                int len = offsets.get(i + 1) - ioff;
+                                if (buf == null || buf.length != len) {
+                                    buf = new byte[len];
+                                }
+                                data.position((int) (payload.offset().toFloat64()) + ioff);
+                                bigIntArray[i] = readBigInt(data, buf);
                             }
-
                             return new BigIntegerArrayColumnData(bigIntArray);
+                        }
                         default:
                             throw new IllegalStateException("Can't decode column of type " + columnType);
                     }
@@ -440,11 +456,16 @@ public class BarrageUtils {
         }
     }
 
-    private static BigInteger readBigInt(ByteBuffer data) {
-        int length = data.getInt();
-        byte[] bytes = new byte[length];
-        data.get(bytes);
-        return new BigInteger(bytes);
+    private static BigInteger readBigInt(ByteBuffer data, byte[] buf) {
+        // TODO: Change to the code below when the Java 9 BigInteger(byte[], int, int) constructor is available.
+        // https://github.com/deephaven/deephaven-core/issues/1626
+        // Make the call take an additional len parameter, and make the calling logic reallocate only when
+        // there is a need to grow, instead of the current need for an exact match.
+        //
+        // data.get(buf, 0, len);
+        // return new BigInteger(buf, 0, len);
+        data.get(buf);
+        return new BigInteger(buf);
     }
 
     private static BitSet readValidityBufferAsBitset(ByteBuffer data, int size, Buffer buffer) {

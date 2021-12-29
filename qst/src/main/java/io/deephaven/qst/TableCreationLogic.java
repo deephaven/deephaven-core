@@ -9,4 +9,8 @@ import io.deephaven.api.TableOperations;
 public interface TableCreationLogic {
 
     <T extends TableOperations<T, T>> T create(TableCreator<T> creation);
+
+    default TableCreationLogic andThen(TableCreationLogic1Input input1) {
+        return new TableCreationLogicAndThen(this, input1);
+    }
 }

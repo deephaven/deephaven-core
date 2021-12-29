@@ -1,6 +1,7 @@
 package io.deephaven.qst.table;
 
 import io.deephaven.annotations.SimpleStyle;
+import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Parameter;
 
@@ -35,6 +36,27 @@ public abstract class TicketTable extends TableBase {
     }
 
     /**
+     * Create a ticket table from the provided {@code fieldName}.
+     *
+     * @param fieldName the query scope field name
+     * @return the ticket table
+     */
+    public static TicketTable fromQueryScopeField(String fieldName) {
+        return of("s/" + fieldName);
+    }
+
+    /**
+     * Create a ticket table from the provided {@code applicationId} and {@code fieldName}.
+     *
+     * @param applicationId the application id
+     * @param fieldName the application field name
+     * @return the ticket table
+     */
+    public static TicketTable fromApplicationField(String applicationId, String fieldName) {
+        return of("a/" + applicationId + "/f/" + fieldName);
+    }
+
+    /**
      * The ticket.
      *
      * @return the ticket
@@ -46,5 +68,12 @@ public abstract class TicketTable extends TableBase {
     public final <V extends Visitor> V walk(V visitor) {
         visitor.visit(this);
         return visitor;
+    }
+
+    @Check
+    final void checkNonEmpty() {
+        if (ticket().length == 0) {
+            throw new IllegalArgumentException("Ticket must be non-empty");
+        }
     }
 }

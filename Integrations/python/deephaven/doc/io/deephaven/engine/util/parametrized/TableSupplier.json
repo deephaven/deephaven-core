@@ -1,0 +1,12 @@
+{
+ "className": "io.deephaven.engine.util.parametrized.TableSupplier",
+ "methods": {
+  "build": "Use to start the construction of a Table Supplier.\n\n:param sourceTable: (io.deephaven.engine.table.Table) - the source table\n:return: (io.deephaven.engine.table.Table) a Proxy that will supply a table",
+  "complete": "Sets a Table Supplier to be complete. This means that the supplier will generate a table the next time a filter\n operation is called. This method has no affect on Tables that are not suppliers.\n\n:param maybeSupplier: (io.deephaven.engine.table.Table) - a Table that may be a supplier\n:return: (io.deephaven.engine.table.Table) a completed Supplier or unaltered Table",
+  "getAppliedEmptyTable": "Gets an empty version of the supplied table with all current operations applied to it. If the Table is not a\n Table Supplier then this will return the table unaltered.\n\n:param maybeSupplier: (io.deephaven.engine.table.Table) - a Table that may be a supplier\n:return: (io.deephaven.engine.table.Table) an applied empty table or an unaltered table",
+  "invoke": ":param proxy: java.lang.Object\n:param method: java.lang.reflect.Method\n:param args: java.lang.Object[]\n:return: java.lang.Object"
+ },
+ "path": "io.deephaven.engine.util.parametrized.TableSupplier",
+ "text": "TableSupplier creates a Proxy to a Table with a list of Table operations to be applied when a filter method is\n called.",
+ "typeName": "class"
+}

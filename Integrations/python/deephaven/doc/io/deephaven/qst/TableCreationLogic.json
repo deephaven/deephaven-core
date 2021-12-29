@@ -1,6 +1,7 @@
 {
  "className": "io.deephaven.qst.TableCreationLogic",
  "methods": {
+  "andThen": ":param input1: io.deephaven.qst.TableCreationLogic1Input\n:return: io.deephaven.qst.TableCreationLogic",
   "create": "Note: Java generics information - <T extends io.deephaven.api.TableOperations<T,\nT>>\n\n:param creation: io.deephaven.qst.TableCreator<T>\n:return: T"
  },
  "path": "io.deephaven.qst.TableCreationLogic",

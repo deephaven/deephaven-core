@@ -1,0 +1,6 @@
+{
+ "className": "io.deephaven.proto.backplane.grpc.RemovedFieldOrBuilder",
+ "methods": {},
+ "path": "io.deephaven.proto.backplane.grpc.RemovedFieldOrBuilder",
+ "typeName": "interface"
+}

@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.engine.util.AbstractExpressionFactory",
+ "methods": {
+  "getPattern": ":return: java.lang.String"
+ },
+ "path": "io.deephaven.engine.util.AbstractExpressionFactory",
+ "typeName": "class"
+}

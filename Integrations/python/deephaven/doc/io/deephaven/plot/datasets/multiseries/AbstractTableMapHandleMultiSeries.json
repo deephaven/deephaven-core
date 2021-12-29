@@ -1,0 +1,12 @@
+{
+ "className": "io.deephaven.plot.datasets.multiseries.AbstractTableMapHandleMultiSeries",
+ "methods": {
+  "applyTransform": "Calls a .update() on the underlying table with the given formula: underlyingTable.update(columnName = update)\n\n:param columnName: (java.lang.String) - the resulting column\n:param update: (java.lang.String) - the formula inside\n:param classesToImport: (java.lang.Class[]) - classes to import into the query scope\n:param params: (java.util.Map<java.lang.String,java.lang.Object>) - parameters to add to the query scope\n:param columnTypesPreserved: (boolean) - set to true if the update clause is 'add only' with respect to columns. This allows\n        the copying of ACLs",
+  "getTableMap": ":return: (io.deephaven.engine.table.TableMap) the underlying TableMap",
+  "getTableMapHandle": ":return: io.deephaven.plot.util.tables.TableBackedTableMapHandle",
+  "getX": ":return: (java.lang.String) the x-axis data column",
+  "getY": ":return: (java.lang.String) the y-axis data column"
+ },
+ "path": "io.deephaven.plot.datasets.multiseries.AbstractTableMapHandleMultiSeries",
+ "typeName": "class"
+}

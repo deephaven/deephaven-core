@@ -32,9 +32,21 @@ public class Column {
     private String constituentType;
 
     private String description;
+    private final boolean isInputTableKeyColumn;
+
+    @JsMethod(namespace = "dh.Column")
+    public static CustomColumn formatRowColor(String expression) {
+        return new CustomColumn(CustomColumn.ROW_FORMAT_NAME, CustomColumn.TYPE_FORMAT_COLOR, expression);
+    }
+
+    @JsMethod(namespace = "dh.Column")
+    public static CustomColumn createCustomColumn(String name, String expression) {
+        return new CustomColumn(name, CustomColumn.TYPE_NEW, expression);
+    }
 
     public Column(int jsIndex, int index, Integer formatColumnIndex, Integer styleColumnIndex, String type, String name,
-            boolean isPartitionColumn, Integer formatStringColumnIndex, String description) {
+            boolean isPartitionColumn, Integer formatStringColumnIndex, String description,
+            boolean inputTableKeyColumn) {
         this.jsIndex = jsIndex;
         this.index = index;
         this.formatColumnIndex = formatColumnIndex;
@@ -44,6 +56,7 @@ public class Column {
         this.isPartitionColumn = isPartitionColumn;
         this.formatStringColumnIndex = formatStringColumnIndex;
         this.description = description;
+        this.isInputTableKeyColumn = inputTableKeyColumn;
     }
 
     @JsMethod
@@ -123,6 +136,10 @@ public class Column {
         return isPartitionColumn;
     }
 
+    public boolean isInputTableKeyColumn() {
+        return isInputTableKeyColumn;
+    }
+
     @JsMethod
     public Sort sort() {
         return new Sort(this);
@@ -131,6 +148,21 @@ public class Column {
     @JsMethod
     public FilterValue filter() {
         return new FilterValue(this);
+    }
+
+    @JsMethod
+    public CustomColumn formatColor(String expression) {
+        return new CustomColumn(name, CustomColumn.TYPE_FORMAT_COLOR, expression);
+    }
+
+    @JsMethod
+    public CustomColumn formatNumber(String expression) {
+        return new CustomColumn(name, CustomColumn.TYPE_FORMAT_NUMBER, expression);
+    }
+
+    @JsMethod
+    public CustomColumn formatDate(String expression) {
+        return new CustomColumn(name, CustomColumn.TYPE_FORMAT_DATE, expression);
     }
 
     @JsMethod

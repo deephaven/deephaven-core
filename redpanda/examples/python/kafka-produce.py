@@ -22,13 +22,13 @@
 #  * Start the redpanda compose: (cd redpanda && docker-compose up --build)
 #  * From web UI do:
 #
-#    > from deephaven import KafkaTools as kt
+#    > from deephaven import ConsumeKafka as ck
 #
 # == Example (1)  Simple String Key and simple double Value
 #
 # From web UI do:
 #
-#    > t = kt.consumeToTable({'bootstrap.servers':'redpanda:29092', 'deephaven.key.column.name':'Symbol', 'deephaven.value.column.name':'Price', 'deephaven.value.column.type':'double'}, 'quotes', table_type='append')
+#    > t = ck.consumeToTable({'bootstrap.servers':'redpanda:29092', 'deephaven.key.column.name':'Symbol', 'deephaven.value.column.name':'Price', 'deephaven.value.column.type':'double'}, 'quotes', table_type='append')
 #
 # You should see a table show up with columns [ KafkaPartition, KafkaOffset, KafkaTimestamp, symbol, price ]
 #
@@ -41,7 +41,7 @@
 # == Example (2)  Simple String Key and simple long Value
 #
 # From web UI do:
-#    > t2 = kt.consumeToTable({'bootstrap.servers':'redpanda:29092', 'deephaven.key.column.name':'Metric', 'deephaven.value.column.name':'Value', 'deephaven.value.column.type':'long', 'deephaven.offset.column.name':'', 'deephaven.partition.column.name':''}, 'metrics', table_type='append')
+#    > t2 = ck.consumeToTable({'bootstrap.servers':'redpanda:29092', 'deephaven.key.column.name':'Metric', 'deephaven.value.column.name':'Value', 'deephaven.value.column.type':'long', 'deephaven.offset.column.name':'', 'deephaven.partition.column.name':''}, 'metrics', table_type='append')
 #
 # You should see a table show up with columns: [ KafkaTimestamp, Metric, Value ]
 #
@@ -54,7 +54,7 @@
 # From web UI do:
 #
 #    > import deephaven.Types as dh
-#    > t3 = kt.consumeToTable({'bootstrap.servers' : 'redpanda:29092'}, 'orders', value=kt.json([ ('Symbol', dh.string), ('Side', dh.string), ('Price', dh.double), ('Qty', dh.int_) ]), table_type='append')
+#    > t3 = ck.consumeToTable({'bootstrap.servers' : 'redpanda:29092'}, 'orders', value=ck.json([ ('Symbol', dh.string), ('Side', dh.string), ('Price', dh.double), ('Qty', dh.int_) ]), table_type='append')
 #
 # Run this script on the host (not on a docker image) to produce one row:
 #

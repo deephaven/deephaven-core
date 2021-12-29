@@ -1,0 +1,14 @@
+{
+ "className": "io.deephaven.engine.util.IsWidget",
+ "methods": {
+  "getLiveWidgetVisibility": ":param object: java.lang.Object\n:return: java.lang.String[]",
+  "getTable": "*Overload 1*  \n  :param value: java.lang.Object\n  :return: io.deephaven.engine.table.Table\n  \n*Overload 2*  \n  :param pyObject: org.jpy.PyObject\n  :return: io.deephaven.engine.table.Table",
+  "getWidget": "*Overload 1*  \n  :param value: java.lang.Object\n  :return: io.deephaven.engine.util.LiveWidget\n  \n*Overload 2*  \n  :param pyObject: org.jpy.PyObject\n  :return: io.deephaven.engine.util.LiveWidget",
+  "isLiveWidgetVisibilityProvider": ":param value: java.lang.Object\n:return: boolean",
+  "isTable": ":param value: java.lang.Object\n:return: boolean",
+  "isWidget": ":param value: java.lang.Object\n:return: boolean"
+ },
+ "path": "io.deephaven.engine.util.IsWidget",
+ "text": "Get a widget from an object.",
+ "typeName": "class"
+}

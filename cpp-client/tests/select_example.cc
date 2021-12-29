@@ -29,25 +29,24 @@ using deephaven::client::highlevel::StrCol;
 using deephaven::client::highlevel::TableHandle;
 using deephaven::client::utility::streamf;
 using deephaven::client::utility::stringf;
-using deephaven::client::utility::flight::statusOrDie;
-using deephaven::client::utility::flight::valueOrDie;
+using deephaven::client::utility::TableMaker;
 
 namespace deephaven {
 namespace client {
 namespace tests {
+
 TEST_CASE("Create / update / fetch a table", "[select]") {
-  std::string myTableName = "temp1";
   auto tm = TableMakerForTests::create();
 
   std::vector<int32_t> intData = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
   std::vector<double> doubleData = {0.0, 1.1, 2.2, 3.3, 4.4, 5.5, 6.6, 7.7, 8.8, 9.9};
   std::vector<std::string> stringData = {"zero", "one", "two", "three", "four", "five", "six", "seven",
       "eight", "nine"};
-  TableWizard wizard;
-  wizard.addColumn("IntValue", intData);
-  wizard.addColumn("DoubleValue", doubleData);
-  wizard.addColumn("StringValue", stringData);
-  auto t = wizard.makeTable(tm.client().getManager(), myTableName);
+  TableMaker maker;
+  maker.addColumn("IntValue", intData);
+  maker.addColumn("DoubleValue", doubleData);
+  maker.addColumn("StringValue", stringData);
+  auto t = maker.makeTable(tm.client().getManager());
   auto t2 = t.update("Q2 = IntValue * 100");
   std::cout << t2.stream(true) << '\n';
   auto t3 = t2.update("Q3 = Q2 + 10");

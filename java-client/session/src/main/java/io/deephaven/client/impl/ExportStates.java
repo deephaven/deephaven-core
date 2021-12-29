@@ -2,10 +2,14 @@ package io.deephaven.client.impl;
 
 import com.google.common.annotations.VisibleForTesting;
 import io.deephaven.client.impl.ExportRequest.Listener;
-import io.deephaven.grpc_api.util.ExportTicketHelper;
-import io.deephaven.proto.backplane.grpc.*;
+import io.deephaven.proto.backplane.grpc.BatchTableRequest;
+import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
+import io.deephaven.proto.backplane.grpc.ReleaseRequest;
+import io.deephaven.proto.backplane.grpc.ReleaseResponse;
 import io.deephaven.proto.backplane.grpc.SessionServiceGrpc.SessionServiceStub;
 import io.deephaven.proto.backplane.grpc.TableServiceGrpc.TableServiceStub;
+import io.deephaven.proto.backplane.grpc.Ticket;
+import io.deephaven.proto.util.ExportTicketHelper;
 import io.deephaven.qst.table.ParentsVisitor;
 import io.deephaven.qst.table.TableSpec;
 import io.grpc.stub.StreamObserver;
@@ -21,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.Set;
 
 final class ExportStates {
@@ -92,7 +97,7 @@ final class ExportStates {
         final List<Export> results = new ArrayList<>(requests.size());
         final Set<TableSpec> newSpecs = new HashSet<>(requests.size());
         // linked so TableCreationHandler has a definitive order
-        final Map<Ticket, State> newStates = new LinkedHashMap<>(requests.size());
+        final Map<Integer, State> newStates = new LinkedHashMap<>(requests.size());
 
         for (ExportRequest request : requests) {
             final Optional<State> existing = lookup(request.table());
@@ -103,15 +108,15 @@ final class ExportStates {
                 continue;
             }
 
-            final Ticket ticket = exportTicketCreator.create();
-            final State state = new State(request.table(), ticket);
+            final int exportId = exportTicketCreator.createExportId();
+            final State state = new State(request.table(), exportId);
             if (exports.putIfAbsent(request.table(), state) != null) {
                 throw new IllegalStateException("Unable to put export, already exists");
             }
 
             final Export newExport = state.newReference(request.listener());
             newSpecs.add(request.table());
-            newStates.put(ticket, state);
+            newStates.put(exportId, state);
             results.add(newExport);
         }
 
@@ -145,8 +150,9 @@ final class ExportStates {
         return Optional.ofNullable(exports.get(table));
     }
 
-    private Optional<Ticket> lookupTicket(TableSpec table) {
-        return lookup(table).map(State::ticket);
+    private OptionalInt lookupTicket(TableSpec table) {
+        final Optional<State> state = lookup(table);
+        return state.isPresent() ? OptionalInt.of(state.get().exportId()) : OptionalInt.empty();
     }
 
     private static List<TableSpec> postOrderNewDependencies(Set<TableSpec> oldExports,
@@ -177,7 +183,7 @@ final class ExportStates {
     class State {
 
         private final TableSpec table;
-        private final Ticket ticket;
+        private final int exportId;
 
         private final Set<Export> children;
         private ExportedTableCreationResponse creationResponse;
@@ -186,9 +192,9 @@ final class ExportStates {
 
         private boolean released;
 
-        State(TableSpec table, Ticket ticket) {
+        State(TableSpec table, int exportId) {
             this.table = Objects.requireNonNull(table);
-            this.ticket = Objects.requireNonNull(ticket);
+            this.exportId = exportId;
             this.children = new LinkedHashSet<>();
         }
 
@@ -200,8 +206,8 @@ final class ExportStates {
             return table;
         }
 
-        Ticket ticket() {
-            return ticket;
+        int exportId() {
+            return exportId;
         }
 
         synchronized Export newReference(Listener listener) {
@@ -221,8 +227,9 @@ final class ExportStates {
             if (children.isEmpty()) {
                 ExportStates.this.release(this);
                 released = true;
-                sessionStub.release(ReleaseRequest.newBuilder().setId(ticket).build(),
-                        new TicketReleaseHandler(ticket));
+                sessionStub.release(
+                        ReleaseRequest.newBuilder().setId(ExportTicketHelper.wrapExportIdInTicket(exportId)).build(),
+                        new TicketReleaseHandler(exportId));
                 ++releaseCount;
             }
         }
@@ -277,10 +284,10 @@ final class ExportStates {
 
         private static final Logger log = LoggerFactory.getLogger(TicketReleaseHandler.class);
 
-        private final Ticket ticket;
+        private final int exportId;
 
-        private TicketReleaseHandler(Ticket ticket) {
-            this.ticket = Objects.requireNonNull(ticket);
+        private TicketReleaseHandler(int exportId) {
+            this.exportId = exportId;
         }
 
         @Override
@@ -290,8 +297,7 @@ final class ExportStates {
 
         @Override
         public void onError(Throwable t) {
-            log.error(String.format("onError releasing ticket '%s'",
-                    ExportTicketHelper.toReadableString(ticket, "ticket")), t);
+            log.error(String.format("onError releasing export id %d", exportId), t);
         }
 
         @Override
@@ -303,9 +309,9 @@ final class ExportStates {
     private static final class BatchHandler
             implements StreamObserver<ExportedTableCreationResponse> {
 
-        private final Map<Ticket, State> newStates;
+        private final Map<Integer, State> newStates;
 
-        private BatchHandler(Map<Ticket, State> newStates) {
+        private BatchHandler(Map<Integer, State> newStates) {
             this.newStates = Objects.requireNonNull(newStates);
         }
 
@@ -322,7 +328,8 @@ final class ExportStates {
                 throw new IllegalStateException(
                         "Not expecting export creation responses for empty tickets");
             }
-            final State state = newStates.remove(value.getResultId().getTicket());
+            final int exportId = ExportTicketHelper.ticketToExportId(value.getResultId().getTicket(), "export");
+            final State state = newStates.remove(exportId);
             if (state == null) {
                 throw new IllegalStateException("Unable to find state for creation response");
             }

@@ -1,12 +1,14 @@
 package io.deephaven.qst.column.header;
 
 import io.deephaven.annotations.SimpleStyle;
+import io.deephaven.api.util.NameValidator;
 import io.deephaven.qst.array.Array;
 import io.deephaven.qst.array.ArrayBuilder;
 import io.deephaven.qst.column.Column;
 import io.deephaven.qst.table.NewTable;
 import io.deephaven.qst.table.TableHeader;
 import io.deephaven.qst.type.Type;
+import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Parameter;
 
@@ -189,5 +191,10 @@ public abstract class ColumnHeader<T1> implements TableHeader.Buildable {
     public final Iterator<ColumnHeader<?>> iterator() {
         Set<ColumnHeader<?>> singleton = Collections.singleton(this);
         return singleton.iterator();
+    }
+
+    @Check
+    void checkName() {
+        NameValidator.isValidColumnName(name());
     }
 }

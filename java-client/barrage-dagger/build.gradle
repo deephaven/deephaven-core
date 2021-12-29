@@ -1,0 +1,23 @@
+plugins {
+    id 'java-library'
+}
+
+description = 'The Deephaven engine library plus client'
+
+dependencies {
+    api project(':java-client-barrage')
+    api project(':java-client-flight-dagger')
+    api project(':uri')
+
+    Classpaths.inheritDagger(project)
+
+    Classpaths.inheritJUnitPlatform(project)
+    Classpaths.inheritAssertJ(project)
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+
+    testImplementation project(':log-to-slf4j')
+}
+
+test {
+    useJUnitPlatform()
+}

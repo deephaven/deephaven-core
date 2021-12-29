@@ -5,8 +5,9 @@
 from abc import ABC
 from typing import List, Any
 
-from pydeephaven._combo_aggs import ComboAggregation
-from pydeephaven.constants import SortDirection, MatchRule, AggType
+from pydeephaven.combo_agg import ComboAggregation
+from pydeephaven.constants import SortDirection, MatchRule
+from pydeephaven._constants import AggType
 from pydeephaven.proto import table_pb2, table_pb2_grpc
 
 
@@ -362,30 +363,6 @@ class ExactJoinOp(TableOp):
     def make_grpc_request_for_batch(self, result_id, source_id):
         return table_pb2.BatchTableRequest.Operation(
             exact_join=self.make_grpc_request(result_id=result_id, source_id=source_id))
-
-
-class LeftJoinOp(TableOp):
-    def __init__(self, table: Any, keys: List[str], columns_to_add: List[str] = []):
-        self.table = table
-        self.keys = keys
-        self.columns_to_add = columns_to_add
-
-    @classmethod
-    def get_stub_func(cls, table_service_stub: table_pb2_grpc.TableServiceStub):
-        return table_service_stub.LeftJoinTables
-
-    def make_grpc_request(self, result_id, source_id):
-        left_id = source_id
-        right_id = table_pb2.TableReference(ticket=self.table.ticket)
-        return table_pb2.LeftJoinTablesRequest(result_id=result_id,
-                                               left_id=left_id,
-                                               right_id=right_id,
-                                               columns_to_match=self.keys,
-                                               columns_to_add=self.columns_to_add)
-
-    def make_grpc_request_for_batch(self, result_id, source_id):
-        return table_pb2.BatchTableRequest.Operation(
-            left_join=self.make_grpc_request(result_id=result_id, source_id=source_id))
 
 
 class CrossJoinOp(TableOp):

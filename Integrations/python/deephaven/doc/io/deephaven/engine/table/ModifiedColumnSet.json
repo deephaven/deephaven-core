@@ -1,0 +1,29 @@
+{
+ "className": "io.deephaven.engine.table.ModifiedColumnSet",
+ "methods": {
+  "clear": "Reset the current dirty column state.",
+  "clearAll": "**Incompatible overloads text - text from the first overload:**\n\nMarks all columns in the provided column set in this set as clean.\n\n*Overload 1*  \n  :param columnNames: (java.lang.String...) - the columns which need to be marked clean\n  \n*Overload 2*  \n  :param columnSet: (io.deephaven.engine.table.ModifiedColumnSet) - the set of columns to mark clean",
+  "containsAll": "Check whether or not all columns are currently marked as dirty.\n\n:param columnSet: (io.deephaven.engine.table.ModifiedColumnSet) - the columns to check\n:return: (boolean) true iff all columns match dirtiness",
+  "containsAny": "Check whether or not any columns are currently marked as dirty.\n\n:param columnSet: (io.deephaven.engine.table.ModifiedColumnSet) - the columns to check\n:return: (boolean) true iff any column is dirty",
+  "copy": "Create an exact copy of this ModifiedColumnSet.\n\n:return: (io.deephaven.engine.table.ModifiedColumnSet) a copy with identical state including dirty bits",
+  "empty": ":return: (boolean) whether or not this set is empty",
+  "equals": ":param other: java.lang.Object\n:return: boolean",
+  "extractAsBitSet": ":return: java.util.BitSet",
+  "isCompatibleWith": ":param columnSet: io.deephaven.engine.table.ModifiedColumnSet\n:return: (boolean) whether or not this modified column set is compatible with the provided set",
+  "newIdentityTransformer": "Create a transformer that uses an identity mapping from one ColumnSourceMap to another. The two CSM's must have\n equivalent column names and column ordering.\n\n:param newColumns: (java.util.Map<java.lang.String,? extendsio.deephaven.engine.table.ColumnSource<?>>) - the column source map for result table\n:return: (io.deephaven.engine.table.ModifiedColumnSet.Transformer) a simple Transformer that makes a cheap, but CSM compatible copy",
+  "newTransformer": "Create a transformer that is compatible with the class of ModifiedColumnSets that share a ColumnSourceMap.\n\n:param columnNames: (java.lang.String[]) - input columns to check for dirtiness\n:param columnSets: (io.deephaven.engine.table.ModifiedColumnSet[]) - output columns to mark dirty when input column is dirty\n:return: (io.deephaven.engine.table.ModifiedColumnSet.Transformer) a new Transformer instance",
+  "nonempty": ":return: (boolean) whether or not this set is non-empty",
+  "numColumns": ":return: (int) the number of columns in this set",
+  "requiresTransformer": "This method is used to determine whether or not a dependent requires a transformer to propagate dirty columns\n from its parent. If no transformer is required then it is acceptable to reuse any column set provided by the\n parent. Note this is intended to be determined during initialization and never during an update cycle. It is\n illegal to use the specialized ModifiedColumnSet.EMPTY / ModifiedColumnSet.ALL as their innards do not represent\n any table.\n\n:param columnSet: (io.deephaven.engine.table.ModifiedColumnSet) - the column set for the dependent table\n:return: (boolean) whether or not this modified column set must use a Transformer to propagate modified columns",
+  "setAll": "**Incompatible overloads text - text from the first overload:**\n\nMarks all columns in the provided column set in this set as dirty.\n\n*Overload 1*  \n  :param columnNames: (java.lang.String...) - the columns which need to be marked dirty\n  \n*Overload 2*  \n  :param columnSet: (io.deephaven.engine.table.ModifiedColumnSet) - the set of columns to mark dirty",
+  "setAllDirty": "Sets all columns dirty.",
+  "setColumnWithIndex": "Marks specifically the column with the given index as dirty.\n\n:param columnIndex: (int) - column index to mark dirty",
+  "setColumnsInIndexRange": "Marks specifically a range of adjacent columns. Start is inclusive, end is exclusive; like the BitSet API.\n\n:param columnStart: (int) - start column index to mark dirty\n:param columnEndExclusive: (int) - end column index to mark dirty",
+  "size": ":return: (int) the number of dirty columns",
+  "toDebugString": ":return: java.lang.String",
+  "toString": "*Overload 1*  \n  :return: java.lang.String\n  \n*Overload 2*  \n  :param maxColumns: int\n  :return: java.lang.String"
+ },
+ "path": "io.deephaven.engine.table.ModifiedColumnSet",
+ "text": "Data structure to represent a subset of columns, used for propagating modifications via TableUpdate\n instances.",
+ "typeName": "class"
+}

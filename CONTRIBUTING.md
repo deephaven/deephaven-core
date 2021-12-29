@@ -18,11 +18,20 @@ To get started quickly:
 3) `git clone git@github.com:<username>/deephaven-core.git`
 4) Commit changes to your own branches in your forked repository.
 
+For details on working with git on GitHub, see:
+* [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository)
+* [Connecting to GitHub with SSH](https://docs.github.com/en/authentication/connecting-to-github-with-ssh) 
+* [Troubleshooting cloning errors](https://docs.github.com/en/repositories/creating-and-managing-repositories/troubleshooting-cloning-errors)
+* [Pushing commits to a remote repository](https://docs.github.com/en/get-started/using-git/pushing-commits-to-a-remote-repository)
+
 Forked repositories do not have access to the same tokens/secrets as the [deephaven/deephaven-core](https://github.com/deephaven/deephaven-core) repository, so GitHub actions will fail. To disable GitHub actions in your forked repository, go to "Actions" -> "Disable Actions" in your forked repository settings (`https://github.com/<username>/deephaven-core/settings/actions`).
 
 Over time, forks will get out of sync with the upstream repository.  To stay up to date, either:
 * Navigate to `https://github.com/<username>/deephaven-core` and click on `Fetch upstream`, or
 * Follow these directions on [Syncing A Fork](https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests/syncing-a-fork).
+
+## Building and Running
+For instructions on building and running, see [Build and launch from source](https://deephaven.io/core/docs/how-to-guides/launch-build/).
 
 ## Creating a Pull Request
 Pull requests can be created through the GitHub website or through the GitHub CLI.
@@ -48,3 +57,6 @@ For more information, see:
 ## Styleguide
 The [styleguide](style/README.md) is applied globally to the entire project, except for generated code that gets checked in.
 To apply the styleguide, run `./gradlew spotlessApply`.
+
+## Deephaven Contributor License Agreement (CLA)
+The [Deephaven Contributor License Agreement (CLA)](https://github.com/deephaven/cla/blob/main/CLA.md) must be accepted before a pull request can be merged.  A bot monitors all pull requests.  Follow the instructions from the bot in the pull request comments to accept the CLA.  The Deephaven CLA and associated signatures are maintained at [https://github.com/deephaven/cla](https://github.com/deephaven/cla).

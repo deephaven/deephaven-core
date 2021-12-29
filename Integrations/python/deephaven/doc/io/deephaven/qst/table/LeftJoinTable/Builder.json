@@ -1,6 +1,0 @@
-{
- "className": "io.deephaven.qst.table.LeftJoinTable$Builder",
- "methods": {},
- "path": "io.deephaven.qst.table.LeftJoinTable.Builder",
- "typeName": "interface"
-}

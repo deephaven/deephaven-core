@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.table.impl.select.codegen.FormulaAnalyzer",
+ "methods": {
+  "analyze": ":param rawFormulaString: java.lang.String\n:param columnDefinitionMap: java.util.Map<java.lang.String,io.deephaven.engine.table.ColumnDefinition<?>>\n:param otherVariables: java.util.Map<java.lang.String,java.lang.Class<?>>\n:return: io.deephaven.engine.table.impl.select.codegen.FormulaAnalyzer.Result",
+  "getCompiledFormula": ":param availableColumns: java.util.Map<java.lang.String,io.deephaven.engine.table.ColumnDefinition<?>>\n:param timeConversionResult: io.deephaven.time.DateTimeUtils.Result\n:param otherVariables: java.util.Map<java.lang.String,java.lang.Class<?>>\n:return: io.deephaven.engine.table.impl.lang.QueryLanguageParser.Result"
+ },
+ "path": "io.deephaven.engine.table.impl.select.codegen.FormulaAnalyzer",
+ "typeName": "class"
+}

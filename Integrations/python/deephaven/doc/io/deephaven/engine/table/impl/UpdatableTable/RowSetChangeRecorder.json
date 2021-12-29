@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.engine.table.impl.UpdatableTable$RowSetChangeRecorder",
+ "methods": {
+  "addRowKey": "Flag key as an addition (or a modification if previously removed in this cycle). Must only be called in an\n updater function.\n\n:param key: (long) - The key",
+  "modifyRowKey": "Flag key as an modification (unless it was added this cycle). Must only be called in an updater function.\n\n:param key: (long) - The key",
+  "removeRowKey": "Flag key as a removal (if it wasn't added on this cycle). Must only be called in an updater function.\n\n:param key: (long) - The key"
+ },
+ "path": "io.deephaven.engine.table.impl.UpdatableTable.RowSetChangeRecorder",
+ "text": "Interface provided to updater functions that allows RowSet changes to be recorded for propagation.",
+ "typeName": "interface"
+}

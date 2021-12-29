@@ -1,0 +1,17 @@
+{
+ "className": "io.deephaven.plot.datasets.data.AssociativeDataWithDefault",
+ "methods": {
+  "get": "Gets the value associated with the key\n\n:param key: (AssociativeDataWithDefault.KEY) - key\n:return: (AssociativeDataWithDefault.VALUE) value associated with the key",
+  "getDefault": "Gets the default value for this dataset.\n\n:return: (AssociativeDataWithDefault.VALUE) default value for this dataset",
+  "getSpecific": "Gets this dataset's key-value pairs as an AssociativeData dataset.\n\n:return: (io.deephaven.plot.datasets.data.AssociativeData<AssociativeDataWithDefault.KEY,AssociativeDataWithDefault.VALUE>) AssociativeData dataset representing this datasets key-value pairs",
+  "isModifiable": "Whether the dataset is modifiable.\n\n:return: (boolean) true if the dataset is modifiable, false if not",
+  "put": "Adds the key-value pair to the dataset.\n\n:param key: (AssociativeDataWithDefault.KEY) - key\n:param value: (AssociativeDataWithDefault.VALUE) - value",
+  "putAll": "Adds all key-value pairs in the map to the dataset.\n\nNote: Java generics information - <K extends AssociativeDataWithDefault.KEY,\nV extends AssociativeDataWithDefault.VALUE>\n\n:param values: (java.util.Map<K,V>) - keypair map",
+  "set": "Sets this dataset's values equal to the values in another dataset.\n\n:param data: (io.deephaven.plot.datasets.data.AssociativeDataWithDefault<AssociativeDataWithDefault.KEY,AssociativeDataWithDefault.VALUE>) - dataset to get values from.",
+  "setDefault": "Defines the default value for this dataset.\n\n:param value: (AssociativeDataWithDefault.VALUE) - default value",
+  "setSpecific": "Sets this dataset's key-value pairs.\n\n:param provider: (io.deephaven.plot.datasets.data.AssociativeData<AssociativeDataWithDefault.KEY,AssociativeDataWithDefault.VALUE>) - dataset holding key-value pairs"
+ },
+ "path": "io.deephaven.plot.datasets.data.AssociativeDataWithDefault",
+ "text": "Dataset which has values associated with keys. When the dataset has no value associated with a given key, it falls\n back to a specified default value.",
+ "typeName": "class"
+}

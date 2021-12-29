@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.engine.table.impl.select.setinclusion.DoubleSetInclusionKernel",
+ "methods": {
+  "matchValues": ":param values: io.deephaven.chunk.Chunk<io.deephaven.chunk.attributes.Values>\n:param matches: io.deephaven.chunk.WritableBooleanChunk"
+ },
+ "path": "io.deephaven.engine.table.impl.select.setinclusion.DoubleSetInclusionKernel",
+ "typeName": "class"
+}

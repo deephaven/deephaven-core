@@ -1,0 +1,27 @@
+plugins {
+    id 'java-library'
+}
+
+description 'CSV: Support to read and write engine tables from/to CSV'
+
+dependencies {
+    api project(':engine-api')
+
+    implementation project(':engine-table')
+
+    Classpaths.inheritImmutables(project)
+
+    Classpaths.inheritJUnitPlatform(project)
+    Classpaths.inheritAssertJ(project)
+
+    testImplementation TestTools.projectDependency(project, 'engine-table'),
+            'junit:junit:4.13.2'
+
+    testRuntimeOnly project(':log-to-slf4j'),
+            project(path: ':configs'),
+            project(path: ':test-configs')
+    Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
+}
+
+// testOutOfBand: non-parallel, not a engine test, not isolated
+TestTools.addEngineTest(project, 'OutOfBand', false, false, false)

@@ -1,7 +1,0 @@
-{
- "className": "io.deephaven.db.exceptions.TableAccessException",
- "methods": {},
- "path": "io.deephaven.db.exceptions.TableAccessException",
- "text": "An UncheckedPermissionException derivative which indicates a table may not be accessed for one reason or\n another.",
- "typeName": "class"
-}

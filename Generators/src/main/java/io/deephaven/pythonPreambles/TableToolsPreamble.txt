@@ -37,7 +37,7 @@ def _defineSymbols():
     global _java_type_
     if _java_type_ is None:
         # This will raise an exception if the desired object is not the classpath
-        _java_type_ = jpy.get_type("io.deephaven.db.tables.utils.TableTools")
+        _java_type_ = jpy.get_type("io.deephaven.engine.util.TableTools")
 
 
 # every module method should be decorated with @_passThrough
@@ -78,7 +78,7 @@ def _custom_newTable(*args):
             if _isJavaArray(args[2]):
                 sources = convertToJavaList(args[2])
             else:
-                sources = convertToJavaList(jpy.array('io.deephaven.db.v2.sources.ColumnSource', args[2]))
+                sources = convertToJavaList(jpy.array('io.deephaven.engine.table.ColumnSource', args[2]))
             return _java_type_.newTable(rows, names, sources)
 
     return _java_type_.newTable(*args)

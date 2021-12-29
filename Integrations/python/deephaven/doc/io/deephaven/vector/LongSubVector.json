@@ -1,0 +1,13 @@
+{
+ "className": "io.deephaven.vector.LongSubVector",
+ "methods": {
+  "get": ":param index: long\n:return: long",
+  "isEmpty": ":return: boolean",
+  "size": "The size of this data structure.\n\n:return: (long) The size",
+  "subVector": ":param fromIndex: long\n:param toIndex: long\n:return: io.deephaven.vector.LongVector",
+  "subVectorByPositions": ":param positions: long[]\n:return: io.deephaven.vector.LongVector",
+  "toArray": ":return: long[]"
+ },
+ "path": "io.deephaven.vector.LongSubVector",
+ "typeName": "class"
+}

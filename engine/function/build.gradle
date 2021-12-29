@@ -1,0 +1,33 @@
+plugins {
+    id 'java-library'
+}
+
+description 'Engine Functions: Libraries for use in query expressions'
+
+configurations {
+    testCompile.extendsFrom junit
+}
+
+dependencies {
+    api 'net.sf.trove4j:trove4j:3.0.3',
+            project(':Util'),
+            project(':engine-vector')
+
+    testImplementation TestTools.projectDependency(project, 'Base')
+}
+
+spotless {
+    java {
+        targetExclude(
+                '**/*Boolean*Primitives.java',
+                '**/*Byte*Primitives.java',
+                '**/*Char*Primitives.java',
+                '**/*Short*Primitives.java',
+                '**/*Int*Primitives.java',
+                '**/*Long*Primitives.java',
+                '**/*Float*Primitives.java',
+                '**/*Double*Primitives.java',
+                '**/*Object*Primitives.java',
+        )
+    }
+}

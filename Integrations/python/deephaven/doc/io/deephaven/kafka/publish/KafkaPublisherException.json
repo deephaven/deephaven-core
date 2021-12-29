@@ -1,0 +1,7 @@
+{
+ "className": "io.deephaven.kafka.publish.KafkaPublisherException",
+ "methods": {},
+ "path": "io.deephaven.kafka.publish.KafkaPublisherException",
+ "text": "This exception is thrown when there is a failure to produce a Kafka record during Deephaven to Kafka publication.",
+ "typeName": "class"
+}

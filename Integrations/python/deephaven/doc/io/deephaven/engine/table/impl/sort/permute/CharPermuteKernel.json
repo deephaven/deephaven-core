@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.table.impl.sort.permute.CharPermuteKernel",
+ "methods": {
+  "permute": "*Overload 1*  \n  Note: Java generics information - <T extends io.deephaven.chunk.attributes.Any>\n  \n  :param extend: io.deephaven.chunk.CharChunk<?\n  :param outputPositions: io.deephaven.chunk.IntChunk<io.deephaven.chunk.attributes.ChunkPositions>\n  :param supe: io.deephaven.chunk.WritableCharChunk<?\n  \n*Overload 2*  \n  Note: Java generics information - <T extends io.deephaven.chunk.attributes.Any>\n  \n  :param inputPositions: io.deephaven.chunk.IntChunk<io.deephaven.chunk.attributes.ChunkPositions>\n  :param extend: io.deephaven.chunk.CharChunk<?\n  :param outputPositions: io.deephaven.chunk.IntChunk<io.deephaven.chunk.attributes.ChunkPositions>\n  :param supe: io.deephaven.chunk.WritableCharChunk<?",
+  "permuteInput": "Note: Java generics information - <T extends io.deephaven.chunk.attributes.Any>\n\n:param extend: io.deephaven.chunk.CharChunk<?\n:param inputPositions: io.deephaven.chunk.IntChunk<io.deephaven.chunk.attributes.ChunkPositions>\n:param supe: io.deephaven.chunk.WritableCharChunk<?"
+ },
+ "path": "io.deephaven.engine.table.impl.sort.permute.CharPermuteKernel",
+ "typeName": "class"
+}

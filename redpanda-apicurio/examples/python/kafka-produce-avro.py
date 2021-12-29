@@ -22,7 +22,7 @@
 #  * Start the redpanda-apicurio compose: (cd redpanda-apicurio && docker-compose up --build)
 #  * From web UI do:
 #
-#    > from deephaven import KafkaTools
+#    > from deephaven import ConsumeKafka as ck
 #
 # == Example (1)
 #
@@ -38,8 +38,7 @@
 #
 # From the web IDE, run:
 #
-#    > from deephaven import KafkaTools as kt
-#    > t = kt.consumeToTable({'bootstrap.servers' : 'redpanda:29092', 'schema.registry.url' : 'http://registry:8080/api/ccompat'}, 'share_price', value=kt.avro('share_price_record'), table_type='append')
+#    > t = ck.consumeToTable({'bootstrap.servers' : 'redpanda:29092', 'schema.registry.url' : 'http://registry:8080/api/ccompat'}, 'share_price', value=ck.avro('share_price_record'), table_type='append')
 #
 # The last command above should create a table with columns: [ KafkaPartition, KafkaOffset, KafkaTimestamp, Symbol, Price ]
 # Run this script on the host (not on a docker image) to generate one row:

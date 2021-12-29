@@ -1,10 +1,9 @@
 package io.deephaven.client.impl;
 
 import io.deephaven.client.impl.ExportRequest.Listener;
-import io.deephaven.grpc_api.util.ExportTicketHelper;
-import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.qst.table.TableSpec;
 
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -15,7 +14,7 @@ import java.util.Objects;
  *
  * @see Session
  */
-public final class Export implements AutoCloseable {
+public final class Export implements AutoCloseable, HasExportId {
 
     private final ExportStates.State state;
     private final Listener listener;
@@ -27,6 +26,21 @@ public final class Export implements AutoCloseable {
         this.released = false;
     }
 
+    @Override
+    public ExportId exportId() {
+        return new ExportId(state.exportId());
+    }
+
+    @Override
+    public PathId pathId() {
+        return exportId().pathId();
+    }
+
+    @Override
+    public TicketId ticketId() {
+        return exportId().ticketId();
+    }
+
     /**
      * The session.
      *
@@ -34,15 +48,6 @@ public final class Export implements AutoCloseable {
      */
     public Session session() {
         return state.session();
-    }
-
-    /**
-     * The ticket.
-     *
-     * @return the ticket
-     */
-    public Ticket ticket() {
-        return state.ticket();
     }
 
     /**
@@ -103,10 +108,10 @@ public final class Export implements AutoCloseable {
 
     @Override
     public String toString() {
-        return "Export{ticket=" + toReadableString() + '}';
+        return "Export{id=" + exportId().id() + '}';
     }
 
     public String toReadableString() {
-        return ExportTicketHelper.toReadableString(state.ticket(), "ticket");
+        return exportId().toString();
     }
 }

@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.parquet.table.pagestore.topage.ToDateTimePage",
+ "methods": {
+  "create": "Note: Java generics information - <ATTR extends io.deephaven.chunk.attributes.Any>\n\n:param nativeType: java.lang.Class<?>\n:param unit: org.apache.parquet.schema.LogicalTypeAnnotation.TimeUnit\n:return: io.deephaven.parquet.table.pagestore.topage.ToPage<ATTR,io.deephaven.time.DateTime[]>",
+  "getNativeComponentType": ":return: (java.lang.Class<io.deephaven.time.DateTime>) The native type for the elements of engine arrays produced by this object."
+ },
+ "path": "io.deephaven.parquet.table.pagestore.topage.ToDateTimePage",
+ "typeName": "class"
+}

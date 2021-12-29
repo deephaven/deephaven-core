@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.db.tables.live.NotificationQueue$Dependency",
- "methods": {
-  "satisfied": "Is this ancestor satisfied? Note that this method must be safe to call on any thread.\n\n:param step: (long) - The step for which we are testing satisfaction\n:return: (boolean) Whether the dependency is satisfied on step (and will not fire subsequent notifications)"
- },
- "path": "io.deephaven.db.tables.live.NotificationQueue.Dependency",
- "typeName": "interface"
-}

@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.db.v2.utils.Index$IndexUpdateCoalescer",
- "methods": {
-  "coalesce": ":return: io.deephaven.db.v2.ShiftAwareListener.Update",
-  "update": ":param update: io.deephaven.db.v2.ShiftAwareListener.Update\n:return: io.deephaven.db.v2.utils.Index.IndexUpdateCoalescer"
- },
- "path": "io.deephaven.db.v2.utils.Index.IndexUpdateCoalescer",
- "typeName": "class"
-}

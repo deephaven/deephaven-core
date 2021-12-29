@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.chunk.OrderedChunkUtils",
+ "methods": {
+  "findInChunk": "Finds the insertion point in chunk for value.\n\n*Overload 1*  \n  Note: Java generics information - <ATTR extends io.deephaven.chunk.attributes.Any>\n  \n  :param chunk: (io.deephaven.chunk.LongChunk<ATTR>) - to search through\n  :param value: (long) - the value to find\n  :return: (int) The insertion point in [0, chunk.size()).\n  \n*Overload 2*  \n  Note: Java generics information - <ATTR extends io.deephaven.chunk.attributes.Any>\n  \n  :param chunk: (io.deephaven.chunk.LongChunk<ATTR>) - to search through\n  :param value: (long) - the value to find\n  :param startOffset: (int) - the minimum offset allowed\n  :param endOffsetExclusive: (int) - the offset just beyond the maximum allowed\n  :return: (int) The insertion point in [startOffset, endOffsetExclusive)."
+ },
+ "path": "io.deephaven.chunk.OrderedChunkUtils",
+ "typeName": "class"
+}

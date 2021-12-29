@@ -3,17 +3,16 @@ plugins {
 }
 
 dependencies {
-    annotationProcessor 'org.immutables:value:2.8.1'
-    compileOnly project(':util-immutables')
+    Classpaths.inheritImmutables(project)
 
-    // we'll rely on the DB to provide the necessary groovy dependencies
-    compileOnly "org.codehaus.groovy:groovy:$GROOVY_VERSION"
+    // we'll rely on the engine-table module to provide the necessary groovy dependencies
+    Classpaths.inheritGroovy(project, 'groovy', 'compileOnly')
 
     api project(':proto:proto-backplane-grpc')
 
-    testImplementation(platform('org.junit:junit-bom:5.7.2'))
+    Classpaths.inheritJUnitPlatform(project)
+    Classpaths.inheritAssertJ(project)
     testImplementation 'org.junit.jupiter:junit-jupiter'
-    testImplementation 'org.assertj:assertj-core:3.19.0'
 }
 
 test {

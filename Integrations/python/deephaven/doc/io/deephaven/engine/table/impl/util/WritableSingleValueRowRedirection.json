@@ -1,0 +1,13 @@
+{
+ "className": "io.deephaven.engine.table.impl.util.WritableSingleValueRowRedirection",
+ "methods": {
+  "fillPrevChunk": "Lookup each element in a RowSequence and write the result to a WritableLongChunk, using previous\n values.\n\n:param fillContext: (io.deephaven.engine.table.ChunkSource.FillContext) - The FillContext\n:param innerRowKeys: (io.deephaven.chunk.WritableLongChunk<? extendsio.deephaven.engine.rowset.chunkattributes.RowKeys>) - The result chunk\n:param outerRowKeys: (io.deephaven.engine.rowset.RowSequence) - The row keys to lookup in this RowRedirection",
+  "get": "Simple redirected lookup.\n\n:param outerRowKey: (long) - The \"outer\" row key\n:return: (long) The corresponding \"inner\" row key, or RowSequence.NULL_ROW_KEY if no mapping exists",
+  "getPrev": "Simple redirected lookup, using previous values.\n\n:param outerRowKey: (long) - The \"outer\" row key\n:return: (long) The corresponding \"inner\" row key, or RowSequence.NULL_ROW_KEY if no mapping exists",
+  "getValue": ":return: long",
+  "setValue": ":param newValue: long",
+  "toString": ":return: java.lang.String"
+ },
+ "path": "io.deephaven.engine.table.impl.util.WritableSingleValueRowRedirection",
+ "typeName": "class"
+}

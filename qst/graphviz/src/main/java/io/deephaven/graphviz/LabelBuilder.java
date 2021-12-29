@@ -1,17 +1,21 @@
 package io.deephaven.graphviz;
 
 import io.deephaven.api.Strings;
+import io.deephaven.qst.table.AggregateAllByTable;
 import io.deephaven.qst.table.AggregationTable;
 import io.deephaven.qst.table.AsOfJoinTable;
-import io.deephaven.qst.table.ByTable;
+import io.deephaven.qst.table.CountByTable;
 import io.deephaven.qst.table.EmptyTable;
 import io.deephaven.qst.table.ExactJoinTable;
 import io.deephaven.qst.table.HeadTable;
+import io.deephaven.qst.table.InMemoryAppendOnlyInputTable;
+import io.deephaven.qst.table.InMemoryKeyBackedInputTable;
+import io.deephaven.qst.table.InputTable;
 import io.deephaven.qst.table.Join;
 import io.deephaven.qst.table.JoinTable;
-import io.deephaven.qst.table.LeftJoinTable;
 import io.deephaven.qst.table.NaturalJoinTable;
 import io.deephaven.qst.table.ReverseAsOfJoinTable;
+import io.deephaven.qst.table.SelectDistinctTable;
 import io.deephaven.qst.table.SelectTable;
 import io.deephaven.qst.table.SelectableTable;
 import io.deephaven.qst.table.TableSpec;
@@ -90,11 +94,6 @@ public class LabelBuilder extends TableVisitorGeneric {
     }
 
     @Override
-    public void visit(LeftJoinTable leftJoinTable) {
-        join("leftJoin", leftJoinTable);
-    }
-
-    @Override
     public void visit(AsOfJoinTable aj) {
         join("aj", aj);
     }
@@ -132,23 +131,53 @@ public class LabelBuilder extends TableVisitorGeneric {
     }
 
     @Override
-    public void visit(ByTable byTable) {
-        sb.append("by(");
-        append(Strings::of, byTable.columns(), sb);
+    public void visit(AggregateAllByTable aggAllByTable) {
+        sb.append("aggAllBy(");
+        sb.append(aggAllByTable.spec()).append(',');
+        append(Strings::of, aggAllByTable.groupByColumns(), sb);
         sb.append(')');
     }
 
     @Override
     public void visit(AggregationTable aggregationTable) {
         // TODO(deephaven-core#1116): Add labeling, or structuring, for qst graphviz aggregations
-        sb.append("by([");
-        append(Strings::of, aggregationTable.columns(), sb);
+        sb.append("aggBy([");
+        append(Strings::of, aggregationTable.groupByColumns(), sb);
         sb.append("],[ todo ])");
     }
 
     @Override
     public void visit(TicketTable ticketTable) {
         sb.append("ticketTable(...)");
+    }
+
+    @Override
+    public void visit(InputTable inputTable) {
+        inputTable.walk(new InputTable.Visitor() {
+            @Override
+            public void visit(InMemoryAppendOnlyInputTable inMemoryAppendOnly) {
+                sb.append("InMemoryAppendOnlyInputTable(...)");
+            }
+
+            @Override
+            public void visit(InMemoryKeyBackedInputTable inMemoryKeyBacked) {
+                sb.append("InMemoryKeyBackedInputTable(...)");
+            }
+        });
+    }
+
+    @Override
+    public void visit(SelectDistinctTable selectDistinctTable) {
+        sb.append("selectDistinct(");
+        append(Strings::of, selectDistinctTable.groupByColumns(), sb);
+        sb.append(')');
+    }
+
+    @Override
+    public void visit(CountByTable countByTable) {
+        sb.append("countBy(").append(countByTable.countName()).append(',');
+        append(Strings::of, countByTable.groupByColumns(), sb);
+        sb.append(')');
     }
 
     private void join(String name, Join j) {

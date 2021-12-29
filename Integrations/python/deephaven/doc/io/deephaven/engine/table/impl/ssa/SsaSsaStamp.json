@@ -1,0 +1,13 @@
+{
+ "className": "io.deephaven.engine.table.impl.ssa.SsaSsaStamp",
+ "methods": {
+  "applyShift": ":param leftSsa: io.deephaven.engine.table.impl.ssa.SegmentedSortedArray\n:param rightStampChunk: io.deephaven.chunk.Chunk<? extendsio.deephaven.chunk.attributes.Values>\n:param rightStampKeys: io.deephaven.chunk.LongChunk<io.deephaven.engine.rowset.chunkattributes.RowKeys>\n:param shiftDelta: long\n:param rowRedirection: io.deephaven.engine.table.impl.util.WritableRowRedirection\n:param disallowExactMatch: boolean",
+  "findModified": ":param leftSsa: io.deephaven.engine.table.impl.ssa.SegmentedSortedArray\n:param rowRedirection: io.deephaven.engine.table.impl.util.RowRedirection\n:param rightStampChunk: io.deephaven.chunk.Chunk<? extendsio.deephaven.chunk.attributes.Values>\n:param rightStampIndices: io.deephaven.chunk.LongChunk<io.deephaven.engine.rowset.chunkattributes.RowKeys>\n:param modifiedBuilder: io.deephaven.engine.rowset.RowSetBuilderRandom\n:param disallowExactMatch: boolean",
+  "make": ":param type: io.deephaven.chunk.ChunkType\n:param reverse: boolean\n:return: io.deephaven.engine.table.impl.ssa.SsaSsaStamp",
+  "processEntry": ":param leftSsa: io.deephaven.engine.table.impl.ssa.SegmentedSortedArray\n:param ssa: io.deephaven.engine.table.impl.ssa.SegmentedSortedArray\n:param rowRedirection: io.deephaven.engine.table.impl.util.WritableRowRedirection\n:param disallowExactMatch: boolean",
+  "processInsertion": ":param leftSsa: io.deephaven.engine.table.impl.ssa.SegmentedSortedArray\n:param rightStampChunk: io.deephaven.chunk.Chunk<? extendsio.deephaven.chunk.attributes.Values>\n:param rightKeys: io.deephaven.chunk.LongChunk<io.deephaven.engine.rowset.chunkattributes.RowKeys>\n:param nextRightValue: io.deephaven.chunk.Chunk<io.deephaven.chunk.attributes.Values>\n:param rowRedirection: io.deephaven.engine.table.impl.util.WritableRowRedirection\n:param modifiedBuilder: io.deephaven.engine.rowset.RowSetBuilderRandom\n:param endsWithLastValue: boolean\n:param disallowExactMatch: boolean",
+  "processRemovals": ":param leftSsa: io.deephaven.engine.table.impl.ssa.SegmentedSortedArray\n:param rightStampChunk: io.deephaven.chunk.Chunk<? extendsio.deephaven.chunk.attributes.Values>\n:param rightKeys: io.deephaven.chunk.LongChunk<io.deephaven.engine.rowset.chunkattributes.RowKeys>\n:param priorRedirections: io.deephaven.chunk.WritableLongChunk<io.deephaven.engine.rowset.chunkattributes.RowKeys>\n:param rowRedirection: io.deephaven.engine.table.impl.util.WritableRowRedirection\n:param modifiedBuilder: io.deephaven.engine.rowset.RowSetBuilderRandom\n:param disallowExactMatch: boolean"
+ },
+ "path": "io.deephaven.engine.table.impl.ssa.SsaSsaStamp",
+ "typeName": "interface"
+}

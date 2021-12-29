@@ -1,0 +1,25 @@
+{
+ "className": "io.deephaven.chunk.WritableObjectChunk",
+ "methods": {
+  "add": ":param value: WritableObjectChunk.T",
+  "appendTypedChunk": ":param src: io.deephaven.chunk.ObjectChunk<WritableObjectChunk.T,? extendsWritableObjectChunk.ATTR>\n:param srcOffset: int\n:param length: int",
+  "asTypedWritableObjectChunk": "Note: Java generics information - <T_DERIV extends WritableObjectChunk.T>\n\n:return: io.deephaven.chunk.WritableObjectChunk<T_DERIV,WritableObjectChunk.ATTR>",
+  "copyFromArray": ":param srcArray: java.lang.Object\n:param srcOffset: int\n:param destOffset: int\n:param length: int",
+  "copyFromChunk": ":param src: io.deephaven.chunk.Chunk<? extendsWritableObjectChunk.ATTR>\n:param srcOffset: int\n:param destOffset: int\n:param length: int",
+  "copyFromTypedArray": ":param src: WritableObjectChunk.T[]\n:param srcOffset: int\n:param destOffset: int\n:param length: int",
+  "copyFromTypedChunk": ":param src: io.deephaven.chunk.ObjectChunk<WritableObjectChunk.T,? extendsWritableObjectChunk.ATTR>\n:param srcOffset: int\n:param destOffset: int\n:param length: int",
+  "fillWithBoxedValue": "Fill a sub-range of this writable chunk with the given value, unboxing it as appropriate.\n\n:param offset: (int) - Starting offset\n:param size: (int) - Number of values to fill\n:param value: java.lang.Object",
+  "fillWithNullValue": "Fill a sub-range of this writable chunk with the appropriate Deephaven null value for the type.\n\n:param offset: (int) - Starting offset\n:param length: (int) - Number of values to fill",
+  "fillWithValue": ":param offset: int\n:param length: int\n:param value: WritableObjectChunk.T",
+  "makeWritableChunk": "Note: Java generics information - <T,\nATTR extends io.deephaven.chunk.attributes.Any>\n\n:param size: int\n:return: io.deephaven.chunk.WritableObjectChunk<T,ATTR>",
+  "makeWritableChunkForPool": ":param size: int\n:return: io.deephaven.chunk.WritableObjectChunk",
+  "set": ":param index: int\n:param value: WritableObjectChunk.T",
+  "slice": "Make a new Chunk that represents either exactly the same view on the underlying data as this Chunk, or a subrange\n of that view. The view is defined as [0..size) (in the coordinate space of this Chunk).\n\n:param offset: (int) - Offset of the new Chunk, relative to this Chunk. 0   offset   this.size\n:param capacity: (int) - Capacity and initial size of the new Chunk. 0   capacity   this.size - offset.\n:return: (io.deephaven.chunk.WritableObjectChunk<WritableObjectChunk.T,WritableObjectChunk.ATTR>) The new Chunk. A new Chunk will always be returned, even if the Chunks represent the same view.",
+  "sort": "Sort this chunk in-place using Java's primitive defined ordering.\n\n Of note is that nulls or NaNs are not sorted according to Deephaven ordering rules.\n\n*Overload 1*  \n  \n  \n*Overload 2*  \n  :param start: int\n  :param length: int",
+  "upcast": "Note: Java generics information - <T,\nATTR extends io.deephaven.chunk.attributes.Any,\nATTR_DERIV extends ATTR>\n\n:param self: io.deephaven.chunk.WritableObjectChunk<T,ATTR_DERIV>\n:return: io.deephaven.chunk.WritableObjectChunk<T,ATTR>",
+  "writableChunkWrap": "*Overload 1*  \n  Note: Java generics information - <T,\n  ATTR extends io.deephaven.chunk.attributes.Any>\n  \n  :param data: T[]\n  :return: io.deephaven.chunk.WritableObjectChunk<T,ATTR>\n  \n*Overload 2*  \n  Note: Java generics information - <T,\n  ATTR extends io.deephaven.chunk.attributes.Any>\n  \n  :param data: T[]\n  :param offset: int\n  :param size: int\n  :return: io.deephaven.chunk.WritableObjectChunk<T,ATTR>"
+ },
+ "path": "io.deephaven.chunk.WritableObjectChunk",
+ "text": "WritableChunk implementation for Object data.",
+ "typeName": "class"
+}

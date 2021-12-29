@@ -1,0 +1,12 @@
+{
+ "className": "io.deephaven.engine.table.TransformableTableMap$AsTableBuilder",
+ "methods": {
+  "allowCoalesce": "Set if operations should allow this TableMap to be automatically coalesced into a table.\n\n \n False by default.\n \n\n:param allowCoalesce: (boolean) - if operations should allow this TableMap to be automatically coalesced into a table\n:return: (io.deephaven.engine.table.TransformableTableMap.AsTableBuilder) this builder",
+  "build": "Create a Table object using this builder's current parameters.\n\n:return: (io.deephaven.engine.table.Table) a Table object using this builder's current parameters",
+  "sanityCheckJoin": "Set if join operations should include additional sanity checking.\n\n \n True by default.\n \n\n:param sanityCheckJoins: (boolean) - if we should sanity check join keys, meaning that we should refuse to perform any\n        joins if the join keys would span two segments of the TableMap. This option is safer, but requires\n        additional work on the query engine to perform the safety checks.\n:return: (io.deephaven.engine.table.TransformableTableMap.AsTableBuilder) this builder",
+  "strictKeys": "Set if operations should fail when our RHS TableMap does not have the same keySet.\n\n \n True by default.\n \n\n:param strictKeys: (boolean) - if operations should fail when our RHS TableMap does not have the same keySet\n:return: (io.deephaven.engine.table.TransformableTableMap.AsTableBuilder) this builder"
+ },
+ "path": "io.deephaven.engine.table.TransformableTableMap.AsTableBuilder",
+ "text": "Builder object for a TableMapProxy.\n \n By default strict keys and join sanity check are enabled; but coalescing is not. This gives you the safest\n possible asTable call.",
+ "typeName": "class"
+}

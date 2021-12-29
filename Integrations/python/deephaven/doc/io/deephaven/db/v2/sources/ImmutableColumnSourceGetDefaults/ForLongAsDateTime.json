@@ -1,7 +1,0 @@
-{
- "className": "io.deephaven.db.v2.sources.ImmutableColumnSourceGetDefaults$ForLongAsDateTime",
- "methods": {},
- "path": "io.deephaven.db.v2.sources.ImmutableColumnSourceGetDefaults.ForLongAsDateTime",
- "text": "Default interface for immutable DBDateTime ColumnSource implementations.",
- "typeName": "interface"
-}

@@ -162,7 +162,7 @@ public class JsFigureFactory {
         }
         descriptor.setSeriesList(seriesDescriptors);
 
-        // TODO: IDS-5767 Add support for byExternal and multiseries descriptors
+        // TODO: IDS-5767 Add support for partitionBy and multiseries descriptors
         descriptor.setMultiSeriesList(new MultiSeriesDescriptor[0]);
 
         return descriptor;

@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.table.impl.sources.BoxedColumnSource$OfDateTime",
+ "methods": {
+  "get": ":param index: long\n:return: io.deephaven.time.DateTime",
+  "getPrev": ":param index: long\n:return: io.deephaven.time.DateTime"
+ },
+ "path": "io.deephaven.engine.table.impl.sources.BoxedColumnSource.OfDateTime",
+ "typeName": "class"
+}

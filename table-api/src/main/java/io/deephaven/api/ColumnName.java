@@ -3,8 +3,8 @@ package io.deephaven.api;
 import io.deephaven.annotations.SimpleStyle;
 import io.deephaven.api.agg.Pair;
 import io.deephaven.api.expression.Expression;
+import io.deephaven.api.util.NameValidator;
 import io.deephaven.api.value.Value;
-import io.deephaven.db.tables.utils.NameValidator;
 import org.immutables.value.Value.Check;
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Parameter;
@@ -19,17 +19,8 @@ import java.io.Serializable;
 public abstract class ColumnName
         implements Selectable, Value, Expression, Pair, JoinMatch, JoinAddition, Serializable {
 
-    public static boolean isValidColumnName(String name) {
-        try {
-            NameValidator.validateColumnName(name);
-            return true;
-        } catch (NameValidator.InvalidNameException e) {
-            return false;
-        }
-    }
-
     public static boolean isValidParsedColumnName(String value) {
-        return isValidColumnName(value.trim());
+        return NameValidator.isValidColumnName(value.trim());
     }
 
     public static ColumnName of(String name) {

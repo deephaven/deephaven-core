@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.table.ResettableContext",
+ "methods": {
+  "reset": "Reset this context before it will be used again."
+ },
+ "path": "io.deephaven.engine.table.ResettableContext",
+ "text": "Resettable Context interface, for contexts that must be reset between steps of an operation (e.g. when\n advancing to a new region, or a new chunk of ordered keys).",
+ "typeName": "interface"
+}

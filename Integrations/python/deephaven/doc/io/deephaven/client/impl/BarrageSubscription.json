@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.client.impl.BarrageSubscription",
+ "methods": {
+  "entireTable": "Request a full subscription of the data and populate a BarrageTable with the incrementally updating data\n that is received.\n\n:return: (io.deephaven.extensions.barrage.table.BarrageTable) the BarrageTable"
+ },
+ "path": "io.deephaven.client.impl.BarrageSubscription",
+ "text": "A BarrageSubscription represents a subscription over a table that may or may not be filtered to a viewport of\n the remote source table.",
+ "typeName": "interface"
+}

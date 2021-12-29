@@ -28,8 +28,7 @@ import java.util.concurrent.TimeUnit;
  *
  * @see TableHandleManager
  */
-public final class TableHandle extends TableSpecAdapter<TableHandle, TableHandle>
-        implements Closeable {
+public final class TableHandle extends TableSpecAdapter<TableHandle, TableHandle> implements Closeable, HasExportId {
 
     public interface Lifecycle {
         void onInit(TableHandle handle);
@@ -137,9 +136,24 @@ public final class TableHandle extends TableSpecAdapter<TableHandle, TableHandle
         this.doneLatch = new CountDownLatch(1);
     }
 
+    @Override
+    public ExportId exportId() {
+        return export.exportId();
+    }
+
+    @Override
+    public TicketId ticketId() {
+        return export.ticketId();
+    }
+
+    @Override
+    public PathId pathId() {
+        return export.pathId();
+    }
+
     public TableHandle newRef() {
         TableHandle handle = new TableHandle(table(), lifecycle);
-        handle.init(export.newReference(new ResponseAdapter()));
+        handle.init(export.newReference(handle.responseAdapter()));
         return handle;
     }
 
@@ -204,6 +218,13 @@ public final class TableHandle extends TableSpecAdapter<TableHandle, TableHandle
         return response != null && response.getSuccess();
     }
 
+    public ExportedTableCreationResponse response() {
+        if (!isSuccessful()) {
+            throw new IllegalStateException("Should only get the response on success");
+        }
+        return response;
+    }
+
     /**
      * The table handle has an error when the response from the server indicates an error.
      *
@@ -236,7 +257,7 @@ public final class TableHandle extends TableSpecAdapter<TableHandle, TableHandle
     }
 
     private ExportRequest exportRequest() {
-        return ExportRequest.of(table(), new ResponseAdapter());
+        return ExportRequest.of(table(), responseAdapter());
     }
 
     /**
@@ -276,6 +297,10 @@ public final class TableHandle extends TableSpecAdapter<TableHandle, TableHandle
                 lifecycle.onRelease(this);
             }
         }
+    }
+
+    private ResponseAdapter responseAdapter() {
+        return new ResponseAdapter();
     }
 
     private class ResponseAdapter implements Listener {

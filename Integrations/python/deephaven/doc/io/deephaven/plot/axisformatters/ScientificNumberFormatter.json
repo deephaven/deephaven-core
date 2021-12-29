@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.plot.axisformatters.ScientificNumberFormatter",
+ "methods": {
+  "format": "*Overload 1*  \n  :param number: double\n  :param toAppendTo: java.lang.StringBuffer\n  :param pos: java.text.FieldPosition\n  :return: java.lang.StringBuffer\n  \n*Overload 2*  \n  :param number: long\n  :param toAppendTo: java.lang.StringBuffer\n  :param pos: java.text.FieldPosition\n  :return: java.lang.StringBuffer",
+  "parse": ":param source: java.lang.String\n:param parsePosition: java.text.ParsePosition\n:return: java.lang.Number"
+ },
+ "path": "io.deephaven.plot.axisformatters.ScientificNumberFormatter",
+ "text": "NumberFormat which formats numbers in scientific notation if they are outside the given range.",
+ "typeName": "class"
+}

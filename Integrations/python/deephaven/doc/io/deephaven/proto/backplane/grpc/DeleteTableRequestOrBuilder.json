@@ -1,0 +1,13 @@
+{
+ "className": "io.deephaven.proto.backplane.grpc.DeleteTableRequestOrBuilder",
+ "methods": {
+  "getInputTable": ".io.deephaven.proto.backplane.grpc.Ticket input_table = 1;\n\n:return: (io.deephaven.proto.backplane.grpc.Ticket) The inputTable.",
+  "getInputTableOrBuilder": ".io.deephaven.proto.backplane.grpc.Ticket input_table = 1;\n\n:return: io.deephaven.proto.backplane.grpc.TicketOrBuilder",
+  "getTableToRemove": ".io.deephaven.proto.backplane.grpc.Ticket table_to_remove = 2;\n\n:return: (io.deephaven.proto.backplane.grpc.Ticket) The tableToRemove.",
+  "getTableToRemoveOrBuilder": ".io.deephaven.proto.backplane.grpc.Ticket table_to_remove = 2;\n\n:return: io.deephaven.proto.backplane.grpc.TicketOrBuilder",
+  "hasInputTable": ".io.deephaven.proto.backplane.grpc.Ticket input_table = 1;\n\n:return: (boolean) Whether the inputTable field is set.",
+  "hasTableToRemove": ".io.deephaven.proto.backplane.grpc.Ticket table_to_remove = 2;\n\n:return: (boolean) Whether the tableToRemove field is set."
+ },
+ "path": "io.deephaven.proto.backplane.grpc.DeleteTableRequestOrBuilder",
+ "typeName": "interface"
+}

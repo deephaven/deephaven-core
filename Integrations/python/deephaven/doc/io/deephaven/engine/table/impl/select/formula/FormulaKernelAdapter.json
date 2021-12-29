@@ -1,0 +1,28 @@
+{
+ "className": "io.deephaven.engine.table.impl.select.formula.FormulaKernelAdapter",
+ "methods": {
+  "fillChunk": ":param __context: io.deephaven.engine.table.impl.select.Formula.FillContext\n:param __destination: io.deephaven.chunk.WritableChunk<? superio.deephaven.chunk.attributes.Values>\n:param __rowSequence: io.deephaven.engine.rowset.RowSequence",
+  "fillPrevChunk": ":param __context: io.deephaven.engine.table.impl.select.Formula.FillContext\n:param __destination: io.deephaven.chunk.WritableChunk<? superio.deephaven.chunk.attributes.Values>\n:param __rowSequence: io.deephaven.engine.rowset.RowSequence",
+  "get": ":param k: long\n:return: java.lang.Object",
+  "getBoolean": ":param k: long\n:return: java.lang.Boolean",
+  "getByte": ":param k: long\n:return: byte",
+  "getChar": ":param k: long\n:return: char",
+  "getDouble": ":param k: long\n:return: double",
+  "getFloat": ":param k: long\n:return: float",
+  "getInt": ":param k: long\n:return: int",
+  "getLong": ":param k: long\n:return: long",
+  "getPrev": ":param k: long\n:return: java.lang.Object",
+  "getPrevBoolean": ":param k: long\n:return: java.lang.Boolean",
+  "getPrevByte": ":param k: long\n:return: byte",
+  "getPrevChar": ":param k: long\n:return: char",
+  "getPrevDouble": ":param k: long\n:return: double",
+  "getPrevFloat": ":param k: long\n:return: float",
+  "getPrevInt": ":param k: long\n:return: int",
+  "getPrevLong": ":param k: long\n:return: long",
+  "getPrevShort": ":param k: long\n:return: short",
+  "getShort": ":param k: long\n:return: short",
+  "makeFillContext": ":param chunkCapacity: int\n:return: io.deephaven.engine.table.impl.select.formula.FormulaKernelAdapter.AdapterContext"
+ },
+ "path": "io.deephaven.engine.table.impl.select.formula.FormulaKernelAdapter",
+ "typeName": "class"
+}

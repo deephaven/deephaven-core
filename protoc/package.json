@@ -1,9 +1,0 @@
-{
-  "dependencies": {
-    "google-protobuf": "^3.17.3",
-    "ts-protoc-gen": "^0.15.0"
-  },
-  "engines": {
-    "node": "14.x"
-  }
-}

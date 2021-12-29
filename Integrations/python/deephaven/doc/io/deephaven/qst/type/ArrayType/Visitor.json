@@ -1,7 +1,7 @@
 {
  "className": "io.deephaven.qst.type.ArrayType$Visitor",
  "methods": {
-  "visit": "*Overload 1*  \n  :param nativeArrayType: io.deephaven.qst.type.NativeArrayType<?,?>\n  \n*Overload 2*  \n  :param dbArrayPrimitiveType: io.deephaven.qst.type.DbPrimitiveArrayType<?,?>\n  \n*Overload 3*  \n  :param dbGenericArrayType: io.deephaven.qst.type.DbGenericArrayType<?,?>"
+  "visit": "*Overload 1*  \n  :param nativeArrayType: io.deephaven.qst.type.NativeArrayType<?,?>\n  \n*Overload 2*  \n  :param vectorPrimitiveType: io.deephaven.qst.type.PrimitiveVectorType<?,?>\n  \n*Overload 3*  \n  :param genericVectorType: io.deephaven.qst.type.GenericVectorType<?,?>"
  },
  "path": "io.deephaven.qst.type.ArrayType.Visitor",
  "typeName": "interface"

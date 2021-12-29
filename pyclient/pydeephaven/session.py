@@ -41,12 +41,8 @@ class Session:
             port (int): the port number that Deephaven server is listening on, default is 10000
             never_timeout (bool, optional): never allow the session to timeout, default is True
 
-        Returns:
-            None
-
         Raises:
             DHError
-
         """
         self._r_lock = threading.RLock()
         self._last_ticket = 0
@@ -54,11 +50,11 @@ class Session:
 
         self.host = host
         if not host:
-            self.host = os.environ.get("DHCE_HOST", "localhost")
+            self.host = os.environ.get("DH_HOST", "localhost")
 
         self.port = port
         if not port:
-            self.port = os.environ.get("DHCE_PORT", 10000)
+            self.port = int(os.environ.get("DH_PORT", 10000))
 
         self.is_connected = False
         self.session_token = None
@@ -168,13 +164,9 @@ class Session:
 
     def close(self) -> None:
         """ Close the Session object if it hasn't timed out already.
-        Args:
-
-        Returns:
 
         Raises:
             DHError
-
         """
         with self._r_lock:
             if self.is_connected:
@@ -207,11 +199,8 @@ class Session:
         Args:
             script (str): the Python script code
 
-        Returns:
-
         Raises:
             DHError
-
         """
         with self._r_lock:
             response = self.console_service.run_script(script)
@@ -228,7 +217,6 @@ class Session:
 
         Raises:
             DHError
-
         """
         with self._r_lock:
             if name not in self.tables:
@@ -236,35 +224,31 @@ class Session:
             table_op = FetchTableOp()
             return self.table_service.grpc_table_op(self._tables[name][1], table_op)
 
-    def bind_table(self, table: Table, name: str) -> None:
+    def bind_table(self, name: str, table: Table) -> None:
         """ Bind a table to the given name on the server so that it can be referenced by that name.
 
         Args:
-            table (Table): a Table object
             name (str): name for the table
-
-        Returns:
+            table (Table): a Table object
 
         Raises:
             DHError
-
         """
         with self._r_lock:
             self.console_service.bind_table(table=table, variable_name=name)
 
-    def time_table(self, start_time: int = 0, period: int = 1000000000) -> Table:
+    def time_table(self, period: int, start_time: int = None) -> Table:
         """ Create a time table on the server.
 
         Args:
-            start_time (int): the start time for the time table in nano seconds, default is 0 (mid-night 1970.01.01)
-            period (int): the interval at which the time table ticks (adds a row), default is 1 second
+            period (int): the interval (in nano seconds) at which the time table ticks (adds a row)
+            start_time (int, optional): the start time for the time table in nano seconds, default is None (meaning now)
 
         Returns:
             a Table object
 
         Raises:
             DHError
-
         """
         table_op = TimeTableOp(start_time=start_time, period=period)
         return self.table_service.grpc_table_op(None, table_op)
@@ -280,7 +264,6 @@ class Session:
 
         Raises:
             DHError
-
         """
         table_op = EmptyTableOp(size=size)
         return self.table_service.grpc_table_op(None, table_op)
@@ -299,25 +282,23 @@ class Session:
 
         Raises:
             DHError
-
         """
         return self.flight_service.import_table(data=data)
 
-    def merge_tables(self, tables: List[Table], key_column: str = None) -> Table:
+    def merge_tables(self, tables: List[Table], order_by: str = None) -> Table:
         """ Merge several tables into one table on the server.
 
         Args:
-            tables (list[Tables]): the list of Table objects to merge
-            key_column (str): Optional, if specified the resultant table will be sorted by this column
+            tables (list[Table]): the list of Table objects to merge
+            order_by (str, optional): if specified the resultant table will be sorted on this column
 
         Returns:
             a Table object
 
         Raises:
             DHError
-
         """
-        table_op = MergeTablesOp(tables=tables, key_column=key_column)
+        table_op = MergeTablesOp(tables=tables, key_column=order_by)
         return self.table_service.grpc_table_op(None, table_op)
 
     def query(self, table: Table) -> Query:
@@ -331,6 +312,5 @@ class Session:
 
         Raises:
             DHError
-
         """
         return Query(self, table)

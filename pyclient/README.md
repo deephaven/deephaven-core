@@ -22,17 +22,27 @@ $ python3 setup.py bdist_wheel
 ## Run tests
 ``` shell
 $ python3 -m unittest discover tests
+
+```
+## Run examples
+``` shell
+$ python3 -m examples.demo_table_ops
+$ python3 -m examples.demo_query
+$ python3 -m examples.demo_run_script
+$ python3 -m examples.demo_merge_tables
+$ python3 -m examples.demo_asof_join
+
 ```
 ## Install
 ``` shell
-$ pip3 install dist/pydeephaven-0.4.2-py3-none-any.whl
+$ pip3 install dist/pydeephaven-0.8.0-py3-none-any.whl
 ```
 ## Quick start
 
 ```python    
     >>> from pydeephaven import Session
     >>> session = Session() # assuming Deephaven Community Edition is running locally with the default configuration
-    >>> table1 = session.time_table(period=1000000).update(column_specs=["Col1 = i % 2"])
+    >>> table1 = session.time_table(period=1000000).update(formulas=["Col1 = i % 2"])
     >>> df = table1.snapshot().to_pandas()
     >>> print(df)
                         Timestamp  Col1
@@ -57,4 +67,4 @@ $ pip3 install dist/pydeephaven-0.4.2-py3-none-any.whl
 * https://arrow.apache.org/docs/python/index.html
 
 ## API Reference
-[start here] https://deephaven.io/core/docs/clientapis/python
+[start here] https://deephaven.io/core/client-api/python/

@@ -3,7 +3,7 @@
  "methods": {
   "accept": ":param t: io.deephaven.qst.table.TableSpec",
   "join": ":param join: io.deephaven.qst.table.Join",
-  "visit": "*Overload 1*  \n  :param naturalJoinTable: io.deephaven.qst.table.NaturalJoinTable\n  \n*Overload 2*  \n  :param exactJoinTable: io.deephaven.qst.table.ExactJoinTable\n  \n*Overload 3*  \n  :param joinTable: io.deephaven.qst.table.JoinTable\n  \n*Overload 4*  \n  :param leftJoinTable: io.deephaven.qst.table.LeftJoinTable\n  \n*Overload 5*  \n  :param aj: io.deephaven.qst.table.AsOfJoinTable\n  \n*Overload 6*  \n  :param raj: io.deephaven.qst.table.ReverseAsOfJoinTable\n  \n*Overload 7*  \n  :param whereInTable: io.deephaven.qst.table.WhereInTable\n  \n*Overload 8*  \n  :param whereNotInTable: io.deephaven.qst.table.WhereNotInTable\n  \n*Overload 9*  \n  :param snapshotTable: io.deephaven.qst.table.SnapshotTable"
+  "visit": "*Overload 1*  \n  :param naturalJoinTable: io.deephaven.qst.table.NaturalJoinTable\n  \n*Overload 2*  \n  :param exactJoinTable: io.deephaven.qst.table.ExactJoinTable\n  \n*Overload 3*  \n  :param joinTable: io.deephaven.qst.table.JoinTable\n  \n*Overload 4*  \n  :param aj: io.deephaven.qst.table.AsOfJoinTable\n  \n*Overload 5*  \n  :param raj: io.deephaven.qst.table.ReverseAsOfJoinTable\n  \n*Overload 6*  \n  :param whereInTable: io.deephaven.qst.table.WhereInTable\n  \n*Overload 7*  \n  :param whereNotInTable: io.deephaven.qst.table.WhereNotInTable\n  \n*Overload 8*  \n  :param snapshotTable: io.deephaven.qst.table.SnapshotTable\n  \n*Overload 9*  \n  :param inputTable: io.deephaven.qst.table.InputTable"
  },
  "path": "io.deephaven.qst.table.LinkDescriber",
  "text": "Provides a potentially descriptive label for the parents of a TableSpec.",

@@ -39,9 +39,6 @@ public class Configuration extends PropertyFile {
     /** Property that specifies a base directory for logging. */
     private static final String LOGDIR_ROOT_PROPERTY = "logroot";
 
-    /** Property that specifies the DB root value */
-    private static final String DB_ROOT_PROPERTY = "OnDiskDatabase.rootDirectory";
-
     /** Token used for log root directory substitution */
     private static final String LOGROOT_TOKEN = "<logroot>";
 
@@ -53,9 +50,6 @@ public class Configuration extends PropertyFile {
 
     /** Token used for workspace substitution */
     private static final String WORKSPACE_TOKEN = "<workspace>";
-
-    /** Token used for db root directory substitution */
-    private static final String DB_ROOT_TOKEN = "<dbroot>";
 
     /** Ordered list of properties that can specify the configuration root file */
     @SuppressWarnings("WeakerAccess")
@@ -180,7 +174,6 @@ public class Configuration extends PropertyFile {
     /**
      * Normalize a directory path. This performs the following substitutions and manipulations.
      * <ul>
-     * <li>{@code <dbroot>} - replaced with the on disk database root directory, usually /db</li>
      * <li>{@code <workspace>} - replaced with the process workspace</li>
      * <li>{@code <devroot>} - replaced with the installation root directory</li>
      * <li>{@code <processname>} - replaced with the process name</li>
@@ -233,15 +226,6 @@ public class Configuration extends PropertyFile {
             } else {
                 substitutedPath = substitutedPath.replace(DEVROOT_TOKEN, devroot);
             }
-        }
-
-        if (substitutedPath.contains(DB_ROOT_TOKEN)) {
-            final String dbRoot = getStringWithDefault(DB_ROOT_PROPERTY, null);
-            if (dbRoot == null) {
-                throw new IllegalArgumentException("Directory " + substitutedPath + " (original path " + directoryName
-                        + ") contains " + DB_ROOT_TOKEN + " but " + DB_ROOT_PROPERTY + " property is not defined");
-            }
-            substitutedPath = substitutedPath.replace(DB_ROOT_TOKEN, getStringWithDefault(DB_ROOT_PROPERTY, null));
         }
 
         // Now perform the expansion of any linux-like (i.e. ~) path pieces

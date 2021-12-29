@@ -5,7 +5,6 @@
   <title>Deephaven Web API table viewport and updates</title>
   <script src="dh-internal.js" type="text/javascript"></script>
   <script src="dh-core.js" type="text/javascript"></script>
-  <script src="init.js" type="text/javascript"></script>
   <script src="input_tables.js" type="text/javascript"></script>
   <link href="basic.css" rel="stylesheet" type="text/css" />
   <style>
@@ -19,10 +18,10 @@
   </style>
 </head>
 <body>
-<h3>Persistent Query Configurations</h3>
-<ul id="queries">
-
-</ul>
+<p>
+  This sample creates a KeyedArrayBackedMutableTable with two columns, an integer "id" column and a String
+  "data" column. If a new row is added with the same ID that a previous row had, it will replace that row.
+</p>
 <h3 id="input_header">Table Inputs</h3>
 <ul id="inputs">
 </ul>
@@ -36,139 +35,97 @@
 <button id="end">&gt;&gt;</button>
 
 <script>
-
-  var queries = document.getElementById('queries');
-  var configs = Object.create(null);
-
-  var currentTable, currentInputTable;
-  initInputTables();
-
-  function connected() {
-
-    c.addEventListener(dh.Client.EVENT_CONFIG_REMOVED, event => {
-      removeQuery(event.detail);
-    });
-    c.addEventListener(dh.Client.EVENT_CONFIG_UPDATED, event => {
-      removeQuery(event.detail);
-      addQuery(event.detail);
-    });
-    c.addEventListener(dh.Client.EVENT_CONFIG_ADDED, event => {
-      addQuery(event.detail);
-    });
-    function removeQuery(queryInfo) {
-      var old = configs[queryInfo.serial];
-      if (old) {
-        var queryElt = old.elt;
-        queryElt.parentNode.removeChild(queryElt);
-        delete configs[queryInfo.serial];
-      }
-    }
-    function addQuery(queryInfo) {
-      console.log("config added: " + queryInfo.name);
-
-      var queryElt = document.createElement('li');
-      configs[queryInfo.serial] = {info:queryInfo, elt:queryElt};
-      queryElt.innerText = queryInfo.name + ' [' + queryInfo.status + ']';
-      queryElt.classList.add('closed');
-      var open = false;
-      queryElt.onclick = () => {
-        open = !open;
-        queryElt.className = open ? 'open' : 'closed';
-        queryInfo.addEventListener(dh.QueryInfo.EVENT_TABLE_METRICS, event => {
-          if (event.detail.nanos === -1) {
-            console.log(event.detail.type);
-          } else {
-            console.log(`Metrics: ${event.detail.type} in ${event.detail.formatted}`);
-          }
-        });
-      };
-      var tables = newEl('ul');
-      queryElt.appendChild(tables);
-      queryInfo.tables.forEach(t => {
-        const tableElt = newEl('li');
-        tableElt.classList.add('tableItem')
-
-        const label = newEl('label');
-        label.innerHTML = `${t}`;
-        tableElt.appendChild(label);
-
-        const addTable = newEl('button');
-        addTable.innerText = 'Add whole table';
-        addTable.classList.add('btn-add-table');
-        addTable.disabled = true;
-        addTable.onclick = e => {
-          e.stopPropagation();
-          queryInfo.getTable(t).then(table => window.currentInputTable.addTable(table));
-        };
-        tableElt.appendChild(addTable);
-
-        const deleteTable = newEl('button');
-        deleteTable.innerText = 'Delete whole table';
-        deleteTable.classList.add('btn-delete-table');
-        deleteTable.disabled = true;
-        deleteTable.onclick = e => {
-          e.stopPropagation();
-          queryInfo.getTable(t).then(table => window.currentInputTable.deleteTable(table));
-        };
-        tableElt.appendChild(deleteTable);
-
-        tables.appendChild(tableElt);
-        tableElt.firstElementChild.onclick = e => {
-          e.stopPropagation();
-          queryInfo.getTable(t).then(table => openTable(table, tableElt));
-          tables.querySelectorAll('.selected').forEach(elt => {
-            elt.classList.remove('selected');
-          });
-          tableElt.querySelectorAll('button').forEach(btn => {
-            btn.disabled = true
-          });
-          tableElt.classList.add('selected');
-          tables.querySelectorAll('li.tableItem:not(.selected)').forEach(elt => {
-            elt.querySelectorAll('button').forEach(btn => {
-              btn.disabled = false;
-            });
-            elt.classList.remove('selected');
-          });
-        };
-      });
-      queries.appendChild(queryElt);
-    }
-  }
+  var table, inputTable;
+  var connection;
+  var ide;
+  var simplePagingTable = document.getElementById('simplePagingTable');
   var oldTableHandlerCleanup;
   var currentOffset;
-  var simplePagingTable = document.getElementById('simplePagingTable');
-  function openTable(table, tableElt) {
-    if (!table.hasInputTable) {
-      tableElt.title = 'No input table defined';
+  var PAGE_SIZE = 20;
+  (async () => {
+    connection = new dh.IdeConnection(window.location.protocol + "//" + window.location.host);
+
+    var types = await connection.getConsoleTypes();
+    if (types.indexOf("python") !== -1) {
+      ide = await connection.startSession("python");
+
+      await ide.runCode(`
+from deephaven.TableTools import emptyTable
+import jpy
+KeyedArrayBackedMutableTable = jpy.get_type('io.deephaven.engine.table.impl.util.KeyedArrayBackedMutableTable')
+remoteTable = KeyedArrayBackedMutableTable.make(emptyTable(0).updateView('id=0', 'data=""'), 'id')
+    `)
+    } else if (types.indexOf("groovy") !== -1) {
+      ide = await connection.startSession("groovy");
+
+      await ide.runCode(`
+import io.deephaven.engine.table.impl.util.KeyedArrayBackedMutableTable
+remoteTable = KeyedArrayBackedMutableTable.make(emptyTable(0).updateView('id=0', 'data=""'), 'id')
+`)
+    }
+
+    openTable(await ide.getTable('remoteTable'), simplePagingTable);
+
+    document.getElementById('start').onclick = () => {
+      if (currentOffset > 0) {
+        currentOffset = 0;
+        load();
+      }
+    };
+    document.getElementById('prev').onclick = () => {
+      if (currentOffset > 0) {
+        currentOffset = Math.max(currentOffset - PAGE_SIZE, 0);
+        load();
+      }
+    };
+    document.getElementById('next').onclick = () => {
+      if (currentOffset < table.size) {
+        currentOffset = Math.min(currentOffset + PAGE_SIZE, table.size);
+        load();
+      }
+    };
+    document.getElementById('end').onclick = () => {
+      if (currentOffset < table.size) {
+        currentOffset = Math.max(0, table.size - PAGE_SIZE);
+        load();
+      }
+    };
+  })();
+
+  initInputTables();
+
+  function openTable(t, tableElt) {
+    if (!t.hasInputTable) {
+      tableElt.title = 'Specified table is not an input table';
       tableElt.classList.add('disabled');
-      console.log('not an input table: ', table);
+      console.log('not an input table: ', t);
       return;
     }
-    table.inputTable().then(
+    t.inputTable().then(
       it => {
-        currentInputTable = it;
+        inputTable = it;
         for (const el of document.querySelectorAll(`[colName]`)) {
           el.className = 'value';
         }
         for (const key of it.keys) {
           document.querySelector(`[colName=${key}]`).className = 'key';
         }
-        rebuildInputTables(it, table);
+        rebuildInputTables(it, t);
       }
     );
     // correctly disconnect from the old table, if any
     oldTableHandlerCleanup && oldTableHandlerCleanup();
-    currentTable = table;
+    table = t;
     currentOffset = 0;
     //build a simple table in the dom after removing the old one
     while (simplePagingTable.hasChildNodes()) {
       simplePagingTable.removeChild(simplePagingTable.lastChild);
     }
-    var header = newEl('thead');
-    var headerRow = newEl('tr');
-    table.columns.forEach(columnDef => {
+    var header = document.createElement('thead');
+    var headerRow = document.createElement('tr');
+    t.columns.forEach(columnDef => {
       // build a very simple header
-      var td = newEl('td');
+      var td = document.createElement('td');
       td.innerText = columnDef.name;
       td.setAttribute('colName', columnDef.name);
       headerRow.appendChild(td);
@@ -178,7 +135,7 @@
     simplePagingTable.appendChild(header);
 
     // listen for items to be added, populate the table body
-    oldTableHandlerCleanup = table.addEventListener(dh.Table.EVENT_UPDATED, function handleTableUpdate(event) {
+    oldTableHandlerCleanup = t.addEventListener(dh.Table.EVENT_UPDATED, function handleTableUpdate(event) {
       console.log("update event received, time to redraw data");
       // rebuild the current tbody from scratch
       var tbody = simplePagingTable.querySelector('tbody');
@@ -189,10 +146,10 @@
       var rows = viewportData.rows;
       for (var i = 0; i < rows.length; i++) {
         var tr = document.createElement('tr');
-        for (var j = 0; j < table.columns.length; j++) {
-          var td = newEl('td');
-          td.textContent = rows[i].get(table.columns[j]);
-          var format = rows[i].getFormat(table.columns[j]);
+        for (var j = 0; j < t.columns.length; j++) {
+          var td = document.createElement('td');
+          td.textContent = rows[i].get(t.columns[j]);
+          var format = rows[i].getFormat(t.columns[j]);
           td.style.backgroundColor = format.backgroundColor;
           td.style.color = format.color;
           tr.appendChild(td);
@@ -205,33 +162,9 @@
     // load the very first page
     load();
   }
-  var PAGE_SIZE = 20;
-  document.getElementById('start').onclick = () => {
-    if (currentOffset > 0) {
-      currentOffset = 0;
-      load();
-    }
-  };
-  document.getElementById('prev').onclick = () => {
-    if (currentOffset > 0) {
-      currentOffset = Math.max(currentOffset - PAGE_SIZE, 0);
-      load();
-    }
-  };
-  document.getElementById('next').onclick = () => {
-    if (currentOffset < currentTable.size) {
-      currentOffset = Math.min(currentOffset + PAGE_SIZE, currentTable.size);
-      load();
-    }
-  };
-  document.getElementById('end').onclick = () => {
-    if (currentOffset < currentTable.size) {
-      currentOffset = Math.max(0, currentTable.size - PAGE_SIZE);
-      load();
-    }
-  };
+
   function load() {
-    currentTable.setViewport(currentOffset, currentOffset + PAGE_SIZE - 1);
+    table.setViewport(currentOffset, currentOffset + PAGE_SIZE - 1);
   }
 </script>
 </body>

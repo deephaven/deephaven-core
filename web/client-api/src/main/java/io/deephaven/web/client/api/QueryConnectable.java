@@ -10,6 +10,7 @@ import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.ticket_pb.Tic
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.GetConsoleTypesRequest;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.GetConsoleTypesResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.StartConsoleRequest;
+import io.deephaven.web.client.api.barrage.stream.ResponseStreamWrapper;
 import io.deephaven.web.client.fu.CancellablePromise;
 import io.deephaven.web.client.fu.JsLog;
 import io.deephaven.web.client.fu.LazyPromise;
@@ -79,12 +80,18 @@ public abstract class QueryConnectable<Self extends QueryConnectable<Self>> exte
     private boolean connected;
     private boolean closed;
     private boolean hasDisconnected;
+    private boolean notifiedConnectionError = false;
 
     public QueryConnectable(Supplier<Promise<ConnectToken>> authTokenPromiseSupplier) {
         this.connection = JsLazy.of(() -> new WorkerConnection(this, authTokenPromiseSupplier));
     }
 
     public void notifyConnectionError(ResponseStreamWrapper.Status status) {
+        if (notifiedConnectionError) {
+            return;
+        }
+        notifiedConnectionError = true;
+
         CustomEventInit event = CustomEventInit.create();
         event.setDetail(JsPropertyMap.of(
                 "status", status.getCode(),

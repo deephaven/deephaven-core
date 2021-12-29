@@ -1,6 +1,6 @@
 package io.deephaven.benchmarking;
 
-import io.deephaven.db.v2.utils.metrics.MetricsManager;
+import io.deephaven.util.metrics.MetricsManager;
 import org.openjdk.jmh.results.RunResult;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.options.Options;

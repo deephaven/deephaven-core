@@ -1,0 +1,71 @@
+plugins {
+    id 'application'
+}
+
+configurations {
+    js
+}
+
+dependencies {
+    implementation project(':server')
+    implementation project(':application-mode')
+
+    Classpaths.inheritDagger(project)
+    Classpaths.inheritDagger(project, /* test */ true)
+
+    Classpaths.inheritGrpcPlatform(project)
+    implementation('org.eclipse.jetty:jetty-servlet:11.0.7')
+    implementation 'org.eclipse.jetty:jetty-webapp:11.0.7'
+    implementation 'org.eclipse.jetty.http2:http2-server:11.0.7'
+
+//    implementation 'io.grpc:grpc-servlet-jakarta'
+    implementation project(':grpc-java:grpc-servlet-jakarta')
+    implementation project(':grpc-java:grpc-servlet-websocket-jakarta')
+    implementation 'org.eclipse.jetty.websocket:websocket-jakarta-server:11.0.7'
+
+    runtimeOnly project(':log-to-slf4j')
+    runtimeOnly project(':logback-print-stream-globals')
+    runtimeOnly project(':logback-logbuffer')
+    Classpaths.inheritLogbackClassic(project)
+
+    testImplementation project(':server-test')
+
+    runtimeOnly(project(path: ':web', targetConfiguration: 'jsJar'))
+}
+
+test.systemProperty "UpdateGraphProcessor.allowUnitTestMode", false
+
+distributions {
+    main {
+        distributionBaseName = 'server-jetty'
+    }
+}
+
+def extraJvmArgs = []
+if (hasProperty('groovy')) {
+    extraJvmArgs = ['-Ddeephaven.console.type=groovy']
+}
+
+applicationName = 'start'
+mainClassName = 'io.deephaven.server.jetty.JettyMain'
+applicationDefaultJvmArgs = [
+        '-server',
+        '-XX:+UseG1GC',
+        '-XX:MaxGCPauseMillis=100',
+        '-XX:+UseStringDeduplication',
+        '-XshowSettings:vm',
+
+        // Settings based on the cgroup limits:
+        // https://www.oracle.com/java/technologies/javase/8u191-relnotes.html
+        // the initial memory reservation, expressed as a percentage of (todo - is this as a percentage against the JVMs computed maximum, or the system memory?)
+        // Note: this feature works w/ cgroups v1, and not cgroups v2 *yet* (except in java 15+).
+        // Maybe we can request backport: https://bugs.openjdk.java.net/browse/JDK-8230305 ?
+        // https://www.redhat.com/sysadmin/fedora-31-control-group-v2
+        '-XX:InitialRAMPercentage=25.0',
+        // the percentage of system memory that the JVM will use as maximum in low-memory systems
+        '-XX:MinRAMPercentage=70.0',
+        // the percentage of system memory that the JVM will use as maximum
+        '-XX:MaxRAMPercentage=80.0',
+] + extraJvmArgs
+
+apply plugin: 'io.deephaven.java-open-nio'

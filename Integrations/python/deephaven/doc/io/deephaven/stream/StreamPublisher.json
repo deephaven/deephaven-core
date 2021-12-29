@@ -2,7 +2,7 @@
  "className": "io.deephaven.stream.StreamPublisher",
  "methods": {
   "flush": "Flush any accumulated data in this publisher to the consumer, by invoking its\n accept method.",
-  "register": "Register a consumer whose accept method\n will be used when sufficient data is accumulated or on flush().\n\n \nconsumer must typically be primed to expect the same chunk types that this produces, in the same order.\n\n:param consumer: (io.deephaven.stream.StreamConsumer) - The consumer"
+  "register": "Register a consumer whose accept method\n will be used when sufficient data is accumulated or on flush().\n\n \nconsumer must typically be primed to expect the same chunk types\n that this produces, in the same order.\n\n:param consumer: (io.deephaven.stream.StreamConsumer) - The consumer"
  },
  "path": "io.deephaven.stream.StreamPublisher",
  "text": "Chunk-oriented producer for streams of data.",

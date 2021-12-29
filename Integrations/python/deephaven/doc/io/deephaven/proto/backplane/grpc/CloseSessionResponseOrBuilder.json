@@ -1,0 +1,6 @@
+{
+ "className": "io.deephaven.proto.backplane.grpc.CloseSessionResponseOrBuilder",
+ "methods": {},
+ "path": "io.deephaven.proto.backplane.grpc.CloseSessionResponseOrBuilder",
+ "typeName": "interface"
+}

@@ -27,7 +27,6 @@ using io::deephaven::proto::backplane::grpc::FetchTableRequest;
 using io::deephaven::proto::backplane::grpc::HandshakeRequest;
 using io::deephaven::proto::backplane::grpc::HeadOrTailRequest;
 using io::deephaven::proto::backplane::grpc::HeadOrTailByRequest;
-using io::deephaven::proto::backplane::grpc::LeftJoinTablesRequest;
 using io::deephaven::proto::backplane::grpc::MergeTablesRequest;
 using io::deephaven::proto::backplane::grpc::NaturalJoinTablesRequest;
 using io::deephaven::proto::backplane::grpc::SelectOrUpdateRequest;
@@ -54,8 +53,8 @@ std::shared_ptr<Server> Server::createFromTarget(const std::string &target) {
   auto ss = SessionService::NewStub(channel);
   auto ts = TableService::NewStub(channel);
 
+  // TODO(kosak): Warn about this string conversion or do something more general.
   auto flightTarget = "grpc://" + target;
-  streamf(std::cerr, "TODO(kosak): Converting %o to %o for Arrow Flight\n", target, flightTarget);
   arrow::flight::Location location;
   auto rc1 = arrow::flight::Location::Parse(flightTarget, &location);
   if (!rc1.ok()) {
@@ -95,8 +94,8 @@ Server::Server(Private,
 
 Server::~Server() = default;
 
-Ticket Server::newTicket() {
-  auto ticketId = nextFreeTicketId_++;
+namespace {
+Ticket makeNewTicket(int32_t ticketId) {
   constexpr auto ticketSize = sizeof(ticketId);
   static_assert(ticketSize == 4, "Unexpected ticket size");
   char buffer[ticketSize + 1];
@@ -106,7 +105,19 @@ Ticket Server::newTicket() {
   *result.mutable_ticket() = std::string(buffer, sizeof(buffer));
   return result;
 }
+}  // namespace
 
+Ticket Server::newTicket() {
+  auto ticketId = nextFreeTicketId_++;
+  return makeNewTicket(ticketId);
+}
+
+std::tuple<Ticket, arrow::flight::FlightDescriptor> Server::newTicketAndFlightDescriptor() {
+  auto ticketId = nextFreeTicketId_++;
+  auto ticket = makeNewTicket(ticketId);
+  auto fd = arrow::flight::FlightDescriptor::Path({"export", std::to_string(ticketId)});
+  return std::make_tuple(std::move(ticket), std::move(fd));
+}
 
 void Server::setAuthentication(std::string metadataHeader, std::string sessionToken) {
   if (haveAuth_) {
@@ -349,20 +360,6 @@ Ticket Server::exactJoinAsync(Ticket leftTableTicket, Ticket rightTableTicket,
   return result;
 }
 
-Ticket Server::leftJoinAsync(Ticket leftTableTicket, Ticket rightTableTicket,
-    std::vector<std::string> columnsToMatch, std::vector<std::string> columnsToAdd,
-    std::shared_ptr<EtcCallback> etcCallback) {
-  auto result = newTicket();
-  LeftJoinTablesRequest req;
-  *req.mutable_result_id() = result;
-  *req.mutable_left_id()->mutable_ticket() = std::move(leftTableTicket);
-  *req.mutable_right_id()->mutable_ticket() = std::move(rightTableTicket);
-  moveVectorData(std::move(columnsToMatch), req.mutable_columns_to_match());
-  moveVectorData(std::move(columnsToAdd), req.mutable_columns_to_add());
-  sendRpc(req, std::move(etcCallback), tableStub(), &TableService::Stub::AsyncLeftJoinTables, true);
-  return result;
-}
-
 Ticket Server::asOfJoinAsync(AsOfJoinTablesRequest::MatchRule matchRule, Ticket leftTableTicket,
     Ticket rightTableTicket, std::vector<std::string> columnsToMatch,
     std::vector<std::string> columnsToAdd, std::shared_ptr<EtcCallback> etcCallback) {
@@ -400,20 +397,17 @@ void Server::addMetadata(grpc::ClientContext *ctx) {
 }
 
 void Server::processCompletionQueueForever(const std::shared_ptr<Server> &self) {
-  std::cerr << "Completion queue thread waking up\n";
   while (true) {
     if (!self->processNextCompletionQueueItem()) {
       break;
     }
   }
-  std::cerr << "Completion queue thread shutting down\n";
 }
 
 bool Server::processNextCompletionQueueItem() {
   void *tag;
   bool ok;
   auto gotEvent = completionQueue_.Next(&tag, &ok);
-  // streamf(std::cerr, "gotEvent is %o, tag is %o, ok is %o\n", gotEvent, tag, ok);
   if (!gotEvent) {
     return false;
   }

@@ -8,8 +8,6 @@ import io.deephaven.base.verify.Require;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.configuration.PropertyException;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.io.logger.StreamLoggerImpl;
-import io.deephaven.internal.log.LoggerFactory;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -41,13 +39,6 @@ public interface ProcessEnvironment {
      * @return The main class name
      */
     String getMainClassName();
-
-    /**
-     * Access a shared Logger.
-     *
-     * @return The Logger
-     */
-    Logger getLog();
 
     /**
      * Hook for setting up an installation-specific environment for a given process.
@@ -124,32 +115,6 @@ public interface ProcessEnvironment {
 
     static String getGlobalMainClassName() {
         return get().getMainClassName();
-    }
-
-    static Logger getGlobalLog() {
-        return get().getLog();
-    }
-
-    /**
-     * Get the global log if a global process environment has been installed, or else a logger that will output to
-     * {@link System#out}.
-     * 
-     * @return A logger that can safely be used by code that doesn't otherwise have access to one
-     */
-    static Logger getDefaultLog() {
-        final ProcessEnvironment processEnvironment = ProcessEnvironment.tryGet();
-        return processEnvironment != null ? processEnvironment.getLog() : new StreamLoggerImpl();
-    }
-
-    /**
-     * Get the global log if a global process environment has been installed, or else a
-     * {@link LoggerFactory#getLogger(Class)} for the given class.
-     * 
-     * @return A logger that can safely be used by code that doesn't otherwise have access to one
-     */
-    static Logger getDefaultLog(Class<?> clazz) {
-        final ProcessEnvironment processEnvironment = ProcessEnvironment.tryGet();
-        return processEnvironment != null ? processEnvironment.getLog() : LoggerFactory.getLogger(clazz);
     }
 
     /**

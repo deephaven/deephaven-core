@@ -4,14 +4,12 @@ import io.deephaven.lang.completion.ChunkerCompleter;
 import io.deephaven.lang.completion.CompletionRequest;
 import io.deephaven.lang.generated.ChunkerConstants;
 import io.deephaven.lang.generated.Token;
-import io.deephaven.libs.primitives.BytePrimitives;
+import io.deephaven.function.BytePrimitives;
 import io.deephaven.proto.backplane.script.grpc.CompletionItem;
 import io.deephaven.proto.backplane.script.grpc.DocumentRange;
-import io.deephaven.proto.backplane.script.grpc.TextEdit;
 
 import java.lang.reflect.Method;
 import java.util.Collection;
-import java.util.Set;
 
 /**
  * A class specifically for completing invocations; to be called with method results when the cursor is somewhere that a

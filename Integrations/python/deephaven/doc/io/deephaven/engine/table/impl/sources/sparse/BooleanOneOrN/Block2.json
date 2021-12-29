@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.engine.table.impl.sources.sparse.BooleanOneOrN$Block2",
+ "methods": {
+  "ensureIndex": ":param idx: int\n:param recycler: io.deephaven.util.SoftRecycler<boolean[][]>",
+  "get": ":param idx: int\n:return: boolean[]",
+  "maybeRecycle": ":param recycler: io.deephaven.util.SoftRecycler<boolean[][]>",
+  "set": ":param idx: int\n:param value: boolean[]"
+ },
+ "path": "io.deephaven.engine.table.impl.sources.sparse.BooleanOneOrN.Block2",
+ "typeName": "class"
+}

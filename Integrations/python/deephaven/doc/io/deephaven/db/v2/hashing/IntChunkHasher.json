@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.db.v2.hashing.IntChunkHasher",
- "methods": {
-  "hashInitial": "**Incompatible overloads text - text from the first overload:**\n\nCalled for the first (or only) hash value, sets the hash codes in destination corresponding to values.\n\n*Overload 1*  \n  :param value: (java.lang.Object) - the boxed object to hash\n  :return: (int) the hashcode, as if you called the chunked version of this function\n  \n*Overload 2*  \n  :param values: (io.deephaven.db.v2.sources.chunk.Chunk<io.deephaven.db.v2.sources.chunk.Attributes.Values>) - the values to hash\n  :param destination: (io.deephaven.db.v2.sources.chunk.WritableIntChunk<io.deephaven.db.v2.sources.chunk.Attributes.HashCode>) - the chunk to write hash values into",
-  "hashUpdate": "**Incompatible overloads text - text from the first overload:**\n\nCalled for subsequent hash values, updates the hash codes in destination corresponding to values.\n\n*Overload 1*  \n  :param existing: (int) - the existing hashcode\n  :param value: (java.lang.Object) - the boxed object to add to the hash code\n  :return: (int) the hashcode, as if you called the chunked version of this function\n  \n*Overload 2*  \n  :param values: (io.deephaven.db.v2.sources.chunk.Chunk<io.deephaven.db.v2.sources.chunk.Attributes.Values>) - the values to hash\n  :param destination: (io.deephaven.db.v2.sources.chunk.WritableIntChunk<io.deephaven.db.v2.sources.chunk.Attributes.HashCode>) - the chunk to update hash values into"
- },
- "path": "io.deephaven.db.v2.hashing.IntChunkHasher",
- "typeName": "class"
-}

@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.client.impl.PathId",
+ "methods": {
+  "pathId": "Get the path ID.\n\n:return: (io.deephaven.client.impl.PathId) the path ID"
+ },
+ "path": "io.deephaven.client.impl.PathId",
+ "text": "An opaque holder that represents a flight descriptor path.",
+ "typeName": "class"
+}

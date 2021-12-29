@@ -33,7 +33,7 @@ public abstract class FatalErrorReporterBase implements FatalErrorReporter {
 
     @Override
     public final void report(@NotNull final String message, @NotNull final Throwable throwable) {
-        interceptors.forEach(interceptor -> interceptor.intercept(message, throwable));
+        interceptors.forEach(interceptor -> interceptor.intercept(message, throwable, false));
         reportImpl(message, throwable, false);
     }
 
@@ -56,7 +56,7 @@ public abstract class FatalErrorReporterBase implements FatalErrorReporter {
     @Override
     public final void uncaughtException(@NotNull final Thread thread, @NotNull final Throwable throwable) {
         final String message = "Uncaught exception in thread " + thread.getName();
-        interceptors.forEach(interceptor -> interceptor.intercept(message, throwable));
+        interceptors.forEach(interceptor -> interceptor.intercept(message, throwable, true));
         reportImpl(message, throwable, true);
     }
 

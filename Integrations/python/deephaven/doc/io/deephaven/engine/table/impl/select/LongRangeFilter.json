@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.engine.table.impl.select.LongRangeFilter",
+ "methods": {
+  "copy": "Create a copy of this WhereFilter.\n\n:return: (io.deephaven.engine.table.impl.select.LongRangeFilter) an independent copy of this WhereFilter.",
+  "init": "Initialize this select filter given the table definition\n\n:param tableDefinition: (io.deephaven.engine.table.TableDefinition) - the definition of the table that will be filtered",
+  "toString": ":return: java.lang.String"
+ },
+ "path": "io.deephaven.engine.table.impl.select.LongRangeFilter",
+ "typeName": "class"
+}

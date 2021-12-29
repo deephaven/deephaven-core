@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.db.v2.remote.ConstructSnapshot$SnapshotControl",
- "methods": {
-  "snapshotCompletedConsistently": "Determine if a snapshot was consistent according to the clock cycle. Intended to be paired with a\n ConstructSnapshot.UsePreviousValues function.\n \n Can assume as a precondition that the clock step has not been observed to change since the last time the\n associated ConstructSnapshot.UsePreviousValues.usePreviousValues(long) was invoked, and that the clock state has not\n been observed to change if previous values were used. See ConstructSnapshot.clockConsistent(long, long, boolean).\n \n Will be called at most once per snapshot attempt. Will be called for all possibly-successful snapshot\n attempts. May be called after unsuccessful concurrent snapshot attempts.\n\n:param afterClockValue: (long) - The current clock value after the snapshot function was invoked\n:param usedPreviousValues: (boolean) - If previous values were used\n:return: (boolean) Whether the snapshot is provably consistent"
- },
- "path": "io.deephaven.db.v2.remote.ConstructSnapshot.SnapshotControl",
- "text": "Interface used to control snapshot behavior, including previous value usage and consistency testing.",
- "typeName": "interface"
-}

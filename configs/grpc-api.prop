@@ -27,7 +27,7 @@ StringUtils.cacheSize=0
 TrackedFileHandleFactory.maxOpenFiles=1024
 
 Calendar.default=USNYSE
-Calendar.internalPath=<devroot>/configs/calendar
+Calendar.importPath=/default_calendar_imports.txt
 
 Plot.theme.default=LIGHT
 Plot.theme.internalPath=<devroot>/configs/chartthemes

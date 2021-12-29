@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.table.impl.by.StaticChunkedByAggregationStateManager",
+ "methods": {
+  "doRehash": ":param bc: io.deephaven.engine.table.impl.by.StaticChunkedByAggregationStateManager.BuildContext\n:param sourceChunkInsertedHashSlots: io.deephaven.chunk.WritableIntChunk<io.deephaven.engine.rowset.chunkattributes.RowKeys>\n:param insertedHashSlots: io.deephaven.engine.table.impl.sources.IntegerArraySource",
+  "rehashRequired": ":return: boolean"
+ },
+ "path": "io.deephaven.engine.table.impl.by.StaticChunkedByAggregationStateManager",
+ "typeName": "class"
+}

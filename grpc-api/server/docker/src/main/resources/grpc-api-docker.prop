@@ -1,5 +1,0 @@
-includefiles=grpc-api.prop
-
-jpy.jpyLib=/usr/local/lib/python3.7/dist-packages/jpy.cpython-37m-x86_64-linux-gnu.so
-jpy.jdlLib=/usr/local/lib/python3.7/dist-packages/jdl.cpython-37m-x86_64-linux-gnu.so
-jpy.pythonLib=/usr/lib/x86_64-linux-gnu/libpython3.7m.so.1.0

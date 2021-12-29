@@ -3,23 +3,18 @@ package io.deephaven.web.client.api.widget.plot;
 import elemental2.core.JsArray;
 import elemental2.core.JsObject;
 import elemental2.dom.CustomEventInit;
-import elemental2.promise.IThenable;
 import elemental2.promise.Promise;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.FetchFigureResponse;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.FigureDescriptor;
 import io.deephaven.javascript.proto.dhinternal.io.deephaven.proto.console_pb.figuredescriptor.AxisDescriptor;
-import io.deephaven.web.client.api.Callback;
 import io.deephaven.web.client.api.Callbacks;
 import io.deephaven.web.client.api.HasEventHandling;
 import io.deephaven.web.client.api.JsTable;
 import io.deephaven.web.client.api.TableMap;
 import io.deephaven.web.client.api.WorkerConnection;
 import io.deephaven.web.client.fu.JsLog;
-import io.deephaven.web.client.fu.JsPromise;
 import io.deephaven.web.client.fu.LazyPromise;
 import io.deephaven.web.client.state.ClientTableState;
-import io.deephaven.web.shared.data.InitialTableDefinition;
-import io.deephaven.web.shared.data.TableHandle;
 import io.deephaven.web.shared.fu.JsBiConsumer;
 import jsinterop.annotations.JsIgnore;
 import jsinterop.annotations.JsOptional;
@@ -381,7 +376,7 @@ public class JsFigure extends HasEventHandling {
         }
         for (int i = 0; i < s.getSources().length; i++) {
             SeriesDataSource source = s.getSources()[i];
-            if (!source.getColumnType().equals("io.deephaven.db.tables.utils.DBDateTime")) {
+            if (!source.getColumnType().equals("io.deephaven.time.DateTime")) {
                 continue;
             }
             DownsampledAxisDetails downsampledAxisDetails = downsampled.get(source.getAxis().getDescriptor());

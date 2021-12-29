@@ -1,0 +1,9 @@
+plugins {
+    id 'java-library'
+}
+
+description 'Engine StringSet: Data structure support for efficient storage of sets of Strings'
+
+dependencies {
+    api project(':DataStructures')
+}

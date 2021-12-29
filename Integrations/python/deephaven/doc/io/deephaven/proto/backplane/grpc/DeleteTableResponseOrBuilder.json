@@ -1,0 +1,6 @@
+{
+ "className": "io.deephaven.proto.backplane.grpc.DeleteTableResponseOrBuilder",
+ "methods": {},
+ "path": "io.deephaven.proto.backplane.grpc.DeleteTableResponseOrBuilder",
+ "typeName": "interface"
+}

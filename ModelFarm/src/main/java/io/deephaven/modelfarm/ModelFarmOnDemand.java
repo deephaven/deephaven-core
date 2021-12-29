@@ -6,12 +6,12 @@ package io.deephaven.modelfarm;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.configuration.Configuration;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.rowset.RowSet;
+import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
-import io.deephaven.util.process.ProcessEnvironment;
-import io.deephaven.db.tables.live.LiveTableMonitor;
-import io.deephaven.db.v2.DynamicTable;
-import io.deephaven.db.v2.NotificationStepSource;
-import io.deephaven.db.v2.utils.Index;
+import io.deephaven.engine.table.impl.NotificationStepSource;
 import io.deephaven.util.FunctionalInterfaces;
 
 import java.util.ArrayDeque;
@@ -20,7 +20,7 @@ import java.util.Set;
 
 /**
  * A ModelFarm implementation for evaluating a model upon request, retrieving a snapshot of data for all keys under a
- * single {@link LiveTableMonitor} lock.
+ * single {@link UpdateGraphProcessor} lock.
  *
  * @param <KEYTYPE> The type of the keys (e.g. {@link io.deephaven.modelfarm.fitterfarm.FitScope}).
  * @param <DATATYPE> The type of the data (e.g.
@@ -33,9 +33,9 @@ public class ModelFarmOnDemand<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE extends Row
 
     private static final boolean LOG_PERF =
             Configuration.getInstance().getBooleanWithDefault("ModelFarm.logModelFarmOnDemandPerformance", false);
-    private static final Logger log = ProcessEnvironment.getDefaultLog(ModelFarmOnDemand.class);
+    private static final Logger log = LoggerFactory.getLogger(ModelFarmOnDemand.class);
     private static final FunctionalInterfaces.ThrowingBiConsumer<QueryDataRetrievalOperation, NotificationStepSource, RuntimeException> DO_LOCKED_FUNCTION =
-            getDoLockedConsumer(GetDataLockType.LTM_READ_LOCK);
+            getDoLockedConsumer(GetDataLockType.UGP_READ_LOCK);
 
     private static class QueueAndCallback<DATATYPE> {
         private final Queue<DATATYPE> queue;
@@ -69,7 +69,7 @@ public class ModelFarmOnDemand<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE extends Row
 
     /**
      * Submit a request to {@link Model#exec execute} the {@link #model}. Can be called either with or without a
-     * LiveTableMonitor lock -- the decision of whether/how to acquire a lock is left to the
+     * UpdateGraphProcessor lock -- the decision of whether/how to acquire a lock is left to the
      * {@link #DO_LOCKED_FUNCTION}. All keys represented by the data in the {@code dataManager} will be processed.
      *
      * @param dataManager The {@code RowDataManager} that will provide data for the pricing requests.
@@ -83,7 +83,7 @@ public class ModelFarmOnDemand<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE extends Row
 
     /**
      * Submit a request to {@link Model#exec execute} the {@link #model}. Can be called either with or without a
-     * LiveTableMonitor lock -- the decision of whether/how to acquire a lock is left to the
+     * UpdateGraphProcessor lock -- the decision of whether/how to acquire a lock is left to the
      * {@link #DO_LOCKED_FUNCTION}.
      *
      * @param dataManager The {@code RowDataManager} that will provide data for the pricing requests.
@@ -98,21 +98,21 @@ public class ModelFarmOnDemand<KEYTYPE, DATATYPE, ROWDATAMANAGERTYPE extends Row
             return;
         }
 
-        final DynamicTable dataManagerTable = dataManager.table();
+        final Table dataManagerTable = dataManager.table();
 
         final Queue<DATATYPE> dataToEval = new ArrayDeque<>(keys != null ? keys.size() : dataManagerTable.intSize());
         // get data for all keys under the same lock
         DO_LOCKED_FUNCTION.accept((usePrev) -> {
-            final Index index = dataManagerTable.getIndex();
+            final RowSet rowSet = dataManagerTable.getRowSet();
 
-            if (index.empty()) {
+            if (rowSet.isEmpty()) {
                 log.warn().append(ModelFarmOnDemand.class.getSimpleName() + ": ")
                         .append("Table is empty. Nothing to price.").endl();
                 callback.run();
                 return;
             }
 
-            for (Index.Iterator iter = index.iterator(); iter.hasNext();) {
+            for (RowSet.Iterator iter = rowSet.iterator(); iter.hasNext();) {
                 final long idx = iter.nextLong();
 
                 // if a `keys` set was provided, then only enqueue keys in the `dataManager` that are also in the set.

@@ -21,7 +21,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   syntax='proto3',
   serialized_options=b'H\001P\001',
   create_key=_descriptor._internal_create_key,
-  serialized_pb=b'\n\x1b\x64\x65\x65phaven/proto/table.proto\x12!io.deephaven.proto.backplane.grpc\x1a\x1c\x64\x65\x65phaven/proto/ticket.proto\"l\n\x0eTableReference\x12;\n\x06ticket\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.TicketH\x00\x12\x16\n\x0c\x62\x61tch_offset\x18\x02 \x01(\x11H\x00\x42\x05\n\x03ref\"\xc6\x01\n\x1d\x45xportedTableCreationResponse\x12\x44\n\tresult_id\x18\x01 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x12\n\nerror_info\x18\x03 \x01(\t\x12\x15\n\rschema_header\x18\x04 \x01(\x0c\x12\x11\n\tis_static\x18\x05 \x01(\x08\x12\x10\n\x04size\x18\x06 \x01(\x12\x42\x02\x30\x01\"\x97\x01\n\x11\x46\x65tchTableRequest\x12\x44\n\tsource_id\x18\x01 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12<\n\tresult_id\x18\x02 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\"\x9d\x01\n\x17\x46\x65tchPandasTableRequest\x12\x44\n\tsource_id\x18\x01 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12<\n\tresult_id\x18\x02 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\"\x9a\x01\n\x14\x46\x65tchTableMapRequest\x12\x44\n\tsource_id\x18\x01 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12<\n\tresult_id\x18\x02 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\"\x17\n\x15\x46\x65tchTableMapResponse\"\x1d\n\x1b\x45xportedTableUpdatesRequest\"\x8c\x01\n\x1a\x45xportedTableUpdateMessage\x12<\n\texport_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x10\n\x04size\x18\x02 \x01(\x12\x42\x02\x30\x01\x12\x1e\n\x16update_failure_message\x18\x03 \x01(\t\"c\n\x11\x45mptyTableRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x10\n\x04size\x18\x02 \x01(\x12\x42\x02\x30\x01\"\x88\x01\n\x10TimeTableRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x1c\n\x10start_time_nanos\x18\x02 \x01(\x12\x42\x02\x30\x01\x12\x18\n\x0cperiod_nanos\x18\x03 \x01(\x12\x42\x02\x30\x01\"\xb1\x01\n\x15SelectOrUpdateRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x44\n\tsource_id\x18\x02 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12\x14\n\x0c\x63olumn_specs\x18\x03 \x03(\t\"\xb1\x01\n\x15SelectDistinctRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x44\n\tsource_id\x18\x02 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12\x14\n\x0c\x63olumn_names\x18\x03 \x03(\t\"\xae\x01\n\x12\x44ropColumnsRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x44\n\tsource_id\x18\x02 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12\x14\n\x0c\x63olumn_names\x18\x03 \x03(\t\"\xb5\x01\n\x1eUnstructuredFilterTableRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x44\n\tsource_id\x18\x02 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12\x0f\n\x07\x66ilters\x18\x03 \x03(\t\"\xad\x01\n\x11HeadOrTailRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x44\n\tsource_id\x18\x02 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12\x14\n\x08num_rows\x18\x03 \x01(\x12\x42\x02\x30\x01\"\xce\x01\n\x13HeadOrTailByRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x44\n\tsource_id\x18\x02 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12\x14\n\x08num_rows\x18\x03 \x01(\x12\x42\x02\x30\x01\x12\x1d\n\x15group_by_column_specs\x18\x04 \x03(\t\"\xc3\x01\n\x0eUngroupRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x44\n\tsource_id\x18\x02 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12\x11\n\tnull_fill\x18\x03 \x01(\x08\x12\x1a\n\x12\x63olumns_to_ungroup\x18\x04 \x03(\t\"\xad\x01\n\x12MergeTablesRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x45\n\nsource_ids\x18\x02 \x03(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12\x12\n\nkey_column\x18\x03 \x01(\t\"\x91\x02\n\x14SnapshotTableRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x42\n\x07left_id\x18\x02 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12\x43\n\x08right_id\x18\x03 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12\x1b\n\x13\x64o_initial_snapshot\x18\x04 \x01(\x08\x12\x15\n\rstamp_columns\x18\x05 \x03(\t\"\xa7\x02\n\x16\x43rossJoinTablesRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x42\n\x07left_id\x18\x02 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12\x43\n\x08right_id\x18\x03 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12\x18\n\x10\x63olumns_to_match\x18\x04 \x03(\t\x12\x16\n\x0e\x63olumns_to_add\x18\x05 \x03(\t\x12\x14\n\x0creserve_bits\x18\x06 \x01(\x05\"\x93\x02\n\x18NaturalJoinTablesRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x42\n\x07left_id\x18\x02 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12\x43\n\x08right_id\x18\x03 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12\x18\n\x10\x63olumns_to_match\x18\x04 \x03(\t\x12\x16\n\x0e\x63olumns_to_add\x18\x05 \x03(\t\"\x91\x02\n\x16\x45xactJoinTablesRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x42\n\x07left_id\x18\x02 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12\x43\n\x08right_id\x18\x03 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12\x18\n\x10\x63olumns_to_match\x18\x04 \x03(\t\x12\x16\n\x0e\x63olumns_to_add\x18\x05 \x03(\t\"\x90\x02\n\x15LeftJoinTablesRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x42\n\x07left_id\x18\x02 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12\x43\n\x08right_id\x18\x03 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12\x18\n\x10\x63olumns_to_match\x18\x04 \x03(\t\x12\x16\n\x0e\x63olumns_to_add\x18\x05 \x03(\t\"\xc9\x03\n\x15\x41sOfJoinTablesRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x42\n\x07left_id\x18\x02 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12\x43\n\x08right_id\x18\x03 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12\x18\n\x10\x63olumns_to_match\x18\x04 \x03(\t\x12\x16\n\x0e\x63olumns_to_add\x18\x05 \x03(\t\x12\\\n\x10\x61s_of_match_rule\x18\x07 \x01(\x0e\x32\x42.io.deephaven.proto.backplane.grpc.AsOfJoinTablesRequest.MatchRule\"Y\n\tMatchRule\x12\x13\n\x0fLESS_THAN_EQUAL\x10\x00\x12\r\n\tLESS_THAN\x10\x01\x12\x16\n\x12GREATER_THAN_EQUAL\x10\x02\x12\x10\n\x0cGREATER_THAN\x10\x03\"\xfa\x04\n\x15\x43omboAggregateRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x44\n\tsource_id\x18\x02 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12V\n\naggregates\x18\x03 \x03(\x0b\x32\x42.io.deephaven.proto.backplane.grpc.ComboAggregateRequest.Aggregate\x12\x18\n\x10group_by_columns\x18\x04 \x03(\t\x12\x13\n\x0b\x66orce_combo\x18\x05 \x01(\x08\x1a\xad\x01\n\tAggregate\x12N\n\x04type\x18\x01 \x01(\x0e\x32@.io.deephaven.proto.backplane.grpc.ComboAggregateRequest.AggType\x12\x13\n\x0bmatch_pairs\x18\x02 \x03(\t\x12\x13\n\x0b\x63olumn_name\x18\x03 \x01(\t\x12\x12\n\npercentile\x18\x04 \x01(\x01\x12\x12\n\navg_median\x18\x05 \x01(\x08\"\xa5\x01\n\x07\x41ggType\x12\x07\n\x03SUM\x10\x00\x12\x0b\n\x07\x41\x42S_SUM\x10\x01\x12\t\n\x05\x41RRAY\x10\x02\x12\x07\n\x03\x41VG\x10\x03\x12\t\n\x05\x43OUNT\x10\x04\x12\t\n\x05\x46IRST\x10\x05\x12\x08\n\x04LAST\x10\x06\x12\x07\n\x03MIN\x10\x07\x12\x07\n\x03MAX\x10\x08\x12\n\n\x06MEDIAN\x10\t\x12\x0e\n\nPERCENTILE\x10\n\x12\x07\n\x03STD\x10\x0b\x12\x07\n\x03VAR\x10\x0c\x12\x10\n\x0cWEIGHTED_AVG\x10\r\"\xe1\x01\n\x0eSortDescriptor\x12\x13\n\x0b\x63olumn_name\x18\x01 \x01(\t\x12\x13\n\x0bis_absolute\x18\x02 \x01(\x08\x12R\n\tdirection\x18\x03 \x01(\x0e\x32?.io.deephaven.proto.backplane.grpc.SortDescriptor.SortDirection\"Q\n\rSortDirection\x12\x0b\n\x07UNKNOWN\x10\x00\x12\x17\n\nDESCENDING\x10\xff\xff\xff\xff\xff\xff\xff\xff\xff\x01\x12\r\n\tASCENDING\x10\x01\x12\x0b\n\x07REVERSE\x10\x02\"\xd8\x01\n\x10SortTableRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x44\n\tsource_id\x18\x02 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12@\n\x05sorts\x18\x03 \x03(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.SortDescriptor\"\xd7\x01\n\x12\x46ilterTableRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x44\n\tsource_id\x18\x02 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12=\n\x07\x66ilters\x18\x03 \x03(\x0b\x32,.io.deephaven.proto.backplane.grpc.Condition\" \n\tReference\x12\x13\n\x0b\x63olumn_name\x18\x01 \x01(\t\"\x91\x01\n\x07Literal\x12\x16\n\x0cstring_value\x18\x01 \x01(\tH\x00\x12\x16\n\x0c\x64ouble_value\x18\x02 \x01(\x01H\x00\x12\x14\n\nbool_value\x18\x03 \x01(\x08H\x00\x12\x18\n\nlong_value\x18\x04 \x01(\x12\x42\x02\x30\x01H\x00\x12\x1d\n\x0fnano_time_value\x18\x05 \x01(\x12\x42\x02\x30\x01H\x00\x42\x07\n\x05value\"\x91\x01\n\x05Value\x12\x41\n\treference\x18\x01 \x01(\x0b\x32,.io.deephaven.proto.backplane.grpc.ReferenceH\x00\x12=\n\x07literal\x18\x02 \x01(\x0b\x32*.io.deephaven.proto.backplane.grpc.LiteralH\x00\x42\x06\n\x04\x64\x61ta\"\xbc\x05\n\tCondition\x12>\n\x03\x61nd\x18\x01 \x01(\x0b\x32/.io.deephaven.proto.backplane.grpc.AndConditionH\x00\x12<\n\x02or\x18\x02 \x01(\x0b\x32..io.deephaven.proto.backplane.grpc.OrConditionH\x00\x12>\n\x03not\x18\x03 \x01(\x0b\x32/.io.deephaven.proto.backplane.grpc.NotConditionH\x00\x12\x46\n\x07\x63ompare\x18\x04 \x01(\x0b\x32\x33.io.deephaven.proto.backplane.grpc.CompareConditionH\x00\x12<\n\x02in\x18\x05 \x01(\x0b\x32..io.deephaven.proto.backplane.grpc.InConditionH\x00\x12\x44\n\x06invoke\x18\x06 \x01(\x0b\x32\x32.io.deephaven.proto.backplane.grpc.InvokeConditionH\x00\x12\x45\n\x07is_null\x18\x07 \x01(\x0b\x32\x32.io.deephaven.proto.backplane.grpc.IsNullConditionH\x00\x12\x46\n\x07matches\x18\x08 \x01(\x0b\x32\x33.io.deephaven.proto.backplane.grpc.MatchesConditionH\x00\x12H\n\x08\x63ontains\x18\t \x01(\x0b\x32\x34.io.deephaven.proto.backplane.grpc.ContainsConditionH\x00\x12\x44\n\x06search\x18\n \x01(\x0b\x32\x32.io.deephaven.proto.backplane.grpc.SearchConditionH\x00\x42\x06\n\x04\x64\x61ta\"M\n\x0c\x41ndCondition\x12=\n\x07\x66ilters\x18\x01 \x03(\x0b\x32,.io.deephaven.proto.backplane.grpc.Condition\"L\n\x0bOrCondition\x12=\n\x07\x66ilters\x18\x01 \x03(\x0b\x32,.io.deephaven.proto.backplane.grpc.Condition\"L\n\x0cNotCondition\x12<\n\x06\x66ilter\x18\x01 \x01(\x0b\x32,.io.deephaven.proto.backplane.grpc.Condition\"\xac\x03\n\x10\x43ompareCondition\x12W\n\toperation\x18\x01 \x01(\x0e\x32\x44.io.deephaven.proto.backplane.grpc.CompareCondition.CompareOperation\x12L\n\x10\x63\x61se_sensitivity\x18\x02 \x01(\x0e\x32\x32.io.deephaven.proto.backplane.grpc.CaseSensitivity\x12\x35\n\x03lhs\x18\x03 \x01(\x0b\x32(.io.deephaven.proto.backplane.grpc.Value\x12\x35\n\x03rhs\x18\x04 \x01(\x0b\x32(.io.deephaven.proto.backplane.grpc.Value\"\x82\x01\n\x10\x43ompareOperation\x12\r\n\tLESS_THAN\x10\x00\x12\x16\n\x12LESS_THAN_OR_EQUAL\x10\x01\x12\x10\n\x0cGREATER_THAN\x10\x02\x12\x19\n\x15GREATER_THAN_OR_EQUAL\x10\x03\x12\n\n\x06\x45QUALS\x10\x04\x12\x0e\n\nNOT_EQUALS\x10\x05\"\x95\x02\n\x0bInCondition\x12\x38\n\x06target\x18\x01 \x01(\x0b\x32(.io.deephaven.proto.backplane.grpc.Value\x12<\n\ncandidates\x18\x02 \x03(\x0b\x32(.io.deephaven.proto.backplane.grpc.Value\x12L\n\x10\x63\x61se_sensitivity\x18\x03 \x01(\x0e\x32\x32.io.deephaven.proto.backplane.grpc.CaseSensitivity\x12@\n\nmatch_type\x18\x04 \x01(\x0e\x32,.io.deephaven.proto.backplane.grpc.MatchType\"\x98\x01\n\x0fInvokeCondition\x12\x0e\n\x06method\x18\x01 \x01(\t\x12\x38\n\x06target\x18\x02 \x01(\x0b\x32(.io.deephaven.proto.backplane.grpc.Value\x12;\n\targuments\x18\x03 \x03(\x0b\x32(.io.deephaven.proto.backplane.grpc.Value\"R\n\x0fIsNullCondition\x12?\n\treference\x18\x01 \x01(\x0b\x32,.io.deephaven.proto.backplane.grpc.Reference\"\xf2\x01\n\x10MatchesCondition\x12?\n\treference\x18\x01 \x01(\x0b\x32,.io.deephaven.proto.backplane.grpc.Reference\x12\r\n\x05regex\x18\x02 \x01(\t\x12L\n\x10\x63\x61se_sensitivity\x18\x03 \x01(\x0e\x32\x32.io.deephaven.proto.backplane.grpc.CaseSensitivity\x12@\n\nmatch_type\x18\x04 \x01(\x0e\x32,.io.deephaven.proto.backplane.grpc.MatchType\"\xfb\x01\n\x11\x43ontainsCondition\x12?\n\treference\x18\x01 \x01(\x0b\x32,.io.deephaven.proto.backplane.grpc.Reference\x12\x15\n\rsearch_string\x18\x02 \x01(\t\x12L\n\x10\x63\x61se_sensitivity\x18\x03 \x01(\x0e\x32\x32.io.deephaven.proto.backplane.grpc.CaseSensitivity\x12@\n\nmatch_type\x18\x04 \x01(\x0e\x32,.io.deephaven.proto.backplane.grpc.MatchType\"s\n\x0fSearchCondition\x12\x15\n\rsearch_string\x18\x01 \x01(\t\x12I\n\x13optional_references\x18\x02 \x03(\x0b\x32,.io.deephaven.proto.backplane.grpc.Reference\"\x94\x01\n\x0e\x46lattenRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x44\n\tsource_id\x18\x02 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\"\xb4\x03\n\x19RunChartDownsampleRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x44\n\tsource_id\x18\x02 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12\x13\n\x0bpixel_count\x18\x03 \x01(\x05\x12Z\n\nzoom_range\x18\x04 \x01(\x0b\x32\x46.io.deephaven.proto.backplane.grpc.RunChartDownsampleRequest.ZoomRange\x12\x15\n\rx_column_name\x18\x05 \x01(\t\x12\x16\n\x0ey_column_names\x18\x06 \x03(\t\x1as\n\tZoomRange\x12\x1f\n\x0emin_date_nanos\x18\x01 \x01(\x03\x42\x02\x30\x01H\x00\x88\x01\x01\x12\x1f\n\x0emax_date_nanos\x18\x02 \x01(\x03\x42\x02\x30\x01H\x01\x88\x01\x01\x42\x11\n\x0f_min_date_nanosB\x11\n\x0f_max_date_nanos\"\xd7\x12\n\x11\x42\x61tchTableRequest\x12K\n\x03ops\x18\x01 \x03(\x0b\x32>.io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation\x1a\xf4\x11\n\tOperation\x12K\n\x0b\x65mpty_table\x18\x01 \x01(\x0b\x32\x34.io.deephaven.proto.backplane.grpc.EmptyTableRequestH\x00\x12I\n\ntime_table\x18\x02 \x01(\x0b\x32\x33.io.deephaven.proto.backplane.grpc.TimeTableRequestH\x00\x12M\n\x0c\x64rop_columns\x18\x03 \x01(\x0b\x32\x35.io.deephaven.proto.backplane.grpc.DropColumnsRequestH\x00\x12J\n\x06update\x18\x04 \x01(\x0b\x32\x38.io.deephaven.proto.backplane.grpc.SelectOrUpdateRequestH\x00\x12O\n\x0blazy_update\x18\x05 \x01(\x0b\x32\x38.io.deephaven.proto.backplane.grpc.SelectOrUpdateRequestH\x00\x12H\n\x04view\x18\x06 \x01(\x0b\x32\x38.io.deephaven.proto.backplane.grpc.SelectOrUpdateRequestH\x00\x12O\n\x0bupdate_view\x18\x07 \x01(\x0b\x32\x38.io.deephaven.proto.backplane.grpc.SelectOrUpdateRequestH\x00\x12J\n\x06select\x18\x08 \x01(\x0b\x32\x38.io.deephaven.proto.backplane.grpc.SelectOrUpdateRequestH\x00\x12S\n\x0fselect_distinct\x18\t \x01(\x0b\x32\x38.io.deephaven.proto.backplane.grpc.SelectDistinctRequestH\x00\x12G\n\x06\x66ilter\x18\n \x01(\x0b\x32\x35.io.deephaven.proto.backplane.grpc.FilterTableRequestH\x00\x12`\n\x13unstructured_filter\x18\x0b \x01(\x0b\x32\x41.io.deephaven.proto.backplane.grpc.UnstructuredFilterTableRequestH\x00\x12\x43\n\x04sort\x18\x0c \x01(\x0b\x32\x33.io.deephaven.proto.backplane.grpc.SortTableRequestH\x00\x12\x44\n\x04head\x18\r \x01(\x0b\x32\x34.io.deephaven.proto.backplane.grpc.HeadOrTailRequestH\x00\x12\x44\n\x04tail\x18\x0e \x01(\x0b\x32\x34.io.deephaven.proto.backplane.grpc.HeadOrTailRequestH\x00\x12I\n\x07head_by\x18\x0f \x01(\x0b\x32\x36.io.deephaven.proto.backplane.grpc.HeadOrTailByRequestH\x00\x12I\n\x07tail_by\x18\x10 \x01(\x0b\x32\x36.io.deephaven.proto.backplane.grpc.HeadOrTailByRequestH\x00\x12\x44\n\x07ungroup\x18\x11 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.UngroupRequestH\x00\x12\x46\n\x05merge\x18\x12 \x01(\x0b\x32\x35.io.deephaven.proto.backplane.grpc.MergeTablesRequestH\x00\x12S\n\x0f\x63ombo_aggregate\x18\x13 \x01(\x0b\x32\x38.io.deephaven.proto.backplane.grpc.ComboAggregateRequestH\x00\x12K\n\x08snapshot\x18\x14 \x01(\x0b\x32\x37.io.deephaven.proto.backplane.grpc.SnapshotTableRequestH\x00\x12\x44\n\x07\x66latten\x18\x15 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.FlattenRequestH\x00\x12\\\n\x14run_chart_downsample\x18\x16 \x01(\x0b\x32<.io.deephaven.proto.backplane.grpc.RunChartDownsampleRequestH\x00\x12O\n\ncross_join\x18\x17 \x01(\x0b\x32\x39.io.deephaven.proto.backplane.grpc.CrossJoinTablesRequestH\x00\x12S\n\x0cnatural_join\x18\x18 \x01(\x0b\x32;.io.deephaven.proto.backplane.grpc.NaturalJoinTablesRequestH\x00\x12O\n\nexact_join\x18\x19 \x01(\x0b\x32\x39.io.deephaven.proto.backplane.grpc.ExactJoinTablesRequestH\x00\x12M\n\tleft_join\x18\x1a \x01(\x0b\x32\x38.io.deephaven.proto.backplane.grpc.LeftJoinTablesRequestH\x00\x12N\n\nas_of_join\x18\x1b \x01(\x0b\x32\x38.io.deephaven.proto.backplane.grpc.AsOfJoinTablesRequestH\x00\x12K\n\x0b\x66\x65tch_table\x18\x1c \x01(\x0b\x32\x34.io.deephaven.proto.backplane.grpc.FetchTableRequestH\x00\x12X\n\x12\x66\x65tch_pandas_table\x18\x1d \x01(\x0b\x32:.io.deephaven.proto.backplane.grpc.FetchPandasTableRequestH\x00\x42\x04\n\x02op*2\n\x0f\x43\x61seSensitivity\x12\x0e\n\nMATCH_CASE\x10\x00\x12\x0f\n\x0bIGNORE_CASE\x10\x01*&\n\tMatchType\x12\x0b\n\x07REGULAR\x10\x00\x12\x0c\n\x08INVERTED\x10\x01\x32\xa5$\n\x0cTableService\x12\x91\x01\n GetExportedTableCreationResponse\x12).io.deephaven.proto.backplane.grpc.Ticket\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x86\x01\n\nFetchTable\x12\x34.io.deephaven.proto.backplane.grpc.FetchTableRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x92\x01\n\x10\x46\x65tchPandasTable\x12:.io.deephaven.proto.backplane.grpc.FetchPandasTableRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x84\x01\n\rFetchTableMap\x12\x37.io.deephaven.proto.backplane.grpc.FetchTableMapRequest\x1a\x38.io.deephaven.proto.backplane.grpc.FetchTableMapResponse\"\x00\x12\x86\x01\n\nEmptyTable\x12\x34.io.deephaven.proto.backplane.grpc.EmptyTableRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x84\x01\n\tTimeTable\x12\x33.io.deephaven.proto.backplane.grpc.TimeTableRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x88\x01\n\x0b\x44ropColumns\x12\x35.io.deephaven.proto.backplane.grpc.DropColumnsRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x86\x01\n\x06Update\x12\x38.io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x8a\x01\n\nLazyUpdate\x12\x38.io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x84\x01\n\x04View\x12\x38.io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x8a\x01\n\nUpdateView\x12\x38.io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x86\x01\n\x06Select\x12\x38.io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x8e\x01\n\x0eSelectDistinct\x12\x38.io.deephaven.proto.backplane.grpc.SelectDistinctRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x83\x01\n\x06\x46ilter\x12\x35.io.deephaven.proto.backplane.grpc.FilterTableRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x9b\x01\n\x12UnstructuredFilter\x12\x41.io.deephaven.proto.backplane.grpc.UnstructuredFilterTableRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x7f\n\x04Sort\x12\x33.io.deephaven.proto.backplane.grpc.SortTableRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x80\x01\n\x04Head\x12\x34.io.deephaven.proto.backplane.grpc.HeadOrTailRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x80\x01\n\x04Tail\x12\x34.io.deephaven.proto.backplane.grpc.HeadOrTailRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x84\x01\n\x06HeadBy\x12\x36.io.deephaven.proto.backplane.grpc.HeadOrTailByRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x84\x01\n\x06TailBy\x12\x36.io.deephaven.proto.backplane.grpc.HeadOrTailByRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x80\x01\n\x07Ungroup\x12\x31.io.deephaven.proto.backplane.grpc.UngroupRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x88\x01\n\x0bMergeTables\x12\x35.io.deephaven.proto.backplane.grpc.MergeTablesRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x90\x01\n\x0f\x43rossJoinTables\x12\x39.io.deephaven.proto.backplane.grpc.CrossJoinTablesRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x94\x01\n\x11NaturalJoinTables\x12;.io.deephaven.proto.backplane.grpc.NaturalJoinTablesRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x90\x01\n\x0f\x45xactJoinTables\x12\x39.io.deephaven.proto.backplane.grpc.ExactJoinTablesRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x8e\x01\n\x0eLeftJoinTables\x12\x38.io.deephaven.proto.backplane.grpc.LeftJoinTablesRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x8e\x01\n\x0e\x41sOfJoinTables\x12\x38.io.deephaven.proto.backplane.grpc.AsOfJoinTablesRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x8e\x01\n\x0e\x43omboAggregate\x12\x38.io.deephaven.proto.backplane.grpc.ComboAggregateRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x87\x01\n\x08Snapshot\x12\x37.io.deephaven.proto.backplane.grpc.SnapshotTableRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x80\x01\n\x07\x46latten\x12\x31.io.deephaven.proto.backplane.grpc.FlattenRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x96\x01\n\x12RunChartDownsample\x12<.io.deephaven.proto.backplane.grpc.RunChartDownsampleRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x83\x01\n\x05\x42\x61tch\x12\x34.io.deephaven.proto.backplane.grpc.BatchTableRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x30\x01\x12\x99\x01\n\x14\x45xportedTableUpdates\x12>.io.deephaven.proto.backplane.grpc.ExportedTableUpdatesRequest\x1a=.io.deephaven.proto.backplane.grpc.ExportedTableUpdateMessage\"\x00\x30\x01\x42\x04H\x01P\x01\x62\x06proto3'
+  serialized_pb=b'\n\x1b\x64\x65\x65phaven/proto/table.proto\x12!io.deephaven.proto.backplane.grpc\x1a\x1c\x64\x65\x65phaven/proto/ticket.proto\"l\n\x0eTableReference\x12;\n\x06ticket\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.TicketH\x00\x12\x16\n\x0c\x62\x61tch_offset\x18\x02 \x01(\x11H\x00\x42\x05\n\x03ref\"\xc6\x01\n\x1d\x45xportedTableCreationResponse\x12\x44\n\tresult_id\x18\x01 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12\x0f\n\x07success\x18\x02 \x01(\x08\x12\x12\n\nerror_info\x18\x03 \x01(\t\x12\x15\n\rschema_header\x18\x04 \x01(\x0c\x12\x11\n\tis_static\x18\x05 \x01(\x08\x12\x10\n\x04size\x18\x06 \x01(\x12\x42\x02\x30\x01\"\x97\x01\n\x11\x46\x65tchTableRequest\x12\x44\n\tsource_id\x18\x01 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12<\n\tresult_id\x18\x02 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\"\xa0\x01\n\x1a\x41pplyPreviewColumnsRequest\x12\x44\n\tsource_id\x18\x01 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12<\n\tresult_id\x18\x02 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\"\x9d\x01\n\x17\x46\x65tchPandasTableRequest\x12\x44\n\tsource_id\x18\x01 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12<\n\tresult_id\x18\x02 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\"\x9a\x01\n\x14\x46\x65tchTableMapRequest\x12\x44\n\tsource_id\x18\x01 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12<\n\tresult_id\x18\x02 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\"\x17\n\x15\x46\x65tchTableMapResponse\"\x1d\n\x1b\x45xportedTableUpdatesRequest\"\x8c\x01\n\x1a\x45xportedTableUpdateMessage\x12<\n\texport_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x10\n\x04size\x18\x02 \x01(\x12\x42\x02\x30\x01\x12\x1e\n\x16update_failure_message\x18\x03 \x01(\t\"c\n\x11\x45mptyTableRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x10\n\x04size\x18\x02 \x01(\x12\x42\x02\x30\x01\"\x88\x01\n\x10TimeTableRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x1c\n\x10start_time_nanos\x18\x02 \x01(\x12\x42\x02\x30\x01\x12\x18\n\x0cperiod_nanos\x18\x03 \x01(\x12\x42\x02\x30\x01\"\xb1\x01\n\x15SelectOrUpdateRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x44\n\tsource_id\x18\x02 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12\x14\n\x0c\x63olumn_specs\x18\x03 \x03(\t\"\xb1\x01\n\x15SelectDistinctRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x44\n\tsource_id\x18\x02 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12\x14\n\x0c\x63olumn_names\x18\x03 \x03(\t\"\xae\x01\n\x12\x44ropColumnsRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x44\n\tsource_id\x18\x02 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12\x14\n\x0c\x63olumn_names\x18\x03 \x03(\t\"\xb5\x01\n\x1eUnstructuredFilterTableRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x44\n\tsource_id\x18\x02 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12\x0f\n\x07\x66ilters\x18\x03 \x03(\t\"\xad\x01\n\x11HeadOrTailRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x44\n\tsource_id\x18\x02 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12\x14\n\x08num_rows\x18\x03 \x01(\x12\x42\x02\x30\x01\"\xce\x01\n\x13HeadOrTailByRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x44\n\tsource_id\x18\x02 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12\x14\n\x08num_rows\x18\x03 \x01(\x12\x42\x02\x30\x01\x12\x1d\n\x15group_by_column_specs\x18\x04 \x03(\t\"\xc3\x01\n\x0eUngroupRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x44\n\tsource_id\x18\x02 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12\x11\n\tnull_fill\x18\x03 \x01(\x08\x12\x1a\n\x12\x63olumns_to_ungroup\x18\x04 \x03(\t\"\xad\x01\n\x12MergeTablesRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x45\n\nsource_ids\x18\x02 \x03(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12\x12\n\nkey_column\x18\x03 \x01(\t\"\x91\x02\n\x14SnapshotTableRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x42\n\x07left_id\x18\x02 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12\x43\n\x08right_id\x18\x03 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12\x1b\n\x13\x64o_initial_snapshot\x18\x04 \x01(\x08\x12\x15\n\rstamp_columns\x18\x05 \x03(\t\"\xa7\x02\n\x16\x43rossJoinTablesRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x42\n\x07left_id\x18\x02 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12\x43\n\x08right_id\x18\x03 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12\x18\n\x10\x63olumns_to_match\x18\x04 \x03(\t\x12\x16\n\x0e\x63olumns_to_add\x18\x05 \x03(\t\x12\x14\n\x0creserve_bits\x18\x06 \x01(\x05\"\x93\x02\n\x18NaturalJoinTablesRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x42\n\x07left_id\x18\x02 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12\x43\n\x08right_id\x18\x03 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12\x18\n\x10\x63olumns_to_match\x18\x04 \x03(\t\x12\x16\n\x0e\x63olumns_to_add\x18\x05 \x03(\t\"\x91\x02\n\x16\x45xactJoinTablesRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x42\n\x07left_id\x18\x02 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12\x43\n\x08right_id\x18\x03 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12\x18\n\x10\x63olumns_to_match\x18\x04 \x03(\t\x12\x16\n\x0e\x63olumns_to_add\x18\x05 \x03(\t\"\x90\x02\n\x15LeftJoinTablesRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x42\n\x07left_id\x18\x02 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12\x43\n\x08right_id\x18\x03 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12\x18\n\x10\x63olumns_to_match\x18\x04 \x03(\t\x12\x16\n\x0e\x63olumns_to_add\x18\x05 \x03(\t\"\xc9\x03\n\x15\x41sOfJoinTablesRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x42\n\x07left_id\x18\x02 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12\x43\n\x08right_id\x18\x03 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12\x18\n\x10\x63olumns_to_match\x18\x04 \x03(\t\x12\x16\n\x0e\x63olumns_to_add\x18\x05 \x03(\t\x12\\\n\x10\x61s_of_match_rule\x18\x07 \x01(\x0e\x32\x42.io.deephaven.proto.backplane.grpc.AsOfJoinTablesRequest.MatchRule\"Y\n\tMatchRule\x12\x13\n\x0fLESS_THAN_EQUAL\x10\x00\x12\r\n\tLESS_THAN\x10\x01\x12\x16\n\x12GREATER_THAN_EQUAL\x10\x02\x12\x10\n\x0cGREATER_THAN\x10\x03\"\xfa\x04\n\x15\x43omboAggregateRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x44\n\tsource_id\x18\x02 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12V\n\naggregates\x18\x03 \x03(\x0b\x32\x42.io.deephaven.proto.backplane.grpc.ComboAggregateRequest.Aggregate\x12\x18\n\x10group_by_columns\x18\x04 \x03(\t\x12\x13\n\x0b\x66orce_combo\x18\x05 \x01(\x08\x1a\xad\x01\n\tAggregate\x12N\n\x04type\x18\x01 \x01(\x0e\x32@.io.deephaven.proto.backplane.grpc.ComboAggregateRequest.AggType\x12\x13\n\x0bmatch_pairs\x18\x02 \x03(\t\x12\x13\n\x0b\x63olumn_name\x18\x03 \x01(\t\x12\x12\n\npercentile\x18\x04 \x01(\x01\x12\x12\n\navg_median\x18\x05 \x01(\x08\"\xa5\x01\n\x07\x41ggType\x12\x07\n\x03SUM\x10\x00\x12\x0b\n\x07\x41\x42S_SUM\x10\x01\x12\t\n\x05GROUP\x10\x02\x12\x07\n\x03\x41VG\x10\x03\x12\t\n\x05\x43OUNT\x10\x04\x12\t\n\x05\x46IRST\x10\x05\x12\x08\n\x04LAST\x10\x06\x12\x07\n\x03MIN\x10\x07\x12\x07\n\x03MAX\x10\x08\x12\n\n\x06MEDIAN\x10\t\x12\x0e\n\nPERCENTILE\x10\n\x12\x07\n\x03STD\x10\x0b\x12\x07\n\x03VAR\x10\x0c\x12\x10\n\x0cWEIGHTED_AVG\x10\r\"\xe1\x01\n\x0eSortDescriptor\x12\x13\n\x0b\x63olumn_name\x18\x01 \x01(\t\x12\x13\n\x0bis_absolute\x18\x02 \x01(\x08\x12R\n\tdirection\x18\x03 \x01(\x0e\x32?.io.deephaven.proto.backplane.grpc.SortDescriptor.SortDirection\"Q\n\rSortDirection\x12\x0b\n\x07UNKNOWN\x10\x00\x12\x17\n\nDESCENDING\x10\xff\xff\xff\xff\xff\xff\xff\xff\xff\x01\x12\r\n\tASCENDING\x10\x01\x12\x0b\n\x07REVERSE\x10\x02\"\xd8\x01\n\x10SortTableRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x44\n\tsource_id\x18\x02 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12@\n\x05sorts\x18\x03 \x03(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.SortDescriptor\"\xd7\x01\n\x12\x46ilterTableRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x44\n\tsource_id\x18\x02 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12=\n\x07\x66ilters\x18\x03 \x03(\x0b\x32,.io.deephaven.proto.backplane.grpc.Condition\" \n\tReference\x12\x13\n\x0b\x63olumn_name\x18\x01 \x01(\t\"\x91\x01\n\x07Literal\x12\x16\n\x0cstring_value\x18\x01 \x01(\tH\x00\x12\x16\n\x0c\x64ouble_value\x18\x02 \x01(\x01H\x00\x12\x14\n\nbool_value\x18\x03 \x01(\x08H\x00\x12\x18\n\nlong_value\x18\x04 \x01(\x12\x42\x02\x30\x01H\x00\x12\x1d\n\x0fnano_time_value\x18\x05 \x01(\x12\x42\x02\x30\x01H\x00\x42\x07\n\x05value\"\x91\x01\n\x05Value\x12\x41\n\treference\x18\x01 \x01(\x0b\x32,.io.deephaven.proto.backplane.grpc.ReferenceH\x00\x12=\n\x07literal\x18\x02 \x01(\x0b\x32*.io.deephaven.proto.backplane.grpc.LiteralH\x00\x42\x06\n\x04\x64\x61ta\"\xbc\x05\n\tCondition\x12>\n\x03\x61nd\x18\x01 \x01(\x0b\x32/.io.deephaven.proto.backplane.grpc.AndConditionH\x00\x12<\n\x02or\x18\x02 \x01(\x0b\x32..io.deephaven.proto.backplane.grpc.OrConditionH\x00\x12>\n\x03not\x18\x03 \x01(\x0b\x32/.io.deephaven.proto.backplane.grpc.NotConditionH\x00\x12\x46\n\x07\x63ompare\x18\x04 \x01(\x0b\x32\x33.io.deephaven.proto.backplane.grpc.CompareConditionH\x00\x12<\n\x02in\x18\x05 \x01(\x0b\x32..io.deephaven.proto.backplane.grpc.InConditionH\x00\x12\x44\n\x06invoke\x18\x06 \x01(\x0b\x32\x32.io.deephaven.proto.backplane.grpc.InvokeConditionH\x00\x12\x45\n\x07is_null\x18\x07 \x01(\x0b\x32\x32.io.deephaven.proto.backplane.grpc.IsNullConditionH\x00\x12\x46\n\x07matches\x18\x08 \x01(\x0b\x32\x33.io.deephaven.proto.backplane.grpc.MatchesConditionH\x00\x12H\n\x08\x63ontains\x18\t \x01(\x0b\x32\x34.io.deephaven.proto.backplane.grpc.ContainsConditionH\x00\x12\x44\n\x06search\x18\n \x01(\x0b\x32\x32.io.deephaven.proto.backplane.grpc.SearchConditionH\x00\x42\x06\n\x04\x64\x61ta\"M\n\x0c\x41ndCondition\x12=\n\x07\x66ilters\x18\x01 \x03(\x0b\x32,.io.deephaven.proto.backplane.grpc.Condition\"L\n\x0bOrCondition\x12=\n\x07\x66ilters\x18\x01 \x03(\x0b\x32,.io.deephaven.proto.backplane.grpc.Condition\"L\n\x0cNotCondition\x12<\n\x06\x66ilter\x18\x01 \x01(\x0b\x32,.io.deephaven.proto.backplane.grpc.Condition\"\xac\x03\n\x10\x43ompareCondition\x12W\n\toperation\x18\x01 \x01(\x0e\x32\x44.io.deephaven.proto.backplane.grpc.CompareCondition.CompareOperation\x12L\n\x10\x63\x61se_sensitivity\x18\x02 \x01(\x0e\x32\x32.io.deephaven.proto.backplane.grpc.CaseSensitivity\x12\x35\n\x03lhs\x18\x03 \x01(\x0b\x32(.io.deephaven.proto.backplane.grpc.Value\x12\x35\n\x03rhs\x18\x04 \x01(\x0b\x32(.io.deephaven.proto.backplane.grpc.Value\"\x82\x01\n\x10\x43ompareOperation\x12\r\n\tLESS_THAN\x10\x00\x12\x16\n\x12LESS_THAN_OR_EQUAL\x10\x01\x12\x10\n\x0cGREATER_THAN\x10\x02\x12\x19\n\x15GREATER_THAN_OR_EQUAL\x10\x03\x12\n\n\x06\x45QUALS\x10\x04\x12\x0e\n\nNOT_EQUALS\x10\x05\"\x95\x02\n\x0bInCondition\x12\x38\n\x06target\x18\x01 \x01(\x0b\x32(.io.deephaven.proto.backplane.grpc.Value\x12<\n\ncandidates\x18\x02 \x03(\x0b\x32(.io.deephaven.proto.backplane.grpc.Value\x12L\n\x10\x63\x61se_sensitivity\x18\x03 \x01(\x0e\x32\x32.io.deephaven.proto.backplane.grpc.CaseSensitivity\x12@\n\nmatch_type\x18\x04 \x01(\x0e\x32,.io.deephaven.proto.backplane.grpc.MatchType\"\x98\x01\n\x0fInvokeCondition\x12\x0e\n\x06method\x18\x01 \x01(\t\x12\x38\n\x06target\x18\x02 \x01(\x0b\x32(.io.deephaven.proto.backplane.grpc.Value\x12;\n\targuments\x18\x03 \x03(\x0b\x32(.io.deephaven.proto.backplane.grpc.Value\"R\n\x0fIsNullCondition\x12?\n\treference\x18\x01 \x01(\x0b\x32,.io.deephaven.proto.backplane.grpc.Reference\"\xf2\x01\n\x10MatchesCondition\x12?\n\treference\x18\x01 \x01(\x0b\x32,.io.deephaven.proto.backplane.grpc.Reference\x12\r\n\x05regex\x18\x02 \x01(\t\x12L\n\x10\x63\x61se_sensitivity\x18\x03 \x01(\x0e\x32\x32.io.deephaven.proto.backplane.grpc.CaseSensitivity\x12@\n\nmatch_type\x18\x04 \x01(\x0e\x32,.io.deephaven.proto.backplane.grpc.MatchType\"\xfb\x01\n\x11\x43ontainsCondition\x12?\n\treference\x18\x01 \x01(\x0b\x32,.io.deephaven.proto.backplane.grpc.Reference\x12\x15\n\rsearch_string\x18\x02 \x01(\t\x12L\n\x10\x63\x61se_sensitivity\x18\x03 \x01(\x0e\x32\x32.io.deephaven.proto.backplane.grpc.CaseSensitivity\x12@\n\nmatch_type\x18\x04 \x01(\x0e\x32,.io.deephaven.proto.backplane.grpc.MatchType\"s\n\x0fSearchCondition\x12\x15\n\rsearch_string\x18\x01 \x01(\t\x12I\n\x13optional_references\x18\x02 \x03(\x0b\x32,.io.deephaven.proto.backplane.grpc.Reference\"\x94\x01\n\x0e\x46lattenRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x44\n\tsource_id\x18\x02 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\"\xb4\x03\n\x19RunChartDownsampleRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12\x44\n\tsource_id\x18\x02 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReference\x12\x13\n\x0bpixel_count\x18\x03 \x01(\x05\x12Z\n\nzoom_range\x18\x04 \x01(\x0b\x32\x46.io.deephaven.proto.backplane.grpc.RunChartDownsampleRequest.ZoomRange\x12\x15\n\rx_column_name\x18\x05 \x01(\t\x12\x16\n\x0ey_column_names\x18\x06 \x03(\t\x1as\n\tZoomRange\x12\x1f\n\x0emin_date_nanos\x18\x01 \x01(\x03\x42\x02\x30\x01H\x00\x88\x01\x01\x12\x1f\n\x0emax_date_nanos\x18\x02 \x01(\x03\x42\x02\x30\x01H\x01\x88\x01\x01\x42\x11\n\x0f_min_date_nanosB\x11\n\x0f_max_date_nanos\"\xf5\x04\n\x17\x43reateInputTableRequest\x12<\n\tresult_id\x18\x01 \x01(\x0b\x32).io.deephaven.proto.backplane.grpc.Ticket\x12L\n\x0fsource_table_id\x18\x02 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.TableReferenceH\x00\x12\x10\n\x06schema\x18\x03 \x01(\x0cH\x00\x12W\n\x04kind\x18\x04 \x01(\x0b\x32I.io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind\x1a\xd4\x02\n\x0eInputTableKind\x12}\n\x15in_memory_append_only\x18\x01 \x01(\x0b\x32\\.io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryAppendOnlyH\x00\x12{\n\x14in_memory_key_backed\x18\x02 \x01(\x0b\x32[.io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryKeyBackedH\x00\x1a\x14\n\x12InMemoryAppendOnly\x1a(\n\x11InMemoryKeyBacked\x12\x13\n\x0bkey_columns\x18\x01 \x03(\tB\x06\n\x04kindB\x0c\n\ndefinition\"\x91\x14\n\x11\x42\x61tchTableRequest\x12K\n\x03ops\x18\x01 \x03(\x0b\x32>.io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation\x1a\xae\x13\n\tOperation\x12K\n\x0b\x65mpty_table\x18\x01 \x01(\x0b\x32\x34.io.deephaven.proto.backplane.grpc.EmptyTableRequestH\x00\x12I\n\ntime_table\x18\x02 \x01(\x0b\x32\x33.io.deephaven.proto.backplane.grpc.TimeTableRequestH\x00\x12M\n\x0c\x64rop_columns\x18\x03 \x01(\x0b\x32\x35.io.deephaven.proto.backplane.grpc.DropColumnsRequestH\x00\x12J\n\x06update\x18\x04 \x01(\x0b\x32\x38.io.deephaven.proto.backplane.grpc.SelectOrUpdateRequestH\x00\x12O\n\x0blazy_update\x18\x05 \x01(\x0b\x32\x38.io.deephaven.proto.backplane.grpc.SelectOrUpdateRequestH\x00\x12H\n\x04view\x18\x06 \x01(\x0b\x32\x38.io.deephaven.proto.backplane.grpc.SelectOrUpdateRequestH\x00\x12O\n\x0bupdate_view\x18\x07 \x01(\x0b\x32\x38.io.deephaven.proto.backplane.grpc.SelectOrUpdateRequestH\x00\x12J\n\x06select\x18\x08 \x01(\x0b\x32\x38.io.deephaven.proto.backplane.grpc.SelectOrUpdateRequestH\x00\x12S\n\x0fselect_distinct\x18\t \x01(\x0b\x32\x38.io.deephaven.proto.backplane.grpc.SelectDistinctRequestH\x00\x12G\n\x06\x66ilter\x18\n \x01(\x0b\x32\x35.io.deephaven.proto.backplane.grpc.FilterTableRequestH\x00\x12`\n\x13unstructured_filter\x18\x0b \x01(\x0b\x32\x41.io.deephaven.proto.backplane.grpc.UnstructuredFilterTableRequestH\x00\x12\x43\n\x04sort\x18\x0c \x01(\x0b\x32\x33.io.deephaven.proto.backplane.grpc.SortTableRequestH\x00\x12\x44\n\x04head\x18\r \x01(\x0b\x32\x34.io.deephaven.proto.backplane.grpc.HeadOrTailRequestH\x00\x12\x44\n\x04tail\x18\x0e \x01(\x0b\x32\x34.io.deephaven.proto.backplane.grpc.HeadOrTailRequestH\x00\x12I\n\x07head_by\x18\x0f \x01(\x0b\x32\x36.io.deephaven.proto.backplane.grpc.HeadOrTailByRequestH\x00\x12I\n\x07tail_by\x18\x10 \x01(\x0b\x32\x36.io.deephaven.proto.backplane.grpc.HeadOrTailByRequestH\x00\x12\x44\n\x07ungroup\x18\x11 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.UngroupRequestH\x00\x12\x46\n\x05merge\x18\x12 \x01(\x0b\x32\x35.io.deephaven.proto.backplane.grpc.MergeTablesRequestH\x00\x12S\n\x0f\x63ombo_aggregate\x18\x13 \x01(\x0b\x32\x38.io.deephaven.proto.backplane.grpc.ComboAggregateRequestH\x00\x12K\n\x08snapshot\x18\x14 \x01(\x0b\x32\x37.io.deephaven.proto.backplane.grpc.SnapshotTableRequestH\x00\x12\x44\n\x07\x66latten\x18\x15 \x01(\x0b\x32\x31.io.deephaven.proto.backplane.grpc.FlattenRequestH\x00\x12\\\n\x14run_chart_downsample\x18\x16 \x01(\x0b\x32<.io.deephaven.proto.backplane.grpc.RunChartDownsampleRequestH\x00\x12O\n\ncross_join\x18\x17 \x01(\x0b\x32\x39.io.deephaven.proto.backplane.grpc.CrossJoinTablesRequestH\x00\x12S\n\x0cnatural_join\x18\x18 \x01(\x0b\x32;.io.deephaven.proto.backplane.grpc.NaturalJoinTablesRequestH\x00\x12O\n\nexact_join\x18\x19 \x01(\x0b\x32\x39.io.deephaven.proto.backplane.grpc.ExactJoinTablesRequestH\x00\x12M\n\tleft_join\x18\x1a \x01(\x0b\x32\x38.io.deephaven.proto.backplane.grpc.LeftJoinTablesRequestH\x00\x12N\n\nas_of_join\x18\x1b \x01(\x0b\x32\x38.io.deephaven.proto.backplane.grpc.AsOfJoinTablesRequestH\x00\x12K\n\x0b\x66\x65tch_table\x18\x1c \x01(\x0b\x32\x34.io.deephaven.proto.backplane.grpc.FetchTableRequestH\x00\x12X\n\x12\x66\x65tch_pandas_table\x18\x1d \x01(\x0b\x32:.io.deephaven.proto.backplane.grpc.FetchPandasTableRequestH\x00\x12^\n\x15\x61pply_preview_columns\x18\x1e \x01(\x0b\x32=.io.deephaven.proto.backplane.grpc.ApplyPreviewColumnsRequestH\x00\x12X\n\x12\x63reate_input_table\x18\x1f \x01(\x0b\x32:.io.deephaven.proto.backplane.grpc.CreateInputTableRequestH\x00\x42\x04\n\x02op*2\n\x0f\x43\x61seSensitivity\x12\x0e\n\nMATCH_CASE\x10\x00\x12\x0f\n\x0bIGNORE_CASE\x10\x01*&\n\tMatchType\x12\x0b\n\x07REGULAR\x10\x00\x12\x0c\n\x08INVERTED\x10\x01\x32\xd5&\n\x0cTableService\x12\x91\x01\n GetExportedTableCreationResponse\x12).io.deephaven.proto.backplane.grpc.Ticket\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x86\x01\n\nFetchTable\x12\x34.io.deephaven.proto.backplane.grpc.FetchTableRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x92\x01\n\x10\x46\x65tchPandasTable\x12:.io.deephaven.proto.backplane.grpc.FetchPandasTableRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x84\x01\n\rFetchTableMap\x12\x37.io.deephaven.proto.backplane.grpc.FetchTableMapRequest\x1a\x38.io.deephaven.proto.backplane.grpc.FetchTableMapResponse\"\x00\x12\x98\x01\n\x13\x41pplyPreviewColumns\x12=.io.deephaven.proto.backplane.grpc.ApplyPreviewColumnsRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x86\x01\n\nEmptyTable\x12\x34.io.deephaven.proto.backplane.grpc.EmptyTableRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x84\x01\n\tTimeTable\x12\x33.io.deephaven.proto.backplane.grpc.TimeTableRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x88\x01\n\x0b\x44ropColumns\x12\x35.io.deephaven.proto.backplane.grpc.DropColumnsRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x86\x01\n\x06Update\x12\x38.io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x8a\x01\n\nLazyUpdate\x12\x38.io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x84\x01\n\x04View\x12\x38.io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x8a\x01\n\nUpdateView\x12\x38.io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x86\x01\n\x06Select\x12\x38.io.deephaven.proto.backplane.grpc.SelectOrUpdateRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x8e\x01\n\x0eSelectDistinct\x12\x38.io.deephaven.proto.backplane.grpc.SelectDistinctRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x83\x01\n\x06\x46ilter\x12\x35.io.deephaven.proto.backplane.grpc.FilterTableRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x9b\x01\n\x12UnstructuredFilter\x12\x41.io.deephaven.proto.backplane.grpc.UnstructuredFilterTableRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x7f\n\x04Sort\x12\x33.io.deephaven.proto.backplane.grpc.SortTableRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x80\x01\n\x04Head\x12\x34.io.deephaven.proto.backplane.grpc.HeadOrTailRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x80\x01\n\x04Tail\x12\x34.io.deephaven.proto.backplane.grpc.HeadOrTailRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x84\x01\n\x06HeadBy\x12\x36.io.deephaven.proto.backplane.grpc.HeadOrTailByRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x84\x01\n\x06TailBy\x12\x36.io.deephaven.proto.backplane.grpc.HeadOrTailByRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x80\x01\n\x07Ungroup\x12\x31.io.deephaven.proto.backplane.grpc.UngroupRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x88\x01\n\x0bMergeTables\x12\x35.io.deephaven.proto.backplane.grpc.MergeTablesRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x90\x01\n\x0f\x43rossJoinTables\x12\x39.io.deephaven.proto.backplane.grpc.CrossJoinTablesRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x94\x01\n\x11NaturalJoinTables\x12;.io.deephaven.proto.backplane.grpc.NaturalJoinTablesRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x90\x01\n\x0f\x45xactJoinTables\x12\x39.io.deephaven.proto.backplane.grpc.ExactJoinTablesRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x8e\x01\n\x0eLeftJoinTables\x12\x38.io.deephaven.proto.backplane.grpc.LeftJoinTablesRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x8e\x01\n\x0e\x41sOfJoinTables\x12\x38.io.deephaven.proto.backplane.grpc.AsOfJoinTablesRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x8e\x01\n\x0e\x43omboAggregate\x12\x38.io.deephaven.proto.backplane.grpc.ComboAggregateRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x87\x01\n\x08Snapshot\x12\x37.io.deephaven.proto.backplane.grpc.SnapshotTableRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x80\x01\n\x07\x46latten\x12\x31.io.deephaven.proto.backplane.grpc.FlattenRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x96\x01\n\x12RunChartDownsample\x12<.io.deephaven.proto.backplane.grpc.RunChartDownsampleRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x92\x01\n\x10\x43reateInputTable\x12:.io.deephaven.proto.backplane.grpc.CreateInputTableRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x12\x83\x01\n\x05\x42\x61tch\x12\x34.io.deephaven.proto.backplane.grpc.BatchTableRequest\x1a@.io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse\"\x00\x30\x01\x12\x99\x01\n\x14\x45xportedTableUpdates\x12>.io.deephaven.proto.backplane.grpc.ExportedTableUpdatesRequest\x1a=.io.deephaven.proto.backplane.grpc.ExportedTableUpdateMessage\"\x00\x30\x01\x42\x04H\x01P\x01\x62\x06proto3'
   ,
   dependencies=[deephaven_dot_proto_dot_ticket__pb2.DESCRIPTOR,])
 
@@ -45,8 +45,8 @@ _CASESENSITIVITY = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=11780,
-  serialized_end=11830,
+  serialized_start=12761,
+  serialized_end=12811,
 )
 _sym_db.RegisterEnumDescriptor(_CASESENSITIVITY)
 
@@ -71,8 +71,8 @@ _MATCHTYPE = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=11832,
-  serialized_end=11870,
+  serialized_start=12813,
+  serialized_end=12851,
 )
 _sym_db.RegisterEnumDescriptor(_MATCHTYPE)
 
@@ -113,8 +113,8 @@ _ASOFJOINTABLESREQUEST_MATCHRULE = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=4569,
-  serialized_end=4658,
+  serialized_start=4732,
+  serialized_end=4821,
 )
 _sym_db.RegisterEnumDescriptor(_ASOFJOINTABLESREQUEST_MATCHRULE)
 
@@ -136,7 +136,7 @@ _COMBOAGGREGATEREQUEST_AGGTYPE = _descriptor.EnumDescriptor(
       type=None,
       create_key=_descriptor._internal_create_key),
     _descriptor.EnumValueDescriptor(
-      name='ARRAY', index=2, number=2,
+      name='GROUP', index=2, number=2,
       serialized_options=None,
       type=None,
       create_key=_descriptor._internal_create_key),
@@ -198,8 +198,8 @@ _COMBOAGGREGATEREQUEST_AGGTYPE = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=5130,
-  serialized_end=5295,
+  serialized_start=5293,
+  serialized_end=5458,
 )
 _sym_db.RegisterEnumDescriptor(_COMBOAGGREGATEREQUEST_AGGTYPE)
 
@@ -233,8 +233,8 @@ _SORTDESCRIPTOR_SORTDIRECTION = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=5442,
-  serialized_end=5523,
+  serialized_start=5605,
+  serialized_end=5686,
 )
 _sym_db.RegisterEnumDescriptor(_SORTDESCRIPTOR_SORTDIRECTION)
 
@@ -278,8 +278,8 @@ _COMPARECONDITION_COMPAREOPERATION = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   serialized_options=None,
-  serialized_start=7529,
-  serialized_end=7659,
+  serialized_start=7692,
+  serialized_end=7822,
 )
 _sym_db.RegisterEnumDescriptor(_COMPARECONDITION_COMPAREOPERATION)
 
@@ -434,6 +434,45 @@ _FETCHTABLEREQUEST = _descriptor.Descriptor(
 )
 
 
+_APPLYPREVIEWCOLUMNSREQUEST = _descriptor.Descriptor(
+  name='ApplyPreviewColumnsRequest',
+  full_name='io.deephaven.proto.backplane.grpc.ApplyPreviewColumnsRequest',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  create_key=_descriptor._internal_create_key,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='source_id', full_name='io.deephaven.proto.backplane.grpc.ApplyPreviewColumnsRequest.source_id', index=0,
+      number=1, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='result_id', full_name='io.deephaven.proto.backplane.grpc.ApplyPreviewColumnsRequest.result_id', index=1,
+      number=2, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=562,
+  serialized_end=722,
+)
+
+
 _FETCHPANDASTABLEREQUEST = _descriptor.Descriptor(
   name='FetchPandasTableRequest',
   full_name='io.deephaven.proto.backplane.grpc.FetchPandasTableRequest',
@@ -468,8 +507,8 @@ _FETCHPANDASTABLEREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=562,
-  serialized_end=719,
+  serialized_start=725,
+  serialized_end=882,
 )
 
 
@@ -507,8 +546,8 @@ _FETCHTABLEMAPREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=722,
-  serialized_end=876,
+  serialized_start=885,
+  serialized_end=1039,
 )
 
 
@@ -532,8 +571,8 @@ _FETCHTABLEMAPRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=878,
-  serialized_end=901,
+  serialized_start=1041,
+  serialized_end=1064,
 )
 
 
@@ -557,8 +596,8 @@ _EXPORTEDTABLEUPDATESREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=903,
-  serialized_end=932,
+  serialized_start=1066,
+  serialized_end=1095,
 )
 
 
@@ -603,8 +642,8 @@ _EXPORTEDTABLEUPDATEMESSAGE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=935,
-  serialized_end=1075,
+  serialized_start=1098,
+  serialized_end=1238,
 )
 
 
@@ -642,8 +681,8 @@ _EMPTYTABLEREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1077,
-  serialized_end=1176,
+  serialized_start=1240,
+  serialized_end=1339,
 )
 
 
@@ -688,8 +727,8 @@ _TIMETABLEREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1179,
-  serialized_end=1315,
+  serialized_start=1342,
+  serialized_end=1478,
 )
 
 
@@ -734,8 +773,8 @@ _SELECTORUPDATEREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1318,
-  serialized_end=1495,
+  serialized_start=1481,
+  serialized_end=1658,
 )
 
 
@@ -780,8 +819,8 @@ _SELECTDISTINCTREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1498,
-  serialized_end=1675,
+  serialized_start=1661,
+  serialized_end=1838,
 )
 
 
@@ -826,8 +865,8 @@ _DROPCOLUMNSREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1678,
-  serialized_end=1852,
+  serialized_start=1841,
+  serialized_end=2015,
 )
 
 
@@ -872,8 +911,8 @@ _UNSTRUCTUREDFILTERTABLEREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1855,
-  serialized_end=2036,
+  serialized_start=2018,
+  serialized_end=2199,
 )
 
 
@@ -918,8 +957,8 @@ _HEADORTAILREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2039,
-  serialized_end=2212,
+  serialized_start=2202,
+  serialized_end=2375,
 )
 
 
@@ -971,8 +1010,8 @@ _HEADORTAILBYREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2215,
-  serialized_end=2421,
+  serialized_start=2378,
+  serialized_end=2584,
 )
 
 
@@ -1024,8 +1063,8 @@ _UNGROUPREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2424,
-  serialized_end=2619,
+  serialized_start=2587,
+  serialized_end=2782,
 )
 
 
@@ -1070,8 +1109,8 @@ _MERGETABLESREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2622,
-  serialized_end=2795,
+  serialized_start=2785,
+  serialized_end=2958,
 )
 
 
@@ -1130,8 +1169,8 @@ _SNAPSHOTTABLEREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2798,
-  serialized_end=3071,
+  serialized_start=2961,
+  serialized_end=3234,
 )
 
 
@@ -1197,8 +1236,8 @@ _CROSSJOINTABLESREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=3074,
-  serialized_end=3369,
+  serialized_start=3237,
+  serialized_end=3532,
 )
 
 
@@ -1257,8 +1296,8 @@ _NATURALJOINTABLESREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=3372,
-  serialized_end=3647,
+  serialized_start=3535,
+  serialized_end=3810,
 )
 
 
@@ -1317,8 +1356,8 @@ _EXACTJOINTABLESREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=3650,
-  serialized_end=3923,
+  serialized_start=3813,
+  serialized_end=4086,
 )
 
 
@@ -1377,8 +1416,8 @@ _LEFTJOINTABLESREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=3926,
-  serialized_end=4198,
+  serialized_start=4089,
+  serialized_end=4361,
 )
 
 
@@ -1445,8 +1484,8 @@ _ASOFJOINTABLESREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=4201,
-  serialized_end=4658,
+  serialized_start=4364,
+  serialized_end=4821,
 )
 
 
@@ -1505,8 +1544,8 @@ _COMBOAGGREGATEREQUEST_AGGREGATE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=4954,
-  serialized_end=5127,
+  serialized_start=5117,
+  serialized_end=5290,
 )
 
 _COMBOAGGREGATEREQUEST = _descriptor.Descriptor(
@@ -1565,8 +1604,8 @@ _COMBOAGGREGATEREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=4661,
-  serialized_end=5295,
+  serialized_start=4824,
+  serialized_end=5458,
 )
 
 
@@ -1612,8 +1651,8 @@ _SORTDESCRIPTOR = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=5298,
-  serialized_end=5523,
+  serialized_start=5461,
+  serialized_end=5686,
 )
 
 
@@ -1658,8 +1697,8 @@ _SORTTABLEREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=5526,
-  serialized_end=5742,
+  serialized_start=5689,
+  serialized_end=5905,
 )
 
 
@@ -1704,8 +1743,8 @@ _FILTERTABLEREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=5745,
-  serialized_end=5960,
+  serialized_start=5908,
+  serialized_end=6123,
 )
 
 
@@ -1736,8 +1775,8 @@ _REFERENCE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=5962,
-  serialized_end=5994,
+  serialized_start=6125,
+  serialized_end=6157,
 )
 
 
@@ -1801,8 +1840,8 @@ _LITERAL = _descriptor.Descriptor(
       create_key=_descriptor._internal_create_key,
     fields=[]),
   ],
-  serialized_start=5997,
-  serialized_end=6142,
+  serialized_start=6160,
+  serialized_end=6305,
 )
 
 
@@ -1845,8 +1884,8 @@ _VALUE = _descriptor.Descriptor(
       create_key=_descriptor._internal_create_key,
     fields=[]),
   ],
-  serialized_start=6145,
-  serialized_end=6290,
+  serialized_start=6308,
+  serialized_end=6453,
 )
 
 
@@ -1945,8 +1984,8 @@ _CONDITION = _descriptor.Descriptor(
       create_key=_descriptor._internal_create_key,
     fields=[]),
   ],
-  serialized_start=6293,
-  serialized_end=6993,
+  serialized_start=6456,
+  serialized_end=7156,
 )
 
 
@@ -1977,8 +2016,8 @@ _ANDCONDITION = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=6995,
-  serialized_end=7072,
+  serialized_start=7158,
+  serialized_end=7235,
 )
 
 
@@ -2009,8 +2048,8 @@ _ORCONDITION = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=7074,
-  serialized_end=7150,
+  serialized_start=7237,
+  serialized_end=7313,
 )
 
 
@@ -2041,8 +2080,8 @@ _NOTCONDITION = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=7152,
-  serialized_end=7228,
+  serialized_start=7315,
+  serialized_end=7391,
 )
 
 
@@ -2095,8 +2134,8 @@ _COMPARECONDITION = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=7231,
-  serialized_end=7659,
+  serialized_start=7394,
+  serialized_end=7822,
 )
 
 
@@ -2148,8 +2187,8 @@ _INCONDITION = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=7662,
-  serialized_end=7939,
+  serialized_start=7825,
+  serialized_end=8102,
 )
 
 
@@ -2194,8 +2233,8 @@ _INVOKECONDITION = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=7942,
-  serialized_end=8094,
+  serialized_start=8105,
+  serialized_end=8257,
 )
 
 
@@ -2226,8 +2265,8 @@ _ISNULLCONDITION = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=8096,
-  serialized_end=8178,
+  serialized_start=8259,
+  serialized_end=8341,
 )
 
 
@@ -2279,8 +2318,8 @@ _MATCHESCONDITION = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=8181,
-  serialized_end=8423,
+  serialized_start=8344,
+  serialized_end=8586,
 )
 
 
@@ -2332,8 +2371,8 @@ _CONTAINSCONDITION = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=8426,
-  serialized_end=8677,
+  serialized_start=8589,
+  serialized_end=8840,
 )
 
 
@@ -2371,8 +2410,8 @@ _SEARCHCONDITION = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=8679,
-  serialized_end=8794,
+  serialized_start=8842,
+  serialized_end=8957,
 )
 
 
@@ -2410,8 +2449,8 @@ _FLATTENREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=8797,
-  serialized_end=8945,
+  serialized_start=8960,
+  serialized_end=9108,
 )
 
 
@@ -2459,8 +2498,8 @@ _RUNCHARTDOWNSAMPLEREQUEST_ZOOMRANGE = _descriptor.Descriptor(
       create_key=_descriptor._internal_create_key,
     fields=[]),
   ],
-  serialized_start=9269,
-  serialized_end=9384,
+  serialized_start=9432,
+  serialized_end=9547,
 )
 
 _RUNCHARTDOWNSAMPLEREQUEST = _descriptor.Descriptor(
@@ -2525,8 +2564,164 @@ _RUNCHARTDOWNSAMPLEREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=8948,
-  serialized_end=9384,
+  serialized_start=9111,
+  serialized_end=9547,
+)
+
+
+_CREATEINPUTTABLEREQUEST_INPUTTABLEKIND_INMEMORYAPPENDONLY = _descriptor.Descriptor(
+  name='InMemoryAppendOnly',
+  full_name='io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryAppendOnly',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  create_key=_descriptor._internal_create_key,
+  fields=[
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=10095,
+  serialized_end=10115,
+)
+
+_CREATEINPUTTABLEREQUEST_INPUTTABLEKIND_INMEMORYKEYBACKED = _descriptor.Descriptor(
+  name='InMemoryKeyBacked',
+  full_name='io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryKeyBacked',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  create_key=_descriptor._internal_create_key,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='key_columns', full_name='io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryKeyBacked.key_columns', index=0,
+      number=1, type=9, cpp_type=9, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=10117,
+  serialized_end=10157,
+)
+
+_CREATEINPUTTABLEREQUEST_INPUTTABLEKIND = _descriptor.Descriptor(
+  name='InputTableKind',
+  full_name='io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  create_key=_descriptor._internal_create_key,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='in_memory_append_only', full_name='io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.in_memory_append_only', index=0,
+      number=1, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='in_memory_key_backed', full_name='io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.in_memory_key_backed', index=1,
+      number=2, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+  ],
+  extensions=[
+  ],
+  nested_types=[_CREATEINPUTTABLEREQUEST_INPUTTABLEKIND_INMEMORYAPPENDONLY, _CREATEINPUTTABLEREQUEST_INPUTTABLEKIND_INMEMORYKEYBACKED, ],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+    _descriptor.OneofDescriptor(
+      name='kind', full_name='io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.kind',
+      index=0, containing_type=None,
+      create_key=_descriptor._internal_create_key,
+    fields=[]),
+  ],
+  serialized_start=9825,
+  serialized_end=10165,
+)
+
+_CREATEINPUTTABLEREQUEST = _descriptor.Descriptor(
+  name='CreateInputTableRequest',
+  full_name='io.deephaven.proto.backplane.grpc.CreateInputTableRequest',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  create_key=_descriptor._internal_create_key,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='result_id', full_name='io.deephaven.proto.backplane.grpc.CreateInputTableRequest.result_id', index=0,
+      number=1, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='source_table_id', full_name='io.deephaven.proto.backplane.grpc.CreateInputTableRequest.source_table_id', index=1,
+      number=2, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='schema', full_name='io.deephaven.proto.backplane.grpc.CreateInputTableRequest.schema', index=2,
+      number=3, type=12, cpp_type=9, label=1,
+      has_default_value=False, default_value=b"",
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='kind', full_name='io.deephaven.proto.backplane.grpc.CreateInputTableRequest.kind', index=3,
+      number=4, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+  ],
+  extensions=[
+  ],
+  nested_types=[_CREATEINPUTTABLEREQUEST_INPUTTABLEKIND, ],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+    _descriptor.OneofDescriptor(
+      name='definition', full_name='io.deephaven.proto.backplane.grpc.CreateInputTableRequest.definition',
+      index=0, containing_type=None,
+      create_key=_descriptor._internal_create_key,
+    fields=[]),
+  ],
+  serialized_start=9550,
+  serialized_end=10179,
 )
 
 
@@ -2741,6 +2936,20 @@ _BATCHTABLEREQUEST_OPERATION = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='apply_preview_columns', full_name='io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.apply_preview_columns', index=29,
+      number=30, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
+    _descriptor.FieldDescriptor(
+      name='create_input_table', full_name='io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation.create_input_table', index=30,
+      number=31, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR,  create_key=_descriptor._internal_create_key),
   ],
   extensions=[
   ],
@@ -2758,8 +2967,8 @@ _BATCHTABLEREQUEST_OPERATION = _descriptor.Descriptor(
       create_key=_descriptor._internal_create_key,
     fields=[]),
   ],
-  serialized_start=9486,
-  serialized_end=11778,
+  serialized_start=10281,
+  serialized_end=12759,
 )
 
 _BATCHTABLEREQUEST = _descriptor.Descriptor(
@@ -2789,8 +2998,8 @@ _BATCHTABLEREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=9387,
-  serialized_end=11778,
+  serialized_start=10182,
+  serialized_end=12759,
 )
 
 _TABLEREFERENCE.fields_by_name['ticket'].message_type = deephaven_dot_proto_dot_ticket__pb2._TICKET
@@ -2803,6 +3012,8 @@ _TABLEREFERENCE.fields_by_name['batch_offset'].containing_oneof = _TABLEREFERENC
 _EXPORTEDTABLECREATIONRESPONSE.fields_by_name['result_id'].message_type = _TABLEREFERENCE
 _FETCHTABLEREQUEST.fields_by_name['source_id'].message_type = _TABLEREFERENCE
 _FETCHTABLEREQUEST.fields_by_name['result_id'].message_type = deephaven_dot_proto_dot_ticket__pb2._TICKET
+_APPLYPREVIEWCOLUMNSREQUEST.fields_by_name['source_id'].message_type = _TABLEREFERENCE
+_APPLYPREVIEWCOLUMNSREQUEST.fields_by_name['result_id'].message_type = deephaven_dot_proto_dot_ticket__pb2._TICKET
 _FETCHPANDASTABLEREQUEST.fields_by_name['source_id'].message_type = _TABLEREFERENCE
 _FETCHPANDASTABLEREQUEST.fields_by_name['result_id'].message_type = deephaven_dot_proto_dot_ticket__pb2._TICKET
 _FETCHTABLEMAPREQUEST.fields_by_name['source_id'].message_type = _TABLEREFERENCE
@@ -2957,6 +3168,26 @@ _RUNCHARTDOWNSAMPLEREQUEST_ZOOMRANGE.fields_by_name['max_date_nanos'].containing
 _RUNCHARTDOWNSAMPLEREQUEST.fields_by_name['result_id'].message_type = deephaven_dot_proto_dot_ticket__pb2._TICKET
 _RUNCHARTDOWNSAMPLEREQUEST.fields_by_name['source_id'].message_type = _TABLEREFERENCE
 _RUNCHARTDOWNSAMPLEREQUEST.fields_by_name['zoom_range'].message_type = _RUNCHARTDOWNSAMPLEREQUEST_ZOOMRANGE
+_CREATEINPUTTABLEREQUEST_INPUTTABLEKIND_INMEMORYAPPENDONLY.containing_type = _CREATEINPUTTABLEREQUEST_INPUTTABLEKIND
+_CREATEINPUTTABLEREQUEST_INPUTTABLEKIND_INMEMORYKEYBACKED.containing_type = _CREATEINPUTTABLEREQUEST_INPUTTABLEKIND
+_CREATEINPUTTABLEREQUEST_INPUTTABLEKIND.fields_by_name['in_memory_append_only'].message_type = _CREATEINPUTTABLEREQUEST_INPUTTABLEKIND_INMEMORYAPPENDONLY
+_CREATEINPUTTABLEREQUEST_INPUTTABLEKIND.fields_by_name['in_memory_key_backed'].message_type = _CREATEINPUTTABLEREQUEST_INPUTTABLEKIND_INMEMORYKEYBACKED
+_CREATEINPUTTABLEREQUEST_INPUTTABLEKIND.containing_type = _CREATEINPUTTABLEREQUEST
+_CREATEINPUTTABLEREQUEST_INPUTTABLEKIND.oneofs_by_name['kind'].fields.append(
+  _CREATEINPUTTABLEREQUEST_INPUTTABLEKIND.fields_by_name['in_memory_append_only'])
+_CREATEINPUTTABLEREQUEST_INPUTTABLEKIND.fields_by_name['in_memory_append_only'].containing_oneof = _CREATEINPUTTABLEREQUEST_INPUTTABLEKIND.oneofs_by_name['kind']
+_CREATEINPUTTABLEREQUEST_INPUTTABLEKIND.oneofs_by_name['kind'].fields.append(
+  _CREATEINPUTTABLEREQUEST_INPUTTABLEKIND.fields_by_name['in_memory_key_backed'])
+_CREATEINPUTTABLEREQUEST_INPUTTABLEKIND.fields_by_name['in_memory_key_backed'].containing_oneof = _CREATEINPUTTABLEREQUEST_INPUTTABLEKIND.oneofs_by_name['kind']
+_CREATEINPUTTABLEREQUEST.fields_by_name['result_id'].message_type = deephaven_dot_proto_dot_ticket__pb2._TICKET
+_CREATEINPUTTABLEREQUEST.fields_by_name['source_table_id'].message_type = _TABLEREFERENCE
+_CREATEINPUTTABLEREQUEST.fields_by_name['kind'].message_type = _CREATEINPUTTABLEREQUEST_INPUTTABLEKIND
+_CREATEINPUTTABLEREQUEST.oneofs_by_name['definition'].fields.append(
+  _CREATEINPUTTABLEREQUEST.fields_by_name['source_table_id'])
+_CREATEINPUTTABLEREQUEST.fields_by_name['source_table_id'].containing_oneof = _CREATEINPUTTABLEREQUEST.oneofs_by_name['definition']
+_CREATEINPUTTABLEREQUEST.oneofs_by_name['definition'].fields.append(
+  _CREATEINPUTTABLEREQUEST.fields_by_name['schema'])
+_CREATEINPUTTABLEREQUEST.fields_by_name['schema'].containing_oneof = _CREATEINPUTTABLEREQUEST.oneofs_by_name['definition']
 _BATCHTABLEREQUEST_OPERATION.fields_by_name['empty_table'].message_type = _EMPTYTABLEREQUEST
 _BATCHTABLEREQUEST_OPERATION.fields_by_name['time_table'].message_type = _TIMETABLEREQUEST
 _BATCHTABLEREQUEST_OPERATION.fields_by_name['drop_columns'].message_type = _DROPCOLUMNSREQUEST
@@ -2986,6 +3217,8 @@ _BATCHTABLEREQUEST_OPERATION.fields_by_name['left_join'].message_type = _LEFTJOI
 _BATCHTABLEREQUEST_OPERATION.fields_by_name['as_of_join'].message_type = _ASOFJOINTABLESREQUEST
 _BATCHTABLEREQUEST_OPERATION.fields_by_name['fetch_table'].message_type = _FETCHTABLEREQUEST
 _BATCHTABLEREQUEST_OPERATION.fields_by_name['fetch_pandas_table'].message_type = _FETCHPANDASTABLEREQUEST
+_BATCHTABLEREQUEST_OPERATION.fields_by_name['apply_preview_columns'].message_type = _APPLYPREVIEWCOLUMNSREQUEST
+_BATCHTABLEREQUEST_OPERATION.fields_by_name['create_input_table'].message_type = _CREATEINPUTTABLEREQUEST
 _BATCHTABLEREQUEST_OPERATION.containing_type = _BATCHTABLEREQUEST
 _BATCHTABLEREQUEST_OPERATION.oneofs_by_name['op'].fields.append(
   _BATCHTABLEREQUEST_OPERATION.fields_by_name['empty_table'])
@@ -3074,10 +3307,17 @@ _BATCHTABLEREQUEST_OPERATION.fields_by_name['fetch_table'].containing_oneof = _B
 _BATCHTABLEREQUEST_OPERATION.oneofs_by_name['op'].fields.append(
   _BATCHTABLEREQUEST_OPERATION.fields_by_name['fetch_pandas_table'])
 _BATCHTABLEREQUEST_OPERATION.fields_by_name['fetch_pandas_table'].containing_oneof = _BATCHTABLEREQUEST_OPERATION.oneofs_by_name['op']
+_BATCHTABLEREQUEST_OPERATION.oneofs_by_name['op'].fields.append(
+  _BATCHTABLEREQUEST_OPERATION.fields_by_name['apply_preview_columns'])
+_BATCHTABLEREQUEST_OPERATION.fields_by_name['apply_preview_columns'].containing_oneof = _BATCHTABLEREQUEST_OPERATION.oneofs_by_name['op']
+_BATCHTABLEREQUEST_OPERATION.oneofs_by_name['op'].fields.append(
+  _BATCHTABLEREQUEST_OPERATION.fields_by_name['create_input_table'])
+_BATCHTABLEREQUEST_OPERATION.fields_by_name['create_input_table'].containing_oneof = _BATCHTABLEREQUEST_OPERATION.oneofs_by_name['op']
 _BATCHTABLEREQUEST.fields_by_name['ops'].message_type = _BATCHTABLEREQUEST_OPERATION
 DESCRIPTOR.message_types_by_name['TableReference'] = _TABLEREFERENCE
 DESCRIPTOR.message_types_by_name['ExportedTableCreationResponse'] = _EXPORTEDTABLECREATIONRESPONSE
 DESCRIPTOR.message_types_by_name['FetchTableRequest'] = _FETCHTABLEREQUEST
+DESCRIPTOR.message_types_by_name['ApplyPreviewColumnsRequest'] = _APPLYPREVIEWCOLUMNSREQUEST
 DESCRIPTOR.message_types_by_name['FetchPandasTableRequest'] = _FETCHPANDASTABLEREQUEST
 DESCRIPTOR.message_types_by_name['FetchTableMapRequest'] = _FETCHTABLEMAPREQUEST
 DESCRIPTOR.message_types_by_name['FetchTableMapResponse'] = _FETCHTABLEMAPRESPONSE
@@ -3119,6 +3359,7 @@ DESCRIPTOR.message_types_by_name['ContainsCondition'] = _CONTAINSCONDITION
 DESCRIPTOR.message_types_by_name['SearchCondition'] = _SEARCHCONDITION
 DESCRIPTOR.message_types_by_name['FlattenRequest'] = _FLATTENREQUEST
 DESCRIPTOR.message_types_by_name['RunChartDownsampleRequest'] = _RUNCHARTDOWNSAMPLEREQUEST
+DESCRIPTOR.message_types_by_name['CreateInputTableRequest'] = _CREATEINPUTTABLEREQUEST
 DESCRIPTOR.message_types_by_name['BatchTableRequest'] = _BATCHTABLEREQUEST
 DESCRIPTOR.enum_types_by_name['CaseSensitivity'] = _CASESENSITIVITY
 DESCRIPTOR.enum_types_by_name['MatchType'] = _MATCHTYPE
@@ -3144,6 +3385,13 @@ FetchTableRequest = _reflection.GeneratedProtocolMessageType('FetchTableRequest'
   # @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.grpc.FetchTableRequest)
   })
 _sym_db.RegisterMessage(FetchTableRequest)
+
+ApplyPreviewColumnsRequest = _reflection.GeneratedProtocolMessageType('ApplyPreviewColumnsRequest', (_message.Message,), {
+  'DESCRIPTOR' : _APPLYPREVIEWCOLUMNSREQUEST,
+  '__module__' : 'pydeephaven.proto.table_pb2'
+  # @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.grpc.ApplyPreviewColumnsRequest)
+  })
+_sym_db.RegisterMessage(ApplyPreviewColumnsRequest)
 
 FetchPandasTableRequest = _reflection.GeneratedProtocolMessageType('FetchPandasTableRequest', (_message.Message,), {
   'DESCRIPTOR' : _FETCHPANDASTABLEREQUEST,
@@ -3448,6 +3696,37 @@ RunChartDownsampleRequest = _reflection.GeneratedProtocolMessageType('RunChartDo
 _sym_db.RegisterMessage(RunChartDownsampleRequest)
 _sym_db.RegisterMessage(RunChartDownsampleRequest.ZoomRange)
 
+CreateInputTableRequest = _reflection.GeneratedProtocolMessageType('CreateInputTableRequest', (_message.Message,), {
+
+  'InputTableKind' : _reflection.GeneratedProtocolMessageType('InputTableKind', (_message.Message,), {
+
+    'InMemoryAppendOnly' : _reflection.GeneratedProtocolMessageType('InMemoryAppendOnly', (_message.Message,), {
+      'DESCRIPTOR' : _CREATEINPUTTABLEREQUEST_INPUTTABLEKIND_INMEMORYAPPENDONLY,
+      '__module__' : 'pydeephaven.proto.table_pb2'
+      # @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryAppendOnly)
+      })
+    ,
+
+    'InMemoryKeyBacked' : _reflection.GeneratedProtocolMessageType('InMemoryKeyBacked', (_message.Message,), {
+      'DESCRIPTOR' : _CREATEINPUTTABLEREQUEST_INPUTTABLEKIND_INMEMORYKEYBACKED,
+      '__module__' : 'pydeephaven.proto.table_pb2'
+      # @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind.InMemoryKeyBacked)
+      })
+    ,
+    'DESCRIPTOR' : _CREATEINPUTTABLEREQUEST_INPUTTABLEKIND,
+    '__module__' : 'pydeephaven.proto.table_pb2'
+    # @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.grpc.CreateInputTableRequest.InputTableKind)
+    })
+  ,
+  'DESCRIPTOR' : _CREATEINPUTTABLEREQUEST,
+  '__module__' : 'pydeephaven.proto.table_pb2'
+  # @@protoc_insertion_point(class_scope:io.deephaven.proto.backplane.grpc.CreateInputTableRequest)
+  })
+_sym_db.RegisterMessage(CreateInputTableRequest)
+_sym_db.RegisterMessage(CreateInputTableRequest.InputTableKind)
+_sym_db.RegisterMessage(CreateInputTableRequest.InputTableKind.InMemoryAppendOnly)
+_sym_db.RegisterMessage(CreateInputTableRequest.InputTableKind.InMemoryKeyBacked)
+
 BatchTableRequest = _reflection.GeneratedProtocolMessageType('BatchTableRequest', (_message.Message,), {
 
   'Operation' : _reflection.GeneratedProtocolMessageType('Operation', (_message.Message,), {
@@ -3484,8 +3763,8 @@ _TABLESERVICE = _descriptor.ServiceDescriptor(
   index=0,
   serialized_options=None,
   create_key=_descriptor._internal_create_key,
-  serialized_start=11873,
-  serialized_end=16518,
+  serialized_start=12854,
+  serialized_end=17803,
   methods=[
   _descriptor.MethodDescriptor(
     name='GetExportedTableCreationResponse',
@@ -3528,9 +3807,19 @@ _TABLESERVICE = _descriptor.ServiceDescriptor(
     create_key=_descriptor._internal_create_key,
   ),
   _descriptor.MethodDescriptor(
+    name='ApplyPreviewColumns',
+    full_name='io.deephaven.proto.backplane.grpc.TableService.ApplyPreviewColumns',
+    index=4,
+    containing_service=None,
+    input_type=_APPLYPREVIEWCOLUMNSREQUEST,
+    output_type=_EXPORTEDTABLECREATIONRESPONSE,
+    serialized_options=None,
+    create_key=_descriptor._internal_create_key,
+  ),
+  _descriptor.MethodDescriptor(
     name='EmptyTable',
     full_name='io.deephaven.proto.backplane.grpc.TableService.EmptyTable',
-    index=4,
+    index=5,
     containing_service=None,
     input_type=_EMPTYTABLEREQUEST,
     output_type=_EXPORTEDTABLECREATIONRESPONSE,
@@ -3540,7 +3829,7 @@ _TABLESERVICE = _descriptor.ServiceDescriptor(
   _descriptor.MethodDescriptor(
     name='TimeTable',
     full_name='io.deephaven.proto.backplane.grpc.TableService.TimeTable',
-    index=5,
+    index=6,
     containing_service=None,
     input_type=_TIMETABLEREQUEST,
     output_type=_EXPORTEDTABLECREATIONRESPONSE,
@@ -3550,7 +3839,7 @@ _TABLESERVICE = _descriptor.ServiceDescriptor(
   _descriptor.MethodDescriptor(
     name='DropColumns',
     full_name='io.deephaven.proto.backplane.grpc.TableService.DropColumns',
-    index=6,
+    index=7,
     containing_service=None,
     input_type=_DROPCOLUMNSREQUEST,
     output_type=_EXPORTEDTABLECREATIONRESPONSE,
@@ -3560,7 +3849,7 @@ _TABLESERVICE = _descriptor.ServiceDescriptor(
   _descriptor.MethodDescriptor(
     name='Update',
     full_name='io.deephaven.proto.backplane.grpc.TableService.Update',
-    index=7,
+    index=8,
     containing_service=None,
     input_type=_SELECTORUPDATEREQUEST,
     output_type=_EXPORTEDTABLECREATIONRESPONSE,
@@ -3570,7 +3859,7 @@ _TABLESERVICE = _descriptor.ServiceDescriptor(
   _descriptor.MethodDescriptor(
     name='LazyUpdate',
     full_name='io.deephaven.proto.backplane.grpc.TableService.LazyUpdate',
-    index=8,
+    index=9,
     containing_service=None,
     input_type=_SELECTORUPDATEREQUEST,
     output_type=_EXPORTEDTABLECREATIONRESPONSE,
@@ -3580,7 +3869,7 @@ _TABLESERVICE = _descriptor.ServiceDescriptor(
   _descriptor.MethodDescriptor(
     name='View',
     full_name='io.deephaven.proto.backplane.grpc.TableService.View',
-    index=9,
+    index=10,
     containing_service=None,
     input_type=_SELECTORUPDATEREQUEST,
     output_type=_EXPORTEDTABLECREATIONRESPONSE,
@@ -3590,7 +3879,7 @@ _TABLESERVICE = _descriptor.ServiceDescriptor(
   _descriptor.MethodDescriptor(
     name='UpdateView',
     full_name='io.deephaven.proto.backplane.grpc.TableService.UpdateView',
-    index=10,
+    index=11,
     containing_service=None,
     input_type=_SELECTORUPDATEREQUEST,
     output_type=_EXPORTEDTABLECREATIONRESPONSE,
@@ -3600,7 +3889,7 @@ _TABLESERVICE = _descriptor.ServiceDescriptor(
   _descriptor.MethodDescriptor(
     name='Select',
     full_name='io.deephaven.proto.backplane.grpc.TableService.Select',
-    index=11,
+    index=12,
     containing_service=None,
     input_type=_SELECTORUPDATEREQUEST,
     output_type=_EXPORTEDTABLECREATIONRESPONSE,
@@ -3610,7 +3899,7 @@ _TABLESERVICE = _descriptor.ServiceDescriptor(
   _descriptor.MethodDescriptor(
     name='SelectDistinct',
     full_name='io.deephaven.proto.backplane.grpc.TableService.SelectDistinct',
-    index=12,
+    index=13,
     containing_service=None,
     input_type=_SELECTDISTINCTREQUEST,
     output_type=_EXPORTEDTABLECREATIONRESPONSE,
@@ -3620,7 +3909,7 @@ _TABLESERVICE = _descriptor.ServiceDescriptor(
   _descriptor.MethodDescriptor(
     name='Filter',
     full_name='io.deephaven.proto.backplane.grpc.TableService.Filter',
-    index=13,
+    index=14,
     containing_service=None,
     input_type=_FILTERTABLEREQUEST,
     output_type=_EXPORTEDTABLECREATIONRESPONSE,
@@ -3630,7 +3919,7 @@ _TABLESERVICE = _descriptor.ServiceDescriptor(
   _descriptor.MethodDescriptor(
     name='UnstructuredFilter',
     full_name='io.deephaven.proto.backplane.grpc.TableService.UnstructuredFilter',
-    index=14,
+    index=15,
     containing_service=None,
     input_type=_UNSTRUCTUREDFILTERTABLEREQUEST,
     output_type=_EXPORTEDTABLECREATIONRESPONSE,
@@ -3640,7 +3929,7 @@ _TABLESERVICE = _descriptor.ServiceDescriptor(
   _descriptor.MethodDescriptor(
     name='Sort',
     full_name='io.deephaven.proto.backplane.grpc.TableService.Sort',
-    index=15,
+    index=16,
     containing_service=None,
     input_type=_SORTTABLEREQUEST,
     output_type=_EXPORTEDTABLECREATIONRESPONSE,
@@ -3650,7 +3939,7 @@ _TABLESERVICE = _descriptor.ServiceDescriptor(
   _descriptor.MethodDescriptor(
     name='Head',
     full_name='io.deephaven.proto.backplane.grpc.TableService.Head',
-    index=16,
+    index=17,
     containing_service=None,
     input_type=_HEADORTAILREQUEST,
     output_type=_EXPORTEDTABLECREATIONRESPONSE,
@@ -3660,7 +3949,7 @@ _TABLESERVICE = _descriptor.ServiceDescriptor(
   _descriptor.MethodDescriptor(
     name='Tail',
     full_name='io.deephaven.proto.backplane.grpc.TableService.Tail',
-    index=17,
+    index=18,
     containing_service=None,
     input_type=_HEADORTAILREQUEST,
     output_type=_EXPORTEDTABLECREATIONRESPONSE,
@@ -3670,7 +3959,7 @@ _TABLESERVICE = _descriptor.ServiceDescriptor(
   _descriptor.MethodDescriptor(
     name='HeadBy',
     full_name='io.deephaven.proto.backplane.grpc.TableService.HeadBy',
-    index=18,
+    index=19,
     containing_service=None,
     input_type=_HEADORTAILBYREQUEST,
     output_type=_EXPORTEDTABLECREATIONRESPONSE,
@@ -3680,7 +3969,7 @@ _TABLESERVICE = _descriptor.ServiceDescriptor(
   _descriptor.MethodDescriptor(
     name='TailBy',
     full_name='io.deephaven.proto.backplane.grpc.TableService.TailBy',
-    index=19,
+    index=20,
     containing_service=None,
     input_type=_HEADORTAILBYREQUEST,
     output_type=_EXPORTEDTABLECREATIONRESPONSE,
@@ -3690,7 +3979,7 @@ _TABLESERVICE = _descriptor.ServiceDescriptor(
   _descriptor.MethodDescriptor(
     name='Ungroup',
     full_name='io.deephaven.proto.backplane.grpc.TableService.Ungroup',
-    index=20,
+    index=21,
     containing_service=None,
     input_type=_UNGROUPREQUEST,
     output_type=_EXPORTEDTABLECREATIONRESPONSE,
@@ -3700,7 +3989,7 @@ _TABLESERVICE = _descriptor.ServiceDescriptor(
   _descriptor.MethodDescriptor(
     name='MergeTables',
     full_name='io.deephaven.proto.backplane.grpc.TableService.MergeTables',
-    index=21,
+    index=22,
     containing_service=None,
     input_type=_MERGETABLESREQUEST,
     output_type=_EXPORTEDTABLECREATIONRESPONSE,
@@ -3710,7 +3999,7 @@ _TABLESERVICE = _descriptor.ServiceDescriptor(
   _descriptor.MethodDescriptor(
     name='CrossJoinTables',
     full_name='io.deephaven.proto.backplane.grpc.TableService.CrossJoinTables',
-    index=22,
+    index=23,
     containing_service=None,
     input_type=_CROSSJOINTABLESREQUEST,
     output_type=_EXPORTEDTABLECREATIONRESPONSE,
@@ -3720,7 +4009,7 @@ _TABLESERVICE = _descriptor.ServiceDescriptor(
   _descriptor.MethodDescriptor(
     name='NaturalJoinTables',
     full_name='io.deephaven.proto.backplane.grpc.TableService.NaturalJoinTables',
-    index=23,
+    index=24,
     containing_service=None,
     input_type=_NATURALJOINTABLESREQUEST,
     output_type=_EXPORTEDTABLECREATIONRESPONSE,
@@ -3730,7 +4019,7 @@ _TABLESERVICE = _descriptor.ServiceDescriptor(
   _descriptor.MethodDescriptor(
     name='ExactJoinTables',
     full_name='io.deephaven.proto.backplane.grpc.TableService.ExactJoinTables',
-    index=24,
+    index=25,
     containing_service=None,
     input_type=_EXACTJOINTABLESREQUEST,
     output_type=_EXPORTEDTABLECREATIONRESPONSE,
@@ -3740,7 +4029,7 @@ _TABLESERVICE = _descriptor.ServiceDescriptor(
   _descriptor.MethodDescriptor(
     name='LeftJoinTables',
     full_name='io.deephaven.proto.backplane.grpc.TableService.LeftJoinTables',
-    index=25,
+    index=26,
     containing_service=None,
     input_type=_LEFTJOINTABLESREQUEST,
     output_type=_EXPORTEDTABLECREATIONRESPONSE,
@@ -3750,7 +4039,7 @@ _TABLESERVICE = _descriptor.ServiceDescriptor(
   _descriptor.MethodDescriptor(
     name='AsOfJoinTables',
     full_name='io.deephaven.proto.backplane.grpc.TableService.AsOfJoinTables',
-    index=26,
+    index=27,
     containing_service=None,
     input_type=_ASOFJOINTABLESREQUEST,
     output_type=_EXPORTEDTABLECREATIONRESPONSE,
@@ -3760,7 +4049,7 @@ _TABLESERVICE = _descriptor.ServiceDescriptor(
   _descriptor.MethodDescriptor(
     name='ComboAggregate',
     full_name='io.deephaven.proto.backplane.grpc.TableService.ComboAggregate',
-    index=27,
+    index=28,
     containing_service=None,
     input_type=_COMBOAGGREGATEREQUEST,
     output_type=_EXPORTEDTABLECREATIONRESPONSE,
@@ -3770,7 +4059,7 @@ _TABLESERVICE = _descriptor.ServiceDescriptor(
   _descriptor.MethodDescriptor(
     name='Snapshot',
     full_name='io.deephaven.proto.backplane.grpc.TableService.Snapshot',
-    index=28,
+    index=29,
     containing_service=None,
     input_type=_SNAPSHOTTABLEREQUEST,
     output_type=_EXPORTEDTABLECREATIONRESPONSE,
@@ -3780,7 +4069,7 @@ _TABLESERVICE = _descriptor.ServiceDescriptor(
   _descriptor.MethodDescriptor(
     name='Flatten',
     full_name='io.deephaven.proto.backplane.grpc.TableService.Flatten',
-    index=29,
+    index=30,
     containing_service=None,
     input_type=_FLATTENREQUEST,
     output_type=_EXPORTEDTABLECREATIONRESPONSE,
@@ -3790,7 +4079,7 @@ _TABLESERVICE = _descriptor.ServiceDescriptor(
   _descriptor.MethodDescriptor(
     name='RunChartDownsample',
     full_name='io.deephaven.proto.backplane.grpc.TableService.RunChartDownsample',
-    index=30,
+    index=31,
     containing_service=None,
     input_type=_RUNCHARTDOWNSAMPLEREQUEST,
     output_type=_EXPORTEDTABLECREATIONRESPONSE,
@@ -3798,9 +4087,19 @@ _TABLESERVICE = _descriptor.ServiceDescriptor(
     create_key=_descriptor._internal_create_key,
   ),
   _descriptor.MethodDescriptor(
+    name='CreateInputTable',
+    full_name='io.deephaven.proto.backplane.grpc.TableService.CreateInputTable',
+    index=32,
+    containing_service=None,
+    input_type=_CREATEINPUTTABLEREQUEST,
+    output_type=_EXPORTEDTABLECREATIONRESPONSE,
+    serialized_options=None,
+    create_key=_descriptor._internal_create_key,
+  ),
+  _descriptor.MethodDescriptor(
     name='Batch',
     full_name='io.deephaven.proto.backplane.grpc.TableService.Batch',
-    index=31,
+    index=33,
     containing_service=None,
     input_type=_BATCHTABLEREQUEST,
     output_type=_EXPORTEDTABLECREATIONRESPONSE,
@@ -3810,7 +4109,7 @@ _TABLESERVICE = _descriptor.ServiceDescriptor(
   _descriptor.MethodDescriptor(
     name='ExportedTableUpdates',
     full_name='io.deephaven.proto.backplane.grpc.TableService.ExportedTableUpdates',
-    index=32,
+    index=34,
     containing_service=None,
     input_type=_EXPORTEDTABLEUPDATESREQUEST,
     output_type=_EXPORTEDTABLEUPDATEMESSAGE,

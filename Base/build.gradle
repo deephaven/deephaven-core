@@ -1,5 +1,8 @@
 dependencies {
-    compile depLog4j, depTrove3, depAnnotations, depCommonsCompress, project(':Internals')
+
+    compile depTrove3, depAnnotations, depCommonsCompress
+
+    compile depCommonsLang3
 
     compile 'io.deephaven:hash:0.1.0'
 

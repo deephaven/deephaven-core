@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.engine.table.impl.sources.UngroupedFloatArrayColumnSource",
+ "methods": {
+  "getComponentType": ":return: java.lang.Class<?>",
+  "getFloat": ":param index: long\n:return: float",
+  "getPrevFloat": ":param index: long\n:return: float",
+  "isImmutable": "Determine if this column source is immutable, meaning that the values at a given row key never change.\n\n:return: (boolean) true if the values at a given row key of the column source never change, false otherwise"
+ },
+ "path": "io.deephaven.engine.table.impl.sources.UngroupedFloatArrayColumnSource",
+ "typeName": "class"
+}

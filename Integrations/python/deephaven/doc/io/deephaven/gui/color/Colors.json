@@ -19,6 +19,6 @@
   "values": "Returns an array containing the constants of this enum type, in\nthe order they are declared.\n\n:return: (io.deephaven.gui.color.Colors[]) an array containing the constants of this enum type, in the order they are declared"
  },
  "path": "io.deephaven.gui.color.Colors",
- "text": "Pre-defined Colors available by name.\n\n The colors are the named colors commonly supported by HTML browsers.\n\n Methods and colors moved from DBColorUtil to here. They are left in DBColorUtil for backward compatibility. TODO\n (deephaven/deephaven-core/issues/175): Move this to a new module and package",
+ "text": "Pre-defined Colors available by name.\n\n The colors are the named colors commonly supported by HTML browsers.\n\n Methods and colors moved from DBColorUtil to here. They are left in ColorUtil for backward compatibility. TODO\n (deephaven/deephaven-core/issues/175): Move this to a new module and package",
  "typeName": "enum"
 }

@@ -5,20 +5,14 @@
 package io.deephaven.stats;
 
 import io.deephaven.base.clock.TimeConstants;
-import io.deephaven.internals.DirectMemoryStats;
-import io.deephaven.internals.JdkInternalsLoader;
-import io.deephaven.util.loggers.SimpleMailAppender;
 import io.deephaven.base.stats.Stats;
 import io.deephaven.base.stats.Value;
 import io.deephaven.base.stats.Counter;
 import io.deephaven.base.stats.State;
 import io.deephaven.hash.KeyedObjectHash;
 import io.deephaven.hash.KeyedObjectKey;
-import org.apache.log4j.*;
 
 import java.lang.management.*;
-import java.security.AccessController;
-import java.security.PrivilegedAction;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.function.BooleanSupplier;
@@ -28,14 +22,10 @@ public class StatsMemoryCollector {
     private static final long NANOS = 1000000000;
     private static final long MICROS = 1000000;
     private static final long MILLIS = 1000;
-    private static final DirectMemoryStats DIRECT_MEMORY_STATS = AccessController
-            .doPrivileged((PrivilegedAction<DirectMemoryStats>) JdkInternalsLoader.getInstance()::getDirectMemoryStats);
 
     private final MemoryMXBean memoryBean;
     private final Consumer<String> alertFunction;
     private final BooleanSupplier cmsAlertEnabled;
-
-    private static final Logger log = Logger.getLogger(StatsMemoryCollector.class);
 
     /*
      * This used to use the ServerStatus.getJvmUptime(), which is really only interesting because it is the first time
@@ -134,25 +124,13 @@ public class StatsMemoryCollector {
                 time.sample(timeSample);
 
                 if ("ConcurrentMarkSweep".equals(bean.getName())) {
-                    if (timeSample > 1000 && getStatsUptime() > 300000) {
-                        // snooze this e-mail for one minute after we forcefully schedule a preopen gc
-                        if (enableCmsAlerts.getAsBoolean()) {
-                            log.log(SimpleMailAppender
-                                    .MAIL("Long GC detected -- " + System.getProperty("process.name")),
-                                    "GC Time=" + timeSample);
-                        }
-                    }
-
                     if (c - lastCount > 0 && getStatsUptime() > 600000) {
                         final long now = System.currentTimeMillis();
                         if (now - lastCMSOccurrence < 30000) { // twice in 30 seconds seems like a bit much
                             if (now - lastCMSOccurrenceMailSent > TimeConstants.HOUR) { // send at most one an hour
                                 SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm:ss.SSS");
-
                                 final String message =
                                         "Last CMS collection at " + dateFormat.format(new Date(lastCMSOccurrence));
-                                log.log(SimpleMailAppender
-                                        .MAIL("Rapid CMS detected -- " + System.getProperty("process.name")), message);
                                 if (alertFunction != null) {
                                     alertFunction.accept("Rapid CMS detected, " + message);
                                 }
@@ -181,9 +159,6 @@ public class StatsMemoryCollector {
     private final Value nonHeapCommitted;
     private final Value nonHeapMax;
 
-    private final Value directMemoryUsed;
-    private final Value directMemoryMax;
-
     StatsMemoryCollector(long interval, Consumer<String> alertFunction, BooleanSupplier cmsAlertEnabled) {
         this.alertFunction = alertFunction;
         this.cmsAlertEnabled = cmsAlertEnabled;
@@ -197,9 +172,6 @@ public class StatsMemoryCollector {
         this.nonHeapUsed = Stats.makeItem("Memory-NonHeap", "Used", State.FACTORY).getValue();
         this.nonHeapCommitted = Stats.makeItem("Memory-NonHeap", "Committed", State.FACTORY).getValue();
         this.nonHeapMax = Stats.makeItem("Memory-NonHeap", "Max", State.FACTORY).getValue();
-
-        this.directMemoryUsed = Stats.makeItem("Memory-Direct", "Used", State.FACTORY).getValue();
-        this.directMemoryMax = Stats.makeItem("Memory-Direct", "Max", State.FACTORY).getValue();
     }
 
     /**
@@ -216,14 +188,6 @@ public class StatsMemoryCollector {
         nonHeapUsed.sample(nonHeap.getUsed());
         nonHeapCommitted.sample(nonHeap.getCommitted());
         nonHeapMax.sample(nonHeap.getMax());
-
-        AccessController.doPrivileged((PrivilegedAction<Void>) () -> {
-            // Obviously we are using internal Sun APIs here. Worst case is Java 9 breaks this and we have to do it a
-            // different way
-            directMemoryUsed.sample(DIRECT_MEMORY_STATS.getMemoryUsed());
-            directMemoryMax.sample(DIRECT_MEMORY_STATS.maxDirectMemory());
-            return null;
-        });
 
         for (MemoryPoolMXBean b : ManagementFactory.getMemoryPoolMXBeans()) {
             PoolState pool = pools.get(b.getName());

@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.engine.util.IterableUtils",
+ "methods": {
+  "appendCommaSeparatedList": "Note: Java generics information - <T>\n\n:param sb: java.lang.StringBuilder\n:param s: java.lang.Iterable<T>\n:return: java.lang.StringBuilder",
+  "appendSeparatedList": "Note: Java generics information - <T>\n\n:param sb: java.lang.StringBuilder\n:param s: java.lang.Iterable<T>\n:param separator: java.lang.String\n:param renderer: java.util.function.Function<T,java.lang.String>\n:return: java.lang.StringBuilder",
+  "makeCommaSeparatedList": "Note: Java generics information - <T>\n\n:param s: java.lang.Iterable<T>\n:return: java.lang.String",
+  "makeSeparatedList": "Note: Java generics information - <T>\n\n:param s: java.lang.Iterable<T>\n:param separator: java.lang.String\n:param renderer: java.util.function.Function<T,java.lang.String>\n:return: java.lang.String"
+ },
+ "path": "io.deephaven.engine.util.IterableUtils",
+ "typeName": "class"
+}

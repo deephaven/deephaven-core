@@ -1,0 +1,13 @@
+{
+ "className": "io.deephaven.engine.rowset.impl.OrderedLongSet$BuilderSequential",
+ "methods": {
+  "accept": "Provides a range to this consumer. As consecutive calls to accept are made, delivered ranges are assumed to be\n non overlapping and increasing in their first value; in particular, the first of a range has to be strictly\n greater than the last of the previous range.\n\n:param firstKey: (long) - the range first value.\n:param lastKey: (long) - the range last value.",
+  "appendKey": ":param key: long",
+  "appendRange": ":param firstKey: long\n:param lastKey: long",
+  "appendTreeIndexImpl": ":param shiftAmount: long\n:param ix: io.deephaven.engine.rowset.impl.OrderedLongSet\n:param acquire: boolean",
+  "getTreeIndexImpl": ":return: io.deephaven.engine.rowset.impl.OrderedLongSet",
+  "setDomain": ":param minKey: long\n:param maxKey: long"
+ },
+ "path": "io.deephaven.engine.rowset.impl.OrderedLongSet.BuilderSequential",
+ "typeName": "interface"
+}

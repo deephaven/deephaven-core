@@ -1,7 +1,6 @@
 package io.deephaven.integrations.learn;
 
-import io.deephaven.db.v2.InMemoryTable;
-import io.deephaven.db.v2.sources.ColumnSource;
+import io.deephaven.engine.table.impl.InMemoryTable;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -24,6 +23,7 @@ public class ScattererTest {
                 });
     }
 
+    @SafeVarargs
     private static Input[] createInputs(Function<Object[], Object>... gatherFuncs) {
         return new Input[] {new Input(new String[] {"Column1", "Column2"}, gatherFuncs[0]),
                 new Input("Column3", gatherFuncs[1])};
@@ -33,9 +33,16 @@ public class ScattererTest {
         return createInputs(gatherFunc, gatherFunc);
     }
 
+    @SafeVarargs
     private static Output[] createOutputs(Function<Object[], Object>... scatterFuncs) {
         return new Output[] {new Output("OutCol1", scatterFuncs[0], "int"),
                 new Output("OutCol2", scatterFuncs[1], null)};
+    }
+
+    @SafeVarargs
+    private static Output[] createOutputsPy(Function<Object[], Object>... scatterFuncs) {
+        return new Output[] {new Output("OutCol1", true, scatterFuncs[0], "int"),
+                new Output("OutCol2", true, scatterFuncs[1], null)};
     }
 
     private static Output[] createOutputs(Function<Object[], Object> scatterFunc) {
@@ -44,13 +51,13 @@ public class ScattererTest {
 
     @Test(expected = io.deephaven.base.verify.RequirementFailure.class)
     public void nullOutputArrayTest() {
-        Scatterer scatterer = new Scatterer(null);
+        new Scatterer(null);
     }
 
     @Test(expected = io.deephaven.base.verify.RequirementFailure.class)
     public void nullOutputElementTest() {
         Output[] outputs = createOutputs(args -> args);
-        Scatterer scatterer = new Scatterer(new Output[] {outputs[0], null});
+        new Scatterer(new Output[] {outputs[0], null});
     }
 
     @Test
@@ -112,8 +119,25 @@ public class ScattererTest {
         Scatterer scatterer = new Scatterer(outputs);
 
         Assert.assertArrayEquals(
-                new String[] {"OutCol1 =  (__scatterer.scatter(0, __FutureOffset))",
+                new String[] {"OutCol1 = (int) (__scatterer.scatter(0, __FutureOffset))",
                         "OutCol2 =  (__scatterer.scatter(1, __FutureOffset))"},
+                scatterer.generateQueryStrings("__FutureOffset"));
+    }
+
+    @Test
+    public void generateQueryStringsPyTest() {
+
+        Function<Object[], Object> scatterFunc1 = (params) -> 3;
+
+        Function<Object[], Object> scatterFunc2 = (params) -> 4;
+
+        Output[] outputs = createOutputsPy(scatterFunc1, scatterFunc2);
+
+        Scatterer scatterer = new Scatterer(outputs);
+
+        Assert.assertArrayEquals(
+                new String[] {"OutCol1 = (int) (PyObject)  (__scatterer.scatter(0, __FutureOffset))",
+                        "OutCol2 =  (PyObject)  (__scatterer.scatter(1, __FutureOffset))"},
                 scatterer.generateQueryStrings("__FutureOffset"));
     }
 }

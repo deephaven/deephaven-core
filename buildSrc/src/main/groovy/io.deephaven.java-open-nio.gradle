@@ -1,0 +1,32 @@
+plugins {
+  id 'java'
+}
+
+def runtimeVersion = Integer.parseInt((String)project.findProperty('runtimeVersion') ?: '11')
+def testRuntimeVersion = Integer.parseInt((String)project.findProperty('testRuntimeVersion') ?: '11')
+
+//    Caused by: java.lang.reflect.InaccessibleObjectException: Unable to make field long java.nio.Buffer.address accessible: module java.base does not "opens java.nio" to unnamed module @5a42bbf4
+//     at java.base/java.lang.reflect.AccessibleObject.checkCanSetAccessible(AccessibleObject.java:354)
+//     at java.base/java.lang.reflect.AccessibleObject.checkCanSetAccessible(AccessibleObject.java:297)
+//     at java.base/java.lang.reflect.Field.checkCanSetAccessible(Field.java:178)
+//     at java.base/java.lang.reflect.Field.setAccessible(Field.java:172)
+//     at org.apache.arrow.memory.util.MemoryUtil.<clinit>(MemoryUtil.java:84)
+//     ... 15 more
+
+if (runtimeVersion > 8) {
+  tasks.withType(JavaExec).configureEach {
+    jvmArgs += ['--add-opens', 'java.base/java.nio=ALL-UNNAMED']
+  }
+
+  tasks.withType(CreateStartScripts).configureEach {
+    defaultJvmOpts += ['--add-opens', 'java.base/java.nio=ALL-UNNAMED']
+  }
+
+  // TODO(deephaven-core#1493): add-opens Docker application based on plugin conventions
+}
+
+if (testRuntimeVersion > 8) {
+  tasks.withType(Test).configureEach {
+    jvmArgs += ['--add-opens', 'java.base/java.nio=ALL-UNNAMED']
+  }
+}

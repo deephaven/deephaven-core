@@ -24,20 +24,25 @@ public class PythonStaticGenerator {
     private static final List<String> customKafkaTools = Arrays.asList(); // "consumeToTable"
     // which methods should just be skipped
     private static final List<String> skipGeneration = Arrays.asList(
-            "io.deephaven.db.tables.utils.TableTools,display",
-            "io.deephaven.db.tables.utils.DBTimeUtils,convertJimDateTimeQuiet",
-            "io.deephaven.db.tables.utils.DBTimeUtils,convertJimMicrosDateTimeQuiet",
-            "io.deephaven.db.tables.utils.DBTimeUtils,convertJimMicrosDateTimeQuietFast",
-            "io.deephaven.db.tables.utils.DBTimeUtils,convertJimMicrosDateTimeQuietFastTz",
-            "io.deephaven.db.tables.utils.DBTimeUtils,diff",
-            "io.deephaven.db.tables.utils.DBTimeUtils,yearDiff",
-            "io.deephaven.db.tables.utils.DBTimeUtils,dayDiff",
-            "io.deephaven.db.plot.colors.ColorMaps,closureMap",
+            "io.deephaven.engine.util.TableTools,display",
+            "io.deephaven.time.DateTimeUtils,convertJimDateTimeQuiet",
+            "io.deephaven.time.DateTimeUtils,convertJimMicrosDateTimeQuiet",
+            "io.deephaven.time.DateTimeUtils,convertJimMicrosDateTimeQuietFast",
+            "io.deephaven.time.DateTimeUtils,convertJimMicrosDateTimeQuietFastTz",
+            "io.deephaven.time.DateTimeUtils,diff",
+            "io.deephaven.time.DateTimeUtils,yearDiff",
+            "io.deephaven.time.DateTimeUtils,dayDiff",
+            "io.deephaven.plot.colors.ColorMaps,closureMap",
             "io.deephaven.kafka.KafkaTools,consumeToTable",
-            "io.deephaven.kafka.KafkaTools,jsonSpec",
-            "io.deephaven.kafka.KafkaTools,avroSpec",
-            "io.deephaven.kafka.KafkaTools,simpleSpec",
-            "io.deephaven.kafka.KafkaTools,ignoreSpec");
+            "io.deephaven.kafka.KafkaTools.Consume,jsonSpec",
+            "io.deephaven.kafka.KafkaTools.Consume,avroSpec",
+            "io.deephaven.kafka.KafkaTools.Consume,simpleSpec",
+            "io.deephaven.kafka.KafkaTools.Consume,ignoreSpec",
+            "io.deephaven.kafka.KafkaTools,produceFromTable",
+            "io.deephaven.kafka.KafkaTools.Produce,jsonSpec",
+            "io.deephaven.kafka.KafkaTools.Produce,avroSpec",
+            "io.deephaven.kafka.KafkaTools.Produce,simpleSpec",
+            "io.deephaven.kafka.KafkaTools.Produce,ignoreSpec");
     private static final List<String> skipClassDocs = Collections.emptyList();
     private static final Logger log = Logger.getLogger(PythonStaticGenerator.class.toString());
     private static final String gradleTask = ":Generators:generatePythonIntegrationStaticMethods";
@@ -106,9 +111,9 @@ public class PythonStaticGenerator {
         final String beginMethod = "@_passThrough\ndef " + methodName + "(" + paramString + "):" +
                 PythonGeneratorParser.getMethodDocstring(classDocContainer, methodName, 4) + "\n";
         final String endMethod;
-        if ((javaClass.equals("io.deephaven.db.tables.utils.ParquetTools")
+        if ((javaClass.equals("io.deephaven.parquet.table.ParquetTools")
                 && customParquetTools.contains(methodName)) ||
-                (javaClass.equals("io.deephaven.db.tables.utils.TableTools")
+                (javaClass.equals("io.deephaven.engine.util.TableTools")
                         && customTableTools.contains(methodName))
                 ||
                 (javaClass.equals("io.deephaven.kafka.KafkaTools")

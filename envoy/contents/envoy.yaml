@@ -29,6 +29,12 @@ static_resources:
                     - name: reverse_proxy
                       domains: ["*"]
                       routes:
+                        - match:
+                            prefix: "/"
+                            headers:
+                              - name: "sec-websocket-protocol"
+                                present_match: true
+                          route: { cluster: grpc-proxy }
                         - match: # Call to / goes to the landing page
                             path: "/"
                           route: { cluster: web }
@@ -46,16 +52,11 @@ static_resources:
                           route: { cluster: web }
                         - match: # Any GRPC call is assumed to be forwarded to the real service
                             prefix: "/"
-                            grpc: {}
                           route:
                             cluster: grpc-api
                             max_stream_duration:
                               grpc_timeout_header_max: 0s
                             timeout: 0s
-                        - match: # Any other call made will be forwarded to the grpc websocket proxy
-                            prefix: "/"
-                          route:
-                            cluster: grpc-proxy
                 http_filters:
                   - name: envoy.filters.http.grpc_web
                   - name: envoy.filters.http.router
@@ -79,7 +80,7 @@ static_resources:
       lb_policy: ROUND_ROBIN
       http2_protocol_options: {}
       load_assignment:
-        cluster_name: grpc-proxy
+        cluster_name: grpc-api
         endpoints:
           - lb_endpoints:
               - endpoint:

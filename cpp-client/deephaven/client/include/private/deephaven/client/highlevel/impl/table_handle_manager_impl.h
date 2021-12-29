@@ -44,6 +44,8 @@ public:
   //  std::shared_ptr<QueryTableImpl> tempTable(const std::vector<ColumnDataHolder> &columnDataHolders);
   std::shared_ptr<TableHandleImpl> timeTable(int64_t startTimeNanos, int64_t periodNanos);
 
+  std::tuple<std::shared_ptr<TableHandleImpl>, arrow::flight::FlightDescriptor> newTicket() const;
+
   const Ticket &consoleId() const { return consoleId_; }
   const std::shared_ptr<Server> &server() const { return server_; }
   const std::shared_ptr<Executor> &executor() const { return executor_; }

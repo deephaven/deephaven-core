@@ -1,0 +1,47 @@
+plugins {
+    id 'java'
+    id 'application'
+}
+
+dependencies {
+    implementation project(':java-client-barrage-dagger')
+    implementation project(':java-client-flight-examples')
+
+    implementation 'info.picocli:picocli:4.6.1'
+
+    Classpaths.inheritJUnitPlatform(project)
+    Classpaths.inheritAssertJ(project)
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+
+    runtimeOnly project(':log-to-slf4j')
+    Classpaths.inheritLogbackClassic(project)
+}
+
+test {
+    useJUnitPlatform()
+}
+
+startScripts.enabled = false
+
+def createApplication = { String name, String mainClass ->
+    project.tasks.register("create-${name}", CreateStartScripts) {script ->
+        script.mainClass.set mainClass
+        script.applicationName = name
+        script.outputDir = project.layout.buildDirectory.dir(name).get().asFile
+        script.classpath = startScripts.classpath
+        script.defaultJvmOpts = [
+                '-server',
+                '-XX:+UseG1GC',
+                '-XX:MaxGCPauseMillis=100',
+                '-XX:+UseStringDeduplication',
+                '-DConfiguration.rootFile=dh-defaults.prop']
+    }
+}
+
+applicationDistribution.into('bin') {
+    from(createApplication('subscribe-application-field', 'io.deephaven.client.examples.SubscribeApplicationField'))
+    from(createApplication('subscribe-qs', 'io.deephaven.client.examples.SubscribeQueryScope'))
+    fileMode = 0755
+}
+
+apply plugin: 'io.deephaven.java-open-nio'

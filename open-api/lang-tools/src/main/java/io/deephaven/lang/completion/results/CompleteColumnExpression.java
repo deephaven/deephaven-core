@@ -1,6 +1,6 @@
 package io.deephaven.lang.completion.results;
 
-import io.deephaven.libs.primitives.BytePrimitives;
+import io.deephaven.function.BytePrimitives;
 import io.deephaven.lang.completion.ChunkerCompleter;
 import io.deephaven.lang.completion.CompletionRequest;
 import io.deephaven.lang.generated.ChunkerConstants;
@@ -9,11 +9,9 @@ import io.deephaven.lang.generated.Node;
 import io.deephaven.lang.generated.Token;
 import io.deephaven.proto.backplane.script.grpc.CompletionItem;
 import io.deephaven.proto.backplane.script.grpc.DocumentRange;
-import io.deephaven.proto.backplane.script.grpc.TextEdit;
 
 import java.lang.reflect.Method;
 import java.util.Collection;
-import java.util.Set;
 
 /**
  * A class specifically for completing column expression; to be called after the completer has discovered the a column

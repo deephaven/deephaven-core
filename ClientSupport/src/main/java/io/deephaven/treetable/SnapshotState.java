@@ -5,21 +5,21 @@ import io.deephaven.base.StringUtils;
 import io.deephaven.base.verify.Assert;
 import io.deephaven.datastructures.util.CollectionUtil;
 import io.deephaven.datastructures.util.SmartKey;
-import io.deephaven.db.tables.ColumnDefinition;
-import io.deephaven.db.exceptions.UncheckedTableException;
-import io.deephaven.db.tables.Table;
-import io.deephaven.db.tables.TableDefinition;
-import io.deephaven.db.tables.select.MatchPair;
-import io.deephaven.db.tables.utils.DBDateTime;
+import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.exceptions.UncheckedTableException;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.table.MatchPair;
+import io.deephaven.time.DateTime;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.util.QueryConstants;
-import io.deephaven.db.util.BooleanUtils;
-import io.deephaven.db.util.ColumnFormattingValues;
-import io.deephaven.db.v2.HierarchicalTable;
-import io.deephaven.db.v2.HierarchicalTableInfo;
-import io.deephaven.db.v2.RollupInfo;
-import io.deephaven.db.v2.TableMap;
-import io.deephaven.db.v2.sources.ColumnSource;
-import io.deephaven.db.v2.utils.Index;
+import io.deephaven.util.BooleanUtils;
+import io.deephaven.engine.util.ColumnFormattingValues;
+import io.deephaven.engine.table.impl.HierarchicalTable;
+import io.deephaven.engine.table.impl.HierarchicalTableInfo;
+import io.deephaven.engine.table.impl.RollupInfo;
+import io.deephaven.engine.table.TableMap;
+import io.deephaven.engine.table.ColumnSource;
 
 import java.lang.reflect.Array;
 import java.util.*;
@@ -89,7 +89,8 @@ class SnapshotState {
     // endregion
 
     interface Copier {
-        void copy(boolean usePrev, ColumnSource columnSource, Index.Iterator it, Object target, int offset, Table table,
+        void copy(boolean usePrev, ColumnSource columnSource, RowSet.Iterator it, Object target, int offset,
+                Table table,
                 TableMap tableMap, BitSet childPresenceColumn);
     }
 
@@ -112,7 +113,7 @@ class SnapshotState {
                     .filter(p -> source.hasColumns(p.rightColumn)) // Filter out any columns that don't exist in the
                                                                    // parent
                                                                    // this is a concern for the Count aggregation.
-                    .collect(Collectors.toMap(MatchPair::left, MatchPair::right));
+                    .collect(Collectors.toMap(MatchPair::leftColumn, MatchPair::rightColumn));
             includedConstituentColumns = new HashSet<>();
         } else {
             constituentCopiers = null;
@@ -155,7 +156,7 @@ class SnapshotState {
                     // later on. Ignore the by columns, they do not get modified.
                     if (includeConstituents) { // Do we include constituents?
                         final String sourceName = aggToSourceMap.get(dataPair.first);
-                        if (!io.deephaven.db.util.string.StringUtils.isNullOrEmpty(sourceName) &&
+                        if (!io.deephaven.engine.util.string.StringUtils.isNullOrEmpty(sourceName) &&
                                 !((RollupInfo) info).getSelectColumnNames().contains(dataPair.first) && // Is it one of
                                                                                                         // the grouping
                                                                                                         // columns?
@@ -179,35 +180,35 @@ class SnapshotState {
      *           it's table key, so that clients can map rows back into the tree structure.
      *
      * @param usePrev if the snapshot should use previous values.
-     * @param snapshotIndex An index containing the rows to copy from the source table.
+     * @param snapshotRowSet A RowSet containing the rows to copy from the source table.
      */
-    void addToSnapshot(boolean usePrev, Table table, Object tableKey, TableMap tableMap, Index snapshotIndex) {
-        Assert.leq(copied + snapshotIndex.size(), "dataOffset + snapshotIndex.size()", actualViewportSize,
+    void addToSnapshot(boolean usePrev, Table table, Object tableKey, TableMap tableMap, RowSet snapshotRowSet) {
+        Assert.leq(copied + snapshotRowSet.size(), "dataOffset + snapshotRowSet.size()", actualViewportSize,
                 "viewport size");
 
         if (table.hasAttribute(Table.ROLLUP_LEAF_ATTRIBUTE) && includeConstituents) {
-            addToSnapshotConstituent(usePrev, table, tableMap, snapshotIndex);
+            addToSnapshotConstituent(usePrev, table, tableMap, snapshotRowSet);
         } else {
-            addToSnapshotNormal(usePrev, table, tableMap, snapshotIndex);
+            addToSnapshotNormal(usePrev, table, tableMap, snapshotRowSet);
         }
 
         // Associate the rows with this table.
-        Arrays.fill(tableKeyColumn, copied, copied + snapshotIndex.intSize(), tableKey);
+        Arrays.fill(tableKeyColumn, copied, copied + snapshotRowSet.intSize(), tableKey);
 
-        copied += snapshotIndex.size();
+        copied += snapshotRowSet.size();
     }
 
     /**
      * Copy data directly from the table in question.
      */
-    private void addToSnapshotNormal(boolean usePrev, Table table, TableMap tableMap, Index snapshotIndex) {
+    private void addToSnapshotNormal(boolean usePrev, Table table, TableMap tableMap, RowSet snapshotRowSet) {
         for (int ii = 0; ii < data.size(); ii++) {
             if (!columns.get(ii)) {
                 continue;
             }
 
             final ColumnSource cs = table.getColumnSource(data.get(ii).first);
-            columnCopiers[ii].copy(usePrev, cs, snapshotIndex.iterator(), data.get(ii).second, copied, table, tableMap,
+            columnCopiers[ii].copy(usePrev, cs, snapshotRowSet.iterator(), data.get(ii).second, copied, table, tableMap,
                     childPresenceColumn);
         }
     }
@@ -216,11 +217,11 @@ class SnapshotState {
      * Copy the data from the table in question, assuming that the table is a constituent table. This means that we need
      * to copy the data to the alternate data set because column types may be reused or changed.
      */
-    private void addToSnapshotConstituent(boolean usePrev, Table table, TableMap tableMap, Index snapshotIndex) {
+    private void addToSnapshotConstituent(boolean usePrev, Table table, TableMap tableMap, RowSet snapshotRowSet) {
         includesLeafData = true;
         includedConstituentColumns.forEach(cn -> {
             final ColumnSource<?> cs = table.getColumnSource(cn);
-            constituentCopiers.get(cn).copy(usePrev, cs, snapshotIndex.iterator(), constituentData.get(cn).getSecond(),
+            constituentCopiers.get(cn).copy(usePrev, cs, snapshotRowSet.iterator(), constituentData.get(cn).getSecond(),
                     copied, table, tableMap, childPresenceColumn);
         });
 
@@ -237,7 +238,7 @@ class SnapshotState {
                 // so we'll allow those to not exist and be null-filled
                 final ColumnSource<?> cs = columnSourceMap.get(columnName);
                 if (cs != null) {
-                    columnCopiers[ii].copy(usePrev, cs, snapshotIndex.iterator(), data.get(ii).second, copied, table,
+                    columnCopiers[ii].copy(usePrev, cs, snapshotRowSet.iterator(), data.get(ii).second, copied, table,
                             tableMap, childPresenceColumn);
                 } else if (!ColumnFormattingValues.isFormattingColumn(columnName)) {
                     throw new UncheckedTableException(
@@ -297,7 +298,7 @@ class SnapshotState {
     private Pair<String, Object> makeData(ColumnDefinition col, int requestedViewportSize) {
         final Class type = col.getDataType();
         final String name = col.getName();
-        if (type == DBDateTime.class) {
+        if (type == DateTime.class) {
             return new Pair<>(name, new long[requestedViewportSize]);
         } else if (type == boolean.class || type == Boolean.class) {
             return new Pair<>(name, new byte[requestedViewportSize]);
@@ -353,13 +354,13 @@ class SnapshotState {
      * @return A Copier for the child key column
      */
     private Copier makeChildCopier(Class type) {
-        if (type == DBDateTime.class) {
+        if (type == DateTime.class) {
             return (usePrev, columnSource, it, target, offset, table, tableMap, childPresenceColumn) -> {
                 Assert.neqNull(tableMap, "Child table map");
                 while (it.hasNext()) {
                     final long next = it.nextLong();
-                    final DBDateTime keyVal =
-                            (DBDateTime) (usePrev ? columnSource.getPrev(next) : columnSource.get(next));
+                    final DateTime keyVal =
+                            (DateTime) (usePrev ? columnSource.getPrev(next) : columnSource.get(next));
                     final Table child = tableMap.get(keyVal);
                     ((long[]) target)[offset] = keyVal.getNanos();
                     childPresenceColumn.set(offset++, child != null && child.size() > 0);
@@ -462,13 +463,13 @@ class SnapshotState {
      * Create a {@link Copier} that will copy data from columns into the local snapshot.
      */
     private Copier makeCopier(Class type) {
-        if (type == DBDateTime.class) {
+        if (type == DateTime.class) {
             return (usePrev, columnSource, it, target, offset, table, tableMap, childPresenceColumn) -> {
                 while (it.hasNext()) {
                     final long next = it.nextLong();
-                    final DBDateTime dbDateTime =
-                            (DBDateTime) (usePrev ? columnSource.getPrev(next) : columnSource.get(next));
-                    ((long[]) target)[offset++] = dbDateTime == null ? QueryConstants.NULL_LONG : dbDateTime.getNanos();
+                    final DateTime dateTime =
+                            (DateTime) (usePrev ? columnSource.getPrev(next) : columnSource.get(next));
+                    ((long[]) target)[offset++] = dateTime == null ? QueryConstants.NULL_LONG : dateTime.getNanos();
                 }
             };
         } else if (type == boolean.class || type == Boolean.class) {

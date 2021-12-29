@@ -5,21 +5,18 @@ dependencies {
     testCompile project(path: ':Base', configuration: 'tests')
 
     testRuntimeOnly project(':log-to-slf4j')
-    testRuntimeOnly 'org.slf4j:slf4j-simple:1.7.30'
+    Classpaths.inheritSlf4j(project, 'slf4j-simple', 'testRuntimeOnly')
 }
 
 test {
     useJUnit()
 
-    workingDir = "$rootDir"
     enableAssertions = true
     maxHeapSize = '3g'
 
     systemProperty 'Configuration.rootFile', 'lib-tests.prop'
     systemProperty 'devroot', "$rootDir"
     systemProperty 'workspace', "$rootDir/tmp/workspace"
-    systemProperty 'log4j.configuration', 'log4j.teamcity.xml'
-    systemProperty 'disable.pdsport.rotate', 'true'
     systemProperty 'configuration.quiet', 'true'
 
     exclude '**/NoTest*'

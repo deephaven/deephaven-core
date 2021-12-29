@@ -1,0 +1,12 @@
+{
+ "className": "io.deephaven.engine.table.impl.preview.ArrayPreview",
+ "methods": {
+  "fromArray": ":param array: java.lang.Object\n:return: io.deephaven.engine.table.impl.preview.ArrayPreview",
+  "fromPyListWrapper": ":param list: org.jpy.PyListWrapper\n:return: io.deephaven.engine.table.impl.preview.ArrayPreview",
+  "fromVector": ":param vector: io.deephaven.vector.Vector<?>\n:return: io.deephaven.engine.table.impl.preview.ArrayPreview",
+  "toString": ":return: java.lang.String"
+ },
+ "path": "io.deephaven.engine.table.impl.preview.ArrayPreview",
+ "text": "A Preview Type for Arrays and Vector. Converts long arrays to a String \"[1, 2, 3, 4, 5...]\"",
+ "typeName": "class"
+}

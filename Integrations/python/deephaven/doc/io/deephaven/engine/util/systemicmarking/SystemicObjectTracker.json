@@ -1,0 +1,13 @@
+{
+ "className": "io.deephaven.engine.util.systemicmarking.SystemicObjectTracker",
+ "methods": {
+  "executeSystemically": "Execute the supplier with the thread's systemic importance set to the value of systemicThread.\n\nNote: Java generics information - <T>\n\n:param systemicThread: (boolean) - if the thread should be systemic while executing supplier\n:param supplier: (java.util.function.Supplier<T>) - the operation to execute with the given value of systemicThread\n:return: (T) the supplier's return value",
+  "isSystemic": "Determine if an object is systemic.\n\n If marking is not enabled, all objects are systemic. If marking is enabled, only objects marked systemic are\n systemic.\n\n:param o: io.deephaven.engine.util.systemicmarking.SystemicObject\n:return: (boolean) true if o should be treated as systemic object.",
+  "isSystemicObjectMarkingEnabled": ":return: (boolean) true if systemic object marking is enabled, false otherwise.",
+  "isSystemicThread": ":return: (boolean) true if the current thread is creating systemic objects, false otherwise",
+  "markThreadSystemic": "Marks the current thread as systemically important, this is a permanent change."
+ },
+ "path": "io.deephaven.engine.util.systemicmarking.SystemicObjectTracker",
+ "text": "If enabled, marks objects as systemically important.\n\n When enabled, only errors from systemically important objects are treated as fatal.",
+ "typeName": "class"
+}

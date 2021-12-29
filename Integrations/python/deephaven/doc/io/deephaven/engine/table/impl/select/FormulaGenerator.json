@@ -1,0 +1,12 @@
+{
+ "className": "io.deephaven.engine.table.impl.select.FormulaGenerator",
+ "methods": {
+  "disallowRefresh": ":return: boolean",
+  "getColumnArrays": ":return: java.util.List<java.lang.String>",
+  "getFormula": ":param rowSet: io.deephaven.engine.rowset.RowSet\n:param returnType: java.lang.Class\n:param initLazyMap: boolean\n:param columnsToData: java.util.Map<java.lang.String,? extendsio.deephaven.engine.table.ColumnSource>\n:param fallThroughColumns: java.util.Map<java.lang.String,? extendsio.deephaven.engine.table.ColumnSource>\n:param fallThroughContiguous: boolean\n:param columnsOverride: java.util.Map<java.lang.String,? extendsio.deephaven.engine.table.ColumnSource>\n:param overflowStateRowSet: io.deephaven.engine.rowset.RowSet\n:return: io.deephaven.engine.table.impl.select.Formula",
+  "getReturnedType": ":return: java.lang.Class",
+  "initDef": ":param columnDefinitionMap: java.util.Map<java.lang.String,io.deephaven.engine.table.ColumnDefinition>\n:param columnsOverride: java.util.Map<java.lang.String,? extendsio.deephaven.engine.table.ColumnSource>\n:return: java.util.List<java.lang.String>"
+ },
+ "path": "io.deephaven.engine.table.impl.select.FormulaGenerator",
+ "typeName": "interface"
+}

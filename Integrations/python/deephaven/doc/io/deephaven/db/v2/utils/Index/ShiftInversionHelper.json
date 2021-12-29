@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.db.v2.utils.Index$ShiftInversionHelper",
- "methods": {
-  "mapToPrevKeyspace": ":param key: long\n:param isEnd: boolean\n:return: long"
- },
- "path": "io.deephaven.db.v2.utils.Index.ShiftInversionHelper",
- "typeName": "class"
-}

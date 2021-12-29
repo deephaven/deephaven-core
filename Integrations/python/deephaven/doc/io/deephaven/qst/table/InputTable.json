@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.qst.table.InputTable",
+ "methods": {
+  "schema": "The schema for the input table.\n\n:return: (io.deephaven.qst.table.TableSchema) the schema",
+  "walk": "Note: Java generics information - <V extends io.deephaven.qst.table.InputTable.Visitor>\n\n:param visitor: V\n:return: V"
+ },
+ "path": "io.deephaven.qst.table.InputTable",
+ "text": "An input table creation specification.",
+ "typeName": "interface"
+}

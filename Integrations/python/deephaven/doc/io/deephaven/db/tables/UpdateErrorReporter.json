@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.db.tables.UpdateErrorReporter",
- "methods": {
-  "reportUpdateError": ":param t: java.lang.Throwable"
- },
- "path": "io.deephaven.db.tables.UpdateErrorReporter",
- "typeName": "interface"
-}

@@ -33,7 +33,7 @@ def _defineSymbols():
     global _java_type_, _java_file_type_, _dh_config_, _compression_codec_
     if _java_type_ is None:
         # This will raise an exception if the desired object is not the classpath
-        _java_type_ = jpy.get_type("io.deephaven.db.tables.utils.ParquetTools")
+        _java_type_ = jpy.get_type("io.deephaven.parquet.table.ParquetTools")
         _java_file_type_ = jpy.get_type("java.io.File")
         _dh_config_ = jpy.get_type("io.deephaven.configuration.Configuration")
         _compression_codec_ = jpy.get_type("org.apache.parquet.hadoop.metadata.CompressionCodecName")
@@ -109,6 +109,7 @@ def _custom_writeTable(*args):
         return _java_type_.writeTable(args[0], getFileObject(args[1]))
     elif len(args) == 3:
         return _java_type_.writeTable(args[0], getFileObject(args[1]),  getattr(_java_type_, args[2]))
+    raise Exception('Wrong number of arguments: {}'.format(len(args)))
 
 
 def _custom_writeTables(sources, tableDefinition, destinations):

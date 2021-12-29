@@ -1,0 +1,12 @@
+{
+ "className": "io.deephaven.engine.table.impl.vector.PrevByteVectorColumnWrapper",
+ "methods": {
+  "get": ":param i: long\n:return: byte",
+  "size": "The size of this data structure.\n\n:return: (long) The size",
+  "subVector": ":param fromIndex: long\n:param toIndex: long\n:return: io.deephaven.vector.ByteVector",
+  "subVectorByPositions": ":param positions: long[]\n:return: io.deephaven.vector.ByteVector",
+  "toArray": "*Overload 1*  \n  :return: byte[]\n  \n*Overload 2*  \n  :param shouldBeNullIfOutofBounds: boolean\n  :param maxSize: int\n  :return: byte[]"
+ },
+ "path": "io.deephaven.engine.table.impl.vector.PrevByteVectorColumnWrapper",
+ "typeName": "class"
+}

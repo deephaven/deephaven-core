@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.engine.table.impl.remote.InitialSnapshotTable",
+ "methods": {
+  "getSubscribedColumns": ":return: java.util.BitSet",
+  "isSubscribedColumn": ":param column: int\n:return: boolean",
+  "setupInitialSnapshotTable": "*Overload 1*  \n  :param originalTable: io.deephaven.engine.table.Table\n  :param snapshot: io.deephaven.engine.table.impl.remote.InitialSnapshot\n  :return: io.deephaven.engine.table.impl.remote.InitialSnapshotTable\n  \n*Overload 2*  \n  :param originalTable: io.deephaven.engine.table.Table\n  :param snapshot: io.deephaven.engine.table.impl.remote.InitialSnapshot\n  :param subscribedColumns: java.util.BitSet\n  :return: io.deephaven.engine.table.impl.remote.InitialSnapshotTable\n  \n*Overload 3*  \n  :param definition: io.deephaven.engine.table.TableDefinition\n  :param snapshot: io.deephaven.engine.table.impl.remote.InitialSnapshot\n  :return: io.deephaven.engine.table.impl.remote.InitialSnapshotTable\n  \n*Overload 4*  \n  :param definition: io.deephaven.engine.table.TableDefinition\n  :param snapshot: io.deephaven.engine.table.impl.remote.InitialSnapshot\n  :param subscribedColumns: java.util.BitSet\n  :return: io.deephaven.engine.table.impl.remote.InitialSnapshotTable"
+ },
+ "path": "io.deephaven.engine.table.impl.remote.InitialSnapshotTable",
+ "typeName": "class"
+}

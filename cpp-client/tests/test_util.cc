@@ -1,13 +1,20 @@
-#include "tests/test_util.h"
+/*
+ * Copyright (c) 2016-2020 Deephaven Data Labs and Patent Pending
+ */
+#include "test_util.h"
+#include "deephaven/client/utility/table_maker.h"
+#include "deephaven/client/utility/utility.h"
 
 namespace deephaven {
 namespace client {
 namespace tests {
 
 using deephaven::client::highlevel::TableHandle;
-using deephaven::client::utility::flight::statusOrDie;
-using deephaven::client::utility::flight::valueOrDie;
+using deephaven::client::utility::okOrThrow;
+using deephaven::client::utility::valueOrThrow;
+using deephaven::client::utility::streamf;
 using deephaven::client::utility::stringf;
+using deephaven::client::utility::TableMaker;
 
 ColumnNamesForTests::ColumnNamesForTests() : importDate_("ImportDate"), ticker_("Ticker"),
   open_("Open"), close_("Close"), volume_("Volume") {}
@@ -91,79 +98,30 @@ ColumnDataForTests::ColumnDataForTests(ColumnDataForTests &&other) noexcept = de
 ColumnDataForTests &ColumnDataForTests::operator=(ColumnDataForTests &&other) noexcept = default;
 ColumnDataForTests::~ColumnDataForTests() = default;
 
-TableWizard::TableWizard() = default;
-TableWizard::~TableWizard() = default;
-
-void TableWizard::finishAddColumn(std::string name, internal::TypeConverter info) {
-  auto kvMetadata = std::make_shared<arrow::KeyValueMetadata>();
-  statusOrDie(kvMetadata->Set("deephaven:type", info.deephavenType()), "KeyValueMetadata::Set");
-
-  auto field = std::make_shared<arrow::Field>(std::move(name), std::move(info.dataType()), true,
-      std::move(kvMetadata));
-  statusOrDie(schemaBuilder_.AddField(field), "SchemaBuilder::AddField");
-
-  if (columns_.empty()) {
-    numRows_ = info.column()->length();
-  } else if (numRows_ != info.column()->length()) {
-    auto message = stringf("Column sizes not consistent: expected %o, have %o", numRows_,
-        info.column()->length());
-    throw std::runtime_error(message);
-  }
-
-  columns_.push_back(std::move(info.column()));
-}
-
 TableMakerForTests TableMakerForTests::create() {
-  std::cerr << "Connecting to server (TODO(kosak): parameterize connection name)\n";
+  std::string connectionString("localhost:10000");
+  streamf(std::cerr, "Connecting to %o\n", connectionString);
   auto client = Client::connect("localhost:10000");
   auto manager = client.getManager();
 
   ColumnNamesForTests cn;
   ColumnDataForTests cd;
 
-  TableWizard wizard;
-  wizard.addColumn(cn.importDate(), cd.importDate());
-  wizard.addColumn(cn.ticker(), cd.ticker());
-  wizard.addColumn(cn.open(), cd.open());
-  wizard.addColumn(cn.close(), cd.close());
-  wizard.addColumn(cn.volume(), cd.volume());
+  TableMaker maker;
+  maker.addColumn(cn.importDate(), cd.importDate());
+  maker.addColumn(cn.ticker(), cd.ticker());
+  maker.addColumn(cn.open(), cd.open());
+  maker.addColumn(cn.close(), cd.close());
+  maker.addColumn(cn.volume(), cd.volume());
 
-  std::string testTableName = "demo";
-
-  auto testTable = wizard.makeTable(manager, testTableName);
-
-  return TableMakerForTests(std::move(client), std::move(testTable), std::move(testTableName),
-      std::move(cn), std::move(cd));
+  auto testTable = maker.makeTable(manager);
+  return TableMakerForTests(std::move(client), std::move(testTable), std::move(cn), std::move(cd));
 }
 
 TableMakerForTests::TableMakerForTests(TableMakerForTests &&) noexcept = default;
 TableMakerForTests &TableMakerForTests::operator=(TableMakerForTests &&) noexcept = default;
 TableMakerForTests::~TableMakerForTests() = default;
 
-TableHandle TableWizard::makeTable(const TableHandleManager &manager, std::string tableName) {
-  auto schema = valueOrDie(schemaBuilder_.Finish(), "Failed to create schema");
-
-  auto wrapper = manager.createFlightWrapper();
-
-  arrow::flight::FlightCallOptions options;
-  wrapper.addAuthHeaders(&options);
-
-  auto fd = arrow::flight::FlightDescriptor::Path({"scope", tableName});
-
-  std::unique_ptr<arrow::flight::FlightStreamWriter> fsw;
-  std::unique_ptr<arrow::flight::FlightMetadataReader> fmr;
-  statusOrDie(wrapper.flightClient()->DoPut(options, fd, schema, &fsw, &fmr), "DoPut failed");
-  auto batch = arrow::RecordBatch::Make(schema, numRows_, std::move(columns_));
-
-  statusOrDie(fsw->WriteRecordBatch(*batch), "WriteRecordBatch failed");
-  statusOrDie(fsw->DoneWriting(), "DoneWriting failed");
-
-  std::shared_ptr<arrow::Buffer> buf;
-  statusOrDie(fmr->ReadMetadata(&buf), "ReadMetadata failed");
-  statusOrDie(fsw->Close(), "Close failed");
-
-  return manager.fetchTable(std::move(tableName));
-}
 
 namespace internal {
 void compareTableHelper(int depth, const std::shared_ptr<arrow::Table> &table,
@@ -217,8 +175,8 @@ void compareTableHelper(int depth, const std::shared_ptr<arrow::Table> &table,
       continue;
     }
 
-    const auto lItem = valueOrDie(lChunk->GetScalar(lChunkIndex), "GetScalar");
-    const auto rItem = valueOrDie(rChunk->GetScalar(rChunkIndex), "GetScalar");
+    const auto lItem = valueOrThrow(DEEPHAVEN_EXPR_MSG(lChunk->GetScalar(lChunkIndex)));
+    const auto rItem = valueOrThrow(DEEPHAVEN_EXPR_MSG(rChunk->GetScalar(rChunkIndex)));
 
     if (!lItem->Equals(rItem)) {
       auto message = stringf("Column %o: Columns differ at element %o: %o vs %o",
@@ -237,7 +195,7 @@ void compareTableHelper(int depth, const std::shared_ptr<arrow::Table> &table,
 std::shared_ptr<arrow::Table> basicValidate(const TableHandle &table, int expectedColumns) {
   auto fsr = table.getFlightStreamReader();
   std::shared_ptr<arrow::Table> arrowTable;
-  statusOrDie(fsr->ReadAll(&arrowTable), "FlightStreamReader::ReadAll");
+  okOrThrow(DEEPHAVEN_EXPR_MSG(fsr->ReadAll(&arrowTable)));
 
   if (expectedColumns != arrowTable->num_columns()) {
     auto message = stringf("Expected %o columns, but table actually has %o columns",
@@ -247,21 +205,6 @@ std::shared_ptr<arrow::Table> basicValidate(const TableHandle &table, int expect
 
   return arrowTable;
 }
-
-TypeConverter::TypeConverter(std::shared_ptr<arrow::DataType> dataType,
-    std::string deephavenType, std::shared_ptr<arrow::Array> column) :
-    dataType_(std::move(dataType)), deephavenType_(std::move(deephavenType)),
-    column_(std::move(column)) {}
-TypeConverter::~TypeConverter() = default;
-
-const char *TypeConverterTraits<bool>::deephavenTypeName = "java.lang.Boolean";
-const char *TypeConverterTraits<int8_t>::deephavenTypeName = "byte";
-const char *TypeConverterTraits<int16_t>::deephavenTypeName = "short";
-const char *TypeConverterTraits<int32_t>::deephavenTypeName = "int";
-const char *TypeConverterTraits<int64_t>::deephavenTypeName = "long";
-const char *TypeConverterTraits<float>::deephavenTypeName = "float";
-const char *TypeConverterTraits<double>::deephavenTypeName = "double";
-const char *TypeConverterTraits<std::string>::deephavenTypeName = "java.lang.String";
 }  // namespace internal
 
 }  // namespace tests

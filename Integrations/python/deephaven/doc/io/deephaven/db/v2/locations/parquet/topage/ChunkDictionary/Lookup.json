@@ -1,8 +1,0 @@
-{
- "className": "io.deephaven.db.v2.locations.parquet.topage.ChunkDictionary$Lookup",
- "methods": {
-  "lookup": "Apply whatever lookup logic needs to be applied to a \"raw\" Dictionary in order to get a value for the\n supplied key.\n\n:param dictionary: (org.apache.parquet.column.Dictionary) - The Dictionary\n:param key: (int) - The key\n:return: (ChunkDictionary.Lookup.T) The value that should be mapped by the enclosing ChunkDictionary"
- },
- "path": "io.deephaven.db.v2.locations.parquet.topage.ChunkDictionary.Lookup",
- "typeName": "interface"
-}

@@ -6,10 +6,12 @@ package io.deephaven.modelfarm;
 
 import io.deephaven.base.verify.Assert;
 import io.deephaven.base.verify.Require;
-import io.deephaven.db.exceptions.QueryCancellationException;
-import io.deephaven.db.tables.live.LiveTableMonitor;
-import io.deephaven.db.v2.NotificationStepSource;
-import io.deephaven.db.v2.remote.ConstructSnapshot;
+import io.deephaven.engine.exceptions.CancellationException;
+import io.deephaven.engine.table.ColumnSource;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.engine.table.impl.NotificationStepSource;
+import io.deephaven.engine.table.impl.remote.ConstructSnapshot;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.util.FunctionalInterfaces;
@@ -44,9 +46,8 @@ public abstract class ModelFarmBase<DATATYPE> implements ModelFarm {
     }
 
     /**
-     * An operation that uses data from Deephaven {@link io.deephaven.db.tables.Table Tables}, using either
-     * {@link io.deephaven.db.v2.sources.ColumnSource#getPrev} or {@link io.deephaven.db.v2.sources.ColumnSource#get})
-     * depending on the value of the argument to {@link #retrieveData}.
+     * An operation that uses data from Deephaven {@link Table Tables}, using either {@link ColumnSource#getPrev} or
+     * {@link ColumnSource#get}) depending on the value of the argument to {@link #retrieveData}.
      */
     @FunctionalInterface
     interface QueryDataRetrievalOperation {
@@ -54,9 +55,8 @@ public abstract class ModelFarmBase<DATATYPE> implements ModelFarm {
         /**
          * Performs an operation using data from a query.
          *
-         * @param usePrev Whether to use the previous data at a given index when retrieving data (i.e. if {@code true},
-         *        use {@link io.deephaven.db.v2.sources.ColumnSource#getPrev} instead of
-         *        {@link io.deephaven.db.v2.sources.ColumnSource#get}).
+         * @param usePrev Whether to use the previous data at a given row key when retrieving data (i.e. if
+         *        {@code true}, use {@link ColumnSource#getPrev} instead of {@link ColumnSource#get}).
          */
         void retrieveData(boolean usePrev);
 
@@ -67,17 +67,17 @@ public abstract class ModelFarmBase<DATATYPE> implements ModelFarm {
      */
     public enum GetDataLockType {
         /**
-         * The LTM lock is already held.
+         * The UGP lock is already held.
          */
-        LTM_LOCK_ALREADY_HELD,
+        UGP_LOCK_ALREADY_HELD,
         /**
-         * Acquire the LTM lock.
+         * Acquire the UGP lock.
          */
-        LTM_LOCK,
+        UGP_LOCK,
         /**
-         * Acquire an LTM read lock.
+         * Acquire an UGP read lock.
          */
-        LTM_READ_LOCK,
+        UGP_READ_LOCK,
         /**
          * Use the (usually) lock-free snapshotting mechanism.
          */
@@ -200,23 +200,23 @@ public abstract class ModelFarmBase<DATATYPE> implements ModelFarm {
 
     /**
      * Returns a {@code ThrowingConsumer} that takes a {@link QueryDataRetrievalOperation}, acquires a
-     * {@link LiveTableMonitor} lock based on the specified {@code lockType}, then executes the {@code FitDataPopulator}
-     * with the appropriate value for usePrev.
+     * {@link UpdateGraphProcessor} lock based on the specified {@code lockType}, then executes the
+     * {@code FitDataPopulator} with the appropriate value for usePrev.
      *
-     * @param lockType The way of acquiring the {@code LiveTableMonitor} lock.
+     * @param lockType The way of acquiring the {@code UpdateGraphProcessor} lock.
      * @return A function that runs a {@link }
      */
     @SuppressWarnings("WeakerAccess")
     protected static FunctionalInterfaces.ThrowingBiConsumer<QueryDataRetrievalOperation, NotificationStepSource, RuntimeException> getDoLockedConsumer(
             final GetDataLockType lockType) {
         switch (lockType) {
-            case LTM_LOCK_ALREADY_HELD:
+            case UGP_LOCK_ALREADY_HELD:
                 return (queryDataRetrievalOperation, source) -> queryDataRetrievalOperation.retrieveData(false);
-            case LTM_LOCK:
-                return (queryDataRetrievalOperation, source) -> LiveTableMonitor.DEFAULT.exclusiveLock()
+            case UGP_LOCK:
+                return (queryDataRetrievalOperation, source) -> UpdateGraphProcessor.DEFAULT.exclusiveLock()
                         .doLocked(() -> queryDataRetrievalOperation.retrieveData(false));
-            case LTM_READ_LOCK:
-                return (queryDataRetrievalOperation, source) -> LiveTableMonitor.DEFAULT.sharedLock()
+            case UGP_READ_LOCK:
+                return (queryDataRetrievalOperation, source) -> UpdateGraphProcessor.DEFAULT.sharedLock()
                         .doLocked(() -> queryDataRetrievalOperation.retrieveData(false));
             case SNAPSHOT:
                 return (queryDataRetrievalOperation, source) -> {
@@ -227,9 +227,9 @@ public abstract class ModelFarmBase<DATATYPE> implements ModelFarm {
                                     queryDataRetrievalOperation.retrieveData(usePrev);
                                     return true; // This indicates that the snapshot ran OK, not that the data is OK.
                                 });
-                    } catch (QueryCancellationException e) {
+                    } catch (CancellationException e) {
                         log.warn(e).append(
-                                "ModelFarmBase.getData(SNAPSHOT): QueryCancellationException.  The ModelFarm is probably shutting down.")
+                                "ModelFarmBase.getData(SNAPSHOT): CancellationException.  The ModelFarm is probably shutting down.")
                                 .endl();
                     }
                 };
@@ -340,12 +340,14 @@ public abstract class ModelFarmBase<DATATYPE> implements ModelFarm {
                 timeout == Long.MAX_VALUE ? Long.MAX_VALUE : System.currentTimeMillis() + unit.toMillis(timeout);
         boolean allThreadsTerminated = false;
 
-        while (!allThreadsTerminated && System.currentTimeMillis() < timeoutMillis) {
-            synchronized (ModelFarmBase.this) {
+        synchronized (ModelFarmBase.this) {
+            long currentTime = System.currentTimeMillis();
+
+            while (!allThreadsTerminated && currentTime < timeoutMillis) {
                 if (!threads.isEmpty()) {
                     try {
                         // Wait for the state to change. (The last thread to exit will update the state to TERMINATED.)
-                        ModelFarmBase.this.wait(timeoutMillis - System.currentTimeMillis());
+                        ModelFarmBase.this.wait(timeoutMillis - currentTime);
 
                         if (threads.isEmpty()) {
                             allThreadsTerminated = true;
@@ -357,7 +359,11 @@ public abstract class ModelFarmBase<DATATYPE> implements ModelFarm {
                             throw new RuntimeException("Interrupted while awaiting ModelFarm termination.", e);
                         }
                     }
+                } else {
+                    allThreadsTerminated = true;
                 }
+
+                currentTime = System.currentTimeMillis();
             }
         }
 

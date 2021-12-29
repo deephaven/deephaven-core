@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.db.v2.iterators.IntegerColumnIterator",
- "methods": {
-  "nextInt": ":return: int"
- },
- "path": "io.deephaven.db.v2.iterators.IntegerColumnIterator",
- "text": "Iteration support for boxed or primitive integers contained with a ColumnSource.",
- "typeName": "class"
-}

@@ -53,6 +53,13 @@ std::shared_ptr<TableHandleImpl> TableHandleManagerImpl::timeTable(int64_t start
   return TableHandleImpl::create(self_.lock(), std::move(resultTicket), std::move(cb));
 }
 
+std::tuple<std::shared_ptr<TableHandleImpl>, arrow::flight::FlightDescriptor>
+TableHandleManagerImpl::newTicket() const {
+  auto [ticket, fd] = server_->newTicketAndFlightDescriptor();
+  auto cb = TableHandleImpl::createSatisfiedCallback(this, ticket);
+  auto th = TableHandleImpl::create(self_.lock(), std::move(ticket), std::move(cb));
+  return std::make_tuple(std::move(th), std::move(fd));
+}
 }  // namespace impl
 }  // namespace highlevel
 }  // namespace client

@@ -476,8 +476,10 @@ and also will permit some changes not to inform the UI right away that they have
  Note that the filter property will immediately return the new value, but you may receive update events using the old
  filter before the new one is applied, and the `filterchanged` event fires. Reusing existing, applied filters may enable
  this to perform better on the server.  The `updated` event will also fire, but `rowadded` and `rowremoved` will not.
- * `applyCustomColumns(String[]):String[]` - Replace the current custom columns with a new set. These columns can be
- used when adding new filter and sort operations to the table, as long as they are present.
+ * `applyCustomColumns(String[]):String[]` - Deprecated, use `applyCustomColumns(CustomColumn[])` instead - Replace the current custom columns with a new set. These columns can be
+  used when adding new filter and sort operations to the table, as long as they are present.
+ * `applyCustomColumns(CustomColumn[]):CustomColumn[]` - Replace the current custom columns with a new set. These columns can be
+  used when adding new filter and sort operations to the table, as long as they are present.
  * `setViewport(Number firstRow, Number lastRow, Column[]= columns, Number= updateIntervalMs):TableViewportSubscription` - 
  If the columns parameter is not provided, all columns will be used. If the updateIntervalMs parameter is not provided, 
  a default of one second will be used. Until this is called, no data will be available. Invoking this will result in events
@@ -535,7 +537,7 @@ and also will permit some changes not to inform the UI right away that they have
    * "ReverseAJ"
    * "ExactJoin"
    * "LeftJoin"
- * `byExternal(String[] keys, boolean= dropKeys):Promise<TableMap>` - Creates a new TableMap from the contents of the
+ * `partitionBy(String[] keys, boolean= dropKeys):Promise<TableMap>` - Creates a new TableMap from the contents of the
  current table, partitioning data based on the specified keys.
 <!--
  * `getAttributes():String[]` - returns an array listing the attributes that are set on this table, minus some of those already
@@ -570,11 +572,18 @@ and also will permit some changes not to inform the UI right away that they have
 Describes the structure of the column, and if desired can be used to get access to the data to be rendered in this
 column.
 
+###### Static functions
+ * `formatRowColor(String expression): CustomColumn` - Format entire rows colors using the expression specified. Returns a `CustomColumn` object to apply to a table using `applyCustomColumns` with the parameters specified.
+ * `createCustomColumn(String name, String expression): CustomColumn` - Return a `CustomColumn` object to apply using `applyCustomColumns` with the expression specified.
+
 ###### Methods
  * `get(Row):Any` - Returns the value for this column in the given row. Type will be consistent with the type of the
  Column.
  * `filter():FilterValue` - Creates a new value for use in filters based on this column. Used either as a parameter to
  another filter operation, or as a builder to create a filter operation.
+ * `formatColor(String expression): CustomColumn` - Return a `CustomColumn` object to apply using `applyCustomColumns` with the expression specified.
+ * `formatNumber(String expression): CustomColumn` - Return a `CustomColumn` object to apply using `applyCustomColumns` with the expression specified.
+ * `formatDate(String expression): CustomColumn` - Return a `CustomColumn` object to apply using `applyCustomColumns` with the expression specified.
  * `sort():Sort` - Creates a sort builder object, to be used when sorting by this column.
 
 ###### Properties
@@ -599,7 +608,12 @@ return a new Sort instance.
 ###### Properties
  * `Column column` - The column which is sorted.
  * `String direction` - The direction of this sort, either `ASC`, `DESC`, or `REVERSE`.
- * `boolean isAbs` - True if the absolute value of the column should be used when sorting; defaults to false.
+ * `boolean isAbs` - True if the absolute value of the column should be used when sorting; defaults to false. 
+
+##### Class `CustomColumn`
+* `String name` - The name of the column to use.
+* `String type` - Type of custom column. One of `FORMAT_COLOR`, `FORMAT_NUMBER`, `FORMAT_DATE`, or `NEW`.
+* `String expression` - The expression to evaluate this custom column.
 
 ##### Class `FilterValue`
 Describes data that can be filtered, either a column reference or a literal value. Used this way, the type of a value
@@ -802,7 +816,7 @@ rows. To achieve this, request the same Totals Table again, but remove the `grou
  * `FilterCondition[] filter` - Read-only. An ordered list of Filters to apply to the table.  To update, call applyFilter().
  Note that this getter will return the new value immediately, even though it may take a little time to update on the
  server. You may listen for the `filterchanged` event to know when to update the UI.
- * `String[] customColumns` - Read-only. An ordered list of custom column formulas to add to the table, either adding
+ * `CustomColumn[] customColumns` - Read-only. An ordered list of custom column formulas to add to the table, either adding
  new columns or replacing existing ones. To update, call `applyCustomColumns()`.
 
 ###### Methods
@@ -825,8 +839,10 @@ rows. To achieve this, request the same Totals Table again, but remove the `grou
  Note that the filter property will immediately return the new value, but you may receive update events using the old
  filter before the new one is applied, and the `filterchanged` event fires. Reusing existing, applied filters may enable
  this to perform better on the server.  The `updated` event will also fire, but `rowadded` and `rowremoved` will not.
- * `applyCustomColumns(String[]):String[]` - Replace the current custom columns with a new set. These columns can be
+ * `applyCustomColumns(String[]):String[]` - Deprecated, use `applyCustomColumns(CustomColumn[])` instead - Replace the current custom columns with a new set. These columns can be
  used when adding new filter and sort operations to the table, as long as they are present.
+ * `applyCustomColumns(CustomColumn[]):CustomColumn[]` - Replace the current custom columns with a new set. These columns can be
+    used when adding new filter and sort operations to the table, as long as they are present.
  * `addEventListener(String type, function listener):Function` - Listen for events on the main connection.  Returns a
  convenience function to remove the event listener.
  * `removeEventListener(String type, function listener)` - Allow for manual "normal" event handler removal as well.
@@ -1280,7 +1296,7 @@ This enum describes the name of each supported operation/aggregation type when c
 Provides the details for a figure.
 
 The Deephaven JS API supports automatic lossless downsampling of time-series data, when that data is plotted in one or
-more line series. Using a scatter plot or a X-axis of some type other than DBDateTime will prevent this feature
+more line series. Using a scatter plot or a X-axis of some type other than DateTime will prevent this feature
 from being applied to a series. To enable this feature, invoke `Axis.range(...)` to specify the length in pixels of the
 axis on the screen, and the range of values that are visible, and the server will use that width (and range, if any) to
 reduce the number of points sent to the client.

@@ -9,7 +9,9 @@ import jsinterop.annotations.JsType;
         namespace = JsPackage.GLOBAL)
 public class OpCase {
     public static int AS_OF_JOIN,
+            APPLY_PREVIEW_COLUMNS,
             COMBO_AGGREGATE,
+            CREATE_INPUT_TABLE,
             CROSS_JOIN,
             DROP_COLUMNS,
             EMPTY_TABLE,

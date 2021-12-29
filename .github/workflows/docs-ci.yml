@@ -5,7 +5,6 @@ on:
     branches: [ main ]
   push:
     branches: [ main ]
-    tags: [ 'v*' ]
 
 jobs:
   javadoc:
@@ -14,24 +13,35 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Setup JDK 8
-        id: setup-java-8
-        uses: actions/setup-java@v2.2.0
+      - name: Setup JDK 11
+        id: setup-java-11
+        uses: actions/setup-java@v2
         with:
-          distribution: 'zulu'
-          java-version: '8.0.302'
+          distribution: 'temurin'
+          java-version: '11'
 
+      # TODO(deephaven-core#1513): Remove non-LTS JDK 15 as part of javadocs process
       - name: Setup JDK 15
         id: setup-java-15
-        uses: actions/setup-java@v2.2.0
+        uses: actions/setup-java@v2
         with:
           distribution: 'zulu'
-          java-version: '15.0.4'
+          java-version: '15'
+
+      - name: Setup JDK 17
+        id: setup-java-17
+        uses: actions/setup-java@v2
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Set JAVA_HOME
+        run: echo "JAVA_HOME=${{ steps.setup-java-11.outputs.path }}" >> $GITHUB_ENV
 
       - name: Setup gradle properties
         run: |
           cat .github/env/${{ runner.os }}/gradle.properties >> gradle.properties
-          echo "org.gradle.java.installations.paths=${{ steps.setup-java-8.outputs.path }},${{ steps.setup-java-15.outputs.path }}" >> gradle.properties
+          echo "org.gradle.java.installations.paths=${{ steps.setup-java-11.outputs.path }},${{ steps.setup-java-15.outputs.path }},${{ steps.setup-java-17.outputs.path }}" >> gradle.properties
 
       - name: All Javadoc
         uses: burrunan/gradle-cache-action@v1
@@ -65,23 +75,35 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Setup JDK 8
-        id: setup-java-8
-        uses: actions/setup-java@v2.2.0
+      - name: Setup JDK 11
+        id: setup-java-11
+        uses: actions/setup-java@v2
         with:
-          distribution: 'zulu'
-          java-version: '8.0.302'
+          distribution: 'temurin'
+          java-version: '11'
+
+      # TODO(deephaven-core#1513): Remove non-LTS JDK 15 as part of javadocs process
       - name: Setup JDK 15
         id: setup-java-15
-        uses: actions/setup-java@v2.2.0
+        uses: actions/setup-java@v2
         with:
           distribution: 'zulu'
-          java-version: '15.0.4'
+          java-version: '15'
+
+      - name: Setup JDK 17
+        id: setup-java-17
+        uses: actions/setup-java@v2
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Set JAVA_HOME
+        run: echo "JAVA_HOME=${{ steps.setup-java-11.outputs.path }}" >> $GITHUB_ENV
 
       - name: Setup gradle properties
         run: |
           cat .github/env/${{ runner.os }}/gradle.properties >> gradle.properties
-          echo "org.gradle.java.installations.paths=${{ steps.setup-java-8.outputs.path }},${{ steps.setup-java-15.outputs.path }}" >> gradle.properties
+          echo "org.gradle.java.installations.paths=${{ steps.setup-java-11.outputs.path }},${{ steps.setup-java-15.outputs.path }},${{ steps.setup-java-17.outputs.path }}" >> gradle.properties
 
       - name: Generate Python Docs
         uses: burrunan/gradle-cache-action@v1
@@ -109,6 +131,58 @@ jobs:
           switches: -avzr --delete
           path: sphinx/build/pyclient-docs/
           remote_path: deephaven-core/client-api/python/
+          remote_host: ${{ secrets.DOCS_HOST }}
+          remote_port: ${{ secrets.DOCS_PORT }}
+          remote_user: ${{ secrets.DOCS_USER }}
+          remote_key: ${{ secrets.DEEPHAVEN_CORE_SSH_KEY }}
+
+  cppdoc:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Setup JDK 11
+        id: setup-java-11
+        uses: actions/setup-java@v2
+        with:
+          distribution: 'temurin'
+          java-version: '11'
+
+      - name: Set JAVA_HOME
+        run: echo "JAVA_HOME=${{ steps.setup-java-11.outputs.path }}" >> $GITHUB_ENV
+
+      - name: Setup gradle properties
+        run: |
+          cat .github/env/${{ runner.os }}/gradle.properties >> gradle.properties
+          echo "org.gradle.java.installations.paths=${{ steps.setup-java-11.outputs.path }}" >> gradle.properties
+
+      - name: Generate C++ Docs
+        uses: burrunan/gradle-cache-action@v1
+        with:
+          job-id: cppDocs
+          arguments: --scan sphinx:cppClientDocs sphinx:cppExamplesDocs
+          gradle-version: wrapper
+
+      - name: Deploy Client C++ Docs
+        if: ${{ github.ref == 'refs/heads/main' }}
+        uses: burnett01/rsync-deployments@4.1
+        with:
+          switches: -avzr --delete
+          path: sphinx/build/cppClientDocs/
+          remote_path: deephaven-core/client-api/cpp/
+          remote_host: ${{ secrets.DOCS_HOST }}
+          remote_port: ${{ secrets.DOCS_PORT }}
+          remote_user: ${{ secrets.DOCS_USER }}
+          remote_key: ${{ secrets.DEEPHAVEN_CORE_SSH_KEY }}
+
+      - name: Deploy Client C++ Example Docs
+        if: ${{ github.ref == 'refs/heads/main' }}
+        uses: burnett01/rsync-deployments@4.1
+        with:
+          switches: -avzr --delete
+          path: sphinx/build/cppExamplesDocs/
+          remote_path: deephaven-core/client-api/cpp-examples/
           remote_host: ${{ secrets.DOCS_HOST }}
           remote_port: ${{ secrets.DOCS_PORT }}
           remote_user: ${{ secrets.DOCS_USER }}

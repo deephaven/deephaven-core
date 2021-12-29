@@ -1,0 +1,21 @@
+plugins {
+    id 'java-library'
+}
+
+description = 'The Deephaven URI library'
+
+dependencies {
+    Classpaths.inheritImmutables(project)
+
+    Classpaths.inheritJUnitPlatform(project)
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
+
+    Classpaths.inheritAssertJ(project)
+}
+
+test {
+    useJUnitPlatform()
+}
+
+apply plugin: 'io.deephaven.java-publishing-conventions'

@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.db.tables.select.Utils",
- "methods": {
-  "getFormulaTokens": ":param formula: java.lang.String\n:param names: java.util.Collection<java.lang.String>\n:return: java.util.List<java.lang.String>",
-  "replaceFormulaTokens": ":param formula: java.lang.String\n:param sourceToken: java.lang.String\n:param destToken: java.lang.String\n:return: java.lang.String"
- },
- "path": "io.deephaven.db.tables.select.Utils",
- "typeName": "class"
-}

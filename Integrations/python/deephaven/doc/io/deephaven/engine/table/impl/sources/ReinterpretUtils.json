@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.engine.table.impl.sources.ReinterpretUtils",
+ "methods": {
+  "booleanToByteSource": "Given a Boolean column source turn it into a byte column source, either via reinterpretation or wrapping.\n\n:param source: (io.deephaven.engine.table.ColumnSource<?>) - the source to turn into a byte source\n:return: (io.deephaven.engine.table.ColumnSource<java.lang.Byte>) the byte source",
+  "convertToOriginal": "Reinterpret or box ColumnSource back to its original type.\n\n:param originalType: (java.lang.Class<?>) - The type to convert to\n:param source: (io.deephaven.engine.table.ColumnSource<?>) - The source to convert\n:return: (io.deephaven.engine.table.ColumnSource<?>) Reinterpret or box source back to the original type if possible",
+  "dateTimeToLongSource": "Given a DateTime column source turn it into a long column source, either via reinterpretation or wrapping.\n\n:param source: (io.deephaven.engine.table.ColumnSource<?>) - the source to turn into a long source\n:return: (io.deephaven.engine.table.ColumnSource<java.lang.Long>) the long source",
+  "maybeConvertToPrimitive": "If source is something that we prefer to handle as a primitive, do the appropriate conversion.\n\n:param source: (io.deephaven.engine.table.ColumnSource<?>) - The source to convert\n:return: (io.deephaven.engine.table.ColumnSource<?>) If possible, the source converted to a primitive, otherwise the source"
+ },
+ "path": "io.deephaven.engine.table.impl.sources.ReinterpretUtils",
+ "typeName": "class"
+}

@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.db.v2.tuples.TupleSourceCodeGenerator",
- "methods": {
-  "main": ":param args: java.lang.String..."
- },
- "path": "io.deephaven.db.v2.tuples.TupleSourceCodeGenerator",
- "text": "Generator for a library of TupleSource classes.",
- "typeName": "class"
-}

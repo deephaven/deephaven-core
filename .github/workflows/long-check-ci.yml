@@ -5,7 +5,6 @@ on:
     branches: [ main ]
   push:
     branches: [ 'main', 'check/**', 'release/v*' ]
-    tags: [ 'v*' ]
 
 jobs:
   long-checks:
@@ -14,18 +13,27 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-      # note: this uses Zulu and not AdoptOpenJDK or other. should make sure we build and test on the same one...
-      - name: Setup JDK
-        id: setup-java
-        uses: actions/setup-java@v2.2.0
+      - name: Setup JDK 11
+        id: setup-java-11
+        uses: actions/setup-java@v2
         with:
-          distribution: 'zulu'
-          java-version: '8.0.302'
+          distribution: 'temurin'
+          java-version: '11'
+
+      - name: Setup JDK 17
+        id: setup-java-17
+        uses: actions/setup-java@v2
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Set JAVA_HOME
+        run: echo "JAVA_HOME=${{ steps.setup-java-11.outputs.path }}" >> $GITHUB_ENV
 
       - name: Setup gradle properties
         run: |
           cat .github/env/${{ runner.os }}/gradle.properties >> gradle.properties
-          echo "org.gradle.java.installations.paths=${{ steps.setup-java.outputs.path }}" >> gradle.properties
+          echo "org.gradle.java.installations.paths=${{ steps.setup-java-11.outputs.path }},${{ steps.setup-java-17.outputs.path }}," >> gradle.properties
 
       - name: Check
         uses: burrunan/gradle-cache-action@v1
@@ -47,3 +55,11 @@ jobs:
         with:
           name: long-check-ci-reports
           path: '**/build/reports/tests/**'
+
+      - name: Upload JVM Error Logs
+        uses: actions/upload-artifact@v2
+        if: failure()
+        with:
+          name: long-check-ci-jvm-err
+          path: '**/*_pid*.log'
+          if-no-files-found: ignore

@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.engine.table.impl.sort.partition.DoublePartitionKernel",
+ "methods": {
+  "createContext": ":param rowSet: io.deephaven.engine.rowset.RowSet\n:param columnSource: io.deephaven.engine.table.ColumnSource<java.lang.Double>\n:param chunkSize: int\n:param nPartitions: int\n:param preserveEquality: boolean\n:return: io.deephaven.engine.table.impl.sort.partition.DoublePartitionKernel.PartitionKernelContext",
+  "partition": "After we have created the context, we can determine what things are in a partition.\n\n:param context: (io.deephaven.engine.table.impl.sort.partition.DoublePartitionKernel.PartitionKernelContext) - our context, containing the pivots\n:param indexKeys: (io.deephaven.chunk.LongChunk<io.deephaven.engine.rowset.chunkattributes.RowKeys>) - a chunk of row keys to partition\n:param values: (io.deephaven.chunk.DoubleChunk) - a chunk of values that go with the row keys"
+ },
+ "path": "io.deephaven.engine.table.impl.sort.partition.DoublePartitionKernel",
+ "typeName": "class"
+}

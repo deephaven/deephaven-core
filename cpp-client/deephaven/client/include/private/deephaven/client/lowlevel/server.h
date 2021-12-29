@@ -104,6 +104,7 @@ public:
   arrow::flight::FlightClient *flightClient() const { return flightClient_.get(); }
 
   Ticket newTicket();
+  std::tuple<Ticket, arrow::flight::FlightDescriptor> newTicketAndFlightDescriptor();
 
   void setAuthentication(std::string metadataHeader, std::string sessionToken);
 
@@ -176,10 +177,6 @@ public:
       std::shared_ptr<EtcCallback> etcCallback);
 
   Ticket exactJoinAsync(Ticket leftTableTicket, Ticket rightTableTicket,
-      std::vector<std::string> columnsToMatch, std::vector<std::string> columnsToAdd,
-      std::shared_ptr<EtcCallback> etcCallback);
-
-  Ticket leftJoinAsync(Ticket leftTableTicket, Ticket rightTableTicket,
       std::vector<std::string> columnsToMatch, std::vector<std::string> columnsToAdd,
       std::shared_ptr<EtcCallback> etcCallback);
 

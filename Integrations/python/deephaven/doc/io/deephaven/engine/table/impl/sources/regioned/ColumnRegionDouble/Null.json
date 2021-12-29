@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.engine.table.impl.sources.regioned.ColumnRegionDouble$Null",
+ "methods": {
+  "getDouble": "Get a single double from this region.\n\n:param elementIndex: (long) - Element row key in the table's address space\n:return: (double) The double value at the specified element row key"
+ },
+ "path": "io.deephaven.engine.table.impl.sources.regioned.ColumnRegionDouble.Null",
+ "typeName": "class"
+}

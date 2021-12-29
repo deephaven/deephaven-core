@@ -1,6 +1,7 @@
 package io.deephaven.qst.table;
 
 import io.deephaven.annotations.LeafStyle;
+import io.deephaven.api.util.NameValidator;
 import io.deephaven.qst.array.Array;
 import io.deephaven.qst.column.Column;
 import io.deephaven.qst.column.header.ColumnHeader;
@@ -168,6 +169,13 @@ public abstract class NewTable extends TableBase implements Iterable<Column<?>> 
         @Override
         public Column<?> next() {
             return adapt(it.next());
+        }
+    }
+
+    @Check
+    final void checkNames() {
+        for (String name : columns().keySet()) {
+            NameValidator.validateColumnName(name);
         }
     }
 }

@@ -1,9 +1,0 @@
-{
- "className": "io.deephaven.db.v2.utils.KeyHolder$Base",
- "methods": {
-  "addDependent": ":param dependent: io.deephaven.db.v2.utils.KeyHolder",
-  "removeDependent": ":param dependent: io.deephaven.db.v2.utils.KeyHolder"
- },
- "path": "io.deephaven.db.v2.utils.KeyHolder.Base",
- "typeName": "class"
-}

@@ -1,6 +1,7 @@
 package io.deephaven.libs;
 
 import io.deephaven.configuration.Configuration;
+import io.deephaven.util.type.TypeUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
@@ -13,8 +14,6 @@ import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
-
-import io.deephaven.util.type.TypeUtils;
 
 
 /**
@@ -286,7 +285,7 @@ public class GroovyStaticImportGenerator {
         code += "/**\n";
         code += " * Functions statically imported into Groovy.\n";
         code += " *\n";
-        code += " * @see io.deephaven.libs.primitives\n";
+        code += " * @see io.deephaven.function\n";
         code += " */\n";
         code += "public class GroovyStaticImports {\n";
 
@@ -387,48 +386,46 @@ public class GroovyStaticImportGenerator {
         log.warning("Running GroovyStaticImportGenerator assertNoChange=" + assertNoChange);
 
         final String[] imports = {
-                "io.deephaven.libs.primitives.BooleanPrimitives",
-                "io.deephaven.libs.primitives.ByteNumericPrimitives",
-                "io.deephaven.libs.primitives.BytePrimitives",
-                "io.deephaven.libs.primitives.CharacterPrimitives",
-                "io.deephaven.libs.primitives.DoubleFpPrimitives",
-                "io.deephaven.libs.primitives.DoubleNumericPrimitives",
-                "io.deephaven.libs.primitives.DoublePrimitives",
-                "io.deephaven.libs.primitives.FloatFpPrimitives",
-                "io.deephaven.libs.primitives.FloatNumericPrimitives",
-                "io.deephaven.libs.primitives.FloatPrimitives",
-                "io.deephaven.libs.primitives.IntegerNumericPrimitives",
-                "io.deephaven.libs.primitives.IntegerPrimitives",
-                "io.deephaven.libs.primitives.LongNumericPrimitives",
-                "io.deephaven.libs.primitives.LongPrimitives",
-                "io.deephaven.libs.primitives.ObjectPrimitives",
-                "io.deephaven.libs.primitives.ShortNumericPrimitives",
-                "io.deephaven.libs.primitives.ShortPrimitives",
-                "io.deephaven.libs.primitives.SpecialPrimitives",
-                "io.deephaven.libs.primitives.ComparePrimitives",
-                "io.deephaven.libs.primitives.Casting",
+                "io.deephaven.function.BooleanPrimitives",
+                "io.deephaven.function.ByteNumericPrimitives",
+                "io.deephaven.function.BytePrimitives",
+                "io.deephaven.function.CharacterPrimitives",
+                "io.deephaven.function.DoubleFpPrimitives",
+                "io.deephaven.function.DoubleNumericPrimitives",
+                "io.deephaven.function.DoublePrimitives",
+                "io.deephaven.function.FloatFpPrimitives",
+                "io.deephaven.function.FloatNumericPrimitives",
+                "io.deephaven.function.FloatPrimitives",
+                "io.deephaven.function.IntegerNumericPrimitives",
+                "io.deephaven.function.IntegerPrimitives",
+                "io.deephaven.function.LongNumericPrimitives",
+                "io.deephaven.function.LongPrimitives",
+                "io.deephaven.function.ObjectPrimitives",
+                "io.deephaven.function.ShortNumericPrimitives",
+                "io.deephaven.function.ShortPrimitives",
+                "io.deephaven.function.SpecialPrimitives",
+                "io.deephaven.function.ComparePrimitives",
+                "io.deephaven.function.Casting",
         };
 
         @SuppressWarnings("unchecked")
         GroovyStaticImportGenerator gen = new GroovyStaticImportGenerator(imports,
+                // skipping common erasure "sum"
                 Collections.singletonList((f) -> f.methodName.equals("sum") && f.parameterTypes.length == 1
-                        && f.parameterTypes[0].getTypeName().contains("io.deephaven.db.tables.dbarrays.DbArray<")) // skipping
-                                                                                                                   // common
-                                                                                                                   // erasure
-                                                                                                                   // "sum"
-        );
+                        && f.parameterTypes[0].getTypeName()
+                                .contains("ObjectVector<")));
 
         final String code = gen.generateCode();
         log.info("\n\n**************************************\n\n");
         log.info(code);
 
-        String file = devroot + "/DB/src/main/java/io/deephaven/libs/GroovyStaticImports.java";
+        String file = devroot + "/engine/table/src/main/java/io/deephaven/libs/GroovyStaticImports.java";
 
         if (assertNoChange) {
             String oldCode = new String(Files.readAllBytes(Paths.get(file)));
             if (!code.equals(oldCode)) {
                 throw new RuntimeException(
-                        "Change in generated code.  Run GroovyStaticImportGenerator or \"./gradlew :DB:groovyStaticImportGenerator\" to regenerate\n");
+                        "Change in generated code.  Run GroovyStaticImportGenerator or \"./gradlew :Generators:groovyStaticImportGenerator\" to regenerate\n");
             }
         } else {
 

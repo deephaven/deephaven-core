@@ -1,10 +1,10 @@
 package io.deephaven.benchmarking.impl;
 
-import io.deephaven.db.tables.ColumnDefinition;
-import io.deephaven.db.tables.Table;
-import io.deephaven.db.tables.TableDefinition;
-import io.deephaven.db.tables.utils.TableTools;
-import io.deephaven.db.v2.SparseSelect;
+import io.deephaven.engine.table.ColumnDefinition;
+import io.deephaven.engine.table.Table;
+import io.deephaven.engine.table.TableDefinition;
+import io.deephaven.engine.util.TableTools;
+import io.deephaven.engine.table.impl.SparseSelect;
 import io.deephaven.benchmarking.generator.ColumnGenerator;
 import org.jetbrains.annotations.NotNull;
 

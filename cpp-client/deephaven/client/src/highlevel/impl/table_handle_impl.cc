@@ -41,8 +41,14 @@ namespace client {
 namespace highlevel {
 namespace impl {
 
-std::shared_ptr<internal::LazyState> TableHandleImpl::createEtcCallback(const TableHandleManagerImpl *managerImpl) {
-  return internal::LazyState::create(managerImpl->server(), managerImpl->flightExecutor());
+std::shared_ptr<internal::LazyState> TableHandleImpl::createEtcCallback(const TableHandleManagerImpl *thm) {
+  return internal::LazyState::create(thm->server(), thm->flightExecutor());
+}
+
+std::shared_ptr<internal::LazyState> TableHandleImpl::createSatisfiedCallback(
+    const TableHandleManagerImpl *thm, Ticket ticket) {
+  return internal::LazyState::createSatisfied(thm->server(), thm->flightExecutor(),
+      std::move(ticket));
 }
 
 std::shared_ptr<TableHandleImpl> TableHandleImpl::create(std::shared_ptr<TableHandleManagerImpl> thm,
@@ -58,9 +64,8 @@ TableHandleImpl::TableHandleImpl(Private, std::shared_ptr<TableHandleManagerImpl
     managerImpl_(std::move(thm)), ticket_(std::move(ticket)), lazyState_(std::move(lazyState)) {
 }
 
-TableHandleImpl::~TableHandleImpl() {
-  std::cerr << "Tear down TableHandleImpl (need to send Release to server)\n";
-}
+// TODO(kosak): Need to actually send Release to the server
+TableHandleImpl::~TableHandleImpl() = default;
 
 std::shared_ptr<TableHandleImpl> TableHandleImpl::select(std::vector<std::string> columnSpecs) {
   auto cb = TableHandleImpl::createEtcCallback(managerImpl_.get());
@@ -144,7 +149,7 @@ std::shared_ptr<TableHandleImpl> TableHandleImpl::defaultAggregateByType(
 }
 
 std::shared_ptr<TableHandleImpl> TableHandleImpl::by(std::vector<std::string> columnSpecs) {
-  return defaultAggregateByType(ComboAggregateRequest::ARRAY, std::move(columnSpecs));
+  return defaultAggregateByType(ComboAggregateRequest::GROUP, std::move(columnSpecs));
 }
 
 std::shared_ptr<TableHandleImpl> TableHandleImpl::by(
@@ -298,14 +303,6 @@ std::shared_ptr<TableHandleImpl> TableHandleImpl::exactJoin(const TableHandleImp
   return TableHandleImpl::create(managerImpl_, std::move(resultTicket), std::move(cb));
 }
 
-std::shared_ptr<TableHandleImpl> TableHandleImpl::leftJoin(const TableHandleImpl &rightSide,
-    std::vector<std::string> columnsToMatch, std::vector<std::string> columnsToAdd) const {
-  auto cb = TableHandleImpl::createEtcCallback(managerImpl_.get());
-  auto resultTicket = managerImpl_->server()->leftJoinAsync(ticket_, rightSide.ticket_,
-      std::move(columnsToMatch), std::move(columnsToAdd), cb);
-  return TableHandleImpl::create(managerImpl_, std::move(resultTicket), std::move(cb));
-}
-
 std::shared_ptr<TableHandleImpl> TableHandleImpl::asOfJoin(AsOfJoinTablesRequest::MatchRule matchRule,
     const TableHandleImpl &rightSide, std::vector<std::string> columnsToMatch,
     std::vector<std::string> columnsToAdd) {
@@ -390,8 +387,6 @@ void TableHandleImpl::bindToVariableAsync(std::string variable,
 
     std::shared_ptr<SFCallback<>> outerCb_;
   };
-  std::unique_ptr<int[]> up;
-  up[5] = 3;
   auto cb = std::make_shared<cb_t>(std::move(callback));
   managerImpl_->server()->bindToVariableAsync(managerImpl_->consoleId(), ticket_,
       std::move(variable), std::move(cb));
@@ -403,9 +398,17 @@ void TableHandleImpl::observe() {
 
 namespace internal {
 std::shared_ptr<LazyState> LazyState::create(std::shared_ptr<Server> server,
-    std::shared_ptr<Executor> executor) {
-  auto result = std::make_shared<LazyState>(Private(), std::move(server), std::move(executor));
+    std::shared_ptr<Executor> flightExecutor) {
+  auto result = std::make_shared<LazyState>(Private(), std::move(server), std::move(flightExecutor));
   result->weakSelf_ = result;
+  return result;
+}
+
+std::shared_ptr<LazyState>
+LazyState::createSatisfied(std::shared_ptr<Server> server, std::shared_ptr<Executor> flightExecutor,
+    Ticket ticket) {
+  auto result = create(std::move(server), std::move(flightExecutor));
+  result->ticketPromise_.setValue(std::move(ticket));
   return result;
 }
 

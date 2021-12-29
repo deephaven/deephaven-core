@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.engine.table.impl.locations.impl.RandomGroupingBuilder",
+ "methods": {
+  "addToGrouping": "Add a mapping from value [firstRowKey, lastRowKey] to the groupings under construction.\n\n:param value: (RandomGroupingBuilder.DATA_TYPE) - The value for the grouping\n:param firstKey: (long) - The first key in the range\n:param lastKey: (long) - The last key in the range",
+  "getGrouping": "Get the groupings under construction in a form usable by AbstractColumnSource implementations.\n\n:return: (java.util.Map<RandomGroupingBuilder.DATA_TYPE,io.deephaven.engine.rowset.RowSet>) A mapping from grouping value to its matching RowSet"
+ },
+ "path": "io.deephaven.engine.table.impl.locations.impl.RandomGroupingBuilder",
+ "text": "Builder for constructing groupings from one or more <value, key range> pairs, with no requirement that key\n ranges be sequential.",
+ "typeName": "class"
+}

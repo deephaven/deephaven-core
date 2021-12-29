@@ -1,0 +1,17 @@
+{
+ "className": "io.deephaven.csv.CsvSpecs$Builder",
+ "methods": {
+  "build": ":return: io.deephaven.csv.CsvSpecs",
+  "charset": ":param charset: java.nio.charset.Charset\n:return: io.deephaven.csv.CsvSpecs.Builder",
+  "delimiter": ":param delimiter: char\n:return: io.deephaven.csv.CsvSpecs.Builder",
+  "hasHeaderRow": ":param hasHeaderRow: boolean\n:return: io.deephaven.csv.CsvSpecs.Builder",
+  "header": ":param header: io.deephaven.qst.table.TableHeader\n:return: io.deephaven.csv.CsvSpecs.Builder",
+  "ignoreSurroundingSpaces": ":param ignoreSurroundingSpaces: boolean\n:return: io.deephaven.csv.CsvSpecs.Builder",
+  "inference": ":param inferenceSpecs: io.deephaven.csv.InferenceSpecs\n:return: io.deephaven.csv.CsvSpecs.Builder",
+  "putParsers": ":param columnName: java.lang.String\n:param parser: io.deephaven.csv.Parser<?>\n:return: io.deephaven.csv.CsvSpecs.Builder",
+  "quote": ":param quote: char\n:return: io.deephaven.csv.CsvSpecs.Builder",
+  "trim": ":param trim: boolean\n:return: io.deephaven.csv.CsvSpecs.Builder"
+ },
+ "path": "io.deephaven.csv.CsvSpecs.Builder",
+ "typeName": "interface"
+}

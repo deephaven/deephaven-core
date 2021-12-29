@@ -2,7 +2,8 @@ package io.deephaven.lang.completion
 
 import groovy.transform.CompileDynamic
 import groovy.transform.CompileStatic
-import io.deephaven.db.util.VariableProvider
+import io.deephaven.engine.util.VariableProvider
+import io.deephaven.internal.log.LoggerFactory
 import io.deephaven.io.logger.Logger
 import io.deephaven.lang.generated.Node
 import io.deephaven.lang.generated.Token
@@ -11,7 +12,6 @@ import io.deephaven.lang.parse.ParsedDocument
 import io.deephaven.proto.backplane.script.grpc.CompletionItem
 import io.deephaven.proto.backplane.script.grpc.CompletionItemOrBuilder
 import io.deephaven.proto.backplane.script.grpc.Position
-import io.deephaven.util.process.ProcessEnvironment
 import spock.lang.Specification
 
 /**
@@ -55,7 +55,7 @@ trait ChunkerParseTestMixin {
 
     @CompileDynamic
     String doCompletion(String command, int completionPos, int resultIndex) {
-        Logger log = ProcessEnvironment.getDefaultLog(CompletionHandler)
+        Logger log = LoggerFactory.getLogger(CompletionHandler)
 
         ChunkerCompleter completer = new ChunkerCompleter(log, variables)
         parse(command)

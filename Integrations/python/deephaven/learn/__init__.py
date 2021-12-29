@@ -30,12 +30,12 @@ def _defineSymbols():
         raise SystemError("No java functionality can be used until the JVM has been initialized through the jpy module")
 
     global _Input_, _Output_, _Computer_, _Scatterer_
+
     if _Input_ is None:
         _Input_ = jpy.get_type("io.deephaven.integrations.learn.Input")
         _Output_ = jpy.get_type("io.deephaven.integrations.learn.Output")
         _Computer_ = jpy.get_type("io.deephaven.integrations.learn.Computer")
         _Scatterer_ = jpy.get_type("io.deephaven.integrations.learn.Scatterer")
-
 
 # every module method that invokes Java classes should be decorated with @_passThrough
 @wrapt.decorator
@@ -55,6 +55,10 @@ def _passThrough(wrapped, instance, args, kwargs):
     _defineSymbols()
     return wrapped(*args, **kwargs)
 
+try:
+    _defineSymbols()
+except Exception as e:
+    pass
 
 @_passThrough
 class Input:
@@ -215,7 +219,7 @@ def learn(table=None, model_func=None, inputs=[], outputs=[], batch_size = None)
     #TODO: When ticket #1072 is resolved, the following code should be replaced with
     # Globals["__computer"] = _Computer_(table, model_func, [input.input for input in inputs], batch_size)
     # and remove from globals at the end of function
-    jpy.get_type("io.deephaven.db.tables.select.QueryScope").addParam("__computer", _Computer_(table, model_func, [input.input for input in inputs], batch_size))
+    jpy.get_type("io.deephaven.engine.table.lang.QueryScope").addParam("__computer", _Computer_(table, model_func, [input.input for input in inputs], batch_size))
 
     futureOffset = _createNonconflictingColumnName(table, "__FutureOffset")
     clean = _createNonconflictingColumnName(table, "__CleanComputer")
@@ -225,7 +229,7 @@ def learn(table=None, model_func=None, inputs=[], outputs=[], batch_size = None)
         #TODO: Similarly at resolution of #1072, replace the following code with
         # Globals["__scatterer"] = __scatterer
         # and remove from Globals at end of function
-        jpy.get_type("io.deephaven.db.tables.select.QueryScope").addParam("__scatterer", __scatterer)
+        jpy.get_type("io.deephaven.engine.table.lang.QueryScope").addParam("__scatterer", __scatterer)
 
         return table.update(f"{futureOffset} = __computer.compute(k)")\
                 .update(__scatterer.generateQueryStrings(f"{futureOffset}"))\
