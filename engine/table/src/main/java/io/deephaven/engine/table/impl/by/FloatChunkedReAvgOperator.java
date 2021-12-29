@@ -14,7 +14,6 @@ import io.deephaven.chunk.*;
 import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 
-
 import java.util.Collections;
 import java.util.Map;
 
