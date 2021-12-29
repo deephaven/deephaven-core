@@ -748,7 +748,7 @@ public class ColumnPageReaderImpl implements ColumnPageReader {
             }
         }
         Object values;
-        if (currentNullOffsets != null) {
+        if (currentNullOffsets != null && currentNullOffsets.hasRemaining()) {
             values = materializeWithNulls(numValues, primitiveTypeName, currentNullOffsets,
                     dataReader, nullValue);
         } else {
