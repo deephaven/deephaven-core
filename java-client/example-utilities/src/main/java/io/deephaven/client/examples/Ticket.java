@@ -14,21 +14,17 @@ public class Ticket implements HasTicketId {
     @ArgGroup(exclusive = false)
     RawTicket rawTicket;
 
-    private HasTicketId get() {
-        if (scopeField != null) {
-            return scopeField;
-        }
-        if (applicationField != null) {
-            return applicationField;
-        }
-        if (rawTicket != null) {
-            return rawTicket;
-        }
-        throw new IllegalStateException();
-    }
-
     @Override
     public TicketId ticketId() {
-        return get().ticketId();
+        if (scopeField != null) {
+            return scopeField.ticketId();
+        }
+        if (applicationField != null) {
+            return applicationField.ticketId();
+        }
+        if (rawTicket != null) {
+            return rawTicket.ticketId();
+        }
+        throw new IllegalStateException();
     }
 }
