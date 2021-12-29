@@ -106,15 +106,16 @@ class DTypesTestCase(BaseTestCase):
 
         nulls = {dtypes.float_: NULL_FLOAT, dtypes.double: NULL_DOUBLE}
 
-        np_array = np.array([float('nan'), NULL_DOUBLE, 1.1, float('inf')], dtype=np.float64)
+        np_array = np.array([float('nan'), 1.7976931348623157e+300, NULL_DOUBLE, 1.1, float('inf')], dtype=np.float64)
         for dt, nv in nulls.items():
             map_fn = functools.partial(remap_double, null_value=nv)
             with self.subTest(f"numpy double array to {dt} with mapping"):
-                expected = [nv, nv, 1.1, nv]
+                expected = [nv, 1.7976931348623157e+300, nv, 1.1, nv]
                 j_array = dt.array_from(np_array, remap=map_fn)
                 py_array = [x for x in j_array]
-                for i in range(3):
-                    self.assertAlmostEqual(expected[i], py_array[i])
+                for i in range(4):
+                    # downcast from double to float results in inf when the value is outside of float range
+                    self.assertTrue(math.isclose(expected[i], py_array[i], rel_tol=1e-7) or py_array[i] == float('inf'))
 
         with self.subTest("double array from numpy array"):
             np_array = np.array([float('nan'), NULL_DOUBLE, 1.1, float('inf')], dtype=np.float64)
