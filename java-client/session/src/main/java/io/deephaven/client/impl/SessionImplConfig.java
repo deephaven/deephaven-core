@@ -1,7 +1,7 @@
 package io.deephaven.client.impl;
 
 import io.deephaven.annotations.BuildableStyle;
-import io.deephaven.grpc_api.DeephavenChannel;
+import io.deephaven.proto.DeephavenChannel;
 import org.immutables.value.Value.Default;
 import org.immutables.value.Value.Immutable;
 

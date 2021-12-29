@@ -2872,7 +2872,8 @@ public abstract class SortedRanges extends RefCountedCow<SortedRanges> implement
     public abstract int bytesUsed();
 
     /**
-     * @param k if k == 0, compact if count < capacity. k > 0, compact if (capacity - count > (capacity >> k).
+     * @param k if k == 0, compact if count &lt; capacity. k &gt; 0, compact if (capacity - count &gt; (capacity
+     *        &gt;&gt; k).
      */
     public abstract SortedRanges tryCompactUnsafe(int k);
 

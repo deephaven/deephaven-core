@@ -11,15 +11,14 @@ import io.deephaven.engine.table.impl.sources.ObjectArraySource;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.ChunkLengths;
 import io.deephaven.chunk.attributes.ChunkPositions;
-import io.deephaven.engine.rowset.chunkattributes.OrderedRowKeys;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
-import io.deephaven.engine.rowset.RowSequenceFactory;
 import io.deephaven.util.BigDecimalUtils;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.math.RoundingMode;
 import java.util.Collections;
 import java.util.Map;
 
@@ -75,12 +74,7 @@ class BigIntegerChunkedReVarOperator implements IterativeChunkedAggregationOpera
     }
 
     private void doBucketedUpdate(ReVarContext context, IntChunk<RowKeys> destinations, IntChunk<ChunkPositions> startPositions, WritableBooleanChunk<Values> stateModified) {
-        context.keyIndices.setSize(startPositions.size());
-        for (int ii = 0; ii < startPositions.size(); ++ii) {
-            final int startPosition = startPositions.get(ii);
-            context.keyIndices.set(ii, destinations.get(startPosition));
-        }
-        try (final RowSequence destinationOk = RowSequenceFactory.wrapRowKeysChunkAsRowSequence(context.keyIndices)) {
+        try (final RowSequence destinationOk = context.destinationSequenceFromChunks(destinations, startPositions)) {
             updateResult(context, destinationOk, stateModified);
         }
     }
@@ -90,8 +84,10 @@ class BigIntegerChunkedReVarOperator implements IterativeChunkedAggregationOpera
         final ObjectChunk<BigInteger, ? extends Values> sum2SumChunk = sum2Sum.getChunk(reVarContext.sum2SumContext, destinationOk).asObjectChunk();
         final LongChunk<? extends Values> nncSumChunk = nncSum.getChunk(reVarContext.nncSumContext, destinationOk).asLongChunk();
         final int size = reVarContext.keyIndices.size();
+        final boolean ordered = reVarContext.ordered;
         for (int ii = 0; ii < size; ++ii) {
-            stateModified.set(ii, updateResult(reVarContext.keyIndices.get(ii), sumSumChunk.get(ii), sum2SumChunk.get(ii), nncSumChunk.get(ii)));
+            final boolean changed = updateResult(reVarContext.keyIndices.get(ii), sumSumChunk.get(ii), sum2SumChunk.get(ii), nncSumChunk.get(ii));
+            stateModified.set(ordered ? ii : reVarContext.statePositions.get(ii), changed);
         }
     }
 
@@ -114,20 +110,19 @@ class BigIntegerChunkedReVarOperator implements IterativeChunkedAggregationOpera
                 newSum2 = BigInteger.ZERO;
             }
             final BigDecimal countMinus1 = BigDecimal.valueOf(nonNullCount - 1);
-            final BigDecimal variance = new BigDecimal(newSum2).subtract(new BigDecimal(newSum.pow(2)).divide(BigDecimal.valueOf(nonNullCount), BigDecimal.ROUND_HALF_UP)).divide(countMinus1, BigDecimal.ROUND_HALF_UP);
+            final BigDecimal variance = new BigDecimal(newSum2).subtract(new BigDecimal(newSum.pow(2)).divide(BigDecimal.valueOf(nonNullCount), RoundingMode.HALF_UP)).divide(countMinus1, RoundingMode.HALF_UP);
             final BigDecimal result = std ? BigDecimalUtils.sqrt(variance, SCALE) : variance;
             return !result.equals(resultColumn.getAndSetUnsafe(destination, result));
         }
     }
 
-    private class ReVarContext implements BucketedContext {
-        final WritableLongChunk<OrderedRowKeys> keyIndices;
+    private class ReVarContext extends ReAvgVarOrderingContext implements BucketedContext {
         final ChunkSource.GetContext sumSumContext;
         final ChunkSource.GetContext sum2SumContext;
         final ChunkSource.GetContext nncSumContext;
 
         private ReVarContext(int size) {
-            keyIndices = WritableLongChunk.makeWritableChunk(size);
+            super(size);
             sumSumContext = sumSum.makeGetContext(size);
             sum2SumContext = sum2Sum.makeGetContext(size);
             nncSumContext = nncSum.makeGetContext(size);
@@ -135,7 +130,7 @@ class BigIntegerChunkedReVarOperator implements IterativeChunkedAggregationOpera
 
         @Override
         public void close() {
-            keyIndices.close();
+            super.close();
             sumSumContext.close();
             sum2SumContext.close();
             nncSumContext.close();

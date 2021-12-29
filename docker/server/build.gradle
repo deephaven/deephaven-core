@@ -34,7 +34,7 @@ configurations {
 }
 
 dependencies {
-    serverApplicationDist project(path: ':grpc-api-server-native', configuration: 'applicationDist')
+    serverApplicationDist project(path: ':server-netty', configuration: 'applicationDist')
 }
 
 def dockerLicenses = License.createFrom(project).syncDockerLicense().get()
