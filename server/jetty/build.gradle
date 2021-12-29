@@ -69,3 +69,7 @@ applicationDefaultJvmArgs = [
 ] + extraJvmArgs
 
 apply plugin: 'io.deephaven.java-open-nio'
+
+tasks.withType(JavaExec) {
+    jvmArgs applicationDefaultJvmArgs
+}
