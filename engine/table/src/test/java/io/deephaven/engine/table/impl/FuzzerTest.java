@@ -200,7 +200,7 @@ public class FuzzerTest {
     public void testLargeSetOfFuzzerQueriesSimTime() throws IOException, InterruptedException {
         final long seed1 = DateTime.now().getNanos();
         for (long iteration = 0; iteration < 5; ++iteration) {
-            for (int segment = 8; segment < 10; segment++) {
+            for (int segment = 0; segment < 10; segment++) {
                 UpdateGraphProcessor.DEFAULT.resetForUnitTests(false);
                 try (final SafeCloseable ignored = LivenessScopeStack.open()) {
                     System.out.println("// Segment: " + segment);

@@ -455,8 +455,9 @@ public class ReplicatePrimitiveCode {
 
         System.out.println("Generating java file " + resultClassJavaPath);
         PrintWriter out = new PrintWriter(resultClassJavaPath);
+        out.println("/*");
         out.println(
-                "/* ---------------------------------------------------------------------------------------------------------------------");
+                " * ---------------------------------------------------------------------------------------------------------------------");
         out.println(" * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit "
                 + sourceClassName + " and regenerate");
         out.println(

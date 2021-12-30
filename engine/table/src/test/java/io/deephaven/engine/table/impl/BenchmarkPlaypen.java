@@ -1,15 +1,17 @@
 package io.deephaven.engine.table.impl;
 
-import io.deephaven.api.Selectable;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.util.TableTools;
 import io.deephaven.parquet.table.ParquetTools;
 
 import java.text.DecimalFormat;
-import java.util.Arrays;
-import java.util.List;
 
-public class TestSumByProfile {
+/**
+ * This program will read a parquet file, select or view some columns, and then perform some operation on the resulting
+ * table.  It mimics some of the tests we would care about with bencher (https://github.com/deephaven/bencher), but in
+ * an easy-to-profile way from your IDE.
+ */
+public class BenchmarkPlaypen {
     public static void main(String[] args) {
         if (args.length != 3) {
             usage();
