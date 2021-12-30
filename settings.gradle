@@ -211,6 +211,9 @@ project(':extensions-classgraph').projectDir = file('extensions/classgraph')
 include(':extensions-suanshu')
 project(':extensions-suanshu').projectDir = file('extensions/suanshu')
 
+include(':plugin')
+include(':plugin:figure')
+
 include(':envoy')
 
 include(':grpc-proxy')

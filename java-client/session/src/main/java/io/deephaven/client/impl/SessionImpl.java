@@ -23,6 +23,8 @@ import io.deephaven.proto.backplane.script.grpc.BindTableToVariableResponse;
 import io.deephaven.proto.backplane.script.grpc.ConsoleServiceGrpc.ConsoleServiceStub;
 import io.deephaven.proto.backplane.script.grpc.ExecuteCommandRequest;
 import io.deephaven.proto.backplane.script.grpc.ExecuteCommandResponse;
+import io.deephaven.proto.backplane.script.grpc.FetchObjectRequest;
+import io.deephaven.proto.backplane.script.grpc.FetchObjectResponse;
 import io.deephaven.proto.backplane.script.grpc.StartConsoleRequest;
 import io.deephaven.proto.backplane.script.grpc.StartConsoleResponse;
 import io.grpc.CallCredentials;
@@ -247,6 +249,16 @@ public final class SessionImpl extends SessionBase {
     }
 
     @Override
+    public CompletableFuture<FetchedObject> fetchObject(HasTicketId ticketId) {
+        final FetchObjectRequest request = FetchObjectRequest.newBuilder()
+                .setSourceId(ticketId.ticketId().ticket())
+                .build();
+        final FetchObserver observer = new FetchObserver();
+        consoleService.fetchObject(request, observer);
+        return observer.future;
+    }
+
+    @Override
     public void close() {
         try {
             closeFuture().get(closeTimeout.toNanos(), TimeUnit.NANOSECONDS);
@@ -380,6 +392,40 @@ public final class SessionImpl extends SessionBase {
         @Override
         public void onNext(BindTableToVariableResponse value) {
             future.complete(null);
+        }
+
+        @Override
+        public void onError(Throwable t) {
+            future.completeExceptionally(t);
+        }
+
+        @Override
+        public void onCompleted() {
+            if (!future.isDone()) {
+                future.completeExceptionally(
+                        new IllegalStateException("Observer completed without response"));
+            }
+        }
+    }
+
+    private static final class FetchObserver
+            implements ClientResponseObserver<FetchObjectRequest, FetchObjectResponse> {
+        private final CompletableFuture<FetchedObject> future = new CompletableFuture<>();
+
+        @Override
+        public void beforeStart(ClientCallStreamObserver<FetchObjectRequest> requestStream) {
+            future.whenComplete((session, throwable) -> {
+                if (future.isCancelled()) {
+                    requestStream.cancel("User cancelled", null);
+                }
+            });
+        }
+
+        @Override
+        public void onNext(FetchObjectResponse value) {
+            final String type = value.getType();
+            final ByteString data = value.getData();
+            future.complete(new FetchedObject(type, data));
         }
 
         @Override

@@ -1,0 +1,9 @@
+plugins {
+    id 'java'
+}
+
+dependencies {
+    implementation project(':plugin')
+    implementation project(':Plot')
+    implementation project(':extensions-barrage')
+}

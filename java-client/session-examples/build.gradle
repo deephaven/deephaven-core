@@ -43,6 +43,7 @@ applicationDistribution.into('bin') {
     from(createApplication('execute-script', 'io.deephaven.client.examples.ExecuteScript'))
     from(createApplication('execute-code', 'io.deephaven.client.examples.ExecuteCode'))
     from(createApplication('subscribe-fields', 'io.deephaven.client.examples.SubscribeToFields'))
+    from(createApplication('fetch-object', 'io.deephaven.client.examples.FetchObject'))
     fileMode = 0755
 }
 

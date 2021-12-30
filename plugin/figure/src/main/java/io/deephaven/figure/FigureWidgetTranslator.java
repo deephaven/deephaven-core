@@ -1,7 +1,8 @@
-package io.deephaven.server.console.figure;
+package io.deephaven.figure;
 
 import io.deephaven.api.Selectable;
 import io.deephaven.engine.table.Table;
+import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.gui.shape.JShapes;
 import io.deephaven.gui.shape.NamedShape;
 import io.deephaven.gui.shape.Shape;
@@ -37,6 +38,9 @@ import io.deephaven.plot.util.tables.SwappableTableOneClickAbstract;
 import io.deephaven.plot.util.tables.SwappableTableOneClickMap;
 import io.deephaven.plot.util.tables.TableHandle;
 import io.deephaven.plot.util.tables.TableMapHandle;
+import io.deephaven.plugin.type.Exporter;
+import io.deephaven.plugin.type.Exporter.Export;
+import io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse;
 import io.deephaven.proto.backplane.grpc.TableReference;
 import io.deephaven.proto.backplane.script.grpc.FigureDescriptor;
 import io.deephaven.proto.backplane.script.grpc.FigureDescriptor.AxisDescriptor;
@@ -54,8 +58,6 @@ import io.deephaven.proto.backplane.script.grpc.FigureDescriptor.SeriesPlotStyle
 import io.deephaven.proto.backplane.script.grpc.FigureDescriptor.SourceDescriptor;
 import io.deephaven.proto.backplane.script.grpc.FigureDescriptor.SourceType;
 import io.deephaven.proto.backplane.script.grpc.FigureDescriptor.StringMapWithDefault;
-import io.deephaven.server.session.SessionState;
-import io.deephaven.server.table.TableServiceGrpcImpl;
 import io.deephaven.time.calendar.BusinessCalendar;
 import org.jetbrains.annotations.NotNull;
 import org.joda.time.format.DateTimeFormat;
@@ -81,17 +83,29 @@ import java.util.stream.Stream;
 public class FigureWidgetTranslator {
     private static final DateTimeFormatter HOLIDAY_TIME_FORMAT = DateTimeFormat.forPattern("HH:mm");
 
+    // Copied from TableServiceGrpcImpl
+    public static ExportedTableCreationResponse buildTableCreationResponse(final TableReference tableRef,
+            final Table table) {
+        return ExportedTableCreationResponse.newBuilder()
+                .setSuccess(true)
+                .setResultId(tableRef)
+                .setIsStatic(!table.isRefreshing())
+                .setSize(table.size())
+                .setSchemaHeader(BarrageUtil.schemaBytesFromTable(table))
+                .build();
+    }
+
     private final List<String> errorList = new ArrayList<>();
     private final Map<TableHandle, Integer> tablePositionMap = new HashMap<>();
     private final Map<TableMapHandle, Integer> tableMapPositionMap = new HashMap<>();
 
     private FigureWidgetTranslator() {}
 
-    public static FigureDescriptor translate(FigureWidget figure, SessionState sessionState) {
-        return new FigureWidgetTranslator().translateFigure(figure, sessionState);
+    public static FigureDescriptor translate(FigureWidget figure, Exporter exporter) {
+        return new FigureWidgetTranslator().translateFigure(figure, exporter);
     }
 
-    private FigureDescriptor translateFigure(FigureWidget f, SessionState sessionState) {
+    private FigureDescriptor translateFigure(FigureWidget f, Exporter exporter) {
         FigureDescriptor.Builder clientFigure = FigureDescriptor.newBuilder();
         BaseFigureImpl figure = f.getFigure();
 
@@ -108,9 +122,9 @@ public class FigureWidgetTranslator {
             }
             i++;
 
-            SessionState.ExportObject<Table> tableExportObject = sessionState.newServerSideExport(table);
-            clientFigure.addTables(TableServiceGrpcImpl.buildTableCreationResponse(
-                    TableReference.newBuilder().setTicket(tableExportObject.getExportId()).build(), table));
+            final Export<Table> export = exporter.newServerSideExport(table);
+            clientFigure.addTables(buildTableCreationResponse(
+                    TableReference.newBuilder().setTicket(export.getExportId()).build(), table));
         }
 
         // TODO (deephaven-core#62) implement once tablemaps are ready

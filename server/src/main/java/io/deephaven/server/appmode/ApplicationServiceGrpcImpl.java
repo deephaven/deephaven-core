@@ -4,27 +4,29 @@ import com.google.rpc.Code;
 import io.deephaven.appmode.ApplicationState;
 import io.deephaven.appmode.CustomField;
 import io.deephaven.appmode.Field;
-import io.deephaven.time.DateTimeUtils;
-import io.deephaven.plot.FigureWidget;
-import io.deephaven.engine.table.Table;
-import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.engine.liveness.LivenessArtifact;
 import io.deephaven.engine.liveness.LivenessReferent;
+import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.DynamicNode;
+import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.extensions.barrage.util.BarrageUtil;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
+import io.deephaven.plugin.type.ObjectTypeLookup;
 import io.deephaven.server.session.SessionService;
 import io.deephaven.server.session.SessionState;
 import io.deephaven.server.util.Scheduler;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
+import io.deephaven.plugin.type.ObjectType;
 import io.deephaven.proto.backplane.grpc.ApplicationServiceGrpc;
 import io.deephaven.proto.backplane.grpc.CustomInfo;
 import io.deephaven.proto.backplane.grpc.FieldInfo;
+import io.deephaven.proto.backplane.grpc.FieldInfo.FieldType;
 import io.deephaven.proto.backplane.grpc.FieldsChangeUpdate;
-import io.deephaven.proto.backplane.grpc.FigureInfo;
 import io.deephaven.proto.backplane.grpc.ListFieldsRequest;
 import io.deephaven.proto.backplane.grpc.TableInfo;
+import io.deephaven.proto.backplane.grpc.UnknownInfo;
+import io.deephaven.time.DateTimeUtils;
 import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 
@@ -46,6 +48,8 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
     private final AppMode mode;
     private final Scheduler scheduler;
     private final SessionService sessionService;
+    private final ObjectTypeLookup objectTypeLookup;
+
     private final LivenessTracker tracker = new LivenessTracker();
 
     /** The list of Field listeners */
@@ -66,10 +70,12 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
     @Inject
     public ApplicationServiceGrpcImpl(final AppMode mode,
             final Scheduler scheduler,
-            final SessionService sessionService) {
+            final SessionService sessionService,
+            final ObjectTypeLookup objectTypeLookup) {
         this.mode = mode;
         this.scheduler = scheduler;
         this.sessionService = sessionService;
+        this.objectTypeLookup = objectTypeLookup;
     }
 
     @Override
@@ -248,7 +254,7 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
                 .build();
     }
 
-    private static FieldInfo getFieldInfo(final AppFieldId id, final Field<?> field) {
+    private FieldInfo getFieldInfo(final AppFieldId id, final Field<?> field) {
         if (field instanceof CustomField) {
             return getCustomFieldInfo(id, (CustomField<?>) field);
         }
@@ -270,14 +276,9 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
                 .build();
     }
 
-    private static FieldInfo getStandardFieldInfo(final AppFieldId id, final Field<?> field) {
+    private FieldInfo getStandardFieldInfo(final AppFieldId id, final Field<?> field) {
         // Note that this method accepts any Field and not just StandardField
-        final FieldInfo.FieldType fieldType = fetchFieldType(field.value());
-
-        if (fieldType == null) {
-            throw new IllegalArgumentException("Application Field is not of standard type; use CustomField instead");
-        }
-
+        final FieldInfo.FieldType fieldType = fieldType(field.value());
         return FieldInfo.newBuilder()
                 .setTicket(id.getTicket())
                 .setFieldName(id.fieldName)
@@ -288,20 +289,33 @@ public class ApplicationServiceGrpcImpl extends ApplicationServiceGrpc.Applicati
                 .build();
     }
 
-    private static FieldInfo.FieldType fetchFieldType(final Object obj) {
-        if (obj instanceof Table) {
-            final Table table = (Table) obj;
-            return FieldInfo.FieldType.newBuilder().setTable(TableInfo.newBuilder()
-                    .setSchemaHeader(BarrageUtil.schemaBytesFromTable(table))
-                    .setIsStatic(!table.isRefreshing())
-                    .setSize(table.size())
-                    .build()).build();
+    private FieldInfo.FieldType fieldType(final Object object) {
+        if (object instanceof Table) {
+            return tableFieldType((Table) object);
         }
-        if (obj instanceof FigureWidget) {
-            return FieldInfo.FieldType.newBuilder().setFigure(FigureInfo.getDefaultInstance()).build();
-        }
+        return objectTypeLookup.findObjectType(object)
+                .map(ApplicationServiceGrpcImpl::customFieldType)
+                .orElseGet(ApplicationServiceGrpcImpl::unknownType);
+    }
 
-        return null;
+    private static FieldType tableFieldType(Table table) {
+        return FieldType.newBuilder().setTable(TableInfo.newBuilder()
+                .setSchemaHeader(BarrageUtil.schemaBytesFromTable(table))
+                .setIsStatic(!table.isRefreshing())
+                .setSize(table.size())
+                .build()).build();
+    }
+
+    private static FieldType customFieldType(ObjectType type) {
+        return FieldType.newBuilder()
+                .setCustom(CustomInfo.newBuilder().setType(type.name()).build())
+                .build();
+    }
+
+    private static FieldType unknownType() {
+        return FieldType.newBuilder()
+                .setUnknown(UnknownInfo.newBuilder().build())
+                .build();
     }
 
     private static class ScopeField implements Field<Object> {

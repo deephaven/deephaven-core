@@ -106,7 +106,7 @@ Set<Project> modsAreBasic = subprojects.findAll {it.name in [
     'docker-runtime-base',
     'docker-server',
     'docker-server-slim',
-    'raw-js-openapi'
+    'raw-js-openapi',
 ] }
 
 Set<Project> modsAreBin = subprojects.findAll {it.name in ['bin', 'configs', 'test-configs'] }
@@ -397,6 +397,8 @@ tasks.register 'allJavadoc', Javadoc, {
                 ':extensions-csv',
                 ':extensions-kafka',
                 ':extensions-parquet-table',
+                ':plugin',
+                ':plugin:figure',
                 ':Util',
                 ':ModelFarm',
                 ':Numerics',

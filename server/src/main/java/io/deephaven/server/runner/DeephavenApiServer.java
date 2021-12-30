@@ -8,6 +8,7 @@ import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.util.AbstractScriptSession;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
+import io.deephaven.server.plugin.PluginsLoader;
 import io.deephaven.server.appmode.ApplicationInjector;
 import io.deephaven.server.console.ConsoleServiceGrpcImpl;
 import io.deephaven.server.log.LogInit;
@@ -35,6 +36,7 @@ public class DeephavenApiServer {
     private final UpdateGraphProcessor ugp;
     private final LogInit logInit;
     private final ConsoleServiceGrpcImpl consoleService;
+    private final PluginsLoader pluginsLoader;
     private final ApplicationInjector applicationInjector;
     private final UriResolvers uriResolvers;
     private final SessionService sessionService;
@@ -45,6 +47,7 @@ public class DeephavenApiServer {
             final UpdateGraphProcessor ugp,
             final LogInit logInit,
             final ConsoleServiceGrpcImpl consoleService,
+            final PluginsLoader pluginsLoader,
             final ApplicationInjector applicationInjector,
             final UriResolvers uriResolvers,
             final SessionService sessionService) {
@@ -52,6 +55,7 @@ public class DeephavenApiServer {
         this.ugp = ugp;
         this.logInit = logInit;
         this.consoleService = consoleService;
+        this.pluginsLoader = pluginsLoader;
         this.applicationInjector = applicationInjector;
         this.uriResolvers = uriResolvers;
         this.sessionService = sessionService;
@@ -99,6 +103,7 @@ public class DeephavenApiServer {
 
         log.info().append("Initializing Script Session...").endl();
         consoleService.initializeGlobalScriptSession();
+        pluginsLoader.registerAll();
 
         log.info().append("Starting UGP...").endl();
         ugp.start();

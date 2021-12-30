@@ -29,6 +29,7 @@ import io.deephaven.hash.KeyedIntObjectKey;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.log.LogEntry;
 import io.deephaven.io.logger.Logger;
+import io.deephaven.plugin.type.Exporter;
 import io.deephaven.proto.backplane.grpc.ExportNotification;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.proto.flight.util.FlightExportTicketHelper;
@@ -1329,4 +1330,33 @@ public class SessionState {
                     return retval;
                 }
             };
+
+    public Exporter asExporter() {
+        return new ExporterImpl();
+    }
+
+    private class ExporterImpl implements Exporter {
+        @Override
+        public <T> Export<T> newServerSideExport(T export) {
+            return new ExportImpl<>(SessionState.this.newServerSideExport(export));
+        }
+    }
+
+    private static class ExportImpl<T> implements Exporter.Export<T> {
+        private final ExportObject<T> export;
+
+        public ExportImpl(ExportObject<T> export) {
+            this.export = Objects.requireNonNull(export);
+        }
+
+        @Override
+        public T get() {
+            return export.get();
+        }
+
+        @Override
+        public Ticket getExportId() {
+            return export.getExportId();
+        }
+    }
 }

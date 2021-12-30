@@ -56,10 +56,10 @@ message FieldInfo {
     oneof field {
       CustomInfo custom = 1;
       TableInfo table = 2;
-      // reserved = 3; // for TreeTable
+      UnknownInfo unknown = 3;
       // reserved = 4; // for TableMap
-      FigureInfo figure = 5;
-      // reserved = 6; // for PANDAS
+      // reserved = 5; // *DEPRECATED* Figure
+      // reserved = 6; // for TreeTable
 
       // use values above 4096 for custom client behavior
     }
@@ -82,6 +82,10 @@ message CustomInfo {
   string type = 1; // application-specific type to identify the purpose of this custom field reference
 }
 
+message UnknownInfo {
+
+}
+
 /*
  * Lightly describe a Table.
  */
@@ -94,11 +98,4 @@ message TableInfo {
 
   // The current number of rows for this table.
   sint64 size = 3 [jstype=JS_STRING];
-}
-
-/*
- * Lightly describes a Figure.
- */
-message FigureInfo {
-  // Intentionally empty and is here for backwards compatibility should this API change.
 }

@@ -4,6 +4,7 @@ import io.deephaven.base.FileUtils;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.table.TableMap;
+import io.deephaven.plugin.type.ObjectTypeLookup.NoOp;
 import io.deephaven.time.DateTimeUtils;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
 import io.deephaven.engine.table.lang.QueryScope;
@@ -93,7 +94,7 @@ public class FuzzerTest {
     }
 
     private GroovyDeephavenSession getGroovySession(@Nullable TimeProvider timeProvider) throws IOException {
-        final GroovyDeephavenSession session = new GroovyDeephavenSession(RunScripts.serviceLoader());
+        final GroovyDeephavenSession session = new GroovyDeephavenSession(NoOp.INSTANCE, RunScripts.serviceLoader());
         QueryScope.setScope(session.newQueryScope());
         return session;
     }

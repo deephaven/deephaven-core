@@ -5,6 +5,7 @@ import dagger.Provides;
 import dagger.multibindings.ElementsIntoSet;
 import io.deephaven.chunk.util.pools.MultiChunkPool;
 import io.deephaven.engine.updategraph.UpdateGraphProcessor;
+import io.deephaven.server.plugin.PluginModule;
 import io.deephaven.server.appmode.AppMode;
 import io.deephaven.server.appmode.AppModeModule;
 import io.deephaven.server.arrow.ArrowModule;
@@ -50,6 +51,7 @@ import java.util.concurrent.TimeUnit;
         TableModule.class,
         InputTableModule.class,
         ConsoleModule.class,
+        PluginModule.class,
         GroovyConsoleSessionModule.class,
         PythonConsoleSessionModule.class
 })

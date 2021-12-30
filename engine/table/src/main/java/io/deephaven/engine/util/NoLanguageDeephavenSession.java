@@ -31,7 +31,7 @@ public class NoLanguageDeephavenSession extends AbstractScriptSession implements
     }
 
     public NoLanguageDeephavenSession(final String scriptType) {
-        super(null, false);
+        super(null, null, false);
 
         this.scriptType = scriptType;
         variables = new LinkedHashMap<>();
@@ -60,6 +60,21 @@ public class NoLanguageDeephavenSession extends AbstractScriptSession implements
         } catch (QueryScope.MissingVariableException e) {
             return defaultValue;
         }
+    }
+
+    @Override
+    protected Snapshot emptySnapshot() {
+        throw new UnsupportedOperationException(SCRIPT_TYPE + " session does not support emptySnapshot");
+    }
+
+    @Override
+    protected Snapshot takeSnapshot() {
+        throw new UnsupportedOperationException(SCRIPT_TYPE + " session does not support takeSnapshot");
+    }
+
+    @Override
+    protected Changes createDiff(Snapshot from, Snapshot to, RuntimeException e) {
+        throw new UnsupportedOperationException(SCRIPT_TYPE + " session does not support diff");
     }
 
     @Override

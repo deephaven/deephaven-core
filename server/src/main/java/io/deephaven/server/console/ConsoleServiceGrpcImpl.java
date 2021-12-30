@@ -4,17 +4,20 @@
 
 package io.deephaven.server.console;
 
+import com.google.protobuf.ByteString;
+import com.google.protobuf.ByteStringAccess;
 import com.google.rpc.Code;
 import io.deephaven.configuration.Configuration;
 import io.deephaven.engine.table.Table;
 import io.deephaven.engine.updategraph.DynamicNode;
 import io.deephaven.engine.util.DelegatingScriptSession;
-import io.deephaven.engine.util.ExportedObjectType;
 import io.deephaven.engine.util.NoLanguageDeephavenSession;
 import io.deephaven.engine.util.ScriptSession;
 import io.deephaven.engine.util.VariableProvider;
 import io.deephaven.engine.util.jpy.JpyInit;
+import io.deephaven.extensions.barrage.util.BarrageProtoUtil.ExposedByteArrayOutputStream;
 import io.deephaven.extensions.barrage.util.GrpcUtil;
+import io.deephaven.figure.FigureWidgetTranslator;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.LogBuffer;
 import io.deephaven.io.logger.LogBufferRecord;
@@ -27,6 +30,8 @@ import io.deephaven.lang.parse.LspTools;
 import io.deephaven.lang.parse.ParsedDocument;
 import io.deephaven.lang.shared.lsp.CompletionCancelled;
 import io.deephaven.plot.FigureWidget;
+import io.deephaven.plugin.type.ObjectType;
+import io.deephaven.plugin.type.ObjectTypeLookup;
 import io.deephaven.proto.backplane.grpc.Ticket;
 import io.deephaven.proto.backplane.script.grpc.AutoCompleteRequest;
 import io.deephaven.proto.backplane.script.grpc.AutoCompleteResponse;
@@ -42,6 +47,8 @@ import io.deephaven.proto.backplane.script.grpc.ExecuteCommandRequest;
 import io.deephaven.proto.backplane.script.grpc.ExecuteCommandResponse;
 import io.deephaven.proto.backplane.script.grpc.FetchFigureRequest;
 import io.deephaven.proto.backplane.script.grpc.FetchFigureResponse;
+import io.deephaven.proto.backplane.script.grpc.FetchObjectRequest;
+import io.deephaven.proto.backplane.script.grpc.FetchObjectResponse;
 import io.deephaven.proto.backplane.script.grpc.FigureDescriptor;
 import io.deephaven.proto.backplane.script.grpc.GetCompletionItemsRequest;
 import io.deephaven.proto.backplane.script.grpc.GetCompletionItemsResponse;
@@ -54,7 +61,6 @@ import io.deephaven.proto.backplane.script.grpc.StartConsoleResponse;
 import io.deephaven.proto.backplane.script.grpc.TextDocumentItem;
 import io.deephaven.proto.backplane.script.grpc.VariableDefinition;
 import io.deephaven.proto.backplane.script.grpc.VersionedTextDocumentIdentifier;
-import io.deephaven.server.console.figure.FigureWidgetTranslator;
 import io.deephaven.server.session.SessionCloseableObserver;
 import io.deephaven.server.session.SessionService;
 import io.deephaven.server.session.SessionState;
@@ -86,6 +92,10 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
     public static final boolean REMOTE_CONSOLE_DISABLED =
             Configuration.getInstance().getBooleanWithDefault("deephaven.console.disable", false);
 
+    public static boolean isPythonSession() {
+        return PYTHON_TYPE.equals(WORKER_CONSOLE_TYPE);
+    }
+
     private final Map<String, Provider<ScriptSession>> scriptTypes;
     private final TicketRouter ticketRouter;
     private final SessionService sessionService;
@@ -95,25 +105,28 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
 
     private final GlobalSessionProvider globalSessionProvider;
 
+    private final ObjectTypeLookup objectTypeLookup;
+
     @Inject
     public ConsoleServiceGrpcImpl(final Map<String, Provider<ScriptSession>> scriptTypes,
             final TicketRouter ticketRouter,
             final SessionService sessionService,
             final LogBuffer logBuffer,
-            final GlobalSessionProvider globalSessionProvider) {
+            final GlobalSessionProvider globalSessionProvider,
+            final ObjectTypeLookup objectTypeLookup) {
         this.scriptTypes = scriptTypes;
         this.ticketRouter = ticketRouter;
         this.sessionService = sessionService;
         this.logBuffer = logBuffer;
         this.globalSessionProvider = globalSessionProvider;
-
+        this.objectTypeLookup = objectTypeLookup;
         if (!scriptTypes.containsKey(WORKER_CONSOLE_TYPE)) {
             throw new IllegalArgumentException("Console type not found: " + WORKER_CONSOLE_TYPE);
         }
     }
 
     public void initializeGlobalScriptSession() throws IOException, InterruptedException, TimeoutException {
-        if (PYTHON_TYPE.equals(WORKER_CONSOLE_TYPE)) {
+        if (isPythonSession()) {
             JpyInit.init(log);
         }
         globalSessionProvider.initializeGlobalScriptSession(scriptTypes.get(WORKER_CONSOLE_TYPE).get());
@@ -233,9 +246,16 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
         });
     }
 
-    private static VariableDefinition makeVariableDefinition(Map.Entry<String, ExportedObjectType> entry) {
-        return VariableDefinition.newBuilder().setTitle(entry.getKey()).setType(entry.getValue().name())
-                .setId(ScopeTicketResolver.ticketForName(entry.getKey())).build();
+    private static VariableDefinition makeVariableDefinition(Map.Entry<String, String> entry) {
+        return makeVariableDefinition(entry.getKey(), entry.getValue());
+    }
+
+    private static VariableDefinition makeVariableDefinition(String title, String type) {
+        return VariableDefinition.newBuilder()
+                .setTitle(title)
+                .setType(type)
+                .setId(ScopeTicketResolver.ticketForName(title))
+                .build();
     }
 
     @Override
@@ -403,6 +423,8 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
         });
     }
 
+    // TODO(deephaven-core#1784): Remove fetchFigure RPC
+    @Deprecated
     @Override
     public void fetchFigure(FetchFigureRequest request, StreamObserver<FetchFigureResponse> responseObserver) {
         GrpcUtil.rpcWrapper(log, responseObserver, () -> {
@@ -424,14 +446,48 @@ public class ConsoleServiceGrpcImpl extends ConsoleServiceGrpc.ConsoleServiceImp
                                     "Value bound to ticket " + name + " is not a FigureWidget");
                         }
                         FigureWidget widget = (FigureWidget) result;
-
-                        FigureDescriptor translated = FigureWidgetTranslator.translate(widget, session);
-
+                        FigureDescriptor translated = FigureWidgetTranslator.translate(widget, session.asExporter());
                         responseObserver
                                 .onNext(FetchFigureResponse.newBuilder().setFigureDescriptor(translated).build());
                         responseObserver.onCompleted();
                     });
         });
+    }
+
+    @Override
+    public void fetchObject(FetchObjectRequest request, StreamObserver<FetchObjectResponse> responseObserver) {
+        GrpcUtil.rpcWrapper(log, responseObserver, () -> {
+            final SessionState session = sessionService.getCurrentSession();
+            if (request.getSourceId().getTicket().isEmpty()) {
+                throw GrpcUtil.statusRuntimeException(Code.FAILED_PRECONDITION, "No sourceId supplied");
+            }
+            final SessionState.ExportObject<Object> object = ticketRouter.resolve(
+                    session, request.getSourceId(), "sourceId");
+            session.nonExport()
+                    .require(object)
+                    .onError(responseObserver)
+                    .submit(() -> {
+                        final Object o = object.get();
+                        final FetchObjectResponse response = serialize(session, o);
+                        responseObserver.onNext(response);
+                        responseObserver.onCompleted();
+                        return null;
+                    });
+        });
+    }
+
+    private FetchObjectResponse serialize(SessionState state, Object object) throws IOException {
+        final ExposedByteArrayOutputStream out = new ExposedByteArrayOutputStream();
+        final ObjectType type = objectTypeLookup.findObjectType(object).orElseThrow(() -> noTypeException(object));
+        final String name = type.name();
+        type.writeTo(state.asExporter(), object, out);
+        final ByteString data = ByteStringAccess.wrap(out.peekBuffer(), 0, out.size());
+        return FetchObjectResponse.newBuilder().setType(name).setData(data).build();
+    }
+
+    private static IllegalArgumentException noTypeException(Object o) {
+        return new IllegalArgumentException(
+                "No type registered for object class=" + o.getClass().getName() + ", value=" + o);
     }
 
     private static class LogBufferStreamAdapter extends SessionCloseableObserver<LogSubscriptionData>

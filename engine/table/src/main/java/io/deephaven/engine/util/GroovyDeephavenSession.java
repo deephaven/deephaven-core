@@ -22,6 +22,7 @@ import io.deephaven.engine.util.scripts.ScriptPathLoaderState;
 import io.deephaven.engine.util.scripts.StateOverrideScriptPathLoader;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
+import io.deephaven.plugin.type.ObjectTypeLookup;
 import io.deephaven.util.annotations.VisibleForTesting;
 import org.codehaus.groovy.control.CompilationUnit;
 import org.codehaus.groovy.control.Phases;
@@ -122,14 +123,16 @@ public class GroovyDeephavenSession extends AbstractScriptSession implements Scr
     private transient SourceClosure sourceClosure;
     private transient SourceClosure sourceOnceClosure;
 
-    public GroovyDeephavenSession(final RunScripts runScripts) throws IOException {
-        this(null, runScripts, false);
+    public GroovyDeephavenSession(ObjectTypeLookup objectTypeLookup, final RunScripts runScripts)
+            throws IOException {
+        this(objectTypeLookup, null, runScripts, false);
     }
 
     public GroovyDeephavenSession(
-            @Nullable final Listener changeListener, final RunScripts runScripts, boolean isDefaultScriptSession)
+            ObjectTypeLookup objectTypeLookup, @Nullable final Listener changeListener,
+            final RunScripts runScripts, boolean isDefaultScriptSession)
             throws IOException {
-        super(changeListener, isDefaultScriptSession);
+        super(objectTypeLookup, changeListener, isDefaultScriptSession);
 
         this.scriptFinder = new ScriptFinder(DEFAULT_SCRIPT_PATH);
 
@@ -137,6 +140,8 @@ public class GroovyDeephavenSession extends AbstractScriptSession implements Scr
         groovyShell.setVariable("DB_SCRIPT_PATH", DEFAULT_SCRIPT_PATH);
 
         compilerContext.setParentClassLoader(getShell().getClassLoader());
+
+        publishInitial();
 
         for (final String path : runScripts.paths) {
             runScript(path);
@@ -620,6 +625,48 @@ public class GroovyDeephavenSession extends AbstractScriptSession implements Scr
     }
 
     @Override
+    protected Snapshot emptySnapshot() {
+        return new GroovySnapshot(Collections.emptyMap());
+    }
+
+    @Override
+    protected Snapshot takeSnapshot() {
+        return new GroovySnapshot(new HashMap<>(getVariables()));
+    }
+
+    @Override
+    protected Changes createDiff(Snapshot from, Snapshot to, RuntimeException e) {
+        return diffImpl((GroovySnapshot) from, (GroovySnapshot) to, e);
+    }
+
+    private Changes diffImpl(GroovySnapshot from, GroovySnapshot to, RuntimeException e) {
+        Changes diff = new Changes();
+        diff.error = e;
+        for (final Map.Entry<String, Object> entry : to.scope.entrySet()) {
+            final String name = entry.getKey();
+            final Object existingValue = from.scope.get(name);
+            final Object newValue = entry.getValue();
+            applyVariableChangeToDiff(diff, name, existingValue, newValue);
+        }
+        for (final Map.Entry<String, Object> entry : from.scope.entrySet()) {
+            final String name = entry.getKey();
+            if (to.scope.containsKey(name)) {
+                continue; // this is already handled even if old or new values are non-displayable
+            }
+            applyVariableChangeToDiff(diff, name, entry.getValue(), null);
+        }
+        return diff;
+    }
+
+    private static class GroovySnapshot implements Snapshot {
+
+        private final Map<String, Object> scope;
+
+        public GroovySnapshot(Map<String, Object> existingScope) {
+            this.scope = Objects.requireNonNull(existingScope);
+        }
+    }
+
     public Set<String> getVariableNames() {
         // noinspection unchecked
         return Collections.unmodifiableSet(groovyShell.getContext().getVariables().keySet());

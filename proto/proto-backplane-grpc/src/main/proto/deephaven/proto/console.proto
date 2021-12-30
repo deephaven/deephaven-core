@@ -44,7 +44,12 @@ service ConsoleService {
      */
     rpc NextAutoCompleteStream(AutoCompleteRequest) returns (BrowserNextResponse) {}
 
+    /**
+     * Deprecated: TODO(deephaven-core#1784): Remove fetchFigure RPC
+     */
     rpc FetchFigure(FetchFigureRequest) returns (FetchFigureResponse) {}
+
+    rpc FetchObject(FetchObjectRequest) returns (FetchObjectResponse) {}
 }
 
 
@@ -216,8 +221,18 @@ message TextEdit {
 message FetchFigureRequest {
     io.deephaven.proto.backplane.grpc.Ticket source_id = 1;
 }
+
 message FetchFigureResponse {
     FigureDescriptor figure_descriptor = 1;
+}
+
+message FetchObjectRequest {
+    io.deephaven.proto.backplane.grpc.Ticket source_id = 1;
+}
+
+message FetchObjectResponse {
+    string type = 1;
+    bytes data = 2;
 }
 
 message FigureDescriptor {
