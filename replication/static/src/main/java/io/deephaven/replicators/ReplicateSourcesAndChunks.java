@@ -164,16 +164,17 @@ public class ReplicateSourcesAndChunks {
 
         if (flatSourcePath.contains("2D")) {
             lines = simpleFixup(lines, "constructor",
-                    "Flat2DObjectArraySource\\(long size", "Flat2DObjectArraySource\\(Class<T> type, Class<?> componentType, long size",
+                    "Flat2DObjectArraySource\\(long size",
+                    "Flat2DObjectArraySource\\(Class<T> type, Class<?> componentType, long size",
                     "super\\(Object.class\\)", "super\\(type, componentType\\)",
-                    "this\\(size", "this\\(type, componentType, size"
-                    );
+                    "this\\(size", "this\\(type, componentType, size");
             lines = simpleFixup(lines, "allocateArray", "return \\(T\\)data;", "return data;");
         } else {
             lines = simpleFixup(lines, "constructor",
-                    "FlatObjectArraySource\\(long size", "FlatObjectArraySource\\(Class<T> type, Class<?> componentType, long size",
-                    "super\\(Object.class\\)", "super\\(type, componentType\\)"
-            );}
+                    "FlatObjectArraySource\\(long size",
+                    "FlatObjectArraySource\\(Class<T> type, Class<?> componentType, long size",
+                    "super\\(Object.class\\)", "super\\(type, componentType\\)");
+        }
 
         FileUtils.writeLines(resultClassJavaFile, lines);
     }
