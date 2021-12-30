@@ -8,6 +8,10 @@ import org.jetbrains.annotations.NotNull;
 
 import javax.swing.table.AbstractTableModel;
 
+/**
+ * A {@link javax.swing.table.TableModel} implementation that simply wraps
+ * a {@link BarrageTable} without any fancy viewports.
+ */
 public class BarrageBackedTableModel extends AbstractTableModel {
     @ReferentialIntegrity
     private final InstrumentedTableUpdateListenerAdapter listener;
