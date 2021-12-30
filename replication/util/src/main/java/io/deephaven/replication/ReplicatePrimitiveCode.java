@@ -461,7 +461,7 @@ public class ReplicatePrimitiveCode {
         out.println(" * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit "
                 + sourceClassName + " and regenerate");
         out.println(
-                " * ------------------------------------------------------------------------------------------------------------------");
+                " * ---------------------------------------------------------------------------------------------------------------------");
         out.println(
                 " */");
         out.print(replaceAllInternal(inputText.toString(), serialVersionUID, exemptions, pairs));

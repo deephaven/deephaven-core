@@ -8,8 +8,8 @@ import java.text.DecimalFormat;
 
 /**
  * This program will read a parquet file, select or view some columns, and then perform some operation on the resulting
- * table.  It mimics some of the tests we would care about with bencher (https://github.com/deephaven/bencher), but in
- * an easy-to-profile way from your IDE.
+ * table. It mimics some of the tests we would care about with bencher (https://github.com/deephaven/bencher), but in an
+ * easy-to-profile way from your IDE.
  */
 public class BenchmarkPlaypen {
     public static void main(String[] args) {

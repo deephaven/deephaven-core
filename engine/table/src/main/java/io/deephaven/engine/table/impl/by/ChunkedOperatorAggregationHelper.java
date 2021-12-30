@@ -1657,7 +1657,7 @@ public class ChunkedOperatorAggregationHelper {
                     if (ii == inputSlot) {
                         if (!permute) {
                             valueChunks[inputSlot] = getChunk(ac.inputColumns[ii], getContexts[ii], chunkOk, usePrev);
-                         } else {
+                        } else {
                             assert workingChunks != null;
                             valueChunks[inputSlot] =
                                     getAndPermuteChunk(ac.inputColumns[ii], getContexts[ii], chunkOk, usePrev,
