@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.server.console.groovy.InitScriptsModule$OldConfig",
+ "methods": {
+  "providesRunScriptLogic": ":return: io.deephaven.engine.util.GroovyDeephavenSession.RunScripts"
+ },
+ "path": "io.deephaven.server.console.groovy.InitScriptsModule.OldConfig",
+ "typeName": "interface"
+}

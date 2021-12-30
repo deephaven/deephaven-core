@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.uri.resolver.UriResolvers",
+ "methods": {
+  "find": "Note: Java generics information - <T extends io.deephaven.uri.resolver.UriResolver>\n\n:param clazz: java.lang.Class<T>\n:return: java.util.Optional<T>",
+  "resolve": ":param uri: java.net.URI\n:return: java.lang.Object",
+  "resolver": ":param uri: java.net.URI\n:return: io.deephaven.uri.resolver.UriResolver",
+  "resolvers": ":return: java.util.Set<io.deephaven.uri.resolver.UriResolver>"
+ },
+ "path": "io.deephaven.uri.resolver.UriResolvers",
+ "typeName": "class"
+}

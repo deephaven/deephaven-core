@@ -1,0 +1,12 @@
+{
+ "className": "io.deephaven.server.table.ops.GrpcTableOperation",
+ "methods": {
+  "create": "This actually performs the operation. It will typically be performed after the\n\n:param request: (GrpcTableOperation.T) - the original request from the user\n:param sourceTables: (java.util.List<io.deephaven.server.session.SessionState.ExportObject<io.deephaven.engine.table.Table>>) - the source tables that this operation may or may not need\n:return: (io.deephaven.engine.table.Table) the resulting table",
+  "getRequestFromOperation": "Extract the specific request object from the batch operation.\n\n:param op: (io.deephaven.proto.backplane.grpc.BatchTableRequest.Operation) - the batch operation\n:return: (GrpcTableOperation.T) the typed request from the batch",
+  "getResultTicket": "Get the result ticket for this operation.\n\n:param request: (GrpcTableOperation.T) - the request\n:return: (io.deephaven.proto.backplane.grpc.Ticket) the result ticket",
+  "getTableReferences": "Get the table references for this operation.\n\n:param request: (GrpcTableOperation.T) - the request\n:return: (java.util.List<io.deephaven.proto.backplane.grpc.TableReference>) the table references of the other source table dependencies",
+  "validateRequest": "This method validates preconditions of the request.\n\n:param request: (GrpcTableOperation.T) - the original request from the user"
+ },
+ "path": "io.deephaven.server.table.ops.GrpcTableOperation",
+ "typeName": "class"
+}

@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.server.console.groovy.InitScriptsModule$Explicit",
+ "methods": {
+  "bindsCountMetricsScripts": ":param impl: io.deephaven.engine.util.GroovyDeephavenSession.CountMetrics\n:return: io.deephaven.engine.util.GroovyDeephavenSession.InitScript",
+  "bindsDbScripts": ":param impl: io.deephaven.engine.util.GroovyDeephavenSession.Base\n:return: io.deephaven.engine.util.GroovyDeephavenSession.InitScript",
+  "bindsPerformanceQueriesScripts": ":param impl: io.deephaven.engine.util.GroovyDeephavenSession.PerformanceQueries\n:return: io.deephaven.engine.util.GroovyDeephavenSession.InitScript",
+  "providesRunScriptLogic": ":param scripts: java.util.Set<io.deephaven.engine.util.GroovyDeephavenSession.InitScript>\n:return: io.deephaven.engine.util.GroovyDeephavenSession.RunScripts"
+ },
+ "path": "io.deephaven.server.console.groovy.InitScriptsModule.Explicit",
+ "typeName": "interface"
+}

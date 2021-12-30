@@ -1,0 +1,15 @@
+{
+ "className": "io.deephaven.server.log.LogModule",
+ "methods": {
+  "bindsStreamToLogBufferInstance": ":param streamToLogBuffer: io.deephaven.io.logger.StreamToLogBuffer\n:return: io.deephaven.base.system.StandardStreamReceiver",
+  "bindsStreamToReal": ":param streamToReal: io.deephaven.base.system.StreamToPrintStreams\n:return: io.deephaven.base.system.StandardStreamReceiver",
+  "providesLogBuffer": ":return: io.deephaven.io.logger.LogBuffer",
+  "providesLogSink": ":return: io.deephaven.io.log.LogSink",
+  "providesLoggerSinkSetups": ":return: java.util.Set<io.deephaven.internal.log.InitSink>",
+  "providesStandardStreamState": ":param receivers: java.util.Set<io.deephaven.base.system.StandardStreamReceiver>\n:return: io.deephaven.base.system.StandardStreamState",
+  "providesStreamToLogBuffer": ":param logBuffer: io.deephaven.io.logger.LogBuffer\n:return: io.deephaven.io.logger.StreamToLogBuffer",
+  "providesStreamToReal": ":param out: java.io.PrintStream\n:param err: java.io.PrintStream\n:return: io.deephaven.base.system.StreamToPrintStreams"
+ },
+ "path": "io.deephaven.server.log.LogModule",
+ "typeName": "interface"
+}

@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.server.barrage.BarrageStreamGenerator$ConsecutiveDrainableStreams",
+ "methods": {
+  "available": ":return: int",
+  "drainTo": ":param outputStream: java.io.OutputStream\n:return: int"
+ },
+ "path": "io.deephaven.server.barrage.BarrageStreamGenerator.ConsecutiveDrainableStreams",
+ "typeName": "class"
+}

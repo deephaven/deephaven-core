@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.proto.flight.util.SchemaHelper",
+ "methods": {
+  "flatbufSchema": "**Incompatible overloads text - text from the first overload:**\n\nCreates a flatbuf Schema from raw bytes of a Message.\n\n*Overload 1*  \n  :param response: (io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse) - the response\n  :return: (org.apache.arrow.flatbuf.Schema) the flatbuf schema\n  \n*Overload 2*  \n  :param bb: (java.nio.ByteBuffer) - a bytebuffer that contains a schema in a message\n  :return: (org.apache.arrow.flatbuf.Schema) a flatbuf schema",
+  "schema": "Creates a schema from an export response.\n\n:param response: (io.deephaven.proto.backplane.grpc.ExportedTableCreationResponse) - the response\n:return: (org.apache.arrow.vector.types.pojo.Schema) the schema"
+ },
+ "path": "io.deephaven.proto.flight.util.SchemaHelper",
+ "typeName": "class"
+}

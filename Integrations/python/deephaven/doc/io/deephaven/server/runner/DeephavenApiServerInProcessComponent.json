@@ -1,0 +1,9 @@
+{
+ "className": "io.deephaven.server.runner.DeephavenApiServerInProcessComponent",
+ "methods": {
+  "channelBuilder": ":return: io.grpc.ManagedChannelBuilder<?>",
+  "getServer": ":return: io.deephaven.server.runner.DeephavenApiServer"
+ },
+ "path": "io.deephaven.server.runner.DeephavenApiServerInProcessComponent",
+ "typeName": "interface"
+}

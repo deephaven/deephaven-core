@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.server.auth.AuthContextProvider",
+ "methods": {
+  "authenticate": "Authenticate and obtain an AuthContext using the provided protocol and byte payload.\n\n:param protocolVersion: (long) - the protocol version to use (application specific)\n:param payload: (com.google.protobuf.ByteString) - the user's login details (protocol specific)\n:return: (io.deephaven.util.auth.AuthContext) null if user could not be authenticated, otherwise an AuthContext for the user",
+  "supportsProtocol": "Returns true if this auth context provider can authenticate using the provided protocol version.\n\n:param authProtocol: (long) - the protocol version to use (application specific)\n:return: (boolean) true iff `authProtocol` is supported"
+ },
+ "path": "io.deephaven.server.auth.AuthContextProvider",
+ "text": "The AuthContextProvider's job is to manage all authentication and authorization responsibilities. If audit logging is\n required, an implementation of this (and its companion AuthContext) is the correct way path forward.",
+ "typeName": "interface"
+}

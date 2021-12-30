@@ -1,0 +1,10 @@
+{
+ "className": "io.deephaven.server.arrow.ArrowFlightUtil$DoPutObserver",
+ "methods": {
+  "onError": ":param t: java.lang.Throwable",
+  "onNext": ":param request: java.io.InputStream"
+ },
+ "path": "io.deephaven.server.arrow.ArrowFlightUtil.DoPutObserver",
+ "text": "This is a stateful observer; a DoPut stream begins with its schema.",
+ "typeName": "class"
+}
