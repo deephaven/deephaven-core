@@ -163,35 +163,19 @@ public class ReplicateSourcesAndChunks {
         lines = genericObjectColumnSourceReplacements(lines);
 
         if (flatSourcePath.contains("2D")) {
-            lines = flat2DConstructor(lines);
-            // we really only want this in the allocateArray region
-            lines = globalReplacements(lines, "return \\(T\\)data;", "return data;");
+            lines = simpleFixup(lines, "constructor",
+                    "Flat2DObjectArraySource\\(long size", "Flat2DObjectArraySource\\(Class<T> type, Class<?> componentType, long size",
+                    "super\\(Object.class\\)", "super\\(type, componentType\\)",
+                    "this\\(size", "this\\(type, componentType, size"
+                    );
+            lines = simpleFixup(lines, "allocateArray", "return \\(T\\)data;", "return data;");
         } else {
-            lines = flatConstructor(lines);
-        }
+            lines = simpleFixup(lines, "constructor",
+                    "FlatObjectArraySource\\(long size", "FlatObjectArraySource\\(Class<T> type, Class<?> componentType, long size",
+                    "super\\(Object.class\\)", "super\\(type, componentType\\)"
+            );}
 
         FileUtils.writeLines(resultClassJavaFile, lines);
-    }
-
-    @NotNull
-    private static List<String> flatConstructor(List<String> lines) {
-        lines = ReplicationUtils.replaceRegion(lines, "constructor", Arrays.asList(
-                "    public FlatObjectArraySource(Class<T> type, Class<?> componentType, long size) {",
-                "        super(type, componentType);",
-                "        this.data = new Object[Math.toIntExact(size)];",
-                "    }"));
-        return lines;
-    }
-
-    @NotNull
-    private static List<String> flat2DConstructor(List<String> lines) {
-        lines = ReplicationUtils.replaceRegion(lines, "constructor", Arrays.asList(
-                "    public Flat2DObjectArraySource(Class<T> type, Class<?> componentType, long size) {",
-                "        super(type, componentType);",
-                "        this.size = size;",
-                "        this.data = allocateArray(size);",
-                "    }"));
-        return lines;
     }
 
     private static List<String> genericObjectColumnSourceReplacements(List<String> lines) {

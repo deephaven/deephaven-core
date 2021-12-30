@@ -26,29 +26,38 @@ import static io.deephaven.util.QueryConstants.NULL_FLOAT;
  * Simple flat array source that supports filling for initial creation.
  */
 public class Flat2DFloatArraySource extends AbstractColumnSource<Float> implements ImmutableColumnSourceGetDefaults.ForFloat, WritableColumnSource<Float>, FillUnordered, InMemoryColumnSource, ChunkedBackingStoreExposedWritableSource {
-    private static final long SEGMENT_SHIFT = 30;
-    private static final int SEGMENT_SIZE = 1<<SEGMENT_SHIFT;
-    private static final int SEGMENT_MASK = SEGMENT_SIZE - 1;
+    private static final int DEFAULT_SEGMENT_SHIFT = 30;
+    private final long segmentShift;
+    private final int segmentMask;
 
     private final long size;
     private final float[][] data;
 
+
     // region constructor
     public Flat2DFloatArraySource(long size) {
+        this(size, DEFAULT_SEGMENT_SHIFT);
+    }
+
+    public Flat2DFloatArraySource(long size, int segmentShift) {
         super(float.class);
+        this.segmentShift = segmentShift;
+        int segmentSize = 1 << segmentShift;
+        segmentMask = segmentSize - 1;
+
         this.size = size;
-        data = allocateArray(size);
+        data = allocateArray(size, segmentSize);
     }
     // endregion constructor
 
     // region allocateArray
-    private static float [][] allocateArray(long size) {
-        final int segments = Math.toIntExact((size + SEGMENT_SIZE - 1) / SEGMENT_SIZE);
+    private static float [][] allocateArray(long size, int segmentSize) {
+        final int segments = Math.toIntExact((size + segmentSize - 1) / segmentSize);
         final float [][] data = new float[segments][];
         int segment = 0;
-        while (size > SEGMENT_SIZE) {
-            data[segment++] = new float[SEGMENT_SIZE];
-            size -= SEGMENT_SIZE;
+        while (size > segmentSize) {
+            data[segment++] = new float[segmentSize];
+            size -= segmentSize;
         }
         data[segment] = new float[Math.toIntExact(size)];
         return data;
@@ -65,11 +74,11 @@ public class Flat2DFloatArraySource extends AbstractColumnSource<Float> implemen
     }
 
     public int keyToSegment(long index) {
-        return (int)(index >> SEGMENT_SHIFT);
+        return (int)(index >> segmentShift);
     }
 
     public int keyToOffset(long index) {
-        return (int)(index & SEGMENT_MASK);
+        return (int)(index & segmentMask);
     }
 
     public final float getUnsafe(long key) {
@@ -92,13 +101,13 @@ public class Flat2DFloatArraySource extends AbstractColumnSource<Float> implemen
     public long resetWritableChunkToBackingStore(@NotNull ResettableWritableChunk<?> chunk, long position) {
         final int segment = keyToSegment(position);
         chunk.asResettableWritableFloatChunk().resetFromTypedArray((float[])data[segment], 0, data[segment].length);
-        return (long)segment << SEGMENT_SHIFT;
+        return (long)segment << segmentShift;
     }
     @Override
     public long resetWritableChunkToBackingStoreSlice(@NotNull ResettableWritableChunk<?> chunk, long position) {
         final int segment = keyToSegment(position);
         final int segmentLength = data[segment].length;
-        final long firstPositionInSegment = (long)segment << SEGMENT_SHIFT;
+        final long firstPositionInSegment = (long)segment << segmentShift;
         final int offset = (int)(position - firstPositionInSegment);
         final int capacity = segmentLength - offset;
         chunk.asResettableWritableFloatChunk().resetFromTypedArray((float[])data[segment], offset, capacity);
@@ -116,14 +125,15 @@ public class Flat2DFloatArraySource extends AbstractColumnSource<Float> implemen
 
     private void fillChunkByRanges(WritableChunk<? super Values> destination, RowSequence rowSequence) {
         final WritableFloatChunk<? super Values> asFloatChunk = destination.asWritableFloatChunk();
-        final MutableInt srcPos = new MutableInt(0);
+        final MutableInt destPos = new MutableInt(0);
         rowSequence.forAllRowKeyRanges((long start, long end) -> {
             while (start < end) {
                 final int segment = keyToSegment(start);
-                final long segmentEnd = start | SEGMENT_MASK;
+                final int offset = keyToOffset(start);
+                final long segmentEnd = start | segmentMask;
                 final long realEnd = Math.min(segmentEnd, end);
                 final int rangeLength = Math.toIntExact(realEnd - start + 1);
-                asFloatChunk.copyFromTypedArray(data[segment], Math.toIntExact(start), srcPos.getAndAdd(rangeLength), rangeLength);
+                asFloatChunk.copyFromTypedArray(data[segment], offset, destPos.getAndAdd(rangeLength), rangeLength);
                 start += rangeLength;
             }
         });
@@ -196,10 +206,11 @@ public class Flat2DFloatArraySource extends AbstractColumnSource<Float> implemen
         rowSequence.forAllRowKeyRanges((long start, long end) -> {
             while (start < end) {
                 final int segment = keyToSegment(start);
-                final long segmentEnd = start | SEGMENT_MASK;
+                final int destOffset = keyToOffset(start);
+                final long segmentEnd = start | segmentMask;
                 final long realEnd = Math.min(segmentEnd, end);
                 final int rangeLength = Math.toIntExact(realEnd - start + 1);
-                asFloatChunk.copyToTypedArray(srcPos.getAndAdd(rangeLength), data[segment], Math.toIntExact(start), rangeLength);
+                asFloatChunk.copyToTypedArray(srcPos.getAndAdd(rangeLength), data[segment], destOffset, rangeLength);
                 start += rangeLength;
             }
         });

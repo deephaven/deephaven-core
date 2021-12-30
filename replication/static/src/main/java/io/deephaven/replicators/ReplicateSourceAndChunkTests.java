@@ -41,6 +41,8 @@ public class ReplicateSourceAndChunkTests {
                 "engine/table/src/test/java/io/deephaven/engine/table/impl/sources/TestCharacterSparseArraySource.java");
         charToAllButBoolean(
                 "engine/table/src/test/java/io/deephaven/engine/table/impl/sources/TestCharacterFlatArraySource.java");
+        charToAllButBoolean(
+                "engine/table/src/test/java/io/deephaven/engine/table/impl/sources/TestCharacterFlat2DArraySource.java");
 
         charToAll("engine/chunk/src/test/java/io/deephaven/chunk/TestCharChunk.java");
         fixupChunkTest(charToObject("engine/chunk/src/test/java/io/deephaven/chunk/TestCharChunk.java"));
