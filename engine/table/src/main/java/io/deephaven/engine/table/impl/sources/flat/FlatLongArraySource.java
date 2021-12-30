@@ -23,7 +23,15 @@ import static io.deephaven.util.QueryConstants.NULL_LONG;
 // endregion boxing imports
 
 /**
- * Simple flat array source that supports filling for initial creation.
+ * Simple flat array source that supports fillFromChunk for initial creation.
+ *
+ * No previous value tracking is permitted, so this column source is only useful as a flat static source.
+ *
+ * A single array backs the result, so getChunk calls with contiguous ranges should always be able to return a
+ * reference to the backing store without an array copy.  The immediate consequence is that you may not create
+ * sources that have a capacity larger than Integer.MAX_VALUE.
+ *
+ * If your size is greater than Integer.MAX_VALUE, prefer {@link Flat2DLongArraySource}.
  */
 public class FlatLongArraySource extends AbstractColumnSource<Long> implements ImmutableColumnSourceGetDefaults.ForLong, WritableColumnSource<Long>, FillUnordered, InMemoryColumnSource, ChunkedBackingStoreExposedWritableSource {
     private final long[] data;
