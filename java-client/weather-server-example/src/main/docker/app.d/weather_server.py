@@ -31,7 +31,7 @@ class Location:
     def __hash__(self):
         return hash((self.city, self.state))
 
-API_KEY = 'AIzaSyAPD7FPbAzzJXhn29VsiuYTZ2LFDotvM60'
+API_KEY = 'YOUR API_KEY_HERE'
 CITY_LOCK = Lock()
 trackedCities = set()
 
