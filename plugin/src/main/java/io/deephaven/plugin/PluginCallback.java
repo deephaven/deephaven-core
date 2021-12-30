@@ -4,5 +4,5 @@ import io.deephaven.plugin.type.ObjectType;
 
 public interface PluginCallback {
 
-    void registerCustomType(ObjectType objectType);
+    void registerObjectType(ObjectType objectType);
 }

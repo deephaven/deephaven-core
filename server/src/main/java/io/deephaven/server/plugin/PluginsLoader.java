@@ -55,7 +55,7 @@ public final class PluginsLoader implements PluginCallback {
     }
 
     @Override
-    public void registerCustomType(ObjectType objectType) {
+    public void registerObjectType(ObjectType objectType) {
         log.info().append("Registering plugin object type: ")
                 .append(objectType.name()).append(" / ")
                 .append(objectType.toString())
@@ -68,8 +68,8 @@ public final class PluginsLoader implements PluginCallback {
         private int count = 0;
 
         @Override
-        public void registerCustomType(ObjectType objectType) {
-            PluginsLoader.this.registerCustomType(objectType);
+        public void registerObjectType(ObjectType objectType) {
+            PluginsLoader.this.registerObjectType(objectType);
             ++count;
         }
     }
@@ -134,10 +134,16 @@ public final class PluginsLoader implements PluginCallback {
         }
 
         @SuppressWarnings("unused")
-        public void register_custom_type(PyObject module) {
+        public void register_object_type(PyObject module) {
             final PythonCustomType pythonCustomType = PythonCustomType.of(module);
             final Adapter adapter = Adapter.of(pythonCustomType);
-            callback.registerCustomType(adapter);
+            callback.registerObjectType(adapter);
+        }
+
+        // Remove before merge, but still want code reviewers to be able to use existing matplotlib plugin
+        @Deprecated
+        public void register_custom_type(PyObject module) {
+            register_object_type(module);
         }
     }
 
