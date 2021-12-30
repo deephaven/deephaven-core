@@ -1,20 +1,19 @@
 from deephaven.TableTools import *
+from deephaven import as_list
 from deephaven import DynamicTableWriter, Types as dht
-from deephaven import ComboAggregateFactory as caf
-from deephaven import DBTimeUtils
-import time
+from deephaven import Aggregation as agg
+from deephaven import DateTimeUtils as TimeUtils
+# import time
 from threading import Lock
 from threading import Thread
 import random
 import time
-import json
-from collections import namedtuple
+# import json
+# from collections import namedtuple
 from dataclasses import dataclass
 from datetime import datetime
 from math import cos, asin, sqrt, pi
-import os
-
-os.system("pip install requests")
+# import os
 import requests
 
 @dataclass
@@ -32,7 +31,7 @@ class Location:
     def __hash__(self):
         return hash((self.city, self.state))
 
-API_KEY = 'YOUR_KEY_HERE'
+API_KEY = 'AIzaSyAPD7FPbAzzJXhn29VsiuYTZ2LFDotvM60'
 CITY_LOCK = Lock()
 trackedCities = set()
 
@@ -47,24 +46,24 @@ CurrentData = tableWriter.getTable()
 binnedData = CurrentData.updateView("bin30M=lowerBin(Timestamp, 30 * MINUTE)", "bin1Hr=lowerBin(Timestamp, 1 *HOUR)")
 
 # Compute some statistics
-binnedStats30 = binnedData.by(caf.AggCombo( \
-    caf.AggMin("Min30Temp=Temp", "Min30Humid=Humidity"), \
-    caf.AggMax("Max30Temp=Temp", "Max30Humid=Humidity"), \
-    caf.AggAvg("Avg30Temp=Temp", "Avg30Humid=Humidity"), \
-    caf.AggFirst("bin1Hr")), "State", "City", "bin30M")
+binnedStats30 = binnedData.aggBy(as_list([ \
+    agg.AggMin("Min30Temp=Temp", "Min30Humid=Humidity"), \
+    agg.AggMax("Max30Temp=Temp", "Max30Humid=Humidity"), \
+    agg.AggAvg("Avg30Temp=Temp", "Avg30Humid=Humidity"), \
+    agg.AggFirst("bin1Hr")]), "State", "City", "bin30M")
 
-binnedStats60 = binnedData.by(caf.AggCombo( \
-    caf.AggMin("Min60Temp=Temp", "Min60Humid=Humidity"), \
-    caf.AggMax("Max60Temp=Temp", "Max60Humid=Humidity"), \
-    caf.AggAvg("Avg60Temp=Temp", "Avg60Humid=Humidity")), "State", "City", "bin1Hr")
+binnedStats60 = binnedData.aggBy(as_list([ \
+    agg.AggMin("Min60Temp=Temp", "Min60Humid=Humidity"), \
+    agg.AggMax("Max60Temp=Temp", "Max60Humid=Humidity"), \
+    agg.AggAvg("Avg60Temp=Temp", "Avg60Humid=Humidity")]), "State", "City", "bin1Hr")
 
-combinedStats = binnedStats30.naturalJoin(binnedStats60, "State,City,bin1Hr");
+combinedStats = binnedStats30.naturalJoin(binnedStats60, "State,City,bin1Hr")
 
 # Now make a table containing the last values of all the relevant intervals for each city.
 LastByCityState = combinedStats.lastBy("State", "City") \
     .dropColumns("bin30M", "bin1Hr") \
     .naturalJoin(CurrentData.lastBy("State", "City"), "State,City") \
-    .moveUpColumns("Timestamp", "State", "City", "Temp", "Humidity");
+    .moveColumnsUp("Timestamp", "State", "City", "Temp", "Humidity")
 
 
 # Borrowed from https://stackoverflow.com/questions/27928/calculate-distance-between-two-latitude-longitude-points-haversine-formula
@@ -159,8 +158,7 @@ def updateObservation(lc):
         temp = obsJson['properties']['temperature']['value']
         humid = obsJson['properties']['relativeHumidity']['value']
         print("Updated " + str(lc) + " at " + str(time))
-        tableWriter.logRow(DBTimeUtils.millisToTime((int)(time.timestamp()*1000)), lc.state, lc.city, temp, humid)
-
+        tableWriter.logRow(TimeUtils.millisToTime((int)(time.timestamp()*1000)), lc.state, lc.city, temp, humid)
 
 # A simple method to add a city to the set of cities to watch
 def beginWatch(cityName):
@@ -184,12 +182,11 @@ def periodicFetchRealData():
             updateObservation(lc)
         time.sleep(60)
 
-
 def makeUpSomeData():
     while True:
         with(CITY_LOCK):
             for lc in trackedCities:
-                tableWriter.logRow(DBTimeUtils.currentTime(), lc.state, lc.city, random.uniform(33,97), random.uniform(0,100))
+                tableWriter.logRow(TimeUtils.currentTime(), lc.state, lc.city, random.uniform(33,97), random.uniform(0,100))
         time.sleep(1)
 
 bobby = Thread(target=periodicFetchRealData)
