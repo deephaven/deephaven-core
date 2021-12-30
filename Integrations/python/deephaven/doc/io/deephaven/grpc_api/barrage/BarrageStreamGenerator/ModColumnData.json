@@ -1,6 +1,0 @@
-{
- "className": "io.deephaven.grpc_api.barrage.BarrageStreamGenerator$ModColumnData",
- "methods": {},
- "path": "io.deephaven.grpc_api.barrage.BarrageStreamGenerator.ModColumnData",
- "typeName": "class"
-}

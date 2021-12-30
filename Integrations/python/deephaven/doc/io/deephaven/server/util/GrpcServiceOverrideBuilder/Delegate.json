@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.server.util.GrpcServiceOverrideBuilder$Delegate",
+ "methods": {
+  "doInvoke": ":param request: GrpcServiceOverrideBuilder.Delegate.ReqT\n:param responseObserver: io.grpc.stub.StreamObserver<GrpcServiceOverrideBuilder.Delegate.RespT>"
+ },
+ "path": "io.deephaven.server.util.GrpcServiceOverrideBuilder.Delegate",
+ "typeName": "interface"
+}

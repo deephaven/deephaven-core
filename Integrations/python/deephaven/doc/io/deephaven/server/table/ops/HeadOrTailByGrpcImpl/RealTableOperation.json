@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.server.table.ops.HeadOrTailByGrpcImpl$RealTableOperation",
+ "methods": {
+  "apply": ":param source: io.deephaven.engine.table.Table\n:param nRows: long\n:param columnSpecs: java.lang.String[]\n:return: io.deephaven.engine.table.Table"
+ },
+ "path": "io.deephaven.server.table.ops.HeadOrTailByGrpcImpl.RealTableOperation",
+ "typeName": "interface"
+}

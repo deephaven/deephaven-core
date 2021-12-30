@@ -1,6 +1,0 @@
-{
- "className": "io.deephaven.grpc_api.runner.ServerBuilderModule",
- "methods": {},
- "path": "io.deephaven.grpc_api.runner.ServerBuilderModule",
- "typeName": "class"
-}

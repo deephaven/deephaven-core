@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.server.console.figure.FigureWidgetTranslator",
+ "methods": {
+  "translate": ":param figure: io.deephaven.plot.FigureWidget\n:param sessionState: io.deephaven.server.session.SessionState\n:return: io.deephaven.proto.backplane.script.grpc.FigureDescriptor"
+ },
+ "path": "io.deephaven.server.console.figure.FigureWidgetTranslator",
+ "typeName": "class"
+}

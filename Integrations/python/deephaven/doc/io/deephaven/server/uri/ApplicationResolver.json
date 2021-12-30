@@ -1,0 +1,12 @@
+{
+ "className": "io.deephaven.server.uri.ApplicationResolver",
+ "methods": {
+  "get": ":return: io.deephaven.server.uri.ApplicationResolver",
+  "isResolvable": "Returns true if the resolver can resolve the uri.\n\n:param uri: (java.net.URI) - the uri\n:return: (boolean) true if this resolver can resolve uri",
+  "resolve": "Resolve uri into an object.\n\n*Overload 1*  \n  :param uri: (java.net.URI) - the URI\n  :return: (java.lang.Object) the object\n  \n*Overload 2*  \n  :param uri: io.deephaven.uri.ApplicationUri\n  :return: io.deephaven.appmode.Field<java.lang.Object>\n  \n*Overload 3*  \n  :param applicationId: java.lang.String\n  :param fieldName: java.lang.String\n  :return: io.deephaven.appmode.Field<java.lang.Object>",
+  "schemes": "The supported schemes.\n\n:return: (java.util.Set<java.lang.String>) the schemes"
+ },
+ "path": "io.deephaven.server.uri.ApplicationResolver",
+ "text": "The application table resolver is able to resolve application URIs.\n\n \n For example, dh:///app/my_app/field/my_field.",
+ "typeName": "class"
+}

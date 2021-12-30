@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.kafka.KafkaSchemaUtils",
+ "methods": {
+  "getEffectiveSchema": ":param fieldName: java.lang.String\n:param fieldSchema: org.apache.avro.Schema\n:return: org.apache.avro.Schema"
+ },
+ "path": "io.deephaven.kafka.KafkaSchemaUtils",
+ "typeName": "class"
+}

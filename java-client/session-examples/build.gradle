@@ -5,11 +5,7 @@ plugins {
 
 dependencies {
     implementation project(':java-client-session-dagger')
-
-    implementation 'info.picocli:picocli:4.6.1'
-
-    Classpaths.inheritGrpcPlatform(project, 'implementation')
-    implementation 'io.grpc:grpc-core'
+    implementation project(':java-client-example-utilities')
     runtimeOnly 'io.grpc:grpc-netty'
 
     Classpaths.inheritJUnitPlatform(project)

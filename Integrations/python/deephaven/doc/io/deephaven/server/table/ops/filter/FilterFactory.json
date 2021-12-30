@@ -1,0 +1,18 @@
+{
+ "className": "io.deephaven.server.table.ops.filter.FilterFactory",
+ "methods": {
+  "makeFilter": ":param table: io.deephaven.engine.table.Table\n:param condition: io.deephaven.proto.backplane.grpc.Condition\n:return: io.deephaven.engine.table.impl.select.WhereFilter",
+  "onAnd": ":param filtersList: java.util.List<io.deephaven.proto.backplane.grpc.Condition>\n:return: io.deephaven.engine.table.impl.select.WhereFilter",
+  "onComparison": ":param operation: io.deephaven.proto.backplane.grpc.CompareCondition.CompareOperation\n:param caseSensitivity: io.deephaven.proto.backplane.grpc.CaseSensitivity\n:param lhs: io.deephaven.proto.backplane.grpc.Value\n:param rhs: io.deephaven.proto.backplane.grpc.Value\n:return: io.deephaven.engine.table.impl.select.WhereFilter",
+  "onContains": ":param reference: io.deephaven.proto.backplane.grpc.Reference\n:param searchString: java.lang.String\n:param caseSensitivity: io.deephaven.proto.backplane.grpc.CaseSensitivity\n:param matchType: io.deephaven.proto.backplane.grpc.MatchType\n:return: io.deephaven.engine.table.impl.select.WhereFilter",
+  "onIn": ":param target: io.deephaven.proto.backplane.grpc.Value\n:param candidatesList: java.util.List<io.deephaven.proto.backplane.grpc.Value>\n:param caseSensitivity: io.deephaven.proto.backplane.grpc.CaseSensitivity\n:param matchType: io.deephaven.proto.backplane.grpc.MatchType\n:return: io.deephaven.engine.table.impl.select.WhereFilter",
+  "onInvoke": ":param method: java.lang.String\n:param target: io.deephaven.proto.backplane.grpc.Value\n:param argumentsList: java.util.List<io.deephaven.proto.backplane.grpc.Value>\n:return: io.deephaven.engine.table.impl.select.WhereFilter",
+  "onIsNull": ":param reference: io.deephaven.proto.backplane.grpc.Reference\n:return: io.deephaven.engine.table.impl.select.WhereFilter",
+  "onMatches": ":param reference: io.deephaven.proto.backplane.grpc.Reference\n:param regex: java.lang.String\n:param caseSensitivity: io.deephaven.proto.backplane.grpc.CaseSensitivity\n:param matchType: io.deephaven.proto.backplane.grpc.MatchType\n:return: io.deephaven.engine.table.impl.select.WhereFilter",
+  "onNot": ":param filter: io.deephaven.proto.backplane.grpc.Condition\n:return: io.deephaven.engine.table.impl.select.WhereFilter",
+  "onOr": ":param filtersList: java.util.List<io.deephaven.proto.backplane.grpc.Condition>\n:return: io.deephaven.engine.table.impl.select.WhereFilter",
+  "onSearch": ":param searchString: java.lang.String\n:param optionalReferencesList: java.util.List<io.deephaven.proto.backplane.grpc.Reference>\n:return: io.deephaven.engine.table.impl.select.WhereFilter"
+ },
+ "path": "io.deephaven.server.table.ops.filter.FilterFactory",
+ "typeName": "class"
+}
