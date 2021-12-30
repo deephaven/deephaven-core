@@ -71,17 +71,19 @@ public class FlatFloatArraySource extends AbstractColumnSource<Float> implements
 
     private void fillChunkByRanges(WritableChunk<? super Values> destination, RowSequence rowSequence) {
         final WritableFloatChunk<? super Values> asFloatChunk = destination.asWritableFloatChunk();
-        final MutableInt srcPos = new MutableInt(0);
+        final MutableInt destPosition = new MutableInt(0);
         rowSequence.forAllRowKeyRanges((long start, long end) -> {
             final int rangeLength = Math.toIntExact(end - start + 1);
-            asFloatChunk.copyFromTypedArray(data, Math.toIntExact(start), srcPos.getAndAdd(rangeLength), rangeLength);
+            asFloatChunk.copyFromTypedArray(data, Math.toIntExact(start), destPosition.getAndAdd(rangeLength), rangeLength);
         });
+        asFloatChunk.setSize(destPosition.intValue());
     }
 
     private void fillChunkByKeys(WritableChunk<? super Values> destination, RowSequence rowSequence) {
         final WritableFloatChunk<? super Values> asFloatChunk = destination.asWritableFloatChunk();
-        final MutableInt srcPos = new MutableInt(0);
-        rowSequence.forAllRowKeys((long key) -> asFloatChunk.set(srcPos.getAndIncrement(), getUnsafe(key)));
+        final MutableInt destPosition = new MutableInt(0);
+        rowSequence.forAllRowKeys((long key) -> asFloatChunk.set(destPosition.getAndIncrement(), getUnsafe(key)));
+        asFloatChunk.setSize(destPosition.intValue());
     }
 
     @Override

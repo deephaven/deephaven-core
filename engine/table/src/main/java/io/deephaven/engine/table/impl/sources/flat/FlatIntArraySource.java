@@ -71,17 +71,19 @@ public class FlatIntArraySource extends AbstractColumnSource<Integer> implements
 
     private void fillChunkByRanges(WritableChunk<? super Values> destination, RowSequence rowSequence) {
         final WritableIntChunk<? super Values> asIntChunk = destination.asWritableIntChunk();
-        final MutableInt srcPos = new MutableInt(0);
+        final MutableInt destPosition = new MutableInt(0);
         rowSequence.forAllRowKeyRanges((long start, long end) -> {
             final int rangeLength = Math.toIntExact(end - start + 1);
-            asIntChunk.copyFromTypedArray(data, Math.toIntExact(start), srcPos.getAndAdd(rangeLength), rangeLength);
+            asIntChunk.copyFromTypedArray(data, Math.toIntExact(start), destPosition.getAndAdd(rangeLength), rangeLength);
         });
+        asIntChunk.setSize(destPosition.intValue());
     }
 
     private void fillChunkByKeys(WritableChunk<? super Values> destination, RowSequence rowSequence) {
         final WritableIntChunk<? super Values> asIntChunk = destination.asWritableIntChunk();
-        final MutableInt srcPos = new MutableInt(0);
-        rowSequence.forAllRowKeys((long key) -> asIntChunk.set(srcPos.getAndIncrement(), getUnsafe(key)));
+        final MutableInt destPosition = new MutableInt(0);
+        rowSequence.forAllRowKeys((long key) -> asIntChunk.set(destPosition.getAndIncrement(), getUnsafe(key)));
+        asIntChunk.setSize(destPosition.intValue());
     }
 
     @Override

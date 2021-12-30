@@ -1,3 +1,6 @@
+/* ---------------------------------------------------------------------------------------------------------------------
+ * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit AbstractCharacterColumnSourceTest and regenerate
+ * ------------------------------------------------------------------------------------------------------------------ */
 package io.deephaven.engine.table.impl.sources;
 
 import io.deephaven.chunk.*;
@@ -21,13 +24,13 @@ import org.junit.Test;
 import java.util.Arrays;
 import java.util.Random;
 
-import static io.deephaven.util.QueryConstants.NULL_CHAR;
+import static io.deephaven.util.QueryConstants.NULL_LONG;
 import static junit.framework.TestCase.*;
 import static junit.framework.TestCase.assertEquals;
 
-public abstract class AbstractCharacterColumnSourceTest {
+public abstract class AbstractLongColumnSourceTest {
     @NotNull
-    abstract WritableColumnSource<Character> makeTestSource();
+    abstract WritableColumnSource<Long> makeTestSource();
 
     int getSourceSize() {
         return 16384;
@@ -54,28 +57,28 @@ public abstract class AbstractCharacterColumnSourceTest {
     }
 
     private void testFill(Random random, int chunkSize) {
-        final WritableColumnSource<Character> source = makeTestSource();
+        final WritableColumnSource<Long> source = makeTestSource();
 
         final ColumnSource.FillContext fillContext = source.makeFillContext(chunkSize);
-        final WritableCharChunk dest = WritableCharChunk.makeWritableChunk(chunkSize);
+        final WritableLongChunk dest = WritableLongChunk.makeWritableChunk(chunkSize);
 
         source.fillChunk(fillContext, dest, RowSetFactory.fromRange(0, 1023));
         for (int ii = 0; ii < 1024; ++ii) {
-            checkFromSource("null check: " + ii, NULL_CHAR, dest.get(ii));
+            checkFromSource("null check: " + ii, NULL_LONG, dest.get(ii));
         }
 
         final int expectedBlockSize = 1024;
-        final char [] expectations = new char[getSourceSize()];
+        final long [] expectations = new long[getSourceSize()];
         // region arrayFill
-        Arrays.fill(expectations, NULL_CHAR);
+        Arrays.fill(expectations, NULL_LONG);
         // endregion arrayFill
-        final char [] randomChars = ArrayGenerator.randomChars(random, expectations.length / 2);
+        final long [] randomLongs = ArrayGenerator.randomLongs(random, expectations.length / 2);
         for (int ii = 0; ii < expectations.length; ++ii) {
             final int block = ii / expectedBlockSize;
             if (block % 2 == 0) {
-                final char randomChar = randomChars[(block / 2 * expectedBlockSize) + (ii % expectedBlockSize)];
-                expectations[ii] = randomChar;
-                source.set(ii, randomChar);
+                final long randomLong = randomLongs[(block / 2 * expectedBlockSize) + (ii % expectedBlockSize)];
+                expectations[ii] = randomLong;
+                source.set(ii, randomLong);
             }
         }
 
@@ -109,28 +112,28 @@ public abstract class AbstractCharacterColumnSourceTest {
     }
 
     private void testGet(Random random, int chunkSize) {
-        final CharacterSparseArraySource source = new CharacterSparseArraySource();
+        final LongSparseArraySource source = new LongSparseArraySource();
 
         final ColumnSource.GetContext getContext = source.makeGetContext(chunkSize);
 
         // the asChunk is not needed here, but it's needed when replicated to Boolean
-        final CharChunk<Values> result = source.getChunk(getContext, RowSetFactory.fromRange(0, 1023)).asCharChunk();
+        final LongChunk<Values> result = source.getChunk(getContext, RowSetFactory.fromRange(0, 1023)).asLongChunk();
         for (int ii = 0; ii < 1024; ++ii) {
-            checkFromSource("null check: " + ii, NULL_CHAR, result.get(ii));
+            checkFromSource("null check: " + ii, NULL_LONG, result.get(ii));
         }
 
         final int expectedBlockSize = 1024;
-        final char [] expectations = new char[getSourceSize()];
+        final long [] expectations = new long[getSourceSize()];
         // region arrayFill
-        Arrays.fill(expectations, NULL_CHAR);
+        Arrays.fill(expectations, NULL_LONG);
         // endregion arrayFill
-        final char [] randomChars = ArrayGenerator.randomChars(random, expectations.length / 2);
+        final long [] randomLongs = ArrayGenerator.randomLongs(random, expectations.length / 2);
         for (int ii = 0; ii < expectations.length; ++ii) {
             final int block = ii / expectedBlockSize;
             if (block % 2 == 0) {
-                final char randomChar = randomChars[(block / 2 * expectedBlockSize) + (ii % expectedBlockSize)];
-                expectations[ii] = randomChar;
-                source.set(ii, randomChar);
+                final long randomLong = randomLongs[(block / 2 * expectedBlockSize) + (ii % expectedBlockSize)];
+                expectations[ii] = randomLong;
+                source.set(ii, randomLong);
             }
         }
 
@@ -171,8 +174,8 @@ public abstract class AbstractCharacterColumnSourceTest {
         return builder.build();
     }
 
-    private void checkRandomFill(int chunkSize, WritableColumnSource<Character> source, ColumnSource.FillContext fillContext,
-                                 WritableCharChunk dest, char[] expectations, RowSet rowSet, boolean usePrev) {
+    private void checkRandomFill(int chunkSize, WritableColumnSource<Long> source, ColumnSource.FillContext fillContext,
+                                 WritableLongChunk dest, long[] expectations, RowSet rowSet, boolean usePrev) {
         for (final RowSequence.Iterator rsIt = rowSet.getRowSequenceIterator(); rsIt.hasMore(); ) {
             final RowSequence nextOk = rsIt.getNextRowSequenceWithLength(chunkSize);
 
@@ -190,8 +193,8 @@ public abstract class AbstractCharacterColumnSourceTest {
         }
     }
 
-    private void checkRangeFill(int chunkSize, WritableColumnSource<Character> source, ColumnSource.FillContext fillContext,
-                                WritableCharChunk dest, char[] expectations, int firstKey, int lastKey, boolean usePrev) {
+    private void checkRangeFill(int chunkSize, WritableColumnSource<Long> source, ColumnSource.FillContext fillContext,
+                                WritableLongChunk dest, long[] expectations, int firstKey, int lastKey, boolean usePrev) {
         int offset;
         final RowSet rowSet = RowSetFactory.fromRange(firstKey, lastKey);
         offset = firstKey;
@@ -208,18 +211,18 @@ public abstract class AbstractCharacterColumnSourceTest {
         }
     }
 
-    private void checkRangeGet(int chunkSize, CharacterSparseArraySource source, ColumnSource.GetContext getContext, char[] expectations, int firstKey, int lastKey, boolean usePrev) {
+    private void checkRangeGet(int chunkSize, LongSparseArraySource source, ColumnSource.GetContext getContext, long[] expectations, int firstKey, int lastKey, boolean usePrev) {
         int offset;
         final RowSet rowSet = RowSetFactory.fromRange(firstKey, lastKey);
         offset = firstKey;
         for (final RowSequence.Iterator it = rowSet.getRowSequenceIterator(); it.hasMore(); ) {
             final RowSequence nextOk = it.getNextRowSequenceWithLength(chunkSize);
 
-            final CharChunk<Values> result;
+            final LongChunk<Values> result;
             if (usePrev) {
-                result = source.getPrevChunk(getContext, nextOk).asCharChunk();
+                result = source.getPrevChunk(getContext, nextOk).asLongChunk();
             } else {
-                result = source.getChunk(getContext, nextOk).asCharChunk();
+                result = source.getChunk(getContext, nextOk).asLongChunk();
             }
             checkRangeResults(expectations, offset, nextOk, result);
             // region samecheck
@@ -233,28 +236,28 @@ public abstract class AbstractCharacterColumnSourceTest {
         }
     }
 
-    private void checkRangeResults(char[] expectations, int offset, RowSequence nextOk, CharChunk<Values> result) {
+    private void checkRangeResults(long[] expectations, int offset, RowSequence nextOk, LongChunk<Values> result) {
         for (int ii = 0; ii < nextOk.size(); ++ii) {
             checkFromValues("expectations[" + offset + " + " + ii + " = " + (ii + offset) + "] vs. dest[" + ii + "]", expectations[ii + offset], result.get(ii));
         }
     }
 
     // region fromvalues
-    private void checkFromValues(String msg, char fromValues, char fromChunk) {
+    private void checkFromValues(String msg, long fromValues, long fromChunk) {
         assertEquals(msg, fromValues, fromChunk);
     }
     // endregion fromvalues
 
     // region fromsource
-    private void checkFromSource(String msg, char fromSource, char fromChunk) {
+    private void checkFromSource(String msg, long fromSource, long fromChunk) {
         assertEquals(msg, fromSource, fromChunk);
     }
     // endregion fromsource
 
     @Test
     public void testSourceSink() {
-        TestSourceSink.runTests(ChunkType.Char, size -> {
-            final CharacterSparseArraySource src = new CharacterSparseArraySource();
+        TestSourceSink.runTests(ChunkType.Long, size -> {
+            final LongSparseArraySource src = new LongSparseArraySource();
             src.ensureCapacity(size);
             return src;
         });
@@ -266,15 +269,15 @@ public abstract class AbstractCharacterColumnSourceTest {
         final int arraySize = 100;
         final int rangeStart = 20;
         final int rangeEnd = 80;
-        final CharacterSparseArraySource source = new CharacterSparseArraySource();
+        final LongSparseArraySource source = new LongSparseArraySource();
         source.ensureCapacity(arraySize);
 
-        final char[] data = ArrayGenerator.randomChars(rng, arraySize);
+        final long[] data = ArrayGenerator.randomLongs(rng, arraySize);
         for (int ii = 0; ii < data.length; ++ii) {
             source.set(ii, data[ii]);
         }
         // super hack
-        final char[] peekedBlock = source.ensureBlock(0, 0, 0);
+        final long[] peekedBlock = source.ensureBlock(0, 0, 0);
 
         try (RowSet srcKeys = RowSetFactory.fromRange(rangeStart, rangeEnd)) {
             try (RowSet destKeys = RowSetFactory.fromRange(rangeStart + 1, rangeEnd + 1)) {
@@ -305,15 +308,15 @@ public abstract class AbstractCharacterColumnSourceTest {
     // to do.
     @Test
     public void testFilllEmptyChunkWithPrev() {
-        final CharacterSparseArraySource src = new CharacterSparseArraySource();
+        final LongSparseArraySource src = new LongSparseArraySource();
         src.startTrackingPrevValues();
         UpdateGraphProcessor.DEFAULT.startCycleForUnitTests();
         try (final RowSet keys = RowSetFactory.empty();
-             final WritableCharChunk<Values> chunk = WritableCharChunk.makeWritableChunk(0)) {
+             final WritableLongChunk<Values> chunk = WritableLongChunk.makeWritableChunk(0)) {
             // Fill from an empty chunk
             src.fillFromChunkByKeys(keys, chunk);
         }
-        // NullPointerException in CharacterSparseArraySource.commitUpdates()
+        // NullPointerException in LongSparseArraySource.commitUpdates()
         UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
     }
 }

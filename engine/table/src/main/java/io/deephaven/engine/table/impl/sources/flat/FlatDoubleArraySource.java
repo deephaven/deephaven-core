@@ -71,17 +71,19 @@ public class FlatDoubleArraySource extends AbstractColumnSource<Double> implemen
 
     private void fillChunkByRanges(WritableChunk<? super Values> destination, RowSequence rowSequence) {
         final WritableDoubleChunk<? super Values> asDoubleChunk = destination.asWritableDoubleChunk();
-        final MutableInt srcPos = new MutableInt(0);
+        final MutableInt destPosition = new MutableInt(0);
         rowSequence.forAllRowKeyRanges((long start, long end) -> {
             final int rangeLength = Math.toIntExact(end - start + 1);
-            asDoubleChunk.copyFromTypedArray(data, Math.toIntExact(start), srcPos.getAndAdd(rangeLength), rangeLength);
+            asDoubleChunk.copyFromTypedArray(data, Math.toIntExact(start), destPosition.getAndAdd(rangeLength), rangeLength);
         });
+        asDoubleChunk.setSize(destPosition.intValue());
     }
 
     private void fillChunkByKeys(WritableChunk<? super Values> destination, RowSequence rowSequence) {
         final WritableDoubleChunk<? super Values> asDoubleChunk = destination.asWritableDoubleChunk();
-        final MutableInt srcPos = new MutableInt(0);
-        rowSequence.forAllRowKeys((long key) -> asDoubleChunk.set(srcPos.getAndIncrement(), getUnsafe(key)));
+        final MutableInt destPosition = new MutableInt(0);
+        rowSequence.forAllRowKeys((long key) -> asDoubleChunk.set(destPosition.getAndIncrement(), getUnsafe(key)));
+        asDoubleChunk.setSize(destPosition.intValue());
     }
 
     @Override

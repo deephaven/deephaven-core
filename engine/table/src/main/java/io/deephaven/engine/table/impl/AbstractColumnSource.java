@@ -33,8 +33,6 @@ public abstract class AbstractColumnSource<T> implements
         ColumnSource<T>,
         DefaultChunkSource.WithPrev<Values> {
 
-    private static final long serialVersionUID = 8003280177657671273L;
-
     /**
      * Minimum average run length in an {@link RowSequence} that should trigger {@link Chunk}-filling by key ranges
      * instead of individual keys.

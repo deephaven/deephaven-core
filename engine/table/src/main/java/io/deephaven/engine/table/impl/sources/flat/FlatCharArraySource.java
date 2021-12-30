@@ -68,17 +68,19 @@ public class FlatCharArraySource extends AbstractColumnSource<Character> impleme
 
     private void fillChunkByRanges(WritableChunk<? super Values> destination, RowSequence rowSequence) {
         final WritableCharChunk<? super Values> asCharChunk = destination.asWritableCharChunk();
-        final MutableInt srcPos = new MutableInt(0);
+        final MutableInt destPosition = new MutableInt(0);
         rowSequence.forAllRowKeyRanges((long start, long end) -> {
             final int rangeLength = Math.toIntExact(end - start + 1);
-            asCharChunk.copyFromTypedArray(data, Math.toIntExact(start), srcPos.getAndAdd(rangeLength), rangeLength);
+            asCharChunk.copyFromTypedArray(data, Math.toIntExact(start), destPosition.getAndAdd(rangeLength), rangeLength);
         });
+        asCharChunk.setSize(destPosition.intValue());
     }
 
     private void fillChunkByKeys(WritableChunk<? super Values> destination, RowSequence rowSequence) {
         final WritableCharChunk<? super Values> asCharChunk = destination.asWritableCharChunk();
-        final MutableInt srcPos = new MutableInt(0);
-        rowSequence.forAllRowKeys((long key) -> asCharChunk.set(srcPos.getAndIncrement(), getUnsafe(key)));
+        final MutableInt destPosition = new MutableInt(0);
+        rowSequence.forAllRowKeys((long key) -> asCharChunk.set(destPosition.getAndIncrement(), getUnsafe(key)));
+        asCharChunk.setSize(destPosition.intValue());
     }
 
     @Override

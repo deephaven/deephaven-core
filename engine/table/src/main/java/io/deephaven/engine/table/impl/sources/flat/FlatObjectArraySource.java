@@ -70,17 +70,19 @@ public class FlatObjectArraySource<T> extends AbstractColumnSource<T> implements
 
     private void fillChunkByRanges(WritableChunk<? super Values> destination, RowSequence rowSequence) {
         final WritableObjectChunk<T, ? super Values> asObjectChunk = destination.asWritableObjectChunk();
-        final MutableInt srcPos = new MutableInt(0);
+        final MutableInt destPosition = new MutableInt(0);
         rowSequence.forAllRowKeyRanges((long start, long end) -> {
             final int rangeLength = Math.toIntExact(end - start + 1);
-            asObjectChunk.copyFromTypedArray((T[])data, Math.toIntExact(start), srcPos.getAndAdd(rangeLength), rangeLength);
+            asObjectChunk.copyFromTypedArray((T[])data, Math.toIntExact(start), destPosition.getAndAdd(rangeLength), rangeLength);
         });
+        asObjectChunk.setSize(destPosition.intValue());
     }
 
     private void fillChunkByKeys(WritableChunk<? super Values> destination, RowSequence rowSequence) {
         final WritableObjectChunk<T, ? super Values> asObjectChunk = destination.asWritableObjectChunk();
-        final MutableInt srcPos = new MutableInt(0);
-        rowSequence.forAllRowKeys((long key) -> asObjectChunk.set(srcPos.getAndIncrement(), getUnsafe(key)));
+        final MutableInt destPosition = new MutableInt(0);
+        rowSequence.forAllRowKeys((long key) -> asObjectChunk.set(destPosition.getAndIncrement(), getUnsafe(key)));
+        asObjectChunk.setSize(destPosition.intValue());
     }
 
     @Override
