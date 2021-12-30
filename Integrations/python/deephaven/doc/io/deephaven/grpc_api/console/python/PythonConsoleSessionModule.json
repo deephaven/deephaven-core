@@ -1,6 +1,0 @@
-{
- "className": "io.deephaven.grpc_api.console.python.PythonConsoleSessionModule",
- "methods": {},
- "path": "io.deephaven.grpc_api.console.python.PythonConsoleSessionModule",
- "typeName": "class"
-}

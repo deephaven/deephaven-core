@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.uri.resolver.UriResolver",
+ "methods": {
+  "isResolvable": "Returns true if the resolver can resolve the uri.\n\n:param uri: (java.net.URI) - the uri\n:return: (boolean) true if this resolver can resolve uri",
+  "resolve": "Resolve uri into an object.\n\n:param uri: (java.net.URI) - the URI\n:return: (java.lang.Object) the object",
+  "schemes": "The supported schemes.\n\n:return: (java.util.Set<java.lang.String>) the schemes"
+ },
+ "path": "io.deephaven.uri.resolver.UriResolver",
+ "text": "A URI resolver resolves URIs into objects.",
+ "typeName": "interface"
+}

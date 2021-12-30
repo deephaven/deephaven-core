@@ -1,0 +1,11 @@
+{
+ "className": "io.deephaven.server.table.validation.ColumnExpressionValidator",
+ "methods": {
+  "validateColumnExpressions": ":param selectColumns: io.deephaven.engine.table.impl.select.SelectColumn[]\n:param originalExpressions: java.lang.String[]\n:param table: io.deephaven.engine.table.Table",
+  "validateSelectFilters": ":param conditionalExpressions: java.lang.String[]\n:param table: io.deephaven.engine.table.Table\n:return: io.deephaven.engine.table.impl.select.WhereFilter[]",
+  "visit": "*Overload 1*  \n  :param n: com.github.javaparser.ast.expr.MethodCallExpr\n  :param arg: java.lang.Void\n  :return: java.lang.Void\n  \n*Overload 2*  \n  :param n: com.github.javaparser.ast.expr.ObjectCreationExpr\n  :param arg: java.lang.Void\n  :return: java.lang.Void"
+ },
+ "path": "io.deephaven.server.table.validation.ColumnExpressionValidator",
+ "text": "Validates a column expression coming from the web api, to ensure that the included code will use the limited\n supported API, and no use of `new`.\n\n This must be an early pass at the AST on the server, as the server's stricter validation will not function without\n it.",
+ "typeName": "class"
+}

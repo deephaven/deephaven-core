@@ -1,0 +1,11 @@
+plugins {
+    id 'java-library'
+}
+
+dependencies {
+    api 'info.picocli:picocli:4.6.1'
+    api project(':java-client-session')
+
+    Classpaths.inheritGrpcPlatform(project, 'api')
+    api 'io.grpc:grpc-core'
+}

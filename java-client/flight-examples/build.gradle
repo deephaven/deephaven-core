@@ -5,8 +5,7 @@ plugins {
 
 dependencies {
     implementation project(':java-client-flight-dagger')
-
-    implementation 'info.picocli:picocli:4.6.1'
+    implementation project(':java-client-example-utilities')
 
     Classpaths.inheritJUnitPlatform(project)
     Classpaths.inheritAssertJ(project)
@@ -37,7 +36,6 @@ def createApplication = { String name, String mainClass ->
 }
 
 applicationDistribution.into('bin') {
-    from(createApplication('get-schema', 'io.deephaven.client.examples.GetSchema'))
     from(createApplication('get-tsv', 'io.deephaven.client.examples.GetTsv'))
     from(createApplication('poll-tsv', 'io.deephaven.client.examples.PollTsv'))
     from(createApplication('list-tables', 'io.deephaven.client.examples.ListTables'))
@@ -52,13 +50,9 @@ applicationDistribution.into('bin') {
     from(createApplication('add-to-input-table', 'io.deephaven.client.examples.AddToInputTable'))
     from(createApplication('kv-input-table', 'io.deephaven.client.examples.KeyValueInputTable'))
 
-    from(createApplication('get-ticket-table', 'io.deephaven.client.examples.GetTicketTable'))
+    from(createApplication('get-table', 'io.deephaven.client.examples.GetDirectTable'))
+    from(createApplication('get-schema', 'io.deephaven.client.examples.GetDirectSchema'))
 
-    from(createApplication('get-application-schema', 'io.deephaven.client.examples.GetApplicationSchema'))
-    from(createApplication('get-application-table', 'io.deephaven.client.examples.GetApplicationTable'))
-
-    from(createApplication('get-scope-schema', 'io.deephaven.client.examples.GetScopeSchema'))
-    from(createApplication('get-scope-table', 'io.deephaven.client.examples.GetScopeTable'))
 
     fileMode = 0755
 }

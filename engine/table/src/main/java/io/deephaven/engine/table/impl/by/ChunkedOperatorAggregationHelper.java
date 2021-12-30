@@ -329,6 +329,11 @@ public class ChunkedOperatorAggregationHelper {
         private final WritableChunk<Values>[] postWorkingChunks;
         private final WritableLongChunk<RowKeys> postPermutedKeyIndices;
 
+        // the valueChunks and postValueChunks arrays never own a chunk, they havea reference to workingChunks or a
+        // chunk returned from a get context, and thus are not closed by this context
+        private final Chunk<? extends Values>[] valueChunks;
+        private final Chunk<? extends Values>[] postValueChunks;
+
         private final WritableIntChunk<ChunkPositions> runStarts;
         private final WritableIntChunk<ChunkLengths> runLengths;
         private final WritableIntChunk<ChunkPositions> chunkPositions;
@@ -402,6 +407,8 @@ public class ChunkedOperatorAggregationHelper {
             ac.initializeGetContexts(sharedContext, getContexts, chunkSize);
             // noinspection unchecked
             workingChunks = toClose.addArray(new WritableChunk[ac.size()]);
+            valueChunks = new Chunk[ac.size()];
+            postValueChunks = new Chunk[ac.size()];
             ac.initializeWorkingChunks(workingChunks, chunkSize);
             permutedKeyIndices =
                     ac.requiresIndices() || keysModified ? toClose.add(WritableLongChunk.makeWritableChunk(chunkSize))
@@ -626,7 +633,6 @@ public class ChunkedOperatorAggregationHelper {
             boolean firstOperator = true;
             setFalse(modifiedSlots, runStarts.size());
 
-            final Chunk<? extends Values>[] valueChunks = new Chunk[ac.size()];
             sharedContext.reset();
             for (int oi = 0; oi < ac.size(); ++oi) {
                 if (!firstOperator) {
@@ -640,7 +646,7 @@ public class ChunkedOperatorAggregationHelper {
                                 getAndPermuteChunk(ac.inputColumns[oi], getContexts[oi], keyIndicesToRemoveChunk, true,
                                         permuteKernels[oi], chunkPositions, workingChunks[oi]);
                     } else {
-                        valueChunks[inputSlot] =
+                        valueChunks[oi] =
                                 getChunk(ac.inputColumns[oi], getContexts[oi], keyIndicesToRemoveChunk, true);
                     }
                 }
@@ -705,8 +711,6 @@ public class ChunkedOperatorAggregationHelper {
             boolean firstOperator = true;
             setFalse(modifiedSlots, runStarts.size());
 
-            final Chunk<? extends Values>[] valueChunks = new Chunk[ac.size()];
-
             sharedContext.reset();
             for (int oi = 0; oi < ac.size(); ++oi) {
                 if (!firstOperator) {
@@ -759,8 +763,6 @@ public class ChunkedOperatorAggregationHelper {
 
             final LongChunk<RowKeys> usePreKeys;
             final LongChunk<RowKeys> usePostKeys;
-            final Chunk<? extends Values>[] valueChunks = new Chunk[ac.size()];
-            final Chunk<? extends Values>[] postValueChunks = new Chunk[ac.size()];
 
             try (final RowSequence preShiftChunkKeys =
                     RowSequenceFactory.wrapRowKeysChunkAsRowSequence(WritableLongChunk.downcast(preKeyIndices));
@@ -847,9 +849,6 @@ public class ChunkedOperatorAggregationHelper {
                 final boolean supplyPostIndices, @NotNull final boolean[] operatorsToProcess,
                 @NotNull final boolean[] operatorsToProcessIndicesOnly) {
             final boolean shifted = preShiftKeyIndicesToModify != postShiftKeyIndicesToModify;
-
-            final Chunk<? extends Values>[] valueChunks = new Chunk[ac.size()];
-            final Chunk<? extends Values>[] postValueChunks = new Chunk[ac.size()];
 
             try (final RowSequence.Iterator preShiftIterator = preShiftKeyIndicesToModify.getRowSequenceIterator();
                     final RowSequence.Iterator postShiftIterator =
@@ -1645,6 +1644,7 @@ public class ChunkedOperatorAggregationHelper {
                 if (permutedKeyIndices != null) {
                     if (permute) {
                         final LongChunk<OrderedRowKeys> keyIndices = chunkOk.asRowKeyChunk();
+                        permutedKeyIndices.setSize(keyIndices.size());
                         LongPermuteKernel.permuteInput(keyIndices, chunkPosition, permutedKeyIndices);
                     } else {
                         chunkOk.fillRowKeyChunk(permutedKeyIndices);

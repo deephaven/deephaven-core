@@ -1,0 +1,8 @@
+{
+ "className": "io.deephaven.proto.util.ByteHelper",
+ "methods": {
+  "byteBufToHex": ":param ticket: java.nio.ByteBuffer\n:return: java.lang.String"
+ },
+ "path": "io.deephaven.proto.util.ByteHelper",
+ "typeName": "class"
+}

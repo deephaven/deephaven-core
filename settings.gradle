@@ -245,6 +245,9 @@ project(':java-client-flight-examples').projectDir = file('java-client/flight-ex
 include(':java-client-barrage-examples')
 project(':java-client-barrage-examples').projectDir = file('java-client/barrage-examples')
 
+include(':java-client-example-utilities')
+project(':java-client-example-utilities').projectDir = file('java-client/example-utilities')
+
 include(':qst:graphviz')
 
 include(':application-mode')

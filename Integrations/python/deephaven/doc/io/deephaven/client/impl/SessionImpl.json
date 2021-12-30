@@ -16,7 +16,8 @@
   "publish": "Publishes ticket into the global scope with name.\n\n:param name: (java.lang.String) - the name, must conform to SourceVersion.isName(CharSequence)\n:param ticketId: (io.deephaven.client.impl.HasTicketId) - the export ID\n:return: (java.util.concurrent.CompletableFuture<java.lang.Void>) the publish completable future",
   "release": "Releases an export ID.\n\n \n Note: this should only be called in combination with exports returned from Session.newExportId().\n\n:param exportId: (io.deephaven.client.impl.ExportId) - the export ID\n:return: (java.util.concurrent.CompletableFuture<java.lang.Void>) the future",
   "releaseCount": ":return: long",
-  "serial": "A serial table handle manager.\n\n:return: (io.deephaven.client.impl.TableHandleManager) a serial manager"
+  "serial": "A serial table handle manager.\n\n:return: (io.deephaven.client.impl.TableHandleManager) a serial manager",
+  "subscribeToFields": ":param listener: io.deephaven.client.impl.ApplicationService.Listener\n:return: io.deephaven.client.impl.ApplicationService.Cancel"
  },
  "path": "io.deephaven.client.impl.SessionImpl",
  "text": "A Session implementation that uses batch requests\n and memoizes based on TableSpec equality.",
