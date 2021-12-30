@@ -331,8 +331,8 @@ public class ChunkedOperatorAggregationHelper {
 
         // the valueChunks and postValueChunks arrays never own a chunk, they havea reference to workingChunks or a
         // chunk returned from a get context, and thus are not closed by this context
-        private final Chunk<? extends Values> [] valueChunks;
-        private final Chunk<? extends Values> [] postValueChunks;
+        private final Chunk<? extends Values>[] valueChunks;
+        private final Chunk<? extends Values>[] postValueChunks;
 
         private final WritableIntChunk<ChunkPositions> runStarts;
         private final WritableIntChunk<ChunkLengths> runLengths;
