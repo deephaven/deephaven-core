@@ -3,6 +3,10 @@ package io.deephaven.engine.table.impl.sources;
 import io.deephaven.chunk.ResettableWritableChunk;
 import org.jetbrains.annotations.NotNull;
 
+/**
+ * Writable sources that use simple arrays to back contiguous regions may implement this interface, allowing callers
+ * to reach directly into their storage in order to fill them without the need for additional array copies.
+ */
 public interface ChunkedBackingStoreExposedWritableSource {
     /**
      * Resets the given chunk to provide a write-through reference to our backing array.

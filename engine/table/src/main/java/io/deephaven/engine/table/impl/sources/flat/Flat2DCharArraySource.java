@@ -20,7 +20,15 @@ import static io.deephaven.util.QueryConstants.NULL_CHAR;
 // endregion boxing imports
 
 /**
- * Simple flat array source that supports filling for initial creation.
+ * Simple almost flat array source that supports fillFromChunk for initial creation.
+ *
+ * No previous value tracking is permitted, so this column source is only useful as a flat static source.
+ *
+ * A two-dimension array single array backs the result, with by default segments of 2^30 elements.  This is so that
+ * getChunk calls with contiguous ranges are often able to return a reference to the backing store without an array
+ * copy.
+ *
+ * If your size is smaller than Integer.MAX_VALUE, prefer {@link FlatCharArraySource}.
  */
 public class Flat2DCharArraySource extends AbstractColumnSource<Character> implements ImmutableColumnSourceGetDefaults.ForChar, WritableColumnSource<Character>, FillUnordered, InMemoryColumnSource, ChunkedBackingStoreExposedWritableSource {
     private static final int DEFAULT_SEGMENT_SHIFT = 30;
