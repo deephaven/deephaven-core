@@ -282,7 +282,8 @@ public abstract class SelectAndViewAnalyzer {
 
     public abstract void startTrackingPrev();
 
-    public boolean flattenedResult() {
-        return false;
-    }
+    /**
+     * Was the result internally flattened?
+     */
+    public abstract boolean flattenedResult();
 }
