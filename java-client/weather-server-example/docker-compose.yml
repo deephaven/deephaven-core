@@ -1,0 +1,44 @@
+version: "3.4"
+
+services:
+  grpc-api:
+    build:
+      context: ./src/main/docker
+    expose:
+      - '8080'
+    volumes:
+      - ./data:/data
+      - api-cache:/cache
+    environment:
+      - JAVA_TOOL_OPTIONS=-Xmx8g -Ddeephaven.console.type=python -Ddeephaven.application.dir=/app.d
+
+  web:
+    image: deephaven/web:local-build
+    expose:
+      - '80'
+    volumes:
+      - ./data:/data
+      - web-tmp:/tmp
+
+  grpc-proxy:
+    image: deephaven/grpc-proxy:local-build
+    environment:
+      - BACKEND_ADDR=grpc-api:8080
+    depends_on:
+      - grpc-api
+    expose:
+      - '8080'
+
+  envoy:
+    image: deephaven/envoy:local-build
+    depends_on:
+      - web
+      - grpc-proxy
+      - grpc-api
+    ports:
+      - "${PORT:-10000}:10000"
+
+volumes:
+    web-tmp:
+    api-cache:
+      
