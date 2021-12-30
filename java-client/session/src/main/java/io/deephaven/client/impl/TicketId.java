@@ -30,7 +30,7 @@ public final class TicketId implements HasTicketId {
         return Ticket.newBuilder().setTicket(ByteStringAccess.wrap(ticket)).build();
     }
 
-    TicketTable table() {
+    public TicketTable table() {
         return TicketTable.of(ticket);
     }
 }
