@@ -16,6 +16,7 @@ import io.deephaven.engine.util.scripts.ScriptPathLoaderState;
 import io.deephaven.internal.log.LoggerFactory;
 import io.deephaven.io.logger.Logger;
 import io.deephaven.plugin.type.ObjectTypeLookup;
+import io.deephaven.plugin.type.ObjectTypeLookup.NoOp;
 import io.deephaven.util.annotations.VisibleForTesting;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -124,8 +125,8 @@ public class PythonDeephavenSession extends AbstractScriptSession implements Scr
      * Creates a Python "{@link ScriptSession}", for use where we should only be reading from the scope, such as an
      * IPython kernel session.
      */
-    public PythonDeephavenSession(ObjectTypeLookup objectTypeLookup, PythonScope<?> scope) {
-        super(objectTypeLookup, null, false);
+    public PythonDeephavenSession(PythonScope<?> scope) {
+        super(NoOp.INSTANCE, null, false);
         this.scope = (PythonScope<PyObject>) scope;
         this.module = null;
         this.evaluator = null;

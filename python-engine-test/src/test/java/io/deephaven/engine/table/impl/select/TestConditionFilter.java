@@ -8,7 +8,6 @@ import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
 import io.deephaven.io.log.LogLevel;
 import io.deephaven.io.logger.StreamLoggerImpl;
-import io.deephaven.plugin.type.ObjectTypeLookup.NoOp;
 import io.deephaven.util.process.ProcessEnvironment;
 import io.deephaven.compilertools.CompilerTools;
 import io.deephaven.engine.table.Table;
@@ -370,8 +369,8 @@ public class TestConditionFilter extends PythonTest {
             QueryScope currentScope = QueryScope.getScope();
             try {
                 if (pythonScope == null) {
-                    pythonScope = new PythonDeephavenSession(NoOp.INSTANCE, new PythonScopeJpyImpl(
-                            getMainGlobals().asDict())).newQueryScope();
+                    pythonScope = new PythonDeephavenSession(new PythonScopeJpyImpl(getMainGlobals().asDict()))
+                            .newQueryScope();
                     QueryScope.setScope(pythonScope);
                 }
                 for (QueryScopeParam param : currentScope.getParams(currentScope.getParamNames())) {
