@@ -113,6 +113,9 @@ public abstract class AbstractCharacterColumnSourceTest {
 
         final ColumnSource.GetContext getContext = source.makeGetContext(chunkSize);
 
+        final Chunk<Values> emptyResult = source.getChunk(getContext, RowSetFactory.empty());
+        assertEquals(emptyResult.size(), 0);
+
         // the asChunk is not needed here, but it's needed when replicated to Boolean
         final CharChunk<Values> result = source.getChunk(getContext, RowSetFactory.fromRange(0, 1023)).asCharChunk();
         for (int ii = 0; ii < 1024; ++ii) {

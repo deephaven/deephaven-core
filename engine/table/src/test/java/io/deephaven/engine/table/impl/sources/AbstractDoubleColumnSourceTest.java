@@ -1,6 +1,8 @@
-/* ---------------------------------------------------------------------------------------------------------------------
+/*
+ * ---------------------------------------------------------------------------------------------------------------------
  * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit AbstractCharacterColumnSourceTest and regenerate
- * ------------------------------------------------------------------------------------------------------------------ */
+ * ---------------------------------------------------------------------------------------------------------------------
+ */
 package io.deephaven.engine.table.impl.sources;
 
 import io.deephaven.chunk.*;
@@ -115,6 +117,9 @@ public abstract class AbstractDoubleColumnSourceTest {
         final DoubleSparseArraySource source = new DoubleSparseArraySource();
 
         final ColumnSource.GetContext getContext = source.makeGetContext(chunkSize);
+
+        final Chunk<Values> emptyResult = source.getChunk(getContext, RowSetFactory.empty());
+        assertEquals(emptyResult.size(), 0);
 
         // the asChunk is not needed here, but it's needed when replicated to Boolean
         final DoubleChunk<Values> result = source.getChunk(getContext, RowSetFactory.fromRange(0, 1023)).asDoubleChunk();

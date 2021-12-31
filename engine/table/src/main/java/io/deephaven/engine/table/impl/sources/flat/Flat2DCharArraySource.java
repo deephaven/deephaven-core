@@ -152,6 +152,9 @@ public class Flat2DCharArraySource extends AbstractColumnSource<Character> imple
 
     @Override
     public Chunk<? extends Values> getChunk(@NotNull GetContext context, @NotNull RowSequence rowSequence) {
+        if (rowSequence.isEmpty()) {
+            return CharChunk.getEmptyChunk();
+        }
         if (rowSequence.isContiguous()) {
             return getChunk(context, rowSequence.firstRowKey(), rowSequence.lastRowKey());
         }

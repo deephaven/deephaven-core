@@ -1,6 +1,8 @@
-/* ---------------------------------------------------------------------------------------------------------------------
+/*
+ * ---------------------------------------------------------------------------------------------------------------------
  * AUTO-GENERATED CLASS - DO NOT EDIT MANUALLY - for any changes edit Flat2DCharArraySource and regenerate
- * ------------------------------------------------------------------------------------------------------------------ */
+ * ---------------------------------------------------------------------------------------------------------------------
+ */
 package io.deephaven.engine.table.impl.sources.flat;
 
 import io.deephaven.chunk.*;
@@ -154,6 +156,9 @@ public class Flat2DObjectArraySource<T> extends AbstractColumnSource<T> implemen
 
     @Override
     public Chunk<? extends Values> getChunk(@NotNull GetContext context, @NotNull RowSequence rowSequence) {
+        if (rowSequence.isEmpty()) {
+            return ObjectChunk.getEmptyChunk();
+        }
         if (rowSequence.isContiguous()) {
             return getChunk(context, rowSequence.firstRowKey(), rowSequence.lastRowKey());
         }
