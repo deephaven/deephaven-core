@@ -283,7 +283,11 @@ public abstract class SelectAndViewAnalyzer {
     public abstract void startTrackingPrev();
 
     /**
-     * Was the result internally flattened?
+     * Was the result internally flattened?  Only the STATIC_SELECT case flattens the result.  If the result preserves
+     * any columns, then flattening is not permitted.  Because all of the other layers are can not internally flatten,
+     * the default implementation returns false.
      */
-    public abstract boolean flattenedResult();
+    public boolean flattenedResult() {
+        return false;
+    }
 }
