@@ -61,17 +61,18 @@ public class SnapshotUtils {
      * @param stampColumns The stamp columns that serve as the source data
      * @param stampKey The source key
      * @param destColumns The destination columns we are writing to to
-     * @param destKey The key in destColumns we want to write to
      */
     public static void copyStampColumns(@NotNull Map<String, ? extends ColumnSource<?>> stampColumns, long stampKey,
-            @NotNull Map<String, SingleValueColumnSource<?>> destColumns, long destKey) {
+            @NotNull Map<String, SingleValueColumnSource<?>> destColumns) {
         for (Map.Entry<String, ? extends ColumnSource<?>> entry : stampColumns.entrySet()) {
             final String name = entry.getKey();
             final ColumnSource<?> src = entry.getValue();
 
             // Fill the corresponding destination column
+            // noinspection rawtypes
             final SingleValueColumnSource dest = destColumns.get(name);
-            dest.set(destKey, src.get(stampKey));
+            // noinspection unchecked
+            dest.set(src.get(stampKey));
         }
     }
 

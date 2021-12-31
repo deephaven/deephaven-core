@@ -97,6 +97,7 @@ public class ReplicateSourceAndChunkTests {
 
         lines = simpleFixup(lines, "arrayFill", "NULL_BOOLEAN", "BooleanUtils.NULL_BOOLEAN_AS_BYTE");
         lines = simpleFixup(lines, "testsourcesink", "ChunkType.Boolean", "ChunkType.Object");
+        lines = simpleFixup(lines, "null unordered check", "NULL_BOOLEAN", "BooleanUtils.NULL_BOOLEAN_AS_BYTE");
 
         lines = applyFixup(lines, "fromsource", "(.*)checkFromSource\\((.*)byte fromSource(.*)\\) \\{",
                 m -> Collections.singletonList(

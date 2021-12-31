@@ -5,9 +5,14 @@
  */
 package io.deephaven.engine.table.impl.sources.flat;
 
+import io.deephaven.engine.table.ColumnSource;
+
+import io.deephaven.time.DateTime;
+
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.WritableColumnSource;
@@ -181,8 +186,13 @@ public class FlatLongArraySource extends AbstractDeferredGroupingColumnSource<Lo
     public void fillChunkUnordered(@NotNull FillContext context, @NotNull WritableChunk<? super Values> dest, @NotNull LongChunk<? extends RowKeys> keys) {
         final WritableLongChunk<? super Values> longDest = dest.asWritableLongChunk();
         for (int ii = 0; ii < keys.size(); ++ii) {
-            final int key = Math.toIntExact(keys.get(ii));
-            longDest.set(ii, getUnsafe(key));
+            final long longKey = keys.get(ii);
+            if (longKey == RowSet.NULL_ROW_KEY) {
+                longDest.set(ii, NULL_LONG);
+            } else {
+                final int key = Math.toIntExact(longKey);
+                longDest.set(ii, getUnsafe(key));
+            }
         }
     }
 
@@ -205,4 +215,17 @@ public class FlatLongArraySource extends AbstractDeferredGroupingColumnSource<Lo
     public Chunk<? extends Values> getPrevChunk(@NotNull GetContext context, long firstKey, long lastKey) {
         return getChunk(context, firstKey, lastKey);
     }
+
+    // region reinterpret
+    @Override
+    public <ALTERNATE_DATA_TYPE> boolean allowsReinterpret(
+            @NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) {
+        return alternateDataType == DateTime.class;
+    }
+
+    protected <ALTERNATE_DATA_TYPE> ColumnSource<ALTERNATE_DATA_TYPE> doReinterpret(
+               @NotNull Class<ALTERNATE_DATA_TYPE> alternateDataType) {
+         return (ColumnSource<ALTERNATE_DATA_TYPE>) new LongAsDateTimeColumnSource(this);
+    }
+    // endregion reinterpret
 }

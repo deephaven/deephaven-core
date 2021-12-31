@@ -8,6 +8,7 @@ package io.deephaven.engine.table.impl.sources.flat;
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;
+import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.SharedContext;
 import io.deephaven.engine.table.WritableColumnSource;
@@ -181,8 +182,13 @@ public class FlatIntArraySource extends AbstractDeferredGroupingColumnSource<Int
     public void fillChunkUnordered(@NotNull FillContext context, @NotNull WritableChunk<? super Values> dest, @NotNull LongChunk<? extends RowKeys> keys) {
         final WritableIntChunk<? super Values> intDest = dest.asWritableIntChunk();
         for (int ii = 0; ii < keys.size(); ++ii) {
-            final int key = Math.toIntExact(keys.get(ii));
-            intDest.set(ii, getUnsafe(key));
+            final long longKey = keys.get(ii);
+            if (longKey == RowSet.NULL_ROW_KEY) {
+                intDest.set(ii, NULL_INT);
+            } else {
+                final int key = Math.toIntExact(longKey);
+                intDest.set(ii, getUnsafe(key));
+            }
         }
     }
 
@@ -205,4 +211,7 @@ public class FlatIntArraySource extends AbstractDeferredGroupingColumnSource<Int
     public Chunk<? extends Values> getPrevChunk(@NotNull GetContext context, long firstKey, long lastKey) {
         return getChunk(context, firstKey, lastKey);
     }
+
+    // region reinterpret
+    // endregion reinterpret
 }

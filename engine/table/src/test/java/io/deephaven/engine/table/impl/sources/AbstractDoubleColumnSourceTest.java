@@ -11,6 +11,7 @@ import io.deephaven.engine.rowset.RowSequence;
 import io.deephaven.engine.rowset.RowSet;
 import io.deephaven.engine.rowset.RowSetBuilderSequential;
 import io.deephaven.engine.rowset.RowSetFactory;
+import io.deephaven.engine.rowset.chunkattributes.RowKeys;
 import io.deephaven.engine.table.ChunkSink;
 import io.deephaven.engine.table.ChunkSource;
 import io.deephaven.engine.table.ColumnSource;
@@ -179,6 +180,18 @@ public abstract class AbstractDoubleColumnSourceTest {
         return builder.build();
     }
 
+    private WritableLongChunk<RowKeys> generateRandomKeys(Random random, int count, int maxsize) {
+        final WritableLongChunk<RowKeys> result = WritableLongChunk.makeWritableChunk(count);
+        for (int ii = 0; ii < count; ++ii) {
+            if (random.nextDouble() < 0.1) {
+                result.set(ii, RowSet.NULL_ROW_KEY);
+            } else {
+                result.set(ii, random.nextInt(maxsize));
+            }
+        }
+        return result;
+    }
+
     private void checkRandomFill(int chunkSize, WritableColumnSource<Double> source, ColumnSource.FillContext fillContext,
                                  WritableDoubleChunk dest, double[] expectations, RowSet rowSet, boolean usePrev) {
         for (final RowSequence.Iterator rsIt = rowSet.getRowSequenceIterator(); rsIt.hasMore(); ) {
@@ -194,6 +207,27 @@ public abstract class AbstractDoubleColumnSourceTest {
             for (final RowSet.Iterator indexIt = nextOk.asRowSet().iterator(); indexIt.hasNext(); ii++) {
                 final long next = indexIt.nextLong();
                 checkFromValues("expectations[" + next + "] vs. dest[" + ii + "]", expectations[(int)next], dest.get(ii));
+            }
+        }
+    }
+
+    private void checkRandomFillUnordered(WritableColumnSource<Double> source, ColumnSource.FillContext fillContext,
+                                          WritableDoubleChunk dest, double[] expectations, LongChunk<RowKeys> keys, boolean usePrev) {
+        final FillUnordered fillUnordered = (FillUnordered)source;
+        if (usePrev) {
+            fillUnordered.fillChunkUnordered(fillContext, dest, keys);
+        } else {
+            fillUnordered.fillPrevChunkUnordered(fillContext, dest, keys);
+        }
+
+        for (int ii = 0; ii < keys.size(); ii++) {
+            final long next = keys.get(ii);
+            if (next == RowSet.NULL_ROW_KEY) {
+                // region null unordered check
+                checkFromValues("null vs. dest[" + ii + "]", NULL_DOUBLE, dest.get(ii));
+                // endregion null unordered check
+            } else {
+                checkFromValues("expectations[" + next + "] vs. dest[" + ii + "]", expectations[(int) next], dest.get(ii));
             }
         }
     }
@@ -323,5 +357,51 @@ public abstract class AbstractDoubleColumnSourceTest {
         }
         // NullPointerException in DoubleSparseArraySource.commitUpdates()
         UpdateGraphProcessor.DEFAULT.completeCycleForUnitTests();
+    }
+
+    @Test
+    public void testFillUnordered() {
+        final Random random = new Random(0);
+        testFillUnordered(random, 1024);
+    }
+
+    private void testFillUnordered(Random random, int chunkSize) {
+        final WritableColumnSource<Double> source = makeTestSource();
+
+        final ColumnSource.FillContext fillContext = source.makeFillContext(chunkSize);
+        final WritableDoubleChunk dest = WritableDoubleChunk.makeWritableChunk(chunkSize);
+
+        source.fillChunk(fillContext, dest, RowSetFactory.fromRange(0, 1023));
+        for (int ii = 0; ii < 1024; ++ii) {
+            checkFromSource("null check: " + ii, NULL_DOUBLE, dest.get(ii));
+        }
+
+        final int expectedBlockSize = 1024;
+        final double [] expectations = new double[getSourceSize()];
+        // region arrayFill
+        Arrays.fill(expectations, NULL_DOUBLE);
+        // endregion arrayFill
+        final double [] randomDoubles = ArrayGenerator.randomDoubles(random, expectations.length / 2);
+        for (int ii = 0; ii < expectations.length; ++ii) {
+            final int block = ii / expectedBlockSize;
+            if (block % 2 == 0) {
+                final double randomDouble = randomDoubles[(block / 2 * expectedBlockSize) + (ii % expectedBlockSize)];
+                expectations[ii] = randomDouble;
+                source.set(ii, randomDouble);
+            }
+        }
+
+        // before we have the previous tracking enabled, prev should just fall through to get
+        for (boolean usePrev : new boolean[]{false, true}) {
+            // lets make a few random indices
+            for (int seed = 0; seed < 100; ++seed) {
+                int count = random.nextInt(chunkSize);
+                try (final WritableLongChunk<RowKeys> rowKeys = generateRandomKeys(random, count, expectations.length)) {
+                    checkRandomFillUnordered(source, fillContext, dest, expectations, rowKeys, usePrev);
+                }
+            }
+        }
+
+        fillContext.close();
     }
 }

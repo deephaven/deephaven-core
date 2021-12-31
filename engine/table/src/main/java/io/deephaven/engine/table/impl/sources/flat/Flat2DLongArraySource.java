@@ -5,6 +5,10 @@
  */
 package io.deephaven.engine.table.impl.sources.flat;
 
+import io.deephaven.engine.table.ColumnSource;
+
+import io.deephaven.time.DateTime;
+
 import io.deephaven.chunk.*;
 import io.deephaven.chunk.attributes.Values;
 import io.deephaven.engine.rowset.RowSequence;

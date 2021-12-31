@@ -6,7 +6,6 @@ package io.deephaven.replicators;
 
 import io.deephaven.replication.ReplicationUtils;
 import org.apache.commons.io.FileUtils;
-import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.io.IOException;
@@ -39,11 +38,15 @@ public class ReplicateSourcesAndChunks {
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/UngroupedBoxedCharArrayColumnSource.java");
         charToAllButBoolean(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/immutable/ImmutableCharArraySource.java");
-        charToAllButBoolean(
+        charToAllButBooleanAndLong(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/flat/FlatCharArraySource.java");
+        fixupLongReinterpret(charToLong(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/flat/FlatCharArraySource.java"));
         replicateObjectFlatArraySource();
-        charToAllButBoolean(
+        charToAllButBooleanAndLong(
                 "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/flat/Flat2DCharArraySource.java");
+        fixupLongReinterpret(charToLong(
+                "engine/table/src/main/java/io/deephaven/engine/table/impl/sources/flat/Flat2DCharArraySource.java"));
         replicateObjectFlat2DArraySource();
         charToAll("engine/chunk/src/main/java/io/deephaven/chunk/sized/SizedCharChunk.java");
 
@@ -67,6 +70,24 @@ public class ReplicateSourcesAndChunks {
         charToAll("engine/table/src/main/java/io/deephaven/engine/table/impl/chunkfillers/CharChunkFiller.java");
 
         replicateChunkColumnSource();
+    }
+
+    private static void fixupLongReinterpret(String longFlatSource) throws IOException {
+        final File resultClassJavaFile = new File(longFlatSource);
+        List<String> lines = FileUtils.readLines(resultClassJavaFile, Charset.defaultCharset());
+        lines = addImport(lines, "import io.deephaven.time.DateTime;");
+        lines = addImport(lines, "import io.deephaven.engine.table.ColumnSource;");
+        lines = replaceRegion(lines, "reinterpret", Arrays.asList("    @Override",
+                "    public <ALTERNATE_DATA_TYPE> boolean allowsReinterpret(",
+                "            @NotNull final Class<ALTERNATE_DATA_TYPE> alternateDataType) {",
+                "        return alternateDataType == DateTime.class;",
+                "    }",
+                "",
+                "    protected <ALTERNATE_DATA_TYPE> ColumnSource<ALTERNATE_DATA_TYPE> doReinterpret(",
+                "               @NotNull Class<ALTERNATE_DATA_TYPE> alternateDataType) {",
+                "         return (ColumnSource<ALTERNATE_DATA_TYPE>) new LongAsDateTimeColumnSource(this);",
+                "    }"));
+        FileUtils.writeLines(resultClassJavaFile, lines);
     }
 
     private static void replicateSingleValues() throws IOException {

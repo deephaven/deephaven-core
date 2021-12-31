@@ -57,7 +57,7 @@ public class SnapshotInternalListener extends BaseTable.ListenerImpl {
         // Populate stamp columns from the triggering table
         if (!triggerTable.getRowSet().isEmpty()) {
             SnapshotUtils.copyStampColumns(triggerTable.getColumnSourceMap(), triggerTable.getRowSet().lastRowKey(),
-                    resultLeftColumns, 0);
+                    resultLeftColumns);
         }
         final TrackingRowSet currentRowSet = snapshotTable.getRowSet();
         final long snapshotSize;
