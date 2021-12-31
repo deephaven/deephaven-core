@@ -60,15 +60,17 @@ public abstract class SelectAndViewAnalyzer {
 
             if (shouldPreserve(sc)) {
                 if (didFlattenedSourceCount > 0) {
+                    // if we've already flattened a source column, start over with flattening disallowed.
                     return create(mode, columnSources, rowSet, parentMcs, publishTheseSources, false, selectColumns);
                 }
                 analyzer =
                         analyzer.createLayerForPreserve(sc.getName(), sc, sc.getDataView(), distinctDeps, mcsBuilder);
+                // we can not flatten future columns because we are preserving this column
                 flattenedResult = false;
                 continue;
             }
 
-            final long targetSize = rowSet.isEmpty() ? 0 : (flattenedResult ? rowSet.size() : rowSet.lastRowKey() + 1);
+            final long targetDestinationCapacity = rowSet.isEmpty() ? 0 : (flattenedResult ? rowSet.size() : rowSet.lastRowKey() + 1);
             switch (mode) {
                 case VIEW_LAZY: {
                     final ColumnSource<?> viewCs = sc.getLazyView();
@@ -84,8 +86,8 @@ public abstract class SelectAndViewAnalyzer {
                     // We need to call newDestInstance because only newDestInstance has the knowledge to endow our
                     // created array with the proper componentType (in the case of Vectors).
                     final WritableColumnSource<?> scs =
-                            flatResult || flattenedResult ? sc.newFlatDestInstance(targetSize)
-                                    : sc.newDestInstance(targetSize);
+                            flatResult || flattenedResult ? sc.newFlatDestInstance(targetDestinationCapacity)
+                                    : sc.newDestInstance(targetDestinationCapacity);
                     analyzer = analyzer.createLayerForSelect(sc.getName(), sc, scs, null, distinctDeps, mcsBuilder,
                             false, flattenedResult);
                     if (flattenedResult) {
@@ -98,7 +100,7 @@ public abstract class SelectAndViewAnalyzer {
                     // We need to call newDestInstance because only newDestInstance has the knowledge to endow our
                     // created array with the proper componentType (in the case of Vectors).
                     // TODO(kosak): use DeltaAwareColumnSource
-                    WritableColumnSource<?> scs = sc.newDestInstance(targetSize);
+                    WritableColumnSource<?> scs = sc.newDestInstance(targetDestinationCapacity);
                     WritableColumnSource<?> underlyingSource = null;
                     if (rowRedirection != null) {
                         underlyingSource = scs;

@@ -78,11 +78,11 @@ public class Flat2DCharArraySource extends AbstractColumnSource<Character> imple
         return getUnsafe(index);
     }
 
-    public int keyToSegment(long index) {
+    private int keyToSegment(long index) {
         return (int)(index >> segmentShift);
     }
 
-    public int keyToOffset(long index) {
+    private int keyToOffset(long index) {
         return (int)(index & segmentMask);
     }
 
@@ -108,6 +108,7 @@ public class Flat2DCharArraySource extends AbstractColumnSource<Character> imple
         chunk.asResettableWritableCharChunk().resetFromTypedArray((char[])data[segment], 0, data[segment].length);
         return (long)segment << segmentShift;
     }
+
     @Override
     public long resetWritableChunkToBackingStoreSlice(@NotNull ResettableWritableChunk<?> chunk, long position) {
         final int segment = keyToSegment(position);
