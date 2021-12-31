@@ -121,7 +121,7 @@ public class FunctionGeneratedTableFactory {
             WritableColumnSource<?> destColumn = writableSources.get(entry.getKey());
             destColumn.ensureCapacity(sourceRowSet.size());
             sourceColumnsArray[cc] = entry.getValue();
-            destColumnsArray[cc] = destColumn;
+            destColumnsArray[cc++] = destColumn;
         }
 
         // noinspection unchecked
