@@ -69,7 +69,7 @@ interface PageMaterializer {
 
         @Override
         public PageMaterializer makeMaterializerNonNull(ValuesReader dataReader, int numValues) {
-            return new BoolMaterializer(dataReader, 0, numValues);
+            return new BoolMaterializer(dataReader, false, numValues);
         }
     };
 
@@ -81,7 +81,7 @@ interface PageMaterializer {
 
         @Override
         public PageMaterializer makeMaterializerNonNull(ValuesReader dataReader, int numValues) {
-            return new BlobMaterializer(dataReader, 0, numValues);
+            return new BlobMaterializer(dataReader, null, numValues);
         }
     };
 
