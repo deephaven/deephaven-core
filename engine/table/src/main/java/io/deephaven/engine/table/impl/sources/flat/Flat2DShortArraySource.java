@@ -267,4 +267,9 @@ public class Flat2DShortArraySource extends AbstractDeferredGroupingColumnSource
     public Chunk<? extends Values> getPrevChunk(@NotNull GetContext context, long firstKey, long lastKey) {
         return getChunk(context, firstKey, lastKey);
     }
+
+    @Override
+    public boolean providesFillUnordered() {
+        return true;
+    }
 }

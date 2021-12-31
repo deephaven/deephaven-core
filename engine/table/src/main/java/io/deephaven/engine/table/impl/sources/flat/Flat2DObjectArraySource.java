@@ -266,4 +266,9 @@ public class Flat2DObjectArraySource<T> extends AbstractDeferredGroupingColumnSo
     public Chunk<? extends Values> getPrevChunk(@NotNull GetContext context, long firstKey, long lastKey) {
         return getChunk(context, firstKey, lastKey);
     }
+
+    @Override
+    public boolean providesFillUnordered() {
+        return true;
+    }
 }

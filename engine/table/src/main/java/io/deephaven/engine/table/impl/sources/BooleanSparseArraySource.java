@@ -950,6 +950,11 @@ public class BooleanSparseArraySource extends SparseArrayColumnSource<Boolean> i
         }
 
         @Override
+        public boolean providesFillUnordered() {
+            return true;
+        }
+
+        @Override
         public void fillFromChunk(@NotNull FillFromContext context_unused, @NotNull Chunk<? extends Values> src, @NotNull RowSequence RowSequence) {
             // This implementation is in "key" style (rather than range style).
             if (RowSequence.size() == 0) {

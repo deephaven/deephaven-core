@@ -838,4 +838,9 @@ public abstract class ArrayBackedColumnSource<T>
             });
         }
     }
+
+    @Override
+    public boolean providesFillUnordered() {
+        return true;
+    }
 }

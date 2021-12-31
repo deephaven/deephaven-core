@@ -216,6 +216,11 @@ public class FlatLongArraySource extends AbstractDeferredGroupingColumnSource<Lo
         return getChunk(context, firstKey, lastKey);
     }
 
+    @Override
+    public boolean providesFillUnordered() {
+        return true;
+    }
+
     // region reinterpret
     @Override
     public <ALTERNATE_DATA_TYPE> boolean allowsReinterpret(

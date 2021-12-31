@@ -211,6 +211,11 @@ public class FlatObjectArraySource<T> extends AbstractDeferredGroupingColumnSour
         return getChunk(context, firstKey, lastKey);
     }
 
+    @Override
+    public boolean providesFillUnordered() {
+        return true;
+    }
+
     // region reinterpret
     // endregion reinterpret
 }

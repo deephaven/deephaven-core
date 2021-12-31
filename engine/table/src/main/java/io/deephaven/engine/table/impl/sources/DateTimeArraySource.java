@@ -246,6 +246,10 @@ public class DateTimeArraySource extends AbstractLongArraySource<DateTime> {
                 @NotNull LongChunk<RowKeys> keys) {
             DateTimeArraySource.super.fillFromChunkUnordered(context, src, keys);
         }
-    }
 
+        @Override
+        public boolean providesFillUnordered() {
+            return true;
+        }
+    }
 }

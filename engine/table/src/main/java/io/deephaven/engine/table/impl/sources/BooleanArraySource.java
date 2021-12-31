@@ -636,5 +636,10 @@ public class BooleanArraySource extends ArraySourceHelper<Boolean, byte[]> imple
             final ByteChunk<? extends Values> chunk = src.asByteChunk();
             BooleanArraySource.this.fillFromChunkUnordered(src, keys, chunk::get);
         }
+
+        @Override
+        public boolean providesFillUnordered() {
+            return true;
+        }
     }
 }

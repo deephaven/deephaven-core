@@ -212,6 +212,11 @@ public class FlatDoubleArraySource extends AbstractDeferredGroupingColumnSource<
         return getChunk(context, firstKey, lastKey);
     }
 
+    @Override
+    public boolean providesFillUnordered() {
+        return true;
+    }
+
     // region reinterpret
     // endregion reinterpret
 }

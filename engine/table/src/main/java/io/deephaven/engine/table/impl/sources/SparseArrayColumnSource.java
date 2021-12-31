@@ -463,4 +463,9 @@ public abstract class SparseArrayColumnSource<T>
         UArray block;
         int offset;
     }
+
+    @Override
+    public boolean providesFillUnordered() {
+        return true;
+    }
 }
