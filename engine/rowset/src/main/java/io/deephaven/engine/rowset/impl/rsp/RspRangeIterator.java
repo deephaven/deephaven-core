@@ -139,7 +139,10 @@ public class RspRangeIterator implements LongRangeIterator, SafeCloseable {
             return spanKey | (long) ri.start();
         }
         final Object s = p.span();
-        if (isSingletonSpan(s) || RspArray.getFullBlockSpanLen(spanInfo, s) > 0) {
+        if (isSingletonSpan(s)) {
+            return spanInfoToSingletonSpanValue(spanInfo);
+        }
+        if (getFullBlockSpanLen(spanInfo, s) > 0) {
             return spanKey;
         }
         try (SpanView res = workDataPerThread.get().borrowSpanView(p.arr(), p.arrIdx(), spanInfo, s)) {
