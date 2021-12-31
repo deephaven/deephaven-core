@@ -167,7 +167,7 @@ final public class SelectColumnLayer extends SelectOrViewColumnLayer {
                                     long rangeOffset = 0;
                                     long firstDest = destKeys.firstRowKey();
                                     final long lastDest = destKeys.lastRowKey();
-                                    while (firstDest < lastDest) {
+                                    while (firstDest <= lastDest) {
                                         final long destCapacity = exposedWritableSource
                                                 .resetWritableChunkToBackingStoreSlice(backingChunk, firstDest);
                                         if (destCapacity >= (lastDest - firstDest + 1)) {

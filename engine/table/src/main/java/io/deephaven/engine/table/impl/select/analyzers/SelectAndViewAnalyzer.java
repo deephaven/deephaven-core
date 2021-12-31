@@ -28,7 +28,8 @@ public abstract class SelectAndViewAnalyzer {
     public static SelectAndViewAnalyzer create(Mode mode, Map<String, ColumnSource<?>> columnSources,
             TrackingRowSet rowSet, ModifiedColumnSet parentMcs, boolean publishTheseSources,
             SelectColumn... selectColumns) {
-        return create(mode, columnSources, rowSet, parentMcs, publishTheseSources, !publishTheseSources, selectColumns);
+        final boolean mustPreserve = !columnSources.isEmpty() && publishTheseSources;
+        return create(mode, columnSources, rowSet, parentMcs, publishTheseSources, !mustPreserve, selectColumns);
     }
 
     private static SelectAndViewAnalyzer create(Mode mode, Map<String, ColumnSource<?>> columnSources,
