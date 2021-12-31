@@ -38,7 +38,8 @@ public interface FillUnordered {
     /**
      * Returns true if this column source can efficiently provide an unordered fill.
      *
-     * If this method false, then fillChunkUnordered and fillPrevChunkUnordered may throw an UnsupportedOperationException.
+     * If this method false, then fillChunkUnordered and fillPrevChunkUnordered may throw an
+     * UnsupportedOperationException.
      *
      * @return if this column source can provide an unordered fill
      */
