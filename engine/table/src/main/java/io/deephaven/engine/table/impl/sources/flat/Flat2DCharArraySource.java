@@ -233,8 +233,13 @@ public class Flat2DCharArraySource extends AbstractDeferredGroupingColumnSource<
     public void fillChunkUnordered(@NotNull FillContext context, @NotNull WritableChunk<? super Values> dest, @NotNull LongChunk<? extends RowKeys> keys) {
         final WritableCharChunk<? super Values> charDest = dest.asWritableCharChunk();
         for (int ii = 0; ii < keys.size(); ++ii) {
-            final int key = Math.toIntExact(keys.get(ii));
-            charDest.set(ii, getUnsafe(key));
+            final long rowKey = keys.get(ii);
+            if (rowKey == RowSequence.NULL_ROW_KEY) {
+                charDest.set(ii, NULL_CHAR);
+            } else {
+                final int key = Math.toIntExact(rowKey);
+                charDest.set(ii, getUnsafe(key));
+            }
         }
     }
 

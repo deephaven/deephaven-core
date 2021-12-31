@@ -238,8 +238,13 @@ public class Flat2DDoubleArraySource extends AbstractDeferredGroupingColumnSourc
     public void fillChunkUnordered(@NotNull FillContext context, @NotNull WritableChunk<? super Values> dest, @NotNull LongChunk<? extends RowKeys> keys) {
         final WritableDoubleChunk<? super Values> doubleDest = dest.asWritableDoubleChunk();
         for (int ii = 0; ii < keys.size(); ++ii) {
-            final int key = Math.toIntExact(keys.get(ii));
-            doubleDest.set(ii, getUnsafe(key));
+            final long rowKey = keys.get(ii);
+            if (rowKey == RowSequence.NULL_ROW_KEY) {
+                doubleDest.set(ii, NULL_DOUBLE);
+            } else {
+                final int key = Math.toIntExact(rowKey);
+                doubleDest.set(ii, getUnsafe(key));
+            }
         }
     }
 

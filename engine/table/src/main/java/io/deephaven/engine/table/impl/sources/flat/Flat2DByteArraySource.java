@@ -238,8 +238,13 @@ public class Flat2DByteArraySource extends AbstractDeferredGroupingColumnSource<
     public void fillChunkUnordered(@NotNull FillContext context, @NotNull WritableChunk<? super Values> dest, @NotNull LongChunk<? extends RowKeys> keys) {
         final WritableByteChunk<? super Values> byteDest = dest.asWritableByteChunk();
         for (int ii = 0; ii < keys.size(); ++ii) {
-            final int key = Math.toIntExact(keys.get(ii));
-            byteDest.set(ii, getUnsafe(key));
+            final long rowKey = keys.get(ii);
+            if (rowKey == RowSequence.NULL_ROW_KEY) {
+                byteDest.set(ii, NULL_BYTE);
+            } else {
+                final int key = Math.toIntExact(rowKey);
+                byteDest.set(ii, getUnsafe(key));
+            }
         }
     }
 
